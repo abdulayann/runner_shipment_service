@@ -1,0 +1,42 @@
+{
+  "airexportfclshipmentList" : {
+    "transportMode": "AIR",
+    "direction": "EXP",
+    "shipmentType": "FCL"
+  },
+  "airexportlclshipmentList" :  {
+    "transportMode": "AIR",
+    "direction": "EXP",
+    "shipmentType": "LCL"
+  },
+  "airimportlclshipmentList" :  {
+    "transportMode": "AIR",
+    "direction": "IMP",
+    "shipmentType": "LCL"
+  },
+  "airimportfclshipmentList" :  {
+    "transportMode": "AIR",
+    "direction": "IMP",
+    "shipmentType": "FCL"
+  },
+  "seaexportlclshipmentList" : {
+    "transportMode": "SEA",
+    "direction": "EXP",
+    "shipmentType": "LCL"
+  },
+  "seaexportfclshipmentList" : {
+    "transportMode": "SEA",
+    "direction": "EXP",
+    "shipmentType": "FCL"
+  },
+  "seaimportlclshipmentList" :  {
+    "transportMode": "SEA",
+    "direction": "IMP",
+    "shipmentType": "LCL"
+  },
+  "seaimportfclshipmentList" :  {
+    "transportMode": "SEA",
+    "direction": "IMP",
+    "shipmentType": "FCL"
+  }
+}

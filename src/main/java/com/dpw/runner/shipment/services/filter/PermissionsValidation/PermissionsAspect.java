@@ -5,23 +5,23 @@ package com.dpw.runner.shipment.services.filter.PermissionsValidation;
 import com.dpw.runner.shipment.services.dto.request.Criteria;
 import com.dpw.runner.shipment.services.dto.request.FilterCriteria;
 import com.dpw.runner.shipment.services.dto.request.Pageable;
-import org.apache.poi.ss.formula.functions.T;
+import com.dpw.runner.shipment.services.utility.CommonUtils;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Before;
-import org.hibernate.Session;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Component;
 
 import javax.persistence.EntityManager;
-import javax.persistence.PersistenceContext;
 import java.util.*;
 
 @Aspect
 @Component
 public class PermissionsAspect {
 
+    private final Logger LOG = LoggerFactory.getLogger(PermissionsAspect.class);
     @Autowired
     private PermissionsContext permissionsContext;
 
@@ -33,6 +33,8 @@ public class PermissionsAspect {
         List<FilterCriteria> criterias = new ArrayList<>();
         if(permissionsContext.getPermissions().contains("airexportfclshipmentList")) {
             List<FilterCriteria> innerFilters = new ArrayList();
+            List<FilterCriteria> inf = new ArrayList();
+            inf = CommonUtils.generateFilterCriteriaFromPermissionType("airexportfclshipmentList");
 
             innerFilters.add(constructCriteria("transportMode", "AIR","=" , null));
             innerFilters.add(constructCriteria("direction", "EXP","=" , "and"));

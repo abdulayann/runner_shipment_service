@@ -1,0 +1,44 @@
+[
+  {
+   "transportMode": "SEA",
+    "direction": {
+      "IMP": {
+        "shipmentType": ["LCL", "FCL", "LSE"]
+      },
+      "EXP": {
+        "shipmentType": ["LCL", "FCL", "LSE"]
+      },
+      "DOM": {
+        "shipmentType": ["LCL", "FCL", "LSE"]
+      }
+    }
+  },
+  {
+    "transportMode": "AIR",
+    "direction": {
+      "IMP": {
+        "shipmentType": ["LCL", "FCL", "LSE"]
+      },
+      "EXP": {
+        "shipmentType": ["LCL", "FCL", "LSE"]
+      },
+      "DOM": {
+        "shipmentType": ["LCL", "FCL", "LSE"]
+      }
+    }
+  },
+  {
+    "transportMode": "ROA",
+    "direction": {
+      "IMP": {
+        "shipmentType": ["LCL", "FCL", "LSE"]
+      },
+      "EXP": {
+        "shipmentType": ["LCL", "FCL", "LSE"]
+      },
+      "DOM": {
+        "shipmentType": ["LCL", "FCL", "LSE"]
+      }
+    }
+  }
+]
