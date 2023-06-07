@@ -75,11 +75,10 @@ public class CommonUtils {
         List<FilterCriteria> innerFilters = new ArrayList();
         JsonObject criteriaObj = readJson(String.format("%s%s",resourcePath,"permissions.json")).getJsonObject(permissionType);
 
-        innerFilters.add(constructCriteria(TRANSPORT_MODE, criteriaObj.get(TRANSPORT_MODE),"=" , null));
-        innerFilters.add(constructCriteria(DIRECTION, criteriaObj.get(DIRECTION),"=" , "and"));
-        innerFilters.add(constructCriteria(SHIPMENT_TYPE, criteriaObj.get(SHIPMENT_TYPE),"=" , "and"));
+        innerFilters.add(constructCriteria(TRANSPORT_MODE, criteriaObj.get(TRANSPORT_MODE).toString(),"=" , null));
+        innerFilters.add(constructCriteria(DIRECTION, criteriaObj.get(DIRECTION).toString(),"=" , "and"));
+        innerFilters.add(constructCriteria(SHIPMENT_TYPE, criteriaObj.get(SHIPMENT_TYPE).toString(),"=" , "and"));
 
-        LOG.info(innerFilters.toString());
         return innerFilters;
     }
 

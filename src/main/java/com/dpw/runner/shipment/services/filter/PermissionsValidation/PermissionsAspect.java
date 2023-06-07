@@ -32,62 +32,35 @@ public class PermissionsAspect {
     public void beforeFindOfMultiTenancyRepository(JoinPoint joinPoint, Pageable pageable) {
         List<FilterCriteria> criterias = new ArrayList<>();
         if(permissionsContext.getPermissions().contains("airexportfclshipmentList")) {
-            List<FilterCriteria> innerFilters = new ArrayList();
-            List<FilterCriteria> inf = new ArrayList();
-            inf = CommonUtils.generateFilterCriteriaFromPermissionType("airexportfclshipmentList");
-
-            innerFilters.add(constructCriteria("transportMode", "AIR","=" , null));
-            innerFilters.add(constructCriteria("direction", "EXP","=" , "and"));
-            innerFilters.add(constructCriteria("shipmentType", "FCL","=" , "and"));
+            List<FilterCriteria> innerFilters = CommonUtils.generateFilterCriteriaFromPermissionType("airexportfclshipmentList");
             criterias.add(FilterCriteria.builder().innerFilter(innerFilters).logicOperator(criterias.isEmpty() ? null : "or").build());
         }
         if(permissionsContext.getPermissions().contains("airexportlclshipmentList")) {
-            List<FilterCriteria> innerFilters = new ArrayList();
-            innerFilters.add(constructCriteria("transportMode", "AIR","=" , null));
-            innerFilters.add(constructCriteria("direction", "EXP","=" , "and"));
-            innerFilters.add(constructCriteria("shipmentType", "LCL","=" , "and"));
+            List<FilterCriteria> innerFilters = CommonUtils.generateFilterCriteriaFromPermissionType("airexportlclshipmentList");
             criterias.add(FilterCriteria.builder().innerFilter(innerFilters).logicOperator(criterias.isEmpty() ? null : "or").build());
         }
         if(permissionsContext.getPermissions().contains("airimportfclshipmentlist")) {
-            List<FilterCriteria> innerFilters = new ArrayList();
-            innerFilters.add(constructCriteria("transportMode", "AIR","=" , null));
-            innerFilters.add(constructCriteria("direction", "IMP","=" , "and"));
-            innerFilters.add(constructCriteria("shipmentType", "FCL","=" , "and"));
+            List<FilterCriteria> innerFilters = CommonUtils.generateFilterCriteriaFromPermissionType("airimportfclshipmentlist");
             criterias.add(FilterCriteria.builder().innerFilter(innerFilters).logicOperator(criterias.isEmpty() ? null : "or").build());
         }
         if(permissionsContext.getPermissions().contains("airimportlclshipmentlist")) {
-            List<FilterCriteria> innerFilters = new ArrayList();
-            innerFilters.add(constructCriteria("transportMode", "AIR","=" , null));
-            innerFilters.add(constructCriteria("direction", "IMP","=" , "and"));
-            innerFilters.add(constructCriteria("shipmentType", "LCL","=" , "and"));
+            List<FilterCriteria> innerFilters = CommonUtils.generateFilterCriteriaFromPermissionType("airimportlclshipmentlist");
             criterias.add(FilterCriteria.builder().innerFilter(innerFilters).logicOperator(criterias.isEmpty() ? null : "or").build());
         }
         if(permissionsContext.getPermissions().contains("seaexportfclshipmentList")) {
-            List<FilterCriteria> innerFilters = new ArrayList();
-            innerFilters.add(constructCriteria("transportMode", "SEA","=" , null));
-            innerFilters.add(constructCriteria("direction", "EXP","=" , "and"));
-            innerFilters.add(constructCriteria("shipmentType", "FCL","=" , "and"));
+            List<FilterCriteria> innerFilters = CommonUtils.generateFilterCriteriaFromPermissionType("seaexportfclshipmentList");
             criterias.add(FilterCriteria.builder().innerFilter(innerFilters).logicOperator(criterias.isEmpty() ? null : "or").build());
         }
         if(permissionsContext.getPermissions().contains("seaexportlclshipmentList")) {
-            List<FilterCriteria> innerFilters = new ArrayList();
-            innerFilters.add(constructCriteria("transportMode", "SEA","=" , null));
-            innerFilters.add(constructCriteria("direction", "EXP","=" , "and"));
-            innerFilters.add(constructCriteria("shipmentType", "LCL","=" , "and"));
+            List<FilterCriteria> innerFilters = CommonUtils.generateFilterCriteriaFromPermissionType("seaexportlclshipmentList");
             criterias.add(FilterCriteria.builder().innerFilter(innerFilters).logicOperator(criterias.isEmpty() ? null : "or").build());
         }
         if(permissionsContext.getPermissions().contains("seaimportfclshipmentlist")) {
-            List<FilterCriteria> innerFilters = new ArrayList();
-            innerFilters.add(constructCriteria("transportMode", "SEA","=" , null));
-            innerFilters.add(constructCriteria("direction", "IMP","=" , "and"));
-            innerFilters.add(constructCriteria("shipmentType", "FCL","=" , "and"));
+            List<FilterCriteria> innerFilters = CommonUtils.generateFilterCriteriaFromPermissionType("seaimportfclshipmentlist");
             criterias.add(FilterCriteria.builder().innerFilter(innerFilters).logicOperator(criterias.isEmpty() ? null : "or").build());
         }
         if(permissionsContext.getPermissions().contains("seaimportlclshipmentlist")) {
-            List<FilterCriteria> innerFilters = new ArrayList();
-            innerFilters.add(constructCriteria("transportMode", "SEA","=" , null));
-            innerFilters.add(constructCriteria("direction", "IMP","=" , "and"));
-            innerFilters.add(constructCriteria("shipmentType", "LCL","=" , "and"));
+            List<FilterCriteria> innerFilters = CommonUtils.generateFilterCriteriaFromPermissionType("seaimportlclshipmentlist");
             criterias.add(FilterCriteria.builder().innerFilter(innerFilters).logicOperator(criterias.isEmpty() ? null : "or").build());
         }
 
