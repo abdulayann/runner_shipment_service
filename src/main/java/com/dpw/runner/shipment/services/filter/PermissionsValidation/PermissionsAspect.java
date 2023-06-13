@@ -24,44 +24,31 @@ public class PermissionsAspect {
     private final Logger LOG = LoggerFactory.getLogger(PermissionsAspect.class);
     @Autowired
     private PermissionsContext permissionsContext;
-
-
     @Autowired
     private EntityManager entityManager;
+
     @Before("execution(* com.dpw.runner.shipment.services.service.IShipmentService+.*(..)) && args(pageable)")
     public void beforeFindOfMultiTenancyRepository(JoinPoint joinPoint, Pageable pageable) {
         List<FilterCriteria> criterias = new ArrayList<>();
-        if(permissionsContext.getPermissions().contains("airexportfclshipmentList")) {
-            List<FilterCriteria> innerFilters = CommonUtils.generateFilterCriteriaFromPermissionType("airexportfclshipmentList");
-            criterias.add(FilterCriteria.builder().innerFilter(innerFilters).logicOperator(criterias.isEmpty() ? null : "or").build());
-        }
-        if(permissionsContext.getPermissions().contains("airexportlclshipmentList")) {
-            List<FilterCriteria> innerFilters = CommonUtils.generateFilterCriteriaFromPermissionType("airexportlclshipmentList");
-            criterias.add(FilterCriteria.builder().innerFilter(innerFilters).logicOperator(criterias.isEmpty() ? null : "or").build());
-        }
-        if(permissionsContext.getPermissions().contains("airimportfclshipmentlist")) {
-            List<FilterCriteria> innerFilters = CommonUtils.generateFilterCriteriaFromPermissionType("airimportfclshipmentlist");
-            criterias.add(FilterCriteria.builder().innerFilter(innerFilters).logicOperator(criterias.isEmpty() ? null : "or").build());
-        }
-        if(permissionsContext.getPermissions().contains("airimportlclshipmentlist")) {
-            List<FilterCriteria> innerFilters = CommonUtils.generateFilterCriteriaFromPermissionType("airimportlclshipmentlist");
-            criterias.add(FilterCriteria.builder().innerFilter(innerFilters).logicOperator(criterias.isEmpty() ? null : "or").build());
-        }
-        if(permissionsContext.getPermissions().contains("seaexportfclshipmentList")) {
-            List<FilterCriteria> innerFilters = CommonUtils.generateFilterCriteriaFromPermissionType("seaexportfclshipmentList");
-            criterias.add(FilterCriteria.builder().innerFilter(innerFilters).logicOperator(criterias.isEmpty() ? null : "or").build());
-        }
-        if(permissionsContext.getPermissions().contains("seaexportlclshipmentList")) {
-            List<FilterCriteria> innerFilters = CommonUtils.generateFilterCriteriaFromPermissionType("seaexportlclshipmentList");
-            criterias.add(FilterCriteria.builder().innerFilter(innerFilters).logicOperator(criterias.isEmpty() ? null : "or").build());
-        }
-        if(permissionsContext.getPermissions().contains("seaimportfclshipmentlist")) {
-            List<FilterCriteria> innerFilters = CommonUtils.generateFilterCriteriaFromPermissionType("seaimportfclshipmentlist");
-            criterias.add(FilterCriteria.builder().innerFilter(innerFilters).logicOperator(criterias.isEmpty() ? null : "or").build());
-        }
-        if(permissionsContext.getPermissions().contains("seaimportlclshipmentlist")) {
-            List<FilterCriteria> innerFilters = CommonUtils.generateFilterCriteriaFromPermissionType("seaimportlclshipmentlist");
-            criterias.add(FilterCriteria.builder().innerFilter(innerFilters).logicOperator(criterias.isEmpty() ? null : "or").build());
+        // Sort permission list to bring the "ALL" permissions in front .
+        // This will help to avoid adding criteria for some property when ALL was already there
+        permissionsContext.getPermissions().sort(new Comparator<String>() {
+            @Override
+            public int compare(String o1, String o2) {
+                return Integer.compare(o1.length(), o2.length());
+            }
+        });
+        HashSet<String> permissionSet = new HashSet<>();
+
+        for(String permission : permissionsContext.getPermissions()) {
+            List<FilterCriteria> innerFilters =
+                    CommonUtils.generateFilterCriteriaFromPermissionType(permission, permissionSet);
+            //TODO Logic to skip the permissions already covered in the ALL part
+
+            if(!innerFilters.isEmpty()) {
+                criterias.add(FilterCriteria.builder().innerFilter(innerFilters)
+                        .logicOperator(criterias.isEmpty() ? null : "or").build());
+            }
         }
 
         FilterCriteria criteria1 = FilterCriteria.builder().innerFilter(pageable.getFilterCriteria()).build();

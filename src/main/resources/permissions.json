@@ -38,5 +38,30 @@
     "transportMode": "SEA",
     "direction": "IMP",
     "shipmentType": "FCL"
+  },
+  "shipmentlist": {
+    "transportMode": "ALL",
+    "direction": "ALL",
+    "shipmentType": "ALL"
+  },
+  "airshipmentlist": {
+    "transportMode": "AIR",
+    "direction": "ALL",
+    "shipmentType": "ALL"
+  },
+  "airimpshipmentlist": {
+    "transportMode": "AIR",
+    "direction": "IMP",
+    "shipmentType": "ALL"
+  },
+  "airexpshipmentlist": {
+    "transportMode": "AIR",
+    "direction": "EXP",
+    "shipmentType": "ALL"
+  },
+  "airdomshipmentlist": {
+    "transportMode": "AIR",
+    "direction": "DOM",
+    "shipmentType": "ALL"
   }
 }

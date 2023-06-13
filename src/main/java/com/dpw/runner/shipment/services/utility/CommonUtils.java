@@ -71,13 +71,16 @@ public class CommonUtils {
         return jsonData;
     }
 
-    public static List<FilterCriteria> generateFilterCriteriaFromPermissionType(String permissionType){
+    public static List<FilterCriteria> generateFilterCriteriaFromPermissionType(String permissionType, HashSet<String> permissionSet){
         List<FilterCriteria> innerFilters = new ArrayList();
         JsonObject criteriaObj = readJson(String.format("%s%s",resourcePath,"permissions.json")).getJsonObject(permissionType);
 
-        innerFilters.add(constructCriteria(TRANSPORT_MODE, criteriaObj.get(TRANSPORT_MODE).toString(),"=" , null));
-        innerFilters.add(constructCriteria(DIRECTION, criteriaObj.get(DIRECTION).toString(),"=" , "and"));
-        innerFilters.add(constructCriteria(SHIPMENT_TYPE, criteriaObj.get(SHIPMENT_TYPE).toString(),"=" , "and"));
+        if(criteriaObj.get(TRANSPORT_MODE).toString() != ALL)
+            innerFilters.add(constructCriteria(TRANSPORT_MODE, criteriaObj.get(TRANSPORT_MODE).toString(),"=" , null));
+        if(criteriaObj.get(DIRECTION).toString() != ALL)
+            innerFilters.add(constructCriteria(DIRECTION, criteriaObj.get(DIRECTION).toString(),"=" , "and"));
+        if(criteriaObj.get(SHIPMENT_TYPE).toString() != ALL)
+            innerFilters.add(constructCriteria(SHIPMENT_TYPE, criteriaObj.get(SHIPMENT_TYPE).toString(),"=" , "and"));
 
         return innerFilters;
     }

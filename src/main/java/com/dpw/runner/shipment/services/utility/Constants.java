@@ -6,4 +6,5 @@ public class Constants {
     public static final String SHIPMENT_TYPE = "shipmentType";
     public static final String EQUAL = "=";
     public static final String AND = "and";
+    public static final String ALL = "ALL";
 }
