@@ -1,5 +1,7 @@
 package com.dpw.runner.shipment.services.filter.PermissionsValidation;
 
+import com.dpw.runner.shipment.services.service.IUserService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -10,9 +12,11 @@ import java.util.List;
 public class PermissionsContext {
     private static ThreadLocal<List<String>> Permissions = new InheritableThreadLocal<>();
 
+    @Autowired
+    private static IUserService usersService;
+
     public static List<String> getPermissions() {
-        //we need to return Permissions.get()
-        return Arrays.asList("airexportfclshipmentList", "airexportlclshipmentList", "seaexportfclshipmentList");
+        return Permissions.get();
     }
 
     public static void setPermissions(List<String> UserPermissions) {

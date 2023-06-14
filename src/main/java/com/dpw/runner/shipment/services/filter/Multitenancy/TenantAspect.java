@@ -1,9 +1,11 @@
 package com.dpw.runner.shipment.services.filter.Multitenancy;
 
 
+import com.dpw.runner.shipment.services.filter.PermissionsValidation.PermissionsContext;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Before;
 import org.hibernate.Session;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.persistence.EntityManager;
@@ -21,14 +23,19 @@ public class TenantAspect {
 
     private HashSet<String> permissions;
 
+    @Autowired
+    private TenantContext tenantContext;
+
+    @Autowired
+    private PermissionsContext permissionsContext;
+
     @Before("execution(* com.dpw.runner.shipment.services.filter.Multitenancy.MultiTenancyRepository+.*(..))")
     public void beforeFindOfMultiTenancyRepository() {
 
-        //fetch current tenantId from the user service api
-        long tenantId = 1;
+        long tenantId = tenantContext.getCurrentTenant();
 
-        //fetch permissions from user service api
-        permissions = new HashSet<>(Arrays.asList("SuperAdmin", "ParentCompanyAdmin", "CompanyAdmin", "TenantAdmin"));
+
+        permissions = new HashSet<String>(permissionsContext.getPermissions());
 
         if(!permissions.contains("SuperAdmin")) {
             if(permissions.contains("ParentCompanyAdmin"))
