@@ -1,4 +1,29 @@
 {
+  "shipmentList": {
+    "transportMode": "ALL",
+    "direction": "ALL",
+    "shipmentType": "ALL"
+  },
+  "airshipmentList": {
+    "transportMode": "AIR",
+    "direction": "ALL",
+    "shipmentType": "ALL"
+  },
+  "airimpshipmentList": {
+    "transportMode": "AIR",
+    "direction": "IMP",
+    "shipmentType": "ALL"
+  },
+  "airexpshipmentList": {
+    "transportMode": "AIR",
+    "direction": "EXP",
+    "shipmentType": "ALL"
+  },
+  "airdomshipmentList": {
+    "transportMode": "AIR",
+    "direction": "DOM",
+    "shipmentType": "ALL"
+  },
   "airexportfclshipmentList" : {
     "transportMode": "AIR",
     "direction": "EXP",
@@ -19,6 +44,26 @@
     "direction": "IMP",
     "shipmentType": "FCL"
   },
+  "seashipmentList": {
+    "transportMode": "SEA",
+    "direction": "ALL",
+    "shipmentType": "ALL"
+  },
+  "seaimpshipmentList": {
+    "transportMode": "SEA",
+    "direction": "IMP",
+    "shipmentType": "ALL"
+  },
+  "seaexpshipmentList": {
+    "transportMode": "SEA",
+    "direction": "EXP",
+    "shipmentType": "ALL"
+  },
+  "seadomshipmentList": {
+    "transportMode": "SEA",
+    "direction": "DOM",
+    "shipmentType": "ALL"
+  },
   "seaexportlclshipmentList" : {
     "transportMode": "SEA",
     "direction": "EXP",
@@ -38,30 +83,5 @@
     "transportMode": "SEA",
     "direction": "IMP",
     "shipmentType": "FCL"
-  },
-  "shipmentlist": {
-    "transportMode": "ALL",
-    "direction": "ALL",
-    "shipmentType": "ALL"
-  },
-  "airshipmentlist": {
-    "transportMode": "AIR",
-    "direction": "ALL",
-    "shipmentType": "ALL"
-  },
-  "airimpshipmentlist": {
-    "transportMode": "AIR",
-    "direction": "IMP",
-    "shipmentType": "ALL"
-  },
-  "airexpshipmentlist": {
-    "transportMode": "AIR",
-    "direction": "EXP",
-    "shipmentType": "ALL"
-  },
-  "airdomshipmentlist": {
-    "transportMode": "AIR",
-    "direction": "DOM",
-    "shipmentType": "ALL"
   }
 }

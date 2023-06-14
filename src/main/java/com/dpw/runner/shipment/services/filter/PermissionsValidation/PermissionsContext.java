@@ -12,7 +12,7 @@ public class PermissionsContext {
 
     public static List<String> getPermissions() {
         //we need to return Permissions.get()
-        return Arrays.asList("airexportfclshipmentList", "airexportlclshipmentList", "seaexportfclshipmentList");
+        return Arrays.asList("airexportfclshipmentList", "airexportlclshipmentList", "airimpshipmentList",  "airshipmentlist");
     }
 
     public static void setPermissions(List<String> UserPermissions) {
