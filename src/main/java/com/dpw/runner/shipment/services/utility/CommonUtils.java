@@ -23,32 +23,6 @@ public class CommonUtils {
 
     private static final Logger LOG = LoggerFactory.getLogger(CommonUtils.class);
     private static final String resourcePath = String.format("%s%s", System.getProperty("user.dir"), "/src/main/resources/");
-    private static ObjectMapper mapper = new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT);
-
-    public static List<Object> getAclPermissionList() {
-        File jsonInputFile = new File(String.format("%s%s", resourcePath, "acl.json"));
-        List<Object> jsonData = new ArrayList<>();
-        Map<String, Object> obj = new HashMap<>();
-        InputStream is;
-        LOG.info("Loaded input file : {}", jsonInputFile);
-
-        try {
-            is = new FileInputStream(jsonInputFile);
-            JsonReader reader = Json.createReader(is);
-            JsonArray permission = reader.readArray();
-            reader.close();
-            for (int i = 0; i < permission.size(); i++) {
-                JsonObject temp = permission.getJsonObject(i);
-                obj.put(temp.get("transportMode").toString(), temp.get("direction"));
-            }
-
-            jsonData = Arrays.asList(permission.toArray());
-            LOG.info("Total permissions scanned : {}", permission.size());
-        } catch (Exception e) {
-            LOG.error("Failed to read input json file", e);
-        }
-        return jsonData;
-    }
 
     public static JsonObject readJson(String FilePath) {
         File jsonInputFile = new File(FilePath);
@@ -76,16 +50,18 @@ public class CommonUtils {
 
         for (String permission : permissionList) {
             List<FilterCriteria> innerFilters = new ArrayList();
-            JsonObject criteriaObj = readJson(String.format("%s%s", resourcePath, "permissions.json")).getJsonObject(permission);
             HashMap<String, String> criteriaMap = new HashMap<>();
-            String transportMode = criteriaObj.getString(TRANSPORT_MODE);
-            String direction = criteriaObj.getString(DIRECTION);
-            String shipmentType = criteriaObj.getString(SHIPMENT_TYPE).toString();
+            // De-construct permission string into individual elements and strip the last element
+            List<String> test = Arrays.stream(permission.toLowerCase().split(DELIMITER))
+                    .filter(e -> !e.contains("list"))
+                    .collect(Collectors.toList());
+            String transportMode = getParameterFromPermission(TRANSPORT_MODE_INDEX, test);
+            String direction = getParameterFromPermission(DIRECTION_INDEX, test);
+            String shipmentType = getParameterFromPermission(SHIPMENT_TYPE_INDEX, test);
             criteriaMap.put(TRANSPORT_MODE, transportMode);
             criteriaMap.put(DIRECTION, direction);
             criteriaMap.put(SHIPMENT_TYPE, shipmentType);
             HashMap<String, Boolean> criteriaAppenderMap = checkCriteriaAppender(criteriaMap, permissionSet);
-
 
             if (!transportMode.equals(ALL)) {
                 if (criteriaAppenderMap.get(TRANSPORT_MODE))
@@ -148,4 +124,11 @@ public class CommonUtils {
         return criteriaAppenderMap;
     }
 
+    private static String getParameterFromPermission(int parameterIndex, List<String> permission) {
+        String parameterValue = ALL;
+        if (parameterIndex < permission.size()) {
+            parameterValue = permission.get(parameterIndex);
+        }
+        return parameterValue;
+    }
 }
