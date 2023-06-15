@@ -24,12 +24,12 @@ public class CommonUtils {
             List<FilterCriteria> innerFilters = new ArrayList();
             HashMap<String, String> criteriaMap = new HashMap<>();
             // De-construct permission string into individual elements and strip the last element
-            List<String> test = Arrays.stream(permission.toLowerCase().split(DELIMITER))
+            List<String> parameterList = Arrays.stream(permission.toLowerCase().split(DELIMITER))
                     .filter(e -> !e.contains("list"))
                     .collect(Collectors.toList());
-            String transportMode = getParameterFromPermission(TRANSPORT_MODE_INDEX, test);
-            String direction = getParameterFromPermission(DIRECTION_INDEX, test);
-            String shipmentType = getParameterFromPermission(SHIPMENT_TYPE_INDEX, test);
+            String transportMode = getParameterFromPermission(TRANSPORT_MODE_INDEX, parameterList);
+            String direction = getParameterFromPermission(DIRECTION_INDEX, parameterList);
+            String shipmentType = getParameterFromPermission(SHIPMENT_TYPE_INDEX, parameterList);
             criteriaMap.put(TRANSPORT_MODE, transportMode);
             criteriaMap.put(DIRECTION, direction);
             criteriaMap.put(SHIPMENT_TYPE, shipmentType);
