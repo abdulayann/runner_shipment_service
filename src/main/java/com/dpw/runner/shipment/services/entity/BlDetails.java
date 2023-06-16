@@ -1,7 +1,7 @@
 package com.dpw.runner.shipment.services.entity;
 
 
-import com.dpw.runner.shipment.services.filter.Multitenancy.MultiTenancy;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
 import lombok.*;
 import lombok.experimental.Accessors;
