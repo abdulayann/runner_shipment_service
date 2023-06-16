@@ -6,7 +6,9 @@ import com.dpw.runner.shipment.services.dto.response.RunnerResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.repository.*;
 import com.dpw.runner.shipment.services.service.IShipmentService;
+import lombok.Setter;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -20,16 +22,24 @@ import java.util.*;
 @Service
 public class ShipmentService implements IShipmentService {
 
-    @Autowired
-    private IShipmentDao shipmentDao;
-    @Autowired
+    public IShipmentDao shipmentDao;
     private IBlDetailsDao blDetailsDao;
-    @Autowired
     private IMeasurementDao measurementDao;
-    @Autowired
     private ICarrierDao carrierDao;
-    @Autowired
     private IPartiesDao partiesDao;
+
+    @Autowired
+    public ShipmentService(IShipmentDao shipmentDao,
+                           IBlDetailsDao blDetailsDao,
+                           IMeasurementDao measurementDao,
+                           ICarrierDao carrierDao,
+                           IPartiesDao partiesDao) {
+        this.shipmentDao = shipmentDao;
+        this.blDetailsDao = blDetailsDao;
+        this.measurementDao = measurementDao;
+        this.carrierDao = carrierDao;
+        this.partiesDao = partiesDao;
+    }
 
     private List<String> TRANSPORT_MODES = Arrays.asList("SEA", "ROAD", "RAIL", "AIR");
     private List<String> SHIPMENT_TYPE = Arrays.asList("FCL", "LCL");
@@ -37,18 +47,20 @@ public class ShipmentService implements IShipmentService {
     private List<String> VOLUME_UNIT = Arrays.asList("M3", "L3", "CC");
     private List<String> SHIPPING_LINE = Arrays.asList("DPWC", "MARUSK", "APLU");
     private List<String> LOCATIONS = Arrays.asList("Jabel Ali", "Nava Shiva", "Shanghai", "Vancouver", "Seattle");
-    private List<String> PARTY_TYPE = Arrays.asList("CLIENT","CONSIGNER", "CONSIGNEE");
-    private List<String> DIRECTIONS = Arrays.asList("IMP","EXP");
-    private List<String> SOURCE = Arrays.asList("API","Runner", "Logistics");
+    private List<String> PARTY_TYPE = Arrays.asList("CLIENT", "CONSIGNER", "CONSIGNEE");
+    private List<String> DIRECTIONS = Arrays.asList("IMP", "EXP");
+    private List<String> SOURCE = Arrays.asList("API", "Runner", "Logistics");
 
     private Map<String, Object> ADDRESS = Map.ofEntries(
-        Map.entry("AddressShortCode", "Default")
+            Map.entry("AddressShortCode", "Default")
     );
     private Map<String, Object> ORG = Map.ofEntries(
             Map.entry("TenantName", "DP WORLD LOGISTICS CANADA INC")
     );
 
-    @Override @Transactional
+
+    @Override
+    @Transactional
     public List<ShipmentDetails> createTestShipment(Integer count) {
         List<ShipmentDetails> response = new ArrayList<>();
         /**
@@ -107,14 +119,14 @@ public class ShipmentService implements IShipmentService {
     public RunnerResponse fetchShipments(Pageable pageable) {
         double start = System.currentTimeMillis();
         org.springframework.data.domain.Pageable pages;
-        if(pageable.getSortRequest() != null && pageable.getFilterCriteria() != null && pageable.getFilterCriteria().size() == 0) {
-            Sort sortRequest = Sort.by(IShipmentDao.tableNames.get(pageable.getSortRequest().getFieldName()) +"."+ pageable.getSortRequest().getFieldName());
+        if (pageable.getSortRequest() != null && pageable.getFilterCriteria() != null && pageable.getFilterCriteria().size() == 0) {
+            Sort sortRequest = Sort.by(IShipmentDao.tableNames.get(pageable.getSortRequest().getFieldName()) + "." + pageable.getSortRequest().getFieldName());
             sortRequest = sortRequest.descending();
             pages = PageRequest.of(pageable.getPageNo(), pageable.getLimit(), sortRequest);
         } else {
             pages = PageRequest.of(pageable.getPageNo(), pageable.getLimit());
         }
-        Page<ShipmentDetails> page  = shipmentDao.findAll(IShipmentDao.fetchShipmentData((pageable.getFilterCriteria() == null ? new ArrayList<>() : pageable.getFilterCriteria()), pageable.getSortRequest()),pages);
+        Page<ShipmentDetails> page = shipmentDao.findAll(IShipmentDao.fetchShipmentData((pageable.getFilterCriteria() == null ? new ArrayList<>() : pageable.getFilterCriteria()), pageable.getSortRequest()), pages);
         System.out.println((System.currentTimeMillis() - start));
         RunnerResponse runnerResponse = RunnerResponse.builder().data(page.getContent()).pageNo(page.getTotalPages()).count(page.getTotalElements()).build();
         return runnerResponse;
@@ -123,16 +135,16 @@ public class ShipmentService implements IShipmentService {
     private List<PartiesDetails> createParties(ShipmentDetails shipmentDetails) {
         List<PartiesDetails> parties = new ArrayList<>();
         int random = new Random().nextInt(100);
-        for (String partyType: PARTY_TYPE) {
+        for (String partyType : PARTY_TYPE) {
             PartiesDetails party = PartiesDetails.builder()
-                        .guid(UUID.randomUUID()).type(partyType).orgId(random).addressId(random)
-                        .orgData(ORG).addressData(ADDRESS)
-                        .entityId(shipmentDetails.getId()).entityType("SHIPMENT")
-                        .build();
+                    .guid(UUID.randomUUID()).type(partyType).orgId(random).addressId(random)
+                    .orgData(ORG).addressData(ADDRESS)
+                    .entityId(shipmentDetails.getId()).entityType("SHIPMENT")
+                    .build();
             party.setTenantId(1);
             parties.add(party);
         }
-        parties = partiesDao.saveAll(parties);
+//        parties = partiesDao.saveAll(parties);
         return parties;
     }
 
@@ -158,7 +170,8 @@ public class ShipmentService implements IShipmentService {
     private MeasurementDetails createMeasurement() {
         int random = new Random().nextInt(100);
         MeasurementDetails measurementDetails = MeasurementDetails.builder().guid(UUID.randomUUID())
-                .volume(new BigDecimal(random)).volumeUnit(VOLUME_UNIT.get(new Random().nextInt(100) % VOLUME_UNIT.size()))
+                .volume(new BigDecimal(random))
+                .volumeUnit(VOLUME_UNIT.get(new Random().nextInt(100) % VOLUME_UNIT.size()))
                 .volumetricWeight(new BigDecimal(random)).volumetricWeightUnit(WEIGHT_UNIT.get(new Random().nextInt(100) % WEIGHT_UNIT.size()))
                 .chargable(new BigDecimal(random)).chargeableUnit(VOLUME_UNIT.get(new Random().nextInt(100) % VOLUME_UNIT.size()))
                 .netWeight(new BigDecimal(random)).netWeightUnit(WEIGHT_UNIT.get(new Random().nextInt(100) % WEIGHT_UNIT.size()))
@@ -171,8 +184,11 @@ public class ShipmentService implements IShipmentService {
     private BlDetails createBlData() {
         int random = new Random().nextInt(100);
         BlDetails blDetails = BlDetails.builder()
-                .guid(UUID.randomUUID()).releaseType(generateString(3)).hblType(generateString(3))
-                .deliveryMode(TRANSPORT_MODES.get(random % TRANSPORT_MODES.size())).screeningStatus(generateString(3))
+                .guid(UUID.randomUUID())
+                .releaseType(generateString(3))
+                .hblType(generateString(3))
+                .deliveryMode(TRANSPORT_MODES.get(random % TRANSPORT_MODES.size()))
+                .screeningStatus(generateString(3))
                 .build();
         blDetails.setTenantId(1);
         return blDetailsDao.save(blDetails);
@@ -180,10 +196,20 @@ public class ShipmentService implements IShipmentService {
 
     private ShipmentDetails createShipmentData() {
         int random = new Random().nextInt(100);
-        ShipmentDetails shipmentDetails = ShipmentDetails.builder().guid(UUID.randomUUID()).direction(DIRECTIONS.get(random % DIRECTIONS.size())).status(1)
-                .source(SOURCE.get(random % SOURCE.size())).transportMode(TRANSPORT_MODES.get(random % TRANSPORT_MODES.size())).shipmentType(SHIPMENT_TYPE.get(random % SHIPMENT_TYPE.size()))
-                .houseBill(generateString(10)).masterBill(generateString(10)).bookingReference(generateString(10)).consolRef(generateString(10)).paymentTerms(generateString(3))
-                .goodsDescription(generateString(10)).additionalTerms(generateString(10))
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+                .guid(UUID.randomUUID())
+                .direction(DIRECTIONS.get(random % DIRECTIONS.size()))
+                .status(1)
+                .source(SOURCE.get(random % SOURCE.size()))
+                .transportMode(TRANSPORT_MODES.get(random % TRANSPORT_MODES.size()))
+                .shipmentType(SHIPMENT_TYPE.get(random % SHIPMENT_TYPE.size()))
+                .houseBill(generateString(10))
+                .masterBill(generateString(10))
+                .bookingReference(generateString(10))
+                .consolRef(generateString(10))
+                .paymentTerms(generateString(3))
+                .goodsDescription(generateString(10))
+                .additionalTerms(generateString(10))
                 .build();
         shipmentDetails.setTenantId(1);
         return shipmentDetails;

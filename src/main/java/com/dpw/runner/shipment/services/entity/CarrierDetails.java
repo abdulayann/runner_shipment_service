@@ -1,8 +1,10 @@
 package com.dpw.runner.shipment.services.entity;
 
 import com.dpw.runner.shipment.services.filter.Multitenancy.MultiTenancy;
+import com.vladmihalcea.hibernate.type.json.JsonType;
 import lombok.*;
 import lombok.experimental.Accessors;
+import org.hibernate.annotations.TypeDef;
 
 import javax.persistence.*;
 import java.time.LocalDateTime;
@@ -17,6 +19,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@TypeDef(name = "jsonb", typeClass = JsonType.class)
 public class CarrierDetails extends MultiTenancy {
 
     private static final long serialVersionUID = 190794279984274725L;

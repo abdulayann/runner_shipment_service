@@ -27,6 +27,7 @@ import static org.springframework.data.jpa.domain.Specification.where;
 public interface IShipmentDao extends MultiTenancyRepository<ShipmentDetails>, PermissionsRepository<ShipmentDetails> {
 
     Page<ShipmentDetails> findAll(Specification<ShipmentDetails> spec, Pageable pageable);
+
     Map<String, ShipmentTableMapping> tableNames = Map.ofEntries(
             Map.entry("type", ShipmentTableMapping.builder().tableName("parties").dataType(String.class).build()),
             Map.entry("orgId", ShipmentTableMapping.builder().tableName("parties").dataType(Integer.class).build()),
@@ -95,7 +96,7 @@ public interface IShipmentDao extends MultiTenancyRepository<ShipmentDetails>, P
         Specification<ShipmentDetails> specification = null;
         Map<String, Join<Class, ShipmentDetails>> map = new HashMap<>();
         for (FilterCriteria filters : filterCriteria) {
-            if(filters.getLogicOperator() == null) {
+            if (filters.getLogicOperator() == null) {
                 specification =
                         where(getSpecificationFromFilters(filters.getInnerFilter(), sortRequest, map));
             } else if (filters.getLogicOperator().equalsIgnoreCase("OR")) {
@@ -121,21 +122,20 @@ public interface IShipmentDao extends MultiTenancyRepository<ShipmentDetails>, P
                     map.put(tableNames.get(input.getFieldName()).getTableName(), join);
                     path = join;
                     query.distinct(true);
-                }
-                else {
+                } else {
                     path = map.get(tableNames.get(input.getFieldName()).getTableName());
                 }
             }
 
-            if(!query.getResultType().isAssignableFrom(Long.class) && sortRequest != null && (query.getOrderList() == null ||query.getOrderList().size() == 0)) {
+            if (!query.getResultType().isAssignableFrom(Long.class) && sortRequest != null && (query.getOrderList() == null || query.getOrderList().size() == 0)) {
                 if (tableNames.get(sortRequest.getFieldName()).getTableName().equalsIgnoreCase(ShipmentDetails.class.getSimpleName())) {
-                    if(sortRequest.getOrder().equalsIgnoreCase("DESC")) {
+                    if (sortRequest.getOrder().equalsIgnoreCase("DESC")) {
                         query.orderBy(Arrays.asList(criteriaBuilder.desc(root.get(sortRequest.getFieldName()))));
                     } else {
                         query.orderBy(Arrays.asList(criteriaBuilder.asc(root.get(sortRequest.getFieldName()))));
                     }
                 } else {
-                    if(sortRequest.getOrder().equalsIgnoreCase("DESC")) {
+                    if (sortRequest.getOrder().equalsIgnoreCase("DESC")) {
                         query.orderBy(Arrays.asList(criteriaBuilder.desc(((Join) root.fetch(tableNames.get(sortRequest.getFieldName()).getTableName(), JoinType.LEFT)).get(sortRequest.getFieldName()))));
                     } else {
                         query.orderBy(Arrays.asList(criteriaBuilder.asc(((Join) root.fetch(tableNames.get(sortRequest.getFieldName()).getTableName(), JoinType.LEFT)).get(sortRequest.getFieldName()))));
@@ -148,46 +148,46 @@ public interface IShipmentDao extends MultiTenancyRepository<ShipmentDetails>, P
     }
 
     public static <T> Predicate createSpecification(Class dataType, Criteria input, Path path, CriteriaBuilder criteriaBuilder) {
-        switch (input.getOperator()){
+        switch (input.getOperator()) {
             case "=":
-                if(dataType.isAssignableFrom(String.class)) {
-                    return criteriaBuilder.equal(criteriaBuilder.lower(path.get(input.getFieldName())),(((String) input.getValue()).toLowerCase()));
+                if (dataType.isAssignableFrom(String.class)) {
+                    return criteriaBuilder.equal(criteriaBuilder.lower(path.get(input.getFieldName())), (((String) input.getValue()).toLowerCase()));
                 }
-                return criteriaBuilder.equal(path.get(input.getFieldName()),input.getValue());
+                return criteriaBuilder.equal(path.get(input.getFieldName()), input.getValue());
 
             case "!=":
-                if(dataType.isAssignableFrom(String.class)) {
-                    return criteriaBuilder.notEqual(criteriaBuilder.lower(path.get(input.getFieldName())),(((String) input.getValue()).toLowerCase()));
+                if (dataType.isAssignableFrom(String.class)) {
+                    return criteriaBuilder.notEqual(criteriaBuilder.lower(path.get(input.getFieldName())), (((String) input.getValue()).toLowerCase()));
                 }
                 return criteriaBuilder.notEqual(path.get(input.getFieldName()), input.getValue());
 
             case ">":
-                if(dataType.isAssignableFrom(String.class)) {
-                    return criteriaBuilder.greaterThan(path.get(input.getFieldName()),(String) input.getValue());
+                if (dataType.isAssignableFrom(String.class)) {
+                    return criteriaBuilder.greaterThan(path.get(input.getFieldName()), (String) input.getValue());
                 }
-                if(dataType.isAssignableFrom(Date.class)) {
-                    return criteriaBuilder.greaterThan(path.get(input.getFieldName()),covertStringToData((String) input.getValue(), "yyyy-MM-dd"));
+                if (dataType.isAssignableFrom(Date.class)) {
+                    return criteriaBuilder.greaterThan(path.get(input.getFieldName()), covertStringToData((String) input.getValue(), "yyyy-MM-dd"));
                 }
-                if(dataType.isAssignableFrom(LocalDateTime.class)) {
-                    return criteriaBuilder.greaterThan(path.get(input.getFieldName()),covertStringToLocalDate((String) input.getValue(), "yyyy-MM-dd"));
+                if (dataType.isAssignableFrom(LocalDateTime.class)) {
+                    return criteriaBuilder.greaterThan(path.get(input.getFieldName()), covertStringToLocalDate((String) input.getValue(), "yyyy-MM-dd"));
                 }
-                return criteriaBuilder.gt(path.get(input.getFieldName()),(Number) input.getValue());
+                return criteriaBuilder.gt(path.get(input.getFieldName()), (Number) input.getValue());
 
             case "<":
-                if(dataType.isAssignableFrom(String.class)) {
-                    return criteriaBuilder.lessThan(path.get(input.getFieldName()),(String) input.getValue());
+                if (dataType.isAssignableFrom(String.class)) {
+                    return criteriaBuilder.lessThan(path.get(input.getFieldName()), (String) input.getValue());
                 }
-                if(dataType.isAssignableFrom(Date.class)) {
-                    return criteriaBuilder.lessThan(path.get(input.getFieldName()),covertStringToData((String) input.getValue(), "yyyy-MM-dd"));
+                if (dataType.isAssignableFrom(Date.class)) {
+                    return criteriaBuilder.lessThan(path.get(input.getFieldName()), covertStringToData((String) input.getValue(), "yyyy-MM-dd"));
                 }
-                if(dataType.isAssignableFrom(LocalDateTime.class)) {
-                    return criteriaBuilder.lessThan(path.get(input.getFieldName()),covertStringToLocalDate((String) input.getValue(), "yyyy-MM-dd"));
+                if (dataType.isAssignableFrom(LocalDateTime.class)) {
+                    return criteriaBuilder.lessThan(path.get(input.getFieldName()), covertStringToLocalDate((String) input.getValue(), "yyyy-MM-dd"));
                 }
                 return criteriaBuilder.lt(path.get(input.getFieldName()), (Number) input.getValue());
 
             case "LIKE":
                 return criteriaBuilder.like(criteriaBuilder.lower(path.get(input.getFieldName())),
-                        "%"+((String) input.getValue()).toLowerCase()+"%");
+                        "%" + ((String) input.getValue()).toLowerCase() + "%");
 
             case "IN":
                 return criteriaBuilder.in(path.get(input.getFieldName()))
@@ -197,34 +197,33 @@ public interface IShipmentDao extends MultiTenancyRepository<ShipmentDetails>, P
         }
     }
 
-    public static <T> Specification<T> getSpecificationFromFilters(List<FilterCriteria> filter, SortRequest sortRequest, Map<String, Join<Class, ShipmentDetails>> map){
-        if(filter == null || filter.size()==0) {
+    public static <T> Specification<T> getSpecificationFromFilters(List<FilterCriteria> filter, SortRequest sortRequest, Map<String, Join<Class, ShipmentDetails>> map) {
+        if (filter == null || filter.size() == 0) {
             return null;
         }
 
         Specification<T> specification = null;
 
         for (FilterCriteria input : filter) {
-            if(input.getInnerFilter() != null && input.getInnerFilter().size() > 0) {
-                if(input.getLogicOperator() != null) {
+            if (input.getInnerFilter() != null && input.getInnerFilter().size() > 0) {
+                if (input.getLogicOperator() != null) {
                     if (input.getLogicOperator().equalsIgnoreCase("OR")) {
                         specification = specification.or(getSpecificationFromFilters(input.getInnerFilter(), null, map));
                     } else if (input.getLogicOperator().equalsIgnoreCase("AND")) {
                         specification = specification.and(getSpecificationFromFilters(input.getInnerFilter(), null, map));
                     }
-                }
-                else {
+                } else {
                     specification =
                             where(getSpecificationFromFilters(input.getInnerFilter(), sortRequest, map));
                 }
             } else {
-                if(input.getLogicOperator() != null) {
+                if (input.getLogicOperator() != null) {
                     if (input.getLogicOperator().equalsIgnoreCase("OR")) {
                         specification = specification.or(createSpecification(input.getCriteria(), null, map));
                     } else if (input.getLogicOperator().equalsIgnoreCase("AND")) {
                         specification = specification.and(createSpecification(input.getCriteria(), null, map));
                     }
-                }else {
+                } else {
                     specification =
                             where(createSpecification(input.getCriteria(), sortRequest, map));
                 }
@@ -233,18 +232,18 @@ public interface IShipmentDao extends MultiTenancyRepository<ShipmentDetails>, P
         return specification;
     }
 
-    public static LocalDateTime covertStringToLocalDate(String date, String pattern){
+    public static LocalDateTime covertStringToLocalDate(String date, String pattern) {
 
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern(pattern);
 
         try {
             return LocalDate.parse(date, formatter).atStartOfDay();
-        } catch (Exception e){
+        } catch (Exception e) {
             return null;
         }
     }
 
-    public static Date covertStringToData(String date, String pattern){
+    public static Date covertStringToData(String date, String pattern) {
 
         SimpleDateFormat formatter = new SimpleDateFormat(pattern, Locale.ENGLISH);
         try {

@@ -15,9 +15,12 @@ import java.util.List;
 @RestController
 public class ShipmentController {
 
-    @Autowired
     private IShipmentService shipmentService;
 
+    @Autowired
+    public ShipmentController(IShipmentService shipmentService) {
+        this.shipmentService = shipmentService;
+    }
 
     @PostMapping(value = "/list-shipment")
     public ResponseEntity<?> fetchByQuery(@RequestBody @NonNull Pageable pageable) {
@@ -31,6 +34,5 @@ public class ShipmentController {
                 .body(shipmentService.createTestShipment(count));
         return response;
     }
-
 
 }
