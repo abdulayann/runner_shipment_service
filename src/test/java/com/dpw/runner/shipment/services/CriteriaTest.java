@@ -1,10 +1,10 @@
 package com.dpw.runner.shipment.services;
 
-import com.dpw.runner.shipment.services.dto.request.Criteria;
-import com.dpw.runner.shipment.services.dto.request.FilterCriteria;
-import com.dpw.runner.shipment.services.dto.request.Pageable;
-import com.dpw.runner.shipment.services.filter.PermissionsValidation.PermissionsAspect;
-import com.dpw.runner.shipment.services.filter.PermissionsValidation.PermissionsContext;
+import com.dpw.runner.shipment.services.commons.requests.Criteria;
+import com.dpw.runner.shipment.services.commons.requests.FilterCriteria;
+import com.dpw.runner.shipment.services.commons.requests.Pageable;
+import com.dpw.runner.shipment.services.aspects.PermissionsValidationAspect.PermissionsAspect;
+import com.dpw.runner.shipment.services.aspects.PermissionsValidationAspect.PermissionsContext;
 import org.aspectj.lang.JoinPoint;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

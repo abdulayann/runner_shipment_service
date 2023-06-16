@@ -1,12 +1,12 @@
 package com.dpw.runner.shipment.services;
 
-import com.dpw.runner.shipment.services.dto.request.Criteria;
-import com.dpw.runner.shipment.services.dto.request.FilterCriteria;
-import com.dpw.runner.shipment.services.dto.request.Pageable;
-import com.dpw.runner.shipment.services.dto.request.SortRequest;
-import com.dpw.runner.shipment.services.dto.response.RunnerResponse;
+import com.dpw.runner.shipment.services.commons.requests.Criteria;
+import com.dpw.runner.shipment.services.commons.requests.FilterCriteria;
+import com.dpw.runner.shipment.services.commons.requests.Pageable;
+import com.dpw.runner.shipment.services.commons.requests.SortRequest;
+import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
-import com.dpw.runner.shipment.services.service.IShipmentService;
+import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -31,7 +31,6 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @ExtendWith({MockitoExtension.class, SpringExtension.class})

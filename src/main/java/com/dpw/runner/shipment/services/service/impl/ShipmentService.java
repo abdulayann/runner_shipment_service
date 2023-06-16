@@ -1,11 +1,11 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 
-import com.dpw.runner.shipment.services.dto.request.Pageable;
-import com.dpw.runner.shipment.services.dto.response.RunnerResponse;
+import com.dpw.runner.shipment.services.commons.requests.Pageable;
+import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.entity.*;
-import com.dpw.runner.shipment.services.repository.*;
-import com.dpw.runner.shipment.services.service.IShipmentService;
+import com.dpw.runner.shipment.services.repository.interfaces.*;
+import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
