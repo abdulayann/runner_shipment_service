@@ -9,7 +9,7 @@ import javax.persistence.*;
 @Entity
 @Setter
 @Getter
-@Table(name = "reference_numbers")
+@Table(name = "file_repo")
 @Accessors(chain = true)
 @ToString(onlyExplicitlyIncluded = true)
 @NoArgsConstructor
