@@ -12,9 +12,6 @@ import java.util.List;
 public class PermissionsContext {
     private static ThreadLocal<List<String>> Permissions = new InheritableThreadLocal<>();
 
-    @Autowired
-    private static IUserService usersService;
-
     public static List<String> getPermissions() {
         return Permissions.get();
     }

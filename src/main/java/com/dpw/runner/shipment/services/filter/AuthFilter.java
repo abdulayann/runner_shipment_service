@@ -7,6 +7,7 @@ import com.dpw.runner.shipment.services.filter.Multitenancy.TenantContext;
 import com.dpw.runner.shipment.services.filter.Multitenancy.UserContext;
 import com.dpw.runner.shipment.services.filter.PermissionsValidation.PermissionsContext;
 import com.dpw.runner.shipment.services.service.IUserService;
+import com.dpw.runner.shipment.services.service.impl.GetUserServiceFactory;
 import com.dpw.runner.shipment.services.utility.TokenUtility;
 import com.nimbusds.jwt.proc.BadJWTException;
 import lombok.extern.slf4j.Slf4j;
@@ -31,15 +32,16 @@ import java.util.UUID;
 public class AuthFilter implements Filter {
 
     @Autowired
-    IUserService usersService;
+    private GetUserServiceFactory getUserServiceFactory;
+
     @Autowired
     TokenUtility tokenUtility;
     private static final String VALIDATION_ERROR = "Failed to Validate Auth Token";
 
-
     @Override
     public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain) throws IOException, ServletException {
 
+        IUserService usersService = getUserServiceFactory.returnUser();
         HttpServletRequest req = (HttpServletRequest) servletRequest;
         HttpServletResponse res = (HttpServletResponse) servletResponse;
         long time = System.currentTimeMillis();
