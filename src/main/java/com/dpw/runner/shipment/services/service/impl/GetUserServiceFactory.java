@@ -4,6 +4,8 @@ import com.dpw.runner.shipment.services.service.interfaces.IUserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.USER_SERVICE_MAVANI;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.USER_SERVICE_V1;
 
 @Configuration
 public class GetUserServiceFactory {
@@ -12,7 +14,7 @@ public class GetUserServiceFactory {
     private String source;
 
     @Autowired
-    UserService userService;
+    UserServiceMavani userServiceMavani;
 
     @Autowired
     UserServiceV1 userServiceV1;
@@ -20,15 +22,15 @@ public class GetUserServiceFactory {
     public IUserService returnUserService()
     {
         if(source == null || source.isEmpty())
-            return userServiceV1;  // throw exception
+            return userServiceV1;  // TODO- throw exception?
         switch (source)
         {
-            case "v1":
+            case USER_SERVICE_V1:
                 return userServiceV1;
-            case "mavani":
-                return userService;
+            case USER_SERVICE_MAVANI:
+                return userServiceMavani;
             default:
-                return userServiceV1;  // throw exception
+                return userServiceV1;  // TODO- throw exception?
         }
     }
 }
