@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.entity;
 
+import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import lombok.*;
 import lombok.experimental.Accessors;
 import org.hibernate.annotations.Cache;
@@ -15,13 +16,7 @@ import javax.persistence.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Notes {
-
-    @Id
-    @Column(name = "id")
-    @ToString.Include
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+public class Notes extends BaseEntity {
 
     @Column(name = "entity_type")
     private String entityType;

@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.entity;
 
+import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.entity.enums.Ownership;
 import lombok.*;
 import lombok.experimental.Accessors;
@@ -14,12 +15,7 @@ import javax.persistence.*;
 @ToString(onlyExplicitlyIncluded = true)
 @NoArgsConstructor
 @AllArgsConstructor
-public class TruckDriverDetails {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id")
-    @ToString.Include
-    private Long id;
+public class TruckDriverDetails extends BaseEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "transporter_type")

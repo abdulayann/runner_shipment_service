@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.entity;
 
+import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import lombok.*;
 import lombok.experimental.Accessors;
 
@@ -14,12 +15,7 @@ import java.time.LocalDateTime;
 @ToString(onlyExplicitlyIncluded = true)
 @NoArgsConstructor
 @AllArgsConstructor
-public class Routings {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id")
-    @ToString.Include
-    private Long id;
+public class Routings extends BaseEntity {
 
     @Column(name = "leg")
     private Long leg;

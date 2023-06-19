@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.entity;
 
 
+import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import lombok.*;
 import lombok.experimental.Accessors;
 
@@ -15,12 +16,7 @@ import java.time.LocalDateTime;
 @ToString(onlyExplicitlyIncluded = true)
 @NoArgsConstructor
 @AllArgsConstructor
-public class BookingCarriage {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id")
-    @ToString.Include
-    private Long id;
+public class BookingCarriage extends BaseEntity {
 
     @Column(name = "pol_id")
     private Long polId;
@@ -39,7 +35,7 @@ public class BookingCarriage {
 
     @Column(name = "voyage")
     private String voyage;
-    
+
     @Column(name = "carriage_type")
     private String carriageType;
 
@@ -51,5 +47,4 @@ public class BookingCarriage {
 
     @Column(name = "vessel_id")
     private Long vesselId;
-
 }

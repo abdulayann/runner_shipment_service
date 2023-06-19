@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.entity;
 
+import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import lombok.*;
 import lombok.experimental.Accessors;
 
@@ -14,13 +15,7 @@ import java.util.UUID;
 @ToString(onlyExplicitlyIncluded = true)
 @NoArgsConstructor
 @AllArgsConstructor
-public class ReferenceNumbers {
-
-    @Id
-    @ToString.Include
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id")
-    private Long id;
+public class ReferenceNumbers extends BaseEntity {
 
     @Column(name = "guid")
     private UUID guid;

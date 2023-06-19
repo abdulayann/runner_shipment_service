@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.entity;
 
+import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import lombok.*;
 import lombok.experimental.Accessors;
 
@@ -17,7 +18,7 @@ import java.time.LocalDateTime;
 @ToString(onlyExplicitlyIncluded = true)
 @NoArgsConstructor
 @AllArgsConstructor
-public class Jobs {
+public class Jobs extends BaseEntity {
 
     @Column(name = "order_number")
     private String orderNumber;
@@ -69,8 +70,5 @@ public class Jobs {
 
     @Column(name = "supplier_id")
     private Long supplierId;
-
-    @Id
-    private Long id;
 
 }

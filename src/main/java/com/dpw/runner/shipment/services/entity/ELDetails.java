@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.entity;
 
 import javax.persistence.*;
 
+import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.entity.enums.MergeClass;
 import lombok.*;
 import lombok.experimental.Accessors;
@@ -15,13 +16,7 @@ import lombok.experimental.Accessors;
 @ToString(onlyExplicitlyIncluded = true)
 @NoArgsConstructor
 @AllArgsConstructor
-public class ELDetails {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id")
-    @ToString.Include
-    private Long id;
+public class ELDetails extends BaseEntity {
 
     @Column(name = "shipment_id")
     private Long shipmentId;
