@@ -1,10 +1,10 @@
 package com.dpw.runner.shipment.services.entity.enums;
 
 public enum LGDStatus {
-    Initiated(0, "Initiated"),
-    Success(1, "Success"),
-    Failed(2, "Failed"),
-    Resent(3, "Resent");
+    INITIATED(0, "Initiated"),
+    SUCCESS(1, "Success"),
+    FAILED(2, "Failed"),
+    RESENT(3, "Resent");
 
     private final int value;
     private final String description;
