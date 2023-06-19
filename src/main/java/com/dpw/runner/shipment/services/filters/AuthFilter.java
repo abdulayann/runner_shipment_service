@@ -6,6 +6,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.RequestAuthCo
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.aspects.PermissionsValidationAspect.PermissionsContext;
+import com.dpw.runner.shipment.services.service.impl.GetUserServiceFactory;
 import com.dpw.runner.shipment.services.service.interfaces.IUserService;
 import com.dpw.runner.shipment.services.utils.TokenUtility;
 import com.nimbusds.jwt.proc.BadJWTException;
@@ -30,7 +31,7 @@ import java.util.UUID;
 public class AuthFilter implements Filter {
 
     @Autowired
-    IUserService usersService;
+    private GetUserServiceFactory getUserServiceFactory;
     @Autowired
     TokenUtility tokenUtility;
     private static final String VALIDATION_ERROR = "Failed to Validate Auth Token";
@@ -39,6 +40,7 @@ public class AuthFilter implements Filter {
     @Override
     public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain) throws IOException, ServletException {
 
+        IUserService userService = getUserServiceFactory.returnUserService();
         HttpServletRequest req = (HttpServletRequest) servletRequest;
         HttpServletResponse res = (HttpServletResponse) servletResponse;
         long time = System.currentTimeMillis();
@@ -61,7 +63,7 @@ public class AuthFilter implements Filter {
         }
         userName = "Test";  // remove this
         if(userName!=null){
-            UsersDto userByUserName = usersService.getUserByUserName(userName);
+            UsersDto userByUserName = userService.getUserByUserName(userName);
             if (userByUserName == null) {
                 String errormessage = "Auth failed:- User " + userName + " is not onboarded on shipment service";
                 log.info(errormessage);
