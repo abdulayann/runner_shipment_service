@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.service.impl;
 
 
 import com.dpw.runner.shipment.services.commons.requests.Pageable;
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.repository.interfaces.*;
@@ -116,7 +117,7 @@ public class ShipmentService implements IShipmentService {
         }
         Page<ShipmentDetails> page  = shipmentDao.findAll(IShipmentDao.fetchShipmentData((pageable.getFilterCriteria() == null ? new ArrayList<>() : pageable.getFilterCriteria()), pageable.getSortRequest()),pages);
         System.out.println((System.currentTimeMillis() - start));
-        RunnerResponse runnerResponse = RunnerResponse.builder().data(page.getContent()).pageNo(page.getTotalPages()).count(page.getTotalElements()).build();
+        RunnerResponse runnerResponse = RunnerResponse.builder().data((IRunnerResponse) page.getContent()).pageNo(page.getTotalPages()).count(page.getTotalElements()).build();
         return runnerResponse;
     }
 
