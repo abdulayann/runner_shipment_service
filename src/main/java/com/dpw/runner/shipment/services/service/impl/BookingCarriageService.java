@@ -1,27 +1,37 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
-import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
-import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
+import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.BookingCarriageRequest;
 import com.dpw.runner.shipment.services.dto.response.BookingCarriageResponse;
 import com.dpw.runner.shipment.services.entity.BookingCarriage;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.IBookingCarriageDao;
+import com.dpw.runner.shipment.services.repository.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.service.interfaces.IBookingCarriageService;
+import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import javax.persistence.criteria.Join;
+import javax.persistence.criteria.JoinType;
+import javax.persistence.criteria.Path;
+import java.util.*;
+
+import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
+import static org.springframework.data.jpa.domain.Specification.where;
 
 @SuppressWarnings("ALL")
 @Service
@@ -35,9 +45,9 @@ public class BookingCarriageService implements IBookingCarriageService {
         BookingCarriageRequest request = null;
         request = (BookingCarriageRequest) commonRequestModel.getData();
         // TODO- implement validator
-        BookingCarriage bookingCarriage = mapToEntityFromRequest(request);
+        BookingCarriage bookingCarriage = convertRequestToEntity(request);
         bookingCarriage = bookingCarriageDao.save(bookingCarriage);
-        return ResponseHelper.buildSuccessResponse(convertToResponse(bookingCarriage, null));
+        return ResponseHelper.buildSuccessResponse(convertEntityToDto(bookingCarriage));
     }
 
     @Transactional
@@ -51,10 +61,10 @@ public class BookingCarriageService implements IBookingCarriageService {
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
 
-        BookingCarriage bookingCarriage = mapToEntityFromRequest(request);
+        BookingCarriage bookingCarriage = convertRequestToEntity(request);
         bookingCarriage.setId(oldEntity.get().getId());
         bookingCarriage = bookingCarriageDao.save(bookingCarriage);
-        return ResponseHelper.buildSuccessResponse(convertToResponse(bookingCarriage, null));
+        return ResponseHelper.buildSuccessResponse(convertEntityToDto(bookingCarriage));
     }
 
     public ResponseEntity<?> list(CommonRequestModel commonRequestModel){
@@ -62,9 +72,13 @@ public class BookingCarriageService implements IBookingCarriageService {
         try {
             // TODO- implement actual logic with filters
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
-            List<BookingCarriage> bookingCarriageList = bookingCarriageDao.findAll();
 
-            return ResponseHelper.buildListSuccessResponse(convertListResponse(bookingCarriageList, null), request.getPageNo(), bookingCarriageList.size());
+            Pair<Specification<BookingCarriage>, Pageable> tuple = fetchData(request, BookingCarriage.class.getSimpleName());
+            Page<BookingCarriage> bookingCarriagePage  = bookingCarriageDao.findAll(tuple.getLeft(), tuple.getRight());
+            return ResponseHelper.buildListSuccessResponse(
+                    convertEntityListToDtoList(bookingCarriagePage.getContent()),
+                    bookingCarriagePage.getTotalPages(),
+                    bookingCarriagePage.getTotalElements());
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;
@@ -106,7 +120,7 @@ public class BookingCarriageService implements IBookingCarriageService {
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
 
-            BookingCarriageResponse response = convertToResponse(bookingCarriage.get(), null);
+            BookingCarriageResponse response = convertEntityToDto(bookingCarriage.get());
             return ResponseHelper.buildSuccessResponse(response);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -116,11 +130,10 @@ public class BookingCarriageService implements IBookingCarriageService {
         }
     }
 
-    private static BookingCarriageResponse convertToResponse(BookingCarriage bookingCarriage, BookingCarriageResponse response) {
-        if(response == null) {
-            response = new BookingCarriageResponse();
-        }
+    private static BookingCarriageResponse convertEntityToDto(BookingCarriage bookingCarriage) {
+        BookingCarriageResponse response = new BookingCarriageResponse();
         response.setId(bookingCarriage.getId());
+        response.setGuid(bookingCarriage.getGuid());
         response.setBookingId(bookingCarriage.getBookingId());
         response.setShipmentId(bookingCarriage.getShipmentId());
         response.setVesselId(bookingCarriage.getVesselId());
@@ -135,16 +148,17 @@ public class BookingCarriageService implements IBookingCarriageService {
         return response;
     }
 
-    private static List<IRunnerResponse> convertListResponse(List<BookingCarriage> lst, Map<String, String> locationMap) {
+    private static List<IRunnerResponse> convertEntityListToDtoList(List<BookingCarriage> lst) {
         List<IRunnerResponse> responseList = new ArrayList<>();
         lst.forEach(bookingCarriage -> {
-            responseList.add(convertToResponse(bookingCarriage, null));
+            responseList.add(convertEntityToDto(bookingCarriage));
         });
         return responseList;
     }
 
-    public static BookingCarriage mapToEntityFromRequest(BookingCarriageRequest request) {
+    public static BookingCarriage convertRequestToEntity(BookingCarriageRequest request) {
         BookingCarriage bookingCarriage = new BookingCarriage();
+        bookingCarriage.setGuid(UUID.randomUUID());
         bookingCarriage.setBookingId(request.getBookingId());
         bookingCarriage.setShipmentId(request.getShipmentId());
         bookingCarriage.setVesselId(request.getVesselId());

@@ -10,6 +10,7 @@ import org.springframework.data.annotation.LastModifiedDate;
 import javax.persistence.*;
 import java.io.Serializable;
 import java.util.Date;
+import java.util.UUID;
 
 /**
  *
@@ -23,6 +24,9 @@ import java.util.Date;
 public class BaseEntity implements Serializable {
 
     private static final long serialVersionUID = 1L;
+
+    @ToString.Include
+    private UUID guid;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -42,39 +46,9 @@ public class BaseEntity implements Serializable {
     @LastModifiedDate
     private Date updatedAt;
 
-//	@ToString.Include
-//	private Boolean isActive;
-
     @Column(name = "created_by")
     private Integer createdBy;
 
-    /**
-     * @return the createdAt
-     */
-    public Date getCreatedAt() {
-        return createdAt;
-    }
-
-    /**
-     * @param createdAt the createdAt to set
-     */
-    public void setCreatedAt(Date createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    /**
-     * @return the updatedAt
-     */
-    public Date getUpdatedAt() {
-        return updatedAt;
-    }
-
-    /**
-     * @param updatedAt the updatedAt to set
-     */
-    public void setUpdatedAt(Date updatedAt) {
-        this.updatedAt = updatedAt;
-    }
-
-
+    @Column(name = "updated_by")
+    private Integer updatedBy;
 }

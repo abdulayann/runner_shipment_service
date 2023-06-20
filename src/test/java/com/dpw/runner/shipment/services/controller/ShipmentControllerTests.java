@@ -1,14 +1,20 @@
 package com.dpw.runner.shipment.services.controller;
 
+import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
+import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.Pageable;
+import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
+import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 
 import java.util.List;
 
@@ -32,9 +38,9 @@ public class ShipmentControllerTests {
 
     @Test
     public void fetchByQuery_call_success(){
-        var sampleRequest = Pageable.builder().build();
-        var samplePage = createSamplePage();
-        when(shipmentService.fetchShipments(sampleRequest)).thenReturn(samplePage);
+        var sampleRequest = new ListCommonRequest();
+        var samplePage = (ResponseEntity) createSamplePage();
+        when(shipmentService.fetchShipments(CommonRequestModel.buildRequest(sampleRequest))).thenReturn(samplePage);
         var response = shipmentController.fetchByQuery(sampleRequest);
         assertTrue(response.getBody().equals(samplePage));
         assertTrue(response.getStatusCode().equals(HttpStatus.OK));
@@ -52,8 +58,8 @@ public class ShipmentControllerTests {
         assertTrue(response.getStatusCode().equals(HttpStatus.OK));
     }
 
-    private RunnerResponse createSamplePage(){
-        return new RunnerResponse();
+    private ResponseEntity<?> createSamplePage(){
+        return ResponseHelper.buildListSuccessResponse(null,0,0);
     }
 
 
