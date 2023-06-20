@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.entity;
 
 import javax.persistence.*;
 
+import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import lombok.*;
 
 import java.math.BigDecimal;
@@ -13,12 +14,7 @@ import java.math.BigDecimal;
 @ToString(onlyExplicitlyIncluded = true)
 @NoArgsConstructor
 @AllArgsConstructor
-public class Packing {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id")
-    private Long id;
+public class Packing extends BaseEntity {
 
     @Column(name = "consolidation_id")
     private Long consolidationId;

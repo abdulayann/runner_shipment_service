@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.entity;
 
+import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import lombok.*;
 import lombok.experimental.Accessors;
 import org.hibernate.annotations.CollectionId;
@@ -14,11 +15,7 @@ import javax.persistence.*;
 @ToString(onlyExplicitlyIncluded = true)
 @NoArgsConstructor
 @AllArgsConstructor
-public class FileRepo {
-
-    @Id
-    @Column(name = "id")
-    private Long id;
+public class FileRepo extends BaseEntity {
 
     @Column(name = "file_name")
     private String fileName;

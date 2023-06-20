@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.entity;
 
+import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import lombok.*;
 import lombok.experimental.Accessors;
 
@@ -13,13 +14,7 @@ import javax.persistence.*;
 @ToString(onlyExplicitlyIncluded = true)
 @NoArgsConstructor
 @AllArgsConstructor
-public class Logs {
-
-    @Id
-    @Column(name = "id")
-    @ToString.Include
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+public class Logs extends BaseEntity {
 
     @Column(name = "user_id")
     private String userId;
