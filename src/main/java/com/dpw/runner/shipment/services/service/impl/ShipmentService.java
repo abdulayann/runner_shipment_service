@@ -1,22 +1,30 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 
-import com.dpw.runner.shipment.services.commons.requests.Pageable;
+import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
+import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
+import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.*;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
+import com.nimbusds.jose.util.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
+
+import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 
 @Service
 public class ShipmentService implements IShipmentService {
@@ -105,20 +113,75 @@ public class ShipmentService implements IShipmentService {
     }
 
     @Override
-    public RunnerResponse fetchShipments(Pageable pageable) {
-        double start = System.currentTimeMillis();
-        org.springframework.data.domain.Pageable pages;
-        if(pageable.getSortRequest() != null && pageable.getFilterCriteria() != null && pageable.getFilterCriteria().size() == 0) {
-            Sort sortRequest = Sort.by(IShipmentDao.tableNames.get(pageable.getSortRequest().getFieldName()) +"."+ pageable.getSortRequest().getFieldName());
-            sortRequest = sortRequest.descending();
-            pages = PageRequest.of(pageable.getPageNo(), pageable.getLimit(), sortRequest);
-        } else {
-            pages = PageRequest.of(pageable.getPageNo(), pageable.getLimit());
-        }
-        Page<ShipmentDetails> page  = shipmentDao.findAll(IShipmentDao.fetchShipmentData((pageable.getFilterCriteria() == null ? new ArrayList<>() : pageable.getFilterCriteria()), pageable.getSortRequest()),pages);
-        System.out.println((System.currentTimeMillis() - start));
-        RunnerResponse runnerResponse = RunnerResponse.builder().data((IRunnerResponse) page.getContent()).pageNo(page.getTotalPages()).count(page.getTotalElements()).build();
-        return runnerResponse;
+    public ResponseEntity<?> fetchShipments(CommonRequestModel commonRequestModel) {
+//        double start = System.currentTimeMillis();
+//        org.springframework.data.domain.Pageable pages;
+//        if(pageable.getSortRequest() != null && pageable.getFilterCriteria() != null && pageable.getFilterCriteria().size() == 0) {
+//            Sort sortRequest = Sort.by(IShipmentDao.tableNames.get(pageable.getSortRequest().getFieldName()) +"."+ pageable.getSortRequest().getFieldName());
+//            sortRequest = sortRequest.descending();
+//            pages = PageRequest.of(pageable.getPageNo(), pageable.getLimit(), sortRequest);
+//        } else {
+//            pages = PageRequest.of(pageable.getPageNo(), pageable.getLimit());
+//        }
+//        Page<ShipmentDetails> page  = shipmentDao.findAll(IShipmentDao.fetchShipmentData((pageable.getFilterCriteria() == null ? new ArrayList<>() : pageable.getFilterCriteria()), pageable.getSortRequest()),pages);
+//        System.out.println((System.currentTimeMillis() - start));
+//        //RunnerResponse runnerResponse = RunnerResponse.builder().data((IRunnerResponse) page.getContent()).pageNo(page.getTotalPages()).count(page.getTotalElements()).build();
+//        //return runnerResponse;
+//        return ResponseHelper.buildListSuccessResponse(
+//                convertEntityListToDtoList(page.getContent()),
+//                page.getTotalPages(),
+//                page.getTotalElements());
+
+        ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
+
+        Pair<Specification<ShipmentDetails>, Pageable> tuple = fetchData(request, ShipmentDetails.class.getSimpleName());
+        Page<ShipmentDetails> shipmentDetailsPage  = shipmentDao.findAll(tuple.getLeft(), tuple.getRight());
+        return ResponseHelper.buildListSuccessResponse(
+                convertEntityListToDtoList(shipmentDetailsPage.getContent()),
+                shipmentDetailsPage.getTotalPages(),
+                shipmentDetailsPage.getTotalElements());
+    }
+
+    private static ShipmentDetailsResponse convertEntityToDto(ShipmentDetails shipmentDetails) {
+        ShipmentDetailsResponse response = new ShipmentDetailsResponse();
+        response.setId(shipmentDetails.getId());
+        response.setGuid(shipmentDetails.getGuid());
+        response.setParties(shipmentDetails.getParties());
+        response.setBlDetails(shipmentDetails.getBlDetails());
+        response.setDeliveryDetails(shipmentDetails.getDeliveryDetails());
+        response.setPickupDetails(shipmentDetails.getPickupDetails());
+        response.setGoodsDescription(shipmentDetails.getGoodsDescription());
+        response.setAdditionalTerms(shipmentDetails.getAdditionalTerms());
+        response.setAssignedTo(shipmentDetails.getAssignedTo());
+        response.setIsDomestic(shipmentDetails.getIsDomestic());
+        response.setShipmentId(shipmentDetails.getShipmentId());
+        response.setIncoterms(shipmentDetails.getIncoterms());
+        response.setPaymentTerms(shipmentDetails.getPaymentTerms());
+        response.setSalesAgent(shipmentDetails.getSalesAgent());
+        response.setConsolRef(shipmentDetails.getConsolRef());
+        response.setBookingReference(shipmentDetails.getBookingReference());
+        response.setMasterBill(shipmentDetails.getMasterBill());
+        response.setServiceType(shipmentDetails.getServiceType());
+        response.setJobType(shipmentDetails.getJobType());
+        response.setSource(shipmentDetails.getSource());
+        response.setStatus(shipmentDetails.getStatus());
+        response.setShipmentType(shipmentDetails.getShipmentType());
+        response.setDirection(shipmentDetails.getDirection());
+        response.setTransportMode(shipmentDetails.getTransportMode());
+        response.setHouseBill(shipmentDetails.getHouseBill());
+        response.setMeasurementDetails(shipmentDetails.getMeasurementDetails());
+        response.setCarrierDetails(shipmentDetails.getCarrierDetails());
+
+
+        return response;
+    }
+
+    private static List<IRunnerResponse> convertEntityListToDtoList(List<ShipmentDetails> lst) {
+        List<IRunnerResponse> responseList = new ArrayList<>();
+        lst.forEach(shipmentDetail -> {
+            responseList.add(convertEntityToDto(shipmentDetail));
+        });
+        return responseList;
     }
 
     private List<PartiesDetails> createParties(ShipmentDetails shipmentDetails) {
