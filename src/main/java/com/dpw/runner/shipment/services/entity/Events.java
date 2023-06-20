@@ -22,6 +22,9 @@ public class Events extends BaseEntity {
     @Column(name = "guid")
     private UUID guid;
 
+    @Column(name = "shipment_id")
+    private Long shipmentId;
+
     @Column(name = "master_list")
     private String masterList;
 
@@ -38,7 +41,7 @@ public class Events extends BaseEntity {
     private Boolean isPublicTrackingEvent;
 
     @Column(name = "tenant_id")
-    private String tenantId;
+    private Long tenantId;
 
     @Column(name = "place_name")
     private String placeName;

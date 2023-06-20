@@ -1,0 +1,27 @@
+package com.dpw.runner.shipment.services.dto.request;
+
+import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
+import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
+import lombok.Getter;
+import lombok.ToString;
+
+import java.util.Date;
+
+@Getter
+@ToString
+public class EventsRequest extends CommonRequest implements IRunnerRequest {
+    private Long id;
+    private String masterList;
+    private Long tenantId;
+    private Long shipmentId;
+    private String description;
+    private Date estimated;
+    private Date actual;
+    private Boolean isPublicTrackingEvent;
+    private String placeName;
+    private String placeDescription;
+    private String latitude;
+    private String longitude;
+    private String source;
+    private String event_estimate_update_reasons;
+}
