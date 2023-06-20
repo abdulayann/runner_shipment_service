@@ -10,7 +10,7 @@ public interface IEventService {
 
     ResponseEntity<?> list(EventsRequest request);
     ResponseEntity<?> create(EventsRequest request);
-    ResponseEntity<?> update(EventsRequest request);
+    ResponseEntity<?> update(List<EventsRequest> request);
     ResponseEntity<?> delete(List<EventsRequest> request);
 
 }

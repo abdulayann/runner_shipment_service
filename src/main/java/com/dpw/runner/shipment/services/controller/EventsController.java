@@ -36,12 +36,12 @@ public class EventsController {
 
     @PutMapping(value = ApiConstants.API_UPDATE)
     public ResponseEntity<?> updateEvent(@RequestBody List<EventsRequest> request) {
-        return null;
+        return eventService.update(request);
     }
 
     @DeleteMapping(value = ApiConstants.API_DELETE)
-    public ResponseEntity<?> deleteEvent(@RequestBody EventsRequest request) {
-        return null;
+    public ResponseEntity<?> deleteEvent(@RequestBody List<EventsRequest> request) {
+        return eventService.delete(request);
     }
 
 

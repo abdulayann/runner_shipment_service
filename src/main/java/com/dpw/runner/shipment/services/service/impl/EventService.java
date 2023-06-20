@@ -42,10 +42,12 @@ public class EventService implements IEventService {
     }
 
     @Override
-    public ResponseEntity<?> update(EventsRequest request) {
-        Events event = generateEntityMappingFromRequest(request);
-        event = eventDao.save(event);
-        return ResponseEntity.status(HttpStatus.OK).body(generateEventResponseFromEntity(event));
+    public ResponseEntity<?> update(List<EventsRequest> request) {
+        List<Events> events = request.stream()
+                .map(this::generateEntityMappingFromRequest)
+                .collect(Collectors.toList());
+        eventDao.saveAll(events);
+        return ResponseEntity.status(HttpStatus.OK).body(EventConstants.EVENT_UPDATE_SUCCESS);
     }
 
     @Override
