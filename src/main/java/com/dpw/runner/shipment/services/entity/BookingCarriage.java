@@ -20,6 +20,7 @@ public class BookingCarriage extends MultiTenancy {
 
     @Id
     @ToString.Include
+    @Column(name = "id")
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
