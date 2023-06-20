@@ -24,7 +24,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@TypeDef(name = "jsonb", typeClass = JsonBinaryType.class )
+@TypeDef(name = "jsonb", typeClass = JsonBinaryType.class)
 public class ShipmentDetails extends MultiTenancy {
 
     private static final long serialVersionUID = 190794279984274725L;
@@ -37,8 +37,8 @@ public class ShipmentDetails extends MultiTenancy {
     @Column(name = "guid")
     private UUID guid;
 
-    @OneToMany(cascade=CascadeType.ALL, fetch = FetchType.EAGER,mappedBy="entityId")
-    @Where(clause = "entity_type = '[Shipments]'")
+    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER, mappedBy = "entityId")
+    @Where(clause = "entity_type = 'Shipments'")
     private List<PartiesDetails> parties;
 
     @OneToOne(targetEntity = BlDetails.class)
@@ -117,4 +117,14 @@ public class ShipmentDetails extends MultiTenancy {
     @OneToOne(targetEntity = DeliveryDetails.class)
     @JoinColumn(name = "delivery_detail_id", referencedColumnName = "id")
     private DeliveryDetails deliveryDetails;
+    @ManyToOne(optional = false)
+    private ReferenceNumbers referenceNumbers;
+
+    public ReferenceNumbers getReferenceNumbers() {
+        return referenceNumbers;
+    }
+
+    public void setReferenceNumbers(ReferenceNumbers referenceNumbers) {
+        this.referenceNumbers = referenceNumbers;
+    }
 }

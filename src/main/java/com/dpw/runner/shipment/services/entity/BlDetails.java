@@ -6,9 +6,11 @@ import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
 import lombok.*;
 import lombok.experimental.Accessors;
 import org.hibernate.annotations.TypeDef;
+import org.hibernate.annotations.Where;
 
 import javax.persistence.*;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 
@@ -21,7 +23,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@TypeDef(name = "jsonb", typeClass = JsonBinaryType.class )
+@TypeDef(name = "jsonb", typeClass = JsonBinaryType.class)
 public class BlDetails extends MultiTenancy {
 
     private static final long serialVersionUID = 190794279984274725L;
@@ -40,8 +42,9 @@ public class BlDetails extends MultiTenancy {
     @Column(name = "house_bill_type")
     private String hblType;
 
-    @Column(name = "shipment_id")
-    private Long shipmentId;
+    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER, mappedBy = "entityId")
+    @Where(clause = "entity_type = 'blDetails'")
+    private List<ShipmentDetails> shipmentDetailsList;
 
     @Column(name = "delivery_mode")
     private String deliveryMode;

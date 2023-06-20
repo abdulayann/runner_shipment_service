@@ -1,25 +1,33 @@
 package com.dpw.runner.shipment.services.entity;
 
-import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import lombok.experimental.Accessors;
 import lombok.*;
+import org.hibernate.annotations.Where;
 
 import javax.persistence.*;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 @Setter
 @Getter
-@Table(name = "shipment_services")
+@Table(name = "services")
 @Accessors(chain = true)
 @ToString(onlyExplicitlyIncluded = true)
 @NoArgsConstructor
 @AllArgsConstructor
-public class ShipmentServices extends BaseEntity {
+public class Services extends MultiTenancy {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
+    @ToString.Include
+    private Long id;
 
-    @Column(name = "shipment_id")
-    private Long shipmentId;
+    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER, mappedBy = "entityId")
+    @Where(clause = "entity_type = 'services'")
+    private List<ShipmentDetails> shipmentDetailsList;
 
     @Column(name = "consolidation_id")
     private Long consolidationId;

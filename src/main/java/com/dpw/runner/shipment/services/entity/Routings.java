@@ -1,11 +1,14 @@
 package com.dpw.runner.shipment.services.entity;
 
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import lombok.*;
 import lombok.experimental.Accessors;
+import org.hibernate.annotations.Where;
 
 import javax.persistence.*;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 @Setter
@@ -15,7 +18,12 @@ import java.time.LocalDateTime;
 @ToString(onlyExplicitlyIncluded = true)
 @NoArgsConstructor
 @AllArgsConstructor
-public class Routings extends BaseEntity {
+public class Routings extends MultiTenancy {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
+    @ToString.Include
+    private Long id;
 
     @Column(name = "leg")
     private Long leg;
@@ -50,8 +58,12 @@ public class Routings extends BaseEntity {
     @Column(name = "atd")
     private LocalDateTime atd;
 
-    @Column(name = "shipment_id")
-    private Long shipmentId;
+    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER, mappedBy = "entityId")
+    @Where(clause = "entity_type = 'Routings'")
+    private List<ShipmentDetails> shipmentDetailsList;
+
+    @Column(name = "consolidation_id")
+    private Long consolidation_id;
 
     @Column(name = "is_linked")
     private Boolean isLinked;
