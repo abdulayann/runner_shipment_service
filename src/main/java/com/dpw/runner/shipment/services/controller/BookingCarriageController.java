@@ -1,12 +1,13 @@
 package com.dpw.runner.shipment.services.controller;
 
+import com.dpw.runner.shipment.services.commons.constants.ApiConstants;
 import com.dpw.runner.shipment.services.commons.constants.BookingCarriageConstants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
-import com.dpw.runner.shipment.services.dto.request.BookingCarriageGetRequest;
+import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.dto.request.BookingCarriageRequest;
 import com.dpw.runner.shipment.services.dto.response.BookingCarriageResponse;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
@@ -34,7 +35,7 @@ public class BookingCarriageController {
             @ApiResponse(code = 200, message = BookingCarriageConstants.BOOKING_CARRIAGE_CREATE_SUCCESSFUL),
             @ApiResponse(code = 404, message = BookingCarriageConstants.NO_DATA, response = RunnerResponse.class)
     })
-    @PostMapping(BookingCarriageConstants.API_CREATE)
+    @PostMapping(ApiConstants.API_CREATE)
     public ResponseEntity<RunnerResponse<BookingCarriageResponse>> createBookingCarriageData(@RequestBody @Valid BookingCarriageRequest request) {
         String responseMsg;
         try {
@@ -48,30 +49,30 @@ public class BookingCarriageController {
     }
 
     @ApiResponses(value = { @ApiResponse(code = 200, message = BookingCarriageConstants.BOOKING_CARRIAGE_DELETE_SUCCESSFUL) })
-    @DeleteMapping(BookingCarriageConstants.API_DELETE)
+    @DeleteMapping(ApiConstants.API_DELETE)
     public ResponseEntity<RunnerResponse> delete(@RequestParam @Valid Long id) {
-        BookingCarriageGetRequest request = BookingCarriageGetRequest.builder().id(id).build();
+        CommonGetRequest request = CommonGetRequest.builder().id(id).build();
         return (ResponseEntity<RunnerResponse>) bookingCarriageService.delete(CommonRequestModel.buildRequest(request));
     }
 
     // @PreAuthorize("hasAuthority('"+ Permissions.AdministrationGeneral+"')") //TODO-Authorization
     @ApiResponses(value = { @ApiResponse(code = 200, message = BookingCarriageConstants.BOOKING_CARRIAGE_LIST_SUCCESSFUL, responseContainer = BookingCarriageConstants.RESPONSE_CONTAINER_LIST) })
-    @PostMapping(BookingCarriageConstants.API_LIST)
+    @PostMapping(ApiConstants.API_LIST)
     public ResponseEntity<RunnerListResponse<BookingCarriageResponse>> list(@RequestBody ListCommonRequest listCommonRequest) {
         return (ResponseEntity<RunnerListResponse<BookingCarriageResponse>>) bookingCarriageService.list(CommonRequestModel.buildRequest(listCommonRequest));
     }
 
     // @PreAuthorize("hasAuthority('"+ Permissions.AdministrationGeneral+"')") //TODO-Authorization
     @ApiResponses(value = { @ApiResponse(code = 200, message = BookingCarriageConstants.BOOKING_CARRIAGE_RETRIEVE_BY_ID_SUCCESSFUL) })
-    @GetMapping(BookingCarriageConstants.API_RETRIEVE_BY_ID)
+    @GetMapping(ApiConstants.API_RETRIEVE_BY_ID)
     public ResponseEntity<RunnerResponse<BookingCarriageResponse>> retrieveById(@ApiParam(value = BookingCarriageConstants.BOOKING_CARRIAGE_ID, required = true) @RequestParam Long id) {
-        BookingCarriageGetRequest request = BookingCarriageGetRequest.builder().id(id).build();
+        CommonGetRequest request = CommonGetRequest.builder().id(id).build();
         return (ResponseEntity<RunnerResponse<BookingCarriageResponse>>) bookingCarriageService.retrieveById(CommonRequestModel.buildRequest(request));
     }
 
     // @PreAuthorize("hasAuthority('"+ Permissions.AdministrationGeneral+"')") //TODO-Authorization
     @ApiResponses(value = { @ApiResponse(code = 200, message = BookingCarriageConstants.BOOKING_CARRIAGE_UPDATE_SUCCESSFUL, response = RunnerResponse.class) })
-    @PutMapping(BookingCarriageConstants.API_UPDATE)
+    @PutMapping(ApiConstants.API_UPDATE)
     public ResponseEntity<RunnerResponse> update(@RequestBody @Valid BookingCarriageRequest request) {
         String responseMsg;
         try {

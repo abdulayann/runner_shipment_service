@@ -10,6 +10,7 @@ import javax.persistence.Column;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import java.time.LocalDateTime;
 import java.util.Date;
 
 @Getter
@@ -22,8 +23,8 @@ public class BookingCarriageRequest extends CommonRequest implements IRunnerRequ
     private Long vesselId;
     private Long polId;
     private Long podId;
-    private Date eta;
-    private Date etd;
+    private LocalDateTime eta;
+    private LocalDateTime etd;
     private String vessel;
     private String voyage;
     private String carriageType;

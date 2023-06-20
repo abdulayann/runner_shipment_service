@@ -4,7 +4,7 @@ import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.dto.request.BookingCarriageGetRequest;
+import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.dto.request.BookingCarriageRequest;
 import com.dpw.runner.shipment.services.dto.response.BookingCarriageResponse;
 import com.dpw.runner.shipment.services.entity.BookingCarriage;
@@ -78,7 +78,7 @@ public class BookingCarriageService implements IBookingCarriageService {
         String responseMsg;
         try {
            // TODO- implement Validation logic
-            BookingCarriageGetRequest request = (BookingCarriageGetRequest) commonRequestModel.getData();
+            CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
             long id =request.getId();
             Optional<BookingCarriage> bookingCarriage = bookingCarriageDao.findById(id);
             if(!bookingCarriage.isPresent()) {
@@ -98,7 +98,7 @@ public class BookingCarriageService implements IBookingCarriageService {
     public ResponseEntity<?> retrieveById(CommonRequestModel commonRequestModel){
         String responseMsg;
         try {
-            BookingCarriageGetRequest request = (BookingCarriageGetRequest) commonRequestModel.getData();
+            CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
             long id =request.getId();
             Optional<BookingCarriage> bookingCarriage = bookingCarriageDao.findById(id);
             if(!bookingCarriage.isPresent()) {
