@@ -47,4 +47,7 @@ public class BookingCarriage extends BaseEntity {
 
     @Column(name = "vessel_id")
     private Long vesselId;
+
+    @Column(name = "booking_id")
+    private Long bookingId;
 }
