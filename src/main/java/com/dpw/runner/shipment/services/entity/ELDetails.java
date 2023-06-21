@@ -22,12 +22,6 @@ import java.util.List;
 @AllArgsConstructor
 public class ELDetails extends MultiTenancy {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id")
-    @ToString.Include
-    private Long id;
-
     @Column(name = "shipment_id")
     private Long shipmentId;
 

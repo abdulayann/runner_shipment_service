@@ -19,11 +19,6 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ReferenceNumbers extends MultiTenancy {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id")
-    @ToString.Include
-    private Long id;
 
     @Column(name = "guid")
     private UUID guid;
@@ -40,9 +35,6 @@ public class ReferenceNumbers extends MultiTenancy {
     @Column(name = "reference_number")
     private String referenceNumber;
 
-    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER, mappedBy = "entityId")
-    @Where(clause = "entity_type = 'shipment'")
-    private List<ShipmentDetails> shipmentDetails;
-
-
+    @Column(name = "shipment_id")
+    private String shipmentId;
 }

@@ -23,11 +23,6 @@ public class DeliveryDetails extends MultiTenancy {
 
     private static final long serialVersionUID = 190794279984274725L;
 
-    @Id
-    @ToString.Include
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
     @Column(name = "guid")
     private UUID guid;
 
@@ -37,7 +32,7 @@ public class DeliveryDetails extends MultiTenancy {
     @Column(name = "required_by")
     private LocalDateTime requiredBy;
 
-    @OneToMany(cascade=CascadeType.ALL, fetch = FetchType.EAGER,mappedBy="entityId")
+    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER, mappedBy = "entityId")
     @Where(clause = "entity_type = 'Delivery'")
     private List<PartiesDetails> parties;
 

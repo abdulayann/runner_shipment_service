@@ -9,6 +9,7 @@ import org.hibernate.annotations.Type;
 import org.hibernate.annotations.TypeDef;
 
 import javax.persistence.*;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -53,13 +54,10 @@ public class PartiesDetails extends MultiTenancy {
     @Column(name = "address_data", columnDefinition = "jsonb")
     private Map<String, Object> addressData;
 
-    @OneToOne(targetEntity = Containers.class, cascade = CascadeType.ALL)
-    @JoinColumn(name = "containers_id", referencedColumnName = "pickup_address")
-    private Containers containersPickupAddress;
+    @OneToMany(targetEntity = Containers.class, cascade = CascadeType.ALL, mappedBy = "pickupAddress")
+    private List<Containers> containersPickupAddress;
 
-    @OneToOne(targetEntity = Containers.class, cascade = CascadeType.ALL)
-    @JoinColumn(name = "containers_id", referencedColumnName = "delivery_address")
-    private Containers containersDeliveryAddress;
-
+    @OneToMany(targetEntity = Containers.class, cascade = CascadeType.ALL, mappedBy = "deliveryAddress")
+    private List<Containers> containersDeliveryAddress;
 
 }

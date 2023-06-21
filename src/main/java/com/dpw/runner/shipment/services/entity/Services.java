@@ -19,16 +19,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class Services extends MultiTenancy {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id")
-    @ToString.Include
-    private Long id;
-
-    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER, mappedBy = "entityId")
-    @Where(clause = "entity_type = 'services'")
-    private List<ShipmentDetails> shipmentDetailsList;
-
+    
     @Column(name = "shipment_id")
     private Long shipmentId;
 

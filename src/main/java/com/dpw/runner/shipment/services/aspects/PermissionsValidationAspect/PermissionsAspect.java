@@ -3,7 +3,7 @@ package com.dpw.runner.shipment.services.aspects.PermissionsValidationAspect;
 
 import com.dpw.runner.shipment.services.commons.requests.Criteria;
 import com.dpw.runner.shipment.services.commons.requests.FilterCriteria;
-import com.dpw.runner.shipment.services.commons.requests.Pageable;
+import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.Aspect;
@@ -28,9 +28,9 @@ public class PermissionsAspect {
     @Autowired
     private EntityManager entityManager;
 
-    @Before("execution(* com.dpw.runner.shipment.services.service.interfaces.IShipmentService+.*(..)) && args(pageable)")
-    public void beforeFindOfMultiTenancyRepository(JoinPoint joinPoint, Pageable pageable) {
-        List<String> permissionList = permissionsContext.getPermissions();
+    @Before("execution(* com.dpw.runner.shipment.services.service.interfaces.IShipmentService+.*(..)) && args(listCommonRequest)")
+    public void beforeFindOfMultiTenancyRepository(JoinPoint joinPoint, ListCommonRequest listCommonRequest) {
+        List<String> permissionList = PermissionsContext.getPermissions();
         permissionList.sort(new Comparator<String>() {
             @Override
             public int compare(String o1, String o2) {
@@ -39,9 +39,9 @@ public class PermissionsAspect {
         });
         List<FilterCriteria> criterias = CommonUtils.generateFilterCriteriaFromPermissions(permissionList);
 
-        FilterCriteria criteria1 = FilterCriteria.builder().innerFilter(pageable.getFilterCriteria()).build();
+        FilterCriteria criteria1 = FilterCriteria.builder().innerFilter(listCommonRequest.getFilterCriteria()).build();
         FilterCriteria criteria2 = FilterCriteria.builder().innerFilter(criterias).logicOperator("AND").build();
-        pageable.setFilterCriteria(Arrays.asList(criteria1, criteria2));
+        listCommonRequest.setFilterCriteria(Arrays.asList(criteria1, criteria2));
     }
 
     private FilterCriteria constructCriteria(String fieldName, Object value, String operator, String logicalOperator) {

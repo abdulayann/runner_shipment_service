@@ -21,11 +21,6 @@ public class CarrierDetails extends MultiTenancy {
 
     private static final long serialVersionUID = 190794279984274725L;
 
-    @Id
-    @ToString.Include
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
     @Column(name = "guid")
     private UUID guid;
 

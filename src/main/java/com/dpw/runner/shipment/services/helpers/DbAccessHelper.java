@@ -4,8 +4,7 @@ import com.dpw.runner.shipment.services.commons.requests.Criteria;
 import com.dpw.runner.shipment.services.commons.requests.FilterCriteria;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.SortRequest;
-import com.dpw.runner.shipment.services.dto.request.ShipmentMapping;
-import com.dpw.runner.shipment.services.entity.BookingCarriage;
+import com.dpw.runner.shipment.services.commons.requests.RunnerEntityMapping;
 import com.nimbusds.jose.util.Pair;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -13,7 +12,6 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 
 import javax.persistence.criteria.*;
-import java.math.BigDecimal;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
@@ -21,75 +19,14 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
-import static com.dpw.runner.shipment.services.repository.interfaces.IShipmentDao.covertStringToData;
 import static org.springframework.data.jpa.domain.Specification.where;
 
 @SuppressWarnings("ALL")
 public class DbAccessHelper {
-    public static Map<String, ShipmentMapping> tableNames = Map.ofEntries(
-            Map.entry("type", ShipmentMapping.builder().tableName("parties").dataType(String.class).build()),
-            Map.entry("orgId", ShipmentMapping.builder().tableName("parties").dataType(Integer.class).build()),
-            Map.entry("houseBill", ShipmentMapping.builder().tableName("ShipmentDetails").dataType(String.class).build()),
-            Map.entry("hblType", ShipmentMapping.builder().tableName("blDetails").dataType(String.class).build()),
-            Map.entry("transportMode", ShipmentMapping.builder().tableName("ShipmentDetails").dataType(String.class).build()),
-            Map.entry("releaseType", ShipmentMapping.builder().tableName("blDetails").dataType(String.class).build()),
-            Map.entry("deliveryMode", ShipmentMapping.builder().tableName("blDetails").dataType(String.class).build()),
-            Map.entry("direction", ShipmentMapping.builder().tableName("ShipmentDetails").dataType(String.class).build()),
-            Map.entry("shipmentType", ShipmentMapping.builder().tableName("ShipmentDetails").dataType(String.class).build()),
-            Map.entry("status", ShipmentMapping.builder().tableName("ShipmentDetails").dataType(Integer.class).build()),
-            Map.entry("source", ShipmentMapping.builder().tableName("ShipmentDetails").dataType(String.class).build()),
-            Map.entry("jobType", ShipmentMapping.builder().tableName("ShipmentDetails").dataType(String.class).build()),
-            Map.entry("serviceType", ShipmentMapping.builder().tableName("ShipmentDetails").dataType(String.class).build()),
-            Map.entry("masterBill", ShipmentMapping.builder().tableName("ShipmentDetails").dataType(String.class).build()),
-            Map.entry("bookingReference", ShipmentMapping.builder().tableName("ShipmentDetails").dataType(String.class).build()),
-            Map.entry("consolRef", ShipmentMapping.builder().tableName("ShipmentDetails").dataType(String.class).build()),
-            Map.entry("salesAgent", ShipmentMapping.builder().tableName("ShipmentDetails").dataType(Long.class).build()),
-            Map.entry("paymentTerms", ShipmentMapping.builder().tableName("ShipmentDetails").dataType(String.class).build()),
-            Map.entry("incoterms", ShipmentMapping.builder().tableName("ShipmentDetails").dataType(String.class).build()),
-            Map.entry("shipmentId", ShipmentMapping.builder().tableName("ShipmentDetails").dataType(String.class).build()),
-            Map.entry("isDomestic", ShipmentMapping.builder().tableName("ShipmentDetails").dataType(Boolean.class).build()),
-            Map.entry("assignedTo", ShipmentMapping.builder().tableName("ShipmentDetails").dataType(Integer.class).build()),
-            Map.entry("additionalTerms", ShipmentMapping.builder().tableName("ShipmentDetails").dataType(String.class).build()),
-            Map.entry("goodsDescription", ShipmentMapping.builder().tableName("ShipmentDetails").dataType(String.class).build()),
-            Map.entry("createdAt", ShipmentMapping.builder().tableName("ShipmentDetails").dataType(Date.class).build()),
-            Map.entry("estimatedPickup", ShipmentMapping.builder().tableName("pickupDetails").dataType(LocalDateTime.class).build()),
-            Map.entry("actualPickup", ShipmentMapping.builder().tableName("pickupDetails").dataType(LocalDateTime.class).build()),
-            Map.entry("estimatedDelivery", ShipmentMapping.builder().tableName("deliveryDetails").dataType(LocalDateTime.class).build()),
-            Map.entry("requiredBy", ShipmentMapping.builder().tableName("deliveryDetails").dataType(LocalDateTime.class).build()),
-            Map.entry("addressId", ShipmentMapping.builder().tableName("parties").dataType(Integer.class).build()),
-            Map.entry("screeningStatus", ShipmentMapping.builder().tableName("blDetails").dataType(String.class).build()),
-            Map.entry("paidPlace", ShipmentMapping.builder().tableName("blDetails").dataType(Long.class).build()),
-            Map.entry("placeOfIssue", ShipmentMapping.builder().tableName("blDetails").dataType(Long.class).build()),
-            Map.entry("dateOfIssue", ShipmentMapping.builder().tableName("blDetails").dataType(LocalDateTime.class).build()),
-            Map.entry("dateOfReceipt", ShipmentMapping.builder().tableName("blDetails").dataType(LocalDateTime.class).build()),
-            Map.entry("goodsCo", ShipmentMapping.builder().tableName("blDetails").dataType(String.class).build()),
-            Map.entry("boeDate", ShipmentMapping.builder().tableName("blDetails").dataType(LocalDateTime.class).build()),
-            Map.entry("boeNumber", ShipmentMapping.builder().tableName("blDetails").dataType(String.class).build()),
-            Map.entry("shippingLine", ShipmentMapping.builder().tableName("carrierDetails").dataType(String.class).build()),
-            Map.entry("vessel", ShipmentMapping.builder().tableName("carrierDetails").dataType(String.class).build()),
-            Map.entry("voyage", ShipmentMapping.builder().tableName("carrierDetails").dataType(String.class).build()),
-            Map.entry("origin", ShipmentMapping.builder().tableName("carrierDetails").dataType(String.class).build()),
-            Map.entry("destination", ShipmentMapping.builder().tableName("carrierDetails").dataType(String.class).build()),
-            Map.entry("eta", ShipmentMapping.builder().tableName("carrierDetails").dataType(LocalDateTime.class).build()),
-            Map.entry("etd", ShipmentMapping.builder().tableName("carrierDetails").dataType(LocalDateTime.class).build()),
-            Map.entry("ata", ShipmentMapping.builder().tableName("carrierDetails").dataType(LocalDateTime.class).build()),
-            Map.entry("weight", ShipmentMapping.builder().tableName("measurementDetails").dataType(BigDecimal.class).build()),
-            Map.entry("weightUnit", ShipmentMapping.builder().tableName("measurementDetails").dataType(String.class).build()),
-            Map.entry("volume", ShipmentMapping.builder().tableName("measurementDetails").dataType(BigDecimal.class).build()),
-            Map.entry("volumeUnit", ShipmentMapping.builder().tableName("measurementDetails").dataType(String.class).build()),
-            Map.entry("volumetricWeight", ShipmentMapping.builder().tableName("measurementDetails").dataType(BigDecimal.class).build()),
-            Map.entry("volumetricWeightUnit", ShipmentMapping.builder().tableName("measurementDetails").dataType(String.class).build()),
-            Map.entry("chargable", ShipmentMapping.builder().tableName("measurementDetails").dataType(BigDecimal.class).build()),
-            Map.entry("chargeableUnit", ShipmentMapping.builder().tableName("measurementDetails").dataType(String.class).build()),
-            Map.entry("netWeight", ShipmentMapping.builder().tableName("measurementDetails").dataType(BigDecimal.class).build()),
-            Map.entry("netWeightUnit", ShipmentMapping.builder().tableName("measurementDetails").dataType(String.class).build()),
-            Map.entry("noOfPacks", ShipmentMapping.builder().tableName("measurementDetails").dataType(Integer.class).build()),
-            Map.entry("packsUnit", ShipmentMapping.builder().tableName("measurementDetails").dataType(String.class).build()),
-            Map.entry("innerPacks", ShipmentMapping.builder().tableName("measurementDetails").dataType(Integer.class).build()),
-            Map.entry("innerPackUnit", ShipmentMapping.builder().tableName("measurementDetails").dataType(String.class).build())
-    );
+    private static Map<String, RunnerEntityMapping> tableNames = new HashMap<>();
 
-    public static <T> Pair<Specification<T>, Pageable> fetchData(ListCommonRequest request, String className) {
+    public static <T> Pair<Specification<T>, Pageable> fetchData(ListCommonRequest request, String className, Map<String, RunnerEntityMapping> tableName) {
+        tableNames = tableName;
         Pageable pages;
         if(request.getSortRequest() != null && request.getFilterCriteria() != null && request.getFilterCriteria().size() == 0) {
             Sort sortRequest = Sort.by(tableNames.get(request.getSortRequest().getFieldName()) +"."+ request.getSortRequest().getFieldName());
