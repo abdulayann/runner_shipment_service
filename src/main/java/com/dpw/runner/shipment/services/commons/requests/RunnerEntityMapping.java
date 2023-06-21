@@ -1,4 +1,4 @@
-package com.dpw.runner.shipment.services.dto.request;
+package com.dpw.runner.shipment.services.commons.requests;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Data
 @Builder
-public class ShipmentMapping {
+public class RunnerEntityMapping {
     private String parentTable;
     private String fieldName;
     private String tableName;

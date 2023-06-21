@@ -28,12 +28,6 @@ public class BlDetails extends MultiTenancy {
 
     private static final long serialVersionUID = 190794279984274725L;
 
-    @Id
-    @ToString.Include
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id")
-    private Long id;
-
     @Column(name = "guid")
     private UUID guid;
 

@@ -22,11 +22,6 @@ import java.util.UUID;
 public class PickupDetails extends MultiTenancy {
     private static final long serialVersionUID = 190794279984274725L;
 
-    @Id
-    @ToString.Include
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
     @Column(name = "guid")
     private UUID guid;
 
@@ -36,7 +31,7 @@ public class PickupDetails extends MultiTenancy {
     @Column(name = "actual_pickup")
     private LocalDateTime actualPickup;
 
-    @OneToMany(cascade=CascadeType.ALL, fetch = FetchType.EAGER,mappedBy="entityId")
+    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER, mappedBy = "entityId")
     @Where(clause = "entity_type = 'Pickup'")
     private List<PartiesDetails> parties;
 }

@@ -20,11 +20,6 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class Containers extends MultiTenancy {
 
-    @Id
-    @ToString.Include
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
     @Column(name = "consolidation_id")
     private int consolidationId;
 

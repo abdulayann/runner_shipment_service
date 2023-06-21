@@ -2,9 +2,9 @@ package com.dpw.runner.shipment.services;
 
 import com.dpw.runner.shipment.services.commons.requests.Criteria;
 import com.dpw.runner.shipment.services.commons.requests.FilterCriteria;
-import com.dpw.runner.shipment.services.commons.requests.Pageable;
 import com.dpw.runner.shipment.services.aspects.PermissionsValidationAspect.PermissionsAspect;
 import com.dpw.runner.shipment.services.aspects.PermissionsValidationAspect.PermissionsContext;
+import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import org.aspectj.lang.JoinPoint;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -32,7 +32,7 @@ class CriteriaTest {
 
     @Test
     void beforeFindOfMultiTenancyRepository_ShouldAddFilterCriteriaBasedOnPermissions() {
-        Pageable pageable = new Pageable();
+        ListCommonRequest pageable = new ListCommonRequest();
         pageable.setFilterCriteria(new ArrayList<>());
 
         // Act
