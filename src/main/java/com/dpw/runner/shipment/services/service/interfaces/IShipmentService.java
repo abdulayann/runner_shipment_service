@@ -9,4 +9,14 @@ import java.util.List;
 public interface IShipmentService {
     List<ShipmentDetails> createTestShipment(Integer count);
     ResponseEntity<?> fetchShipments(CommonRequestModel commonRequestModel);
+
+    ResponseEntity<?> create(CommonRequestModel commonRequestModel) throws Exception;
+
+    ResponseEntity<?> update(CommonRequestModel commonRequestModel) throws Exception;
+
+    ResponseEntity<?> list(CommonRequestModel commonRequestModel);
+
+    ResponseEntity<?> delete(CommonRequestModel commonRequestModel);
+
+    ResponseEntity<?> retrieveById(CommonRequestModel commonRequestModel);
 }

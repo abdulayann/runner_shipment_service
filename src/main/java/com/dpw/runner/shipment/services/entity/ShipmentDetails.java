@@ -11,6 +11,8 @@ import org.hibernate.annotations.Where;
 import javax.persistence.*;
 import javax.persistence.Id;
 import javax.persistence.Table;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -143,4 +145,126 @@ public class ShipmentDetails extends MultiTenancy {
 
     @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY, mappedBy = "shipmentId")
     private List<TruckDriverDetails> truckDriverDetails;
+
+    @Column(name = "weight")
+    private BigDecimal weight;
+
+    @Column(name = "weight_unit")
+    private String weightUnit;
+
+    @Column(name = "volume")
+    private BigDecimal volume;
+
+    @Column(name = "volume_unit")
+    private String volumeUnit;
+
+    @Column(name = "volumetric_weight")
+    private BigDecimal volumetricWeight;
+
+    @Column(name = "volumetric_weight_unit")
+    private String volumetricWeightUnit;
+
+    @Column(name = "chargable")
+    private BigDecimal chargable;
+
+    @Column(name = "chargeable_unit")
+    private String chargeableUnit;
+
+    @Column(name = "net_weight")
+    private BigDecimal netWeight;
+
+    @Column(name = "net_weight_unit")
+    private String netWeightUnit;
+
+    @Column(name = "no_of_packs")
+    private Integer noOfPacks;
+
+    @Column(name = "packs_unit")
+    private String packsUnit;
+
+    @Column(name = "inner_packs")
+    private Integer innerPacks;
+
+    @Column(name = "inner_pack_unit")
+    private String innerPackUnit;
+
+    @Column(name = "freight_local")
+    private Integer freightLocal;
+
+    @Column(name = "freightLocal_Currency")
+    private String freightLocalCurrency;
+
+    @Column(name = "freight_overseas")
+    private Integer freightOverseas;
+
+    @Column(name = "freightOverseas_Currency")
+    private String freightOverseasCurrency;
+
+    @Column(name = "auto_update_wt_vol")
+    private boolean autoUpdateWtVol;
+
+    @Column(name = "container_auto_wv_update")
+    private boolean containerAutoWeightVolumeUpdate;
+
+    @Column(name = "marks_num")
+    private String marksNum;
+
+    @Column(name = "entry_detail")
+    private String entryDetail;
+
+    @Column(name = "is_locked")
+    private boolean isLocked;
+
+    @Column(name = "locked_by")
+    private String lockedBy;
+
+    @Column(name = "is_notify_consignee_equal")
+    private boolean isNotifyConsigneeEqual;
+
+        //ShipmentOrderId
+
+    @Column(name = "booking_type")
+    private String bookingType;
+
+    @Column(name = "cargo_finance_booking")
+    private boolean cargoFinanceBooking;
+
+    @Column(name = "booking_number")
+    private String bookingNumber;
+
+    @Column(name = "route")
+    private String route;
+
+    @Column(name = "source_tenant_id")
+    private long SourceTenantId;
+
+    @Column(name = "documentation_partner")
+    private long documentationPartner;
+
+    @Column(name = "triangulation_partner")
+    private long triangulationPartner;
+
+    @Column(name = "receiving_branch")
+    private long receivingBranch;
+
+    @Column(name = "intra_branch")
+    private boolean intraBranch;
+
+    @Column(name = "prev_shipment_status")
+    private Integer prevShipmentStatus;
+
+    @Column(name = "is_shipment_read_only")
+    private boolean isShipmentReadOnly;
+
+    @Column(name = "shipment_completed_by")
+    private String shipmentCompletedBy;
+
+    @Column(name = "shipment_completed_on")
+    private LocalDateTime shipmentCompletedOn;
+
+    @Column(name = "finance_closed_by")
+    private String financeClosedBy;
+
+    @Column(name = "finance_closed_on")
+    private LocalDateTime financeClosedOn;
 }
