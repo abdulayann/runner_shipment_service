@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
 
+@SuppressWarnings("ALL")
 @RestController
 @RequestMapping(ReferenceNumbersConstants.REFERENCE_NUMBERS_API_HANDLE)
 @Slf4j
