@@ -163,12 +163,12 @@ public class BookingCarriageService implements IBookingCarriageService {
             Map.entry("id", RunnerEntityMapping.builder().tableName("BookingCarriage").dataType(Integer.class).build()),
             Map.entry("polId", RunnerEntityMapping.builder().tableName("BookingCarriage").dataType(Integer.class).build()),
             Map.entry("podId", RunnerEntityMapping.builder().tableName("BookingCarriage").dataType(Integer.class).build()),
-            Map.entry("eta", RunnerEntityMapping.builder().tableName("BookingCarriage").dataType(Integer.class).build()),
-            Map.entry("etd", RunnerEntityMapping.builder().tableName("BookingCarriage").dataType(Integer.class).build()),
-            Map.entry("vessel", RunnerEntityMapping.builder().tableName("BookingCarriage").dataType(Integer.class).build()),
-            Map.entry("voyage", RunnerEntityMapping.builder().tableName("BookingCarriage").dataType(Integer.class).build()),
-            Map.entry("carriageType", RunnerEntityMapping.builder().tableName("BookingCarriage").dataType(Integer.class).build()),
-            Map.entry("shipmentId", RunnerEntityMapping.builder().tableName("BookingCarriage").dataType(Integer.class).build()),
+            Map.entry("eta", RunnerEntityMapping.builder().tableName("BookingCarriage").dataType(Date.class).build()),
+            Map.entry("etd", RunnerEntityMapping.builder().tableName("BookingCarriage").dataType(Date.class).build()),
+            Map.entry("vessel", RunnerEntityMapping.builder().tableName("BookingCarriage").dataType(String.class).build()),
+            Map.entry("voyage", RunnerEntityMapping.builder().tableName("BookingCarriage").dataType(String.class).build()),
+            Map.entry("carriageType", RunnerEntityMapping.builder().tableName("BookingCarriage").dataType(String.class).build()),
+            Map.entry("shipmentId", RunnerEntityMapping.builder().tableName("BookingCarriage").dataType(String.class).build()),
             Map.entry("vesselId", RunnerEntityMapping.builder().tableName("BookingCarriage").dataType(Integer.class).build()),
             Map.entry("bookingId", RunnerEntityMapping.builder().tableName("BookingCarriage").dataType(Integer.class).build())
 
