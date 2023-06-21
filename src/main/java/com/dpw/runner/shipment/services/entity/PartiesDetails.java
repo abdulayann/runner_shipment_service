@@ -53,4 +53,13 @@ public class PartiesDetails extends MultiTenancy {
     @Column(name = "address_data", columnDefinition = "jsonb")
     private Map<String, Object> addressData;
 
+    @OneToOne(targetEntity = Containers.class, cascade = CascadeType.ALL)
+    @JoinColumn(name = "containers_id", referencedColumnName = "pickup_address")
+    private Containers containersPickupAddress;
+
+    @OneToOne(targetEntity = Containers.class, cascade = CascadeType.ALL)
+    @JoinColumn(name = "containers_id", referencedColumnName = "delivery_address")
+    private Containers containersDeliveryAddress;
+
+
 }

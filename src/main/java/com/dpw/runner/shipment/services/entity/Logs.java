@@ -1,10 +1,13 @@
 package com.dpw.runner.shipment.services.entity;
 
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import lombok.*;
 import lombok.experimental.Accessors;
 
 import javax.persistence.*;
+import java.time.LocalDateTime;
+import java.util.Date;
 
 @Entity
 @Setter
@@ -14,10 +17,12 @@ import javax.persistence.*;
 @ToString(onlyExplicitlyIncluded = true)
 @NoArgsConstructor
 @AllArgsConstructor
-public class Logs extends BaseEntity {
-
-    @Column(name = "user_id")
-    private String userId;
+public class Logs extends MultiTenancy {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
+    @ToString.Include
+    private Long id;
 
     @Column(name = "user_name")
     private String userName;
@@ -26,19 +31,13 @@ public class Logs extends BaseEntity {
     private String action;
 
     @Column(name = "changed_on")
-    private String changedOn;
+    private LocalDateTime changedOn;
 
-    @Column(name = "table_name")
-    private String tableName;
+    @Column(name = "entity_id")
+    private Long entityId;
 
-    @Column(name = "row_id")
-    private String rowId;
-
-    @Column(name = "module")
-    private String module;
-
-    @Column(name = "page")
-    private String page;
+    @Column(name = "entity_name")
+    private String entityName;
 
     @Column(name = "changes")
     private String changes;

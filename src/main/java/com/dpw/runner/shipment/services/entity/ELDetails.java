@@ -2,10 +2,14 @@ package com.dpw.runner.shipment.services.entity;
 
 import javax.persistence.*;
 
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.entity.enums.MergeClass;
 import lombok.*;
 import lombok.experimental.Accessors;
+import org.hibernate.annotations.Where;
+
+import java.util.List;
 
 
 @Entity
@@ -16,7 +20,13 @@ import lombok.experimental.Accessors;
 @ToString(onlyExplicitlyIncluded = true)
 @NoArgsConstructor
 @AllArgsConstructor
-public class ELDetails extends BaseEntity {
+public class ELDetails extends MultiTenancy {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
+    @ToString.Include
+    private Long id;
 
     @Column(name = "shipment_id")
     private Long shipmentId;

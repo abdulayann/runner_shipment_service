@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.entity;
 
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.entity.enums.ContainerStatus;
 import lombok.*;
@@ -17,22 +18,18 @@ import java.time.LocalDateTime;
 @ToString(onlyExplicitlyIncluded = true)
 @NoArgsConstructor
 @AllArgsConstructor
-public class Containers extends BaseEntity {
+public class Containers extends MultiTenancy {
+
+    @Id
+    @ToString.Include
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
     @Column(name = "consolidation_id")
     private int consolidationId;
 
-    @Column(name = "shipment_id")
-    private Long shipmentId;
-
-    @Column(name = "entity_type")
-    private String entityType;
-
-    @Column(name = "entity_id")
-    private String entityId;
-
-    @Column(name = "container_type_id")
-    private Long containerTypeId;
+    @Column(name = "container_code")
+    private String containerCode;
 
     @Column(name = "container_number")
     private String containerNumber;
@@ -64,8 +61,8 @@ public class Containers extends BaseEntity {
     @Column(name = "measurement_unit")
     private String measurementUnit;
 
-    @Column(name = "commodity_id")
-    private Long commodityId;
+    @Column(name = "commodity_code")
+    private String commodityCode;
 
     @Column(name = "hs_code")
     private String hsCode;
@@ -127,41 +124,11 @@ public class Containers extends BaseEntity {
     @Column(name = "hbl_delivery_mode")
     private String hblDeliveryMode;
 
-    @Column(name = "per_container_cost_rate")
-    private String perContainerCostRate;
-
-    @Column(name = "per_container_sell_rate")
-    private String perContainerSellRate;
-
-    @Column(name = "current_cost_rate")
-    private BigDecimal currentCostRate;
-
-    @Column(name = "minimum_cost")
-    private BigDecimal minimumCost;
-
-    @Column(name = "total_cost_value")
-    private BigDecimal totalCostValue;
-
-    @Column(name = "current_sell_rate")
-    private BigDecimal currentSellRate;
-
-    @Column(name = "minimum_sell")
-    private BigDecimal minimumSell;
-
-    @Column(name = "total_sell_value")
-    private BigDecimal totalSellValue;
-
-    @Column(name = "pickup_address")
-    private String pickupAddress;
-
-    @Column(name = "delivery_address")
-    private String deliveryAddress;
-
     @Column(name = "allocation_date")
     private LocalDateTime allocationDate;
 
     @Column(name = "dg_class")
-    private Long dgClass;
+    private String dgClass;
 
     @Column(name = "hazardous")
     private Boolean hazardous;
@@ -220,9 +187,6 @@ public class Containers extends BaseEntity {
     @Column(name = "is_own_container")
     private Boolean isOwnContainer;
 
-    @Column(name = "pack_id")
-    private int packId;
-
     @Column(name = "transport_mode")
     private String transportMode;
 
@@ -265,4 +229,10 @@ public class Containers extends BaseEntity {
 
     @Column(name = "volume_utilization")
     private String volumeUtilization;
+
+    @Column(name = "pickup_address")
+    private String pickupAddress;
+
+    @Column(name = "delivery_address")
+    private String deliveryAddress;
 }

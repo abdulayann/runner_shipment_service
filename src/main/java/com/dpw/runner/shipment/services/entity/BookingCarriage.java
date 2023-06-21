@@ -1,12 +1,13 @@
 package com.dpw.runner.shipment.services.entity;
 
 
-import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import lombok.*;
 import lombok.experimental.Accessors;
 
 import javax.persistence.*;
 import java.time.LocalDateTime;
+import java.util.Date;
 
 @Entity
 @Setter
@@ -16,7 +17,13 @@ import java.time.LocalDateTime;
 @ToString(onlyExplicitlyIncluded = true)
 @NoArgsConstructor
 @AllArgsConstructor
-public class BookingCarriage extends BaseEntity {
+public class BookingCarriage extends MultiTenancy {
+
+    @Id
+    @ToString.Include
+    @Column(name = "id")
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
     @Column(name = "pol_id")
     private Long polId;
@@ -25,10 +32,10 @@ public class BookingCarriage extends BaseEntity {
     private Long podId;
 
     @Column(name = "eta")
-    private LocalDateTime eta;
+    private Date eta;
 
     @Column(name = "etd")
-    private LocalDateTime etd;
+    private Date etd;
 
     @Column(name = "vessel")
     private String vessel;

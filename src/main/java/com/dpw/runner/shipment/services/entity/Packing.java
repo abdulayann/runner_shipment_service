@@ -2,7 +2,7 @@ package com.dpw.runner.shipment.services.entity;
 
 import javax.persistence.*;
 
-import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import lombok.*;
 
 import java.math.BigDecimal;
@@ -14,11 +14,17 @@ import java.math.BigDecimal;
 @ToString(onlyExplicitlyIncluded = true)
 @NoArgsConstructor
 @AllArgsConstructor
-public class Packing extends BaseEntity {
+public class Packing extends MultiTenancy {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
+    @ToString.Include
+    private Long id;
 
     @Column(name = "consolidation_id")
     private Long consolidationId;
-
+    
     @Column(name = "shipment_id")
     private Long shipmentId;
 
@@ -135,12 +141,6 @@ public class Packing extends BaseEntity {
 
     @Column(name = "volume_weight_unit")
     private String volumeWeightUnit;
-
-    @Column(name = "entity_id")
-    private Long entityId;
-
-    @Column(name = "entity_type")
-    private String entityType;
 
     @Column(name = "vin_number")
     private String vinNumber;

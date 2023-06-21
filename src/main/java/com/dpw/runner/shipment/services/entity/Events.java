@@ -1,13 +1,11 @@
 package com.dpw.runner.shipment.services.entity;
 
-import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import lombok.*;
 import lombok.experimental.Accessors;
 
 import javax.persistence.*;
 import java.time.LocalDateTime;
-import java.util.Date;
-import java.util.UUID;
 
 @Entity
 @Setter
@@ -17,13 +15,13 @@ import java.util.UUID;
 @ToString(onlyExplicitlyIncluded = true)
 @NoArgsConstructor
 @AllArgsConstructor
-public class Events extends BaseEntity {
-
-    @Column(name = "guid")
-    private UUID guid;
+public class Events extends MultiTenancy {
 
     @Column(name = "shipment_id")
     private Long shipmentId;
+
+    @Column(name = "consolidation_id")
+    private Long consolidationId;
 
     @Column(name = "master_list")
     private String masterList;
@@ -39,9 +37,6 @@ public class Events extends BaseEntity {
 
     @Column(name = "is_public_tracking_event")
     private Boolean isPublicTrackingEvent;
-
-    @Column(name = "tenant_id")
-    private Long tenantId;
 
     @Column(name = "place_name")
     private String placeName;
