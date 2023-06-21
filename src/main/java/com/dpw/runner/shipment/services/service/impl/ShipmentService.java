@@ -1,20 +1,24 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 
+import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
 import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.*;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
 import com.nimbusds.jose.util.Pair;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -27,6 +31,7 @@ import java.util.*;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 
 @Service
+@Slf4j
 public class ShipmentService implements IShipmentService {
 
     @Autowired
@@ -39,6 +44,9 @@ public class ShipmentService implements IShipmentService {
     private ICarrierDao carrierDao;
     @Autowired
     private IPartiesDao partiesDao;
+
+    @Autowired
+    private JsonHelper jsonHelper;
 
     private List<String> TRANSPORT_MODES = Arrays.asList("SEA", "ROAD", "RAIL", "AIR");
     private List<String> SHIPMENT_TYPE = Arrays.asList("FCL", "LCL");
@@ -176,10 +184,10 @@ public class ShipmentService implements IShipmentService {
         return response;
     }
 
-    private static List<IRunnerResponse> convertEntityListToDtoList(List<ShipmentDetails> lst) {
+    private List<IRunnerResponse> convertEntityListToDtoList(List<ShipmentDetails> lst) {
         List<IRunnerResponse> responseList = new ArrayList<>();
         lst.forEach(shipmentDetail -> {
-            responseList.add(convertEntityToDto(shipmentDetail));
+            responseList.add(jsonHelper.convertValue(shipmentDetail, ShipmentDetailsResponse.class));
         });
         return responseList;
     }
@@ -264,5 +272,95 @@ public class ShipmentService implements IShipmentService {
         return salt.toString();
     }
 
+    @Override @Transactional
+    public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
+        ShipmentRequest request = null;
+        request = (ShipmentRequest) commonRequestModel.getData();
+        // TODO- implement validator
+        ShipmentDetails shipmentDetails = jsonHelper.convertValue(request, ShipmentDetails.class);
+        shipmentDetails = shipmentDao.save(shipmentDetails);
+        return ResponseHelper.buildSuccessResponse(jsonHelper.convertValue(shipmentDetails, ShipmentDetailsResponse.class));
+    }
+
+    @Override
+    @Transactional
+    public ResponseEntity<?> update(CommonRequestModel commonRequestModel) throws Exception {
+        ShipmentRequest request = (ShipmentRequest) commonRequestModel.getData();
+        // TODO- implement Validation logic
+        long id =request.getId();
+        Optional<ShipmentDetails> oldEntity = shipmentDao.findById(id);
+        if(!oldEntity.isPresent()) {
+            log.debug("Shipment Details is null for Id {}", request.getId());
+            throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+        }
+
+        ShipmentDetails entity = jsonHelper.convertValue(request, ShipmentDetails.class);
+        entity.setId(oldEntity.get().getId());
+        entity = shipmentDao.save(entity);
+        return ResponseHelper.buildSuccessResponse(jsonHelper.convertValue(entity, ShipmentDetailsResponse.class));
+    }
+
+    public ResponseEntity<?> list(CommonRequestModel commonRequestModel){
+        String responseMsg;
+        try {
+            // TODO- implement actual logic with filters
+            ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
+
+            Pair<Specification<ShipmentDetails>, Pageable> tuple = fetchData(request, ShipmentDetails.class.getSimpleName());
+            Page<ShipmentDetails> shipmentDetailsPage  = shipmentDao.findAll(tuple.getLeft(), tuple.getRight());
+            return ResponseHelper.buildListSuccessResponse(
+                    convertEntityListToDtoList(shipmentDetailsPage.getContent()),
+                    shipmentDetailsPage.getTotalPages(),
+                    shipmentDetailsPage.getTotalElements());
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+
+    }
+
+    public ResponseEntity<?> delete(CommonRequestModel commonRequestModel){
+        String responseMsg;
+        try {
+            // TODO- implement Validation logic
+            CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
+            long id =request.getId();
+            Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(id);
+            if(!shipmentDetails.isPresent()) {
+                log.debug("Shipment Details is null for Id {}", request.getId());
+                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+            }
+            shipmentDao.delete(shipmentDetails.get());
+            return ResponseHelper.buildSuccessResponse();
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_DELETE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
+    public ResponseEntity<?> retrieveById(CommonRequestModel commonRequestModel){
+        String responseMsg;
+        try {
+            CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
+            long id =request.getId();
+            Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(id);
+            if(!shipmentDetails.isPresent()) {
+                log.debug("Shipment Details is null for Id {}", request.getId());
+                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+            }
+
+            ShipmentDetailsResponse response = jsonHelper.convertValue(shipmentDetails.get(), ShipmentDetailsResponse.class);
+            return ResponseHelper.buildSuccessResponse(response);
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
 
 }

@@ -1,25 +1,21 @@
-package com.dpw.runner.shipment.services.dto.response;
+package com.dpw.runner.shipment.services.dto.request;
 
-import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
+import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
-import lombok.ToString;
-import org.hibernate.annotations.Where;
+import lombok.NoArgsConstructor;
 
-import javax.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.UUID;
 
 @Data
-public class ShipmentDetailsResponse implements IRunnerResponse {
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class ShipmentRequest extends CommonRequest implements IRunnerRequest {
     private Long id;
-    private UUID guid;
-    private List<PartiesDetails> parties;
-    private BlDetails blDetails;
-    private CarrierDetails carrierDetails;
-    private MeasurementDetails measurementDetails;
     private String houseBill;
     private String transportMode;
     private String direction;
@@ -79,6 +75,4 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     private LocalDateTime shipmentCompletedOn;
     private String financeClosedBy;
     private LocalDateTime financeClosedOn;
-    private PickupDetails pickupDetails;
-    private DeliveryDetails deliveryDetails;
 }
