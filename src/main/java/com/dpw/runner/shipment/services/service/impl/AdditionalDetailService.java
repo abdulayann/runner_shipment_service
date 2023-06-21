@@ -7,6 +7,7 @@ import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.AdditionalDetailRequest;
 import com.dpw.runner.shipment.services.dto.response.AdditionalDetailResponse;
+import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.entity.AdditionalDetail;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
@@ -125,7 +126,7 @@ public class AdditionalDetailService implements IAdditionalDetailService {
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
 
-            AdditionalDetailResponse response = (AdditionalDetailResponse) convertEntityToDto(additionalDetails.get());
+            AdditionalDetailResponse response = jsonHelper.convertValue(additionalDetails.get(), AdditionalDetailResponse.class);
             return ResponseHelper.buildSuccessResponse(response);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -135,16 +136,13 @@ public class AdditionalDetailService implements IAdditionalDetailService {
         }
     }
 
-    private IRunnerResponse convertEntityToDto(AdditionalDetail additionalDetails) {
-        AdditionalDetailResponse additionalDetail = new AdditionalDetailResponse();
-        // TODO - implement mapper
-        return additionalDetail;
+    private IRunnerResponse convertEntityToDto(AdditionalDetail additionalDetail) {
+        return jsonHelper.convertValue(additionalDetail, AdditionalDetailResponse.class);
     }
 
     private AdditionalDetail convertRequestToEntity(AdditionalDetailRequest request) {
         AdditionalDetail additionalDetail = new AdditionalDetail();
-        // TODO - implement mapper
-        return additionalDetail;
+        return jsonHelper.convertValue(request, AdditionalDetail.class);
     }
 
     private List<IRunnerResponse> convertEntityListToDtoList(List<AdditionalDetail> list) {
