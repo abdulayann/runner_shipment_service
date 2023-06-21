@@ -16,15 +16,9 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 public class Packing extends MultiTenancy {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id")
-    @ToString.Include
-    private Long id;
-
     @Column(name = "consolidation_id")
     private Long consolidationId;
-    
+
     @Column(name = "shipment_id")
     private Long shipmentId;
 

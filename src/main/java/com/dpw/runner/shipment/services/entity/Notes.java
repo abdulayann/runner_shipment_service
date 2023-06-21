@@ -18,11 +18,6 @@ import javax.persistence.*;
 @AllArgsConstructor
 @Builder
 public class Notes extends MultiTenancy {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id")
-    @ToString.Include
-    private Long id;
 
     @Column(name = "text")
     private String text;

@@ -21,11 +21,6 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 public class Events extends MultiTenancy {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id")
-    @ToString.Include
-    private Long id;
 
     @Column(name = "shipment_id")
     private Long shipmentId;
