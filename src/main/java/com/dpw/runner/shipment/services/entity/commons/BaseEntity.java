@@ -3,6 +3,8 @@ package com.dpw.runner.shipment.services.entity.commons;
 import lombok.*;
 import lombok.experimental.Accessors;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.Generated;
+import org.hibernate.annotations.GenerationTime;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
@@ -26,6 +28,7 @@ public class BaseEntity implements Serializable {
     private static final long serialVersionUID = 1L;
 
     @ToString.Include
+    @Generated(GenerationTime.INSERT)
     private UUID guid;
 
     @Id
