@@ -2,7 +2,7 @@ package com.dpw.runner.shipment.services;
 
 import com.dpw.runner.shipment.services.commons.requests.Criteria;
 import com.dpw.runner.shipment.services.commons.requests.FilterCriteria;
-import com.dpw.runner.shipment.services.commons.requests.Pageable;
+import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.SortRequest;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
@@ -55,7 +55,7 @@ public class IntegrationTest {
 
     @Test
     public void testFetchByQuery_request1() throws Exception {
-        Pageable pageable = createSamplePageable1();
+        ListCommonRequest pageable = createSamplePageable1();
         Page<ShipmentDetails> shipments = new PageImpl<ShipmentDetails>(Collections.emptyList());
 
         MvcResult mvcResult = mockMvc.perform(post("/list-shipment")
@@ -72,7 +72,7 @@ public class IntegrationTest {
 
     @Test
     public void testFetchByQuery_request3() throws Exception {
-        Pageable pageable = createSamplePageable2();
+        ListCommonRequest pageable = createSamplePageable2();
         Page<ShipmentDetails> shipments = new PageImpl<ShipmentDetails>(Collections.emptyList());
 
         MvcResult mvcResult = mockMvc.perform(post("/list-shipment")
@@ -87,15 +87,16 @@ public class IntegrationTest {
 
     private final String response = "";
 
-    private Pageable createSamplePageable1(){
-        Pageable pageable = Pageable.builder()
-                .pageNo(0)
-                .limit(10)
-                .sortRequest(SortRequest.builder()
+    private ListCommonRequest createSamplePageable1(){
+        ListCommonRequest pageable = new ListCommonRequest();
+
+        pageable.setPageNo(0);
+        pageable.setLimit(10);
+        pageable.setSortRequest(SortRequest.builder()
                         .fieldName("deliveryMode")
                         .order("DESC")
-                        .build())
-                .filterCriteria(Arrays.asList(
+                        .build());
+        pageable.setFilterCriteria(Arrays.asList(
                         FilterCriteria.builder()
                                 .innerFilter(Arrays.asList(
                                         FilterCriteria.builder()
@@ -113,21 +114,21 @@ public class IntegrationTest {
                                                         .build())
                                                 .build()
                                 ))
-                                .build()))
-                .build();
+                                .build()));
 
         return pageable;
     }
 
-    private Pageable createSamplePageable2(){
-        Pageable pageable = Pageable.builder()
-                .pageNo(0)
-                .limit(10)
-                .sortRequest(SortRequest.builder()
-                        .fieldName("deliveryMode")
-                        .order("DESC")
-                        .build())
-                .filterCriteria(Arrays.asList(
+    private ListCommonRequest createSamplePageable2(){
+        ListCommonRequest pageable = new ListCommonRequest();
+
+        pageable.setPageNo(0);
+        pageable.setLimit(10);
+        pageable.setSortRequest(SortRequest.builder()
+                .fieldName("deliveryMode")
+                .order("DESC")
+                .build());
+        pageable.setFilterCriteria(Arrays.asList(
                         FilterCriteria.builder()
                                 .innerFilter(Arrays.asList(
                                         FilterCriteria.builder()
@@ -145,8 +146,7 @@ public class IntegrationTest {
                                                         .build())
                                                 .build()
                                 ))
-                                .build()))
-                .build();
+                                .build()));
 
         return pageable;
     }
