@@ -1,11 +1,14 @@
 package com.dpw.runner.shipment.services.entity;
 
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import lombok.*;
 import lombok.experimental.Accessors;
 import org.hibernate.annotations.CollectionId;
+import org.hibernate.annotations.Where;
 
 import javax.persistence.*;
+import java.util.List;
 
 @Entity
 @Setter
@@ -15,7 +18,19 @@ import javax.persistence.*;
 @ToString(onlyExplicitlyIncluded = true)
 @NoArgsConstructor
 @AllArgsConstructor
-public class FileRepo extends BaseEntity {
+public class FileRepo extends MultiTenancy {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
+    @ToString.Include
+    private Long id;
+
+    @Column(name = "entity_id")
+    private Long entityId;
+
+    @Column(name = "entity_type")
+    private String entityType;
 
     @Column(name = "file_name")
     private String fileName;
@@ -35,9 +50,4 @@ public class FileRepo extends BaseEntity {
     @Column(name = "event_code")
     private String eventCode;
 
-    @Column(name = "shipment_id")
-    private Long shipmentId;
-
-    @Column(name = "consolidation_id")
-    private Long consolidationId;
 }

@@ -1,7 +1,7 @@
 package com.dpw.runner.shipment.services.entity;
 
 
-import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import lombok.*;
 import lombok.experimental.Accessors;
 
@@ -17,7 +17,13 @@ import java.util.Date;
 @ToString(onlyExplicitlyIncluded = true)
 @NoArgsConstructor
 @AllArgsConstructor
-public class BookingCarriage extends BaseEntity {
+public class BookingCarriage extends MultiTenancy {
+
+    @Id
+    @ToString.Include
+    @Column(name = "id")
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
     @Column(name = "pol_id")
     private Long polId;

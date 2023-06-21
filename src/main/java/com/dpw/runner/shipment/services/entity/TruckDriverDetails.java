@@ -1,21 +1,33 @@
 package com.dpw.runner.shipment.services.entity;
 
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.entity.enums.Ownership;
 import lombok.*;
 import lombok.experimental.Accessors;
+import org.hibernate.annotations.Where;
 
 import javax.persistence.*;
+import java.util.List;
 
 @Entity
 @Setter
 @Getter
-@Table(name = "transport_details")
+@Table(name = "truck_driver_details")
 @Accessors(chain = true)
 @ToString(onlyExplicitlyIncluded = true)
 @NoArgsConstructor
 @AllArgsConstructor
-public class TruckDriverDetails extends BaseEntity {
+public class TruckDriverDetails extends MultiTenancy {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
+    @ToString.Include
+    private Long id;
+
+    @Column(name = "shipment_id")
+    private int shipmentId;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "transporter_type")
@@ -45,11 +57,11 @@ public class TruckDriverDetails extends BaseEntity {
     @Column(name = "container_id")
     private Long containerId;
 
-    @Column(name = "shipment_id")
-    private int shipmentId;
+    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER, mappedBy = "shipment_id")
+    private List<ShipmentDetails> shipmentDetailsList;
 
     @Column(name = "consolidation_id")
-    private int consolidationId;
+    private Long consolidationId;
 
     @Column(name = "self_transporter_name")
     private String selfTransporterName;
