@@ -27,9 +27,8 @@ public class Events extends MultiTenancy {
     @ToString.Include
     private Long id;
 
-    @ManyToOne(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
-    @Where(clause = "entity_type = 'events'")
-    private ShipmentDetails shipmentDetailsList;
+    @Column(name = "shipment_id")
+    private Long shipmentId;
 
     @Column(name = "consolidation_id")
     private Long consolidationId;

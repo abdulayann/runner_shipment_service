@@ -44,4 +44,5 @@ public class ReferenceNumbers extends MultiTenancy {
     @Where(clause = "entity_type = 'shipment'")
     private List<ShipmentDetails> shipmentDetails;
 
+
 }

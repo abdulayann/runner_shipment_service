@@ -25,6 +25,9 @@ public class Routings extends MultiTenancy {
     @ToString.Include
     private Long id;
 
+    @Column(name = "shipment_id")
+    private Long shipmentId;
+
     @Column(name = "leg")
     private Long leg;
 
@@ -57,10 +60,6 @@ public class Routings extends MultiTenancy {
 
     @Column(name = "atd")
     private LocalDateTime atd;
-
-    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER, mappedBy = "entityId")
-    @Where(clause = "entity_type = 'Routings'")
-    private List<ShipmentDetails> shipmentDetailsList;
 
     @Column(name = "consolidation_id")
     private Long consolidation_id;

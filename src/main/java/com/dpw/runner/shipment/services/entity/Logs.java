@@ -6,6 +6,7 @@ import lombok.*;
 import lombok.experimental.Accessors;
 
 import javax.persistence.*;
+import java.time.LocalDateTime;
 import java.util.Date;
 
 @Entity
@@ -30,7 +31,7 @@ public class Logs extends MultiTenancy {
     private String action;
 
     @Column(name = "changed_on")
-    private Date changedOn;
+    private LocalDateTime changedOn;
 
     @Column(name = "entity_id")
     private Long entityId;

@@ -29,6 +29,9 @@ public class Services extends MultiTenancy {
     @Where(clause = "entity_type = 'services'")
     private List<ShipmentDetails> shipmentDetailsList;
 
+    @Column(name = "shipment_id")
+    private Long shipmentId;
+
     @Column(name = "consolidation_id")
     private Long consolidationId;
 

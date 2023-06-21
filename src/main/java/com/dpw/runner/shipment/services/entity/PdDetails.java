@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.entity;
 
 import javax.persistence.*;
+import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.List;
 
@@ -24,19 +25,19 @@ public class PdDetails extends MultiTenancy {
     private Long id;
 
     @Column(name = "estimated_pickup")
-    private Date estimatedPickup;
+    private LocalDateTime estimatedPickup;
 
     @Column(name = "required_by")
-    private Date requiredBy;
+    private LocalDateTime requiredBy;
 
     @Column(name = "port_transport_advised")
-    private Date portTransportAdvised;
+    private LocalDateTime portTransportAdvised;
 
     @Column(name = "actual_pickup")
-    private Date actualPickup;
+    private LocalDateTime actualPickup;
 
     @Column(name = "pickup")
-    private Date pickup;
+    private LocalDateTime pickup;
 
     @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER, mappedBy = "entityId")
     @Where(clause = "entity_type = 'jobs' AND party_type = 'broker'")

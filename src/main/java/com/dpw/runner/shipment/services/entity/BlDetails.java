@@ -31,6 +31,7 @@ public class BlDetails extends MultiTenancy {
     @Id
     @ToString.Include
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
     private Long id;
 
     @Column(name = "guid")
@@ -42,9 +43,8 @@ public class BlDetails extends MultiTenancy {
     @Column(name = "house_bill_type")
     private String hblType;
 
-    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER, mappedBy = "entityId")
-    @Where(clause = "entity_type = 'blDetails'")
-    private List<ShipmentDetails> shipmentDetailsList;
+    @Column(name = "shipment_id")
+    private Long shipmentId;
 
     @Column(name = "delivery_mode")
     private String deliveryMode;

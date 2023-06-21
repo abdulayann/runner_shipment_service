@@ -26,14 +26,12 @@ public class TruckDriverDetails extends MultiTenancy {
     @ToString.Include
     private Long id;
 
+    @Column(name = "shipment_id")
+    private int shipmentId;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "transporter_type")
     private Ownership transporterType;
-
-    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER, mappedBy = "entityId")
-    @Where(clause = "entity_type = 'TruckDriverDetails'")
-    @JoinColumn(name = "shipment_id", referencedColumnName = "id")
-    private List<PartiesDetails> partiesDetailsList;
 
     @Column(name = "transporter_name")
     private String transporterName;
@@ -59,8 +57,7 @@ public class TruckDriverDetails extends MultiTenancy {
     @Column(name = "container_id")
     private Long containerId;
 
-    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER, mappedBy = "entityId")
-    @Where(clause = "entity_type = 'TruckDriverDetails'")
+    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER, mappedBy = "shipment_id")
     private List<ShipmentDetails> shipmentDetailsList;
 
     @Column(name = "consolidation_id")

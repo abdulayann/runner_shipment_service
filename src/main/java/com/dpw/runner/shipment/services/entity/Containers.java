@@ -123,24 +123,6 @@ public class Containers extends MultiTenancy {
 
     @Column(name = "hbl_delivery_mode")
     private String hblDeliveryMode;
-    
-    @Column(name = "per_container_sell_rate")
-    private String perContainerSellRate;
-
-    @Column(name = "current_cost_rate")
-    private BigDecimal currentCostRate;
-
-    @Column(name = "minimum_cost")
-    private BigDecimal minimumCost;
-
-    @Column(name = "total_cost_value")
-    private BigDecimal totalCostValue;
-
-    @Column(name = "current_sell_rate")
-    private BigDecimal currentSellRate;
-
-    @Column(name = "minimum_sell")
-    private BigDecimal minimumSell;
 
     @Column(name = "allocation_date")
     private LocalDateTime allocationDate;
@@ -247,4 +229,10 @@ public class Containers extends MultiTenancy {
 
     @Column(name = "volume_utilization")
     private String volumeUtilization;
+
+    @Column(name = "pickup_address")
+    private String pickupAddress;
+
+    @Column(name = "delivery_address")
+    private String deliveryAddress;
 }

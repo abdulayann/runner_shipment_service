@@ -28,9 +28,8 @@ public class ELDetails extends MultiTenancy {
     @ToString.Include
     private Long id;
 
-    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER, mappedBy = "entityId")
-    @Where(clause = "entity_type = 'elDetails'")
-    private List<ShipmentDetails> shipmentDetailsList;
+    @Column(name = "shipment_id")
+    private Long shipmentId;
 
     @Column(name = "el_number")
     private String elNumber;

@@ -26,6 +26,12 @@ public class FileRepo extends MultiTenancy {
     @ToString.Include
     private Long id;
 
+    @Column(name = "entity_id")
+    private Long entityId;
+
+    @Column(name = "entity_type")
+    private String entityType;
+
     @Column(name = "file_name")
     private String fileName;
 
@@ -44,12 +50,4 @@ public class FileRepo extends MultiTenancy {
     @Column(name = "event_code")
     private String eventCode;
 
-    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER, mappedBy = "entityId")
-    @Where(clause = "entity_type = 'fileRepo'")
-    @JoinColumn(name = "shipment_id", referencedColumnName = "id")
-    private List<ShipmentDetails> shipmentDetailsList;
-
-
-    @Column(name = "consolidation_id")
-    private Long consolidationId;
 }

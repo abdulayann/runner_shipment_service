@@ -23,8 +23,14 @@ public class Notes extends MultiTenancy {
     @Column(name = "id")
     @ToString.Include
     private Long id;
-    
+
     @Column(name = "text")
     private String text;
+
+    @Column(name = "shipment_id")
+    private Long shipmentId;
+
+    @Column(name = "consolidation_id")
+    private Long consolidation_id;
 
 }

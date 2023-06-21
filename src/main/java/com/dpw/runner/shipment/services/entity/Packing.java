@@ -24,10 +24,9 @@ public class Packing extends MultiTenancy {
 
     @Column(name = "consolidation_id")
     private Long consolidationId;
-
-    @OneToOne
-    @JoinColumn(name = "shipment_id", referencedColumnName = "id")
-    private ShipmentDetails shipmentDetails;
+    
+    @Column(name = "shipment_id")
+    private Long shipmentId;
 
     @Column(name = "dg_goods_id")
     private Integer DGGoodsId;

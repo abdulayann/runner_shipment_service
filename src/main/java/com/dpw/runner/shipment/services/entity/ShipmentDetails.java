@@ -117,14 +117,34 @@ public class ShipmentDetails extends MultiTenancy {
     @OneToOne(targetEntity = DeliveryDetails.class)
     @JoinColumn(name = "delivery_detail_id", referencedColumnName = "id")
     private DeliveryDetails deliveryDetails;
-    @ManyToOne(optional = false)
-    private ReferenceNumbers referenceNumbers;
 
-    public ReferenceNumbers getReferenceNumbers() {
-        return referenceNumbers;
-    }
+    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY, mappedBy = "shipment_id")
+    private List<BlDetails> blDetailsList;
 
-    public void setReferenceNumbers(ReferenceNumbers referenceNumbers) {
-        this.referenceNumbers = referenceNumbers;
-    }
+    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY, mappedBy = "shipment_id")
+    private List<BookingCarriage> bookingCarriagesList;
+
+    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY, mappedBy = "shipment_id")
+    private List<ELDetails> elDetailsList;
+
+    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY, mappedBy = "shipment_id")
+    private List<Events> eventsList;
+
+    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY, mappedBy = "shipment_id")
+    private List<FileRepo> fileRepoList;
+
+    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY, mappedBy = "shipment_id")
+    private List<Packing> packingList;
+
+    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY, mappedBy = "shipment_id")
+    private List<ReferenceNumbers> referenceNumbersList;
+
+    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY, mappedBy = "shipment_id")
+    private List<Routings> routingsList;
+
+    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY, mappedBy = "shipment_id")
+    private List<Services> servicesList;
+
+    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY, mappedBy = "shipment_id")
+    private List<TruckDriverDetails> truckDriverDetails;
 }

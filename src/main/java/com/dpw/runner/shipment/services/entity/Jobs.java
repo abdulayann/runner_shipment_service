@@ -26,6 +26,9 @@ public class Jobs extends MultiTenancy {
     @ToString.Include
     private Long id;
 
+    @Column(name = "shipment_id")
+    private Long shipmentId;
+
     @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER, mappedBy = "entityId")
     @Where(clause = "entity_type = 'jobs' AND party_type = 'buyer'")
     private List<PartiesDetails> partiesBuyerDetailsList;
