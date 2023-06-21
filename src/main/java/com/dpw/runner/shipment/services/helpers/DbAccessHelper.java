@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.commons.requests.FilterCriteria;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.SortRequest;
 import com.dpw.runner.shipment.services.commons.requests.RunnerEntityMapping;
+import com.dpw.runner.shipment.services.utils.ObjectUtility;
 import com.nimbusds.jose.util.Pair;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -25,7 +26,7 @@ import static org.springframework.data.jpa.domain.Specification.where;
 public class DbAccessHelper {
     private static Map<String, RunnerEntityMapping> tableNames = new HashMap<>();
 
-    public static <T> Pair<Specification<T>, Pageable> fetchData(ListCommonRequest request, String className, Map<String, RunnerEntityMapping> tableName) {
+    public static <T> Pair<Specification<T>, Pageable> fetchData(ListCommonRequest request, Class className, Map<String, RunnerEntityMapping> tableName) {
         tableNames = tableName;
         Pageable pages;
         if(request.getSortRequest() != null && request.getFilterCriteria() != null && request.getFilterCriteria().size() == 0) {
@@ -43,11 +44,11 @@ public class DbAccessHelper {
         for (FilterCriteria filters : filterCriteria) {
             if(filters.getLogicOperator() == null) {
                 specification =
-                        where(getSpecificationFromFilters(filters.getInnerFilter(), sortRequest, map, className));
+                        where(getSpecificationFromFilters(filters.getInnerFilter(), sortRequest, map, className.getSimpleName()));
             } else if (filters.getLogicOperator().equalsIgnoreCase("OR")) {
-                specification = specification.or(getSpecificationFromFilters(filters.getInnerFilter(), null, map, className));
+                specification = specification.or(getSpecificationFromFilters(filters.getInnerFilter(), null, map, className.getSimpleName()));
             } else if (filters.getLogicOperator().equalsIgnoreCase("AND")) {
-                specification = specification.and(getSpecificationFromFilters(filters.getInnerFilter(), null, map, className));
+                specification = specification.and(getSpecificationFromFilters(filters.getInnerFilter(), null, map, className.getSimpleName()));
             }
         }
         return Pair.of(specification,pages);
@@ -197,5 +198,87 @@ public class DbAccessHelper {
         } catch (ParseException e) {
             return null;
         }
+    }
+
+    public static <T> Pair<Specification<T>, Pageable> fetchData(ListCommonRequest request, Class className) {
+        Pageable pages;
+        if(request.getSortRequest() != null && request.getFilterCriteria() != null && request.getFilterCriteria().size() == 0) {
+            Sort sortRequest = Sort.by(request.getSortRequest().getFieldName());
+            sortRequest = sortRequest.descending();
+            pages = PageRequest.of(request.getPageNo(), request.getLimit(), sortRequest);
+        } else {
+            pages = PageRequest.of(request.getPageNo(), request.getLimit());
+        }
+        List<FilterCriteria> filterCriteria = (request.getFilterCriteria() == null ? new ArrayList<FilterCriteria>() : request.getFilterCriteria());
+        SortRequest sortRequest = request.getSortRequest();
+
+        Map<String, Class> dataTypeMap = new HashMap<>();
+        ObjectUtility.getAllFields(className, dataTypeMap);
+
+        Specification<T> specification = null;
+        Map<String, Join<Class, T>> map = new HashMap<>();
+        for (FilterCriteria filters : filterCriteria) {
+            if(filters.getLogicOperator() == null) {
+                specification =
+                        where(getSpecificationFromFiltersWithoutMapping(filters.getInnerFilter(), sortRequest, map, className.getSimpleName(), dataTypeMap));
+            } else if (filters.getLogicOperator().equalsIgnoreCase("OR")) {
+                specification = specification.or(getSpecificationFromFiltersWithoutMapping(filters.getInnerFilter(), null, map, className.getSimpleName(), dataTypeMap));
+            } else if (filters.getLogicOperator().equalsIgnoreCase("AND")) {
+                specification = specification.and(getSpecificationFromFiltersWithoutMapping(filters.getInnerFilter(), null, map, className.getSimpleName(), dataTypeMap));
+            }
+        }
+        return Pair.of(specification,pages);
+    }
+
+    public static <T> Specification<T> getSpecificationFromFiltersWithoutMapping(List<FilterCriteria> filter, SortRequest sortRequest, Map<String, Join<Class, T>> map, String className, Map<String, Class> dataTypeMap){
+        if(filter == null || filter.size()==0) {
+            return null;
+        }
+
+        Specification<T> specification = null;
+
+        for (FilterCriteria input : filter) {
+            if(input.getInnerFilter() != null && input.getInnerFilter().size() > 0) {
+                if(input.getLogicOperator() != null) {
+                    if (input.getLogicOperator().equalsIgnoreCase("OR")) {
+                        specification = specification.or(getSpecificationFromFiltersWithoutMapping(input.getInnerFilter(), null, map, className, dataTypeMap));
+                    } else if (input.getLogicOperator().equalsIgnoreCase("AND")) {
+                        specification = specification.and(getSpecificationFromFiltersWithoutMapping(input.getInnerFilter(), null, map, className, dataTypeMap));
+                    }
+                }
+                else {
+                    specification =
+                            where(getSpecificationFromFiltersWithoutMapping(input.getInnerFilter(), sortRequest, map, className, dataTypeMap));
+                }
+            } else {
+                if(input.getLogicOperator() != null) {
+                    if (input.getLogicOperator().equalsIgnoreCase("OR")) {
+                        specification = specification.or(createSpecificationWithoutFilter(input.getCriteria(), null, map, className, dataTypeMap));
+                    } else if (input.getLogicOperator().equalsIgnoreCase("AND")) {
+                        specification = specification.and(createSpecificationWithoutFilter(input.getCriteria(), null, map, className, dataTypeMap));
+                    }
+                }else {
+                    specification =
+                            where(createSpecificationWithoutFilter(input.getCriteria(), sortRequest, map, className, dataTypeMap));
+                }
+            }
+        }
+        return specification;
+    }
+
+    public static <T> Specification<T> createSpecificationWithoutFilter(Criteria input, SortRequest sortRequest, Map<String, Join<Class, T>> map, String className, Map<String, Class> dataTypeMap) {
+        return (root, query, criteriaBuilder) -> {
+            Path path = root;
+
+            if(!query.getResultType().isAssignableFrom(Long.class) && sortRequest != null && (query.getOrderList() == null ||query.getOrderList().size() == 0)) {
+                if(sortRequest.getOrder().equalsIgnoreCase("DESC")) {
+                    query.orderBy(Arrays.asList(criteriaBuilder.desc(root.get(sortRequest.getFieldName()))));
+                } else {
+                    query.orderBy(Arrays.asList(criteriaBuilder.asc(root.get(sortRequest.getFieldName()))));
+                }
+            }
+            return createSpecification(dataTypeMap.get(input.getFieldName()), input, path, criteriaBuilder);
+
+        };
     }
 }

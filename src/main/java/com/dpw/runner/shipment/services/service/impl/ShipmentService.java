@@ -125,7 +125,7 @@ public class ShipmentService implements IShipmentService {
     public ResponseEntity<?> fetchShipments(CommonRequestModel commonRequestModel) {
         ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
 
-        Pair<Specification<ShipmentDetails>, Pageable> tuple = fetchData(request, ShipmentDetails.class.getSimpleName(), tableNames);
+        Pair<Specification<ShipmentDetails>, Pageable> tuple = fetchData(request, ShipmentDetails.class, tableNames);
         Page<ShipmentDetails> shipmentDetailsPage  = shipmentDao.findAll(tuple.getLeft(), tuple.getRight());
         return ResponseHelper.buildListSuccessResponse(
                 convertEntityListToDtoList(shipmentDetailsPage.getContent()),
@@ -289,7 +289,7 @@ public class ShipmentService implements IShipmentService {
             // TODO- implement actual logic with filters
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
 
-            Pair<Specification<ShipmentDetails>, Pageable> tuple = fetchData(request, ShipmentDetails.class.getSimpleName(), tableNames);
+            Pair<Specification<ShipmentDetails>, Pageable> tuple = fetchData(request, ShipmentDetails.class, tableNames);
             Page<ShipmentDetails> shipmentDetailsPage  = shipmentDao.findAll(tuple.getLeft(), tuple.getRight());
             return ResponseHelper.buildListSuccessResponse(
                     convertEntityListToDtoList(shipmentDetailsPage.getContent()),

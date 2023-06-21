@@ -61,7 +61,7 @@ public class BookingCarriageService implements IBookingCarriageService {
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
             // construct specifications for filter request
-            Pair<Specification<BookingCarriage>, Pageable> tuple = fetchData(request, BookingCarriage.class.getSimpleName(), tableNames);
+            Pair<Specification<BookingCarriage>, Pageable> tuple = fetchData(request, BookingCarriage.class, tableNames);
             Page<BookingCarriage> bookingCarriagePage  = bookingCarriageDao.findAll(tuple.getLeft(), tuple.getRight());
             return ResponseHelper.buildListSuccessResponse(
                     convertEntityListToDtoList(bookingCarriagePage.getContent()),
