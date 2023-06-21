@@ -23,8 +23,8 @@ public class BookingCarriageRequest extends CommonRequest implements IRunnerRequ
     private Long vesselId;
     private Long polId;
     private Long podId;
-    private LocalDateTime eta;
-    private LocalDateTime etd;
+    private Date eta;
+    private Date etd;
     private String vessel;
     private String voyage;
     private String carriageType;

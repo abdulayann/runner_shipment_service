@@ -7,6 +7,7 @@ import lombok.experimental.Accessors;
 
 import javax.persistence.*;
 import java.time.LocalDateTime;
+import java.util.Date;
 
 @Entity
 @Setter
@@ -25,10 +26,10 @@ public class BookingCarriage extends BaseEntity {
     private Long podId;
 
     @Column(name = "eta")
-    private LocalDateTime eta;
+    private Date eta;
 
     @Column(name = "etd")
-    private LocalDateTime etd;
+    private Date etd;
 
     @Column(name = "vessel")
     private String vessel;
