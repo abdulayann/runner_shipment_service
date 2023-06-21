@@ -35,7 +35,6 @@ public class BookingCarriageService implements IBookingCarriageService {
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) throws Exception {
         BookingCarriageRequest request = null;
         request = (BookingCarriageRequest) commonRequestModel.getData();
-        // TODO- implement validator
         BookingCarriage bookingCarriage = convertRequestToEntity(request);
         bookingCarriage = bookingCarriageDao.save(bookingCarriage);
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(bookingCarriage));
@@ -44,7 +43,6 @@ public class BookingCarriageService implements IBookingCarriageService {
     @Transactional
     public ResponseEntity<?> update(CommonRequestModel commonRequestModel) throws Exception {
         BookingCarriageRequest request = (BookingCarriageRequest) commonRequestModel.getData();
-        // TODO- implement Validation logic
         long id =request.getId();
         Optional<BookingCarriage> oldEntity = bookingCarriageDao.findById(id);
         if(!oldEntity.isPresent()) {
@@ -61,9 +59,8 @@ public class BookingCarriageService implements IBookingCarriageService {
     public ResponseEntity<?> list(CommonRequestModel commonRequestModel){
         String responseMsg;
         try {
-            // TODO- implement actual logic with filters
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
-
+            // construct specifications for filter request
             Pair<Specification<BookingCarriage>, Pageable> tuple = fetchData(request, BookingCarriage.class.getSimpleName(), tableNames);
             Page<BookingCarriage> bookingCarriagePage  = bookingCarriageDao.findAll(tuple.getLeft(), tuple.getRight());
             return ResponseHelper.buildListSuccessResponse(
@@ -82,7 +79,6 @@ public class BookingCarriageService implements IBookingCarriageService {
     public ResponseEntity<?> delete(CommonRequestModel commonRequestModel){
         String responseMsg;
         try {
-           // TODO- implement Validation logic
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
             long id =request.getId();
             Optional<BookingCarriage> bookingCarriage = bookingCarriageDao.findById(id);

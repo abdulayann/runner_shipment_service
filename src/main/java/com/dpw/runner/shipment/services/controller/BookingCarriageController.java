@@ -30,7 +30,6 @@ public class BookingCarriageController {
     @Autowired
     private IBookingCarriageService bookingCarriageService;
 
-    // @PreAuthorize("hasAuthority('"+ Permissions.AdministrationGeneral+"')") //TODO-Authorization
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = BookingCarriageConstants.BOOKING_CARRIAGE_CREATE_SUCCESSFUL),
             @ApiResponse(code = 404, message = BookingCarriageConstants.NO_DATA, response = RunnerResponse.class)
@@ -55,14 +54,12 @@ public class BookingCarriageController {
         return (ResponseEntity<RunnerResponse>) bookingCarriageService.delete(CommonRequestModel.buildRequest(request));
     }
 
-    // @PreAuthorize("hasAuthority('"+ Permissions.AdministrationGeneral+"')") //TODO-Authorization
     @ApiResponses(value = { @ApiResponse(code = 200, message = BookingCarriageConstants.BOOKING_CARRIAGE_LIST_SUCCESSFUL, responseContainer = BookingCarriageConstants.RESPONSE_CONTAINER_LIST) })
     @PostMapping(ApiConstants.API_LIST)
     public ResponseEntity<RunnerListResponse<BookingCarriageResponse>> list(@RequestBody ListCommonRequest listCommonRequest) {
         return (ResponseEntity<RunnerListResponse<BookingCarriageResponse>>) bookingCarriageService.list(CommonRequestModel.buildRequest(listCommonRequest));
     }
 
-    // @PreAuthorize("hasAuthority('"+ Permissions.AdministrationGeneral+"')") //TODO-Authorization
     @ApiResponses(value = { @ApiResponse(code = 200, message = BookingCarriageConstants.BOOKING_CARRIAGE_RETRIEVE_BY_ID_SUCCESSFUL) })
     @GetMapping(ApiConstants.API_RETRIEVE_BY_ID)
     public ResponseEntity<RunnerResponse<BookingCarriageResponse>> retrieveById(@ApiParam(value = BookingCarriageConstants.BOOKING_CARRIAGE_ID, required = true) @RequestParam Long id) {
@@ -70,7 +67,6 @@ public class BookingCarriageController {
         return (ResponseEntity<RunnerResponse<BookingCarriageResponse>>) bookingCarriageService.retrieveById(CommonRequestModel.buildRequest(request));
     }
 
-    // @PreAuthorize("hasAuthority('"+ Permissions.AdministrationGeneral+"')") //TODO-Authorization
     @ApiResponses(value = { @ApiResponse(code = 200, message = BookingCarriageConstants.BOOKING_CARRIAGE_UPDATE_SUCCESSFUL, response = RunnerResponse.class) })
     @PutMapping(ApiConstants.API_UPDATE)
     public ResponseEntity<RunnerResponse> update(@RequestBody @Valid BookingCarriageRequest request) {
