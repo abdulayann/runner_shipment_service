@@ -64,11 +64,11 @@ public class EventService implements IEventService {
 
 
     private Events generateEntityMappingFromRequest(EventsRequest request){
-        return mapperHelper.getObjectMapper().convertValue(request, Events.class);
+        return mapperHelper.getMapper().convertValue(request, Events.class);
     }
 
     private EventsResponse generateEventResponseFromEntity(Events event){
-        return mapperHelper.getObjectMapper().convertValue(event,EventsResponse.class);
+        return mapperHelper.getMapper().convertValue(event,EventsResponse.class);
     }
 
 }
