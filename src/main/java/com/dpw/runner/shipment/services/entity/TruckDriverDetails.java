@@ -20,14 +20,8 @@ import java.util.List;
 @AllArgsConstructor
 public class TruckDriverDetails extends MultiTenancy {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id")
-    @ToString.Include
-    private Long id;
-
     @Column(name = "shipment_id")
-    private int shipmentId;
+    private Long shipmentId;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "transporter_type")
@@ -56,10 +50,7 @@ public class TruckDriverDetails extends MultiTenancy {
 
     @Column(name = "container_id")
     private Long containerId;
-
-    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER, mappedBy = "shipment_id")
-    private List<ShipmentDetails> shipmentDetailsList;
-
+    
     @Column(name = "consolidation_id")
     private Long consolidationId;
 

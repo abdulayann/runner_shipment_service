@@ -19,12 +19,6 @@ import java.util.Date;
 @AllArgsConstructor
 public class BookingCarriage extends MultiTenancy {
 
-    @Id
-    @ToString.Include
-    @Column(name = "id")
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
     @Column(name = "pol_id")
     private Long polId;
 

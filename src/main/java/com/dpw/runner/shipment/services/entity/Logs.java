@@ -18,11 +18,6 @@ import java.util.Date;
 @NoArgsConstructor
 @AllArgsConstructor
 public class Logs extends MultiTenancy {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id")
-    @ToString.Include
-    private Long id;
 
     @Column(name = "user_name")
     private String userName;

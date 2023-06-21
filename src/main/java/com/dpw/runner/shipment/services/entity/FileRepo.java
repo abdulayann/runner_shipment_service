@@ -20,12 +20,6 @@ import java.util.List;
 @AllArgsConstructor
 public class FileRepo extends MultiTenancy {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id")
-    @ToString.Include
-    private Long id;
-
     @Column(name = "entity_id")
     private Long entityId;
 

@@ -23,12 +23,6 @@ import java.util.Date;
 @Accessors(chain = true)
 public class ShipmentAdditionalDetails extends MultiTenancy {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id")
-    @ToString.Include
-    private Long id;
-
     @Column(name = "customs_no_issue_date")
     private LocalDateTime customsNoIssueDate;
 
