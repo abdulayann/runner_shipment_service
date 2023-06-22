@@ -61,7 +61,7 @@ public class BookingCarriageService implements IBookingCarriageService {
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
             // construct specifications for filter request
-            Pair<Specification<BookingCarriage>, Pageable> tuple = fetchData(request, BookingCarriage.class, tableNames);
+            Pair<Specification<BookingCarriage>, Pageable> tuple = fetchData(request, BookingCarriage.class);
             Page<BookingCarriage> bookingCarriagePage  = bookingCarriageDao.findAll(tuple.getLeft(), tuple.getRight());
             return ResponseHelper.buildListSuccessResponse(
                     convertEntityListToDtoList(bookingCarriagePage.getContent()),
@@ -159,18 +159,4 @@ public class BookingCarriageService implements IBookingCarriageService {
         bookingCarriage.setCarriageMode(request.getCarriageMode());
         return bookingCarriage;
     }
-    private static Map<String, RunnerEntityMapping> tableNames = Map.ofEntries(
-            Map.entry("id", RunnerEntityMapping.builder().tableName("BookingCarriage").dataType(Integer.class).build()),
-            Map.entry("polId", RunnerEntityMapping.builder().tableName("BookingCarriage").dataType(Integer.class).build()),
-            Map.entry("podId", RunnerEntityMapping.builder().tableName("BookingCarriage").dataType(Integer.class).build()),
-            Map.entry("eta", RunnerEntityMapping.builder().tableName("BookingCarriage").dataType(Date.class).build()),
-            Map.entry("etd", RunnerEntityMapping.builder().tableName("BookingCarriage").dataType(Date.class).build()),
-            Map.entry("vessel", RunnerEntityMapping.builder().tableName("BookingCarriage").dataType(String.class).build()),
-            Map.entry("voyage", RunnerEntityMapping.builder().tableName("BookingCarriage").dataType(String.class).build()),
-            Map.entry("carriageType", RunnerEntityMapping.builder().tableName("BookingCarriage").dataType(String.class).build()),
-            Map.entry("shipmentId", RunnerEntityMapping.builder().tableName("BookingCarriage").dataType(String.class).build()),
-            Map.entry("vesselId", RunnerEntityMapping.builder().tableName("BookingCarriage").dataType(Integer.class).build()),
-            Map.entry("bookingId", RunnerEntityMapping.builder().tableName("BookingCarriage").dataType(Integer.class).build())
-
-    );
 }
