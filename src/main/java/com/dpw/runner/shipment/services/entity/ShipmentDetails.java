@@ -9,7 +9,6 @@ import org.hibernate.annotations.TypeDef;
 import org.hibernate.annotations.Where;
 
 import javax.persistence.*;
-import javax.persistence.Id;
 import javax.persistence.Table;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -141,7 +140,7 @@ public class ShipmentDetails extends MultiTenancy {
     private List<Routings> routingsList;
 
     @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY, mappedBy = "shipmentId")
-    private List<Services> servicesList;
+    private List<ShipmentServices> servicesList;
 
     @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY, mappedBy = "shipmentId")
     private List<TruckDriverDetails> truckDriverDetails;
