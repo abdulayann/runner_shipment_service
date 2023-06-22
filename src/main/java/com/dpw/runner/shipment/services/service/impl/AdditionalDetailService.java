@@ -7,7 +7,6 @@ import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.AdditionalDetailRequest;
 import com.dpw.runner.shipment.services.dto.response.AdditionalDetailResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.entity.AdditionalDetail;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
@@ -73,10 +72,8 @@ public class AdditionalDetailService implements IAdditionalDetailService {
     public ResponseEntity<?> list(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
-            // TODO- implement actual logic with filters
-            // TODO- Map
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
-            Pair<Specification<AdditionalDetail>, Pageable> tuple = fetchData(request, AdditionalDetail.class.getSimpleName(), null);
+            Pair<Specification<AdditionalDetail>, Pageable> tuple = fetchData(request, AdditionalDetail.class);
             Page<AdditionalDetail> additionalDetailsPage  = additionalDetailDao.findAll(tuple.getLeft(), tuple.getRight());
             return ResponseHelper.buildListSuccessResponse(
                     convertEntityListToDtoList(additionalDetailsPage.getContent()),
