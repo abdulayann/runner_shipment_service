@@ -64,7 +64,7 @@ public class ReferenceNumbersService implements IReferenceNumbersService {
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
             // construct specifications for filter request
-            Pair<Specification<ReferenceNumbers>, Pageable> tuple = fetchData(request, ReferenceNumbers.class.getSimpleName(), tableNames);
+            Pair<Specification<ReferenceNumbers>, Pageable> tuple = fetchData(request, ReferenceNumbers.class);
             Page<ReferenceNumbers> referenceNumbersPage  = referenceNumbersDao.findAll(tuple.getLeft(), tuple.getRight());
             return ResponseHelper.buildListSuccessResponse(
                     convertEntityListToDtoList(referenceNumbersPage.getContent()),
@@ -150,12 +150,4 @@ public class ReferenceNumbersService implements IReferenceNumbersService {
         referenceNumbers.setReferenceNumber(request.getReferenceNumber());
         return referenceNumbers;
     }
-    private static Map<String, RunnerEntityMapping> tableNames = Map.ofEntries(
-            Map.entry("id", RunnerEntityMapping.builder().tableName("ReferenceNumbers").dataType(Integer.class).build()),
-            Map.entry("consolidationId", RunnerEntityMapping.builder().tableName("ReferenceNumbers").dataType(Integer.class).build()),
-            Map.entry("countryOfIssue", RunnerEntityMapping.builder().tableName("ReferenceNumbers").dataType(String.class).build()),
-            Map.entry("type", RunnerEntityMapping.builder().tableName("ReferenceNumbers").dataType(String.class).build()),
-            Map.entry("referenceNumber", RunnerEntityMapping.builder().tableName("ReferenceNumbers").dataType(String.class).build()),
-            Map.entry("shipmentId", RunnerEntityMapping.builder().tableName("ReferenceNumbers").dataType(Integer.class).build())
-    );
 }
