@@ -54,7 +54,37 @@ public class DbAccessHelper {
         return Pair.of(specification,pages);
     }
 
-    public static <T> Specification<T> getSpecificationFromFilters(List<FilterCriteria> filter, SortRequest sortRequest, Map<String, Join<Class, T>> map, String className){
+    public static <T> Pair<Specification<T>, Pageable> fetchData(ListCommonRequest request, Class className) {
+        Pageable pages;
+        if(request.getSortRequest() != null && request.getFilterCriteria() != null && request.getFilterCriteria().size() == 0) {
+            Sort sortRequest = Sort.by(request.getSortRequest().getFieldName());
+            sortRequest = sortRequest.descending();
+            pages = PageRequest.of(request.getPageNo(), request.getLimit(), sortRequest);
+        } else {
+            pages = PageRequest.of(request.getPageNo(), request.getLimit());
+        }
+        List<FilterCriteria> filterCriteria = (request.getFilterCriteria() == null ? new ArrayList<FilterCriteria>() : request.getFilterCriteria());
+        SortRequest sortRequest = request.getSortRequest();
+
+        Map<String, Class> dataTypeMap = new HashMap<>();
+        ObjectUtility.getAllFields(className, dataTypeMap);
+
+        Specification<T> specification = null;
+        Map<String, Join<Class, T>> map = new HashMap<>();
+        for (FilterCriteria filters : filterCriteria) {
+            if(filters.getLogicOperator() == null) {
+                specification =
+                        where(getSpecificationFromFiltersWithoutMapping(filters.getInnerFilter(), sortRequest, map, className.getSimpleName(), dataTypeMap));
+            } else if (filters.getLogicOperator().equalsIgnoreCase("OR")) {
+                specification = specification.or(getSpecificationFromFiltersWithoutMapping(filters.getInnerFilter(), null, map, className.getSimpleName(), dataTypeMap));
+            } else if (filters.getLogicOperator().equalsIgnoreCase("AND")) {
+                specification = specification.and(getSpecificationFromFiltersWithoutMapping(filters.getInnerFilter(), null, map, className.getSimpleName(), dataTypeMap));
+            }
+        }
+        return Pair.of(specification,pages);
+    }
+
+    private static <T> Specification<T> getSpecificationFromFilters(List<FilterCriteria> filter, SortRequest sortRequest, Map<String, Join<Class, T>> map, String className){
         if(filter == null || filter.size()==0) {
             return null;
         }
@@ -90,7 +120,7 @@ public class DbAccessHelper {
         return specification;
     }
 
-    public static <T> Specification<T> createSpecification(Criteria input, SortRequest sortRequest, Map<String, Join<Class, T>> map, String className) {
+    private static <T> Specification<T> createSpecification(Criteria input, SortRequest sortRequest, Map<String, Join<Class, T>> map, String className) {
         return (root, query, criteriaBuilder) -> {
             Path path = null;
 
@@ -129,7 +159,7 @@ public class DbAccessHelper {
         };
     }
 
-    public static <T> Predicate createSpecification(Class dataType, Criteria input, Path path, CriteriaBuilder criteriaBuilder) {
+    private static <T> Predicate createSpecification(Class dataType, Criteria input, Path path, CriteriaBuilder criteriaBuilder) {
         switch (input.getOperator()){
             case "=":
                 if(dataType.isAssignableFrom(String.class)) {
@@ -179,58 +209,7 @@ public class DbAccessHelper {
         }
     }
 
-    public static LocalDateTime covertStringToLocalDate(String date, String pattern){
-
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern(pattern);
-
-        try {
-            return LocalDate.parse(date, formatter).atStartOfDay();
-        } catch (Exception e){
-            return null;
-        }
-    }
-
-    public static Date covertStringToData(String date, String pattern){
-
-        SimpleDateFormat formatter = new SimpleDateFormat(pattern, Locale.ENGLISH);
-        try {
-            return formatter.parse(date);
-        } catch (ParseException e) {
-            return null;
-        }
-    }
-
-    public static <T> Pair<Specification<T>, Pageable> fetchData(ListCommonRequest request, Class className) {
-        Pageable pages;
-        if(request.getSortRequest() != null && request.getFilterCriteria() != null && request.getFilterCriteria().size() == 0) {
-            Sort sortRequest = Sort.by(request.getSortRequest().getFieldName());
-            sortRequest = sortRequest.descending();
-            pages = PageRequest.of(request.getPageNo(), request.getLimit(), sortRequest);
-        } else {
-            pages = PageRequest.of(request.getPageNo(), request.getLimit());
-        }
-        List<FilterCriteria> filterCriteria = (request.getFilterCriteria() == null ? new ArrayList<FilterCriteria>() : request.getFilterCriteria());
-        SortRequest sortRequest = request.getSortRequest();
-
-        Map<String, Class> dataTypeMap = new HashMap<>();
-        ObjectUtility.getAllFields(className, dataTypeMap);
-
-        Specification<T> specification = null;
-        Map<String, Join<Class, T>> map = new HashMap<>();
-        for (FilterCriteria filters : filterCriteria) {
-            if(filters.getLogicOperator() == null) {
-                specification =
-                        where(getSpecificationFromFiltersWithoutMapping(filters.getInnerFilter(), sortRequest, map, className.getSimpleName(), dataTypeMap));
-            } else if (filters.getLogicOperator().equalsIgnoreCase("OR")) {
-                specification = specification.or(getSpecificationFromFiltersWithoutMapping(filters.getInnerFilter(), null, map, className.getSimpleName(), dataTypeMap));
-            } else if (filters.getLogicOperator().equalsIgnoreCase("AND")) {
-                specification = specification.and(getSpecificationFromFiltersWithoutMapping(filters.getInnerFilter(), null, map, className.getSimpleName(), dataTypeMap));
-            }
-        }
-        return Pair.of(specification,pages);
-    }
-
-    public static <T> Specification<T> getSpecificationFromFiltersWithoutMapping(List<FilterCriteria> filter, SortRequest sortRequest, Map<String, Join<Class, T>> map, String className, Map<String, Class> dataTypeMap){
+    private static <T> Specification<T> getSpecificationFromFiltersWithoutMapping(List<FilterCriteria> filter, SortRequest sortRequest, Map<String, Join<Class, T>> map, String className, Map<String, Class> dataTypeMap){
         if(filter == null || filter.size()==0) {
             return null;
         }
@@ -266,7 +245,7 @@ public class DbAccessHelper {
         return specification;
     }
 
-    public static <T> Specification<T> createSpecificationWithoutFilter(Criteria input, SortRequest sortRequest, Map<String, Join<Class, T>> map, String className, Map<String, Class> dataTypeMap) {
+    private static <T> Specification<T> createSpecificationWithoutFilter(Criteria input, SortRequest sortRequest, Map<String, Join<Class, T>> map, String className, Map<String, Class> dataTypeMap) {
         return (root, query, criteriaBuilder) -> {
             Path path = root;
 
@@ -280,5 +259,26 @@ public class DbAccessHelper {
             return createSpecification(dataTypeMap.get(input.getFieldName()), input, path, criteriaBuilder);
 
         };
+    }
+
+    private static LocalDateTime covertStringToLocalDate(String date, String pattern){
+
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern(pattern);
+
+        try {
+            return LocalDate.parse(date, formatter).atStartOfDay();
+        } catch (Exception e){
+            return null;
+        }
+    }
+
+    private static Date covertStringToData(String date, String pattern){
+
+        SimpleDateFormat formatter = new SimpleDateFormat(pattern, Locale.ENGLISH);
+        try {
+            return formatter.parse(date);
+        } catch (ParseException e) {
+            return null;
+        }
     }
 }

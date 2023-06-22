@@ -3,12 +3,11 @@ package com.dpw.runner.shipment.services.entity;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import lombok.experimental.Accessors;
 import lombok.*;
-import org.hibernate.annotations.Where;
 
 import javax.persistence.*;
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.List;
+import java.util.Date;
 
 @Entity
 @Setter
@@ -18,7 +17,7 @@ import java.util.List;
 @ToString(onlyExplicitlyIncluded = true)
 @NoArgsConstructor
 @AllArgsConstructor
-public class Services extends MultiTenancy {
+public class ShipmentServices extends MultiTenancy {
     
     @Column(name = "shipment_id")
     private Long shipmentId;
@@ -39,7 +38,7 @@ public class Services extends MultiTenancy {
     private int srvLocation;
 
     @Column(name = "booking_date")
-    private LocalDateTime bookingDate;
+    private Date bookingDate;
 
     @Column(name = "service_count")
     private String serviceCount;
@@ -48,7 +47,7 @@ public class Services extends MultiTenancy {
     private Duration serviceDuration;
 
     @Column(name = "completion_date")
-    private LocalDateTime completionDate;
+    private Date completionDate;
 
     @Column(name = "ref_number")
     private String refNumber;
