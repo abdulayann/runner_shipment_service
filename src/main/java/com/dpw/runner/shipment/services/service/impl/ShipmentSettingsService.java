@@ -41,7 +41,6 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) throws Exception {
         ShipmentSettingRequest request = null;
         request = (ShipmentSettingRequest) commonRequestModel.getData();
-        // TODO- implement validator
         ShipmentSettingsDetails shipmentSettingsDetails = convertRequestToEntity(request);
         shipmentSettingsDetails = shipmentSettingsDao.save(shipmentSettingsDetails);
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(shipmentSettingsDetails));
@@ -50,7 +49,6 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
     @Transactional
     public ResponseEntity<?> update(CommonRequestModel commonRequestModel) throws Exception {
         ShipmentSettingRequest request = (ShipmentSettingRequest) commonRequestModel.getData();
-        // TODO- implement Validation logic
         long id = request.getId();
         Optional<ShipmentSettingsDetails> oldEntity = shipmentSettingsDao.findById(id);
         if(!oldEntity.isPresent()) {
@@ -87,9 +85,8 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
     public ResponseEntity<?> list(CommonRequestModel commonRequestModel){
         String responseMsg;
         try {
-            // TODO- implement actual logic with filters
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
-            Pair<Specification<ShipmentSettingsDetails>, Pageable> tuple = fetchData(request, ShipmentSettingsDetails.class.getSimpleName(), tableNames);
+            Pair<Specification<ShipmentSettingsDetails>, Pageable> tuple = fetchData(request, ShipmentSettingsDetails.class);
             Page<ShipmentSettingsDetails> shipmentSettingsPage  = shipmentSettingsDao.findAll(tuple.getLeft(), tuple.getRight());
             return ResponseHelper.buildListSuccessResponse(
                     convertEntityListToDtoList(shipmentSettingsPage.getContent()),
@@ -167,29 +164,4 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
         });
         return responseList;
     }
-
-    private static Map<String, RunnerEntityMapping> tableNames = Map.ofEntries(
-            Map.entry("houseBillNumberLock", RunnerEntityMapping.builder().tableName("ShipmentSettingsDetails").dataType(Boolean.class).build()),
-            Map.entry("restrictHblGen", RunnerEntityMapping.builder().tableName("ShipmentSettingsDetails").dataType(Boolean.class).build()),
-            Map.entry("printPhoneNumber", RunnerEntityMapping.builder().tableName("ShipmentSettingsDetails").dataType(Boolean.class).build()),
-            Map.entry("housebillPrefix", RunnerEntityMapping.builder().tableName("ShipmentSettingsDetails").dataType(String.class).build()),
-            Map.entry("housebillNumberGeneration", RunnerEntityMapping.builder().tableName("ShipmentSettingsDetails").dataType(String.class).build()),
-            Map.entry("footerColumns", RunnerEntityMapping.builder().tableName("ShipmentSettingsDetails").dataType(Integer.class).build()),
-            Map.entry("isAutoPopulateShipType", RunnerEntityMapping.builder().tableName("ShipmentSettingsDetails").dataType(Boolean.class).build()),
-            Map.entry("partialCloningEnabled", RunnerEntityMapping.builder().tableName("ShipmentSettingsDetails").dataType(Boolean.class).build()),
-            Map.entry("shipConsolidationContainerEnabled", RunnerEntityMapping.builder().tableName("ShipmentSettingsDetails").dataType(Boolean.class).build()),
-            Map.entry("multipleShipmentEnabled", RunnerEntityMapping.builder().tableName("ShipmentSettingsDetails").dataType(Boolean.class).build()),
-            Map.entry("enableRouteMaster", RunnerEntityMapping.builder().tableName("ShipmentSettingsDetails").dataType(Boolean.class).build()),
-            Map.entry("arApFlag", RunnerEntityMapping.builder().tableName("ShipmentSettingsDetails").dataType(Boolean.class).build()),
-            Map.entry("shipmentTiCargesLinkage", RunnerEntityMapping.builder().tableName("ShipmentSettingsDetails").dataType(Boolean.class).build()),
-            Map.entry("cooldownTime", RunnerEntityMapping.builder().tableName("ShipmentSettingsDetails").dataType(Integer.class).build()),
-            Map.entry("advancePeriod", RunnerEntityMapping.builder().tableName("ShipmentSettingsDetails").dataType(Integer.class).build()),
-            Map.entry("autoEventCreate", RunnerEntityMapping.builder().tableName("ShipmentSettingsDetails").dataType(Boolean.class).build()),
-            Map.entry("shipmentLite", RunnerEntityMapping.builder().tableName("ShipmentSettingsDetails").dataType(Boolean.class).build()),
-            Map.entry("billingLite", RunnerEntityMapping.builder().tableName("ShipmentSettingsDetails").dataType(Boolean.class).build()),
-            Map.entry("restrictedLocationsEnabled", RunnerEntityMapping.builder().tableName("ShipmentSettingsDetails").dataType(Boolean.class).build()),
-            Map.entry("isAtdAtaAutoPopulateEnabled", RunnerEntityMapping.builder().tableName("ShipmentSettingsDetails").dataType(Boolean.class).build()),
-            Map.entry("restrictedLocations", RunnerEntityMapping.builder().tableName("ShipmentSettingsDetails").dataType(List.class).build()),
-            Map.entry("shipmentImportApproverRole", RunnerEntityMapping.builder().tableName("ShipmentSettingsDetails").dataType(String.class).build())
-    );
 }
