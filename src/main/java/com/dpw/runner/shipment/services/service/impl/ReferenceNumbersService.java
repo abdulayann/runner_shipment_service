@@ -1,0 +1,152 @@
+package com.dpw.runner.shipment.services.service.impl;
+
+import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
+import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
+import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.dto.request.ReferenceNumbersRequest;
+import com.dpw.runner.shipment.services.dto.response.ReferenceNumbersResponse;
+import com.dpw.runner.shipment.services.entity.ReferenceNumbers;
+import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import com.dpw.runner.shipment.services.repository.interfaces.IReferenceNumbersDao;
+import com.dpw.runner.shipment.services.service.interfaces.IReferenceNumbersService;
+import com.nimbusds.jose.util.Pair;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataRetrievalFailureException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.*;
+
+import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
+
+@SuppressWarnings("ALL")
+@Service
+@Slf4j
+public class ReferenceNumbersService implements IReferenceNumbersService {
+    @Autowired
+    private IReferenceNumbersDao referenceNumbersDao;
+
+    @Transactional
+    public ResponseEntity<?> create(CommonRequestModel commonRequestModel) throws Exception {
+        ReferenceNumbersRequest request = null;
+        request = (ReferenceNumbersRequest) commonRequestModel.getData();
+        ReferenceNumbers referenceNumbers = convertRequestToEntity(request);
+        referenceNumbers = referenceNumbersDao.save(referenceNumbers);
+        return ResponseHelper.buildSuccessResponse(convertEntityToDto(referenceNumbers));
+    }
+
+    @Transactional
+    public ResponseEntity<?> update(CommonRequestModel commonRequestModel) throws Exception {
+        ReferenceNumbersRequest request = (ReferenceNumbersRequest) commonRequestModel.getData();
+        long id =request.getId();
+        Optional<ReferenceNumbers> oldEntity = referenceNumbersDao.findById(id);
+        if(!oldEntity.isPresent()) {
+            log.debug("Refernece Numbers is null for Id {}", request.getId());
+            throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+        }
+
+        ReferenceNumbers referenceNumbers = convertRequestToEntity(request);
+        referenceNumbers.setId(oldEntity.get().getId());
+        referenceNumbers = referenceNumbersDao.save(referenceNumbers);
+        return ResponseHelper.buildSuccessResponse(convertEntityToDto(referenceNumbers));
+    }
+
+    public ResponseEntity<?> list(CommonRequestModel commonRequestModel){
+        String responseMsg;
+        try {
+            ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
+            // construct specifications for filter request
+            Pair<Specification<ReferenceNumbers>, Pageable> tuple = fetchData(request, ReferenceNumbers.class);
+            Page<ReferenceNumbers> referenceNumbersPage  = referenceNumbersDao.findAll(tuple.getLeft(), tuple.getRight());
+            return ResponseHelper.buildListSuccessResponse(
+                    convertEntityListToDtoList(referenceNumbersPage.getContent()),
+                    referenceNumbersPage.getTotalPages(),
+                    referenceNumbersPage.getTotalElements());
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+
+    }
+
+    public ResponseEntity<?> delete(CommonRequestModel commonRequestModel){
+        String responseMsg;
+        try {
+            CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
+            long id =request.getId();
+            Optional<ReferenceNumbers> referenceNumbers = referenceNumbersDao.findById(id);
+            if(!referenceNumbers.isPresent()) {
+                log.debug("Reference Numbers is null for Id {}", request.getId());
+                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+            }
+            referenceNumbersDao.delete(referenceNumbers.get());
+            return ResponseHelper.buildSuccessResponse();
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_DELETE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
+    public ResponseEntity<?> retrieveById(CommonRequestModel commonRequestModel){
+        String responseMsg;
+        try {
+            CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
+            long id =request.getId();
+            Optional<ReferenceNumbers> referenceNumbers = referenceNumbersDao.findById(id);
+            if(!referenceNumbers.isPresent()) {
+                log.debug("Reference Numbers is null for Id {}", request.getId());
+                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+            }
+
+            ReferenceNumbersResponse response = convertEntityToDto(referenceNumbers.get());
+            return ResponseHelper.buildSuccessResponse(response);
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
+    private static ReferenceNumbersResponse convertEntityToDto(ReferenceNumbers referenceNumbers) {
+        ReferenceNumbersResponse response = new ReferenceNumbersResponse();
+        response.setId(referenceNumbers.getId());
+        response.setGuid(referenceNumbers.getGuid());
+        response.setConsolidationId(referenceNumbers.getConsolidationId());
+        response.setShipmentId(referenceNumbers.getShipmentId());
+        response.setCountryOfIssue(referenceNumbers.getCountryOfIssue());
+        response.setType(referenceNumbers.getType());
+        response.setReferenceNumber(referenceNumbers.getReferenceNumber());
+        return response;
+    }
+
+    private static List<IRunnerResponse> convertEntityListToDtoList(List<ReferenceNumbers> lst) {
+        List<IRunnerResponse> responseList = new ArrayList<>();
+        lst.forEach(referenceNumbers -> {
+            responseList.add(convertEntityToDto(referenceNumbers));
+        });
+        return responseList;
+    }
+
+    public static ReferenceNumbers convertRequestToEntity(ReferenceNumbersRequest request) {
+        ReferenceNumbers referenceNumbers = new ReferenceNumbers();
+        referenceNumbers.setGuid(UUID.randomUUID());
+        referenceNumbers.setConsolidationId(request.getConsolidationId());
+        referenceNumbers.setShipmentId(request.getShipmentId());
+        referenceNumbers.setCountryOfIssue(request.getCountryOfIssue());
+        referenceNumbers.setType(request.getType());
+        referenceNumbers.setReferenceNumber(request.getReferenceNumber());
+        return referenceNumbers;
+    }
+}

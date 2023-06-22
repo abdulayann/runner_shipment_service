@@ -36,5 +36,5 @@ public class ReferenceNumbers extends MultiTenancy {
     private String referenceNumber;
 
     @Column(name = "shipment_id")
-    private String shipmentId;
+    private Long shipmentId;
 }
