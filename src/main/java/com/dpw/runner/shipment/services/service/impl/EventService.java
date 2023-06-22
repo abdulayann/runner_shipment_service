@@ -7,6 +7,7 @@ import com.dpw.runner.shipment.services.entity.Events;
 import com.dpw.runner.shipment.services.helpers.MapperHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.IEventDao;
 import com.dpw.runner.shipment.services.service.interfaces.IEventService;
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -24,7 +25,7 @@ public class EventService implements IEventService {
     private IEventDao eventDao;
 
     @Autowired
-    private MapperHelper mapperHelper;
+    private ModelMapper modelMapper;
 
 
     @Override
@@ -64,11 +65,11 @@ public class EventService implements IEventService {
 
 
     private Events generateEntityMappingFromRequest(EventsRequest request){
-        return mapperHelper.getMapper().convertValue(request, Events.class);
+        return modelMapper.map(request, Events.class);
     }
 
     private EventsResponse generateEventResponseFromEntity(Events event){
-        return mapperHelper.getMapper().convertValue(event,EventsResponse.class);
+        return modelMapper.map(event,EventsResponse.class);
     }
 
 }

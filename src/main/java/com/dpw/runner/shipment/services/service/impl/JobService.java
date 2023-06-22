@@ -2,31 +2,26 @@ package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.JobConstants;
+import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
-import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
-import com.dpw.runner.shipment.services.commons.requests.RunnerEntityMapping;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.JobRequest;
 import com.dpw.runner.shipment.services.dto.response.JobResponse;
-import com.dpw.runner.shipment.services.entity.BookingCarriage;
 import com.dpw.runner.shipment.services.entity.Jobs;
 import com.dpw.runner.shipment.services.helpers.MapperHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.IJobDao;
 import com.dpw.runner.shipment.services.service.interfaces.IJobService;
-import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.domain.Specification;
+import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
-import java.util.*;
+import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
-
-import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 
 
 @Slf4j
@@ -36,7 +31,7 @@ public class JobService implements IJobService {
     IJobDao jobDao;
 
     @Autowired
-    MapperHelper mapperHelper;
+    ModelMapper modelMapper;
 
     @Override
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) throws Exception {
@@ -73,7 +68,7 @@ public class JobService implements IJobService {
     }
 
     @Override
-    public ResponseEntity<?> delete(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<?> delete(CommonRequestModel commonRequestModel) {
         Long id = commonRequestModel.getId();
         Optional<Jobs> targetJob = jobDao.findById(id);
         if (targetJob.isEmpty()) {
@@ -86,15 +81,32 @@ public class JobService implements IJobService {
 
     @Override
     public ResponseEntity<?> retrieveById(CommonRequestModel commonRequestModel) {
-        return null;
+        String responseMsg;
+        try {
+            CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
+            long id = request.getId();
+            Optional<Jobs> job = jobDao.findById(id);
+            if (job.isEmpty()) {
+                log.debug("Booking Carriage is null for Id {}", request.getId());
+                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+            }
+
+            JobResponse response = (JobResponse) convertEntityToDto(job.get());
+            return ResponseHelper.buildSuccessResponse(response);
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
     }
 
     private IRunnerResponse convertEntityToDto(Jobs job) {
-        return mapperHelper.getMapper().convertValue(job, JobResponse.class);
+        return modelMapper.map(job, JobResponse.class);
     }
 
     private Jobs convertRequestToEntity(JobRequest request) {
-        return mapperHelper.getMapper().convertValue(request, Jobs.class);
+        return modelMapper.map(request, Jobs.class);
     }
 
 }
