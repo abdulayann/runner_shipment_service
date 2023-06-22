@@ -6,11 +6,6 @@ import io.swagger.annotations.ApiModel;
 import lombok.Getter;
 import lombok.ToString;
 
-import javax.persistence.Column;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import java.time.LocalDateTime;
 import java.util.Date;
 
 @Getter
