@@ -150,4 +150,15 @@ public class ReferenceNumbersService implements IReferenceNumbersService {
         referenceNumbers.setReferenceNumber(request.getReferenceNumber());
         return referenceNumbers;
     }
+<<<<<<< HEAD
+=======
+    private static Map<String, RunnerEntityMapping> tableNames = Map.ofEntries(
+            Map.entry("id", RunnerEntityMapping.builder().tableName("ReferenceNumbers").dataType(Integer.class).build()),
+            Map.entry("consolidationId", RunnerEntityMapping.builder().tableName("ReferenceNumbers").dataType(Integer.class).build()),
+            Map.entry("countryOfIssue", RunnerEntityMapping.builder().tableName("ReferenceNumbers").dataType(String.class).build()),
+            Map.entry("type", RunnerEntityMapping.builder().tableName("ReferenceNumbers").dataType(String.class).build()),
+            Map.entry("referenceNumber", RunnerEntityMapping.builder().tableName("ReferenceNumbers").dataType(String.class).build()),
+            Map.entry("shipmentId", RunnerEntityMapping.builder().tableName("ReferenceNumbers").dataType(Integer.class).build())
+    );
+>>>>>>> origin/feature/tapan/referencenumbers
 }
