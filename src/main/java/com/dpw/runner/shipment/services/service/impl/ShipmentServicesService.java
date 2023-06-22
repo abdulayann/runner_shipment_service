@@ -4,7 +4,6 @@ import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
-import com.dpw.runner.shipment.services.commons.requests.RunnerEntityMapping;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.ShipmentServiceRequest;
 import com.dpw.runner.shipment.services.dto.response.ShipmentServiceResponse;
@@ -23,8 +22,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Duration;
-import java.time.LocalDateTime;
 import java.util.*;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
@@ -166,20 +163,4 @@ public class ShipmentServicesService implements IShipmentServicesService {
         shipmentServices.setServiceNotes(request.getServiceNotes());
         return shipmentServices;
     }
-    private static Map<String, RunnerEntityMapping> tableNames = Map.ofEntries(
-            Map.entry("id", RunnerEntityMapping.builder().tableName("ShipmentServices").dataType(Integer.class).build()),
-            Map.entry("shipmentId", RunnerEntityMapping.builder().tableName("ShipmentServices").dataType(Integer.class).build()),
-            Map.entry("consolidationId", RunnerEntityMapping.builder().tableName("ShipmentServices").dataType(Integer.class).build()),
-            Map.entry("serviceType", RunnerEntityMapping.builder().tableName("ShipmentServices").dataType(Integer.class).build()),
-            Map.entry("srvLocation", RunnerEntityMapping.builder().tableName("ShipmentServices").dataType(Integer.class).build()),
-            Map.entry("contractorId", RunnerEntityMapping.builder().tableName("ShipmentServices").dataType(Integer.class).build()),
-            Map.entry("contractorAddressId", RunnerEntityMapping.builder().tableName("ShipmentServices").dataType(Integer.class).build()),
-            Map.entry("bookingDate", RunnerEntityMapping.builder().tableName("ShipmentServices").dataType(LocalDateTime.class).build()),
-            Map.entry("serviceCount", RunnerEntityMapping.builder().tableName("ShipmentServices").dataType(String.class).build()),
-            Map.entry("serviceDuration", RunnerEntityMapping.builder().tableName("ShipmentServices").dataType(Duration.class).build()),
-            Map.entry("completionDate", RunnerEntityMapping.builder().tableName("ShipmentServices").dataType(LocalDateTime.class).build()),
-            Map.entry("refNumber", RunnerEntityMapping.builder().tableName("ShipmentServices").dataType(String.class).build()),
-            Map.entry("serviceNotes", RunnerEntityMapping.builder().tableName("ShipmentServices").dataType(String.class).build())
-
-    );
 }
