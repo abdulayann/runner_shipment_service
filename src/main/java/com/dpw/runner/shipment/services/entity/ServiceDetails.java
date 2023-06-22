@@ -6,7 +6,6 @@ import lombok.*;
 
 import javax.persistence.*;
 import java.time.Duration;
-import java.time.LocalDateTime;
 import java.util.Date;
 
 @Entity
@@ -17,7 +16,7 @@ import java.util.Date;
 @ToString(onlyExplicitlyIncluded = true)
 @NoArgsConstructor
 @AllArgsConstructor
-public class ShipmentServices extends MultiTenancy {
+public class ServiceDetails extends MultiTenancy {
     
     @Column(name = "shipment_id")
     private Long shipmentId;

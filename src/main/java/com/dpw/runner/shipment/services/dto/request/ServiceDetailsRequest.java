@@ -1,16 +1,19 @@
-package com.dpw.runner.shipment.services.dto.response;
+package com.dpw.runner.shipment.services.dto.request;
 
-import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import lombok.Data;
+import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
+import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
+import io.swagger.annotations.ApiModel;
+import lombok.Getter;
+import lombok.ToString;
 
 import java.time.Duration;
 import java.util.Date;
-import java.util.UUID;
 
-@Data
-public class ShipmentServiceResponse implements IRunnerResponse {
+@Getter
+@ApiModel("Service Details Request Model")
+@ToString
+public class ServiceDetailsRequest extends CommonRequest implements IRunnerRequest {
     private Long id;
-    private UUID guid;
     private Long shipmentId;
     private Long consolidationId;
     private String serviceType;
