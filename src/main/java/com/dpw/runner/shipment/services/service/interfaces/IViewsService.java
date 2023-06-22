@@ -6,14 +6,5 @@ import org.springframework.http.ResponseEntity;
 
 import java.util.Optional;
 
-public interface IViewsService {
-    ResponseEntity<?> create(CommonRequestModel commonRequestModel) throws Exception;
-
-    ResponseEntity<?> update(CommonRequestModel commonRequestModel) throws Exception;
-
-    ResponseEntity<?> list(CommonRequestModel commonRequestModel);
-
-    ResponseEntity<?> delete(CommonRequestModel commonRequestModel);
-
-    ResponseEntity<?> retrieveById(CommonRequestModel commonRequestModel);
+public interface IViewsService extends ICommonService{
 }
