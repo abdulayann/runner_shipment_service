@@ -76,7 +76,7 @@ public class AdditionalDetailService implements IAdditionalDetailService {
             // TODO- implement actual logic with filters
             // TODO- Map
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
-            Pair<Specification<AdditionalDetail>, Pageable> tuple = fetchData(request, AdditionalDetail.class.getSimpleName(), null);
+            Pair<Specification<AdditionalDetail>, Pageable> tuple = fetchData(request, AdditionalDetail.class);
             Page<AdditionalDetail> additionalDetailsPage  = additionalDetailDao.findAll(tuple.getLeft(), tuple.getRight());
             return ResponseHelper.buildListSuccessResponse(
                     convertEntityListToDtoList(additionalDetailsPage.getContent()),
