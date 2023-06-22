@@ -25,7 +25,7 @@ import javax.validation.Valid;
 @Slf4j
 @SuppressWarnings("ALL")
 @RestController
-@RequestMapping("/jobs")
+@RequestMapping(JobConstants.JOB_API_HANDLE)
 public class JobController {
 
     @Autowired

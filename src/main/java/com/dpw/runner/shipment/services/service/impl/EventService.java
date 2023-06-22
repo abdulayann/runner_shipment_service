@@ -4,7 +4,6 @@ import com.dpw.runner.shipment.services.commons.constants.EventConstants;
 import com.dpw.runner.shipment.services.dto.request.EventsRequest;
 import com.dpw.runner.shipment.services.dto.response.EventsResponse;
 import com.dpw.runner.shipment.services.entity.Events;
-import com.dpw.runner.shipment.services.helpers.MapperHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.IEventDao;
 import com.dpw.runner.shipment.services.service.interfaces.IEventService;
 import org.modelmapper.ModelMapper;
@@ -14,7 +13,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
