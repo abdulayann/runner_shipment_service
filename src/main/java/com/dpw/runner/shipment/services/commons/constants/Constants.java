@@ -12,4 +12,7 @@ public class Constants {
     public static final String BROWSER_TIMEZONE = "browser-timezone";
     public static final String USER_SERVICE_V1 = "v1";
     public static final String USER_SERVICE_MAVANI = "mavani";
+
+    //MasterDataFactory
+    public static final String MAPPER_MASTER_DATA = "Mapper";
 }
