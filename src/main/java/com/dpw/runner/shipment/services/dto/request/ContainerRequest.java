@@ -1,0 +1,91 @@
+package com.dpw.runner.shipment.services.dto.request;
+
+import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
+import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
+import com.dpw.runner.shipment.services.entity.enums.ContainerStatus;
+import lombok.Getter;
+import lombok.ToString;
+
+import java.math.BigDecimal;
+import java.util.Date;
+import java.util.UUID;
+
+@Getter
+@ToString
+public class ContainerRequest extends CommonRequest implements IRunnerRequest {
+
+    private Long id;
+    private UUID guid;
+    private Long consolidationId;
+    private Long shipmentId;
+    private Long loggingId;
+    private String containerCode;
+    private String containerNumber;
+    private String sealNumber;
+    private String descriptionOfGoods;
+    private Long noOfPackages;
+    private BigDecimal netWeight;
+    private String netWeightUnit;
+    private BigDecimal grossWeight;
+    private String grossWeightUnit;
+    private BigDecimal measurement;
+    private String measurementUnit;
+    private String commodityCode;
+    private String hsCode;
+    private Boolean isShipperOwned;
+    private Boolean isEmpty;
+    private Long containerCount;
+    private String carrierSealNumber;
+    private String shipperSealNumber;
+    private String terminalOperatorSealNumber;
+    private String veterinarySealNumber;
+    private String customsSealNumber;
+    private String customsReleaseCode;
+    private Long containerStuffingLocation;
+    private String containerComments;
+    private BigDecimal grossVolume;
+    private String grossVolumeUnit;
+    private Boolean isReefer;
+    private BigDecimal minTemp;
+    private String minTempUnit;
+    private BigDecimal maxTemp;
+    private String maxTempUnit;
+    private String hblDeliveryMode;
+    private Date allocationDate;
+    private String dgClass;
+    private Boolean hazardous;
+    private String hazardousUn;
+    private BigDecimal tareWeight;
+    private String tareWeightUnit;
+    private String serialNumber;
+    private String innerPackageNumber;
+    private String innerPackageType;
+    private BigDecimal packageLength;
+    private BigDecimal packageBreadth;
+    private BigDecimal packageHeight;
+    private Boolean isTemperatureMaintained;
+    private String packs;
+    private String packsType;
+    private String marksNums;
+    private String innerPackageMeasurementUnit;
+    private String pacrNumber;
+    private BigDecimal chargeable;
+    private String chargeableUnit;
+    private Boolean isOwnContainer;
+    private String transportMode;
+    private ContainerStatus status;
+    private String extraParams;
+    private String remarks;
+    private BigDecimal allocatedWeight;
+    private String allocatedWeightUnit;
+    private BigDecimal allocatedVolume;
+    private String allocatedVolumeUnit;
+    private BigDecimal achievedWeight;
+    private String achievedWeightUnit;
+    private BigDecimal achievedVolume;
+    private String achievedVolumeUnit;
+    private String weightUtilization;
+    private String volumeUtilization;
+    private String pickupAddress;
+    private String deliveryAddress;
+}

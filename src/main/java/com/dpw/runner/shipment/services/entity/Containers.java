@@ -21,7 +21,13 @@ import java.time.LocalDateTime;
 public class Containers extends MultiTenancy {
 
     @Column(name = "consolidation_id")
-    private int consolidationId;
+    private Long consolidationId;
+
+    @Column(name = "shipment_id")
+    private Long shipmentId;
+
+    @Column(name = "logging_id")
+    private Long loggingId;
 
     @Column(name = "container_code")
     private String containerCode;
