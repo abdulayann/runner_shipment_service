@@ -87,7 +87,7 @@ public class ContainerService implements IContainerService {
             long id = request.getId();
             Optional<Containers> container = containerDao.findById(id);
             if (container.isEmpty()) {
-                log.debug("Booking Carriage is null for Id {}", request.getId());
+                log.debug("Container is null for Id {}", request.getId());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
 
