@@ -202,7 +202,7 @@ public class ShipmentService implements IShipmentService {
     private CarrierDetails createCarrier() {
         int random = new Random().nextInt(100);
         CarrierDetails carrier = CarrierDetails.builder()
-                .guid(UUID.randomUUID()).shippingLine(SHIPPING_LINE.get(random % SHIPPING_LINE.size()))
+                .shippingLine(SHIPPING_LINE.get(random % SHIPPING_LINE.size()))
                 .vessel(generateString(5)).voyage(generateString(5)).origin(LOCATIONS.get(random % LOCATIONS.size())).destination(LOCATIONS.get(random % LOCATIONS.size()))
                 .eta(LocalDateTime.now()).etd(LocalDateTime.now()).ata(LocalDateTime.now()).atd(LocalDateTime.now())
                 .build();

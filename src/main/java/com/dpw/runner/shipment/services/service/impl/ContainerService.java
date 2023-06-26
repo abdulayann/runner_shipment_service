@@ -1,7 +1,7 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import com.dpw.runner.shipment.services.commons.constants.ContainerConstants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
-import com.dpw.runner.shipment.services.commons.constants.JobConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
@@ -73,7 +73,7 @@ public class ContainerService implements IContainerService {
         Optional<Containers> targetJob = containerDao.findById(id);
         if (targetJob.isEmpty()) {
             log.debug("No entity present for id {} ", id);
-            return ResponseHelper.buildFailedResponse(JobConstants.NO_DATA);
+            return ResponseHelper.buildFailedResponse(ContainerConstants.NO_DATA);
         }
         containerDao.delete(targetJob.get());
         return ResponseHelper.buildSuccessResponse();
