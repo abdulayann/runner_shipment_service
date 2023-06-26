@@ -11,6 +11,7 @@ import com.dpw.runner.shipment.services.repository.interfaces.IBookingCarriageDa
 import com.dpw.runner.shipment.services.service.interfaces.IBookingCarriageService;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
@@ -30,6 +31,9 @@ import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 public class BookingCarriageService implements IBookingCarriageService {
     @Autowired
     private IBookingCarriageDao bookingCarriageDao;
+
+    @Autowired
+    private ModelMapper modelMapper;
 
     @Transactional
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) throws Exception {
@@ -117,25 +121,11 @@ public class BookingCarriageService implements IBookingCarriageService {
         }
     }
 
-    private static BookingCarriageResponse convertEntityToDto(BookingCarriage bookingCarriage) {
-        BookingCarriageResponse response = new BookingCarriageResponse();
-        response.setId(bookingCarriage.getId());
-        response.setGuid(bookingCarriage.getGuid());
-        response.setBookingId(bookingCarriage.getBookingId());
-        response.setShipmentId(bookingCarriage.getShipmentId());
-        response.setVesselId(bookingCarriage.getVesselId());
-        response.setPolId(bookingCarriage.getPolId());
-        response.setPodId(bookingCarriage.getPodId());
-        response.setEta(bookingCarriage.getEta());
-        response.setEtd(bookingCarriage.getEtd());
-        response.setVessel(bookingCarriage.getVessel());
-        response.setVoyage(bookingCarriage.getVoyage());
-        response.setCarriageType(bookingCarriage.getCarriageType());
-        response.setCarriageMode(bookingCarriage.getCarriageMode());
-        return response;
+    private BookingCarriageResponse convertEntityToDto(BookingCarriage bookingCarriage) {
+        return modelMapper.map(bookingCarriage, BookingCarriageResponse.class);
     }
 
-    private static List<IRunnerResponse> convertEntityListToDtoList(List<BookingCarriage> lst) {
+    private List<IRunnerResponse> convertEntityListToDtoList(List<BookingCarriage> lst) {
         List<IRunnerResponse> responseList = new ArrayList<>();
         lst.forEach(bookingCarriage -> {
             responseList.add(convertEntityToDto(bookingCarriage));
@@ -143,20 +133,7 @@ public class BookingCarriageService implements IBookingCarriageService {
         return responseList;
     }
 
-    public static BookingCarriage convertRequestToEntity(BookingCarriageRequest request) {
-        BookingCarriage bookingCarriage = new BookingCarriage();
-        bookingCarriage.setGuid(UUID.randomUUID());
-        bookingCarriage.setBookingId(request.getBookingId());
-        bookingCarriage.setShipmentId(request.getShipmentId());
-        bookingCarriage.setVesselId(request.getVesselId());
-        bookingCarriage.setPolId(request.getPolId());
-        bookingCarriage.setPodId(request.getPodId());
-        bookingCarriage.setEta(request.getEta());
-        bookingCarriage.setEtd(request.getEtd());
-        bookingCarriage.setVessel(request.getVessel());
-        bookingCarriage.setVoyage(request.getVoyage());
-        bookingCarriage.setCarriageType(request.getCarriageType());
-        bookingCarriage.setCarriageMode(request.getCarriageMode());
-        return bookingCarriage;
+    public BookingCarriage convertRequestToEntity(BookingCarriageRequest request) {
+        return modelMapper.map(request, BookingCarriage.class);
     }
 }

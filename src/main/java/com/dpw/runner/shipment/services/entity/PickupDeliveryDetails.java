@@ -12,15 +12,15 @@ import org.hibernate.annotations.Where;
 @Entity
 @Setter
 @Getter
-@Table(name = "pd_details")
+@Table(name = "pickup_delivery_details")
 @Accessors(chain = true)
 @ToString(onlyExplicitlyIncluded = true)
 @NoArgsConstructor
 @AllArgsConstructor
-public class PdDetails extends MultiTenancy {
+public class PickupDeliveryDetails extends MultiTenancy {
 
-    @Column(name = "estimated_pickup")
-    private LocalDateTime estimatedPickup;
+    @Column(name = "estimated_pickup_or_delivery")
+    private LocalDateTime estimatedPickupOrDelivery;
 
     @Column(name = "required_by")
     private LocalDateTime requiredBy;
@@ -28,11 +28,11 @@ public class PdDetails extends MultiTenancy {
     @Column(name = "port_transport_advised")
     private LocalDateTime portTransportAdvised;
 
-    @Column(name = "actual_pickup")
-    private LocalDateTime actualPickup;
+    @Column(name = "actual_pickup_or_delivery")
+    private LocalDateTime actualPickupOrDelivery;
 
-    @Column(name = "pickup")
-    private LocalDateTime pickup;
+    @Column(name = "pickup_or_delivery")
+    private LocalDateTime pickupOrDelivery;
 
     @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER, mappedBy = "entityId")
     @Where(clause = "entity_type = 'jobs' AND party_type = 'broker'")
