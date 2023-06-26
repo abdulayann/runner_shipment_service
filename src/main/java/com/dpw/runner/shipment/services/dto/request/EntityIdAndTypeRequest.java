@@ -1,0 +1,12 @@
+package com.dpw.runner.shipment.services.dto.request;
+
+import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
+import lombok.Getter;
+import lombok.ToString;
+
+@ToString
+@Getter
+public class EntityIdAndTypeRequest implements IRunnerRequest {
+    private Long entityId;
+    private String entityType;
+}
