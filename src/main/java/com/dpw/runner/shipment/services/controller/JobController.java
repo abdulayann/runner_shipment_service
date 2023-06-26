@@ -1,9 +1,6 @@
 package com.dpw.runner.shipment.services.controller;
 
-import com.dpw.runner.shipment.services.commons.constants.ApiConstants;
-import com.dpw.runner.shipment.services.commons.constants.BookingCarriageConstants;
-import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
-import com.dpw.runner.shipment.services.commons.constants.JobConstants;
+import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
@@ -33,7 +30,7 @@ public class JobController {
 
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = JobConstants.JOB_CREATE_SUCCESSFUL),
-            @ApiResponse(code = 404, message = JobConstants.NO_DATA, response = RunnerResponse.class)
+            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
     })
     @PostMapping(value = ApiConstants.API_CREATE)
     public ResponseEntity<RunnerResponse<JobResponse>> create(@RequestBody JobRequest request) {
@@ -49,7 +46,7 @@ public class JobController {
         return (ResponseEntity<RunnerResponse<JobResponse>>) ResponseHelper.buildFailedResponse(responseMessage);
     }
 
-    @ApiResponses(value = { @ApiResponse(code = 200, message = JobConstants.JOB_LIST_SUCCESSFUL) })
+    @ApiResponses(value = {@ApiResponse(code = 200, message = JobConstants.JOB_LIST_SUCCESSFUL)})
     @PostMapping(ApiConstants.API_LIST)
     public ResponseEntity<RunnerListResponse<JobResponse>> list(@RequestParam Long shipmentId) {
         return (ResponseEntity<RunnerListResponse<JobResponse>>) jobService.list(CommonRequestModel.buildRequest(shipmentId));
@@ -78,8 +75,6 @@ public class JobController {
             return (ResponseEntity<RunnerResponse>) ResponseHelper.buildFailedResponse(responseMessage);
         }
     }
-
-
 
 
 }

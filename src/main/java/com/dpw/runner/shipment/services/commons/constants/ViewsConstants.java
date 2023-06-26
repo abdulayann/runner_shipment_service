@@ -13,8 +13,6 @@ public class ViewsConstants {
 
     public static final String VIEW_RETRIEVE_BY_ID_SUCCESSFUL = "Successful View Data Retrieval By Id";
 
-    public static final String NO_DATA = "Not Found!";
-
     public static final String VIEW_ID = "View Id";
 
     public static final String RESPONSE_CONTAINER_LIST = "List";

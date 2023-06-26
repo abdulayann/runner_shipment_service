@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.JobConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
@@ -72,7 +73,7 @@ public class JobService implements IJobService {
         Optional<Jobs> targetJob = jobDao.findById(id);
         if (targetJob.isEmpty()) {
             log.debug("No entity present for id {} ", id);
-            return ResponseHelper.buildFailedResponse(JobConstants.NO_DATA);
+            return ResponseHelper.buildFailedResponse(Constants.NO_DATA);
         }
         jobDao.delete(targetJob.get());
         return ResponseHelper.buildSuccessResponse();

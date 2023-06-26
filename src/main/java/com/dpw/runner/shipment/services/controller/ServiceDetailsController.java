@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.controller;
 
 import com.dpw.runner.shipment.services.commons.constants.ApiConstants;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.ServiceDetailsConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
@@ -32,7 +33,7 @@ public class ServiceDetailsController {
 
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = ServiceDetailsConstants.SERVICE_DETAILS_CREATE_SUCCESSFUL),
-            @ApiResponse(code = 404, message = ServiceDetailsConstants.NO_DATA, response = RunnerResponse.class)
+            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
     })
     @PostMapping(ApiConstants.API_CREATE)
     public ResponseEntity<RunnerResponse<ServiceDetailsResponse>> createShipmentServiceData(@RequestBody @Valid ServiceDetailsRequest request) {
@@ -47,27 +48,27 @@ public class ServiceDetailsController {
         return (ResponseEntity<RunnerResponse<ServiceDetailsResponse>>) ResponseHelper.buildFailedResponse(responseMsg);
     }
 
-    @ApiResponses(value = { @ApiResponse(code = 200, message = ServiceDetailsConstants.SERVICE_DETAILS_DELETE_SUCCESSFUL) })
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ServiceDetailsConstants.SERVICE_DETAILS_DELETE_SUCCESSFUL)})
     @DeleteMapping(ApiConstants.API_DELETE)
     public ResponseEntity<RunnerResponse> delete(@RequestParam @Valid Long id) {
         CommonGetRequest request = CommonGetRequest.builder().id(id).build();
         return (ResponseEntity<RunnerResponse>) serviceDetailsService.delete(CommonRequestModel.buildRequest(request));
     }
 
-    @ApiResponses(value = { @ApiResponse(code = 200, message = ServiceDetailsConstants.SERVICE_DETAILS_LIST_SUCCESSFUL, responseContainer = ServiceDetailsConstants.RESPONSE_CONTAINER_LIST) })
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ServiceDetailsConstants.SERVICE_DETAILS_LIST_SUCCESSFUL, responseContainer = ServiceDetailsConstants.RESPONSE_CONTAINER_LIST)})
     @PostMapping(ApiConstants.API_LIST)
     public ResponseEntity<RunnerListResponse<ServiceDetailsResponse>> list(@RequestBody ListCommonRequest listCommonRequest) {
         return (ResponseEntity<RunnerListResponse<ServiceDetailsResponse>>) serviceDetailsService.list(CommonRequestModel.buildRequest(listCommonRequest));
     }
 
-    @ApiResponses(value = { @ApiResponse(code = 200, message = ServiceDetailsConstants.SERVICE_DETAILS_RETRIEVE_BY_ID_SUCCESSFUL) })
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ServiceDetailsConstants.SERVICE_DETAILS_RETRIEVE_BY_ID_SUCCESSFUL)})
     @GetMapping(ApiConstants.API_RETRIEVE_BY_ID)
     public ResponseEntity<RunnerResponse<ServiceDetailsResponse>> retrieveById(@ApiParam(value = ServiceDetailsConstants.SERVICE_DETAILS_ID, required = true) @RequestParam Long id) {
         CommonGetRequest request = CommonGetRequest.builder().id(id).build();
         return (ResponseEntity<RunnerResponse<ServiceDetailsResponse>>) serviceDetailsService.retrieveById(CommonRequestModel.buildRequest(request));
     }
 
-    @ApiResponses(value = { @ApiResponse(code = 200, message = ServiceDetailsConstants.SERVICE_DETAILS_UPDATE_SUCCESSFUL, response = RunnerResponse.class) })
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ServiceDetailsConstants.SERVICE_DETAILS_UPDATE_SUCCESSFUL, response = RunnerResponse.class)})
     @PutMapping(ApiConstants.API_UPDATE)
     public ResponseEntity<RunnerResponse> update(@RequestBody @Valid ServiceDetailsRequest request) {
         String responseMsg;
