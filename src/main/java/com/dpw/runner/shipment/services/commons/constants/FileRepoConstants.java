@@ -1,0 +1,22 @@
+package com.dpw.runner.shipment.services.commons.constants;
+
+public class FileRepoConstants {
+    public static final String FILE_REPO_API_HANDLE = "/api/v2/file-repo";
+    public static final String FILE_REPO_LIST_ENTITYID_ENTITYTYPE = "/list-entityidandtype";
+
+    public static final String FILE_REPO_CREATE_SUCCESSFUL = "Successful File Repo Data Creation";
+
+    public static final String FILE_REPO_UPDATE_SUCCESSFUL = "Successful File Repo Data Update";
+
+    public static final String FILE_REPO_LIST_SUCCESSFUL = "Successful File Repo Data List Retrieval";
+
+    public static final String FILE_REPO_DELETE_SUCCESSFUL = "Successful File Repo Delete";
+
+    public static final String FILE_REPO_RETRIEVE_BY_ID_SUCCESSFUL = "Successful File Repo Data Retrieval By Id";
+
+    public static final String NO_DATA = "Not Found!";
+
+    public static final String FILE_REPO_ID = "File Repo Id";
+
+    public static final String RESPONSE_CONTAINER_LIST = "List";
+}
