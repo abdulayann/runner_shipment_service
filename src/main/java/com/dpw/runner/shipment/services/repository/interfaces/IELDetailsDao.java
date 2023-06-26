@@ -9,9 +9,11 @@ import org.springframework.data.jpa.repository.Query;
 
 import java.util.Optional;
 
+import static com.dpw.runner.shipment.services.commons.constants.DBQueryConstants.ELDETAILS_SELECT_ELNUMBERS_QUERY;
+
 public interface IELDetailsDao extends JpaRepository<ELDetails, Long> {
     Page<ELDetails> findAll(Specification<ELDetails> spec, Pageable pageable);
 
-    @Query("SELECT e FROM ELDetails e WHERE e.elNumber = :elNumber")
+    @Query(ELDETAILS_SELECT_ELNUMBERS_QUERY)
     Optional<ELDetails> findByElNumber(String elNumber);
 }

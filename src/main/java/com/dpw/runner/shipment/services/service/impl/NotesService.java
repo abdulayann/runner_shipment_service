@@ -5,13 +5,12 @@ import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.dto.request.ELDetailsRequest;
-import com.dpw.runner.shipment.services.dto.request.ElNumbersRequest;
-import com.dpw.runner.shipment.services.dto.response.ELDetailsResponse;
-import com.dpw.runner.shipment.services.entity.ELDetails;
+import com.dpw.runner.shipment.services.dto.request.NotesRequest;
+import com.dpw.runner.shipment.services.dto.response.NotesResponse;
+import com.dpw.runner.shipment.services.entity.Notes;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
-import com.dpw.runner.shipment.services.repository.interfaces.IELDetailsDao;
-import com.dpw.runner.shipment.services.service.interfaces.IELDetailsService;
+import com.dpw.runner.shipment.services.repository.interfaces.INotesDao;
+import com.dpw.runner.shipment.services.service.interfaces.INotesService;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
@@ -22,7 +21,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -32,35 +30,35 @@ import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 
 @Service
 @Slf4j
-public class ELDetailsService implements IELDetailsService {
+public class NotesService implements INotesService {
     @Autowired
-    private IELDetailsDao elDetailsDao;
+    private INotesDao notesDao;
 
     @Autowired
     private ModelMapper modelMapper;
 
-    @Transactional
+    @Override
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) throws Exception {
-        ELDetailsRequest request = (ELDetailsRequest) commonRequestModel.getData();
-        ELDetails elDetails = convertRequestToELDetails(request);
-        elDetails = elDetailsDao.save(elDetails);
-        return ResponseHelper.buildSuccessResponse(convertEntityToDto(elDetails));
+        NotesRequest request = (NotesRequest) commonRequestModel.getData();
+        Notes notes = convertRequestToNotesEntity(request);
+        notes = notesDao.save(notes);
+        return ResponseHelper.buildSuccessResponse(convertEntityToDto(notes));
     }
 
-    @Transactional
+    @Override
     public ResponseEntity<?> update(CommonRequestModel commonRequestModel) throws Exception {
-        ELDetailsRequest request = (ELDetailsRequest) commonRequestModel.getData();
+        NotesRequest request = (NotesRequest) commonRequestModel.getData();
         long id = request.getId();
-        Optional<ELDetails> oldEntity = elDetailsDao.findById(id);
+        Optional<Notes> oldEntity = notesDao.findById(id);
         if (oldEntity.isEmpty()) {
-            log.debug("EL Details is null for Id {}", request.getId());
+            log.debug("Notes is null for Id {}", request.getId());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
 
-        ELDetails elDetails = convertRequestToELDetails(request);
-        elDetails.setId(oldEntity.get().getId());
-        elDetails = elDetailsDao.save(elDetails);
-        return ResponseHelper.buildSuccessResponse(convertEntityToDto(elDetails));
+        Notes notes = convertRequestToNotesEntity(request);
+        notes.setId(oldEntity.get().getId());
+        notes = notesDao.save(notes);
+        return ResponseHelper.buildSuccessResponse(convertEntityToDto(notes));
     }
 
     @Override
@@ -69,12 +67,12 @@ public class ELDetailsService implements IELDetailsService {
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
 
-            Pair<Specification<ELDetails>, Pageable> tuple = fetchData(request, ELDetails.class);
-            Page<ELDetails> elDetailsPage = elDetailsDao.findAll(tuple.getLeft(), tuple.getRight());
+            Pair<Specification<Notes>, Pageable> tuple = fetchData(request, Notes.class);
+            Page<Notes> notesPage = notesDao.findAll(tuple.getLeft(), tuple.getRight());
             return ResponseHelper.buildListSuccessResponse(
-                    convertEntityListToDtoList(elDetailsPage.getContent()),
-                    elDetailsPage.getTotalPages(),
-                    elDetailsPage.getTotalElements());
+                    convertEntityListToDtoList(notesPage.getContent()),
+                    notesPage.getTotalPages(),
+                    notesPage.getTotalElements());
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;
@@ -83,44 +81,22 @@ public class ELDetailsService implements IELDetailsService {
         }
     }
 
-
     @Override
     public ResponseEntity<?> delete(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
             long id = request.getId();
-            Optional<ELDetails> elDetails = elDetailsDao.findById(id);
-            if (elDetails.isEmpty()) {
-                log.debug("El Details is null for Id {}", request.getId());
+            Optional<Notes> note = notesDao.findById(id);
+            if (note.isEmpty()) {
+                log.debug("Notes is null for Id {}", request.getId());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
-            elDetailsDao.delete(elDetails.get());
+            notesDao.delete(note.get());
             return ResponseHelper.buildSuccessResponse();
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_DELETE_EXCEPTION_MSG;
-            log.error(responseMsg, e);
-            return ResponseHelper.buildFailedResponse(responseMsg);
-        }
-    }
-
-    @Override
-    public ResponseEntity<?> validateElNumber(CommonRequestModel requestModel) {
-        String responseMsg;
-        try {
-            ElNumbersRequest request = (ElNumbersRequest) (requestModel.getData());
-            String elNumber = request.getElNumber();
-            Optional<ELDetails> elDetails = elDetailsDao.findByElNumber(elNumber);
-            if (elDetails.isEmpty()) {
-                log.debug("El Detail is null for El Number {}", request.getElNumber());
-                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
-            }
-            ELDetailsResponse response = convertEntityToDto(elDetails.get());
-            return ResponseHelper.buildSuccessResponse(response);
-        } catch (Exception e) {
-            responseMsg = e.getMessage() != null ? e.getMessage()
-                    : DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(responseMsg);
         }
@@ -132,13 +108,13 @@ public class ELDetailsService implements IELDetailsService {
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
             long id = request.getId();
-            Optional<ELDetails> elDetail = elDetailsDao.findById(id);
-            if (elDetail.isEmpty()) {
-                log.debug("El Detail is null for Id {}", request.getId());
+            Optional<Notes> notes = notesDao.findById(id);
+            if (notes.isEmpty()) {
+                log.debug("Notes is null for Id {}", request.getId());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
 
-            ELDetailsResponse response = convertEntityToDto(elDetail.get());
+            NotesResponse response = convertEntityToDto(notes.get());
             return ResponseHelper.buildSuccessResponse(response);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -148,15 +124,15 @@ public class ELDetailsService implements IELDetailsService {
         }
     }
 
-    private ELDetailsResponse convertEntityToDto(ELDetails elDetails) {
-        return modelMapper.map(elDetails, ELDetailsResponse.class);
+    private NotesResponse convertEntityToDto(Notes notes) {
+        return modelMapper.map(notes, NotesResponse.class);
     }
 
-    private ELDetails convertRequestToELDetails(ELDetailsRequest request) {
-        return modelMapper.map(request, ELDetails.class);
+    private Notes convertRequestToNotesEntity(NotesRequest request) {
+        return modelMapper.map(request, Notes.class);
     }
 
-    private List<IRunnerResponse> convertEntityListToDtoList(final List<ELDetails> lst) {
+    private List<IRunnerResponse> convertEntityListToDtoList(final List<Notes> lst) {
         return lst.stream()
                 .map(item -> convertEntityToDto(item))
                 .collect(Collectors.toList());

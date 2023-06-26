@@ -1,7 +1,6 @@
 package com.dpw.runner.shipment.services.controller;
 
 import com.dpw.runner.shipment.services.commons.constants.ApiConstants;
-import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.EventConstants;
 import com.dpw.runner.shipment.services.dto.request.EventsRequest;
 import com.dpw.runner.shipment.services.dto.response.EventsResponse;
@@ -43,6 +42,5 @@ public class EventsController {
     public ResponseEntity<?> deleteEvent(@RequestBody List<EventsRequest> request) {
         return eventService.delete(request);
     }
-
 
 }

@@ -3,9 +3,7 @@ package com.dpw.runner.shipment.services.dto.response;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.entity.enums.MergeClass;
 import io.swagger.annotations.ApiModel;
-import lombok.Builder;
-import lombok.Data;
-import lombok.ToString;
+import lombok.*;
 
 import java.util.UUID;
 
@@ -13,6 +11,8 @@ import java.util.UUID;
 @Builder
 @ApiModel("EL Details Response Model")
 @ToString
+@NoArgsConstructor
+@AllArgsConstructor
 public class ELDetailsResponse implements IRunnerResponse {
     private Long id;
     private UUID guid;

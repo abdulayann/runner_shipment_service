@@ -13,9 +13,4 @@ public class ELDetailsConstants {
 
     public static final String ELDETAILS_RETRIEVE_BY_ID_SUCCESSFUL = "Successful ELDetails Retrieval By Id";
 
-    public static final String NO_DATA = "Not Found!";
-
-    public static final String ELDETAILS_ID = "EL Details Id";
-
-    public static final String ELDETAILS_LIST = "List";
 }
