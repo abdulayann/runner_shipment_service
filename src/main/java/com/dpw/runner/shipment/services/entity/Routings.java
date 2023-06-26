@@ -78,7 +78,7 @@ public class Routings extends MultiTenancy {
     private String entityType;
 
     @Column(name = "entity_id")
-    private String entityId;
+    private Long entityId;
 
     @Column(name = "route_leg_id")
     private Long routeLegId;
