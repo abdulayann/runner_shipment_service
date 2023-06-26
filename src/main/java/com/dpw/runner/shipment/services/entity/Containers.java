@@ -107,7 +107,7 @@ public class Containers extends MultiTenancy {
     private String grossVolumeUnit;
 
     @Column(name = "is_reefer")
-    private boolean isReefer;
+    private Boolean isReefer;
 
     @Column(name = "min_temp")
     private BigDecimal minTemp;
@@ -161,7 +161,7 @@ public class Containers extends MultiTenancy {
     private BigDecimal packageHeight;
 
     @Column(name = "is_temperature_maintained")
-    private boolean isTemperatureMaintained;
+    private Boolean isTemperatureMaintained;
 
     @Column(name = "packs")
     private String packs;
