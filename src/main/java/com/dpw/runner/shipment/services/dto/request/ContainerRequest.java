@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.dto.request;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import com.dpw.runner.shipment.services.entity.enums.ContainerStatus;
+import io.swagger.annotations.ApiModel;
 import lombok.Getter;
 import lombok.ToString;
 
@@ -11,6 +12,7 @@ import java.util.Date;
 import java.util.UUID;
 
 @Getter
+@ApiModel("Container Request Model")
 @ToString
 public class ContainerRequest extends CommonRequest implements IRunnerRequest {
 

@@ -18,6 +18,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -32,7 +33,7 @@ public class ContainerService implements IContainerService {
     @Autowired
     ModelMapper modelMapper;
 
-    @Override
+    @Transactional
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) throws Exception {
         ContainerRequest request = (ContainerRequest) commonRequestModel.getData();
 
@@ -41,7 +42,7 @@ public class ContainerService implements IContainerService {
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(container));
     }
 
-    @Override
+    @Transactional
     public ResponseEntity<?> update(CommonRequestModel commonRequestModel) throws Exception {
         ContainerRequest request = (ContainerRequest) commonRequestModel.getData();
         Containers updatedEntity = convertRequestToEntity(request);
@@ -98,11 +99,6 @@ public class ContainerService implements IContainerService {
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(responseMsg);
         }
-    }
-
-
-    private void beforeSave(Containers container){
-        // TODO validation logic -> createConsolidation (> _ < ) ?
     }
 
     private IRunnerResponse convertEntityToDto(Containers container) {

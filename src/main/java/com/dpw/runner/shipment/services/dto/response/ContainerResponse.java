@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.dto.response;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.entity.enums.ContainerStatus;
+import io.swagger.annotations.ApiModel;
 import lombok.Setter;
 
 import java.math.BigDecimal;
@@ -9,6 +10,7 @@ import java.util.Date;
 import java.util.UUID;
 
 @Setter
+@ApiModel("Container Response Model")
 public class ContainerResponse implements IRunnerResponse {
     private Long id;
     private UUID guid;
