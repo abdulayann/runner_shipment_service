@@ -140,7 +140,7 @@ public class ShipmentDetails extends MultiTenancy {
     private List<Routings> routingsList;
 
     @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY, mappedBy = "shipmentId")
-    private List<ShipmentServices> servicesList;
+    private List<ServiceDetails> servicesList;
 
     @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY, mappedBy = "shipmentId")
     private List<TruckDriverDetails> truckDriverDetails;

@@ -5,12 +5,12 @@ import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.dto.request.ShipmentServiceRequest;
-import com.dpw.runner.shipment.services.dto.response.ShipmentServiceResponse;
-import com.dpw.runner.shipment.services.entity.ShipmentServices;
+import com.dpw.runner.shipment.services.dto.request.ServiceDetailsRequest;
+import com.dpw.runner.shipment.services.dto.response.ServiceDetailsResponse;
+import com.dpw.runner.shipment.services.entity.ServiceDetails;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
-import com.dpw.runner.shipment.services.repository.interfaces.IShipmentServicesDao;
-import com.dpw.runner.shipment.services.service.interfaces.IShipmentServicesService;
+import com.dpw.runner.shipment.services.repository.interfaces.IServiceDetailsDao;
+import com.dpw.runner.shipment.services.service.interfaces.IServiceDetailsService;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,32 +29,32 @@ import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 @SuppressWarnings("ALL")
 @Service
 @Slf4j
-public class ShipmentServicesService implements IShipmentServicesService {
+public class ServiceDetailsService implements IServiceDetailsService {
     @Autowired
-    private IShipmentServicesDao shipmentServicesDao;
+    private IServiceDetailsDao serviceDetailsDao;
 
     @Transactional
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) throws Exception {
-        ShipmentServiceRequest request = null;
-        request = (ShipmentServiceRequest) commonRequestModel.getData();
-        ShipmentServices shipmentServices = convertRequestToEntity(request);
-        shipmentServices = shipmentServicesDao.save(shipmentServices);
+        ServiceDetailsRequest request = null;
+        request = (ServiceDetailsRequest) commonRequestModel.getData();
+        ServiceDetails shipmentServices = convertRequestToEntity(request);
+        shipmentServices = serviceDetailsDao.save(shipmentServices);
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(shipmentServices));
     }
 
     @Transactional
     public ResponseEntity<?> update(CommonRequestModel commonRequestModel) throws Exception {
-        ShipmentServiceRequest request = (ShipmentServiceRequest) commonRequestModel.getData();
+        ServiceDetailsRequest request = (ServiceDetailsRequest) commonRequestModel.getData();
         long id =request.getId();
-        Optional<ShipmentServices> oldEntity = shipmentServicesDao.findById(id);
+        Optional<ServiceDetails> oldEntity = serviceDetailsDao.findById(id);
         if(!oldEntity.isPresent()) {
-            log.debug("Shipment Service is null for Id {}", request.getId());
+            log.debug("Service Details is null for Id {}", request.getId());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
 
-        ShipmentServices shipmentServices = convertRequestToEntity(request);
+        ServiceDetails shipmentServices = convertRequestToEntity(request);
         shipmentServices.setId(oldEntity.get().getId());
-        shipmentServices = shipmentServicesDao.save(shipmentServices);
+        shipmentServices = serviceDetailsDao.save(shipmentServices);
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(shipmentServices));
     }
 
@@ -63,8 +63,8 @@ public class ShipmentServicesService implements IShipmentServicesService {
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
             // construct specifications for filter request
-            Pair<Specification<ShipmentServices>, Pageable> tuple = fetchData(request, ShipmentServices.class);
-            Page<ShipmentServices> shipmentServicesPage  = shipmentServicesDao.findAll(tuple.getLeft(), tuple.getRight());
+            Pair<Specification<ServiceDetails>, Pageable> tuple = fetchData(request, ServiceDetails.class);
+            Page<ServiceDetails> shipmentServicesPage  = serviceDetailsDao.findAll(tuple.getLeft(), tuple.getRight());
             return ResponseHelper.buildListSuccessResponse(
                     convertEntityListToDtoList(shipmentServicesPage.getContent()),
                     shipmentServicesPage.getTotalPages(),
@@ -83,12 +83,12 @@ public class ShipmentServicesService implements IShipmentServicesService {
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
             long id =request.getId();
-            Optional<ShipmentServices> shipmentServices = shipmentServicesDao.findById(id);
+            Optional<ServiceDetails> shipmentServices = serviceDetailsDao.findById(id);
             if(!shipmentServices.isPresent()) {
-                log.debug("Booking Carriage is null for Id {}", request.getId());
+                log.debug("Service Details is null for Id {}", request.getId());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
-            shipmentServicesDao.delete(shipmentServices.get());
+            serviceDetailsDao.delete(shipmentServices.get());
             return ResponseHelper.buildSuccessResponse();
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -103,13 +103,13 @@ public class ShipmentServicesService implements IShipmentServicesService {
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
             long id =request.getId();
-            Optional<ShipmentServices> shipmentServices = shipmentServicesDao.findById(id);
+            Optional<ServiceDetails> shipmentServices = serviceDetailsDao.findById(id);
             if(!shipmentServices.isPresent()) {
-                log.debug("Booking Carriage is null for Id {}", request.getId());
+                log.debug("Service Details is null for Id {}", request.getId());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
 
-            ShipmentServiceResponse response = convertEntityToDto(shipmentServices.get());
+            ServiceDetailsResponse response = convertEntityToDto(shipmentServices.get());
             return ResponseHelper.buildSuccessResponse(response);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -119,8 +119,8 @@ public class ShipmentServicesService implements IShipmentServicesService {
         }
     }
 
-    private static ShipmentServiceResponse convertEntityToDto(ShipmentServices shipmentServices) {
-        ShipmentServiceResponse response = new ShipmentServiceResponse();
+    private static ServiceDetailsResponse convertEntityToDto(ServiceDetails shipmentServices) {
+        ServiceDetailsResponse response = new ServiceDetailsResponse();
         response.setId(shipmentServices.getId());
         response.setGuid(shipmentServices.getGuid());
         response.setShipmentId(shipmentServices.getShipmentId());
@@ -138,7 +138,7 @@ public class ShipmentServicesService implements IShipmentServicesService {
         return response;
     }
 
-    private static List<IRunnerResponse> convertEntityListToDtoList(List<ShipmentServices> lst) {
+    private static List<IRunnerResponse> convertEntityListToDtoList(List<ServiceDetails> lst) {
         List<IRunnerResponse> responseList = new ArrayList<>();
         lst.forEach(shipmentServices -> {
             responseList.add(convertEntityToDto(shipmentServices));
@@ -146,8 +146,8 @@ public class ShipmentServicesService implements IShipmentServicesService {
         return responseList;
     }
 
-    public static ShipmentServices convertRequestToEntity(ShipmentServiceRequest request) {
-        ShipmentServices shipmentServices = new ShipmentServices();
+    public static ServiceDetails convertRequestToEntity(ServiceDetailsRequest request) {
+        ServiceDetails shipmentServices = new ServiceDetails();
         shipmentServices.setGuid(UUID.randomUUID());
         shipmentServices.setShipmentId(request.getShipmentId());
         shipmentServices.setConsolidationId(request.getConsolidationId());
