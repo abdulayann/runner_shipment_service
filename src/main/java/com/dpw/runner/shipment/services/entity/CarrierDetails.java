@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.entity;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import lombok.*;
 import lombok.experimental.Accessors;
+import org.hibernate.annotations.GenerationTime;
 
 import javax.persistence.*;
 import java.time.LocalDateTime;
@@ -20,9 +21,6 @@ import java.util.UUID;
 public class CarrierDetails extends MultiTenancy {
 
     private static final long serialVersionUID = 190794279984274725L;
-
-    @Column(name = "guid")
-    private UUID guid;
 
     @Column(name = "shipping_line")
     private String shippingLine;
