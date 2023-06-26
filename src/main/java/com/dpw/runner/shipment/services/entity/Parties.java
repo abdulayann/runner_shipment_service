@@ -24,7 +24,7 @@ import java.util.UUID;
 @AllArgsConstructor
 @Builder
 @TypeDef(name = "jsonb", typeClass = JsonBinaryType.class)
-public class PartiesDetails extends MultiTenancy {
+public class Parties extends MultiTenancy {
 
     private static final long serialVersionUID = 190794279984274725L;
 

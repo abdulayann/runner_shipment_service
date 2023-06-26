@@ -55,18 +55,19 @@ public class ShipmentService implements IShipmentService {
     private List<String> VOLUME_UNIT = Arrays.asList("M3", "L3", "CC");
     private List<String> SHIPPING_LINE = Arrays.asList("DPWC", "MARUSK", "APLU");
     private List<String> LOCATIONS = Arrays.asList("Jabel Ali", "Nava Shiva", "Shanghai", "Vancouver", "Seattle");
-    private List<String> PARTY_TYPE = Arrays.asList("CLIENT","CONSIGNER", "CONSIGNEE");
-    private List<String> DIRECTIONS = Arrays.asList("IMP","EXP");
-    private List<String> SOURCE = Arrays.asList("API","Runner", "Logistics");
+    private List<String> PARTY_TYPE = Arrays.asList("CLIENT", "CONSIGNER", "CONSIGNEE");
+    private List<String> DIRECTIONS = Arrays.asList("IMP", "EXP");
+    private List<String> SOURCE = Arrays.asList("API", "Runner", "Logistics");
 
     private Map<String, Object> ADDRESS = Map.ofEntries(
-        Map.entry("AddressShortCode", "Default")
+            Map.entry("AddressShortCode", "Default")
     );
     private Map<String, Object> ORG = Map.ofEntries(
             Map.entry("TenantName", "DP WORLD LOGISTICS CANADA INC")
     );
 
-    @Override @Transactional
+    @Override
+    @Transactional
     public List<ShipmentDetails> createTestShipment(Integer count) {
         List<ShipmentDetails> response = new ArrayList<>();
         /**
@@ -113,7 +114,7 @@ public class ShipmentService implements IShipmentService {
             /**
              * Parties Details*
              */
-            List<PartiesDetails> partiesDetails = createParties(shipmentDetail);
+            List<Parties> partiesDetails = createParties(shipmentDetail);
             shipmentDetail.setParties(partiesDetails);
             response.add(shipmentDetail);
         }
@@ -126,7 +127,7 @@ public class ShipmentService implements IShipmentService {
         ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
 
         Pair<Specification<ShipmentDetails>, Pageable> tuple = fetchData(request, ShipmentDetails.class, tableNames);
-        Page<ShipmentDetails> shipmentDetailsPage  = shipmentDao.findAll(tuple.getLeft(), tuple.getRight());
+        Page<ShipmentDetails> shipmentDetailsPage = shipmentDao.findAll(tuple.getLeft(), tuple.getRight());
         return ResponseHelper.buildListSuccessResponse(
                 convertEntityListToDtoList(shipmentDetailsPage.getContent()),
                 shipmentDetailsPage.getTotalPages(),
@@ -175,15 +176,15 @@ public class ShipmentService implements IShipmentService {
         return responseList;
     }
 
-    private List<PartiesDetails> createParties(ShipmentDetails shipmentDetails) {
-        List<PartiesDetails> parties = new ArrayList<>();
+    private List<Parties> createParties(ShipmentDetails shipmentDetails) {
+        List<Parties> parties = new ArrayList<>();
         int random = new Random().nextInt(100);
-        for (String partyType: PARTY_TYPE) {
-            PartiesDetails party = PartiesDetails.builder()
-                        .guid(UUID.randomUUID()).type(partyType).orgId(random).addressId(random)
-                        .orgData(ORG).addressData(ADDRESS)
-                        .entityId(shipmentDetails.getId()).entityType("SHIPMENT")
-                        .build();
+        for (String partyType : PARTY_TYPE) {
+            Parties party = Parties.builder()
+                    .guid(UUID.randomUUID()).type(partyType).orgId(random).addressId(random)
+                    .orgData(ORG).addressData(ADDRESS)
+                    .entityId(shipmentDetails.getId()).entityType("SHIPMENT")
+                    .build();
             party.setTenantId(1);
             parties.add(party);
         }
@@ -255,7 +256,8 @@ public class ShipmentService implements IShipmentService {
         return salt.toString();
     }
 
-    @Override @Transactional
+    @Override
+    @Transactional
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
         ShipmentRequest request = null;
         request = (ShipmentRequest) commonRequestModel.getData();
@@ -270,9 +272,9 @@ public class ShipmentService implements IShipmentService {
     public ResponseEntity<?> update(CommonRequestModel commonRequestModel) throws Exception {
         ShipmentRequest request = (ShipmentRequest) commonRequestModel.getData();
         // TODO- implement Validation logic
-        long id =request.getId();
+        long id = request.getId();
         Optional<ShipmentDetails> oldEntity = shipmentDao.findById(id);
-        if(!oldEntity.isPresent()) {
+        if (!oldEntity.isPresent()) {
             log.debug("Shipment Details is null for Id {}", request.getId());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
@@ -283,14 +285,14 @@ public class ShipmentService implements IShipmentService {
         return ResponseHelper.buildSuccessResponse(jsonHelper.convertValue(entity, ShipmentDetailsResponse.class));
     }
 
-    public ResponseEntity<?> list(CommonRequestModel commonRequestModel){
+    public ResponseEntity<?> list(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             // TODO- implement actual logic with filters
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
 
             Pair<Specification<ShipmentDetails>, Pageable> tuple = fetchData(request, ShipmentDetails.class, tableNames);
-            Page<ShipmentDetails> shipmentDetailsPage  = shipmentDao.findAll(tuple.getLeft(), tuple.getRight());
+            Page<ShipmentDetails> shipmentDetailsPage = shipmentDao.findAll(tuple.getLeft(), tuple.getRight());
             return ResponseHelper.buildListSuccessResponse(
                     convertEntityListToDtoList(shipmentDetailsPage.getContent()),
                     shipmentDetailsPage.getTotalPages(),
@@ -304,14 +306,14 @@ public class ShipmentService implements IShipmentService {
 
     }
 
-    public ResponseEntity<?> delete(CommonRequestModel commonRequestModel){
+    public ResponseEntity<?> delete(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             // TODO- implement Validation logic
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
-            long id =request.getId();
+            long id = request.getId();
             Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(id);
-            if(!shipmentDetails.isPresent()) {
+            if (!shipmentDetails.isPresent()) {
                 log.debug("Shipment Details is null for Id {}", request.getId());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
@@ -325,13 +327,13 @@ public class ShipmentService implements IShipmentService {
         }
     }
 
-    public ResponseEntity<?> retrieveById(CommonRequestModel commonRequestModel){
+    public ResponseEntity<?> retrieveById(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
-            long id =request.getId();
+            long id = request.getId();
             Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(id);
-            if(!shipmentDetails.isPresent()) {
+            if (!shipmentDetails.isPresent()) {
                 log.debug("Shipment Details is null for Id {}", request.getId());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
@@ -345,6 +347,7 @@ public class ShipmentService implements IShipmentService {
             return ResponseHelper.buildFailedResponse(responseMsg);
         }
     }
+
     private Map<String, RunnerEntityMapping> tableNames = Map.ofEntries(
             Map.entry("type", RunnerEntityMapping.builder().tableName("parties").dataType(String.class).build()),
             Map.entry("orgId", RunnerEntityMapping.builder().tableName("parties").dataType(Integer.class).build()),

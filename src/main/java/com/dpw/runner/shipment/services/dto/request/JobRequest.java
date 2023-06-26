@@ -2,7 +2,7 @@ package com.dpw.runner.shipment.services.dto.request;
 
 import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
-import com.dpw.runner.shipment.services.entity.PartiesDetails;
+import com.dpw.runner.shipment.services.entity.Parties;
 import lombok.Getter;
 import lombok.ToString;
 
@@ -14,8 +14,8 @@ import java.util.List;
 public class JobRequest extends CommonRequest implements IRunnerRequest {
     private Long id;
     private Long shipmentId;
-    private List<PartiesDetails> partiesBuyerDetailsList;
-    private List<PartiesDetails> partiesSupplierDetailsList;
+    private List<Parties> partiesBuyerDetailsList;
+    private List<Parties> partiesSupplierDetailsList;
     private String orderNumber;
     private Date orderDate;
     private String confirmNumber;

@@ -33,5 +33,5 @@ public class PickupDetails extends MultiTenancy {
 
     @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER, mappedBy = "entityId")
     @Where(clause = "entity_type = 'Pickup'")
-    private List<PartiesDetails> parties;
+    private List<Parties> parties;
 }

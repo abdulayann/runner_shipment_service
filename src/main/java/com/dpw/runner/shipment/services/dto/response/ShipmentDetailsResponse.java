@@ -3,10 +3,7 @@ package com.dpw.runner.shipment.services.dto.response;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import lombok.Data;
-import lombok.ToString;
-import org.hibernate.annotations.Where;
 
-import javax.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -16,7 +13,7 @@ import java.util.UUID;
 public class ShipmentDetailsResponse implements IRunnerResponse {
     private Long id;
     private UUID guid;
-    private List<PartiesDetails> parties;
+    private List<Parties> parties;
     private BlDetails blDetails;
     private CarrierDetails carrierDetails;
     private MeasurementDetails measurementDetails;

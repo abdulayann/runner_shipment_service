@@ -2,7 +2,6 @@ package com.dpw.runner.shipment.services.entity;
 
 import javax.persistence.*;
 import java.time.LocalDateTime;
-import java.util.Date;
 import java.util.List;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
@@ -37,19 +36,19 @@ public class PdDetails extends MultiTenancy {
 
     @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER, mappedBy = "entityId")
     @Where(clause = "entity_type = 'jobs' AND party_type = 'broker'")
-    private List<PartiesDetails> partiesBrokerDetailsList;
+    private List<Parties> partiesBrokerDetailsList;
 
     @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER, mappedBy = "entityId")
     @Where(clause = "entity_type = 'jobs' AND party_type = 'agent'")
-    private List<PartiesDetails> partiesAgentDetailsList;
+    private List<Parties> partiesAgentDetailsList;
 
     @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER, mappedBy = "entityId")
     @Where(clause = "entity_type = 'jobs' AND party_type = 'transporter'")
-    private List<PartiesDetails> partiesTransporterDetailsList;
+    private List<Parties> partiesTransporterDetailsList;
 
     @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER, mappedBy = "entityId")
     @Where(clause = "entity_type = 'jobs' AND party_type = 'destination'")
-    private List<PartiesDetails> partiesDestinationDetailsList;
+    private List<Parties> partiesDestinationDetailsList;
 
     @Column(name = "type")
     private String type;

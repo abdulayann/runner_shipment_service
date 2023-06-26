@@ -1,7 +1,7 @@
 package com.dpw.runner.shipment.services.dto.response;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.entity.PartiesDetails;
+import com.dpw.runner.shipment.services.entity.Parties;
 import lombok.Data;
 
 import java.util.Date;
@@ -13,8 +13,8 @@ public class JobResponse implements IRunnerResponse {
     private Long id;
     private UUID guid;
     private Long shipmentId;
-    private List<PartiesDetails> partiesBuyerDetailsList;
-    private List<PartiesDetails> partiesSupplierDetailsList;
+    private List<Parties> partiesBuyerDetailsList;
+    private List<Parties> partiesSupplierDetailsList;
     private String orderNumber;
     private Date orderDate;
     private String confirmNumber;

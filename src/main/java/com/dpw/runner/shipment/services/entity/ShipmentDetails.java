@@ -35,7 +35,7 @@ public class ShipmentDetails extends MultiTenancy {
 
     @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER, mappedBy = "entityId")
     @Where(clause = "entity_type = 'Shipments'")
-    private List<PartiesDetails> parties;
+    private List<Parties> parties;
 
     @OneToOne(targetEntity = BlDetails.class)
     @JoinColumn(name = "bl_detail_id", referencedColumnName = "id")
@@ -220,7 +220,7 @@ public class ShipmentDetails extends MultiTenancy {
     @Column(name = "is_notify_consignee_equal")
     private boolean isNotifyConsigneeEqual;
 
-        //ShipmentOrderId
+    //ShipmentOrderId
 
     @Column(name = "booking_type")
     private String bookingType;

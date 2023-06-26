@@ -1,7 +1,6 @@
 package com.dpw.runner.shipment.services.entity;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
-import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import lombok.*;
 import lombok.experimental.Accessors;
 import org.hibernate.annotations.Where;
@@ -25,11 +24,11 @@ public class Jobs extends MultiTenancy {
 
     @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER, mappedBy = "entityId")
     @Where(clause = "entity_type = 'jobs' AND party_type = 'buyer'")
-    private List<PartiesDetails> partiesBuyerDetailsList;
+    private List<Parties> partiesBuyerDetailsList;
 
     @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER, mappedBy = "entityId")
     @Where(clause = "entity_type = 'jobs' AND party_type = 'supplier'")
-    private List<PartiesDetails> partiesSupplierDetailsList;
+    private List<Parties> partiesSupplierDetailsList;
 
     @Column(name = "order_number")
     private String orderNumber;
