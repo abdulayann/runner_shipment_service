@@ -13,8 +13,6 @@ public class BookingCarriageConstants {
 
     public static final String BOOKING_CARRIAGE_RETRIEVE_BY_ID_SUCCESSFUL = "Successful Booking Carriage Data Retrieval By Id";
 
-    public static final String NO_DATA = "Not Found!";
-
     public static final String BOOKING_CARRIAGE_ID = "Booking Carriage Id";
 
     public static final String RESPONSE_CONTAINER_LIST = "List";

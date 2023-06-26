@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.controller;
 
 import com.dpw.runner.shipment.services.commons.constants.ApiConstants;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.ViewsConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
@@ -32,7 +33,7 @@ public class ViewsController {
 
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = ViewsConstants.VIEW_CREATE_SUCCESSFUL),
-            @ApiResponse(code = 404, message = ViewsConstants.NO_DATA, response = RunnerResponse.class)
+            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
     })
     @PostMapping(ApiConstants.API_CREATE)
     public ResponseEntity<RunnerResponse<ViewsResponse>> createViewData(@RequestBody @Valid ViewsRequest request) {
@@ -47,27 +48,27 @@ public class ViewsController {
         return (ResponseEntity<RunnerResponse<ViewsResponse>>) ResponseHelper.buildFailedResponse(responseMsg);
     }
 
-    @ApiResponses(value = { @ApiResponse(code = 200, message = ViewsConstants.VIEW_DELETE_SUCCESSFUL) })
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ViewsConstants.VIEW_DELETE_SUCCESSFUL)})
     @DeleteMapping(ApiConstants.API_DELETE)
     public ResponseEntity<RunnerResponse> delete(@RequestParam @Valid Long id) {
         CommonGetRequest request = CommonGetRequest.builder().id(id).build();
         return (ResponseEntity<RunnerResponse>) viewsService.delete(CommonRequestModel.buildRequest(request));
     }
 
-    @ApiResponses(value = { @ApiResponse(code = 200, message = ViewsConstants.VIEW_LIST_SUCCESSFUL, responseContainer = ViewsConstants.RESPONSE_CONTAINER_LIST) })
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ViewsConstants.VIEW_LIST_SUCCESSFUL, responseContainer = ViewsConstants.RESPONSE_CONTAINER_LIST)})
     @PostMapping(ApiConstants.API_LIST)
     public ResponseEntity<RunnerListResponse<ViewsResponse>> list(@RequestBody ListCommonRequest listCommonRequest) {
         return (ResponseEntity<RunnerListResponse<ViewsResponse>>) viewsService.list(CommonRequestModel.buildRequest(listCommonRequest));
     }
 
-    @ApiResponses(value = { @ApiResponse(code = 200, message = ViewsConstants.VIEW_RETRIEVE_BY_ID_SUCCESSFUL) })
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ViewsConstants.VIEW_RETRIEVE_BY_ID_SUCCESSFUL)})
     @GetMapping(ApiConstants.API_RETRIEVE_BY_ID)
     public ResponseEntity<RunnerResponse<ViewsResponse>> retrieveById(@ApiParam(value = ViewsConstants.VIEW_ID, required = true) @RequestParam Long id) {
         CommonGetRequest request = CommonGetRequest.builder().id(id).build();
         return (ResponseEntity<RunnerResponse<ViewsResponse>>) viewsService.retrieveById(CommonRequestModel.buildRequest(request));
     }
 
-    @ApiResponses(value = { @ApiResponse(code = 200, message = ViewsConstants.VIEW_UPDATE_SUCCESSFUL, response = RunnerResponse.class) })
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ViewsConstants.VIEW_UPDATE_SUCCESSFUL, response = RunnerResponse.class)})
     @PutMapping(ApiConstants.API_UPDATE)
     public ResponseEntity<RunnerResponse> update(@RequestBody @Valid ViewsRequest request) {
         String responseMsg;

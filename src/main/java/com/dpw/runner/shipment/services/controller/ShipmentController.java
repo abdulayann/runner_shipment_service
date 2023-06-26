@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.controller;
 
 import com.dpw.runner.shipment.services.commons.constants.ApiConstants;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.ShipmentConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
@@ -34,7 +35,7 @@ public class ShipmentController {
     @Autowired
     private IShipmentService shipmentService;
 
-    @ApiResponses(value = { @ApiResponse(code = 200, message = "Successful Shipment Details Data List Retrieval", responseContainer = "List") })
+    @ApiResponses(value = {@ApiResponse(code = 200, message = "Successful Shipment Details Data List Retrieval", responseContainer = "List")})
     @PostMapping(value = "/list-shipment")
     public ResponseEntity<RunnerListResponse<ShipmentDetailsResponse>> fetchByQuery(@RequestBody @NonNull ListCommonRequest listCommonRequest) {
         return (ResponseEntity<RunnerListResponse<ShipmentDetailsResponse>>) shipmentService.fetchShipments(CommonRequestModel.buildRequest(listCommonRequest));
@@ -50,7 +51,7 @@ public class ShipmentController {
     // @PreAuthorize("hasAuthority('"+ Permissions.AdministrationGeneral+"')") //TODO-Authorization
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = ShipmentConstants.CREATE_SUCCESSFUL),
-            @ApiResponse(code = 404, message = ShipmentConstants.NO_DATA, response = RunnerResponse.class)
+            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
     })
     @PostMapping(ApiConstants.API_CREATE)
     public ResponseEntity<RunnerResponse<ShipmentDetailsResponse>> create(@RequestBody @Valid ShipmentRequest request) {
@@ -65,7 +66,7 @@ public class ShipmentController {
         return (ResponseEntity<RunnerResponse<ShipmentDetailsResponse>>) ResponseHelper.buildFailedResponse(responseMsg);
     }
 
-    @ApiResponses(value = { @ApiResponse(code = 200, message = ShipmentConstants.DELETE_SUCCESSFUL) })
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.DELETE_SUCCESSFUL)})
     @DeleteMapping(ApiConstants.API_DELETE)
     public ResponseEntity<RunnerResponse> delete(@RequestParam @Valid Long id) {
         CommonGetRequest request = CommonGetRequest.builder().id(id).build();
@@ -73,14 +74,14 @@ public class ShipmentController {
     }
 
     // @PreAuthorize("hasAuthority('"+ Permissions.AdministrationGeneral+"')") //TODO-Authorization
-    @ApiResponses(value = { @ApiResponse(code = 200, message = ShipmentConstants.LIST_SUCCESSFUL, responseContainer = ShipmentConstants.RESPONSE_CONTAINER_LIST) })
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.LIST_SUCCESSFUL, responseContainer = ShipmentConstants.RESPONSE_CONTAINER_LIST)})
     @PostMapping(ApiConstants.API_LIST)
     public ResponseEntity<RunnerListResponse<ShipmentDetailsResponse>> list(@RequestBody ListCommonRequest listCommonRequest) {
         return (ResponseEntity<RunnerListResponse<ShipmentDetailsResponse>>) shipmentService.list(CommonRequestModel.buildRequest(listCommonRequest));
     }
 
     // @PreAuthorize("hasAuthority('"+ Permissions.AdministrationGeneral+"')") //TODO-Authorization
-    @ApiResponses(value = { @ApiResponse(code = 200, message = ShipmentConstants.RETRIEVE_BY_ID_SUCCESSFUL) })
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.RETRIEVE_BY_ID_SUCCESSFUL)})
     @GetMapping(ApiConstants.API_RETRIEVE_BY_ID)
     public ResponseEntity<RunnerResponse<ShipmentDetailsResponse>> retrieveById(@ApiParam(value = ShipmentConstants.SHIPMENT_ID, required = true) @RequestParam Long id) {
         CommonGetRequest request = CommonGetRequest.builder().id(id).build();
@@ -88,7 +89,7 @@ public class ShipmentController {
     }
 
     // @PreAuthorize("hasAuthority('"+ Permissions.AdministrationGeneral+"')") //TODO-Authorization
-    @ApiResponses(value = { @ApiResponse(code = 200, message = ShipmentConstants.UPDATE_SUCCESSFUL, response = RunnerResponse.class) })
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.UPDATE_SUCCESSFUL, response = RunnerResponse.class)})
     @PutMapping(ApiConstants.API_UPDATE)
     public ResponseEntity<RunnerResponse> update(@RequestBody @Valid ShipmentRequest request) {
         String responseMsg;

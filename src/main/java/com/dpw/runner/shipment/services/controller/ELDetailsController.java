@@ -1,9 +1,6 @@
 package com.dpw.runner.shipment.services.controller;
 
-import com.dpw.runner.shipment.services.commons.constants.AdditionalDetailConstants;
-import com.dpw.runner.shipment.services.commons.constants.ApiConstants;
-import com.dpw.runner.shipment.services.commons.constants.ELDetailsConstants;
-import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
@@ -35,7 +32,7 @@ public class ELDetailsController {
     @PostMapping(ApiConstants.API_CREATE)
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = ELDetailsConstants.ELDETAILS_CREATE_SUCCESSFUL),
-            @ApiResponse(code = 404, message = AdditionalDetailConstants.NO_DATA, response = RunnerResponse.class)
+            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
     })
     public ResponseEntity<RunnerResponse<ELDetailsResponse>> create(@RequestBody @Valid @NonNull ELDetailsRequest request) {
         try {

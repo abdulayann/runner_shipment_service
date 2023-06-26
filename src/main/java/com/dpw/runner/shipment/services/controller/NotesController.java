@@ -30,7 +30,7 @@ public class NotesController {
     @PostMapping(ApiConstants.API_CREATE)
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = NotesConstants.NOTES_CREATE_SUCCESSFUL),
-            @ApiResponse(code = 404, message = AdditionalDetailConstants.NO_DATA, response = RunnerResponse.class)
+            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
     })
     public ResponseEntity<RunnerResponse<NotesResponse>> create(@RequestBody @Valid @NonNull NotesRequest request) {
         try {

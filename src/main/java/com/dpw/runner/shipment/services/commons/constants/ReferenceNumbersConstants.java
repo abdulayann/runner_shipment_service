@@ -13,8 +13,6 @@ public class ReferenceNumbersConstants {
 
     public static final String REFERENCE_NUMBERS_RETRIEVE_BY_ID_SUCCESSFUL = "Successful Reference Numbers Data Retrieval By Id";
 
-    public static final String NO_DATA = "Not Found!";
-
     public static final String REFERENCE_NUMBERS_ID = "Reference Numbers Id";
 
     public static final String RESPONSE_CONTAINER_LIST = "List";

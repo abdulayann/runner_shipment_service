@@ -13,7 +13,5 @@ public class AdditionalDetailConstants {
 
     public static final String ADDITIONAL_DETAILS_RETRIEVE_BY_ID_SUCCESSFUL = "Successful Shipment Additional Detail Data Retrieval By Id";
 
-    public static final String NO_DATA = "Not Found!";
-
     public static final String ADDITIONAL_DETAILS_ID = "Additional Detail Id";
 }
