@@ -43,7 +43,6 @@ public class FileRepoService implements IFileRepoService {
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) throws Exception {
         FileRepoRequest request = null;
         request = (FileRepoRequest) commonRequestModel.getData();
-        // TODO- implement validator
         FileRepo fileRepo  = mapToEntityFromRequest(request);
         fileRepo = fileRepoDao.save(fileRepo);
         return ResponseHelper.buildSuccessResponse(convertToResponse(fileRepo));
@@ -52,7 +51,6 @@ public class FileRepoService implements IFileRepoService {
     @Override
     public ResponseEntity<?> update(CommonRequestModel commonRequestModel) throws Exception {
         FileRepoRequest request = (FileRepoRequest) commonRequestModel.getData();
-        // TODO- implement Validation logic
         long id =request.getId();
         Optional<FileRepo> oldEntity = fileRepoDao.findById(id);
         if(!oldEntity.isPresent()) {
@@ -71,7 +69,6 @@ public class FileRepoService implements IFileRepoService {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
-            // construct specifications for filter request
             Pair<Specification<FileRepo>, Pageable> tuple = fetchData(request, FileRepo.class);
             Page<FileRepo> FileRepoPage  = fileRepoDao.findAll(tuple.getLeft(), tuple.getRight());
             return ResponseHelper.buildListSuccessResponse(
@@ -91,7 +88,6 @@ public class FileRepoService implements IFileRepoService {
     public ResponseEntity<?> delete(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
-            // TODO- implement Validation logic
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
             long id = request.getId();
             Optional<FileRepo> fileRepo = fileRepoDao.findById(id);
@@ -135,7 +131,6 @@ public class FileRepoService implements IFileRepoService {
     public ResponseEntity<?> retrieveByEntityIdAndEntityType(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
-            // TODO- implement actual logic with filters
             EntityIdAndTypeRequest request = (EntityIdAndTypeRequest) commonRequestModel.getData();
             List<FileRepo> fileRepoList = fileRepoDao.findByEntityIdAndEntityType(request.getEntityId(), request.getEntityType());
             if(fileRepoList.size() == 0){

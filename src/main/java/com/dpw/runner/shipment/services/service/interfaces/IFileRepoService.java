@@ -8,15 +8,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 @Service
-public interface IFileRepoService {
-    ResponseEntity<?> create(CommonRequestModel commonRequestModel) throws Exception;
-
-    ResponseEntity<?> update(CommonRequestModel commonRequestModel) throws Exception;
-
-    ResponseEntity<?> list(CommonRequestModel commonRequestModel);
-
-    ResponseEntity<?> delete(CommonRequestModel commonRequestModel);
-
-    ResponseEntity<?> retrieveById(CommonRequestModel commonRequestModel);
+public interface IFileRepoService extends ICommonService{
     ResponseEntity<?> retrieveByEntityIdAndEntityType(CommonRequestModel commonRequestModel);
 }
