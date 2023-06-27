@@ -4,12 +4,14 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import io.swagger.annotations.ApiModel;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.ToString;
 
 import javax.persistence.Column;
 import java.util.UUID;
 
 @Getter
+@Setter
 @ApiModel("Reference Numbers Request Model")
 @ToString
 public class ReferenceNumbersRequest extends CommonRequest implements IRunnerRequest {

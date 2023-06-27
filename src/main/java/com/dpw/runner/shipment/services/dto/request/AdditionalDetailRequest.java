@@ -7,6 +7,7 @@ import com.dpw.runner.shipment.services.entity.enums.LGDStatus;
 import com.dpw.runner.shipment.services.entity.enums.Ownership;
 import io.swagger.annotations.ApiModel;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.ToString;
 
 import java.math.BigDecimal;
@@ -14,6 +15,7 @@ import java.time.LocalDateTime;
 import java.util.Date;
 
 @Getter
+@Setter
 @ApiModel("Shipment Additional Details Request Model")
 @ToString
 public class AdditionalDetailRequest extends CommonRequest implements IRunnerRequest {
@@ -98,5 +100,6 @@ public class AdditionalDetailRequest extends CommonRequest implements IRunnerReq
     private Boolean WBLPrinted;
     private Boolean draftPrinted;
     private Boolean surrenderPrinted;
+    private Long shipmentId;
 
 }
