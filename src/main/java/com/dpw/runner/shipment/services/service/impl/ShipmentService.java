@@ -7,12 +7,17 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.RunnerEntityMapping;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.dto.request.AdditionalDetailRequest;
+import com.dpw.runner.shipment.services.dto.request.CompleteShipmentRequest;
+import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
 import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.*;
+import com.dpw.runner.shipment.services.service.interfaces.IAdditionalDetailService;
+import com.dpw.runner.shipment.services.service.interfaces.IContainerService;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
@@ -37,6 +42,12 @@ public class ShipmentService implements IShipmentService {
 
     @Autowired
     private IShipmentDao shipmentDao;
+    @Autowired
+    private IAdditionalDetailService additionalDetailService;
+
+    @Autowired
+    private IContainerService containerService;
+
     @Autowired
     private IBlDetailsDao blDetailsDao;
     @Autowired
@@ -258,13 +269,34 @@ public class ShipmentService implements IShipmentService {
 
     @Override
     @Transactional
-    public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
-        ShipmentRequest request = null;
-        request = (ShipmentRequest) commonRequestModel.getData();
-        // TODO- implement validator
+    public ResponseEntity<?> create(CommonRequestModel commonRequestModel) throws Exception {
+        CompleteShipmentRequest request = null;
+        request = (CompleteShipmentRequest) commonRequestModel.getData();
         ShipmentDetails shipmentDetails = jsonHelper.convertValue(request, ShipmentDetails.class);
         shipmentDetails = shipmentDao.save(shipmentDetails);
+        List<AdditionalDetailRequest> additionalDetailRequest = request.getAdditionalDetailRequest();
+        createAdditionalDetails(shipmentDetails, additionalDetailRequest);
+        List<ContainerRequest> containerRequest = request.getContainerRequest();
+        createContainers(shipmentDetails, containerRequest);
         return ResponseHelper.buildSuccessResponse(jsonHelper.convertValue(shipmentDetails, ShipmentDetailsResponse.class));
+    }
+
+    @Transactional
+    private void createContainers(ShipmentDetails shipmentDetails, List<ContainerRequest> containerRequest) throws Exception {
+        for(int i = 0; i< containerRequest.size(); i++)
+        {
+            containerRequest.get(i).setShipmentId(shipmentDetails.getId());
+            containerService.create(CommonRequestModel.buildRequest(containerRequest.get(i)));
+        }
+    }
+
+    @Transactional
+    private void createAdditionalDetails(ShipmentDetails shipmentDetails, List<AdditionalDetailRequest> additionalDetailRequest) throws Exception {
+        for(int i = 0; i< additionalDetailRequest.size(); i++)
+        {
+            additionalDetailRequest.get(i).setShipmentId(shipmentDetails.getId());
+            additionalDetailService.create(CommonRequestModel.buildRequest(additionalDetailRequest.get(i)));
+        }
     }
 
     @Override

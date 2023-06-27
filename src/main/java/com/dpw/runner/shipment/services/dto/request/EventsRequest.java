@@ -3,11 +3,13 @@ package com.dpw.runner.shipment.services.dto.request;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.ToString;
 
 import java.util.Date;
 
 @Getter
+@Setter
 @ToString
 public class EventsRequest extends CommonRequest implements IRunnerRequest {
     private Long id;
