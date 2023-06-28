@@ -24,7 +24,7 @@ public class MapperMasterDataImpl implements IMasterDataService {
         dataMap.add(MasterData.builder().itemValue("AIR").build());
         dataMap.add(MasterData.builder().itemValue("ROA").build());
         dataMap.add(MasterData.builder().itemValue("RAIL").build());
-        masterDataMap.put(MasterDataType.TransportModes, dataMap);
+        masterDataMap.put(MasterDataType.TRANSPORT_MODE, dataMap);
     }
 
     @Override
