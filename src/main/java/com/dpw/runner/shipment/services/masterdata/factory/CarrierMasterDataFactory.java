@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.masterdata.factory;
 
 import com.dpw.runner.shipment.services.masterdata.helper.ICarrierMasterData;
 import com.dpw.runner.shipment.services.masterdata.helper.impl.mapper.CarrierMasterDataImpl;
+import com.dpw.runner.shipment.services.utils.StringUtility;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 
@@ -15,7 +16,7 @@ public class CarrierMasterDataFactory {
     private String source;
 
     public ICarrierMasterData getCarrierMasterDataService() {
-        if(source == null || source.isEmpty())
+        if(StringUtility.isEmpty(source))
             return carrierMasterData;  // TODO- throw exception?
         switch (source)
         {
