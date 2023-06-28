@@ -33,6 +33,11 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 
@@ -42,6 +47,7 @@ public class ShipmentService implements IShipmentService {
 
     @Autowired
     private IShipmentDao shipmentDao;
+
     @Autowired
     private IAdditionalDetailService additionalDetailService;
 
@@ -50,10 +56,13 @@ public class ShipmentService implements IShipmentService {
 
     @Autowired
     private IBlDetailsDao blDetailsDao;
+
     @Autowired
     private IMeasurementDao measurementDao;
+
     @Autowired
     private ICarrierDao carrierDao;
+
     @Autowired
     private IPartiesDao partiesDao;
 
@@ -267,36 +276,102 @@ public class ShipmentService implements IShipmentService {
         return salt.toString();
     }
 
+
+//    @Transactional
+//    public ResponseEntity<?> createSynchronous(CommonRequestModel commonRequestModel) throws Exception {
+//        CompleteShipmentRequest request = (CompleteShipmentRequest) commonRequestModel.getData();
+//        ShipmentDetails shipmentDetails = jsonHelper.convertValue(request, ShipmentDetails.class);
+//        shipmentDetails = shipmentDao.save(shipmentDetails);
+//        List<AdditionalDetailRequest> additionalDetailRequest = request.getAdditionalDetailRequest();
+//        createAdditionalDetails(shipmentDetails, additionalDetailRequest);
+//        List<ContainerRequest> containerRequest = request.getContainerRequest();
+//        createContainers(shipmentDetails, containerRequest);
+//        return ResponseHelper.buildSuccessResponse(jsonHelper.convertValue(shipmentDetails, ShipmentDetailsResponse.class));
+//    }
+
     @Override
     @Transactional
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) throws Exception {
-        CompleteShipmentRequest request = null;
-        request = (CompleteShipmentRequest) commonRequestModel.getData();
+        ExecutorService executorService = Executors.newFixedThreadPool(100);
+
+        CompleteShipmentRequest request = (CompleteShipmentRequest) commonRequestModel.getData();
         ShipmentDetails shipmentDetails = jsonHelper.convertValue(request, ShipmentDetails.class);
-        shipmentDetails = shipmentDao.save(shipmentDetails);
+
+        CompletableFuture<Void> saveCallToShipmentDao = CompletableFuture.runAsync(() -> shipmentDao.save(shipmentDetails));
+        saveCallToShipmentDao.get();
+
         List<AdditionalDetailRequest> additionalDetailRequest = request.getAdditionalDetailRequest();
-        createAdditionalDetails(shipmentDetails, additionalDetailRequest);
+
+        CompletableFuture<Void> createCallToAdditionalDetails = CompletableFuture.runAsync(() -> {
+            try {
+                createAdditionalDetailsAsync(shipmentDetails, additionalDetailRequest, executorService);
+            } catch (Exception e) {
+                log.error(e.getMessage());
+                throw new RuntimeException(e);
+            }
+        });
+
         List<ContainerRequest> containerRequest = request.getContainerRequest();
-        createContainers(shipmentDetails, containerRequest);
+
+        CompletableFuture<Void> createCallToContainers = CompletableFuture.runAsync(() -> {
+            try {
+                createContainersAsync(shipmentDetails, containerRequest, executorService);
+            } catch (Exception e) {
+                log.error(e.getMessage());
+                throw new RuntimeException(e);
+            }
+        });
+
+        createCallToContainers.get();
+        createCallToAdditionalDetails.get();
+        CompletableFuture.allOf(createCallToAdditionalDetails, createCallToContainers).join();
+        executorService.shutdownNow();
         return ResponseHelper.buildSuccessResponse(jsonHelper.convertValue(shipmentDetails, ShipmentDetailsResponse.class));
     }
 
-    @Transactional
-    private void createContainers(ShipmentDetails shipmentDetails, List<ContainerRequest> containerRequest) throws Exception {
-        for(int i = 0; i< containerRequest.size(); i++)
-        {
-            containerRequest.get(i).setShipmentId(shipmentDetails.getId());
-            containerService.create(CommonRequestModel.buildRequest(containerRequest.get(i)));
-        }
+    private CompletableFuture<Void> createAdditionalDetailsAsync(ShipmentDetails shipmentDetails, List<AdditionalDetailRequest> additionalDetailRequest, ExecutorService executorService) {
+        List<CompletableFuture<Void>> futures = additionalDetailRequest.stream()
+                .map(request -> CompletableFuture.runAsync(() -> {
+                    try {
+                        Thread.sleep(2000);
+                        createAdditionalDetail(shipmentDetails, request);
+                        log.info("COMPLETED ADDITIONAL DETAIL CREATE REQUEST " + request.getId());
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                }, executorService))
+                .collect(Collectors.toList());
+        var list = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+        list.join();
+        return list;
+    }
+
+    private CompletableFuture<Void> createContainersAsync(ShipmentDetails shipmentDetails, List<ContainerRequest> containerRequest, ExecutorService executorService) {
+        List<CompletableFuture<Void>> futures = containerRequest.stream()
+                .map(request -> CompletableFuture.runAsync(() -> {
+                    try {
+                        createContainer(shipmentDetails, request);
+                        log.info("COMPLETED CONTAINERS CREATE REQUEST " + request.getId());
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                }, executorService))
+                .collect(Collectors.toList());
+        var list = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+        list.join();
+        return list;
     }
 
     @Transactional
-    private void createAdditionalDetails(ShipmentDetails shipmentDetails, List<AdditionalDetailRequest> additionalDetailRequest) throws Exception {
-        for(int i = 0; i< additionalDetailRequest.size(); i++)
-        {
-            additionalDetailRequest.get(i).setShipmentId(shipmentDetails.getId());
-            additionalDetailService.create(CommonRequestModel.buildRequest(additionalDetailRequest.get(i)));
-        }
+    public void createContainer(ShipmentDetails shipmentDetails, ContainerRequest containerRequest) throws Exception {
+        containerRequest.setShipmentId(shipmentDetails.getId());
+        containerService.create(CommonRequestModel.buildRequest(containerRequest));
+    }
+
+    @Transactional
+    public void createAdditionalDetail(ShipmentDetails shipmentDetails, AdditionalDetailRequest additionalDetailRequest) throws Exception {
+        additionalDetailRequest.setShipmentId(shipmentDetails.getId());
+        additionalDetailService.create(CommonRequestModel.buildRequest(additionalDetailRequest));
     }
 
     @Override
