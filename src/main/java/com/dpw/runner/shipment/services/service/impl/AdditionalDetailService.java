@@ -8,6 +8,7 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.AdditionalDetailRequest;
 import com.dpw.runner.shipment.services.dto.response.AdditionalDetailResponse;
 import com.dpw.runner.shipment.services.entity.AdditionalDetail;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.IAdditionalDetailDao;
@@ -21,8 +22,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -40,7 +43,7 @@ public class AdditionalDetailService implements IAdditionalDetailService {
     @Autowired
     private JsonHelper jsonHelper;
 
-    @Transactional
+    @Transactional(rollbackFor = {SQLException.class}, propagation = Propagation.MANDATORY)
     @Override
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) throws Exception {
         AdditionalDetailRequest request = (AdditionalDetailRequest) commonRequestModel.getData();
