@@ -410,7 +410,7 @@ public class ShipmentService implements IShipmentService {
         CompletableFuture<Void> createCallToCarrierDetails;
 
         try {
-            shipmentDao.save(shipmentDetails);
+            getShipment(shipmentDetails);
             List<AdditionalDetailRequest> additionalDetailRequest = request.getAdditionalDetailRequest();
             createCallToAdditionalDetails = CompletableFuture.runAsync(() -> {
                 createAdditionalDetailsAsync(shipmentDetails, additionalDetailRequest, executorService);
@@ -433,7 +433,7 @@ public class ShipmentService implements IShipmentService {
 
             List<ELDetailsRequest> elDetailsRequest = request.getElDetailsRequest();
             createCallToElDetails = CompletableFuture.runAsync(() -> {
-               createElDetailsAsync(shipmentDetails, elDetailsRequest, executorService);
+                createElDetailsAsync(shipmentDetails, elDetailsRequest, executorService);
             });
 
             List<EventsRequest> eventsRequest = request.getEventsRequest();
@@ -495,6 +495,11 @@ public class ShipmentService implements IShipmentService {
         CompletableFuture.allOf(createCallToAdditionalDetails, createCallToContainers, createCallToPackings, createCallToBookingCarriages, createCallToElDetails, createCallToEvents, createCallToFileRepos, createCallToJobs, createCallToNotes, createCallToReferenceNumbers, createCallToRoutings, createCallToServiceDetails, createCallToPickupDelivery, createCallToParties, createCallToCarrierDetails).join();
         executorService.shutdownNow();
         return ResponseHelper.buildSuccessResponse(jsonHelper.convertValue(shipmentDetails, ShipmentDetailsResponse.class));
+    }
+
+    @Transactional
+    private void getShipment(ShipmentDetails shipmentDetails) {
+        shipmentDao.save(shipmentDetails);
     }
 
     private CompletableFuture<Void> createCarrierDetailsAsync(ShipmentDetails shipmentDetails, List<CarrierDetailRequest> carrierDetailRequest, ExecutorService executorService) {
@@ -645,7 +650,7 @@ public class ShipmentService implements IShipmentService {
         List<CompletableFuture<Void>> futures = eventsRequest.stream()
                 .map(request -> CompletableFuture.runAsync(() -> {
                     try {
-                         createEvent(shipmentDetails, request);
+                        createEvent(shipmentDetails, request);
                         log.info("COMPLETED EVENT REQUEST " + request.getId());
                     } catch (Exception e) {
                         throw new RuntimeException(e);
@@ -787,6 +792,7 @@ public class ShipmentService implements IShipmentService {
         pickupDeliveryDetailsRequest.setShipmentId(shipmentDetails.getId());
         pickupDeliveryDetailsService.create(CommonRequestModel.buildRequest(pickupDeliveryDetailsRequest));
     }
+
     @Transactional
     public void createReferenceNumber(ShipmentDetails shipmentDetails, ReferenceNumbersRequest referenceNumbersRequest) throws Exception {
         referenceNumbersRequest.setShipmentId(shipmentDetails.getId());

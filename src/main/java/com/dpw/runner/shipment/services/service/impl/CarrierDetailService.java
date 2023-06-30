@@ -21,10 +21,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.sql.SQLException;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -40,7 +38,7 @@ public class CarrierDetailService implements ICarrierDetailService {
     @Autowired
     ModelMapper modelMapper;
 
-    @Transactional(rollbackFor = {SQLException.class}, propagation = Propagation.MANDATORY)
+    @Transactional
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) throws Exception {
         CarrierDetailRequest request = (CarrierDetailRequest) commonRequestModel.getData();
         CarrierDetails carrierDetails = convertRequestToCarrierDetail(request);

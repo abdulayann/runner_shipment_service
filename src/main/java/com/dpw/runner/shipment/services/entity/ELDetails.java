@@ -46,7 +46,7 @@ public class ELDetails extends MultiTenancy {
     private MergeClass mergeClass;
 
     @Column(name = "merge_package")
-    private Long mergePackage;
+    private Long mergePackages;
 
     @Column(name = "merge_package_unit")
     private String mergePackageUnit;
