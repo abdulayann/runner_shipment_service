@@ -9,6 +9,7 @@ import java.math.BigDecimal;
 @Data
 @ApiModel(value = "Packing response model")
 public class PackingResponse implements IRunnerResponse {
+    private Long id;
     private Long consolidationId;
     private Long shipmentId;
     private Integer DGGoodsId;

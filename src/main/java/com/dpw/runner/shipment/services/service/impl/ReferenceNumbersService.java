@@ -20,8 +20,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.sql.SQLException;
 import java.util.*;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
@@ -33,7 +35,7 @@ public class ReferenceNumbersService implements IReferenceNumbersService {
     @Autowired
     private IReferenceNumbersDao referenceNumbersDao;
 
-    @Transactional
+    @Transactional(rollbackFor = {SQLException.class}, propagation = Propagation.MANDATORY)
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) throws Exception {
         ReferenceNumbersRequest request = null;
         request = (ReferenceNumbersRequest) commonRequestModel.getData();

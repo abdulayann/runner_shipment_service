@@ -7,18 +7,13 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.RunnerEntityMapping;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.dto.request.AdditionalDetailRequest;
-import com.dpw.runner.shipment.services.dto.request.CompleteShipmentRequest;
-import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
-import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
+import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.*;
-import com.dpw.runner.shipment.services.service.interfaces.IAdditionalDetailService;
-import com.dpw.runner.shipment.services.service.interfaces.IContainerService;
-import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
+import com.dpw.runner.shipment.services.service.interfaces.*;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -49,10 +44,49 @@ public class ShipmentService implements IShipmentService {
     private IShipmentDao shipmentDao;
 
     @Autowired
+    private IPackingService packingService;
+
+    @Autowired
+    private IBookingCarriageService bookingCarriageService;
+
+    @Autowired
+    private ICarrierDetailService carrierDetailService;
+
+    @Autowired
+    private IELDetailsService elDetailsService;
+
+    @Autowired
+    private IEventService eventService;
+
+    @Autowired
+    private IFileRepoService fileRepoService;
+
+    @Autowired
+    private IJobService jobService;
+
+    @Autowired
+    private INotesService notesService;
+
+    @Autowired
+    private IPickupDeliveryDetailsService pickupDeliveryDetailsService;
+
+    @Autowired
+    private IReferenceNumbersService referenceNumbersService;
+
+    @Autowired
+    private IRoutingsService routingsService;
+
+    @Autowired
+    private IServiceDetailsService serviceDetailsService;
+
+    @Autowired
     private IAdditionalDetailService additionalDetailService;
 
     @Autowired
     private IContainerService containerService;
+
+    @Autowired
+    private IPartiesDetailsService partiesDetailsService;
 
     @Autowired
     private IBlDetailsDao blDetailsDao;
@@ -357,10 +391,23 @@ public class ShipmentService implements IShipmentService {
         ExecutorService executorService = Executors.newFixedThreadPool(100);
 
         CompleteShipmentRequest request = (CompleteShipmentRequest) commonRequestModel.getData();
-        ShipmentDetails shipmentDetails = jsonHelper.convertValue(request, ShipmentDetails.class);
+        ShipmentDetails shipmentDetails = jsonHelper.convertValue(request.getShipmentRequest(), ShipmentDetails.class);
 
-        CompletableFuture<Void> createCallToAdditionalDetails = null;
-        CompletableFuture<Void> createCallToContainers = null;
+        CompletableFuture<Void> createCallToAdditionalDetails;
+        CompletableFuture<Void> createCallToContainers;
+        CompletableFuture<Void> createCallToPackings;
+        CompletableFuture<Void> createCallToBookingCarriages;
+        CompletableFuture<Void> createCallToElDetails;
+        CompletableFuture<Void> createCallToEvents;
+        CompletableFuture<Void> createCallToFileRepos;
+        CompletableFuture<Void> createCallToJobs;
+        CompletableFuture<Void> createCallToNotes;
+        CompletableFuture<Void> createCallToReferenceNumbers;
+        CompletableFuture<Void> createCallToRoutings;
+        CompletableFuture<Void> createCallToServiceDetails;
+        CompletableFuture<Void> createCallToPickupDelivery;
+        CompletableFuture<Void> createCallToParties;
+        CompletableFuture<Void> createCallToCarrierDetails;
 
         try {
             shipmentDao.save(shipmentDetails);
@@ -373,23 +420,281 @@ public class ShipmentService implements IShipmentService {
             createCallToContainers = CompletableFuture.runAsync(() -> {
                 createContainersAsync(shipmentDetails, containerRequest, executorService);
             });
+
+            List<PackingRequest> packingRequest = request.getPackingRequest();
+            createCallToPackings = CompletableFuture.runAsync(() -> {
+                createPackingsAsync(shipmentDetails, packingRequest, executorService);
+            });
+
+            List<BookingCarriageRequest> bookingCarriageRequest = request.getBookingCarriageRequest();
+            createCallToBookingCarriages = CompletableFuture.runAsync(() -> {
+                createBookingCarriagesAsync(shipmentDetails, bookingCarriageRequest, executorService);
+            });
+
+            List<ELDetailsRequest> elDetailsRequest = request.getElDetailsRequest();
+            createCallToElDetails = CompletableFuture.runAsync(() -> {
+               createElDetailsAsync(shipmentDetails, elDetailsRequest, executorService);
+            });
+
+            List<EventsRequest> eventsRequest = request.getEventsRequest();
+            createCallToEvents = CompletableFuture.runAsync(() -> {
+                createEventsAsync(shipmentDetails, eventsRequest, executorService);
+            });
+
+            List<FileRepoRequest> fileRepoRequest = request.getFileRepoRequest();
+            createCallToFileRepos = CompletableFuture.runAsync(() -> {
+                createFileRepoAsync(shipmentDetails, fileRepoRequest, executorService);
+            });
+
+            List<JobRequest> jobRequest = request.getJobRequest();
+            createCallToJobs = CompletableFuture.runAsync(() -> {
+                createJobsAsync(shipmentDetails, jobRequest, executorService);
+            });
+
+            List<NotesRequest> notesRequest = request.getNotesRequest();
+            createCallToNotes = CompletableFuture.runAsync(() -> {
+                createNotesAsync(shipmentDetails, notesRequest, executorService);
+            });
+
+            List<ReferenceNumbersRequest> referenceNumbersRequest = request.getReferenceNumbersRequest();
+            createCallToReferenceNumbers = CompletableFuture.runAsync(() -> {
+                createReferenceNumbersAsync(shipmentDetails, referenceNumbersRequest, executorService);
+            });
+
+            List<RoutingsRequest> routingsRequest = request.getRoutingsRequest();
+            createCallToRoutings = CompletableFuture.runAsync(() -> {
+                createRoutingsAsync(shipmentDetails, routingsRequest, executorService);
+            });
+
+            List<ServiceDetailsRequest> serviceDetailsRequest = request.getServiceDetailsRequest();
+            createCallToServiceDetails = CompletableFuture.runAsync(() -> {
+                createServiceDetailsAsync(shipmentDetails, serviceDetailsRequest, executorService);
+            });
+
+            List<PickupDeliveryDetailsRequest> pickupDeliveryDetailsRequest = request.getPickupDeliveryDetailsRequest();
+            createCallToPickupDelivery = CompletableFuture.runAsync(() -> {
+                createPickupDeliveryAsync(shipmentDetails, pickupDeliveryDetailsRequest, executorService);
+            });
+
+            List<PartiesRequest> partiesRequest = request.getPartiesRequest();
+            createCallToParties = CompletableFuture.runAsync(() -> {
+                createPartiesAsync(shipmentDetails, partiesRequest, executorService);
+            });
+
+            List<CarrierDetailRequest> carrierDetailRequest = request.getCarrierDetailRequest();
+            createCallToCarrierDetails = CompletableFuture.runAsync(() -> {
+                createCarrierDetailsAsync(shipmentDetails, carrierDetailRequest, executorService);
+            });
+
         } catch (Exception e) {
             log.error(e.getMessage());
             TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
             throw new RuntimeException(e);
         }
 
-        CompletableFuture.allOf(createCallToAdditionalDetails, createCallToContainers).join();
+        CompletableFuture.allOf(createCallToAdditionalDetails, createCallToContainers, createCallToPackings, createCallToBookingCarriages, createCallToElDetails, createCallToEvents, createCallToFileRepos, createCallToJobs, createCallToNotes, createCallToReferenceNumbers, createCallToRoutings, createCallToServiceDetails, createCallToPickupDelivery, createCallToParties, createCallToCarrierDetails).join();
         executorService.shutdownNow();
         return ResponseHelper.buildSuccessResponse(jsonHelper.convertValue(shipmentDetails, ShipmentDetailsResponse.class));
     }
 
-    private CompletableFuture<Void> createAdditionalDetailsAsync(ShipmentDetails shipmentDetails, List<AdditionalDetailRequest> additionalDetailRequest, ExecutorService executorService) {
-        List<CompletableFuture<Void>> futures = additionalDetailRequest.stream()
+    private CompletableFuture<Void> createCarrierDetailsAsync(ShipmentDetails shipmentDetails, List<CarrierDetailRequest> carrierDetailRequest, ExecutorService executorService) {
+        List<CompletableFuture<Void>> futures = carrierDetailRequest.stream()
                 .map(request -> CompletableFuture.runAsync(() -> {
                     try {
-                        createAdditionalDetail(shipmentDetails, request);
-                        log.info("COMPLETED ADDITIONAL DETAIL CREATE REQUEST " + request.getId());
+                        createCarrier(shipmentDetails, request);
+                        log.info("COMPLETED CARRIER DETAIL REQUEST " + request.getId());
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                }, executorService))
+                .collect(Collectors.toList());
+        var list = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+        list.join();
+        return list;
+    }
+
+    private CompletableFuture<Void> createPartiesAsync(ShipmentDetails shipmentDetails, List<PartiesRequest> partiesRequest, ExecutorService executorService) {
+        List<CompletableFuture<Void>> futures = partiesRequest.stream()
+                .map(request -> CompletableFuture.runAsync(() -> {
+                    try {
+                        createParties(shipmentDetails, request);
+                        log.info("COMPLETED PARTIES REQUEST " + request.getId());
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                }, executorService))
+                .collect(Collectors.toList());
+        var list = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+        list.join();
+        return list;
+    }
+
+    private CompletableFuture<Void> createPickupDeliveryAsync(ShipmentDetails shipmentDetails, List<PickupDeliveryDetailsRequest> pickupDeliveryDetailsRequest, ExecutorService executorService) {
+        List<CompletableFuture<Void>> futures = pickupDeliveryDetailsRequest.stream()
+                .map(request -> CompletableFuture.runAsync(() -> {
+                    try {
+                        createPickupDelivery(shipmentDetails, request);
+                        log.info("COMPLETED PICKUP DELIVERY REQUEST " + request.getId());
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                }, executorService))
+                .collect(Collectors.toList());
+        var list = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+        list.join();
+        return list;
+    }
+
+    private CompletableFuture<Void> createServiceDetailsAsync(ShipmentDetails shipmentDetails, List<ServiceDetailsRequest> serviceDetailsRequest, ExecutorService executorService) {
+        List<CompletableFuture<Void>> futures = serviceDetailsRequest.stream()
+                .map(request -> CompletableFuture.runAsync(() -> {
+                    try {
+                        createServiceDetail(shipmentDetails, request);
+                        log.info("COMPLETED SERVICE DETAIL REQUEST " + request.getId());
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                }, executorService))
+                .collect(Collectors.toList());
+        var list = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+        list.join();
+        return list;
+    }
+
+    private CompletableFuture<Void> createRoutingsAsync(ShipmentDetails shipmentDetails, List<RoutingsRequest> routingsRequest, ExecutorService executorService) {
+        List<CompletableFuture<Void>> futures = routingsRequest.stream()
+                .map(request -> CompletableFuture.runAsync(() -> {
+                    try {
+                        createRouting(shipmentDetails, request);
+                        log.info("COMPLETED ROUTING REQUEST " + request.getId());
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                }, executorService))
+                .collect(Collectors.toList());
+        var list = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+        list.join();
+        return list;
+    }
+
+    private CompletableFuture<Void> createReferenceNumbersAsync(ShipmentDetails shipmentDetails, List<ReferenceNumbersRequest> referenceNumbersRequest, ExecutorService executorService) {
+        List<CompletableFuture<Void>> futures = referenceNumbersRequest.stream()
+                .map(request -> CompletableFuture.runAsync(() -> {
+                    try {
+                        createReferenceNumber(shipmentDetails, request);
+                        log.info("COMPLETED REFERENCE NUMBER REQUEST " + request.getId());
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                }, executorService))
+                .collect(Collectors.toList());
+        var list = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+        list.join();
+        return list;
+    }
+
+    private CompletableFuture<Void> createNotesAsync(ShipmentDetails shipmentDetails, List<NotesRequest> notesRequest, ExecutorService executorService) {
+        List<CompletableFuture<Void>> futures = notesRequest.stream()
+                .map(request -> CompletableFuture.runAsync(() -> {
+                    try {
+                        createNote(shipmentDetails, request);
+                        log.info("COMPLETED NOTE REQUEST " + request.getId());
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                }, executorService))
+                .collect(Collectors.toList());
+        var list = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+        list.join();
+        return list;
+    }
+
+    private CompletableFuture<Void> createJobsAsync(ShipmentDetails shipmentDetails, List<JobRequest> jobRequest, ExecutorService executorService) {
+        List<CompletableFuture<Void>> futures = jobRequest.stream()
+                .map(request -> CompletableFuture.runAsync(() -> {
+                    try {
+                        createJob(shipmentDetails, request);
+                        log.info("COMPLETED JOB REQUEST " + request.getId());
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                }, executorService))
+                .collect(Collectors.toList());
+        var list = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+        list.join();
+        return list;
+    }
+
+    private CompletableFuture<Void> createFileRepoAsync(ShipmentDetails shipmentDetails, List<FileRepoRequest> fileRepoRequest, ExecutorService executorService) {
+        List<CompletableFuture<Void>> futures = fileRepoRequest.stream()
+                .map(request -> CompletableFuture.runAsync(() -> {
+                    try {
+                        createFileRepo(shipmentDetails, request);
+                        log.info("COMPLETED FILE REPO REQUEST " + request.getId());
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                }, executorService))
+                .collect(Collectors.toList());
+        var list = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+        list.join();
+        return list;
+    }
+
+    private CompletableFuture<Void> createEventsAsync(ShipmentDetails shipmentDetails, List<EventsRequest> eventsRequest, ExecutorService executorService) {
+        List<CompletableFuture<Void>> futures = eventsRequest.stream()
+                .map(request -> CompletableFuture.runAsync(() -> {
+                    try {
+                         createEvent(shipmentDetails, request);
+                        log.info("COMPLETED EVENT REQUEST " + request.getId());
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                }, executorService))
+                .collect(Collectors.toList());
+        var list = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+        list.join();
+        return list;
+    }
+
+    private CompletableFuture<Void> createElDetailsAsync(ShipmentDetails shipmentDetails, List<ELDetailsRequest> elDetailsRequest, ExecutorService executorService) {
+        List<CompletableFuture<Void>> futures = elDetailsRequest.stream()
+                .map(request -> CompletableFuture.runAsync(() -> {
+                    try {
+                        createElDetail(shipmentDetails, request);
+                        log.info("COMPLETED EL DETAIL REQUEST " + request.getId());
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                }, executorService))
+                .collect(Collectors.toList());
+        var list = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+        list.join();
+        return list;
+    }
+
+    private CompletableFuture<Void> createBookingCarriagesAsync(ShipmentDetails shipmentDetails, List<BookingCarriageRequest> bookingCarriageRequest, ExecutorService executorService) {
+        List<CompletableFuture<Void>> futures = bookingCarriageRequest.stream()
+                .map(request -> CompletableFuture.runAsync(() -> {
+                    try {
+                        createbookingCarriage(shipmentDetails, request);
+                        log.info("COMPLETED BOOKING CARRIAGE REQUEST " + request.getId());
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                }, executorService))
+                .collect(Collectors.toList());
+        var list = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+        list.join();
+        return list;
+    }
+
+    private CompletableFuture<Void> createPackingsAsync(ShipmentDetails shipmentDetails, List<PackingRequest> packingRequest, ExecutorService executorService) {
+        List<CompletableFuture<Void>> futures = packingRequest.stream()
+                .map(request -> CompletableFuture.runAsync(() -> {
+                    try {
+                        createPacking(shipmentDetails, request);
+                        log.info("COMPLETED PACKING REQUEST " + request.getId());
                     } catch (Exception e) {
                         throw new RuntimeException(e);
                     }
@@ -416,6 +721,84 @@ public class ShipmentService implements IShipmentService {
         return list;
     }
 
+    private CompletableFuture<Void> createAdditionalDetailsAsync(ShipmentDetails shipmentDetails, List<AdditionalDetailRequest> additionalDetailRequest, ExecutorService executorService) {
+        List<CompletableFuture<Void>> futures = additionalDetailRequest.stream()
+                .map(request -> CompletableFuture.runAsync(() -> {
+                    try {
+                        createAdditionalDetail(shipmentDetails, request);
+                        log.info("COMPLETED ADDITIONAL DETAIL CREATE REQUEST " + request.getId());
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                }, executorService))
+                .collect(Collectors.toList());
+        var list = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+        list.join();
+        return list;
+    }
+
+    @Transactional
+    public void createbookingCarriage(ShipmentDetails shipmentDetails, BookingCarriageRequest bookingCarriageRequest) throws Exception {
+        bookingCarriageRequest.setShipmentId(shipmentDetails.getId());
+        bookingCarriageService.create(CommonRequestModel.buildRequest(bookingCarriageRequest));
+    }
+
+    @Transactional
+    public void createElDetail(ShipmentDetails shipmentDetails, ELDetailsRequest elDetailsRequest) throws Exception {
+        elDetailsRequest.setShipmentId(shipmentDetails.getId());
+        elDetailsService.create(CommonRequestModel.buildRequest(elDetailsRequest));
+    }
+
+    @Transactional
+    public void createEvent(ShipmentDetails shipmentDetails, EventsRequest eventsRequest) throws Exception {
+        eventsRequest.setShipmentId(shipmentDetails.getId());
+        eventService.create(eventsRequest);
+    }
+
+    @Transactional
+    public void createFileRepo(ShipmentDetails shipmentDetails, FileRepoRequest fileRepoRequest) throws Exception {
+        fileRepoRequest.setEntityId(shipmentDetails.getId());
+        fileRepoRequest.setEntityType("SHIPMENT");
+        fileRepoService.create(CommonRequestModel.buildRequest(fileRepoRequest));
+    }
+
+    @Transactional
+    public void createJob(ShipmentDetails shipmentDetails, JobRequest jobRequest) throws Exception {
+        jobRequest.setShipmentId(shipmentDetails.getId());
+        jobService.create(CommonRequestModel.buildRequest(jobRequest));
+    }
+
+    @Transactional
+    public void createNote(ShipmentDetails shipmentDetails, NotesRequest notesRequest) throws Exception {
+        notesRequest.setEntityId(shipmentDetails.getId());
+        notesRequest.setEntityType("SHIPMENT");
+        notesService.create(CommonRequestModel.buildRequest(notesRequest));
+    }
+
+    @Transactional
+    public void createParties(ShipmentDetails shipmentDetails, PartiesRequest partiesRequest) throws Exception {
+        partiesRequest.setEntityId(shipmentDetails.getId());
+        partiesRequest.setEntityType("SHIPMENT");
+        partiesDetailsService.create(CommonRequestModel.buildRequest(partiesRequest));
+    }
+
+    @Transactional
+    public void createPickupDelivery(ShipmentDetails shipmentDetails, PickupDeliveryDetailsRequest pickupDeliveryDetailsRequest) throws Exception {
+        pickupDeliveryDetailsRequest.setShipmentId(shipmentDetails.getId());
+        pickupDeliveryDetailsService.create(CommonRequestModel.buildRequest(pickupDeliveryDetailsRequest));
+    }
+    @Transactional
+    public void createReferenceNumber(ShipmentDetails shipmentDetails, ReferenceNumbersRequest referenceNumbersRequest) throws Exception {
+        referenceNumbersRequest.setShipmentId(shipmentDetails.getId());
+        referenceNumbersService.create(CommonRequestModel.buildRequest(referenceNumbersRequest));
+    }
+
+    @Transactional
+    public void createPacking(ShipmentDetails shipmentDetails, PackingRequest packingRequest) throws Exception {
+        packingRequest.setShipmentId(shipmentDetails.getId());
+        packingService.create(CommonRequestModel.buildRequest(packingRequest));
+    }
+
     @Transactional
     public void createContainer(ShipmentDetails shipmentDetails, ContainerRequest containerRequest) throws Exception {
         containerRequest.setShipmentId(shipmentDetails.getId());
@@ -423,9 +806,27 @@ public class ShipmentService implements IShipmentService {
     }
 
     @Transactional
+    public void createRouting(ShipmentDetails shipmentDetails, RoutingsRequest routingsRequest) throws Exception {
+        routingsRequest.setShipmentId(shipmentDetails.getId());
+        routingsService.create(CommonRequestModel.buildRequest(routingsRequest));
+    }
+
+    @Transactional
+    public void createServiceDetail(ShipmentDetails shipmentDetails, ServiceDetailsRequest serviceDetailsRequest) throws Exception {
+        serviceDetailsRequest.setShipmentId(shipmentDetails.getId());
+        serviceDetailsService.create(CommonRequestModel.buildRequest(serviceDetailsRequest));
+    }
+
+    @Transactional
     public void createAdditionalDetail(ShipmentDetails shipmentDetails, AdditionalDetailRequest additionalDetailRequest) throws Exception {
         additionalDetailRequest.setShipmentId(shipmentDetails.getId());
         additionalDetailService.create(CommonRequestModel.buildRequest(additionalDetailRequest));
+    }
+
+    @Transactional
+    public void createCarrier(ShipmentDetails shipmentDetails, CarrierDetailRequest carrierDetailRequest) throws Exception {
+        carrierDetailRequest.setShipmentId(shipmentDetails.getId());
+        carrierDetailService.create(CommonRequestModel.buildRequest(carrierDetailRequest));
     }
 
     @Override

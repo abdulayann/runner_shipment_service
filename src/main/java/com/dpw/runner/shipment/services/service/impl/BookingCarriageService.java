@@ -19,8 +19,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.sql.SQLException;
 import java.util.*;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
@@ -35,7 +37,7 @@ public class BookingCarriageService implements IBookingCarriageService {
     @Autowired
     private ModelMapper modelMapper;
 
-    @Transactional
+    @Transactional(rollbackFor = {SQLException.class}, propagation = Propagation.MANDATORY)
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) throws Exception {
         BookingCarriageRequest request = null;
         request = (BookingCarriageRequest) commonRequestModel.getData();
