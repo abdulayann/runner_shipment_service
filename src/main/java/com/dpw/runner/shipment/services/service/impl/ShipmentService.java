@@ -498,7 +498,7 @@ public class ShipmentService implements IShipmentService {
     }
 
     @Transactional
-    private void getShipment(ShipmentDetails shipmentDetails) {
+    void getShipment(ShipmentDetails shipmentDetails) {
         shipmentDao.save(shipmentDetails);
     }
 
