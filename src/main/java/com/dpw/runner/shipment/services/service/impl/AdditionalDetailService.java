@@ -21,11 +21,10 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -43,13 +42,16 @@ public class AdditionalDetailService implements IAdditionalDetailService {
     @Autowired
     private JsonHelper jsonHelper;
 
-    @Transactional(rollbackFor = {SQLException.class}, propagation = Propagation.MANDATORY)
+    @Transactional
     @Override
+    @Async
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) throws Exception {
         AdditionalDetailRequest request = (AdditionalDetailRequest) commonRequestModel.getData();
         // TODO- implement validator
         AdditionalDetail additionalDetails = convertRequestToEntity(request);
         additionalDetails = additionalDetailDao.save(additionalDetails);
+        if (true)
+            throw new RunnerException("Test");
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(additionalDetails));
     }
 
@@ -58,9 +60,9 @@ public class AdditionalDetailService implements IAdditionalDetailService {
     public ResponseEntity<?> update(CommonRequestModel commonRequestModel) throws Exception {
         AdditionalDetailRequest request = (AdditionalDetailRequest) commonRequestModel.getData();
         // TODO- implement Validation logic
-        long id =request.getId();
+        long id = request.getId();
         Optional<AdditionalDetail> oldEntity = additionalDetailDao.findById(id);
-        if(!oldEntity.isPresent()) {
+        if (!oldEntity.isPresent()) {
             log.debug("Shipment Additional detail is null for Id {}", request.getId());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
@@ -77,7 +79,7 @@ public class AdditionalDetailService implements IAdditionalDetailService {
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
             Pair<Specification<AdditionalDetail>, Pageable> tuple = fetchData(request, AdditionalDetail.class);
-            Page<AdditionalDetail> additionalDetailsPage  = additionalDetailDao.findAll(tuple.getLeft(), tuple.getRight());
+            Page<AdditionalDetail> additionalDetailsPage = additionalDetailDao.findAll(tuple.getLeft(), tuple.getRight());
             return ResponseHelper.buildListSuccessResponse(
                     convertEntityListToDtoList(additionalDetailsPage.getContent()),
                     additionalDetailsPage.getTotalPages(),
@@ -91,16 +93,15 @@ public class AdditionalDetailService implements IAdditionalDetailService {
     }
 
 
-
     @Override
     public ResponseEntity<?> delete(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             // TODO- implement Validation logic
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
-            long id =request.getId();
+            long id = request.getId();
             Optional<AdditionalDetail> additionalDetails = additionalDetailDao.findById(id);
-            if(!additionalDetails.isPresent()) {
+            if (!additionalDetails.isPresent()) {
                 log.debug("Shipment Additional detail is null for Id {}", request.getId());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
@@ -119,9 +120,9 @@ public class AdditionalDetailService implements IAdditionalDetailService {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
-            long id =request.getId();
+            long id = request.getId();
             Optional<AdditionalDetail> additionalDetails = additionalDetailDao.findById(id);
-            if(!additionalDetails.isPresent()) {
+            if (!additionalDetails.isPresent()) {
                 log.debug("Shipment Additional detail is null for Id {}", request.getId());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }

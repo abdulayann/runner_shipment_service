@@ -4,9 +4,7 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import com.dpw.runner.shipment.services.entity.enums.ContainerStatus;
 import io.swagger.annotations.ApiModel;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.ToString;
+import lombok.*;
 
 import java.math.BigDecimal;
 import java.util.Date;
@@ -16,6 +14,9 @@ import java.util.UUID;
 @Setter
 @ApiModel("Container Request Model")
 @ToString
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class ContainerRequest extends CommonRequest implements IRunnerRequest {
 
     private Long id;

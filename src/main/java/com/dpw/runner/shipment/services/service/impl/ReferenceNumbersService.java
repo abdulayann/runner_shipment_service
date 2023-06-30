@@ -20,11 +20,12 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.sql.SQLException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 
@@ -34,92 +35,6 @@ import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 public class ReferenceNumbersService implements IReferenceNumbersService {
     @Autowired
     private IReferenceNumbersDao referenceNumbersDao;
-
-    @Transactional(rollbackFor = {SQLException.class}, propagation = Propagation.MANDATORY)
-    public ResponseEntity<?> create(CommonRequestModel commonRequestModel) throws Exception {
-        ReferenceNumbersRequest request = null;
-        request = (ReferenceNumbersRequest) commonRequestModel.getData();
-        ReferenceNumbers referenceNumbers = convertRequestToEntity(request);
-        referenceNumbers = referenceNumbersDao.save(referenceNumbers);
-        return ResponseHelper.buildSuccessResponse(convertEntityToDto(referenceNumbers));
-    }
-
-    @Transactional
-    public ResponseEntity<?> update(CommonRequestModel commonRequestModel) throws Exception {
-        ReferenceNumbersRequest request = (ReferenceNumbersRequest) commonRequestModel.getData();
-        long id =request.getId();
-        Optional<ReferenceNumbers> oldEntity = referenceNumbersDao.findById(id);
-        if(!oldEntity.isPresent()) {
-            log.debug("Refernece Numbers is null for Id {}", request.getId());
-            throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
-        }
-
-        ReferenceNumbers referenceNumbers = convertRequestToEntity(request);
-        referenceNumbers.setId(oldEntity.get().getId());
-        referenceNumbers = referenceNumbersDao.save(referenceNumbers);
-        return ResponseHelper.buildSuccessResponse(convertEntityToDto(referenceNumbers));
-    }
-
-    public ResponseEntity<?> list(CommonRequestModel commonRequestModel){
-        String responseMsg;
-        try {
-            ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
-            // construct specifications for filter request
-            Pair<Specification<ReferenceNumbers>, Pageable> tuple = fetchData(request, ReferenceNumbers.class);
-            Page<ReferenceNumbers> referenceNumbersPage  = referenceNumbersDao.findAll(tuple.getLeft(), tuple.getRight());
-            return ResponseHelper.buildListSuccessResponse(
-                    convertEntityListToDtoList(referenceNumbersPage.getContent()),
-                    referenceNumbersPage.getTotalPages(),
-                    referenceNumbersPage.getTotalElements());
-        } catch (Exception e) {
-            responseMsg = e.getMessage() != null ? e.getMessage()
-                    : DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;
-            log.error(responseMsg, e);
-            return ResponseHelper.buildFailedResponse(responseMsg);
-        }
-
-    }
-
-    public ResponseEntity<?> delete(CommonRequestModel commonRequestModel){
-        String responseMsg;
-        try {
-            CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
-            long id =request.getId();
-            Optional<ReferenceNumbers> referenceNumbers = referenceNumbersDao.findById(id);
-            if(!referenceNumbers.isPresent()) {
-                log.debug("Reference Numbers is null for Id {}", request.getId());
-                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
-            }
-            referenceNumbersDao.delete(referenceNumbers.get());
-            return ResponseHelper.buildSuccessResponse();
-        } catch (Exception e) {
-            responseMsg = e.getMessage() != null ? e.getMessage()
-                    : DaoConstants.DAO_GENERIC_DELETE_EXCEPTION_MSG;
-            log.error(responseMsg, e);
-            return ResponseHelper.buildFailedResponse(responseMsg);
-        }
-    }
-
-    public ResponseEntity<?> retrieveById(CommonRequestModel commonRequestModel){
-        String responseMsg;
-        try {
-            CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
-            long id =request.getId();
-            Optional<ReferenceNumbers> referenceNumbers = referenceNumbersDao.findById(id);
-            if(!referenceNumbers.isPresent()) {
-                log.debug("Reference Numbers is null for Id {}", request.getId());
-                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
-            }
-
-            ReferenceNumbersResponse response = convertEntityToDto(referenceNumbers.get());
-            return ResponseHelper.buildSuccessResponse(response);
-        } catch (Exception e) {
-            responseMsg = e.getMessage() != null ? e.getMessage()
-                    : DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;
-            log.error(responseMsg, e);
-            return ResponseHelper.buildFailedResponse(responseMsg);
-        }
-    }
 
     private static ReferenceNumbersResponse convertEntityToDto(ReferenceNumbers referenceNumbers) {
         ReferenceNumbersResponse response = new ReferenceNumbersResponse();
@@ -150,5 +65,91 @@ public class ReferenceNumbersService implements IReferenceNumbersService {
         referenceNumbers.setType(request.getType());
         referenceNumbers.setReferenceNumber(request.getReferenceNumber());
         return referenceNumbers;
+    }
+
+    @Transactional
+    public ResponseEntity<?> create(CommonRequestModel commonRequestModel) throws Exception {
+        ReferenceNumbersRequest request = null;
+        request = (ReferenceNumbersRequest) commonRequestModel.getData();
+        ReferenceNumbers referenceNumbers = convertRequestToEntity(request);
+        referenceNumbers = referenceNumbersDao.save(referenceNumbers);
+        return ResponseHelper.buildSuccessResponse(convertEntityToDto(referenceNumbers));
+    }
+
+    @Transactional
+    public ResponseEntity<?> update(CommonRequestModel commonRequestModel) throws Exception {
+        ReferenceNumbersRequest request = (ReferenceNumbersRequest) commonRequestModel.getData();
+        long id = request.getId();
+        Optional<ReferenceNumbers> oldEntity = referenceNumbersDao.findById(id);
+        if (!oldEntity.isPresent()) {
+            log.debug("Refernece Numbers is null for Id {}", request.getId());
+            throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+        }
+
+        ReferenceNumbers referenceNumbers = convertRequestToEntity(request);
+        referenceNumbers.setId(oldEntity.get().getId());
+        referenceNumbers = referenceNumbersDao.save(referenceNumbers);
+        return ResponseHelper.buildSuccessResponse(convertEntityToDto(referenceNumbers));
+    }
+
+    public ResponseEntity<?> list(CommonRequestModel commonRequestModel) {
+        String responseMsg;
+        try {
+            ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
+            // construct specifications for filter request
+            Pair<Specification<ReferenceNumbers>, Pageable> tuple = fetchData(request, ReferenceNumbers.class);
+            Page<ReferenceNumbers> referenceNumbersPage = referenceNumbersDao.findAll(tuple.getLeft(), tuple.getRight());
+            return ResponseHelper.buildListSuccessResponse(
+                    convertEntityListToDtoList(referenceNumbersPage.getContent()),
+                    referenceNumbersPage.getTotalPages(),
+                    referenceNumbersPage.getTotalElements());
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+
+    }
+
+    public ResponseEntity<?> delete(CommonRequestModel commonRequestModel) {
+        String responseMsg;
+        try {
+            CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
+            long id = request.getId();
+            Optional<ReferenceNumbers> referenceNumbers = referenceNumbersDao.findById(id);
+            if (!referenceNumbers.isPresent()) {
+                log.debug("Reference Numbers is null for Id {}", request.getId());
+                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+            }
+            referenceNumbersDao.delete(referenceNumbers.get());
+            return ResponseHelper.buildSuccessResponse();
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_DELETE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
+    public ResponseEntity<?> retrieveById(CommonRequestModel commonRequestModel) {
+        String responseMsg;
+        try {
+            CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
+            long id = request.getId();
+            Optional<ReferenceNumbers> referenceNumbers = referenceNumbersDao.findById(id);
+            if (!referenceNumbers.isPresent()) {
+                log.debug("Reference Numbers is null for Id {}", request.getId());
+                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+            }
+
+            ReferenceNumbersResponse response = convertEntityToDto(referenceNumbers.get());
+            return ResponseHelper.buildSuccessResponse(response);
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
     }
 }
