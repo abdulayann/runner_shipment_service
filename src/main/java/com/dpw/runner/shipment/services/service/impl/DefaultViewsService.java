@@ -17,6 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
@@ -30,7 +31,7 @@ public class DefaultViewsService implements IDefaultViewsService {
     @Autowired
     private IDefaultViewsDao defaultViewsDao;
 
-    @Transactional
+    @Transactional(propagation = Propagation.MANDATORY)
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) throws Exception {
         DefaultViewsRequest request = null;
         request = (DefaultViewsRequest) commonRequestModel.getData();

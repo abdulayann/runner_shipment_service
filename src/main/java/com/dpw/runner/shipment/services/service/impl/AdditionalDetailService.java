@@ -23,6 +23,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
@@ -42,7 +43,7 @@ public class AdditionalDetailService implements IAdditionalDetailService {
     @Autowired
     private JsonHelper jsonHelper;
 
-    @Transactional
+    @Transactional(propagation = Propagation.MANDATORY)
     @Override
     @Async
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) throws Exception {

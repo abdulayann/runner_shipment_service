@@ -41,7 +41,7 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
     @Autowired
     private ModelMapper modelMapper;
 
-    @Transactional
+    @Transactional(propagation = Propagation.MANDATORY)
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) throws Exception {
         PickupDeliveryDetailsRequest request = null;
         request = (PickupDeliveryDetailsRequest) commonRequestModel.getData();
