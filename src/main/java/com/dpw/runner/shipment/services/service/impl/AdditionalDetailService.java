@@ -43,16 +43,13 @@ public class AdditionalDetailService implements IAdditionalDetailService {
     @Autowired
     private JsonHelper jsonHelper;
 
-    @Transactional(propagation = Propagation.MANDATORY)
+    @Transactional
     @Override
-    @Async
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) throws Exception {
         AdditionalDetailRequest request = (AdditionalDetailRequest) commonRequestModel.getData();
         // TODO- implement validator
         AdditionalDetail additionalDetails = convertRequestToEntity(request);
         additionalDetails = additionalDetailDao.save(additionalDetails);
-        if (true)
-            throw new RunnerException("Test");
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(additionalDetails));
     }
 

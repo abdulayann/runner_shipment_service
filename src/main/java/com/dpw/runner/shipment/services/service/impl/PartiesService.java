@@ -40,7 +40,7 @@ public class PartiesService implements IPartiesDetailsService {
     private ModelMapper modelMapper;
 
     @Override
-    @Transactional(propagation = Propagation.MANDATORY)
+    @Transactional
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) throws Exception {
         PartiesRequest request = (PartiesRequest) commonRequestModel.getData();
         Parties notes = convertRequestToPartiesDetailsEntity(request);

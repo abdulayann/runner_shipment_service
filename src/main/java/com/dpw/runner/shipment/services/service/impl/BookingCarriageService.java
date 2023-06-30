@@ -40,7 +40,7 @@ public class BookingCarriageService implements IBookingCarriageService {
     @Autowired
     private ModelMapper modelMapper;
 
-    @Transactional(propagation = Propagation.MANDATORY)
+    @Transactional
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) throws Exception {
         BookingCarriageRequest request = null;
         request = (BookingCarriageRequest) commonRequestModel.getData();

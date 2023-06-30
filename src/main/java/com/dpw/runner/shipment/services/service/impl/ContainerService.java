@@ -34,7 +34,7 @@ public class ContainerService implements IContainerService {
     @Autowired
     ModelMapper modelMapper;
 
-    @Transactional(propagation = Propagation.MANDATORY)
+    @Transactional
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) throws Exception {
         ContainerRequest request = (ContainerRequest) commonRequestModel.getData();
 

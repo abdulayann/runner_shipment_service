@@ -38,7 +38,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
     @Autowired
     private IShipmentSettingsDao shipmentSettingsDao;
 
-    @Transactional(propagation = Propagation.MANDATORY)
+    @Transactional
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) throws Exception {
         ShipmentSettingRequest request = null;
         request = (ShipmentSettingRequest) commonRequestModel.getData();

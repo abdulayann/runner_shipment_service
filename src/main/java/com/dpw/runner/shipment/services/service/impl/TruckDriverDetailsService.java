@@ -42,7 +42,7 @@ public class TruckDriverDetailsService implements ITruckDriverDetailsService {
     private ModelMapper modelMapper;
 
     @Override
-    @Transactional(propagation = Propagation.MANDATORY)
+    @Transactional
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) throws Exception {
         TruckDriverDetailsRequest request = (TruckDriverDetailsRequest) commonRequestModel.getData();
         TruckDriverDetails notes = convertRequestToTruckDriverDetailsEntity(request);

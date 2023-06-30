@@ -40,7 +40,7 @@ public class RoutingsService implements IRoutingsService {
     private ModelMapper modelMapper;
 
     @Override
-    @Transactional(propagation = Propagation.MANDATORY)
+    @Transactional
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) throws Exception {
         RoutingsRequest request = (RoutingsRequest) commonRequestModel.getData();
         Routings notes = convertRequestToRoutingsEntity(request);

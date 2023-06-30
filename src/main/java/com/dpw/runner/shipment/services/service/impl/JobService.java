@@ -35,7 +35,7 @@ public class JobService implements IJobService {
     ModelMapper modelMapper;
 
     @Override
-    @Transactional(propagation = Propagation.MANDATORY)
+    @Transactional
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) throws Exception {
         JobRequest request = (JobRequest) commonRequestModel.getData();
 

@@ -31,7 +31,7 @@ public class DefaultViewsService implements IDefaultViewsService {
     @Autowired
     private IDefaultViewsDao defaultViewsDao;
 
-    @Transactional(propagation = Propagation.MANDATORY)
+    @Transactional
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) throws Exception {
         DefaultViewsRequest request = null;
         request = (DefaultViewsRequest) commonRequestModel.getData();

@@ -82,7 +82,7 @@ public class ServiceDetailsService implements IServiceDetailsService {
         return shipmentServices;
     }
 
-    @Transactional(propagation = Propagation.MANDATORY)
+    @Transactional
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) throws Exception {
         ServiceDetailsRequest request = null;
         request = (ServiceDetailsRequest) commonRequestModel.getData();
