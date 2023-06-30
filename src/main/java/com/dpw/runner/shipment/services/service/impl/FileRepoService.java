@@ -73,7 +73,7 @@ public class FileRepoService implements IFileRepoService {
     }
 
     @Override
-    @Transactional(propagation = Propagation.MANDATORY)
+    @Transactional
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) throws Exception {
         FileRepoRequest request = null;
         request = (FileRepoRequest) commonRequestModel.getData();

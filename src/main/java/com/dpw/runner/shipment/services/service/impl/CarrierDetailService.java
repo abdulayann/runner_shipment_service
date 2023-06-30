@@ -39,7 +39,7 @@ public class CarrierDetailService implements ICarrierDetailService {
     @Autowired
     ModelMapper modelMapper;
 
-    @Transactional(propagation = Propagation.MANDATORY)
+    @Transactional
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) throws Exception {
         CarrierDetailRequest request = (CarrierDetailRequest) commonRequestModel.getData();
         CarrierDetails carrierDetails = convertRequestToCarrierDetail(request);

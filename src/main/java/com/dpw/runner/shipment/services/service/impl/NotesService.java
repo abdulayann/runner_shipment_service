@@ -40,7 +40,7 @@ public class NotesService implements INotesService {
     private ModelMapper modelMapper;
 
     @Override
-    @Transactional(propagation = Propagation.MANDATORY)
+    @Transactional
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) throws Exception {
         NotesRequest request = (NotesRequest) commonRequestModel.getData();
         Notes notes = convertRequestToNotesEntity(request);

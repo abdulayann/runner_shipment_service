@@ -40,7 +40,7 @@ public class ELDetailsService implements IELDetailsService {
     @Autowired
     private ModelMapper modelMapper;
 
-    @Transactional(propagation = Propagation.MANDATORY)
+    @Transactional
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) throws Exception {
         ELDetailsRequest request = (ELDetailsRequest) commonRequestModel.getData();
         ELDetails elDetails = convertRequestToELDetails(request);

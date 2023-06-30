@@ -68,7 +68,7 @@ public class ReferenceNumbersService implements IReferenceNumbersService {
         return referenceNumbers;
     }
 
-    @Transactional(propagation = Propagation.MANDATORY)
+    @Transactional
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) throws Exception {
         ReferenceNumbersRequest request = null;
         request = (ReferenceNumbersRequest) commonRequestModel.getData();

@@ -38,7 +38,7 @@ public class EventService implements IEventService {
     }
 
     @Override
-    @Transactional(propagation = Propagation.MANDATORY)
+    @Transactional
     public ResponseEntity<EventsResponse> create(EventsRequest request) {
         Events event = generateEntityMappingFromRequest(request);
         event.setGuid(UUID.randomUUID());

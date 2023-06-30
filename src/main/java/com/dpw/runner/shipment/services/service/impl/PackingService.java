@@ -32,7 +32,7 @@ public class PackingService implements IPackingService {
     @Autowired
     ModelMapper modelMapper;
 
-    @Transactional(propagation = Propagation.MANDATORY)
+    @Transactional
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) throws Exception {
         PackingRequest request = (PackingRequest) commonRequestModel.getData();
 
