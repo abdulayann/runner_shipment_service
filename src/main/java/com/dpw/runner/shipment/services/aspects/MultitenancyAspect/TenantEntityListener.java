@@ -18,7 +18,7 @@ public class TenantEntityListener {
     public void prePersistOrUpdate(Object object) {
         if (object instanceof MultiTenancy) {
             //needs to be the current tenantId of the user which can be fetched from the user service
-            ((MultiTenancy) object).setTenantId(1);
+            ((MultiTenancy) object).setTenantId(TenantContext.getCurrentTenant());
         }
     }
 

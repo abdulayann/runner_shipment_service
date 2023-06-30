@@ -26,4 +26,5 @@ public class CarrierDetailRequest implements IRunnerRequest {
     private LocalDateTime etd;
     private LocalDateTime ata;
     private LocalDateTime atd;
+    private Long shipmentId;
 }

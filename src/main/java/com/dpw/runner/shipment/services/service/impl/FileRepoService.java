@@ -25,7 +25,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -40,6 +43,7 @@ public class FileRepoService implements IFileRepoService {
     private IFileRepoDao fileRepoDao;
 
     @Override
+    @Transactional(rollbackFor = {SQLException.class}, propagation = Propagation.MANDATORY)
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) throws Exception {
         FileRepoRequest request = null;
         request = (FileRepoRequest) commonRequestModel.getData();

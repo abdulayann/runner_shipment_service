@@ -11,7 +11,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.sql.SQLException;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -37,6 +40,7 @@ public class EventService implements IEventService {
     }
 
     @Override
+    @Transactional(rollbackFor = {SQLException.class}, propagation = Propagation.MANDATORY)
     public ResponseEntity<EventsResponse> create(EventsRequest request) {
         Events event = generateEntityMappingFromRequest(request);
         event.setGuid(UUID.randomUUID());

@@ -18,7 +18,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.sql.SQLException;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -34,6 +37,7 @@ public class JobService implements IJobService {
     ModelMapper modelMapper;
 
     @Override
+    @Transactional(rollbackFor = {SQLException.class}, propagation = Propagation.MANDATORY)
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) throws Exception {
         JobRequest request = (JobRequest) commonRequestModel.getData();
 

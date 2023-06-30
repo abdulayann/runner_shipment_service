@@ -21,7 +21,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.sql.SQLException;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -38,6 +41,7 @@ public class RoutingsService implements IRoutingsService {
     private ModelMapper modelMapper;
 
     @Override
+    @Transactional(rollbackFor = {SQLException.class}, propagation = Propagation.MANDATORY)
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) throws Exception {
         RoutingsRequest request = (RoutingsRequest) commonRequestModel.getData();
         Routings notes = convertRequestToRoutingsEntity(request);
