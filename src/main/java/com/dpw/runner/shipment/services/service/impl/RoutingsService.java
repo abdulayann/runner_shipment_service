@@ -41,7 +41,7 @@ public class RoutingsService implements IRoutingsService {
 
     @Override
     @Transactional
-    public ResponseEntity<?> create(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
         RoutingsRequest request = (RoutingsRequest) commonRequestModel.getData();
         Routings notes = convertRequestToRoutingsEntity(request);
         notes = routingsDao.save(notes);
@@ -49,7 +49,7 @@ public class RoutingsService implements IRoutingsService {
     }
 
     @Override
-    public ResponseEntity<?> update(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
         RoutingsRequest request = (RoutingsRequest) commonRequestModel.getData();
         long id = request.getId();
         Optional<Routings> oldEntity = routingsDao.findById(id);

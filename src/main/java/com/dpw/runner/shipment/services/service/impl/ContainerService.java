@@ -35,7 +35,7 @@ public class ContainerService implements IContainerService {
     ModelMapper modelMapper;
 
     @Transactional
-    public ResponseEntity<?> create(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
         ContainerRequest request = (ContainerRequest) commonRequestModel.getData();
 
         Containers container = convertRequestToEntity(request);
@@ -44,7 +44,7 @@ public class ContainerService implements IContainerService {
     }
 
     @Transactional
-    public ResponseEntity<?> update(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
         ContainerRequest request = (ContainerRequest) commonRequestModel.getData();
         Containers updatedEntity = convertRequestToEntity(request);
         containerDao.save(updatedEntity);

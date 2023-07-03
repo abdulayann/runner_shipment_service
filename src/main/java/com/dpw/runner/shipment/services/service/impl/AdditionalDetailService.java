@@ -45,7 +45,7 @@ public class AdditionalDetailService implements IAdditionalDetailService {
 
     @Transactional
     @Override
-    public ResponseEntity<?> create(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
         AdditionalDetailRequest request = (AdditionalDetailRequest) commonRequestModel.getData();
         // TODO- implement validator
         AdditionalDetail additionalDetails = convertRequestToEntity(request);
@@ -55,7 +55,7 @@ public class AdditionalDetailService implements IAdditionalDetailService {
 
     @Transactional
     @Override
-    public ResponseEntity<?> update(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
         AdditionalDetailRequest request = (AdditionalDetailRequest) commonRequestModel.getData();
         // TODO- implement Validation logic
         long id = request.getId();

@@ -41,7 +41,7 @@ public class PartiesService implements IPartiesDetailsService {
 
     @Override
     @Transactional
-    public ResponseEntity<?> create(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
         PartiesRequest request = (PartiesRequest) commonRequestModel.getData();
         Parties notes = convertRequestToPartiesDetailsEntity(request);
         notes = partiesDao.save(notes);
@@ -49,7 +49,7 @@ public class PartiesService implements IPartiesDetailsService {
     }
 
     @Override
-    public ResponseEntity<?> update(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
         PartiesRequest request = (PartiesRequest) commonRequestModel.getData();
         long id = request.getId();
         Optional<Parties> oldEntity = partiesDao.findById(id);

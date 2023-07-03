@@ -36,7 +36,7 @@ public class JobService implements IJobService {
 
     @Override
     @Transactional
-    public ResponseEntity<?> create(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
         JobRequest request = (JobRequest) commonRequestModel.getData();
 
         Jobs job = convertRequestToEntity(request);
@@ -45,7 +45,7 @@ public class JobService implements IJobService {
     }
 
     @Override
-    public ResponseEntity<?> update(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
         JobRequest request = (JobRequest) commonRequestModel.getData();
         Jobs updatedEntity = convertRequestToEntity(request);
         jobDao.save(updatedEntity);

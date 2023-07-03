@@ -41,7 +41,7 @@ public class ELDetailsService implements IELDetailsService {
     private ModelMapper modelMapper;
 
     @Transactional
-    public ResponseEntity<?> create(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
         ELDetailsRequest request = (ELDetailsRequest) commonRequestModel.getData();
         ELDetails elDetails = convertRequestToELDetails(request);
         elDetails = elDetailsDao.save(elDetails);
@@ -49,7 +49,7 @@ public class ELDetailsService implements IELDetailsService {
     }
 
     @Transactional
-    public ResponseEntity<?> update(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
         ELDetailsRequest request = (ELDetailsRequest) commonRequestModel.getData();
         long id = request.getId();
         Optional<ELDetails> oldEntity = elDetailsDao.findById(id);

@@ -31,8 +31,11 @@ public class DefaultViewsService implements IDefaultViewsService {
     @Autowired
     private IDefaultViewsDao defaultViewsDao;
 
+    @Autowired
+    private ModelMapper modelMapper;
+
     @Transactional
-    public ResponseEntity<?> create(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
         DefaultViewsRequest request = null;
         request = (DefaultViewsRequest) commonRequestModel.getData();
         DefaultViews defaultView = convertRequestToEntity(request);
@@ -41,7 +44,7 @@ public class DefaultViewsService implements IDefaultViewsService {
     }
 
     @Transactional
-    public ResponseEntity<?> update(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
         DefaultViewsRequest request = (DefaultViewsRequest) commonRequestModel.getData();
         long id =request.getId();
         Optional<DefaultViews> oldEntity = defaultViewsDao.findById(id);
@@ -113,13 +116,13 @@ public class DefaultViewsService implements IDefaultViewsService {
         }
     }
 
-    private static DefaultViewsResponse convertEntityToDto(DefaultViews view) {
+    private DefaultViewsResponse convertEntityToDto(DefaultViews view) {
         DefaultViewsResponse response = new DefaultViewsResponse();
-        new ModelMapper().map(view, response);
+        modelMapper.map(view, response);
         return response;
     }
 
-    private static List<IRunnerResponse> convertEntityListToDtoList(List<DefaultViews> lst) {
+    private List<IRunnerResponse> convertEntityListToDtoList(List<DefaultViews> lst) {
         List<IRunnerResponse> responseList = new ArrayList<>();
         lst.forEach(view -> {
             responseList.add(convertEntityToDto(view));
@@ -127,9 +130,9 @@ public class DefaultViewsService implements IDefaultViewsService {
         return responseList;
     }
 
-    public static DefaultViews convertRequestToEntity(DefaultViewsRequest request) {
+    public DefaultViews convertRequestToEntity(DefaultViewsRequest request) {
         DefaultViews view = new DefaultViews();
-        new ModelMapper().map(request, view);
+        modelMapper.map(request, view);
         return view;
     }
 }

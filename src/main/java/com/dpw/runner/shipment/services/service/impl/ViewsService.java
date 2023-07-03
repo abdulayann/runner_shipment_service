@@ -36,8 +36,11 @@ public class ViewsService implements IViewsService {
     @Autowired
     private IDefaultViewsDao defaultViewsDao;
 
+    @Autowired
+    private ModelMapper modelMapper;
+
     @Transactional
-    public ResponseEntity<?> create(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
         ViewsRequest request = null;
         request = (ViewsRequest) commonRequestModel.getData();
         Views views = convertRequestToEntity(request);
@@ -54,7 +57,7 @@ public class ViewsService implements IViewsService {
     }
 
     @Transactional
-    public ResponseEntity<?> update(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
         ViewsRequest request = (ViewsRequest) commonRequestModel.getData();
         long id =request.getId();
         Optional<Views> oldEntity = viewsDao.findById(id);
@@ -147,13 +150,13 @@ public class ViewsService implements IViewsService {
         }
     }
 
-    private static ViewsResponse convertEntityToDto(Views view) {
+    private ViewsResponse convertEntityToDto(Views view) {
         ViewsResponse response = new ViewsResponse();
-        new ModelMapper().map(view, response);
+        modelMapper.map(view, response);
         return response;
     }
 
-    private static List<IRunnerResponse> convertEntityListToDtoList(List<Views> lst) {
+    private List<IRunnerResponse> convertEntityListToDtoList(List<Views> lst) {
         List<IRunnerResponse> responseList = new ArrayList<>();
         lst.forEach(view -> {
             responseList.add(convertEntityToDto(view));
@@ -161,9 +164,9 @@ public class ViewsService implements IViewsService {
         return responseList;
     }
 
-    public static Views convertRequestToEntity(ViewsRequest request) {
+    public Views convertRequestToEntity(ViewsRequest request) {
         Views view = new Views();
-        new ModelMapper().map(request, view);
+        modelMapper.map(request, view);
         return view;
     }
 }
