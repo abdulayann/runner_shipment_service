@@ -21,8 +21,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionStatus;
 
 import java.util.List;
 import java.util.Optional;
@@ -39,13 +39,28 @@ public class NotesService implements INotesService {
     @Autowired
     private ModelMapper modelMapper;
 
+//    @Autowired
+//    private PlatformTransactionManager transactionManager;
+
+    public ResponseEntity<?> createNote(CommonRequestModel commonRequestModel, TransactionStatus txStatus, PlatformTransactionManager transactionManager) {
+//        TransactionDefinition txDef = new DefaultTransactionDefinition();
+//        var txStatus = transactionManager.getTransaction(txDef);
+        try {
+            log.info("txStatus in notes : " + txStatus.isCompleted() + " " + txStatus.toString());
+            NotesRequest request = (NotesRequest) commonRequestModel.getData();
+            Notes notes = convertRequestToNotesEntity(request);
+            notes = notesDao.save(notes);
+            return ResponseHelper.buildSuccessResponse(convertEntityToDto(notes));
+        } catch (Exception ex) {
+            log.error("Create call to Notes Failed");
+            transactionManager.rollback(txStatus);
+            return ResponseHelper.buildFailedResponse("Create call to Notes Failed");
+        }
+    }
+
     @Override
-    @Transactional
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) throws Exception {
-        NotesRequest request = (NotesRequest) commonRequestModel.getData();
-        Notes notes = convertRequestToNotesEntity(request);
-        notes = notesDao.save(notes);
-        return ResponseHelper.buildSuccessResponse(convertEntityToDto(notes));
+        return null;
     }
 
     @Override

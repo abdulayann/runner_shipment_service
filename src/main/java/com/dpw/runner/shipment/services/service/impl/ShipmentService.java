@@ -23,8 +23,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.interceptor.TransactionAspectSupport;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.TransactionStatus;
+import org.springframework.transaction.support.DefaultTransactionDefinition;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -102,6 +104,9 @@ public class ShipmentService implements IShipmentService {
 
     @Autowired
     private JsonHelper jsonHelper;
+
+    @Autowired
+    private PlatformTransactionManager transactionManager;
 
     private List<String> TRANSPORT_MODES = Arrays.asList("SEA", "ROAD", "RAIL", "AIR");
     private List<String> SHIPMENT_TYPE = Arrays.asList("FCL", "LCL");
@@ -217,7 +222,7 @@ public class ShipmentService implements IShipmentService {
     }
 
     @Override
-    @Transactional
+
     public List<ShipmentDetails> createTestShipment(Integer count) {
         List<ShipmentDetails> response = new ArrayList<>();
         /**
@@ -362,7 +367,7 @@ public class ShipmentService implements IShipmentService {
     }
 
 
-//    @Transactional
+//    
 //    public ResponseEntity<?> createSynchronous(CommonRequestModel commonRequestModel) throws Exception {
 //        CompleteShipmentRequest request = (CompleteShipmentRequest) commonRequestModel.getData();
 //        ShipmentDetails shipmentDetails = jsonHelper.convertValue(request, ShipmentDetails.class);
@@ -386,121 +391,119 @@ public class ShipmentService implements IShipmentService {
     }
 
     @Override
-    @Transactional
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) throws Exception {
+        TransactionDefinition txDef = new DefaultTransactionDefinition();
+        var txStatus = transactionManager.getTransaction(txDef);
         ExecutorService executorService = Executors.newFixedThreadPool(100);
 
         CompleteShipmentRequest request = (CompleteShipmentRequest) commonRequestModel.getData();
         ShipmentDetails shipmentDetails = jsonHelper.convertValue(request.getShipmentRequest(), ShipmentDetails.class);
 
-        CompletableFuture<Void> createCallToAdditionalDetails;
-        CompletableFuture<Void> createCallToContainers;
+//        CompletableFuture<Void> createCallToAdditionalDetails;
+//        CompletableFuture<Void> createCallToContainers;
         CompletableFuture<Void> createCallToPackings;
-        CompletableFuture<Void> createCallToBookingCarriages;
+//        CompletableFuture<Void> createCallToBookingCarriages;
         CompletableFuture<Void> createCallToElDetails;
-        CompletableFuture<Void> createCallToEvents;
-        CompletableFuture<Void> createCallToFileRepos;
+//        CompletableFuture<Void> createCallToEvents;
+//        CompletableFuture<Void> createCallToFileRepos;
         CompletableFuture<Void> createCallToJobs;
         CompletableFuture<Void> createCallToNotes;
-        CompletableFuture<Void> createCallToReferenceNumbers;
-        CompletableFuture<Void> createCallToRoutings;
-        CompletableFuture<Void> createCallToServiceDetails;
-        CompletableFuture<Void> createCallToPickupDelivery;
-        CompletableFuture<Void> createCallToParties;
-        CompletableFuture<Void> createCallToCarrierDetails;
+//        CompletableFuture<Void> createCallToReferenceNumbers;
+//        CompletableFuture<Void> createCallToRoutings;
+//        CompletableFuture<Void> createCallToServiceDetails;
+//        CompletableFuture<Void> createCallToPickupDelivery;
+//        CompletableFuture<Void> createCallToParties;
+//        CompletableFuture<Void> createCallToCarrierDetails;
 
         try {
-            getShipment(shipmentDetails);
-            List<AdditionalDetailRequest> additionalDetailRequest = request.getAdditionalDetailRequest();
-            createCallToAdditionalDetails = CompletableFuture.runAsync(() -> {
-                createAdditionalDetailsAsync(shipmentDetails, additionalDetailRequest, executorService);
-            });
+            shipmentDao.save(shipmentDetails);
+//            List<AdditionalDetailRequest> additionalDetailRequest = request.getAdditionalDetailRequest();
+//            createCallToAdditionalDetails = CompletableFuture.runAsync(() -> {
+//                createAdditionalDetailsAsync(shipmentDetails, additionalDetailRequest, executorService);
+//            });
 
-            List<ContainerRequest> containerRequest = request.getContainerRequest();
-            createCallToContainers = CompletableFuture.runAsync(() -> {
-                createContainersAsync(shipmentDetails, containerRequest, executorService);
-            });
+//            List<ContainerRequest> containerRequest = request.getContainerRequest();
+//            createCallToContainers = CompletableFuture.runAsync(() -> {
+//                createContainersAsync(shipmentDetails, containerRequest, executorService);
+//            });
 
-            List<PackingRequest> packingRequest = request.getPackingRequest();
-            createCallToPackings = CompletableFuture.runAsync(() -> {
-                createPackingsAsync(shipmentDetails, packingRequest, executorService);
-            });
+//            List<PackingRequest> packingRequest = request.getPackingRequest();
+//            createCallToPackings = CompletableFuture.runAsync(() -> {
+//                createPackingsAsync(shipmentDetails, packingRequest, executorService);
+//            });
 
-            List<BookingCarriageRequest> bookingCarriageRequest = request.getBookingCarriageRequest();
-            createCallToBookingCarriages = CompletableFuture.runAsync(() -> {
-                createBookingCarriagesAsync(shipmentDetails, bookingCarriageRequest, executorService);
-            });
+//            List<BookingCarriageRequest> bookingCarriageRequest = request.getBookingCarriageRequest();
+//            createCallToBookingCarriages = CompletableFuture.runAsync(() -> {
+//                createBookingCarriagesAsync(shipmentDetails, bookingCarriageRequest, executorService);
+//            });
 
-            List<ELDetailsRequest> elDetailsRequest = request.getElDetailsRequest();
-            createCallToElDetails = CompletableFuture.runAsync(() -> {
-                createElDetailsAsync(shipmentDetails, elDetailsRequest, executorService);
-            });
+//            List<ELDetailsRequest> elDetailsRequest = request.getElDetailsRequest();
+//            createCallToElDetails = CompletableFuture.runAsync(() -> {
+//                createElDetailsAsync(shipmentDetails, elDetailsRequest, executorService);
+//            });
 
-            List<EventsRequest> eventsRequest = request.getEventsRequest();
-            createCallToEvents = CompletableFuture.runAsync(() -> {
-                createEventsAsync(shipmentDetails, eventsRequest, executorService);
-            });
+//            List<EventsRequest> eventsRequest = request.getEventsRequest();
+//            createCallToEvents = CompletableFuture.runAsync(() -> {
+//                createEventsAsync(shipmentDetails, eventsRequest, executorService);
+//            });
 
-            List<FileRepoRequest> fileRepoRequest = request.getFileRepoRequest();
-            createCallToFileRepos = CompletableFuture.runAsync(() -> {
-                createFileRepoAsync(shipmentDetails, fileRepoRequest, executorService);
-            });
+//            List<FileRepoRequest> fileRepoRequest = request.getFileRepoRequest();
+//            createCallToFileRepos = CompletableFuture.runAsync(() -> {
+//                createFileRepoAsync(shipmentDetails, fileRepoRequest, executorService);
+//            });
 
             List<JobRequest> jobRequest = request.getJobRequest();
             createCallToJobs = CompletableFuture.runAsync(() -> {
-                createJobsAsync(shipmentDetails, jobRequest, executorService);
+                createJobsAsync(shipmentDetails, jobRequest, executorService, txStatus);
             });
 
             List<NotesRequest> notesRequest = request.getNotesRequest();
             createCallToNotes = CompletableFuture.runAsync(() -> {
-                createNotesAsync(shipmentDetails, notesRequest, executorService);
+                createNotesAsync(shipmentDetails, notesRequest, executorService, txStatus);
             });
 
-            List<ReferenceNumbersRequest> referenceNumbersRequest = request.getReferenceNumbersRequest();
-            createCallToReferenceNumbers = CompletableFuture.runAsync(() -> {
-                createReferenceNumbersAsync(shipmentDetails, referenceNumbersRequest, executorService);
-            });
+//            List<ReferenceNumbersRequest> referenceNumbersRequest = request.getReferenceNumbersRequest();
+//            createCallToReferenceNumbers = CompletableFuture.runAsync(() -> {
+//                createReferenceNumbersAsync(shipmentDetails, referenceNumbersRequest, executorService);
+//            });
 
-            List<RoutingsRequest> routingsRequest = request.getRoutingsRequest();
-            createCallToRoutings = CompletableFuture.runAsync(() -> {
-                createRoutingsAsync(shipmentDetails, routingsRequest, executorService);
-            });
+//            List<RoutingsRequest> routingsRequest = request.getRoutingsRequest();
+//            createCallToRoutings = CompletableFuture.runAsync(() -> {
+//                createRoutingsAsync(shipmentDetails, routingsRequest, executorService);
+//            });
 
-            List<ServiceDetailsRequest> serviceDetailsRequest = request.getServiceDetailsRequest();
-            createCallToServiceDetails = CompletableFuture.runAsync(() -> {
-                createServiceDetailsAsync(shipmentDetails, serviceDetailsRequest, executorService);
-            });
+//            List<ServiceDetailsRequest> serviceDetailsRequest = request.getServiceDetailsRequest();
+//            createCallToServiceDetails = CompletableFuture.runAsync(() -> {
+//                createServiceDetailsAsync(shipmentDetails, serviceDetailsRequest, executorService);
+//            });
 
-            List<PickupDeliveryDetailsRequest> pickupDeliveryDetailsRequest = request.getPickupDeliveryDetailsRequest();
-            createCallToPickupDelivery = CompletableFuture.runAsync(() -> {
-                createPickupDeliveryAsync(shipmentDetails, pickupDeliveryDetailsRequest, executorService);
-            });
+//            List<PickupDeliveryDetailsRequest> pickupDeliveryDetailsRequest = request.getPickupDeliveryDetailsRequest();
+//            createCallToPickupDelivery = CompletableFuture.runAsync(() -> {
+//                createPickupDeliveryAsync(shipmentDetails, pickupDeliveryDetailsRequest, executorService);
+//            });
 
-            List<PartiesRequest> partiesRequest = request.getPartiesRequest();
-            createCallToParties = CompletableFuture.runAsync(() -> {
-                createPartiesAsync(shipmentDetails, partiesRequest, executorService);
-            });
+//            List<PartiesRequest> partiesRequest = request.getPartiesRequest();
+//            createCallToParties = CompletableFuture.runAsync(() -> {
+//                createPartiesAsync(shipmentDetails, partiesRequest, executorService);
+//            });
 
-            List<CarrierDetailRequest> carrierDetailRequest = request.getCarrierDetailRequest();
-            createCallToCarrierDetails = CompletableFuture.runAsync(() -> {
-                createCarrierDetailsAsync(shipmentDetails, carrierDetailRequest, executorService);
-            });
-
+//            List<CarrierDetailRequest> carrierDetailRequest = request.getCarrierDetailRequest();
+//            createCallToCarrierDetails = CompletableFuture.runAsync(() -> {
+//                createCarrierDetailsAsync(shipmentDetails, carrierDetailRequest, executorService);
+//            });
+            CompletableFuture.allOf(createCallToJobs, createCallToNotes).join();
+            executorService.shutdownNow();
+            transactionManager.commit(txStatus);
         } catch (Exception e) {
             log.error(e.getMessage());
-            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+//            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+            transactionManager.rollback(txStatus);
             throw new RuntimeException(e);
         }
 
-        CompletableFuture.allOf(createCallToAdditionalDetails, createCallToContainers, createCallToPackings, createCallToBookingCarriages, createCallToElDetails, createCallToEvents, createCallToFileRepos, createCallToJobs, createCallToNotes, createCallToReferenceNumbers, createCallToRoutings, createCallToServiceDetails, createCallToPickupDelivery, createCallToParties, createCallToCarrierDetails).join();
-        executorService.shutdownNow();
         return ResponseHelper.buildSuccessResponse(jsonHelper.convertValue(shipmentDetails, ShipmentDetailsResponse.class));
     }
 
-    @Transactional
-    void getShipment(ShipmentDetails shipmentDetails) {
-        shipmentDao.save(shipmentDetails);
-    }
 
     private CompletableFuture<Void> createCarrierDetailsAsync(ShipmentDetails shipmentDetails, List<CarrierDetailRequest> carrierDetailRequest, ExecutorService executorService) {
         List<CompletableFuture<Void>> futures = carrierDetailRequest.stream()
@@ -598,11 +601,12 @@ public class ShipmentService implements IShipmentService {
         return list;
     }
 
-    private CompletableFuture<Void> createNotesAsync(ShipmentDetails shipmentDetails, List<NotesRequest> notesRequest, ExecutorService executorService) {
+    private CompletableFuture<Void> createNotesAsync(ShipmentDetails shipmentDetails, List<NotesRequest> notesRequest,
+                                                     ExecutorService executorService, TransactionStatus txStatus) {
         List<CompletableFuture<Void>> futures = notesRequest.stream()
                 .map(request -> CompletableFuture.runAsync(() -> {
                     try {
-                        createNote(shipmentDetails, request);
+                        createNote(shipmentDetails, request, txStatus);
                         log.info("COMPLETED NOTE REQUEST " + request.getId());
                     } catch (Exception e) {
                         throw new RuntimeException(e);
@@ -614,11 +618,11 @@ public class ShipmentService implements IShipmentService {
         return list;
     }
 
-    private CompletableFuture<Void> createJobsAsync(ShipmentDetails shipmentDetails, List<JobRequest> jobRequest, ExecutorService executorService) {
+    private CompletableFuture<Void> createJobsAsync(ShipmentDetails shipmentDetails, List<JobRequest> jobRequest, ExecutorService executorService, TransactionStatus txStatus) {
         List<CompletableFuture<Void>> futures = jobRequest.stream()
                 .map(request -> CompletableFuture.runAsync(() -> {
                     try {
-                        createJob(shipmentDetails, request);
+                        createJob(shipmentDetails, request, txStatus);
                         log.info("COMPLETED JOB REQUEST " + request.getId());
                     } catch (Exception e) {
                         throw new RuntimeException(e);
@@ -742,101 +746,99 @@ public class ShipmentService implements IShipmentService {
         return list;
     }
 
-    @Transactional
+
     public void createbookingCarriage(ShipmentDetails shipmentDetails, BookingCarriageRequest bookingCarriageRequest) throws Exception {
         bookingCarriageRequest.setShipmentId(shipmentDetails.getId());
         bookingCarriageService.create(CommonRequestModel.buildRequest(bookingCarriageRequest));
     }
 
-    @Transactional
+
     public void createElDetail(ShipmentDetails shipmentDetails, ELDetailsRequest elDetailsRequest) throws Exception {
         elDetailsRequest.setShipmentId(shipmentDetails.getId());
         elDetailsService.create(CommonRequestModel.buildRequest(elDetailsRequest));
     }
 
-    @Transactional
+
     public void createEvent(ShipmentDetails shipmentDetails, EventsRequest eventsRequest) throws Exception {
         eventsRequest.setShipmentId(shipmentDetails.getId());
         eventService.create(eventsRequest);
     }
 
-    @Transactional
+
     public void createFileRepo(ShipmentDetails shipmentDetails, FileRepoRequest fileRepoRequest) throws Exception {
         fileRepoRequest.setEntityId(shipmentDetails.getId());
         fileRepoRequest.setEntityType("SHIPMENT");
         fileRepoService.create(CommonRequestModel.buildRequest(fileRepoRequest));
     }
 
-    @Transactional
-    public void createJob(ShipmentDetails shipmentDetails, JobRequest jobRequest) throws Exception {
+
+    public void createJob(ShipmentDetails shipmentDetails, JobRequest jobRequest, TransactionStatus txStatus) throws Exception {
         jobRequest.setShipmentId(shipmentDetails.getId());
-        jobService.create(CommonRequestModel.buildRequest(jobRequest));
+        jobService.createJob(CommonRequestModel.buildRequest(jobRequest), txStatus, transactionManager);
     }
 
-    @Transactional
-    public void createNote(ShipmentDetails shipmentDetails, NotesRequest notesRequest) throws Exception {
+
+    public void createNote(ShipmentDetails shipmentDetails, NotesRequest notesRequest, TransactionStatus txStatus) throws Exception {
         notesRequest.setEntityId(shipmentDetails.getId());
         notesRequest.setEntityType("SHIPMENT");
-        notesService.create(CommonRequestModel.buildRequest(notesRequest));
+        notesService.createNote(CommonRequestModel.buildRequest(notesRequest), txStatus, transactionManager);
     }
 
-    @Transactional
+
     public void createParties(ShipmentDetails shipmentDetails, PartiesRequest partiesRequest) throws Exception {
         partiesRequest.setEntityId(shipmentDetails.getId());
         partiesRequest.setEntityType("SHIPMENT");
         partiesDetailsService.create(CommonRequestModel.buildRequest(partiesRequest));
     }
 
-    @Transactional
+
     public void createPickupDelivery(ShipmentDetails shipmentDetails, PickupDeliveryDetailsRequest pickupDeliveryDetailsRequest) throws Exception {
         pickupDeliveryDetailsRequest.setShipmentId(shipmentDetails.getId());
         pickupDeliveryDetailsService.create(CommonRequestModel.buildRequest(pickupDeliveryDetailsRequest));
     }
 
-    @Transactional
+
     public void createReferenceNumber(ShipmentDetails shipmentDetails, ReferenceNumbersRequest referenceNumbersRequest) throws Exception {
         referenceNumbersRequest.setShipmentId(shipmentDetails.getId());
         referenceNumbersService.create(CommonRequestModel.buildRequest(referenceNumbersRequest));
     }
 
-    @Transactional
+
     public void createPacking(ShipmentDetails shipmentDetails, PackingRequest packingRequest) throws Exception {
         packingRequest.setShipmentId(shipmentDetails.getId());
         packingService.create(CommonRequestModel.buildRequest(packingRequest));
     }
 
-    @Transactional
+
     public void createContainer(ShipmentDetails shipmentDetails, ContainerRequest containerRequest) throws Exception {
         containerRequest.setShipmentId(shipmentDetails.getId());
         containerService.create(CommonRequestModel.buildRequest(containerRequest));
     }
 
-    @Transactional
+
     public void createRouting(ShipmentDetails shipmentDetails, RoutingsRequest routingsRequest) throws Exception {
         routingsRequest.setShipmentId(shipmentDetails.getId());
         routingsService.create(CommonRequestModel.buildRequest(routingsRequest));
     }
 
-    @Transactional
     public void createServiceDetail(ShipmentDetails shipmentDetails, ServiceDetailsRequest serviceDetailsRequest) throws Exception {
         serviceDetailsRequest.setShipmentId(shipmentDetails.getId());
         serviceDetailsService.create(CommonRequestModel.buildRequest(serviceDetailsRequest));
     }
 
-    @Transactional
+
     public void createAdditionalDetail(ShipmentDetails shipmentDetails, AdditionalDetailRequest additionalDetailRequest) throws Exception {
         additionalDetailRequest.setShipmentId(shipmentDetails.getId());
         additionalDetailService.create(CommonRequestModel.buildRequest(additionalDetailRequest));
     }
 
-    @Transactional
     public void createCarrier(ShipmentDetails shipmentDetails, CarrierDetailRequest carrierDetailRequest) throws Exception {
         carrierDetailRequest.setShipmentId(shipmentDetails.getId());
         carrierDetailService.create(CommonRequestModel.buildRequest(carrierDetailRequest));
     }
 
     @Override
-    @Transactional
+
     public ResponseEntity<?> update(CommonRequestModel commonRequestModel) throws Exception {
         ShipmentRequest request = (ShipmentRequest) commonRequestModel.getData();
         // TODO- implement Validation logic

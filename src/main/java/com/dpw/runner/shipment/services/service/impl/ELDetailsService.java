@@ -21,9 +21,15 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
+import org.springframework.jdbc.datasource.DataSourceTransactionManager;
+import org.springframework.orm.jpa.JpaTransactionManager;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.TransactionManager;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.DefaultTransactionDefinition;
 
 import java.util.List;
 import java.util.Optional;
@@ -40,12 +46,25 @@ public class ELDetailsService implements IELDetailsService {
     @Autowired
     private ModelMapper modelMapper;
 
-    @Transactional
+    @Autowired
+    private PlatformTransactionManager transactionManager;
+
+    @Override
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) throws Exception {
-        ELDetailsRequest request = (ELDetailsRequest) commonRequestModel.getData();
-        ELDetails elDetails = convertRequestToELDetails(request);
-        elDetails = elDetailsDao.save(elDetails);
-        return ResponseHelper.buildSuccessResponse(convertEntityToDto(elDetails));
+        TransactionDefinition txDef = new DefaultTransactionDefinition();
+        var txStatus = transactionManager.getTransaction(txDef);
+        try {
+            ELDetailsRequest request = (ELDetailsRequest) commonRequestModel.getData();
+            ELDetails elDetails = convertRequestToELDetails(request);
+            elDetails = elDetailsDao.save(elDetails);
+//            throw new RuntimeException("operation failed !!");
+            transactionManager.commit(txStatus);
+            return ResponseHelper.buildSuccessResponse(convertEntityToDto(elDetails));
+        } catch (Exception ex) {
+            log.error("Create call to el details failed !");
+            transactionManager.rollback(txStatus);
+            return ResponseHelper.buildFailedResponse("Create call to el details failed !");
+        }
     }
 
     @Transactional

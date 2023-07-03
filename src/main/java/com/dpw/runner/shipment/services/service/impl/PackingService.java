@@ -17,8 +17,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.DefaultTransactionDefinition;
 
 import java.util.List;
 import java.util.Optional;
@@ -32,13 +35,24 @@ public class PackingService implements IPackingService {
     @Autowired
     ModelMapper modelMapper;
 
-    @Transactional
-    public ResponseEntity<?> create(CommonRequestModel commonRequestModel) throws Exception {
-        PackingRequest request = (PackingRequest) commonRequestModel.getData();
+    @Autowired
+    private PlatformTransactionManager transactionManager;
 
-        Packing packing = convertRequestToEntity(request);
-        packing = packingDao.save(packing);
-        return ResponseHelper.buildSuccessResponse(convertEntityToDto(packing));
+    @Override
+    public ResponseEntity<?> create(CommonRequestModel commonRequestModel) throws Exception {
+        TransactionDefinition txDef = new DefaultTransactionDefinition();
+        var txStatus = transactionManager.getTransaction(txDef);
+        try {
+            PackingRequest request = (PackingRequest) commonRequestModel.getData();
+            Packing packing = convertRequestToEntity(request);
+            packing = packingDao.save(packing);
+            transactionManager.commit(txStatus);
+            return ResponseHelper.buildSuccessResponse(convertEntityToDto(packing));
+        } catch (Exception ex) {
+            log.error("Create Packing Call Failed");
+            transactionManager.rollback(txStatus);
+            return ResponseHelper.buildFailedResponse("Create Packing Call Failed");
+        }
     }
 
     @Transactional

@@ -17,8 +17,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionStatus;
 
 import java.util.List;
 import java.util.Optional;
@@ -34,14 +34,38 @@ public class JobService implements IJobService {
     @Autowired
     ModelMapper modelMapper;
 
-    @Override
-    @Transactional
-    public ResponseEntity<?> create(CommonRequestModel commonRequestModel) throws Exception {
-        JobRequest request = (JobRequest) commonRequestModel.getData();
+//    @Autowired
+//    private PlatformTransactionManager transactionManager;
 
-        Jobs job = convertRequestToEntity(request);
-        job = jobDao.save(job);
-        return ResponseHelper.buildSuccessResponse(convertEntityToDto(job));
+    /**
+     * 1
+     * ->(S) 2
+     * 3
+     * 4
+     * 5
+     * -> 6
+     */
+
+    public ResponseEntity<?> createJob(CommonRequestModel commonRequestModel, TransactionStatus txStatus, PlatformTransactionManager transactionManager) {
+//        TransactionDefinition txDef = new DefaultTransactionDefinition();
+//        var txStatus = transactionManager.getTransaction(txDef);
+        try {
+            JobRequest request = (JobRequest) commonRequestModel.getData();
+            Jobs job = convertRequestToEntity(request);
+            job = jobDao.save(job);
+            var savePoint = txStatus.createSavepoint();
+//            transactionManager.commit(txStatus);
+            return ResponseHelper.buildSuccessResponse(convertEntityToDto(job));
+        } catch (Exception ex) {
+            log.error("Create Call to Jobs failed");
+            transactionManager.rollback(txStatus);
+            return ResponseHelper.buildFailedResponse("Create Call to Jobs failed");
+        }
+    }
+
+    @Override
+    public ResponseEntity<?> create(CommonRequestModel commonRequestModel) throws Exception {
+        return null;
     }
 
     @Override
