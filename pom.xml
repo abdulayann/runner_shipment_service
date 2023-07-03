@@ -85,6 +85,7 @@
             <artifactId>lombok</artifactId>
             <scope>provided</scope>
         </dependency>
+
         <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
@@ -137,6 +138,15 @@
             <groupId>org.testcontainers</groupId>
             <artifactId>testcontainers</artifactId>
             <version>1.15.3</version>
+        </dependency>
+        <dependency>
+
+            <groupId>com.nimbusds</groupId>
+
+            <artifactId>nimbus-jose-jwt</artifactId>
+
+            <version>9.21</version>
+
         </dependency>
     </dependencies>
 

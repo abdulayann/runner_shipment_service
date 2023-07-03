@@ -3,7 +3,7 @@ package com.dpw.runner.shipment.services;
 import com.dpw.runner.shipment.services.entity.BlDetails;
 import com.dpw.runner.shipment.services.entity.MeasurementDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
-import com.dpw.runner.shipment.services.repository.*;
+import com.dpw.runner.shipment.services.repository.interfaces.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -35,7 +35,7 @@ public class TestDataGenerator {
     public List<ShipmentDetails> populateH2WithTestData() {
         List<ShipmentDetails> response = new ArrayList<>();
         ShipmentDetails shipmentDetail1 = ShipmentDetails.builder()
-                .id(1L)
+//                .id(1L)
                 .guid(UUID.randomUUID())
                 .status(1)
                 .direction("EXP")
@@ -65,7 +65,6 @@ public class TestDataGenerator {
 
         MeasurementDetails measurementDetail1 = MeasurementDetails.builder()
                 .guid(UUID.randomUUID())
-                .id(1L)
                 .weight(null)
                 .weightUnit(null)
                 .build();
@@ -78,7 +77,7 @@ public class TestDataGenerator {
         //**************END
 
         ShipmentDetails shipmentDetail2 = ShipmentDetails.builder()
-                .id(2L)
+//                .id(2L)
                 .guid(UUID.randomUUID())
                 .status(0)
                 .direction("EXP")
@@ -96,7 +95,6 @@ public class TestDataGenerator {
         shipmentDetail2.setTenantId(1);
 
         BlDetails blDetail2 = BlDetails.builder()
-                .id(2L)
                 .guid(UUID.randomUUID())
                 .releaseType("3RC")
                 .hblType("DEX")
@@ -109,7 +107,6 @@ public class TestDataGenerator {
 
         MeasurementDetails measurementDetail2 = MeasurementDetails.builder()
                 .guid(UUID.randomUUID())
-                .id(2L)
                 .weight(null)
                 .weightUnit(null)
                 .build();
@@ -122,7 +119,7 @@ public class TestDataGenerator {
         //*************END
 
         ShipmentDetails shipmentDetail3 = ShipmentDetails.builder()
-                .id(3L)
+//                .id(3L)
                 .guid(UUID.randomUUID())
                 .status(0)
                 .direction("EXP")
@@ -140,7 +137,6 @@ public class TestDataGenerator {
         shipmentDetail3.setTenantId(1);
 
         BlDetails blDetail3 = BlDetails.builder()
-                .id(3L)
                 .guid(UUID.randomUUID())
                 .releaseType("4RC")
                 .hblType("DEX")
@@ -153,7 +149,6 @@ public class TestDataGenerator {
 
         MeasurementDetails measurementDetail3 = MeasurementDetails.builder()
                 .guid(UUID.randomUUID())
-                .id(3L)
                 .weight(null)
                 .weightUnit(null)
                 .build();
@@ -166,7 +161,7 @@ public class TestDataGenerator {
         //*************END
 
         ShipmentDetails shipmentDetail4 = ShipmentDetails.builder()
-                .id(4L)
+//                .id(4L)
                 .guid(UUID.randomUUID())
                 .status(0)
                 .direction("EXP")
@@ -184,7 +179,6 @@ public class TestDataGenerator {
         shipmentDetail4.setTenantId(1);
 
         BlDetails blDetail4 = BlDetails.builder()
-                .id(4L)
                 .guid(UUID.randomUUID())
                 .releaseType("5RC")
                 .hblType("DEX")
@@ -197,7 +191,6 @@ public class TestDataGenerator {
 
         MeasurementDetails measurementDetail4 = MeasurementDetails.builder()
                 .guid(UUID.randomUUID())
-                .id(4L)
                 .weight(null)
                 .weightUnit(null)
                 .build();
@@ -210,7 +203,7 @@ public class TestDataGenerator {
         //****END
 
         ShipmentDetails shipmentDetail5 = ShipmentDetails.builder()
-                .id(5L)
+//                .id(5L)
                 .guid(UUID.randomUUID())
                 .shipmentId("SHP000102015")
                 .status(0)
@@ -241,7 +234,6 @@ public class TestDataGenerator {
 
         MeasurementDetails measurementDetail5 = MeasurementDetails.builder()
                 .guid(UUID.randomUUID())
-                .id(5L)
                 .weight(null)
                 .weightUnit(null)
                 .build();
