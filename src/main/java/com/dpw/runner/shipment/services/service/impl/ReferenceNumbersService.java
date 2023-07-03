@@ -69,7 +69,7 @@ public class ReferenceNumbersService implements IReferenceNumbersService {
     }
 
     @Transactional
-    public ResponseEntity<?> create(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
         ReferenceNumbersRequest request = null;
         request = (ReferenceNumbersRequest) commonRequestModel.getData();
         ReferenceNumbers referenceNumbers = convertRequestToEntity(request);
@@ -78,7 +78,7 @@ public class ReferenceNumbersService implements IReferenceNumbersService {
     }
 
     @Transactional
-    public ResponseEntity<?> update(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
         ReferenceNumbersRequest request = (ReferenceNumbersRequest) commonRequestModel.getData();
         long id = request.getId();
         Optional<ReferenceNumbers> oldEntity = referenceNumbersDao.findById(id);

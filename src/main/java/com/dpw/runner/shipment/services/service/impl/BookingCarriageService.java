@@ -41,7 +41,7 @@ public class BookingCarriageService implements IBookingCarriageService {
     private ModelMapper modelMapper;
 
     @Transactional
-    public ResponseEntity<?> create(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
         BookingCarriageRequest request = null;
         request = (BookingCarriageRequest) commonRequestModel.getData();
         BookingCarriage bookingCarriage = convertRequestToEntity(request);
@@ -50,7 +50,7 @@ public class BookingCarriageService implements IBookingCarriageService {
     }
 
     @Transactional
-    public ResponseEntity<?> update(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
         BookingCarriageRequest request = (BookingCarriageRequest) commonRequestModel.getData();
         long id = request.getId();
         Optional<BookingCarriage> oldEntity = bookingCarriageDao.findById(id);

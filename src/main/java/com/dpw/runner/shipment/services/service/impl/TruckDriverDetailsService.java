@@ -43,7 +43,7 @@ public class TruckDriverDetailsService implements ITruckDriverDetailsService {
 
     @Override
     @Transactional
-    public ResponseEntity<?> create(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
         TruckDriverDetailsRequest request = (TruckDriverDetailsRequest) commonRequestModel.getData();
         TruckDriverDetails notes = convertRequestToTruckDriverDetailsEntity(request);
         notes = truckDriverDetailsDao.save(notes);
@@ -51,7 +51,7 @@ public class TruckDriverDetailsService implements ITruckDriverDetailsService {
     }
 
     @Override
-    public ResponseEntity<?> update(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
         TruckDriverDetailsRequest request = (TruckDriverDetailsRequest) commonRequestModel.getData();
         long id = request.getId();
         Optional<TruckDriverDetails> oldEntity = truckDriverDetailsDao.findById(id);

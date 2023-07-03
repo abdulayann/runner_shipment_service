@@ -74,7 +74,7 @@ public class FileRepoService implements IFileRepoService {
 
     @Override
     @Transactional
-    public ResponseEntity<?> create(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
         FileRepoRequest request = null;
         request = (FileRepoRequest) commonRequestModel.getData();
         FileRepo fileRepo = mapToEntityFromRequest(request);
@@ -83,7 +83,7 @@ public class FileRepoService implements IFileRepoService {
     }
 
     @Override
-    public ResponseEntity<?> update(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
         FileRepoRequest request = (FileRepoRequest) commonRequestModel.getData();
         long id = request.getId();
         Optional<FileRepo> oldEntity = fileRepoDao.findById(id);

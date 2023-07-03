@@ -33,7 +33,7 @@ public class PackingService implements IPackingService {
     ModelMapper modelMapper;
 
     @Transactional
-    public ResponseEntity<?> create(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
         PackingRequest request = (PackingRequest) commonRequestModel.getData();
 
         Packing packing = convertRequestToEntity(request);
@@ -42,7 +42,7 @@ public class PackingService implements IPackingService {
     }
 
     @Transactional
-    public ResponseEntity<?> update(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
         PackingRequest request = (PackingRequest) commonRequestModel.getData();
         Packing updatedEntity = convertRequestToEntity(request);
         packingDao.save(updatedEntity);

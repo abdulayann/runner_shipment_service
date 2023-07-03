@@ -41,7 +41,7 @@ public class NotesService implements INotesService {
 
     @Override
     @Transactional
-    public ResponseEntity<?> create(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
         NotesRequest request = (NotesRequest) commonRequestModel.getData();
         Notes notes = convertRequestToNotesEntity(request);
         notes = notesDao.save(notes);
@@ -49,7 +49,7 @@ public class NotesService implements INotesService {
     }
 
     @Override
-    public ResponseEntity<?> update(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
         NotesRequest request = (NotesRequest) commonRequestModel.getData();
         long id = request.getId();
         Optional<Notes> oldEntity = notesDao.findById(id);

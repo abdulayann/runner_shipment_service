@@ -40,7 +40,7 @@ public class CarrierDetailService implements ICarrierDetailService {
     ModelMapper modelMapper;
 
     @Transactional
-    public ResponseEntity<?> create(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
         CarrierDetailRequest request = (CarrierDetailRequest) commonRequestModel.getData();
         CarrierDetails carrierDetails = convertRequestToCarrierDetail(request);
         carrierDetails = carrierDao.save(carrierDetails);
@@ -48,7 +48,7 @@ public class CarrierDetailService implements ICarrierDetailService {
     }
 
     @Transactional
-    public ResponseEntity<?> update(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
         CarrierDetailRequest request = (CarrierDetailRequest) commonRequestModel.getData();
         long id = request.getId();
         Optional<CarrierDetails> oldEntity = carrierDao.findById(id);
