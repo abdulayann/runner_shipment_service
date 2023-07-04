@@ -48,6 +48,7 @@ import org.testcontainers.containers.ContainerFetchException;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @ExtendWith({MockitoExtension.class, SpringExtension.class})
@@ -160,6 +161,26 @@ public class IntegrationTest {
         //Assertions
         assertTrue(actualCount > 0);
 //        assertEquals(expectedIds.toString(), actualIds.toString());
+    }
+
+    @Test
+    public void completeRetrieveTestCriteria() throws Exception {
+        var data = testDataGenerator.createTestShipment(40);
+        for (var i : data) {
+            shipmentService.create(CommonRequestModel.buildRequest(i));
+        }
+
+        int id = 1;
+        for (id = 1; id <= 40; id++) {
+            mockMvc.perform(get("/api/v2/shipment/retrieve/complete/id")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .param("id", String.valueOf(id))
+                            .accept(MediaType.APPLICATION_JSON))
+                    .andExpect(status().isOk())
+                    .andDo(print());
+        }
+
+        assertTrue(id == 41);
     }
 
     @Test
