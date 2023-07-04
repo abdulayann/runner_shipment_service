@@ -9,22 +9,31 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.ViewsRequest;
 import com.dpw.runner.shipment.services.dto.response.ViewsResponse;
 import com.dpw.runner.shipment.services.entity.DefaultViews;
+import com.dpw.runner.shipment.services.entity.TruckDriverDetails;
 import com.dpw.runner.shipment.services.entity.Views;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.IDefaultViewsDao;
 import com.dpw.runner.shipment.services.repository.interfaces.IViewsDao;
 import com.dpw.runner.shipment.services.service.interfaces.IViewsService;
+import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+
+import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 
 @SuppressWarnings("ALL")
 @Service
@@ -103,6 +112,24 @@ public class ViewsService implements IViewsService {
             return ResponseHelper.buildFailedResponse(responseMsg);
         }
 
+    }
+
+    @Override
+    @Async
+    public CompletableFuture<ResponseEntity<?>> listAsync(CommonRequestModel commonRequestModel){
+        String responseMsg;
+        try {
+            ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
+            List<Views> viewsList = viewsDao.findAll();
+
+            return CompletableFuture.completedFuture(
+                    ResponseHelper.buildListSuccessResponse(convertEntityListToDtoList(viewsList), request.getPageNo(), viewsList.size()));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return CompletableFuture.completedFuture(ResponseHelper.buildFailedResponse(responseMsg));
+        }
     }
 
     public ResponseEntity<?> delete(CommonRequestModel commonRequestModel){

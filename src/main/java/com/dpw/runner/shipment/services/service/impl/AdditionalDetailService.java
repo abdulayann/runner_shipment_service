@@ -29,6 +29,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 
@@ -90,6 +91,26 @@ public class AdditionalDetailService implements IAdditionalDetailService {
         }
     }
 
+    @Override
+    @Async
+    public CompletableFuture<ResponseEntity<?>> listAsync(CommonRequestModel commonRequestModel){
+        String responseMsg;
+        try {
+            ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
+            Pair<Specification<AdditionalDetail>, Pageable> tuple = fetchData(request, AdditionalDetail.class);
+            Page<AdditionalDetail> additionalDetailsPage  = additionalDetailDao.findAll(tuple.getLeft(), tuple.getRight());
+            return CompletableFuture.completedFuture(ResponseHelper.buildListSuccessResponse(
+                    convertEntityListToDtoList(additionalDetailsPage.getContent()),
+                    additionalDetailsPage.getTotalPages(),
+                    additionalDetailsPage.getTotalElements()));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return CompletableFuture.completedFuture(ResponseHelper.buildFailedResponse(responseMsg));
+        }
+
+    }
 
     @Override
     public ResponseEntity<?> delete(CommonRequestModel commonRequestModel) {

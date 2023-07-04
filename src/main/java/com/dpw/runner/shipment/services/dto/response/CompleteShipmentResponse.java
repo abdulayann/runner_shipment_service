@@ -1,25 +1,33 @@
 package com.dpw.runner.shipment.services.dto.response;
 
-import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.dto.request.*;
-import lombok.Getter;
+import io.swagger.annotations.ApiModel;
+import lombok.*;
 
 import java.util.List;
 
-@Getter
+@Data
+@Builder
+@ApiModel("Complete Shipment Response Model")
+@ToString
+@AllArgsConstructor
+@NoArgsConstructor
 public class CompleteShipmentResponse implements IRunnerResponse {
-    private List<AdditionalDetailRequest> additionalDetailRequest;
-    private List<BookingCarriageRequest>  bookingCarriageRequest;
-    private List<ContainerRequest> containerRequest;
-    private List<ELDetailsRequest> elDetailsRequest;
-    private List<EventsRequest> eventsRequest;
-    private List<FileRepoRequest> fileRepoRequest;
-    private List<JobRequest> jobRequest;
-    private List<NotesRequest> notesRequest;
-    private List<ReferenceNumbersRequest> referenceNumbersRequest;
-    private List<RoutingsRequest> routingsRequest;
-    private List<ServiceDetailsRequest> serviceDetailsRequest;
-    private ShipmentRequest shipmentRequest;
-}
+    private ShipmentDetailsResponse shipment;
+    private List<PackingResponse> packings;
+    private List<AdditionalDetailResponse> additionalDetails;
+    private List<BookingCarriageResponse>  bookingCarriages;
+    private List<ContainerResponse> containers;
+    private List<ELDetailsResponse> elDetails;
+    private List<EventsResponse> events;
+    private List<FileRepoResponse> fileRepo;
+    private List<JobResponse> job;
+    private List<NotesResponse> notes;
+    private List<ReferenceNumbersResponse> referenceNumbers;
+    private List<RoutingsResponse> routings;
+    private List<ServiceDetailsResponse> serviceDetails;
+    // private List<CarrierDetailResponse> carrierDetails;
+    private List<PickupDeliveryDetailsResponse> pickupDeliveryDetails;
+    private List<PartiesResponse> parties;
 
+}
