@@ -10,6 +10,7 @@ import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
+import com.dpw.runner.shipment.services.dto.response.CompleteShipmentResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
@@ -26,6 +27,7 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 
 @RestController
 @RequestMapping(ShipmentConstants.SHIPMENT_API_HANDLE)
@@ -86,6 +88,13 @@ public class ShipmentController {
     public ResponseEntity<RunnerResponse<ShipmentDetailsResponse>> retrieveById(@ApiParam(value = ShipmentConstants.SHIPMENT_ID, required = true) @RequestParam Long id) {
         CommonGetRequest request = CommonGetRequest.builder().id(id).build();
         return (ResponseEntity<RunnerResponse<ShipmentDetailsResponse>>) shipmentService.retrieveById(CommonRequestModel.buildRequest(request));
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.RETRIEVE_BY_ID_SUCCESSFUL)})
+    @GetMapping(ApiConstants.API_COMPLETE_RETRIEVE_BY_ID)
+    public ResponseEntity<RunnerResponse<CompleteShipmentResponse>> completeRetrieveById(@ApiParam(value = ShipmentConstants.SHIPMENT_ID, required = true) @RequestParam Long id) throws ExecutionException, InterruptedException {
+        CommonGetRequest request = CommonGetRequest.builder().id(id).build();
+        return (ResponseEntity<RunnerResponse<CompleteShipmentResponse>>) shipmentService.completeRetrieveById(CommonRequestModel.buildRequest(request));
     }
 
     // @PreAuthorize("hasAuthority('"+ Permissions.AdministrationGeneral+"')") //TODO-Authorization

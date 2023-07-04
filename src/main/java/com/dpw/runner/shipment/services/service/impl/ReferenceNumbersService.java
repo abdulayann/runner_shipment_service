@@ -7,6 +7,7 @@ import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.ReferenceNumbersRequest;
 import com.dpw.runner.shipment.services.dto.response.ReferenceNumbersResponse;
+import com.dpw.runner.shipment.services.entity.PickupDeliveryDetails;
 import com.dpw.runner.shipment.services.entity.ReferenceNumbers;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.IReferenceNumbersDao;
@@ -19,10 +20,12 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 
@@ -75,7 +78,27 @@ public class ReferenceNumbersService implements IReferenceNumbersService {
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(responseMsg);
         }
+    }
 
+    @Override
+    @Async
+    public CompletableFuture<ResponseEntity<?>> listAsync(CommonRequestModel commonRequestModel){
+        String responseMsg;
+        try {
+            ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
+            // construct specifications for filter request
+            Pair<Specification<ReferenceNumbers>, Pageable> tuple = fetchData(request, ReferenceNumbers.class);
+            Page<ReferenceNumbers> referenceNumbersPage  = referenceNumbersDao.findAll(tuple.getLeft(), tuple.getRight());
+            return CompletableFuture.completedFuture( ResponseHelper.buildListSuccessResponse(
+                    convertEntityListToDtoList(referenceNumbersPage.getContent()),
+                    referenceNumbersPage.getTotalPages(),
+                    referenceNumbersPage.getTotalElements()));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return CompletableFuture.completedFuture(ResponseHelper.buildFailedResponse(responseMsg));
+        }
     }
 
     public ResponseEntity<?> delete(CommonRequestModel commonRequestModel){

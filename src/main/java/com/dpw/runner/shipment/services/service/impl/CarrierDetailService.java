@@ -7,6 +7,7 @@ import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.CarrierDetailRequest;
 import com.dpw.runner.shipment.services.dto.response.CarrierDetailResponse;
+import com.dpw.runner.shipment.services.entity.BookingCarriage;
 import com.dpw.runner.shipment.services.entity.CarrierDetails;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.ICarrierDao;
@@ -20,11 +21,13 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
@@ -82,6 +85,27 @@ public class CarrierDetailService implements ICarrierDetailService {
         }
     }
 
+    @Override
+    @Async
+    public CompletableFuture<ResponseEntity<?>> listAsync(CommonRequestModel commonRequestModel){
+        String responseMsg;
+        try {
+            ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
+
+            Pair<Specification<CarrierDetails>, Pageable> tuple = fetchData(request, CarrierDetails.class);
+            Page<CarrierDetails> carrierDetailsPage = carrierDao.findAll(tuple.getLeft(), tuple.getRight());
+            return CompletableFuture.completedFuture(ResponseHelper.buildListSuccessResponse(
+                    convertEntityListToDtoList(carrierDetailsPage.getContent()),
+                    carrierDetailsPage.getTotalPages(),
+                    carrierDetailsPage.getTotalElements()));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return CompletableFuture.completedFuture(ResponseHelper.buildFailedResponse(responseMsg));
+        }
+
+    }
 
     @Override
     public ResponseEntity<?> delete(CommonRequestModel commonRequestModel) {

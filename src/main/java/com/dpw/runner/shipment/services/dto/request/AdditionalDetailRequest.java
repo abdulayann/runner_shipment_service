@@ -98,5 +98,6 @@ public class AdditionalDetailRequest extends CommonRequest implements IRunnerReq
     private Boolean WBLPrinted;
     private Boolean draftPrinted;
     private Boolean surrenderPrinted;
+    private long shipmentId;
 
 }

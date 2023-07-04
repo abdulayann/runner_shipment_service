@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.controller;
 
 import com.dpw.runner.shipment.services.commons.constants.ApiConstants;
 import com.dpw.runner.shipment.services.commons.constants.EventConstants;
+import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.dto.request.EventsRequest;
 import com.dpw.runner.shipment.services.dto.response.EventsResponse;
 import com.dpw.runner.shipment.services.service.interfaces.IEventService;
@@ -24,7 +25,7 @@ public class EventsController {
 
     @GetMapping(value = ApiConstants.API_LIST)
     public ResponseEntity<?> listEvents(@RequestBody EventsRequest request) {
-        return eventService.list(request);
+        return eventService.list(CommonRequestModel.buildRequest(request));
     }
 
     @PostMapping(value = ApiConstants.API_CREATE)
