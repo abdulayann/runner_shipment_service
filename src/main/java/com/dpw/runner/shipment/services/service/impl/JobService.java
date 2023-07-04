@@ -82,21 +82,6 @@ public class JobService implements IJobService {
     @Override
     @Async
     public CompletableFuture<ResponseEntity<?>> listAsync(CommonRequestModel commonRequestModel){
-//        String responseMsg;
-//        try {
-//            Long id = commonRequestModel.getId();
-//            List<Jobs> jobs = jobDao.findByShipmentId(id);
-//            List<IRunnerResponse> response = jobs.stream()
-//                    .map(this::convertEntityToDto)
-//                    .collect(Collectors.toList());
-//            return CompletableFuture.completedFuture(ResponseHelper.buildListSuccessResponse(response));
-//        } catch (Exception e) {
-//            responseMsg = e.getMessage() != null ? e.getMessage()
-//                    : DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;
-//            log.error(responseMsg, e);
-//            return CompletableFuture.completedFuture(ResponseHelper.buildFailedResponse(responseMsg));
-//        }
-
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
