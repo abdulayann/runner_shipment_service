@@ -2,35 +2,39 @@ package com.dpw.runner.shipment.services.service.impl;
 
 
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
-import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
-import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
-import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
-import com.dpw.runner.shipment.services.commons.requests.RunnerEntityMapping;
+import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
+import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
-import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.*;
-import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
+import com.dpw.runner.shipment.services.service.interfaces.*;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
+import org.aspectj.lang.JoinPoint;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 
+@SuppressWarnings("ALL")
 @Service
 @Slf4j
 public class ShipmentService implements IShipmentService {
@@ -48,6 +52,51 @@ public class ShipmentService implements IShipmentService {
 
     @Autowired
     private JsonHelper jsonHelper;
+
+    @Autowired
+    private IPackingService packingService;
+
+    @Autowired
+    private IBookingCarriageService bookingCarriageService;
+
+    @Autowired
+    private ICarrierDetailService carrierDetailService;
+
+    @Autowired
+    private IELDetailsService elDetailsService;
+
+    @Autowired
+    private IEventService eventService;
+
+    @Autowired
+    private IFileRepoService fileRepoService;
+
+    @Autowired
+    private IJobService jobService;
+
+    @Autowired
+    private INotesService notesService;
+
+    @Autowired
+    private IPickupDeliveryDetailsService pickupDeliveryDetailsService;
+
+    @Autowired
+    private IReferenceNumbersService referenceNumbersService;
+
+    @Autowired
+    private IRoutingsService routingsService;
+
+    @Autowired
+    private IServiceDetailsService serviceDetailsService;
+
+    @Autowired
+    private IAdditionalDetailService additionalDetailService;
+
+    @Autowired
+    private IContainerService containerService;
+
+    @Autowired
+    private IPartiesDetailsService partiesDetailsService;
 
     private List<String> TRANSPORT_MODES = Arrays.asList("SEA", "ROAD", "RAIL", "AIR");
     private List<String> SHIPMENT_TYPE = Arrays.asList("FCL", "LCL");
@@ -346,6 +395,106 @@ public class ShipmentService implements IShipmentService {
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(responseMsg);
         }
+    }
+
+    @Async
+    public CompletableFuture<ResponseEntity<?>> retrieveByIdAsync(CommonRequestModel commonRequestModel) {
+        String responseMsg;
+        try {
+            CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
+            long id = request.getId();
+            Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(id);
+            if (!shipmentDetails.isPresent()) {
+                log.debug("Shipment Details is null for Id {}", request.getId());
+                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+            }
+
+            ShipmentDetailsResponse response = jsonHelper.convertValue(shipmentDetails.get(), ShipmentDetailsResponse.class);
+            return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(response));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return CompletableFuture.completedFuture(ResponseHelper.buildFailedResponse(responseMsg));
+        }
+    }
+
+    public ResponseEntity<?> completeRetrieveById(CommonRequestModel commonRequestModel) throws ExecutionException, InterruptedException {
+        try{
+        // create common list request for shipment id
+        CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
+        long id = request.getId();
+        CommonRequestModel commonListRequestModel = CommonRequestModel.buildRequest(constructListCommonRequest("shipmentId",id,"=" ));
+        CommonRequestModel commonListRequestModelbyEntityId = CommonRequestModel.buildRequest(constructListCommonRequest("entityId",id,"=" ));
+
+        CompletableFuture<ResponseEntity<?>> shipmentsFuture = retrieveByIdAsync(commonRequestModel);
+        CompletableFuture<ResponseEntity<?>> packingsFuture = packingService.listAsync(commonListRequestModel);
+        CompletableFuture<ResponseEntity<?>> additionalDetailsFuture = additionalDetailService.listAsync(commonListRequestModel);
+        CompletableFuture<ResponseEntity<?>> bookingCarriagesFuture = bookingCarriageService.listAsync(commonListRequestModel);
+        CompletableFuture<ResponseEntity<?>> containersFuture = containerService.listAsync(commonListRequestModel);
+        CompletableFuture<ResponseEntity<?>> elDetailsFuture = elDetailsService.listAsync(commonListRequestModel);
+        CompletableFuture<ResponseEntity<?>> eventsFuture = eventService.listAsync(commonListRequestModel);
+        CompletableFuture<ResponseEntity<?>> fileRepoFuture = fileRepoService.listAsync(commonListRequestModelbyEntityId);
+        CompletableFuture<ResponseEntity<?>> jobsFuture = jobService.listAsync(commonListRequestModel);
+        CompletableFuture<ResponseEntity<?>> notesFuture = notesService.listAsync(commonListRequestModelbyEntityId);
+        CompletableFuture<ResponseEntity<?>> referenceNumbersFuture = referenceNumbersService.listAsync(commonListRequestModel);
+        CompletableFuture<ResponseEntity<?>> routingsFuture = routingsService.listAsync(commonListRequestModel);
+        CompletableFuture<ResponseEntity<?>> serviceDetailsFuture = serviceDetailsService.listAsync(commonListRequestModel);
+        CompletableFuture<ResponseEntity<?>> carrierDetailsFuture = carrierDetailService.listAsync(commonListRequestModel);
+        CompletableFuture<ResponseEntity<?>> pickupDeliveryDetailsFuture =pickupDeliveryDetailsService.listAsync(commonListRequestModel);
+        CompletableFuture<ResponseEntity<?>> partiesFuture = partiesDetailsService.listAsync(commonListRequestModelbyEntityId);
+
+        CompletableFuture.allOf(shipmentsFuture, packingsFuture, additionalDetailsFuture, bookingCarriagesFuture, containersFuture,
+                elDetailsFuture, eventsFuture, fileRepoFuture, jobsFuture, notesFuture, referenceNumbersFuture, routingsFuture,
+                serviceDetailsFuture, pickupDeliveryDetailsFuture, partiesFuture).join();
+
+        var response = new CompleteShipmentResponse();
+        var res = (RunnerResponse<ShipmentDetailsResponse>) shipmentsFuture.get().getBody();
+
+        response.setShipment(res.getData());
+        response.setPackings(getResponse(packingsFuture));
+        response.setAdditionalDetails(getResponse(additionalDetailsFuture));
+        response.setBookingCarriages(getResponse(bookingCarriagesFuture));
+        response.setContainers(getResponse(containersFuture));
+        response.setElDetails(getResponse(elDetailsFuture));
+        response.setEvents(getResponse( eventsFuture));
+        response.setFileRepo(getResponse(fileRepoFuture));
+        response.setJob(getResponse(jobsFuture));
+        response.setNotes(getResponse(notesFuture));
+        response.setReferenceNumbers(getResponse(referenceNumbersFuture));
+        response.setRoutings(getResponse( routingsFuture));
+        response.setServiceDetails(getResponse( serviceDetailsFuture));
+        response.setPickupDeliveryDetails(getResponse( pickupDeliveryDetailsFuture));
+        response.setParties(getResponse(partiesFuture));
+
+        return ResponseHelper.buildSuccessResponse(response);
+        } catch (Exception e) {
+            String responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
+    private ListCommonRequest constructListCommonRequest(String fieldName, Object value, String operator){
+        ListCommonRequest request = new ListCommonRequest();
+        request.setPageNo(0);
+        request.setLimit(Integer.MAX_VALUE);
+
+
+        List<FilterCriteria> criterias = new ArrayList<>();
+        List<FilterCriteria> innerFilters = new ArrayList();
+        Criteria criteria = Criteria.builder().fieldName(fieldName).operator(operator).value(value).build();
+        FilterCriteria filterCriteria = FilterCriteria.builder().criteria(criteria).build();
+        innerFilters.add(filterCriteria);
+        criterias.add(FilterCriteria.builder().innerFilter(innerFilters).logicOperator(criterias.isEmpty() ? null : "or").build());
+        request.setFilterCriteria(criterias);
+        return request;
+    }
+
+    private <T extends IRunnerResponse> List<T> getResponse(CompletableFuture<ResponseEntity<?>> responseEntity) throws ExecutionException, InterruptedException {
+        var runnerListResponse = (RunnerListResponse<T>) responseEntity.get().getBody();
+        return (List<T>) runnerListResponse.getData();
     }
 
     private Map<String, RunnerEntityMapping> tableNames = Map.ofEntries(

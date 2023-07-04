@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.PackingConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
+import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.PackingRequest;
 import com.dpw.runner.shipment.services.dto.response.PackingResponse;
@@ -11,17 +12,26 @@ import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.IPackingDao;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingService;
+import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
+
+import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 
 @Slf4j
 @Service
@@ -66,6 +76,29 @@ public class PackingService implements IPackingService {
     }
 
     @Override
+    @Async
+    public CompletableFuture<ResponseEntity<?>> listAsync(CommonRequestModel commonRequestModel){
+        String responseMsg;
+        try {
+            ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
+            // construct specifications for filter request
+            Pair<Specification<Packing>, Pageable> tuple = fetchData(request, Packing.class);
+            Page<Packing> packingPage  = packingDao.findAll(tuple.getLeft(), tuple.getRight());
+            return CompletableFuture.completedFuture(
+                    ResponseHelper
+                            .buildListSuccessResponse(
+                                    convertEntityListToDtoList(packingPage.getContent()),
+                                    packingPage.getTotalPages(),
+                                    packingPage.getTotalElements()));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return CompletableFuture.completedFuture(ResponseHelper.buildFailedResponse(responseMsg));
+        }
+    }
+
+    @Override
     public ResponseEntity<?> delete(CommonRequestModel commonRequestModel) {
         Long id = commonRequestModel.getId();
         Optional<Packing> targetPacking = packingDao.findById(id);
@@ -105,6 +138,14 @@ public class PackingService implements IPackingService {
 
     private Packing convertRequestToEntity(PackingRequest request) {
         return modelMapper.map(request, Packing.class);
+    }
+
+    private List<IRunnerResponse> convertEntityListToDtoList(List<Packing> lst) {
+        List<IRunnerResponse> responseList = new ArrayList<>();
+        lst.forEach(packing -> {
+            responseList.add(convertEntityToDto(packing));
+        });
+        return responseList;
     }
 
 }
