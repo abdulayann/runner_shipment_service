@@ -625,7 +625,7 @@ public class TestDataGenerator {
                 .volumetricWeight(new BigDecimal(random)).volumetricWeightUnit(WEIGHT_UNIT.get(new Random().nextInt(100) % WEIGHT_UNIT.size()))
                 .chargable(new BigDecimal(random)).chargeableUnit(VOLUME_UNIT.get(new Random().nextInt(100) % VOLUME_UNIT.size()))
                 .netWeight(new BigDecimal(random)).netWeightUnit(WEIGHT_UNIT.get(new Random().nextInt(100) % WEIGHT_UNIT.size()))
-                .noOfPacks(random).packsUnit("BAG")
+                .noOfPacks(random).packsUnit("BAG").shipmentId("SHP000" + new Random().nextInt(40))
                 .build();
         return shipmentRequest;
     }

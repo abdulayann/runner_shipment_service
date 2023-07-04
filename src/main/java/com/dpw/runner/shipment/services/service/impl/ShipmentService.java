@@ -189,7 +189,9 @@ public class ShipmentService implements IShipmentService {
             Map.entry("noOfPacks", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(Integer.class).build()),
             Map.entry("packsUnit", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).build()),
             Map.entry("innerPacks", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(Integer.class).build()),
-            Map.entry("innerPackUnit", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).build())
+            Map.entry("innerPackUnit", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).build()),
+            Map.entry("containerNumber", RunnerEntityMapping.builder().tableName("containers").dataType(String.class).build()),
+            Map.entry("containerCode", RunnerEntityMapping.builder().tableName("containers").dataType(String.class).build())
     );
 
     private static ShipmentDetailsResponse convertEntityToDto(ShipmentDetails shipmentDetails) {
@@ -401,6 +403,7 @@ public class ShipmentService implements IShipmentService {
         ExecutorService executorService = Executors.newFixedThreadPool(100);
 
         CompleteShipmentRequest request = (CompleteShipmentRequest) commonRequestModel.getData();
+        System.out.println(jsonHelper.convertToJson(request));
         ShipmentDetails shipmentDetails = jsonHelper.convertValue(request.getShipmentRequest(), ShipmentDetails.class);
 
         CompletableFuture<Void> createCallToAdditionalDetails;

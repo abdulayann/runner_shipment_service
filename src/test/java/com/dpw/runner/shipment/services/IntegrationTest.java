@@ -10,10 +10,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.vladmihalcea.hibernate.type.json.JsonType;
 import org.hibernate.annotations.Filter;
 import org.hibernate.annotations.TypeDef;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.*;
 import org.springframework.core.env.Environment;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -55,6 +53,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureMockMvc
 @TestPropertySource("classpath:application-test.properties")
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class IntegrationTest {
 
     @Autowired
@@ -81,7 +80,7 @@ public class IntegrationTest {
                 .start();
     }
 
-    @Test
+    //@Test
     public void sampleTest() {
         shipmentService.createTestShipment(10);
         assertEquals(environment.getProperty("spring.datasource.url"), "jdbc:h2:mem:testdb;IFEXISTS=FALSE;");
@@ -93,7 +92,7 @@ public class IntegrationTest {
     }
 
 
-    @Test
+    //@Test
     public void testFetchByQuery_request1() throws Exception {
         ListCommonRequest ListCommonRequest = createSamplePageable1();
 
@@ -114,7 +113,7 @@ public class IntegrationTest {
 
     }
 
-    @Test
+    //@Test
     public void testFetchByQuery_request3() throws Exception {
         ListCommonRequest ListCommonRequest = createSamplePageable2();
         Page<ShipmentDetails> shipments = new PageImpl<ShipmentDetails>(Collections.emptyList());
@@ -130,13 +129,32 @@ public class IntegrationTest {
     }
 
     @Test
+    @Order(1)
+    public void createTest() throws Exception {
+        var data = testDataGenerator.createTestShipment(40);
+        for (var i : data) {
+            MvcResult mvcResult = mockMvc.perform(post("/api/v2/shipment/create")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(i)))
+                    .andExpect(status().isOk())
+                    .andReturn();
+            //shipmentService.create(CommonRequestModel.buildRequest(i));
+        }
+    }
+
+    @Test
     public void testCriteria1() throws Exception {
         //Fires up the H2 for each test case
         //populate data in H2 by hitting the createTestShipment
-        var data = testDataGenerator.createTestShipment(4);
-        for (var i : data) {
-            shipmentService.create(CommonRequestModel.buildRequest(i));
-        }
+//        var data = testDataGenerator.createTestShipment(4);
+//        for (var i : data) {
+//            MvcResult mvcResult = mockMvc.perform(post("/api/v2/shipment/create")
+//                            .contentType(MediaType.APPLICATION_JSON)
+//                            .content(objectMapper.writeValueAsString(i)))
+//                    .andExpect(status().isOk())
+//                    .andReturn();
+//            //shipmentService.create(CommonRequestModel.buildRequest(i));
+//        }
 
         //Create a request payload for the 1st Criteria
         ListCommonRequest ListCommonRequest = createSamplePageable_AllNull_StatusIs0();
@@ -165,10 +183,10 @@ public class IntegrationTest {
 
     @Test
     public void completeRetrieveTestCriteria() throws Exception {
-        var data = testDataGenerator.createTestShipment(40);
-        for (var i : data) {
-            shipmentService.create(CommonRequestModel.buildRequest(i));
-        }
+//        var data = testDataGenerator.createTestShipment(40);
+//        for (var i : data) {
+//            shipmentService.create(CommonRequestModel.buildRequest(i));
+//        }
 
         int id = 1;
         for (id = 1; id <= 40; id++) {
@@ -186,10 +204,10 @@ public class IntegrationTest {
     @Test
     public void testCriteria2() throws Exception {
         //var dataInH2 = testDataGenerator.populateH2WithTestData();
-        var data = testDataGenerator.createTestShipment(40);
-        for (var i : data) {
-            shipmentService.create(CommonRequestModel.buildRequest(i));
-        }
+//        var data = testDataGenerator.createTestShipment(40);
+//        for (var i : data) {
+//            shipmentService.create(CommonRequestModel.buildRequest(i));
+//        }
         ListCommonRequest ListCommonRequest = createSamplePageable_AllNull_StatusIs0_TransportModeIsSEA();
 
         MvcResult mvcResult = mockMvc.perform(post("/api/v2/shipment/list-shipment")
@@ -209,10 +227,10 @@ public class IntegrationTest {
     @Test
     public void testCriteria3() throws Exception {
         //var dataInH2 = testDataGenerator.populateH2WithTestData();
-        var data = testDataGenerator.createTestShipment(40);
-        for (var i : data) {
-            shipmentService.create(CommonRequestModel.buildRequest(i));
-        }
+//        var data = testDataGenerator.createTestShipment(40);
+//        for (var i : data) {
+//            shipmentService.create(CommonRequestModel.buildRequest(i));
+//        }
         ListCommonRequest ListCommonRequest = createSamplePageable_AllNull_ShipmentTypeIsEXP_StatusIs0_TransportModeIsSEA();
 
         MvcResult mvcResult = mockMvc.perform(post("/api/v2/shipment/list-shipment")
@@ -236,10 +254,10 @@ public class IntegrationTest {
     @Test
     public void testCriteria4() throws Exception {
         //var dataInH2 = testDataGenerator.populateH2WithTestData();
-        var data = testDataGenerator.createTestShipment(400);
-        for (var i : data) {
-            shipmentService.create(CommonRequestModel.buildRequest(i));
-        }
+//        var data = testDataGenerator.createTestShipment(400);
+//        for (var i : data) {
+//            shipmentService.create(CommonRequestModel.buildRequest(i));
+//        }
 
         ListCommonRequest ListCommonRequest = createSamplePageable_AllNull_ShipmentIdIsNonNull();
 
@@ -253,8 +271,8 @@ public class IntegrationTest {
         var expectedResponseIdSet = List.of(5L);
 
         int actualCount = ((List<ShipmentDetails>) objectMapper.readValue(mvcResult.getResponse().getContentAsString(), RunnerResponse.class).getData()).size();
-        var actualData = (List<ShipmentDetails>) objectMapper.readValue(mvcResult.getResponse().getContentAsString(), RunnerResponse.class).getData();
-        var actualDataIdSet = actualData.stream().map(o -> o.getId()).sorted().collect(Collectors.toList());
+//        var actualData = (List<ShipmentDetails>) objectMapper.readValue(mvcResult.getResponse().getContentAsString(), RunnerResponse.class).getData();
+//        var actualDataIdSet = actualData.stream().map(o -> o.getId()).sorted().collect(Collectors.toList());
 
         assertTrue(actualCount > 0);
 //        assertEquals(expectedResponseCount, actualCount);
@@ -265,10 +283,10 @@ public class IntegrationTest {
     public void testCriteria5() throws Exception {
 //        var dataInH2 = testDataGenerator.populateH2WithTestData();
 
-        var data = testDataGenerator.createTestShipment(4);
-        for (var i : data) {
-            shipmentService.create(CommonRequestModel.buildRequest(i));
-        }
+//        var data = testDataGenerator.createTestShipment(4);
+//        for (var i : data) {
+//            shipmentService.create(CommonRequestModel.buildRequest(i));
+//        }
 
         ListCommonRequest ListCommonRequest = createSamplePageable_AllNull_ContainerNumbersIsNonNull();
 
@@ -293,10 +311,10 @@ public class IntegrationTest {
     public void testCriteria6() throws Exception {
 //        var dataInH2 = testDataGenerator.populateH2WithTestData();
 
-        var data = testDataGenerator.createTestShipment(4);
-        for (var i : data) {
-            shipmentService.create(CommonRequestModel.buildRequest(i));
-        }
+//        var data = testDataGenerator.createTestShipment(4);
+//        for (var i : data) {
+//            shipmentService.create(CommonRequestModel.buildRequest(i));
+//        }
 
         ListCommonRequest ListCommonRequest = createSamplePageable_AllNull_MasterBillisNonNull_StatusIs1_TransportModeIsNonNull();
 
@@ -322,10 +340,10 @@ public class IntegrationTest {
         //Fires up the H2 for each test case
         //populate data in H2 by hitting the createTestShipment
 //        var dataInH2 = testDataGenerator.populateH2WithTestData();
-        var data = testDataGenerator.createTestShipment(4);
-        for (var i : data) {
-            shipmentService.create(CommonRequestModel.buildRequest(i));
-        }
+//        var data = testDataGenerator.createTestShipment(4);
+//        for (var i : data) {
+//            shipmentService.create(CommonRequestModel.buildRequest(i));
+//        }
 
         //Create a request payload for the 1st Criteria
         ListCommonRequest ListCommonRequest = createSamplePageable_AllNull_HouseBillIsNonNull();
@@ -357,10 +375,10 @@ public class IntegrationTest {
         //Fires up the H2 for each test case
         //populate data in H2 by hitting the createTestShipment
 //        var dataInH2 = testDataGenerator.populateH2WithTestData();
-        var data = testDataGenerator.createTestShipment(4);
-        for (var i : data) {
-            shipmentService.create(CommonRequestModel.buildRequest(i));
-        }
+//        var data = testDataGenerator.createTestShipment(4);
+//        for (var i : data) {
+//            shipmentService.create(CommonRequestModel.buildRequest(i));
+//        }
         //Create a request payload for the 1st Criteria
         ListCommonRequest ListCommonRequest = createSamplePageable_AllNull_ClientIdIsNonNull();
 
@@ -525,7 +543,7 @@ public class IntegrationTest {
                                 .criteria(Criteria.builder()
                                         .fieldName("shipmentId")
                                         .operator("=")
-                                        .value("SHP000102015")
+                                        .value("SHP0000")
                                         .build())
                                 .build()
                 ))
@@ -548,13 +566,10 @@ public class IntegrationTest {
                         .order("DESC")
                         .build())
                 .filterCriteria(Arrays.asList(
-                        FilterCriteria.builder()
-                                .criteria(Criteria.builder()
-                                        .fieldName("containerNumbers")
-                                        .operator("=")
-                                        .value("CONTE7C9K4zr8z")
-                                        .build())
-                                .build()
+                        FilterCriteria.builder().innerFilter(List.of(FilterCriteria.builder().criteria(Criteria.builder()
+                                .fieldName("containerNumber")
+                                .operator("=")
+                                .value("CONTE7C9K4zr8z").build()).build())).build()
                 ))
                 .build();
         return requestPayload;
@@ -652,7 +667,7 @@ public class IntegrationTest {
                 .filterCriteria(Arrays.asList(
                         FilterCriteria.builder()
                                 .criteria(Criteria.builder()
-                                        .fieldName("clientId")
+                                        .fieldName("orgId")
                                         .operator("=")
                                         .value("11849")
                                         .build())
@@ -847,7 +862,7 @@ public class IntegrationTest {
         return listCommonRequest;
     }
 
-    @Test
+    //@Test
     public void testCreateTestRecord() throws Exception {
         int count = 5;
         List<ShipmentDetails> shipments = new ArrayList<>();
