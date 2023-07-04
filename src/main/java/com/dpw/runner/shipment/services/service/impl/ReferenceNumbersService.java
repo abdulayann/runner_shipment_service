@@ -14,6 +14,7 @@ import com.dpw.runner.shipment.services.repository.interfaces.IReferenceNumbersD
 import com.dpw.runner.shipment.services.service.interfaces.IReferenceNumbersService;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
@@ -35,6 +36,9 @@ import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 public class ReferenceNumbersService implements IReferenceNumbersService {
     @Autowired
     private IReferenceNumbersDao referenceNumbersDao;
+
+    @Autowired
+    private ModelMapper modelMapper;
 
     @Transactional
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) throws Exception {
@@ -142,19 +146,11 @@ public class ReferenceNumbersService implements IReferenceNumbersService {
         }
     }
 
-    private static ReferenceNumbersResponse convertEntityToDto(ReferenceNumbers referenceNumbers) {
-        ReferenceNumbersResponse response = new ReferenceNumbersResponse();
-        response.setId(referenceNumbers.getId());
-        response.setGuid(referenceNumbers.getGuid());
-        response.setConsolidationId(referenceNumbers.getConsolidationId());
-        response.setShipmentId(referenceNumbers.getShipmentId());
-        response.setCountryOfIssue(referenceNumbers.getCountryOfIssue());
-        response.setType(referenceNumbers.getType());
-        response.setReferenceNumber(referenceNumbers.getReferenceNumber());
-        return response;
+    private ReferenceNumbersResponse convertEntityToDto(ReferenceNumbers referenceNumbers) {
+        return modelMapper.map(referenceNumbers, ReferenceNumbersResponse.class);
     }
 
-    private static List<IRunnerResponse> convertEntityListToDtoList(List<ReferenceNumbers> lst) {
+    private List<IRunnerResponse> convertEntityListToDtoList(List<ReferenceNumbers> lst) {
         List<IRunnerResponse> responseList = new ArrayList<>();
         lst.forEach(referenceNumbers -> {
             responseList.add(convertEntityToDto(referenceNumbers));
@@ -162,14 +158,7 @@ public class ReferenceNumbersService implements IReferenceNumbersService {
         return responseList;
     }
 
-    public static ReferenceNumbers convertRequestToEntity(ReferenceNumbersRequest request) {
-        ReferenceNumbers referenceNumbers = new ReferenceNumbers();
-        referenceNumbers.setGuid(UUID.randomUUID());
-        referenceNumbers.setConsolidationId(request.getConsolidationId());
-        referenceNumbers.setShipmentId(request.getShipmentId());
-        referenceNumbers.setCountryOfIssue(request.getCountryOfIssue());
-        referenceNumbers.setType(request.getType());
-        referenceNumbers.setReferenceNumber(request.getReferenceNumber());
-        return referenceNumbers;
+    public ReferenceNumbers convertRequestToEntity(ReferenceNumbersRequest request) {
+        return modelMapper.map(request, ReferenceNumbers.class);
     }
 }

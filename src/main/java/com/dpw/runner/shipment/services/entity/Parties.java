@@ -40,9 +40,6 @@ public class Parties extends MultiTenancy {
     @Column(name = "org_id")
     private Integer orgId;
 
-    @Column(name = "guid")
-    private UUID guid;
-
     @Column(name = "address_id")
     private Integer addressId;
 

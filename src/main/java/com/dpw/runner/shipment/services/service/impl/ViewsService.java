@@ -45,6 +45,9 @@ public class ViewsService implements IViewsService {
     @Autowired
     private IDefaultViewsDao defaultViewsDao;
 
+    @Autowired
+    private ModelMapper modelMapper;
+
     @Transactional
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) throws Exception {
         ViewsRequest request = null;
@@ -174,13 +177,11 @@ public class ViewsService implements IViewsService {
         }
     }
 
-    private static ViewsResponse convertEntityToDto(Views view) {
-        ViewsResponse response = new ViewsResponse();
-        new ModelMapper().map(view, response);
-        return response;
+    private ViewsResponse convertEntityToDto(Views view) {
+        return modelMapper.map(view, ViewsResponse.class);
     }
 
-    private static List<IRunnerResponse> convertEntityListToDtoList(List<Views> lst) {
+    private List<IRunnerResponse> convertEntityListToDtoList(List<Views> lst) {
         List<IRunnerResponse> responseList = new ArrayList<>();
         lst.forEach(view -> {
             responseList.add(convertEntityToDto(view));
@@ -188,9 +189,7 @@ public class ViewsService implements IViewsService {
         return responseList;
     }
 
-    public static Views convertRequestToEntity(ViewsRequest request) {
-        Views view = new Views();
-        new ModelMapper().map(request, view);
-        return view;
+    public Views convertRequestToEntity(ViewsRequest request) {
+        return modelMapper.map(request, Views.class);
     }
 }

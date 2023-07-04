@@ -8,19 +8,9 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
-public interface IShipmentService {
+public interface IShipmentService extends ICommonService{
     List<ShipmentDetails> createTestShipment(Integer count);
     ResponseEntity<?> fetchShipments(CommonRequestModel commonRequestModel);
-
-    ResponseEntity<?> create(CommonRequestModel commonRequestModel) throws Exception;
-
-    ResponseEntity<?> update(CommonRequestModel commonRequestModel) throws Exception;
-
-    ResponseEntity<?> list(CommonRequestModel commonRequestModel);
-
-    ResponseEntity<?> delete(CommonRequestModel commonRequestModel);
-
-    ResponseEntity<?> retrieveById(CommonRequestModel commonRequestModel);
 
     CompletableFuture<ResponseEntity<?>> retrieveByIdAsync(CommonRequestModel commonRequestModel);
 

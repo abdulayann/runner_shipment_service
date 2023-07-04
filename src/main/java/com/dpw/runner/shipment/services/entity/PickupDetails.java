@@ -22,9 +22,6 @@ import java.util.UUID;
 public class PickupDetails extends MultiTenancy {
     private static final long serialVersionUID = 190794279984274725L;
 
-    @Column(name = "guid")
-    private UUID guid;
-
     @Column(name = "estimated_pickup")
     private LocalDateTime estimatedPickup;
 

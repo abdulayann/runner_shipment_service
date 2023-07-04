@@ -14,9 +14,7 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     private Long id;
     private UUID guid;
     private List<Parties> parties;
-    private BlDetails blDetails;
     private CarrierDetails carrierDetails;
-    private MeasurementDetails measurementDetails;
     private String houseBill;
     private String transportMode;
     private String direction;

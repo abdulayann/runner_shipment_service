@@ -70,4 +70,12 @@ public class ShipmentSettingsController {
     public ResponseEntity<RunnerListResponse<ShipmentSettingsDetailsResponse>> list(@RequestBody ListCommonRequest listCommonRequest) {
         return (ResponseEntity<RunnerListResponse<ShipmentSettingsDetailsResponse>>) shipmentSettingsService.list(CommonRequestModel.buildRequest(listCommonRequest));
     }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentSettingsConstants.SHIPMENT_SETTINGS_DELETE_SUCCESSFUL)})
+    @PostMapping(ApiConstants.API_DELETE)
+    public ResponseEntity<RunnerResponse> delete(@RequestParam @Valid Long id) {
+        CommonGetRequest request = CommonGetRequest.builder().id(id).build();
+        return (ResponseEntity<RunnerResponse>) shipmentSettingsService.delete(CommonRequestModel.buildRequest(request));
+
+    }
 }

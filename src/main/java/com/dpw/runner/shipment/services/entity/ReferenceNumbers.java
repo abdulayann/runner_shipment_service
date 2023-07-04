@@ -20,9 +20,6 @@ import java.util.UUID;
 @AllArgsConstructor
 public class ReferenceNumbers extends MultiTenancy {
 
-    @Column(name = "guid")
-    private UUID guid;
-
     @Column(name = "consolidation_id")
     private Long consolidationId;
 
