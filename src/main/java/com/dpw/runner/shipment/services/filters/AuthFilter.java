@@ -61,7 +61,7 @@ public class AuthFilter implements Filter {
             RequestAuthContext.setAuthToken(authToken);
 
         }
-        userName = "Test";  // remove this
+        userName = "Test";  // TODO: remove this, retrieved from authToken
         if(userName!=null){
             UsersDto userByUserName = userService.getUserByUserName(userName);
             if (userByUserName == null) {

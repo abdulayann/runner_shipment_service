@@ -1,18 +1,22 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancyRepository;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
-import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
-import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
-import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
-import com.dpw.runner.shipment.services.commons.requests.RunnerEntityMapping;
+import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
+import com.dpw.runner.shipment.services.dto.request.CompleteShipmentRequest;
+import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
+import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.*;
+import com.dpw.runner.shipment.services.service.interfaces.ICommonService;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
@@ -28,6 +32,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 
@@ -45,6 +50,12 @@ public class ShipmentService implements IShipmentService {
     private ICarrierDao carrierDao;
     @Autowired
     private IPartiesDao partiesDao;
+
+    @Autowired
+    private IContainerDao containerDao;
+
+    @Autowired
+    private ContainerService containerService;
 
     @Autowired
     private JsonHelper jsonHelper;
@@ -270,16 +281,18 @@ public class ShipmentService implements IShipmentService {
     @Override
     @Transactional
     public ResponseEntity<?> update(CommonRequestModel commonRequestModel) throws Exception {
-        ShipmentRequest request = (ShipmentRequest) commonRequestModel.getData();
+        CompleteShipmentRequest completeShipmentRequest = (CompleteShipmentRequest) commonRequestModel.getData();
+        ShipmentRequest shipmentRequest = (ShipmentRequest) completeShipmentRequest.getShipmentRequest();
         // TODO- implement Validation logic
-        long id = request.getId();
+        long id = shipmentRequest.getId();
         Optional<ShipmentDetails> oldEntity = shipmentDao.findById(id);
         if (!oldEntity.isPresent()) {
-            log.debug("Shipment Details is null for Id {}", request.getId());
+            log.debug("Shipment Details is null for Id {}", shipmentRequest.getId());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
-
-        ShipmentDetails entity = jsonHelper.convertValue(request, ShipmentDetails.class);
+        List<ContainerRequest> containerRequestList = (List<ContainerRequest>) completeShipmentRequest.getContainerRequest();
+        containerService.containersUpdate(containerRequestList, id);
+        ShipmentDetails entity = jsonHelper.convertValue(shipmentRequest, ShipmentDetails.class);
         entity.setId(oldEntity.get().getId());
         entity = shipmentDao.save(entity);
         return ResponseHelper.buildSuccessResponse(jsonHelper.convertValue(entity, ShipmentDetailsResponse.class));
