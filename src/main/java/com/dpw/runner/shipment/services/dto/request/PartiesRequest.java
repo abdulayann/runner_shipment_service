@@ -4,18 +4,17 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import com.dpw.runner.shipment.services.entity.Containers;
 import io.swagger.annotations.ApiModel;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
+import lombok.*;
 
 import java.util.List;
+import java.util.Map;
 
 @Data
 @ApiModel("Parties Request Model")
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class PartiesRequest extends CommonRequest implements IRunnerRequest {
     private Long id;
     private Long entityId;
@@ -24,6 +23,6 @@ public class PartiesRequest extends CommonRequest implements IRunnerRequest {
     private Integer orgId;
     private Integer tenantId;
     private Integer addressId;
-    private List<Containers> containersPickupAddress;
-    private List<Containers> containersDeliveryAddress;
+    private Map<String, Object> orgData;
+    private Map<String, Object> addressData;
 }

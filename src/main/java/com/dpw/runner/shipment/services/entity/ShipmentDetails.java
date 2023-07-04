@@ -145,6 +145,9 @@ public class ShipmentDetails extends MultiTenancy {
     @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY, mappedBy = "shipmentId")
     private List<TruckDriverDetails> truckDriverDetails;
 
+    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY, mappedBy = "shipmentId")
+    private List<AdditionalDetail> additionalDetails;
+
     @Column(name = "weight")
     private BigDecimal weight;
 

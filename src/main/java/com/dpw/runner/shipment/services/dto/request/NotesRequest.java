@@ -12,6 +12,7 @@ import java.time.LocalDateTime;
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class NotesRequest extends CommonRequest implements IRunnerRequest {
     private Long id;
     private String text;

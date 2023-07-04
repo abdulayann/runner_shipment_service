@@ -17,6 +17,7 @@ import java.util.Date;
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class AdditionalDetailRequest extends CommonRequest implements IRunnerRequest {
     private Long id;
     private LocalDateTime customsNoIssueDate;
