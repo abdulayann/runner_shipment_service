@@ -5,9 +5,20 @@ import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+<<<<<<< Updated upstream
+=======
+import com.dpw.runner.shipment.services.dto.request.BookingCarriageRequest;
+import com.dpw.runner.shipment.services.dto.request.FileRepoRequest;
+>>>>>>> Stashed changes
 import com.dpw.runner.shipment.services.dto.request.EntityIdAndTypeRequest;
 import com.dpw.runner.shipment.services.dto.request.FileRepoRequest;
 import com.dpw.runner.shipment.services.dto.response.FileRepoResponse;
+<<<<<<< Updated upstream
+=======
+import com.dpw.runner.shipment.services.entity.BookingCarriage;
+import com.dpw.runner.shipment.services.entity.Events;
+import com.dpw.runner.shipment.services.entity.FileRepo;
+>>>>>>> Stashed changes
 import com.dpw.runner.shipment.services.entity.FileRepo;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.IFileRepoDao;
@@ -24,10 +35,15 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
+<<<<<<< Updated upstream
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+=======
+import java.util.*;
+>>>>>>> Stashed changes
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 
@@ -146,6 +162,57 @@ public class FileRepoService implements IFileRepoService {
         }
     }
 
+    public ResponseEntity<?> updateEntityFromShipment(CommonRequestModel commonRequestModel, Long shipmentId) {
+        String responseMsg;
+        List<FileRepo> responseFileRepo = null;
+        try {
+            // TODO- Handle Transactions here
+            List<FileRepo> existingList = fileRepoDao.findByShipmentId(shipmentId);
+            HashSet<Long> existingIds = new HashSet<>(existingList.stream().map(FileRepo::getId).collect(Collectors.toList()));
+            List<FileRepoRequest> containerList = new ArrayList<>();
+            List<FileRepoRequest> requestList = (List<FileRepoRequest>) commonRequestModel.getDataList();
+            if (requestList != null && requestList.size() != 0) {
+                for (FileRepoRequest request : requestList) {
+                    Long id = request.getId();
+                    if (id != null) {
+                        existingIds.remove(id);
+                    }
+                    containerList.add(request);
+                }
+                responseFileRepo = saveFileRepo(containerList);
+                deleteFileRepo(existingIds);
+            }
+            return ResponseHelper.buildListSuccessResponse(convertListResponse(responseFileRepo));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
+    private List<FileRepo> saveFileRepo(List<FileRepoRequest> fileRepo) {
+        return fileRepoDao.saveAll(fileRepo
+                .stream()
+                .map(this::mapToEntityFromRequest)
+                .collect(Collectors.toList()));
+    }
+
+    private ResponseEntity<?> deleteFileRepo(HashSet<Long> existingIds) {
+        String responseMsg;
+        try {
+            for (Long id : existingIds) {
+                delete(CommonRequestModel.buildRequest(CommonGetRequest.builder().id(id).build()));
+            }
+            return ResponseHelper.buildSuccessResponse();
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_DELETE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
     @Override
     public ResponseEntity<?> retrieveByEntityIdAndEntityType(CommonRequestModel commonRequestModel) {
         String responseMsg;
@@ -174,10 +241,37 @@ public class FileRepoService implements IFileRepoService {
     }
 
     private FileRepo mapToEntityFromRequest(FileRepoRequest request){
+<<<<<<< Updated upstream
         return modelMapper.map(request, FileRepo.class);
     }
     private FileRepoResponse convertToResponse(FileRepo fileRepo){
         return modelMapper.map(fileRepo, FileRepoResponse.class);
+=======
+        FileRepo fileRepo = new FileRepo();
+        fileRepo.setId(request.getId());
+        fileRepo.setFileName(request.getFileName());
+        fileRepo.setPath(request.getPath());
+        fileRepo.setDocType(request.getDocType());
+        fileRepo.setClientEnabled(request.getClientEnabled());
+        fileRepo.setEventCode(request.getEventCode());
+        fileRepo.setIsPosted(request.getIsPosted());
+        fileRepo.setEntityId(request.getEntityId());
+        fileRepo.setEntityType(request.getEntityType());
+        return fileRepo;
+    }
+    private FileRepoResponse convertToResponse(FileRepo fileRepo){
+        FileRepoResponse response = new FileRepoResponse();
+        response.setId(fileRepo.getId());
+        response.setFileName(fileRepo.getFileName());
+        response.setPath(fileRepo.getPath());
+        response.setDocType(fileRepo.getDocType());
+        response.setClientEnabled(fileRepo.getClientEnabled());
+        response.setEventCode(fileRepo.getEventCode());
+        response.setIsPosted(fileRepo.getIsPosted());
+        response.setEntityType(fileRepo.getEntityType());
+        response.setEntityId(fileRepo.getEntityId());
+        return response;
+>>>>>>> Stashed changes
     }
 
 }

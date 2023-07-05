@@ -6,7 +6,12 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.EventsRequest;
+import com.dpw.runner.shipment.services.dto.request.EventsRequest;
 import com.dpw.runner.shipment.services.dto.response.EventsResponse;
+<<<<<<< Updated upstream
+=======
+import com.dpw.runner.shipment.services.entity.Events;
+>>>>>>> Stashed changes
 import com.dpw.runner.shipment.services.entity.Events;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.IEventDao;
@@ -25,6 +30,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -151,6 +157,60 @@ public class EventService implements IEventService {
         }
     }
 
+<<<<<<< Updated upstream
+=======
+    public ResponseEntity<?> updateEntityFromShipment(CommonRequestModel commonRequestModel, Long shipmentId) {
+        String responseMsg;
+        List<Events> responseEvents = null;
+        try {
+            // TODO- Handle Transactions here
+            List<Events> existingList = eventDao.findByShipmentId(shipmentId);
+            HashSet<Long> existingIds = new HashSet<>(existingList.stream().map(Events::getId).collect(Collectors.toList()));
+            List<EventsRequest> containerList = new ArrayList<>();
+            List<EventsRequest> requestList = (List<EventsRequest>) commonRequestModel.getDataList();
+            if (requestList != null && requestList.size() != 0) {
+                for (EventsRequest request : requestList) {
+                    Long id = request.getId();
+                    if (id != null) {
+                        existingIds.remove(id);
+                    }
+                    containerList.add(request);
+                }
+                responseEvents = saveEvents(containerList);
+                deleteEvents(existingIds);
+            }
+            return ResponseHelper.buildListSuccessResponse(convertEntityListToDtoList(responseEvents));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
+    private List<Events> saveEvents(List<EventsRequest> elDetails) {
+        return eventDao.saveAll(elDetails
+                .stream()
+                .map(this::convertRequestToEntity)
+                .collect(Collectors.toList()));
+    }
+
+    private ResponseEntity<?> deleteEvents(HashSet<Long> existingIds) {
+        String responseMsg;
+        try {
+            for (Long id : existingIds) {
+                delete(CommonRequestModel.buildRequest(CommonGetRequest.builder().id(id).build()));
+            }
+            return ResponseHelper.buildSuccessResponse();
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_DELETE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
+>>>>>>> Stashed changes
     public Events convertRequestToEntity(EventsRequest request) {
         return modelMapper.map(request, Events.class);
     }

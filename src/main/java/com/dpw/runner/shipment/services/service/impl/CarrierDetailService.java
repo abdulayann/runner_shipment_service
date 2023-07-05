@@ -25,6 +25,8 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -145,6 +147,63 @@ public class CarrierDetailService implements ICarrierDetailService {
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
+    public ResponseEntity<?> updateEntityFromShipment(CommonRequestModel commonRequestModel, Long shipmentId)
+    {
+        String responseMsg;
+        List<CarrierDetails> responseCarrierDetails = null;
+        try {
+            // TODO- Handle Transactions here
+            List<CarrierDetails> existingList = carrierDao.findByShipmentId(shipmentId);
+            HashSet<Long> existingIds = new HashSet<>( existingList.stream().map(CarrierDetails::getId).collect(Collectors.toList()) );
+            List<CarrierDetailRequest> containerList = new ArrayList<>();
+            List<CarrierDetailRequest> requestList = (List<CarrierDetailRequest>) commonRequestModel.getDataList();
+            if(requestList != null && requestList.size() != 0)
+            {
+                for(CarrierDetailRequest request: requestList)
+                {
+                    Long id = request.getId();
+                    if(id != null) {
+                        existingIds.remove(id);
+                    }
+                    containerList.add(request);
+                }
+                responseCarrierDetails = saveCarrierDetails(containerList);
+                deleteCarrierDetails(existingIds);
+            }
+            return ResponseHelper.buildListSuccessResponse(convertEntityListToDtoList(responseCarrierDetails));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
+    private List<CarrierDetails> saveCarrierDetails(List<CarrierDetailRequest> containers)
+    {
+        return carrierDao.saveAll(containers
+                .stream()
+                .map(this::convertRequestToCarrierDetail)
+                .collect(Collectors.toList()));
+    }
+
+    private ResponseEntity<?> deleteCarrierDetails(HashSet<Long> existingIds)
+    {
+        String responseMsg;
+        try {
+            for(Long id: existingIds)
+            {
+                delete(CommonRequestModel.buildRequest(CommonGetRequest.builder().id(id).build()));
+            }
+            return ResponseHelper.buildSuccessResponse();
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_DELETE_EXCEPTION_MSG;
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(responseMsg);
         }

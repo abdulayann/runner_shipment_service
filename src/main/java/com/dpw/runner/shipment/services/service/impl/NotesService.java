@@ -24,6 +24,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -143,6 +145,63 @@ public class NotesService implements INotesService {
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
+    public ResponseEntity<?> updateEntityFromShipment(CommonRequestModel commonRequestModel, Long shipmentId)
+    {
+        String responseMsg;
+        List<Notes> responseNotes = null;
+        try {
+            // TODO- Handle Transactions here
+            List<Notes> existingList = notesDao.findByShipmentId(shipmentId);
+            HashSet<Long> existingIds = new HashSet<>( existingList.stream().map(Notes::getId).collect(Collectors.toList()) );
+            List<NotesRequest> containerList = new ArrayList<>();
+            List<NotesRequest> requestList = (List<NotesRequest>) commonRequestModel.getDataList();
+            if(requestList != null && requestList.size() != 0)
+            {
+                for(NotesRequest request: requestList)
+                {
+                    Long id = request.getId();
+                    if(id != null) {
+                        existingIds.remove(id);
+                    }
+                    containerList.add(request);
+                }
+                responseNotes = saveNotes(containerList);
+                deleteNotes(existingIds);
+            }
+            return ResponseHelper.buildListSuccessResponse(convertEntityListToDtoList(responseNotes));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
+    private List<Notes> saveNotes(List<NotesRequest> containers)
+    {
+        return notesDao.saveAll(containers
+                .stream()
+                .map(this::convertRequestToNotesEntity)
+                .collect(Collectors.toList()));
+    }
+
+    private ResponseEntity<?> deleteNotes(HashSet<Long> existingIds)
+    {
+        String responseMsg;
+        try {
+            for(Long id: existingIds)
+            {
+                delete(CommonRequestModel.buildRequest(CommonGetRequest.builder().id(id).build()));
+            }
+            return ResponseHelper.buildSuccessResponse();
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_DELETE_EXCEPTION_MSG;
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(responseMsg);
         }

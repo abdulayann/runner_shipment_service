@@ -15,6 +15,7 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.*;
 import com.dpw.runner.shipment.services.service.interfaces.*;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.JoinPoint;
@@ -35,6 +36,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 
 @SuppressWarnings("ALL")
 @Service
@@ -463,21 +465,6 @@ public class ShipmentService implements IShipmentService {
         }
     }
 
-    private ListCommonRequest constructListCommonRequest(String fieldName, Object value, String operator){
-        ListCommonRequest request = new ListCommonRequest();
-        request.setPageNo(0);
-        request.setLimit(Integer.MAX_VALUE);
-
-
-        List<FilterCriteria> criterias = new ArrayList<>();
-        List<FilterCriteria> innerFilters = new ArrayList();
-        Criteria criteria = Criteria.builder().fieldName(fieldName).operator(operator).value(value).build();
-        FilterCriteria filterCriteria = FilterCriteria.builder().criteria(criteria).build();
-        innerFilters.add(filterCriteria);
-        criterias.add(FilterCriteria.builder().innerFilter(innerFilters).logicOperator(criterias.isEmpty() ? null : "or").build());
-        request.setFilterCriteria(criterias);
-        return request;
-    }
 
     private <T extends IRunnerResponse> List<T> getResponse(CompletableFuture<ResponseEntity<?>> responseEntity) throws ExecutionException, InterruptedException {
         var runnerListResponse = (RunnerListResponse<T>) responseEntity.get().getBody();

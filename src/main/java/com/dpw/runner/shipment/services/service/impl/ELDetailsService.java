@@ -8,7 +8,6 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.ELDetailsRequest;
 import com.dpw.runner.shipment.services.dto.request.ElNumbersRequest;
 import com.dpw.runner.shipment.services.dto.response.ELDetailsResponse;
-import com.dpw.runner.shipment.services.entity.BookingCarriage;
 import com.dpw.runner.shipment.services.entity.ELDetails;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.IELDetailsDao;
@@ -26,6 +25,8 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -88,14 +89,14 @@ public class ELDetailsService implements IELDetailsService {
 
     @Override
     @Async
-    public CompletableFuture<ResponseEntity<?>> listAsync(CommonRequestModel commonRequestModel){
+    public CompletableFuture<ResponseEntity<?>> listAsync(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
 
             Pair<Specification<ELDetails>, Pageable> tuple = fetchData(request, ELDetails.class);
             Page<ELDetails> elDetailsPage = elDetailsDao.findAll(tuple.getLeft(), tuple.getRight());
-            return CompletableFuture.completedFuture( ResponseHelper.buildListSuccessResponse(
+            return CompletableFuture.completedFuture(ResponseHelper.buildListSuccessResponse(
                     convertEntityListToDtoList(elDetailsPage.getContent()),
                     elDetailsPage.getTotalPages(),
                     elDetailsPage.getTotalElements()));
@@ -167,6 +168,57 @@ public class ELDetailsService implements IELDetailsService {
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
+    public ResponseEntity<?> updateEntityFromShipment(CommonRequestModel commonRequestModel, Long shipmentId) {
+        String responseMsg;
+        List<ELDetails> responseELDetails = null;
+        try {
+            // TODO- Handle Transactions here
+            List<ELDetails> existingList = elDetailsDao.findByShipmentId(shipmentId);
+            HashSet<Long> existingIds = new HashSet<>(existingList.stream().map(ELDetails::getId).collect(Collectors.toList()));
+            List<ELDetailsRequest> containerList = new ArrayList<>();
+            List<ELDetailsRequest> requestList = (List<ELDetailsRequest>) commonRequestModel.getDataList();
+            if (requestList != null && requestList.size() != 0) {
+                for (ELDetailsRequest request : requestList) {
+                    Long id = request.getId();
+                    if (id != null) {
+                        existingIds.remove(id);
+                    }
+                    containerList.add(request);
+                }
+                responseELDetails = saveELDetails(containerList);
+                deleteELDetails(existingIds);
+            }
+            return ResponseHelper.buildListSuccessResponse(convertEntityListToDtoList(responseELDetails));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
+    private List<ELDetails> saveELDetails(List<ELDetailsRequest> elDetails) {
+        return elDetailsDao.saveAll(elDetails
+                .stream()
+                .map(this::convertRequestToELDetails)
+                .collect(Collectors.toList()));
+    }
+
+    private ResponseEntity<?> deleteELDetails(HashSet<Long> existingIds) {
+        String responseMsg;
+        try {
+            for (Long id : existingIds) {
+                delete(CommonRequestModel.buildRequest(CommonGetRequest.builder().id(id).build()));
+            }
+            return ResponseHelper.buildSuccessResponse();
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_DELETE_EXCEPTION_MSG;
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(responseMsg);
         }

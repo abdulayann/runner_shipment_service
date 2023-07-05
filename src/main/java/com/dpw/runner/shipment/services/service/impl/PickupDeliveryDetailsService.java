@@ -7,7 +7,6 @@ import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.PickupDeliveryDetailsRequest;
 import com.dpw.runner.shipment.services.dto.response.PickupDeliveryDetailsResponse;
-import com.dpw.runner.shipment.services.entity.Parties;
 import com.dpw.runner.shipment.services.entity.PickupDeliveryDetails;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.IPickupDeliveryDetailsDao;
@@ -26,9 +25,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 
@@ -143,6 +144,63 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
+    public ResponseEntity<?> updateEntityFromShipment(CommonRequestModel commonRequestModel, Long shipmentId)
+    {
+        String responseMsg;
+        List<PickupDeliveryDetails> responsePickupDeliveryDetails = null;
+        try {
+            // TODO- Handle Transactions here
+            List<PickupDeliveryDetails> existingList = pickupDeliveryDetailsDao.findByShipmentId(shipmentId);
+            HashSet<Long> existingIds = new HashSet<>( existingList.stream().map(PickupDeliveryDetails::getId).collect(Collectors.toList()) );
+            List<PickupDeliveryDetailsRequest> containerList = new ArrayList<>();
+            List<PickupDeliveryDetailsRequest> requestList = (List<PickupDeliveryDetailsRequest>) commonRequestModel.getDataList();
+            if(requestList != null && requestList.size() != 0)
+            {
+                for(PickupDeliveryDetailsRequest request: requestList)
+                {
+                    Long id = request.getId();
+                    if(id != null) {
+                        existingIds.remove(id);
+                    }
+                    containerList.add(request);
+                }
+                responsePickupDeliveryDetails = savePickupDeliveryDetails(containerList);
+                deletePickupDeliveryDetails(existingIds);
+            }
+            return ResponseHelper.buildListSuccessResponse(convertEntityListToDtoList(responsePickupDeliveryDetails));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
+    private List<PickupDeliveryDetails> savePickupDeliveryDetails(List<PickupDeliveryDetailsRequest> containers)
+    {
+        return pickupDeliveryDetailsDao.saveAll(containers
+                .stream()
+                .map(this::convertRequestToEntity)
+                .collect(Collectors.toList()));
+    }
+
+    private ResponseEntity<?> deletePickupDeliveryDetails(HashSet<Long> existingIds)
+    {
+        String responseMsg;
+        try {
+            for(Long id: existingIds)
+            {
+                delete(CommonRequestModel.buildRequest(CommonGetRequest.builder().id(id).build()));
+            }
+            return ResponseHelper.buildSuccessResponse();
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_DELETE_EXCEPTION_MSG;
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(responseMsg);
         }

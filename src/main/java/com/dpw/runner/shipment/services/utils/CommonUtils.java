@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.utils;
 
 import com.dpw.runner.shipment.services.commons.requests.Criteria;
 import com.dpw.runner.shipment.services.commons.requests.FilterCriteria;
+import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -102,5 +103,20 @@ public class CommonUtils {
             parameterValue = permission.get(parameterIndex);
         }
         return parameterValue;
+    }
+    public static ListCommonRequest constructListCommonRequest(String fieldName, Object value, String operator){
+        ListCommonRequest request = new ListCommonRequest();
+        request.setPageNo(0);
+        request.setLimit(Integer.MAX_VALUE);
+
+
+        List<FilterCriteria> criterias = new ArrayList<>();
+        List<FilterCriteria> innerFilters = new ArrayList();
+        Criteria criteria = Criteria.builder().fieldName(fieldName).operator(operator).value(value).build();
+        FilterCriteria filterCriteria = FilterCriteria.builder().criteria(criteria).build();
+        innerFilters.add(filterCriteria);
+        criterias.add(FilterCriteria.builder().innerFilter(innerFilters).logicOperator(criterias.isEmpty() ? null : "or").build());
+        request.setFilterCriteria(criterias);
+        return request;
     }
 }

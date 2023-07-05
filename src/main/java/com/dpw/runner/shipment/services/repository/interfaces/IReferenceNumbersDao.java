@@ -6,6 +6,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.util.List;
+
 public interface IReferenceNumbersDao extends JpaRepository<ReferenceNumbers, Long> {
     Page<ReferenceNumbers> findAll(Specification<ReferenceNumbers> spec, Pageable pageable);
+    List<ReferenceNumbers> findByShipmentId(Long shipmentId);
 }

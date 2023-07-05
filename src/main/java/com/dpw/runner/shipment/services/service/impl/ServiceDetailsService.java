@@ -27,6 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 
@@ -146,8 +147,85 @@ public class ServiceDetailsService implements IServiceDetailsService {
         }
     }
 
+<<<<<<< Updated upstream
     private ServiceDetailsResponse convertEntityToDto(ServiceDetails shipmentServices) {
         return modelMapper.map(shipmentServices, ServiceDetailsResponse.class);
+=======
+    public ResponseEntity<?> updateEntityFromShipment(CommonRequestModel commonRequestModel, Long shipmentId)
+    {
+        String responseMsg;
+        List<ServiceDetails> responseServiceDetails = null;
+        try {
+            // TODO- Handle Transactions here
+            List<ServiceDetails> existingList = serviceDetailsDao.findByShipmentId(shipmentId);
+            HashSet<Long> existingIds = new HashSet<>( existingList.stream().map(ServiceDetails::getId).collect(Collectors.toList()) );
+            List<ServiceDetailsRequest> containerList = new ArrayList<>();
+            List<ServiceDetailsRequest> requestList = (List<ServiceDetailsRequest>) commonRequestModel.getDataList();
+            if(requestList != null && requestList.size() != 0)
+            {
+                for(ServiceDetailsRequest request: requestList)
+                {
+                    Long id = request.getId();
+                    if(id != null) {
+                        existingIds.remove(id);
+                    }
+                    containerList.add(request);
+                }
+                responseServiceDetails = saveServiceDetails(containerList);
+                deleteServiceDetails(existingIds);
+            }
+            return ResponseHelper.buildListSuccessResponse(convertEntityListToDtoList(responseServiceDetails));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
+    private List<ServiceDetails> saveServiceDetails(List<ServiceDetailsRequest> containers)
+    {
+        return serviceDetailsDao.saveAll(containers
+                .stream()
+                .map(this::convertRequestToEntity)
+                .collect(Collectors.toList()));
+    }
+
+    private ResponseEntity<?> deleteServiceDetails(HashSet<Long> existingIds)
+    {
+        String responseMsg;
+        try {
+            for(Long id: existingIds)
+            {
+                delete(CommonRequestModel.buildRequest(CommonGetRequest.builder().id(id).build()));
+            }
+            return ResponseHelper.buildSuccessResponse();
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_DELETE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
+    private ServiceDetailsResponse convertEntityToDto(ServiceDetails shipmentServices) {
+        ServiceDetailsResponse response = new ServiceDetailsResponse();
+        response.setId(shipmentServices.getId());
+        response.setGuid(shipmentServices.getGuid());
+        response.setShipmentId(shipmentServices.getShipmentId());
+        response.setConsolidationId(shipmentServices.getConsolidationId());
+        response.setServiceType(shipmentServices.getServiceType());
+        response.setContractorId(shipmentServices.getContractorId());
+        response.setContractorAddressId(shipmentServices.getContractorAddressId());
+        response.setSrvLocation(shipmentServices.getSrvLocation());
+        response.setBookingDate(shipmentServices.getBookingDate());
+        response.setServiceCount(shipmentServices.getServiceCount());
+        response.setServiceDuration(shipmentServices.getServiceDuration());
+        response.setCompletionDate(shipmentServices.getCompletionDate());
+        response.setRefNumber(shipmentServices.getRefNumber());
+        response.setServiceNotes(shipmentServices.getServiceNotes());
+        return response;
+>>>>>>> Stashed changes
     }
 
     private List<IRunnerResponse> convertEntityListToDtoList(List<ServiceDetails> lst) {
@@ -159,6 +237,24 @@ public class ServiceDetailsService implements IServiceDetailsService {
     }
 
     public ServiceDetails convertRequestToEntity(ServiceDetailsRequest request) {
+<<<<<<< Updated upstream
         return modelMapper.map(request, ServiceDetails.class);
+=======
+        ServiceDetails shipmentServices = new ServiceDetails();
+        shipmentServices.setGuid(UUID.randomUUID());
+        shipmentServices.setShipmentId(request.getShipmentId());
+        shipmentServices.setConsolidationId(request.getConsolidationId());
+        shipmentServices.setServiceType(request.getServiceType());
+        shipmentServices.setContractorId(request.getContractorId());
+        shipmentServices.setContractorAddressId(request.getContractorAddressId());
+        shipmentServices.setSrvLocation(request.getSrvLocation());
+        shipmentServices.setBookingDate(request.getBookingDate());
+        shipmentServices.setServiceCount(request.getServiceCount());
+        shipmentServices.setServiceDuration(request.getServiceDuration());
+        shipmentServices.setCompletionDate(request.getCompletionDate());
+        shipmentServices.setRefNumber(request.getRefNumber());
+        shipmentServices.setServiceNotes(request.getServiceNotes());
+        return shipmentServices;
+>>>>>>> Stashed changes
     }
 }
