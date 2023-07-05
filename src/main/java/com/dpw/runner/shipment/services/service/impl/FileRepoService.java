@@ -14,6 +14,7 @@ import com.dpw.runner.shipment.services.repository.interfaces.IFileRepoDao;
 import com.dpw.runner.shipment.services.service.interfaces.IFileRepoService;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
@@ -37,42 +38,8 @@ import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 public class FileRepoService implements IFileRepoService {
     @Autowired
     private IFileRepoDao fileRepoDao;
-
-    private static List<IRunnerResponse> convertListResponse(List<FileRepo> lst) {
-        List<IRunnerResponse> responseList = new ArrayList<>();
-        lst.forEach(fileRepo -> {
-            responseList.add(convertToResponse(fileRepo));
-        });
-        return responseList;
-    }
-
-    private static FileRepo mapToEntityFromRequest(FileRepoRequest request) {
-        FileRepo fileRepo = new FileRepo();
-        fileRepo.setId(request.getId());
-        fileRepo.setFileName(request.getFileName());
-        fileRepo.setPath(request.getPath());
-        fileRepo.setDocType(request.getDocType());
-        fileRepo.setClientEnabled(request.getClientEnabled());
-        fileRepo.setEventCode(request.getEventCode());
-        fileRepo.setIsPosted(request.getIsPosted());
-        fileRepo.setEntityId(request.getEntityId());
-        fileRepo.setEntityType(request.getEntityType());
-        return fileRepo;
-    }
-
-    private static FileRepoResponse convertToResponse(FileRepo fileRepo) {
-        FileRepoResponse response = new FileRepoResponse();
-        response.setId(fileRepo.getId());
-        response.setFileName(fileRepo.getFileName());
-        response.setPath(fileRepo.getPath());
-        response.setDocType(fileRepo.getDocType());
-        response.setClientEnabled(fileRepo.getClientEnabled());
-        response.setEventCode(fileRepo.getEventCode());
-        response.setIsPosted(fileRepo.getIsPosted());
-        response.setEntityType(fileRepo.getEntityType());
-        response.setEntityId(fileRepo.getEntityId());
-        return response;
-    }
+    @Autowired
+    private ModelMapper modelMapper;
 
     @Override
     @Transactional
@@ -199,6 +166,21 @@ public class FileRepoService implements IFileRepoService {
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(responseMsg);
         }
+    }
+
+    private List<IRunnerResponse> convertListResponse(List<FileRepo> lst) {
+        List<IRunnerResponse> responseList = new ArrayList<>();
+        lst.forEach(fileRepo -> {
+            responseList.add(convertToResponse(fileRepo));
+        });
+        return responseList;
+    }
+
+    private FileRepo mapToEntityFromRequest(FileRepoRequest request){
+        return modelMapper.map(request, FileRepo.class);
+    }
+    private FileRepoResponse convertToResponse(FileRepo fileRepo){
+        return modelMapper.map(fileRepo, FileRepoResponse.class);
     }
 
 }

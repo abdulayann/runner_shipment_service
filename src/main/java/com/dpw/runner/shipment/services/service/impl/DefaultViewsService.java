@@ -143,9 +143,7 @@ public class DefaultViewsService implements IDefaultViewsService {
     }
 
     private DefaultViewsResponse convertEntityToDto(DefaultViews view) {
-        DefaultViewsResponse response = new DefaultViewsResponse();
-        modelMapper.map(view, response);
-        return response;
+        return modelMapper.map(view, DefaultViewsResponse.class);
     }
 
     private List<IRunnerResponse> convertEntityListToDtoList(List<DefaultViews> lst) {
@@ -157,8 +155,6 @@ public class DefaultViewsService implements IDefaultViewsService {
     }
 
     public DefaultViews convertRequestToEntity(DefaultViewsRequest request) {
-        DefaultViews view = new DefaultViews();
-        modelMapper.map(request, view);
-        return view;
+        return modelMapper.map(request, DefaultViews.class);
     }
 }

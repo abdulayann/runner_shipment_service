@@ -27,11 +27,9 @@ public class ServiceDetails extends MultiTenancy {
     @Column(name = "service_type")
     private String serviceType;
 
-    @Column(name = "contractor_id")
-    private Long contractorId;
-
-    @Column(name = "contractor_address_id")
-    private Long contractorAddressId;
+    @OneToOne(targetEntity = Parties.class)
+    @JoinColumn(name = "contractor_id", referencedColumnName = "id")
+    private Parties contractor;
 
     @Column(name = "srv_location")
     private int srvLocation;

@@ -15,6 +15,7 @@ import com.dpw.runner.shipment.services.repository.interfaces.IAdditionalDetailD
 import com.dpw.runner.shipment.services.service.interfaces.IAdditionalDetailService;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
@@ -42,7 +43,7 @@ public class AdditionalDetailService implements IAdditionalDetailService {
     private IAdditionalDetailDao additionalDetailDao;
 
     @Autowired
-    private JsonHelper jsonHelper;
+    private ModelMapper modelMapper;
 
     @Transactional
     @Override
@@ -145,8 +146,7 @@ public class AdditionalDetailService implements IAdditionalDetailService {
                 log.debug("Shipment Additional detail is null for Id {}", request.getId());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
-
-            AdditionalDetailResponse response = jsonHelper.convertValue(additionalDetails.get(), AdditionalDetailResponse.class);
+            AdditionalDetailResponse response = convertEntityToDto(additionalDetails.get());
             return ResponseHelper.buildSuccessResponse(response);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -156,13 +156,12 @@ public class AdditionalDetailService implements IAdditionalDetailService {
         }
     }
 
-    private IRunnerResponse convertEntityToDto(AdditionalDetail additionalDetail) {
-        return jsonHelper.convertValue(additionalDetail, AdditionalDetailResponse.class);
+    private AdditionalDetailResponse convertEntityToDto(AdditionalDetail additionalDetail) {
+        return modelMapper.map(additionalDetail, AdditionalDetailResponse.class);
     }
 
     private AdditionalDetail convertRequestToEntity(AdditionalDetailRequest request) {
-        AdditionalDetail additionalDetail = new AdditionalDetail();
-        return jsonHelper.convertValue(request, AdditionalDetail.class);
+        return modelMapper.map(request, AdditionalDetail.class);
     }
 
     private List<IRunnerResponse> convertEntityListToDtoList(List<AdditionalDetail> list) {

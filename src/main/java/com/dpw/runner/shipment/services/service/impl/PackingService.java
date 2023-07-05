@@ -6,14 +6,19 @@ import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.dto.request.BookingCarriageRequest;
+import com.dpw.runner.shipment.services.dto.request.JobRequest;
 import com.dpw.runner.shipment.services.dto.request.PackingRequest;
 import com.dpw.runner.shipment.services.dto.response.PackingResponse;
+import com.dpw.runner.shipment.services.entity.BookingCarriage;
+import com.dpw.runner.shipment.services.entity.Jobs;
 import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.IPackingDao;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingService;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
+import org.bouncycastle.util.Pack;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
@@ -54,37 +59,48 @@ public class PackingService implements IPackingService {
     @Transactional
     public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
         PackingRequest request = (PackingRequest) commonRequestModel.getData();
-        Packing updatedEntity = convertRequestToEntity(request);
-        packingDao.save(updatedEntity);
-        return ResponseHelper.buildSuccessResponse(convertEntityToDto(updatedEntity));
+        long id = request.getId();
+        Optional<Packing> oldEntity = packingDao.findById(id);
+        if (!oldEntity.isPresent()) {
+            log.debug("Packing is null for Id {}", request.getId());
+            throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+        }
+
+        Packing packing = convertRequestToEntity(request);
+        packing.setId(oldEntity.get().getId());
+        packing = packingDao.save(packing);
+        return ResponseHelper.buildSuccessResponse(convertEntityToDto(packing));
     }
 
-    @Override
     public ResponseEntity<?> list(CommonRequestModel commonRequestModel) {
-        String responseMessage;
+        String responseMsg;
         try {
-            Long id = commonRequestModel.getId();
-            List<Packing> packings = packingDao.findByShipmentId(id);
-            List<IRunnerResponse> response = packings.stream()
-                    .map(this::convertEntityToDto)
-                    .collect(Collectors.toList());
-            return ResponseHelper.buildListSuccessResponse(response);
+            ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
+            // construct specifications for filter request
+            Pair<Specification<Packing>, Pageable> tuple = fetchData(request, BookingCarriage.class);
+            Page<Packing> packingPage = packingDao.findAll(tuple.getLeft(), tuple.getRight());
+            return ResponseHelper.buildListSuccessResponse(
+                    convertEntityListToDtoList(packingPage.getContent()),
+                    packingPage.getTotalPages(),
+                    packingPage.getTotalElements());
         } catch (Exception e) {
-            responseMessage = e.getMessage();
-            log.debug(responseMessage);
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
         }
-        return ResponseHelper.buildFailedResponse(responseMessage);
+
     }
 
     @Override
     @Async
-    public CompletableFuture<ResponseEntity<?>> listAsync(CommonRequestModel commonRequestModel){
+    public CompletableFuture<ResponseEntity<?>> listAsync(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
             // construct specifications for filter request
             Pair<Specification<Packing>, Pageable> tuple = fetchData(request, Packing.class);
-            Page<Packing> packingPage  = packingDao.findAll(tuple.getLeft(), tuple.getRight());
+            Page<Packing> packingPage = packingDao.findAll(tuple.getLeft(), tuple.getRight());
             return CompletableFuture.completedFuture(
                     ResponseHelper
                             .buildListSuccessResponse(

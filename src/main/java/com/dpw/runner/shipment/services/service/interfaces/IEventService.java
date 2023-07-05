@@ -7,12 +7,5 @@ import org.springframework.http.ResponseEntity;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
-public interface IEventService {
-
-    ResponseEntity<?> list(CommonRequestModel commonRequestModel);
-    CompletableFuture<ResponseEntity<?>> listAsync(CommonRequestModel commonRequestModel);
-    ResponseEntity<?> create(EventsRequest request);
-    ResponseEntity<?> update(List<EventsRequest> request);
-    ResponseEntity<?> delete(List<EventsRequest> request);
-
+public interface IEventService extends ICommonService{
 }

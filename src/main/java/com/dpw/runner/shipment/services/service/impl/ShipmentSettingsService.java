@@ -14,12 +14,14 @@ import com.dpw.runner.shipment.services.repository.interfaces.IShipmentSettingsD
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentSettingsService;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,6 +30,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 
@@ -37,6 +40,9 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
 
     @Autowired
     private IShipmentSettingsDao shipmentSettingsDao;
+
+    @Autowired
+    private ModelMapper modelMapper;
 
     @Transactional
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) throws Exception {
@@ -101,64 +107,55 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
         }
 
     }
-    public static ShipmentSettingsDetails convertRequestToEntity(ShipmentSettingRequest request) {
-        ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
-        shipmentSettingsDetails.setHouseBillNumberLock(request.getHouseBillNumberLock());
-        shipmentSettingsDetails.setGuid(request.getGuid());
-        shipmentSettingsDetails.setRestrictHblGen(request.getRestrictHblGen());
-        shipmentSettingsDetails.setPrintPhoneNumber(request.getPrintPhoneNumber());
-        shipmentSettingsDetails.setHousebillPrefix(request.getHousebillPrefix());
-        shipmentSettingsDetails.setHousebillNumberGeneration(request.getHousebillNumberGeneration());
-        shipmentSettingsDetails.setFooterColumns(request.getFooterColumns());
-        shipmentSettingsDetails.setIsAutoPopulateShipType(request.getIsAutoPopulateShipType());
-        shipmentSettingsDetails.setPartialCloningEnabled(request.getPartialCloningEnabled());
-        shipmentSettingsDetails.setShipConsolidationContainerEnabled(request.getShipConsolidationContainerEnabled());
-        shipmentSettingsDetails.setMultipleShipmentEnabled(request.getMultipleShipmentEnabled());
-        shipmentSettingsDetails.setEnableRouteMaster(request.getEnableRouteMaster());
-        shipmentSettingsDetails.setArApFlag(request.getArApFlag());
-        shipmentSettingsDetails.setShipmentTiCargesLinkage(request.getShipmentTiCargesLinkage());
-        shipmentSettingsDetails.setCooldownTime(request.getCooldownTime());
-        shipmentSettingsDetails.setAdvancePeriod(request.getAdvancePeriod());
-        shipmentSettingsDetails.setAutoEventCreate(request.getAutoEventCreate());
-        shipmentSettingsDetails.setShipmentLite(request.getShipmentLite());
-        shipmentSettingsDetails.setBillingLite(request.getBillingLite());
-        shipmentSettingsDetails.setRestrictedLocationsEnabled(request.getRestricted_Locations_Enabled());
-        shipmentSettingsDetails.setIsAtdAtaAutoPopulateEnabled(request.getIsAtdAtaAutoPopulateEnabled());
-        shipmentSettingsDetails.setRestrictedLocations(request.getRestricted_Locations());
-        shipmentSettingsDetails.setShipmentImportApproverRole(request.getShipmentImportApproverRole());
-        return shipmentSettingsDetails;
+    @Override
+    @Async
+    public CompletableFuture<ResponseEntity<?>> listAsync(CommonRequestModel commonRequestModel){
+        String responseMsg;
+        try {
+            ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
+            Pair<Specification<ShipmentSettingsDetails>, Pageable> tuple = fetchData(request, ShipmentSettingsDetails.class);
+            Page<ShipmentSettingsDetails> shipmentSettingsPage  = shipmentSettingsDao.findAll(tuple.getLeft(), tuple.getRight());
+            return CompletableFuture.completedFuture(ResponseHelper.buildListSuccessResponse(
+                    convertEntityListToDtoList(shipmentSettingsPage.getContent()),
+                    shipmentSettingsPage.getTotalPages(),
+                    shipmentSettingsPage.getTotalElements()));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return CompletableFuture.completedFuture(ResponseHelper.buildFailedResponse(responseMsg));
+        }
     }
 
-    private static ShipmentSettingsDetailsResponse convertEntityToDto(ShipmentSettingsDetails shipmentSettingsDetails) {
-        ShipmentSettingsDetailsResponse response = new ShipmentSettingsDetailsResponse();
-        response.setId(shipmentSettingsDetails.getId());
-        response.setGuid(shipmentSettingsDetails.getGuid());
-        response.setHouseBillNumberLock(shipmentSettingsDetails.getHouseBillNumberLock());
-        response.setRestrictHblGen(shipmentSettingsDetails.getRestrictHblGen());
-        response.setPrintPhoneNumber(shipmentSettingsDetails.getPrintPhoneNumber());
-        response.setHousebillPrefix(shipmentSettingsDetails.getHousebillPrefix());
-        response.setHousebillNumberGeneration(shipmentSettingsDetails.getHousebillNumberGeneration());
-        response.setFooterColumns(shipmentSettingsDetails.getFooterColumns());
-        response.setIsAutoPopulateShipType(shipmentSettingsDetails.getIsAutoPopulateShipType());
-        response.setPartialCloningEnabled(shipmentSettingsDetails.getPartialCloningEnabled());
-        response.setShipConsolidationContainerEnabled(shipmentSettingsDetails.getShipConsolidationContainerEnabled());
-        response.setMultipleShipmentEnabled(shipmentSettingsDetails.getMultipleShipmentEnabled());
-        response.setEnableRouteMaster(shipmentSettingsDetails.getEnableRouteMaster());
-        response.setArApFlag(shipmentSettingsDetails.getArApFlag());
-        response.setShipmentTiCargesLinkage(shipmentSettingsDetails.getShipmentTiCargesLinkage());
-        response.setCooldownTime(shipmentSettingsDetails.getCooldownTime());
-        response.setAdvancePeriod(shipmentSettingsDetails.getAdvancePeriod());
-        response.setAutoEventCreate(shipmentSettingsDetails.getAutoEventCreate());
-        response.setShipmentLite(shipmentSettingsDetails.getShipmentLite());
-        response.setBillingLite(shipmentSettingsDetails.getBillingLite());
-        response.setRestricted_Locations_Enabled(shipmentSettingsDetails.getRestrictedLocationsEnabled());
-        response.setIsAtdAtaAutoPopulateEnabled(shipmentSettingsDetails.getIsAtdAtaAutoPopulateEnabled());
-        response.setRestricted_Locations(shipmentSettingsDetails.getRestrictedLocations());
-        response.setShipmentImportApproverRole(shipmentSettingsDetails.getShipmentImportApproverRole());
-        return response;
+    @Override
+    public ResponseEntity<?> delete(CommonRequestModel commonRequestModel) {
+        String responseMsg;
+        try {
+            CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
+            long id = request.getId();
+            Optional<ShipmentSettingsDetails> note = shipmentSettingsDao.findById(id);
+            if (note.isEmpty()) {
+                log.debug("ShipmentSettingsDetails is null for Id {}", request.getId());
+                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+            }
+            shipmentSettingsDao.delete(note.get());
+            return ResponseHelper.buildSuccessResponse();
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_DELETE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+    public ShipmentSettingsDetails convertRequestToEntity(ShipmentSettingRequest request) {
+        return modelMapper.map(request, ShipmentSettingsDetails.class);
     }
 
-    private static List<IRunnerResponse> convertEntityListToDtoList(List<ShipmentSettingsDetails> list) {
+    private ShipmentSettingsDetailsResponse convertEntityToDto(ShipmentSettingsDetails shipmentSettingsDetails) {
+        return modelMapper.map(shipmentSettingsDetails, ShipmentSettingsDetailsResponse.class);
+    }
+
+    private List<IRunnerResponse> convertEntityListToDtoList(List<ShipmentSettingsDetails> list) {
         List<IRunnerResponse> responseList = new ArrayList<>();
         list.forEach(shipmentSettingsDetail -> {
             responseList.add(convertEntityToDto(shipmentSettingsDetail));

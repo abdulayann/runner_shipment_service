@@ -30,24 +30,14 @@ public class ShipmentDetails extends MultiTenancy {
 
     private static final long serialVersionUID = 190794279984274725L;
 
-    @Column(name = "guid")
-    private UUID guid;
-
     @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER, mappedBy = "entityId")
     @Where(clause = "entity_type = 'Shipments'")
     private List<Parties> parties;
 
-    @OneToOne(targetEntity = BlDetails.class)
-    @JoinColumn(name = "bl_detail_id", referencedColumnName = "id")
-    private BlDetails blDetails;
 
     @OneToOne(targetEntity = CarrierDetails.class)
     @JoinColumn(name = "carrier_detail_id", referencedColumnName = "id")
     private CarrierDetails carrierDetails;
-
-    @OneToOne(targetEntity = MeasurementDetails.class)
-    @JoinColumn(name = "measurement_detail_id", referencedColumnName = "id")
-    private MeasurementDetails measurementDetails;
 
     @Column(name = "house_bill")
     private String houseBill;
@@ -105,17 +95,6 @@ public class ShipmentDetails extends MultiTenancy {
 
     @Column(name = "goods_description")
     private String goodsDescription;
-
-    @OneToOne(targetEntity = PickupDetails.class)
-    @JoinColumn(name = "pickup_detail_id", referencedColumnName = "id")
-    private PickupDetails pickupDetails;
-
-    @OneToOne(targetEntity = DeliveryDetails.class)
-    @JoinColumn(name = "delivery_detail_id", referencedColumnName = "id")
-    private DeliveryDetails deliveryDetails;
-
-    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY, mappedBy = "shipmentId")
-    private List<BlDetails> blDetailsList;
 
     @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY, mappedBy = "shipmentId")
     private List<BookingCarriage> bookingCarriagesList;
@@ -272,4 +251,32 @@ public class ShipmentDetails extends MultiTenancy {
 
     @Column(name = "finance_closed_on")
     private LocalDateTime financeClosedOn;
+
+    @OneToOne(targetEntity = AdditionalDetail.class)
+    @JoinColumn(name = "additional_details_id", referencedColumnName = "id")
+    private AdditionalDetail additionalDetail;
+
+    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY, mappedBy = "entityId")
+    @Where(clause = "entity_name = 'shipments'")
+    private List<Logs> logsList;
+
+    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY, mappedBy = "entityId")
+    @Where(clause = "entity_type = 'shipments'")
+    private List<Notes> notesList;
+
+    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY, mappedBy = "shipmentId")
+    private List<PickupDeliveryDetails> pickupDeliveryDetailsList;
+
+    @OneToOne(targetEntity = Parties.class)
+    @JoinColumn(name = "client_id", referencedColumnName = "id")
+    private Parties client;
+
+    @OneToOne(targetEntity = Parties.class)
+    @JoinColumn(name = "consigner_id", referencedColumnName = "id")
+    private Parties consigner;
+
+    @OneToOne(targetEntity = Parties.class)
+    @JoinColumn(name = "consignee_id", referencedColumnName = "id")
+    private Parties consignee;
+
 }

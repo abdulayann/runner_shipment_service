@@ -49,6 +49,13 @@ public class ShipmentService implements IShipmentService {
 
     @Autowired
     private IShipmentDao shipmentDao;
+    @Autowired
+    private ICarrierDao carrierDao;
+    @Autowired
+    private IPartiesDao partiesDao;
+
+    @Autowired
+    private JsonHelper jsonHelper;
 
     @Autowired
     private IPackingService packingService;
@@ -247,30 +254,10 @@ public class ShipmentService implements IShipmentService {
 
             ShipmentDetails shipmentDetail = createShipmentData();
             /**
-             * Bl Details*
-             */
-            BlDetails blDetail = createBlData();
-            shipmentDetail.setBlDetails(blDetail);
-            /**
-             * Measurement Details*
-             */
-            MeasurementDetails measurementDetail = createMeasurement();
-            shipmentDetail.setMeasurementDetails(measurementDetail);
-            /**
              * Carrier Details*
              */
             CarrierDetails carrierDetail = createCarrier();
             shipmentDetail.setCarrierDetails(carrierDetail);
-            /**
-             * * TODO
-             * Pickup Details*
-             */
-            PickupDetails pickupDetail = createPickup();
-            /**
-             * * TODO
-             * Pickup Details*
-             */
-            DeliveryDetails deliveryDetail = createDelivery();
 
             shipmentDetail = shipmentDao.save(shipmentDetail);
             /**
@@ -309,7 +296,7 @@ public class ShipmentService implements IShipmentService {
         int random = new Random().nextInt(100);
         for (String partyType : PARTY_TYPE) {
             Parties party = Parties.builder()
-                    .guid(UUID.randomUUID()).type(partyType).orgId(random).addressId(random)
+                    .type(partyType).orgId(random).addressId(random)
                     .orgData(ORG).addressData(ADDRESS)
                     .entityId(shipmentDetails.getId()).entityType("SHIPMENT")
                     .build();
@@ -318,14 +305,6 @@ public class ShipmentService implements IShipmentService {
         }
         parties = partiesDao.saveAll(parties);
         return parties;
-    }
-
-    private DeliveryDetails createDelivery() {
-        return null;
-    }
-
-    private PickupDetails createPickup() {
-        return null;
     }
 
     private CarrierDetails createCarrier() {
@@ -339,32 +318,10 @@ public class ShipmentService implements IShipmentService {
         return carrierDao.save(carrier);
     }
 
-    private MeasurementDetails createMeasurement() {
-        int random = new Random().nextInt(100);
-        MeasurementDetails measurementDetails = MeasurementDetails.builder().guid(UUID.randomUUID())
-                .volume(new BigDecimal(random)).volumeUnit(VOLUME_UNIT.get(new Random().nextInt(100) % VOLUME_UNIT.size()))
-                .volumetricWeight(new BigDecimal(random)).volumetricWeightUnit(WEIGHT_UNIT.get(new Random().nextInt(100) % WEIGHT_UNIT.size()))
-                .chargable(new BigDecimal(random)).chargeableUnit(VOLUME_UNIT.get(new Random().nextInt(100) % VOLUME_UNIT.size()))
-                .netWeight(new BigDecimal(random)).netWeightUnit(WEIGHT_UNIT.get(new Random().nextInt(100) % WEIGHT_UNIT.size()))
-                .noOfPacks(random).packsUnit("BAG")
-                .build();
-        measurementDetails.setTenantId(1);
-        return measurementDao.save(measurementDetails);
-    }
-
-    private BlDetails createBlData() {
-        int random = new Random().nextInt(100);
-        BlDetails blDetails = BlDetails.builder()
-                .guid(UUID.randomUUID()).releaseType(generateString(3)).hblType(generateString(3))
-                .deliveryMode(TRANSPORT_MODES.get(random % TRANSPORT_MODES.size())).screeningStatus(generateString(3))
-                .build();
-        blDetails.setTenantId(1);
-        return blDetailsDao.save(blDetails);
-    }
 
     private ShipmentDetails createShipmentData() {
         int random = new Random().nextInt(100);
-        ShipmentDetails shipmentDetails = ShipmentDetails.builder().guid(UUID.randomUUID()).direction(DIRECTIONS.get(random % DIRECTIONS.size())).status(1)
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().direction(DIRECTIONS.get(random % DIRECTIONS.size())).status(1)
                 .source(SOURCE.get(random % SOURCE.size())).transportMode(TRANSPORT_MODES.get(random % TRANSPORT_MODES.size())).shipmentType(SHIPMENT_TYPE.get(random % SHIPMENT_TYPE.size()))
                 .houseBill(generateString(10)).masterBill(generateString(10)).bookingReference(generateString(10)).consolRef(generateString(10)).paymentTerms(generateString(3))
                 .goodsDescription(generateString(10)).additionalTerms(generateString(10))
@@ -702,6 +659,27 @@ public class ShipmentService implements IShipmentService {
                     : DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+
+    }
+    @Override
+    @Async
+    public CompletableFuture<ResponseEntity<?>> listAsync(CommonRequestModel commonRequestModel) {
+        String responseMsg;
+        try {
+            ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
+
+            Pair<Specification<ShipmentDetails>, Pageable> tuple = fetchData(request, ShipmentDetails.class, tableNames);
+            Page<ShipmentDetails> shipmentDetailsPage = shipmentDao.findAll(tuple.getLeft(), tuple.getRight());
+            return CompletableFuture.completedFuture(ResponseHelper.buildListSuccessResponse(
+                    convertEntityListToDtoList(shipmentDetailsPage.getContent()),
+                    shipmentDetailsPage.getTotalPages(),
+                    shipmentDetailsPage.getTotalElements()));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return CompletableFuture.completedFuture(ResponseHelper.buildFailedResponse(responseMsg));
         }
 
     }
