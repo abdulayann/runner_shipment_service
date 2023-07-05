@@ -4,6 +4,8 @@ import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.BookingCarriageRequest;
+import com.dpw.runner.shipment.services.dto.request.BookingCarriageRequest;
+import com.dpw.runner.shipment.services.dto.response.BookingCarriageResponse;
 import com.dpw.runner.shipment.services.dto.response.BookingCarriageResponse;
 import com.dpw.runner.shipment.services.entity.BookingCarriage;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
@@ -24,6 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 
@@ -82,30 +85,6 @@ public class BookingCarriageService implements IBookingCarriageService {
 
     }
 
-    @Override
-    @Async
-    public CompletableFuture<ResponseEntity<?>> listAsync(CommonRequestModel commonRequestModel){
-        String responseMsg;
-        try {
-            ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
-            // construct specifications for filter request
-            Pair<Specification<BookingCarriage>, Pageable> tuple = fetchData(request, BookingCarriage.class);
-            Page<BookingCarriage> bookingCarriagePage  = bookingCarriageDao.findAll(tuple.getLeft(), tuple.getRight());
-            return CompletableFuture.completedFuture(
-                    ResponseHelper
-                            .buildListSuccessResponse(
-                            convertEntityListToDtoList(bookingCarriagePage.getContent()),
-                                    bookingCarriagePage.getTotalPages(),
-                                    bookingCarriagePage.getTotalElements()));
-        } catch (Exception e) {
-            responseMsg = e.getMessage() != null ? e.getMessage()
-                    : DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;
-            log.error(responseMsg, e);
-            return CompletableFuture.completedFuture(ResponseHelper.buildFailedResponse(responseMsg));
-        }
-
-    }
-
     public ResponseEntity<?> delete(CommonRequestModel commonRequestModel){
         String responseMsg;
         try {
@@ -142,6 +121,69 @@ public class BookingCarriageService implements IBookingCarriageService {
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
+    @Override
+    @Async
+    public CompletableFuture<ResponseEntity<?>> listAsync(CommonRequestModel commonRequestModel) {
+        String responseMsg = null;
+        return CompletableFuture.completedFuture(ResponseHelper.buildFailedResponse(responseMsg));
+    }
+
+    public ResponseEntity<?> updateEntityFromShipment(CommonRequestModel commonRequestModel, Long shipmentId)
+    {
+        String responseMsg;
+        List<BookingCarriage> bookingCarriagesResponse = null;
+        try {
+            // TODO- Handle Transactions here
+            List<BookingCarriage> existingList = bookingCarriageDao.findByShipmentId(shipmentId);
+            HashSet<Long> existingIds = new HashSet<>( existingList.stream().map(BookingCarriage::getId).collect(Collectors.toList()) );
+            List<BookingCarriageRequest> saveBookingCarriages = new ArrayList<>();
+            List<BookingCarriageRequest> requestList = (List<BookingCarriageRequest>) commonRequestModel.getDataList();
+            if(requestList != null && requestList.size() != 0)
+            {
+                for(BookingCarriageRequest request: requestList)
+                {
+                    Long id = request.getId();
+                    if(id != null) {
+                        existingIds.remove(id);
+                    }
+                    saveBookingCarriages.add(request);
+                }
+                bookingCarriagesResponse = saveBookingCarriages(saveBookingCarriages);
+                deleteBookingCarriages(existingIds);
+            }
+            return ResponseHelper.buildListSuccessResponse(convertEntityListToDtoList(bookingCarriagesResponse));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
+    private List<BookingCarriage> saveBookingCarriages(List<BookingCarriageRequest> newBookingCarriages)
+    {
+        return bookingCarriageDao.saveAll(newBookingCarriages
+                .stream().map(this::convertRequestToEntity)
+                .collect(Collectors.toList()));
+    }
+
+    private ResponseEntity<?> deleteBookingCarriages(HashSet<Long> existingIds)
+    {
+        String responseMsg;
+        try {
+            for(Long id: existingIds)
+            {
+                delete(CommonRequestModel.buildRequest(CommonGetRequest.builder().id(id).build()));
+            }
+            return ResponseHelper.buildSuccessResponse();
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_DELETE_EXCEPTION_MSG;
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(responseMsg);
         }
