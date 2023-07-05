@@ -6,5 +6,5 @@ import org.springframework.http.ResponseEntity;
 import java.util.concurrent.CompletableFuture;
 
 public interface IBookingCarriageService extends ICommonService{
-    ResponseEntity<?> updateEntityFromShipment(CommonRequestModel commonRequestModel, Long shipmentId);
+    ResponseEntity<?> updateEntityFromShipment(CommonRequestModel commonRequestModel, Long shipmentId); // TODO- move this to ICommonService
 }
