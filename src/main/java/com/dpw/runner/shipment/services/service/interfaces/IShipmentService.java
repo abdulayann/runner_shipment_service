@@ -25,4 +25,6 @@ public interface IShipmentService {
     CompletableFuture<ResponseEntity<?>> retrieveByIdAsync(CommonRequestModel commonRequestModel);
 
     ResponseEntity<?> completeRetrieveById(CommonRequestModel commonRequestModel) throws ExecutionException, InterruptedException;
+
+    ResponseEntity<?> completeUpdate(CommonRequestModel commonRequestModel) throws Exception;
 }
