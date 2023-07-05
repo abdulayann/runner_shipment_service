@@ -27,6 +27,7 @@ public class TruckDriverDetails extends MultiTenancy {
     @Column(name = "transporter_type")
     private Ownership transporterType;
 
+    // String field in the database, selection of organisation on UI
     @Column(name = "transporter_name")
     private String transporterName;
 

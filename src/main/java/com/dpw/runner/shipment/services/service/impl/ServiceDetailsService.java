@@ -14,6 +14,7 @@ import com.dpw.runner.shipment.services.repository.interfaces.IServiceDetailsDao
 import com.dpw.runner.shipment.services.service.interfaces.IServiceDetailsService;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
@@ -35,6 +36,9 @@ import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 public class ServiceDetailsService implements IServiceDetailsService {
     @Autowired
     private IServiceDetailsDao serviceDetailsDao;
+
+    @Autowired
+    private ModelMapper modelMapper;
 
     @Transactional
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) throws Exception {
@@ -142,26 +146,11 @@ public class ServiceDetailsService implements IServiceDetailsService {
         }
     }
 
-    private static ServiceDetailsResponse convertEntityToDto(ServiceDetails shipmentServices) {
-        ServiceDetailsResponse response = new ServiceDetailsResponse();
-        response.setId(shipmentServices.getId());
-        response.setGuid(shipmentServices.getGuid());
-        response.setShipmentId(shipmentServices.getShipmentId());
-        response.setConsolidationId(shipmentServices.getConsolidationId());
-        response.setServiceType(shipmentServices.getServiceType());
-        response.setContractorId(shipmentServices.getContractorId());
-        response.setContractorAddressId(shipmentServices.getContractorAddressId());
-        response.setSrvLocation(shipmentServices.getSrvLocation());
-        response.setBookingDate(shipmentServices.getBookingDate());
-        response.setServiceCount(shipmentServices.getServiceCount());
-        response.setServiceDuration(shipmentServices.getServiceDuration());
-        response.setCompletionDate(shipmentServices.getCompletionDate());
-        response.setRefNumber(shipmentServices.getRefNumber());
-        response.setServiceNotes(shipmentServices.getServiceNotes());
-        return response;
+    private ServiceDetailsResponse convertEntityToDto(ServiceDetails shipmentServices) {
+        return modelMapper.map(shipmentServices, ServiceDetailsResponse.class);
     }
 
-    private static List<IRunnerResponse> convertEntityListToDtoList(List<ServiceDetails> lst) {
+    private List<IRunnerResponse> convertEntityListToDtoList(List<ServiceDetails> lst) {
         List<IRunnerResponse> responseList = new ArrayList<>();
         lst.forEach(shipmentServices -> {
             responseList.add(convertEntityToDto(shipmentServices));
@@ -169,21 +158,7 @@ public class ServiceDetailsService implements IServiceDetailsService {
         return responseList;
     }
 
-    public static ServiceDetails convertRequestToEntity(ServiceDetailsRequest request) {
-        ServiceDetails shipmentServices = new ServiceDetails();
-        shipmentServices.setGuid(UUID.randomUUID());
-        shipmentServices.setShipmentId(request.getShipmentId());
-        shipmentServices.setConsolidationId(request.getConsolidationId());
-        shipmentServices.setServiceType(request.getServiceType());
-        shipmentServices.setContractorId(request.getContractorId());
-        shipmentServices.setContractorAddressId(request.getContractorAddressId());
-        shipmentServices.setSrvLocation(request.getSrvLocation());
-        shipmentServices.setBookingDate(request.getBookingDate());
-        shipmentServices.setServiceCount(request.getServiceCount());
-        shipmentServices.setServiceDuration(request.getServiceDuration());
-        shipmentServices.setCompletionDate(request.getCompletionDate());
-        shipmentServices.setRefNumber(request.getRefNumber());
-        shipmentServices.setServiceNotes(request.getServiceNotes());
-        return shipmentServices;
+    public ServiceDetails convertRequestToEntity(ServiceDetailsRequest request) {
+        return modelMapper.map(request, ServiceDetails.class);
     }
 }

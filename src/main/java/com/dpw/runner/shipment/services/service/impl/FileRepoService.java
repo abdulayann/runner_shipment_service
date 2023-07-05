@@ -4,20 +4,17 @@ import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
-import com.dpw.runner.shipment.services.commons.requests.RunnerEntityMapping;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.dto.request.BookingCarriageRequest;
 import com.dpw.runner.shipment.services.dto.request.EntityIdAndTypeRequest;
 import com.dpw.runner.shipment.services.dto.request.FileRepoRequest;
-import com.dpw.runner.shipment.services.dto.response.BookingCarriageResponse;
 import com.dpw.runner.shipment.services.dto.response.FileRepoResponse;
-import com.dpw.runner.shipment.services.entity.BookingCarriage;
 import com.dpw.runner.shipment.services.entity.FileRepo;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.IFileRepoDao;
 import com.dpw.runner.shipment.services.service.interfaces.IFileRepoService;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
@@ -29,7 +26,6 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
@@ -40,6 +36,8 @@ import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 public class FileRepoService implements IFileRepoService {
     @Autowired
     private IFileRepoDao fileRepoDao;
+    @Autowired
+    private ModelMapper modelMapper;
 
     @Override
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) throws Exception {
@@ -167,7 +165,7 @@ public class FileRepoService implements IFileRepoService {
         }
     }
 
-    private static List<IRunnerResponse> convertListResponse(List<FileRepo> lst) {
+    private List<IRunnerResponse> convertListResponse(List<FileRepo> lst) {
         List<IRunnerResponse> responseList = new ArrayList<>();
         lst.forEach(fileRepo -> {
             responseList.add(convertToResponse(fileRepo));
@@ -175,31 +173,11 @@ public class FileRepoService implements IFileRepoService {
         return responseList;
     }
 
-    private static FileRepo mapToEntityFromRequest(FileRepoRequest request){
-        FileRepo fileRepo = new FileRepo();
-        fileRepo.setId(request.getId());
-        fileRepo.setFileName(request.getFileName());
-        fileRepo.setPath(request.getPath());
-        fileRepo.setDocType(request.getDocType());
-        fileRepo.setClientEnabled(request.getClientEnabled());
-        fileRepo.setEventCode(request.getEventCode());
-        fileRepo.setIsPosted(request.getIsPosted());
-        fileRepo.setEntityId(request.getEntityId());
-        fileRepo.setEntityType(request.getEntityType());
-        return fileRepo;
+    private FileRepo mapToEntityFromRequest(FileRepoRequest request){
+        return modelMapper.map(request, FileRepo.class);
     }
-    private static FileRepoResponse convertToResponse(FileRepo fileRepo){
-        FileRepoResponse response = new FileRepoResponse();
-        response.setId(fileRepo.getId());
-        response.setFileName(fileRepo.getFileName());
-        response.setPath(fileRepo.getPath());
-        response.setDocType(fileRepo.getDocType());
-        response.setClientEnabled(fileRepo.getClientEnabled());
-        response.setEventCode(fileRepo.getEventCode());
-        response.setIsPosted(fileRepo.getIsPosted());
-        response.setEntityType(fileRepo.getEntityType());
-        response.setEntityId(fileRepo.getEntityId());
-        return response;
+    private FileRepoResponse convertToResponse(FileRepo fileRepo){
+        return modelMapper.map(fileRepo, FileRepoResponse.class);
     }
 
 }
