@@ -156,7 +156,7 @@ public class NotesService implements INotesService {
         List<Notes> responseNotes = null;
         try {
             // TODO- Handle Transactions here
-            List<Notes> existingList = notesDao.findByShipmentId(shipmentId);
+            List<Notes> existingList = notesDao.findByEntityIdAndEntityType(shipmentId, "Shipments");
             HashSet<Long> existingIds = new HashSet<>( existingList.stream().map(Notes::getId).collect(Collectors.toList()) );
             List<NotesRequest> containerList = new ArrayList<>();
             List<NotesRequest> requestList = (List<NotesRequest>) commonRequestModel.getDataList();

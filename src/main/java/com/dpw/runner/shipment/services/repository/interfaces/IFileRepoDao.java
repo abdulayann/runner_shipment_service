@@ -13,5 +13,4 @@ import java.util.List;
 public interface IFileRepoDao extends JpaRepository<FileRepo, Long> {
     public List<FileRepo> findByEntityIdAndEntityType(Long entityId, String entityType);
     Page<FileRepo> findAll(Specification<FileRepo> spec, Pageable pageable);
-    List<FileRepo> findByShipmentId(Long shipmentId);
 }

@@ -157,7 +157,7 @@ public class PartiesService implements IPartiesDetailsService {
         List<Parties> responseParties = null;
         try {
             // TODO- Handle Transactions here
-            List<Parties> existingList = partiesDao.findByShipmentId(shipmentId);
+            List<Parties> existingList = partiesDao.findByEntityIdAndEntityType(shipmentId, "Shipments");
             HashSet<Long> existingIds = new HashSet<>( existingList.stream().map(Parties::getId).collect(Collectors.toList()) );
             List<PartiesRequest> containerList = new ArrayList<>();
             List<PartiesRequest> requestList = (List<PartiesRequest>) commonRequestModel.getDataList();

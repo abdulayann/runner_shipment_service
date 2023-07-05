@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.repository.interfaces;
 
+import com.dpw.runner.shipment.services.entity.FileRepo;
 import com.dpw.runner.shipment.services.entity.Parties;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -12,5 +13,5 @@ import java.util.List;
 @Repository
 public interface IPartiesDao extends JpaRepository<Parties, Long> {
     Page<Parties> findAll(Specification<Parties> spec, Pageable pageable);
-    List<Parties> findByShipmentId(Long shipmentId);
+    public List<Parties> findByEntityIdAndEntityType(Long entityId, String entityType);
 }
