@@ -96,14 +96,6 @@ public class ShipmentDetails extends MultiTenancy {
     @Column(name = "goods_description")
     private String goodsDescription;
 
-    @OneToOne(targetEntity = PickupDetails.class)
-    @JoinColumn(name = "pickup_detail_id", referencedColumnName = "id")
-    private PickupDetails pickupDetails;
-
-    @OneToOne(targetEntity = DeliveryDetails.class)
-    @JoinColumn(name = "delivery_detail_id", referencedColumnName = "id")
-    private DeliveryDetails deliveryDetails;
-
     @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY, mappedBy = "shipmentId")
     private List<BookingCarriage> bookingCarriagesList;
 

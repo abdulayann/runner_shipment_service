@@ -74,6 +74,4 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     private LocalDateTime shipmentCompletedOn;
     private String financeClosedBy;
     private LocalDateTime financeClosedOn;
-    private PickupDetails pickupDetails;
-    private DeliveryDetails deliveryDetails;
 }

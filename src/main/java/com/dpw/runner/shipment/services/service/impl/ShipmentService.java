@@ -134,16 +134,6 @@ public class ShipmentService implements IShipmentService {
              */
             CarrierDetails carrierDetail = createCarrier();
             shipmentDetail.setCarrierDetails(carrierDetail);
-            /**
-             * * TODO
-             * Pickup Details*
-             */
-            PickupDetails pickupDetail = createPickup();
-            /**
-             * * TODO
-             * Pickup Details*
-             */
-            DeliveryDetails deliveryDetail = createDelivery();
 
             shipmentDetail = shipmentDao.save(shipmentDetail);
             /**
@@ -174,8 +164,6 @@ public class ShipmentService implements IShipmentService {
         response.setId(shipmentDetails.getId());
         response.setGuid(shipmentDetails.getGuid());
         response.setParties(shipmentDetails.getParties());
-        response.setDeliveryDetails(shipmentDetails.getDeliveryDetails());
-        response.setPickupDetails(shipmentDetails.getPickupDetails());
         response.setGoodsDescription(shipmentDetails.getGoodsDescription());
         response.setAdditionalTerms(shipmentDetails.getAdditionalTerms());
         response.setAssignedTo(shipmentDetails.getAssignedTo());
@@ -223,14 +211,6 @@ public class ShipmentService implements IShipmentService {
         }
         parties = partiesDao.saveAll(parties);
         return parties;
-    }
-
-    private DeliveryDetails createDelivery() {
-        return null;
-    }
-
-    private PickupDetails createPickup() {
-        return null;
     }
 
     private CarrierDetails createCarrier() {
