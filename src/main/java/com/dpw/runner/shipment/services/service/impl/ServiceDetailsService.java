@@ -150,7 +150,7 @@ public class ServiceDetailsService implements IServiceDetailsService {
     public ResponseEntity<?> updateEntityFromShipment(CommonRequestModel commonRequestModel, Long shipmentId)
     {
         String responseMsg;
-        List<ServiceDetails> responseServiceDetails = null;
+        List<ServiceDetails> responseServiceDetails = new ArrayList<>();
         try {
             // TODO- Handle Transactions here
             List<ServiceDetails> existingList = serviceDetailsDao.findByShipmentId(shipmentId);
@@ -168,8 +168,8 @@ public class ServiceDetailsService implements IServiceDetailsService {
                     containerList.add(request);
                 }
                 responseServiceDetails = saveServiceDetails(containerList);
-                deleteServiceDetails(existingIds);
             }
+            deleteServiceDetails(existingIds);
             return ResponseHelper.buildListSuccessResponse(convertEntityListToDtoList(responseServiceDetails));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()

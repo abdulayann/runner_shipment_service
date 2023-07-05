@@ -175,7 +175,7 @@ public class ELDetailsService implements IELDetailsService {
 
     public ResponseEntity<?> updateEntityFromShipment(CommonRequestModel commonRequestModel, Long shipmentId) {
         String responseMsg;
-        List<ELDetails> responseELDetails = null;
+        List<ELDetails> responseELDetails = new ArrayList<>();
         try {
             // TODO- Handle Transactions here
             List<ELDetails> existingList = elDetailsDao.findByShipmentId(shipmentId);
@@ -191,8 +191,8 @@ public class ELDetailsService implements IELDetailsService {
                     containerList.add(request);
                 }
                 responseELDetails = saveELDetails(containerList);
-                deleteELDetails(existingIds);
             }
+            deleteELDetails(existingIds);
             return ResponseHelper.buildListSuccessResponse(convertEntityListToDtoList(responseELDetails));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()

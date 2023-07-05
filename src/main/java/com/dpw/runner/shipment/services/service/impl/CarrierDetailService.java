@@ -158,7 +158,8 @@ public class CarrierDetailService implements ICarrierDetailService {
         List<CarrierDetails> responseCarrierDetails = null;
         try {
             // TODO- Handle Transactions here
-            List<CarrierDetails> existingList = carrierDao.findByShipmentId(shipmentId);
+            List<CarrierDetails> existingList = new ArrayList<>(); // TODO- Carrier Link with Shipment Needs to be Handled
+            //List<CarrierDetails> existingList = carrierDao.findByShipmentId(shipmentId);
             HashSet<Long> existingIds = new HashSet<>( existingList.stream().map(CarrierDetails::getId).collect(Collectors.toList()) );
             List<CarrierDetailRequest> containerList = new ArrayList<>();
             List<CarrierDetailRequest> requestList = (List<CarrierDetailRequest>) commonRequestModel.getDataList();
@@ -173,8 +174,8 @@ public class CarrierDetailService implements ICarrierDetailService {
                     containerList.add(request);
                 }
                 responseCarrierDetails = saveCarrierDetails(containerList);
-                deleteCarrierDetails(existingIds);
             }
+            deleteCarrierDetails(existingIds);
             return ResponseHelper.buildListSuccessResponse(convertEntityListToDtoList(responseCarrierDetails));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()

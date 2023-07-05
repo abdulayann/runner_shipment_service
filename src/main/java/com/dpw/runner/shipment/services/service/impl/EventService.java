@@ -155,7 +155,7 @@ public class EventService implements IEventService {
 
     public ResponseEntity<?> updateEntityFromShipment(CommonRequestModel commonRequestModel, Long shipmentId) {
         String responseMsg;
-        List<Events> responseEvents = null;
+        List<Events> responseEvents = new ArrayList<>();
         try {
             // TODO- Handle Transactions here
             List<Events> existingList = eventDao.findByShipmentId(shipmentId);
@@ -171,8 +171,8 @@ public class EventService implements IEventService {
                     containerList.add(request);
                 }
                 responseEvents = saveEvents(containerList);
-                deleteEvents(existingIds);
             }
+            deleteEvents(existingIds);
             return ResponseHelper.buildListSuccessResponse(convertEntityListToDtoList(responseEvents));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()

@@ -162,7 +162,7 @@ public class AdditionalDetailService implements IAdditionalDetailService {
     public ResponseEntity<?> updateEntityFromShipment(CommonRequestModel commonRequestModel, Long shipmentId)
     {
         String responseMsg;
-        List<AdditionalDetail> responseAdditionalDetail = null;
+        List<AdditionalDetail> responseAdditionalDetail = new ArrayList<>();
         try {
             // TODO- Handle Transactions here
             List<AdditionalDetail> existingList = additionalDetailDao.findByShipmentId(shipmentId);
@@ -180,8 +180,8 @@ public class AdditionalDetailService implements IAdditionalDetailService {
                     packingList.add(request);
                 }
                 responseAdditionalDetail = saveAdditionalDetails(packingList);
-                deleteAdditionalDetails(existingIds);
             }
+            deleteAdditionalDetails(existingIds);
             return ResponseHelper.buildListSuccessResponse(convertEntityListToDtoList(responseAdditionalDetail));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()

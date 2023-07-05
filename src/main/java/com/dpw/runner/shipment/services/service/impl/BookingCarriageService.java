@@ -154,7 +154,7 @@ public class BookingCarriageService implements IBookingCarriageService {
     public ResponseEntity<?> updateEntityFromShipment(CommonRequestModel commonRequestModel, Long shipmentId)
     {
         String responseMsg;
-        List<BookingCarriage> bookingCarriagesResponse = null;
+        List<BookingCarriage> bookingCarriagesResponse = new ArrayList<>();
         try {
             // TODO- Handle Transactions here
             List<BookingCarriage> existingList = bookingCarriageDao.findByShipmentId(shipmentId);
@@ -172,8 +172,8 @@ public class BookingCarriageService implements IBookingCarriageService {
                     saveBookingCarriages.add(request);
                 }
                 bookingCarriagesResponse = saveBookingCarriages(saveBookingCarriages);
-                deleteBookingCarriages(existingIds);
             }
+            deleteBookingCarriages(existingIds);
             return ResponseHelper.buildListSuccessResponse(convertEntityListToDtoList(bookingCarriagesResponse));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()

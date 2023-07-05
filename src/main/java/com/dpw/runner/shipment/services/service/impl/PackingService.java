@@ -148,7 +148,7 @@ public class PackingService implements IPackingService {
     public ResponseEntity<?> updateEntityFromShipment(CommonRequestModel commonRequestModel, Long shipmentId)
     {
         String responseMsg;
-        List<Packing> responsePacking = null;
+        List<Packing> responsePacking = new ArrayList<>();
         try {
             // TODO- Handle Transactions here
             List<Packing> existingList = packingDao.findByShipmentId(shipmentId);
@@ -166,8 +166,8 @@ public class PackingService implements IPackingService {
                     packingList.add(request);
                 }
                 responsePacking = savePackings(packingList);
-                deletePackings(existingIds);
             }
+            deletePackings(existingIds);
             return ResponseHelper.buildListSuccessResponse(convertEntityListToDtoList(responsePacking));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()

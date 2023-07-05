@@ -150,7 +150,7 @@ public class ContainerService implements IContainerService {
     public ResponseEntity<?> updateEntityFromShipment(CommonRequestModel commonRequestModel, Long shipmentId)
     {
         String responseMsg;
-        List<Containers> responseContainers = null;
+        List<Containers> responseContainers = new ArrayList<>();
         try {
             // TODO- Handle Transactions here
             List<Containers> existingList = containerDao.findByShipmentId(shipmentId);
@@ -168,8 +168,8 @@ public class ContainerService implements IContainerService {
                     containerList.add(request);
                 }
                 responseContainers = saveContainers(containerList);
-                deleteContainers(existingIds);
             }
+            deleteContainers(existingIds);
             return ResponseHelper.buildListSuccessResponse(convertEntityListToDtoList(responseContainers));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()

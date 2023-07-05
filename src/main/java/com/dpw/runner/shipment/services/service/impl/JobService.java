@@ -152,7 +152,7 @@ public class JobService implements IJobService {
     public ResponseEntity<?> updateEntityFromShipment(CommonRequestModel commonRequestModel, Long shipmentId)
     {
         String responseMsg;
-        List<Jobs> responseJobs = null;
+        List<Jobs> responseJobs = new ArrayList<>();
         try {
             // TODO- Handle Transactions here
             List<Jobs> existingList = jobDao.findByShipmentId(shipmentId);
@@ -170,8 +170,8 @@ public class JobService implements IJobService {
                     containerList.add(request);
                 }
                 responseJobs = saveJobs(containerList);
-                deleteJobs(existingIds);
             }
+            deleteJobs(existingIds);
             return ResponseHelper.buildListSuccessResponse(convertEntityListToDtoList(responseJobs));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()

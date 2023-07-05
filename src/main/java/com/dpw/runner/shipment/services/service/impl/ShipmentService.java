@@ -6,9 +6,7 @@ import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
-import com.dpw.runner.shipment.services.dto.request.BookingCarriageRequest;
-import com.dpw.runner.shipment.services.dto.request.CompleteShipmentRequest;
-import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
+import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -282,9 +280,26 @@ public class ShipmentService implements IShipmentService {
 
     @Transactional
     public ResponseEntity<?> completeUpdate(CommonRequestModel commonRequestModel) throws Exception {
+
         CompleteShipmentRequest completeShipmentRequest = (CompleteShipmentRequest) commonRequestModel.getData();
         ShipmentRequest request = (ShipmentRequest) completeShipmentRequest.getShipmentRequest();
+
         List<BookingCarriageRequest> bookingCarriageRequestList = completeShipmentRequest.getBookingCarriageRequest();
+        List<PackingRequest> packingRequestList = completeShipmentRequest.getPackingRequest();
+        List<AdditionalDetailRequest> additionalDetailRequestList = completeShipmentRequest.getAdditionalDetailRequest();
+        List<ContainerRequest> containerRequestList = completeShipmentRequest.getContainerRequest();
+        List<ELDetailsRequest> elDetailsRequestList = completeShipmentRequest.getElDetailsRequest();
+        List<EventsRequest> eventsRequestList = completeShipmentRequest.getEventsRequest();
+        List<FileRepoRequest> fileRepoRequestList = completeShipmentRequest.getFileRepoRequest();
+        List<JobRequest> jobRequestList = completeShipmentRequest.getJobRequest();
+        List<NotesRequest> notesRequestList = completeShipmentRequest.getNotesRequest();
+        List<ReferenceNumbersRequest> referenceNumbersRequestList = completeShipmentRequest.getReferenceNumbersRequest();
+        List<RoutingsRequest> routingsRequestList = completeShipmentRequest.getRoutingsRequest();
+        List<ServiceDetailsRequest> serviceDetailsRequestList = completeShipmentRequest.getServiceDetailsRequest();
+        List<CarrierDetailRequest> carrierDetailRequestList = completeShipmentRequest.getCarrierDetailRequest();
+        List<PickupDeliveryDetailsRequest> pickupDeliveryDetailsRequestList = completeShipmentRequest.getPickupDeliveryDetailsRequest();
+        List<PartiesRequest> partiesRequestList = completeShipmentRequest.getPartiesRequest();
+
         // TODO- implement Validation logic
         long id = request.getId();
         Optional<ShipmentDetails> oldEntity = shipmentDao.findById(id);
@@ -292,12 +307,43 @@ public class ShipmentService implements IShipmentService {
             log.debug("Shipment Details is null for Id {}", request.getId());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
+
         ResponseEntity<?> updatedBookingCarriages = bookingCarriageService.updateEntityFromShipment(CommonRequestModel.buildRequest(bookingCarriageRequestList), id);
+        ResponseEntity<?> updatedPackings = packingService.updateEntityFromShipment(CommonRequestModel.buildRequest(packingRequestList), id);
+        ResponseEntity<?> updatedAdditionalDetails = additionalDetailService.updateEntityFromShipment(CommonRequestModel.buildRequest(additionalDetailRequestList), id);
+        ResponseEntity<?> updatedContainers = containerService.updateEntityFromShipment(CommonRequestModel.buildRequest(containerRequestList), id);
+        ResponseEntity<?> updatedELDetails = elDetailsService.updateEntityFromShipment(CommonRequestModel.buildRequest(elDetailsRequestList), id);
+        ResponseEntity<?> updatedEvents = eventService.updateEntityFromShipment(CommonRequestModel.buildRequest(eventsRequestList), id);
+        ResponseEntity<?> updatedFileRepos = fileRepoService.updateEntityFromShipment(CommonRequestModel.buildRequest(fileRepoRequestList), id);
+        ResponseEntity<?> updatedJobs = jobService.updateEntityFromShipment(CommonRequestModel.buildRequest(jobRequestList), id);
+        ResponseEntity<?> updatedNotes = notesService.updateEntityFromShipment(CommonRequestModel.buildRequest(notesRequestList), id);
+        ResponseEntity<?> updatedReferenceNumbers = referenceNumbersService.updateEntityFromShipment(CommonRequestModel.buildRequest(referenceNumbersRequestList), id);
+        ResponseEntity<?> updatedRoutings = routingsService.updateEntityFromShipment(CommonRequestModel.buildRequest(routingsRequestList), id);
+        ResponseEntity<?> updatedServiceDetails = serviceDetailsService.updateEntityFromShipment(CommonRequestModel.buildRequest(serviceDetailsRequestList), id);
+        ResponseEntity<?> updatedCarrierDetails = carrierDetailService.updateEntityFromShipment(CommonRequestModel.buildRequest(carrierDetailRequestList), id);
+        ResponseEntity<?> updatedPickupDeliveryDetails = pickupDeliveryDetailsService.updateEntityFromShipment(CommonRequestModel.buildRequest(pickupDeliveryDetailsRequestList), id);
+        ResponseEntity<?> updatedPartiesDetails = partiesDetailsService.updateEntityFromShipment(CommonRequestModel.buildRequest(partiesRequestList), id);
+
         ShipmentDetails entity = jsonHelper.convertValue(request, ShipmentDetails.class);
         entity.setId(oldEntity.get().getId());
         entity = shipmentDao.save(entity);
         CompleteShipmentResponse response = CompleteShipmentResponse.builder().
                 bookingCarriages(getResponse(updatedBookingCarriages)).
+                packings(getResponse(updatedPackings)).
+                additionalDetails(getResponse(updatedAdditionalDetails)).
+                containers(getResponse(updatedContainers)).
+                elDetails(getResponse(updatedELDetails)).
+                events(getResponse(updatedEvents)).
+                fileRepo(getResponse(updatedFileRepos)).
+                job(getResponse(updatedJobs)).
+                notes(getResponse(updatedNotes)).
+                referenceNumbers(getResponse(updatedReferenceNumbers)).
+                routings(getResponse(updatedRoutings)).
+                serviceDetails(getResponse(updatedServiceDetails)).
+                //carrier(getResponse(updatedCarrierDetails)).
+                pickupDeliveryDetails(getResponse(updatedPickupDeliveryDetails)).
+                parties(getResponse(updatedPartiesDetails)).
+
                 shipment(convertEntityToDto(entity)).build();
         return ResponseHelper.buildSuccessResponse(response);
     }

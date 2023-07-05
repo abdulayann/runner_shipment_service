@@ -9,6 +9,4 @@ import java.util.List;
 @Repository
 public interface ICarrierDao extends MultiTenancyRepository<CarrierDetails> {
 
-    List<CarrierDetails> findByShipmentId(Long shipmentId);
-
 }

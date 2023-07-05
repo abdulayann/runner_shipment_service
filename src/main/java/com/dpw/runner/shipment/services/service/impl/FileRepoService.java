@@ -151,7 +151,7 @@ public class FileRepoService implements IFileRepoService {
 
     public ResponseEntity<?> updateEntityFromShipment(CommonRequestModel commonRequestModel, Long shipmentId) {
         String responseMsg;
-        List<FileRepo> responseFileRepo = null;
+        List<FileRepo> responseFileRepo = new ArrayList<>();
         try {
             // TODO- Handle Transactions here
             List<FileRepo> existingList = fileRepoDao.findByEntityIdAndEntityType(shipmentId, Constants.SHIPMENT_TYPE);
@@ -167,8 +167,8 @@ public class FileRepoService implements IFileRepoService {
                     containerList.add(request);
                 }
                 responseFileRepo = saveFileRepo(containerList);
-                deleteFileRepo(existingIds);
             }
+            deleteFileRepo(existingIds);
             return ResponseHelper.buildListSuccessResponse(convertListResponse(responseFileRepo));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()

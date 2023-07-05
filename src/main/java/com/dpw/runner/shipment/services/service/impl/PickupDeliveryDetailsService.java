@@ -152,7 +152,7 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
     public ResponseEntity<?> updateEntityFromShipment(CommonRequestModel commonRequestModel, Long shipmentId)
     {
         String responseMsg;
-        List<PickupDeliveryDetails> responsePickupDeliveryDetails = null;
+        List<PickupDeliveryDetails> responsePickupDeliveryDetails = new ArrayList<>();
         try {
             // TODO- Handle Transactions here
             List<PickupDeliveryDetails> existingList = pickupDeliveryDetailsDao.findByShipmentId(shipmentId);
@@ -170,8 +170,8 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
                     containerList.add(request);
                 }
                 responsePickupDeliveryDetails = savePickupDeliveryDetails(containerList);
-                deletePickupDeliveryDetails(existingIds);
             }
+            deletePickupDeliveryDetails(existingIds);
             return ResponseHelper.buildListSuccessResponse(convertEntityListToDtoList(responsePickupDeliveryDetails));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()

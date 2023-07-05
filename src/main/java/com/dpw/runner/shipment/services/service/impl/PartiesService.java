@@ -155,7 +155,7 @@ public class PartiesService implements IPartiesDetailsService {
     public ResponseEntity<?> updateEntityFromShipment(CommonRequestModel commonRequestModel, Long shipmentId)
     {
         String responseMsg;
-        List<Parties> responseParties = null;
+        List<Parties> responseParties = new ArrayList<>();
         try {
             // TODO- Handle Transactions here
             List<Parties> existingList = partiesDao.findByEntityIdAndEntityType(shipmentId, Constants.SHIPMENT_TYPE);
@@ -173,8 +173,8 @@ public class PartiesService implements IPartiesDetailsService {
                     containerList.add(request);
                 }
                 responseParties = saveParties(containerList);
-                deleteParties(existingIds);
             }
+            deleteParties(existingIds);
             return ResponseHelper.buildListSuccessResponse(convertEntityListToDtoList(responseParties));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()

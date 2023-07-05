@@ -150,7 +150,7 @@ public class ReferenceNumbersService implements IReferenceNumbersService {
     public ResponseEntity<?> updateEntityFromShipment(CommonRequestModel commonRequestModel, Long shipmentId)
     {
         String responseMsg;
-        List<ReferenceNumbers> responseReferenceNumbers = null;
+        List<ReferenceNumbers> responseReferenceNumbers = new ArrayList<>();
         try {
             // TODO- Handle Transactions here
             List<ReferenceNumbers> existingList = referenceNumbersDao.findByShipmentId(shipmentId);
@@ -168,8 +168,8 @@ public class ReferenceNumbersService implements IReferenceNumbersService {
                     containerList.add(request);
                 }
                 responseReferenceNumbers = saveReferenceNumbers(containerList);
-                deleteReferenceNumbers(existingIds);
             }
+            deleteReferenceNumbers(existingIds);
             return ResponseHelper.buildListSuccessResponse(convertEntityListToDtoList(responseReferenceNumbers));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()

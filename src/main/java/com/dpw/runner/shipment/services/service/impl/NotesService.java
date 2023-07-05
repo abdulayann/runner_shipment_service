@@ -154,7 +154,7 @@ public class NotesService implements INotesService {
     public ResponseEntity<?> updateEntityFromShipment(CommonRequestModel commonRequestModel, Long shipmentId)
     {
         String responseMsg;
-        List<Notes> responseNotes = null;
+        List<Notes> responseNotes = new ArrayList<>();
         try {
             // TODO- Handle Transactions here
             List<Notes> existingList = notesDao.findByEntityIdAndEntityType(shipmentId, Constants.SHIPMENT_TYPE);
@@ -172,8 +172,8 @@ public class NotesService implements INotesService {
                     containerList.add(request);
                 }
                 responseNotes = saveNotes(containerList);
-                deleteNotes(existingIds);
             }
+            deleteNotes(existingIds);
             return ResponseHelper.buildListSuccessResponse(convertEntityListToDtoList(responseNotes));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()

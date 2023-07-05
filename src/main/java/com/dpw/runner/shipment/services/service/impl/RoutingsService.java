@@ -153,7 +153,7 @@ public class RoutingsService implements IRoutingsService {
     public ResponseEntity<?> updateEntityFromShipment(CommonRequestModel commonRequestModel, Long shipmentId)
     {
         String responseMsg;
-        List<Routings> responseRoutings = null;
+        List<Routings> responseRoutings = new ArrayList<>();
         try {
             // TODO- Handle Transactions here
             List<Routings> existingList = routingsDao.findByShipmentId(shipmentId);
@@ -171,8 +171,8 @@ public class RoutingsService implements IRoutingsService {
                     containerList.add(request);
                 }
                 responseRoutings = saveRoutings(containerList);
-                deleteRoutings(existingIds);
             }
+            deleteRoutings(existingIds);
             return ResponseHelper.buildListSuccessResponse(convertEntityListToDtoList(responseRoutings));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
