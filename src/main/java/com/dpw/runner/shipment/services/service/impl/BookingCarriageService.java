@@ -85,6 +85,30 @@ public class BookingCarriageService implements IBookingCarriageService {
 
     }
 
+    @Override
+    @Async
+    public CompletableFuture<ResponseEntity<?>> listAsync(CommonRequestModel commonRequestModel){
+        String responseMsg;
+        try {
+            ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
+            // construct specifications for filter request
+            Pair<Specification<BookingCarriage>, Pageable> tuple = fetchData(request, BookingCarriage.class);
+            Page<BookingCarriage> bookingCarriagePage  = bookingCarriageDao.findAll(tuple.getLeft(), tuple.getRight());
+            return CompletableFuture.completedFuture(
+                    ResponseHelper
+                            .buildListSuccessResponse(
+                                    convertEntityListToDtoList(bookingCarriagePage.getContent()),
+                                    bookingCarriagePage.getTotalPages(),
+                                    bookingCarriagePage.getTotalElements()));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return CompletableFuture.completedFuture(ResponseHelper.buildFailedResponse(responseMsg));
+        }
+
+    }
+
     public ResponseEntity<?> delete(CommonRequestModel commonRequestModel){
         String responseMsg;
         try {
@@ -124,13 +148,6 @@ public class BookingCarriageService implements IBookingCarriageService {
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(responseMsg);
         }
-    }
-
-    @Override
-    @Async
-    public CompletableFuture<ResponseEntity<?>> listAsync(CommonRequestModel commonRequestModel) {
-        String responseMsg = null;
-        return CompletableFuture.completedFuture(ResponseHelper.buildFailedResponse(responseMsg));
     }
 
     public ResponseEntity<?> updateEntityFromShipment(CommonRequestModel commonRequestModel, Long shipmentId)
