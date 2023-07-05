@@ -253,4 +253,19 @@ public class ShipmentDetails extends MultiTenancy {
 
     @Column(name = "finance_closed_on")
     private LocalDateTime financeClosedOn;
+
+    @OneToOne(targetEntity = AdditionalDetail.class)
+    @JoinColumn(name = "additional_details_id", referencedColumnName = "id")
+    private AdditionalDetail additionalDetail;
+
+    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY, mappedBy = "entityId")
+    @Where(clause = "entity_name = 'shipments'")
+    private List<Logs> logsList;
+
+    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY, mappedBy = "entityId")
+    @Where(clause = "entity_type = 'shipments'")
+    private List<Notes> notesList;
+
+    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY, mappedBy = "shipmentId")
+    private List<PickupDeliveryDetails> pickupDeliveryDetailsList;
 }

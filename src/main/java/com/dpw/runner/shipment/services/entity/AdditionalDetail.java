@@ -199,9 +199,6 @@ public class AdditionalDetail extends MultiTenancy {
     @Column(name = "bonded_warehouse_id")
     private Long bondedWarehouseId;
 
-    @Column(name = "shipment_id")
-    private Long shipmentId;
-
     @Column(name = "release_type")
     private String releaseType;
 
