@@ -37,11 +37,11 @@ public class Parties extends MultiTenancy {
     @Column(name = "party_type")
     private String type;
 
-    @Column(name = "org_id")
-    private Integer orgId;
+    @Column(name = "org_code")
+    private Integer orgCode;
 
-    @Column(name = "address_id")
-    private Integer addressId;
+    @Column(name = "address_code")
+    private Integer addressCode;
 
     @Type(type = "jsonb")
     @Column(name = "org_data", columnDefinition = "jsonb")

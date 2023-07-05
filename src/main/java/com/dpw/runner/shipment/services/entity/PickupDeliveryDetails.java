@@ -34,25 +34,31 @@ public class PickupDeliveryDetails extends MultiTenancy {
     @Column(name = "pickup_or_delivery")
     private LocalDateTime pickupOrDelivery;
 
-    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER, mappedBy = "entityId")
-    @Where(clause = "entity_type = 'jobs' AND party_type = 'broker'")
-    private List<Parties> partiesBrokerDetailsList;
-
-    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER, mappedBy = "entityId")
-    @Where(clause = "entity_type = 'jobs' AND party_type = 'agent'")
-    private List<Parties> partiesAgentDetailsList;
-
-    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER, mappedBy = "entityId")
-    @Where(clause = "entity_type = 'jobs' AND party_type = 'transporter'")
-    private List<Parties> partiesTransporterDetailsList;
-
-    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER, mappedBy = "entityId")
-    @Where(clause = "entity_type = 'jobs' AND party_type = 'destination'")
-    private List<Parties> partiesDestinationDetailsList;
-
     @Column(name = "type")
     private String type;
 
     @Column(name = "shipment_id")
     private Long shipmentId;
+
+    @OneToOne(targetEntity = Parties.class)
+    @JoinColumn(name = "transporter_id", referencedColumnName = "id")
+    private Parties transporterDetail;
+
+    @OneToOne(targetEntity = Parties.class)
+    @JoinColumn(name = "broker_id", referencedColumnName = "id")
+    private Parties brokerDetail;
+
+    @OneToOne(targetEntity = Parties.class)
+    @JoinColumn(name = "destination_id", referencedColumnName = "id")
+    private Parties destinationDetail;
+
+    @OneToOne(targetEntity = Parties.class)
+    @JoinColumn(name = "source_id", referencedColumnName = "id")
+    private Parties sourceDetail;
+
+    @OneToOne(targetEntity = Parties.class)
+    @JoinColumn(name = "agent_id", referencedColumnName = "id")
+    private Parties agentDetail;
+
+
 }

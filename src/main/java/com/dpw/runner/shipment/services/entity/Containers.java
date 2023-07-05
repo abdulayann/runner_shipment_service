@@ -232,13 +232,11 @@ public class Containers extends MultiTenancy {
     @Column(name = "volume_utilization")
     private String volumeUtilization;
 
-    @Column(name = "pickup_address")
-    @OneToMany(targetEntity = Parties.class, cascade = CascadeType.ALL, mappedBy = "entityId")
-    @Where(clause = "entity_type = 'Containers' AND party_type = 'pickup'")
-    private List<Parties> pickupAddress;
+    @OneToOne(targetEntity = Parties.class)
+    @JoinColumn(name = "pickup_address_id", referencedColumnName = "id")
+    private Parties pickupAddress;
 
-    @Column(name = "delivery_address")
-    @OneToMany(targetEntity = Parties.class, cascade = CascadeType.ALL, mappedBy = "entityId")
-    @Where(clause = "entity_type = 'Containers' AND party_type = 'delivery'")
-    private List<Parties> deliveryAddress;
+    @OneToOne(targetEntity = Parties.class)
+    @JoinColumn(name = "delivery_address_id", referencedColumnName = "id")
+    private Parties deliveryAddress;
 }
