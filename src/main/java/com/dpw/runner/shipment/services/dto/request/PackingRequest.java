@@ -12,6 +12,7 @@ import java.math.BigDecimal;
 @ApiModel(value = "Packing request model")
 @ToString
 public class PackingRequest extends CommonRequest implements IRunnerRequest {
+    private Long id;
     private Long consolidationId;
     private Long shipmentId;
     private Integer DGGoodsId;
