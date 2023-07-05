@@ -296,7 +296,7 @@ public class ShipmentService implements IShipmentService {
         int random = new Random().nextInt(100);
         for (String partyType : PARTY_TYPE) {
             Parties party = Parties.builder()
-                    .type(partyType).orgId(random).addressId(random)
+                    .type(partyType).orgCode(generateString(7)).addressCode(generateString(7))
                     .orgData(ORG).addressData(ADDRESS)
                     .entityId(shipmentDetails.getId()).entityType("SHIPMENT")
                     .build();
