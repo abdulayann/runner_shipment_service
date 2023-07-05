@@ -6,6 +6,8 @@ import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
+import com.dpw.runner.shipment.services.dto.request.BookingCarriageRequest;
+import com.dpw.runner.shipment.services.dto.request.CompleteShipmentRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
 import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.entity.*;
@@ -276,6 +278,28 @@ public class ShipmentService implements IShipmentService {
         return ResponseHelper.buildSuccessResponse(jsonHelper.convertValue(entity, ShipmentDetailsResponse.class));
     }
 
+    @Transactional
+    public ResponseEntity<?> completeUpdate(CommonRequestModel commonRequestModel) throws Exception {
+        CompleteShipmentRequest completeShipmentRequest = (CompleteShipmentRequest) commonRequestModel.getData();
+        ShipmentRequest request = (ShipmentRequest) completeShipmentRequest.getShipmentRequest();
+        List<BookingCarriageRequest> bookingCarriageRequestList = completeShipmentRequest.getBookingCarriageRequest();
+        // TODO- implement Validation logic
+        long id = request.getId();
+        Optional<ShipmentDetails> oldEntity = shipmentDao.findById(id);
+        if (!oldEntity.isPresent()) {
+            log.debug("Shipment Details is null for Id {}", request.getId());
+            throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+        }
+        ResponseEntity<?> updatedBookingCarriages = bookingCarriageService.updateEntityFromShipment(CommonRequestModel.buildRequest(bookingCarriageRequestList), id);
+        ShipmentDetails entity = jsonHelper.convertValue(request, ShipmentDetails.class);
+        entity.setId(oldEntity.get().getId());
+        entity = shipmentDao.save(entity);
+        CompleteShipmentResponse response = CompleteShipmentResponse.builder().
+                bookingCarriages(getResponse(updatedBookingCarriages)).
+                shipment(convertEntityToDto(entity)).build();
+        return ResponseHelper.buildSuccessResponse(response);
+    }
+
     public ResponseEntity<?> list(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
@@ -457,6 +481,11 @@ public class ShipmentService implements IShipmentService {
 
     private <T extends IRunnerResponse> List<T> getResponse(CompletableFuture<ResponseEntity<?>> responseEntity) throws ExecutionException, InterruptedException {
         var runnerListResponse = (RunnerListResponse<T>) responseEntity.get().getBody();
+        return (List<T>) runnerListResponse.getData();
+    }
+
+    private <T extends IRunnerResponse> List<T> getResponse(ResponseEntity<?> responseEntity) throws ExecutionException, InterruptedException {
+        var runnerListResponse = (RunnerListResponse<T>) responseEntity.getBody();
         return (List<T>) runnerListResponse.getData();
     }
 

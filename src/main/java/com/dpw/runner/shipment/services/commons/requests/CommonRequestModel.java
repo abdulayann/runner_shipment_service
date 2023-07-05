@@ -13,7 +13,7 @@ public class CommonRequestModel {
     private Long id;
     private String guid;
     private IRunnerRequest data;
-    private List<IRunnerRequest> dataList;
+    private List<?  extends IRunnerRequest> dataList;
     @Builder.Default
     private Integer pageNo = 0;
     @Builder.Default
@@ -63,6 +63,11 @@ public class CommonRequestModel {
     public static CommonRequestModel buildRequest(IRunnerRequest data, Boolean isActive) {
         log.debug("Received Request {}", data);
         return CommonRequestModel.builder().data(data).active(isActive == null || isActive).build();
+    }
+
+    public static CommonRequestModel buildRequest(List<? extends IRunnerRequest> dataList)
+    {
+        return CommonRequestModel.builder().dataList(dataList).build();
     }
 
 }
