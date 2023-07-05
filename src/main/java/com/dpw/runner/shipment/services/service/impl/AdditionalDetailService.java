@@ -159,10 +159,6 @@ public class AdditionalDetailService implements IAdditionalDetailService {
         }
     }
 
-<<<<<<< Updated upstream
-    private AdditionalDetailResponse convertEntityToDto(AdditionalDetail additionalDetail) {
-        return modelMapper.map(additionalDetail, AdditionalDetailResponse.class);
-=======
     public ResponseEntity<?> updateEntityFromShipment(CommonRequestModel commonRequestModel, Long shipmentId)
     {
         String responseMsg;
@@ -220,9 +216,8 @@ public class AdditionalDetailService implements IAdditionalDetailService {
         }
     }
 
-    private IRunnerResponse convertEntityToDto(AdditionalDetail additionalDetail) {
-        return jsonHelper.convertValue(additionalDetail, AdditionalDetailResponse.class);
->>>>>>> Stashed changes
+    private AdditionalDetailResponse convertEntityToDto(AdditionalDetail additionalDetail) {
+            return modelMapper.map(additionalDetail, AdditionalDetailResponse.class);
     }
 
     private AdditionalDetail convertRequestToEntity(AdditionalDetailRequest request) {

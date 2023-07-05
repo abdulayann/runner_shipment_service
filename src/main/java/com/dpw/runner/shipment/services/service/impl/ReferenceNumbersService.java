@@ -147,10 +147,6 @@ public class ReferenceNumbersService implements IReferenceNumbersService {
         }
     }
 
-<<<<<<< Updated upstream
-    private ReferenceNumbersResponse convertEntityToDto(ReferenceNumbers referenceNumbers) {
-        return modelMapper.map(referenceNumbers, ReferenceNumbersResponse.class);
-=======
     public ResponseEntity<?> updateEntityFromShipment(CommonRequestModel commonRequestModel, Long shipmentId)
     {
         String responseMsg;
@@ -209,16 +205,7 @@ public class ReferenceNumbersService implements IReferenceNumbersService {
     }
 
     private ReferenceNumbersResponse convertEntityToDto(ReferenceNumbers referenceNumbers) {
-        ReferenceNumbersResponse response = new ReferenceNumbersResponse();
-        response.setId(referenceNumbers.getId());
-        response.setGuid(referenceNumbers.getGuid());
-        response.setConsolidationId(referenceNumbers.getConsolidationId());
-        response.setShipmentId(referenceNumbers.getShipmentId());
-        response.setCountryOfIssue(referenceNumbers.getCountryOfIssue());
-        response.setType(referenceNumbers.getType());
-        response.setReferenceNumber(referenceNumbers.getReferenceNumber());
-        return response;
->>>>>>> Stashed changes
+        return modelMapper.map(referenceNumbers, ReferenceNumbersResponse.class);
     }
 
     private List<IRunnerResponse> convertEntityListToDtoList(List<ReferenceNumbers> lst) {
@@ -230,17 +217,6 @@ public class ReferenceNumbersService implements IReferenceNumbersService {
     }
 
     public ReferenceNumbers convertRequestToEntity(ReferenceNumbersRequest request) {
-<<<<<<< Updated upstream
         return modelMapper.map(request, ReferenceNumbers.class);
-=======
-        ReferenceNumbers referenceNumbers = new ReferenceNumbers();
-        referenceNumbers.setGuid(UUID.randomUUID());
-        referenceNumbers.setConsolidationId(request.getConsolidationId());
-        referenceNumbers.setShipmentId(request.getShipmentId());
-        referenceNumbers.setCountryOfIssue(request.getCountryOfIssue());
-        referenceNumbers.setType(request.getType());
-        referenceNumbers.setReferenceNumber(request.getReferenceNumber());
-        return referenceNumbers;
->>>>>>> Stashed changes
     }
 }

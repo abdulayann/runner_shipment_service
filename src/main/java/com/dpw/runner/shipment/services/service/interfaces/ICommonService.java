@@ -18,5 +18,4 @@ public interface ICommonService {
     ResponseEntity<?> delete(CommonRequestModel commonRequestModel);
 
     ResponseEntity<?> retrieveById(CommonRequestModel commonRequestModel);
-//    ResponseEntity<?> updateEntityFromShipment(CommonRequestModel commonRequestModel, Long shipmentId);
 }

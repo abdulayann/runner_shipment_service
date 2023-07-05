@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
@@ -157,7 +158,7 @@ public class PartiesService implements IPartiesDetailsService {
         List<Parties> responseParties = null;
         try {
             // TODO- Handle Transactions here
-            List<Parties> existingList = partiesDao.findByEntityIdAndEntityType(shipmentId, "Shipments");
+            List<Parties> existingList = partiesDao.findByEntityIdAndEntityType(shipmentId, Constants.SHIPMENT_TYPE);
             HashSet<Long> existingIds = new HashSet<>( existingList.stream().map(Parties::getId).collect(Collectors.toList()) );
             List<PartiesRequest> containerList = new ArrayList<>();
             List<PartiesRequest> requestList = (List<PartiesRequest>) commonRequestModel.getDataList();

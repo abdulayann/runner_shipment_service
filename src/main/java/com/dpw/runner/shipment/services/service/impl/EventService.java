@@ -6,12 +6,7 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.EventsRequest;
-import com.dpw.runner.shipment.services.dto.request.EventsRequest;
 import com.dpw.runner.shipment.services.dto.response.EventsResponse;
-<<<<<<< Updated upstream
-=======
-import com.dpw.runner.shipment.services.entity.Events;
->>>>>>> Stashed changes
 import com.dpw.runner.shipment.services.entity.Events;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.IEventDao;
@@ -34,6 +29,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 
@@ -157,8 +153,6 @@ public class EventService implements IEventService {
         }
     }
 
-<<<<<<< Updated upstream
-=======
     public ResponseEntity<?> updateEntityFromShipment(CommonRequestModel commonRequestModel, Long shipmentId) {
         String responseMsg;
         List<Events> responseEvents = null;
@@ -210,7 +204,6 @@ public class EventService implements IEventService {
         }
     }
 
->>>>>>> Stashed changes
     public Events convertRequestToEntity(EventsRequest request) {
         return modelMapper.map(request, Events.class);
     }

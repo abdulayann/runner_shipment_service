@@ -147,10 +147,6 @@ public class ServiceDetailsService implements IServiceDetailsService {
         }
     }
 
-<<<<<<< Updated upstream
-    private ServiceDetailsResponse convertEntityToDto(ServiceDetails shipmentServices) {
-        return modelMapper.map(shipmentServices, ServiceDetailsResponse.class);
-=======
     public ResponseEntity<?> updateEntityFromShipment(CommonRequestModel commonRequestModel, Long shipmentId)
     {
         String responseMsg;
@@ -209,23 +205,7 @@ public class ServiceDetailsService implements IServiceDetailsService {
     }
 
     private ServiceDetailsResponse convertEntityToDto(ServiceDetails shipmentServices) {
-        ServiceDetailsResponse response = new ServiceDetailsResponse();
-        response.setId(shipmentServices.getId());
-        response.setGuid(shipmentServices.getGuid());
-        response.setShipmentId(shipmentServices.getShipmentId());
-        response.setConsolidationId(shipmentServices.getConsolidationId());
-        response.setServiceType(shipmentServices.getServiceType());
-        response.setContractorId(shipmentServices.getContractorId());
-        response.setContractorAddressId(shipmentServices.getContractorAddressId());
-        response.setSrvLocation(shipmentServices.getSrvLocation());
-        response.setBookingDate(shipmentServices.getBookingDate());
-        response.setServiceCount(shipmentServices.getServiceCount());
-        response.setServiceDuration(shipmentServices.getServiceDuration());
-        response.setCompletionDate(shipmentServices.getCompletionDate());
-        response.setRefNumber(shipmentServices.getRefNumber());
-        response.setServiceNotes(shipmentServices.getServiceNotes());
-        return response;
->>>>>>> Stashed changes
+        return modelMapper.map(shipmentServices, ServiceDetailsResponse.class);
     }
 
     private List<IRunnerResponse> convertEntityListToDtoList(List<ServiceDetails> lst) {
@@ -237,24 +217,6 @@ public class ServiceDetailsService implements IServiceDetailsService {
     }
 
     public ServiceDetails convertRequestToEntity(ServiceDetailsRequest request) {
-<<<<<<< Updated upstream
         return modelMapper.map(request, ServiceDetails.class);
-=======
-        ServiceDetails shipmentServices = new ServiceDetails();
-        shipmentServices.setGuid(UUID.randomUUID());
-        shipmentServices.setShipmentId(request.getShipmentId());
-        shipmentServices.setConsolidationId(request.getConsolidationId());
-        shipmentServices.setServiceType(request.getServiceType());
-        shipmentServices.setContractorId(request.getContractorId());
-        shipmentServices.setContractorAddressId(request.getContractorAddressId());
-        shipmentServices.setSrvLocation(request.getSrvLocation());
-        shipmentServices.setBookingDate(request.getBookingDate());
-        shipmentServices.setServiceCount(request.getServiceCount());
-        shipmentServices.setServiceDuration(request.getServiceDuration());
-        shipmentServices.setCompletionDate(request.getCompletionDate());
-        shipmentServices.setRefNumber(request.getRefNumber());
-        shipmentServices.setServiceNotes(request.getServiceNotes());
-        return shipmentServices;
->>>>>>> Stashed changes
     }
 }

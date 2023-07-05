@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
@@ -156,7 +157,7 @@ public class NotesService implements INotesService {
         List<Notes> responseNotes = null;
         try {
             // TODO- Handle Transactions here
-            List<Notes> existingList = notesDao.findByEntityIdAndEntityType(shipmentId, "Shipments");
+            List<Notes> existingList = notesDao.findByEntityIdAndEntityType(shipmentId, Constants.SHIPMENT_TYPE);
             HashSet<Long> existingIds = new HashSet<>( existingList.stream().map(Notes::getId).collect(Collectors.toList()) );
             List<NotesRequest> containerList = new ArrayList<>();
             List<NotesRequest> requestList = (List<NotesRequest>) commonRequestModel.getDataList();
