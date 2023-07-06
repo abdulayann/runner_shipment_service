@@ -12,6 +12,9 @@ import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Set;
+
+import static com.fasterxml.jackson.databind.cfg.CoercionInputShape.Array;
 
 @Aspect
 @Component
@@ -32,38 +35,33 @@ public class TenantAspect {
     public void beforeFindOfMultiTenancyRepository() {
 
         long tenantId = tenantContext.getCurrentTenant();
+        ;
 
 
-        permissions = new HashSet<String>(permissionsContext.getPermissions());
+        permissions = new HashSet<>();
+        permissions.add("SuperAdmin");
 
-        if(!permissions.contains("SuperAdmin")) {
-            if(permissions.contains("ParentCompanyAdmin"))
-            {
+        if (!permissions.contains("SuperAdmin")) {
+            if (permissions.contains("ParentCompanyAdmin")) {
                 //fetch tenant ids of parent company from tenants service api
-                int[] tenantIdsOfParent = new int[]{1,2,3};
+                int[] tenantIdsOfParent = new int[]{1, 2, 3};
 
                 entityManager.unwrap(Session.class)
-                .enableFilter(MultiTenancy.MULTI_BRANCH_FILTER_NAME)
-                .setParameterList(MultiTenancy.TENANT_PARAMETER_NAME, Collections.singleton(tenantIdsOfParent));
-            }
-            else if(permissions.contains("CompanyAdmin"))
-            {
+                        .enableFilter(MultiTenancy.MULTI_BRANCH_FILTER_NAME)
+                        .setParameterList(MultiTenancy.TENANT_PARAMETER_NAME, Collections.singleton(tenantIdsOfParent));
+            } else if (permissions.contains("CompanyAdmin")) {
                 //fetch tenant ids of current company from tenants service api
-                int[] tenantIdsOfCompany = new int[]{1,2};
+                int[] tenantIdsOfCompany = new int[]{1, 2};
 
                 entityManager.unwrap(Session.class)
                         .enableFilter(MultiTenancy.MULTI_BRANCH_FILTER_NAME)
                         .setParameterList(MultiTenancy.TENANT_PARAMETER_NAME, Collections.singleton(tenantIdsOfCompany));
-            }
-            else
-            {
+            } else {
                 entityManager.unwrap(Session.class)
                         .enableFilter(MultiTenancy.TENANT_FILTER_NAME)
                         .setParameter(MultiTenancy.TENANT_PARAMETER_NAME, tenantId);
             }
-        }
-        else
-        {
+        } else {
             entityManager.unwrap(Session.class)
                     .enableFilter(MultiTenancy.TENANT_FILTER_NAME)
                     .setParameter(MultiTenancy.TENANT_PARAMETER_NAME, tenantId);

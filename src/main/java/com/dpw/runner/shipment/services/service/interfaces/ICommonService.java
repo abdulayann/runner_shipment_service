@@ -7,9 +7,9 @@ import java.util.concurrent.CompletableFuture;
 
 @SuppressWarnings("ALL")
 public interface ICommonService {
-    ResponseEntity<?> create(CommonRequestModel commonRequestModel) throws Exception;
+    ResponseEntity<?> create(CommonRequestModel commonRequestModel);
 
-    ResponseEntity<?> update(CommonRequestModel commonRequestModel) throws Exception;
+    ResponseEntity<?> update(CommonRequestModel commonRequestModel);
 
     ResponseEntity<?> list(CommonRequestModel commonRequestModel);
 

@@ -8,6 +8,8 @@ import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
 import com.dpw.runner.shipment.services.dto.response.*;
+import com.dpw.runner.shipment.services.dto.request.*;
+import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
@@ -15,7 +17,6 @@ import com.dpw.runner.shipment.services.repository.interfaces.*;
 import com.dpw.runner.shipment.services.service.interfaces.*;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
-import org.aspectj.lang.JoinPoint;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
@@ -25,6 +26,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.interceptor.TransactionAspectSupport;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -94,6 +97,9 @@ public class ShipmentService implements IShipmentService {
     @Autowired
     private IPartiesDetailsService partiesDetailsService;
 
+    @Autowired
+    private TransactionTemplate transactionTemplate;
+
     private List<String> TRANSPORT_MODES = Arrays.asList("SEA", "ROAD", "RAIL", "AIR");
     private List<String> SHIPMENT_TYPE = Arrays.asList("FCL", "LCL");
     private List<String> WEIGHT_UNIT = Arrays.asList("KGS", "G", "DT");
@@ -109,6 +115,70 @@ public class ShipmentService implements IShipmentService {
     );
     private Map<String, Object> ORG = Map.ofEntries(
             Map.entry("TenantName", "DP WORLD LOGISTICS CANADA INC")
+    );
+    private Map<String, RunnerEntityMapping> tableNames = Map.ofEntries(
+            Map.entry("type", RunnerEntityMapping.builder().tableName("parties").dataType(String.class).build()),
+            Map.entry("orgId", RunnerEntityMapping.builder().tableName("parties").dataType(Integer.class).build()),
+            Map.entry("houseBill", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).build()),
+            Map.entry("hblType", RunnerEntityMapping.builder().tableName("additionalDetails").dataType(String.class).build()),
+            Map.entry("transportMode", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).build()),
+            Map.entry("releaseType", RunnerEntityMapping.builder().tableName("additionalDetails").dataType(String.class).build()),
+            Map.entry("deliveryMode", RunnerEntityMapping.builder().tableName("additionalDetails").dataType(String.class).build()),
+            Map.entry("direction", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).build()),
+            Map.entry("shipmentType", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).build()),
+            Map.entry("status", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(Integer.class).build()),
+            Map.entry("source", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).build()),
+            Map.entry("jobType", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).build()),
+            Map.entry("serviceType", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).build()),
+            Map.entry("masterBill", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).build()),
+            Map.entry("bookingReference", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).build()),
+            Map.entry("consolRef", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).build()),
+            Map.entry("salesAgent", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(Long.class).build()),
+            Map.entry("paymentTerms", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).build()),
+            Map.entry("incoterms", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).build()),
+            Map.entry("shipmentId", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).build()),
+            Map.entry("isDomestic", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(Boolean.class).build()),
+            Map.entry("assignedTo", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(Integer.class).build()),
+            Map.entry("additionalTerms", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).build()),
+            Map.entry("goodsDescription", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).build()),
+            Map.entry("createdAt", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(Date.class).build()),
+            Map.entry("estimatedPickup", RunnerEntityMapping.builder().tableName("pickupDetails").dataType(LocalDateTime.class).build()),
+            Map.entry("actualPickup", RunnerEntityMapping.builder().tableName("pickupDetails").dataType(LocalDateTime.class).build()),
+            Map.entry("estimatedDelivery", RunnerEntityMapping.builder().tableName("deliveryDetails").dataType(LocalDateTime.class).build()),
+            Map.entry("requiredBy", RunnerEntityMapping.builder().tableName("deliveryDetails").dataType(LocalDateTime.class).build()),
+            Map.entry("addressId", RunnerEntityMapping.builder().tableName("parties").dataType(Integer.class).build()),
+            Map.entry("screeningStatus", RunnerEntityMapping.builder().tableName("additionalDetails").dataType(String.class).build()),
+            Map.entry("paidPlace", RunnerEntityMapping.builder().tableName("additionalDetails").dataType(Long.class).build()),
+            Map.entry("placeOfIssue", RunnerEntityMapping.builder().tableName("additionalDetails").dataType(Long.class).build()),
+            Map.entry("dateOfIssue", RunnerEntityMapping.builder().tableName("additionalDetails").dataType(LocalDateTime.class).build()),
+            Map.entry("dateOfReceipt", RunnerEntityMapping.builder().tableName("additionalDetails").dataType(LocalDateTime.class).build()),
+            Map.entry("goodsCo", RunnerEntityMapping.builder().tableName("additionalDetails").dataType(String.class).build()),
+            Map.entry("boeDate", RunnerEntityMapping.builder().tableName("additionalDetails").dataType(LocalDateTime.class).build()),
+            Map.entry("boeNumber", RunnerEntityMapping.builder().tableName("additionalDetails").dataType(String.class).build()),
+            Map.entry("shippingLine", RunnerEntityMapping.builder().tableName("carrierDetails").dataType(String.class).build()),
+            Map.entry("vessel", RunnerEntityMapping.builder().tableName("carrierDetails").dataType(String.class).build()),
+            Map.entry("voyage", RunnerEntityMapping.builder().tableName("carrierDetails").dataType(String.class).build()),
+            Map.entry("origin", RunnerEntityMapping.builder().tableName("carrierDetails").dataType(String.class).build()),
+            Map.entry("destination", RunnerEntityMapping.builder().tableName("carrierDetails").dataType(String.class).build()),
+            Map.entry("eta", RunnerEntityMapping.builder().tableName("carrierDetails").dataType(LocalDateTime.class).build()),
+            Map.entry("etd", RunnerEntityMapping.builder().tableName("carrierDetails").dataType(LocalDateTime.class).build()),
+            Map.entry("ata", RunnerEntityMapping.builder().tableName("carrierDetails").dataType(LocalDateTime.class).build()),
+            Map.entry("weight", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(BigDecimal.class).build()),
+            Map.entry("weightUnit", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).build()),
+            Map.entry("volume", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(BigDecimal.class).build()),
+            Map.entry("volumeUnit", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).build()),
+            Map.entry("volumetricWeight", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(BigDecimal.class).build()),
+            Map.entry("volumetricWeightUnit", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).build()),
+            Map.entry("chargable", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(BigDecimal.class).build()),
+            Map.entry("chargeableUnit", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).build()),
+            Map.entry("netWeight", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(BigDecimal.class).build()),
+            Map.entry("netWeightUnit", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).build()),
+            Map.entry("noOfPacks", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(Integer.class).build()),
+            Map.entry("packsUnit", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).build()),
+            Map.entry("innerPacks", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(Integer.class).build()),
+            Map.entry("innerPackUnit", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).build()),
+            Map.entry("containerNumber", RunnerEntityMapping.builder().tableName("containers").dataType(String.class).build()),
+            Map.entry("containerCode", RunnerEntityMapping.builder().tableName("containers").dataType(String.class).build())
     );
 
     @Override
@@ -250,17 +320,276 @@ public class ShipmentService implements IShipmentService {
     @Override
     @Transactional
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
-        ShipmentRequest request = null;
-        request = (ShipmentRequest) commonRequestModel.getData();
-        // TODO- implement validator
-        ShipmentDetails shipmentDetails = jsonHelper.convertValue(request, ShipmentDetails.class);
-        shipmentDetails = shipmentDao.save(shipmentDetails);
+        //ExecutorService executorService = Executors.newFixedThreadPool(100);
+
+        CompleteShipmentRequest request = (CompleteShipmentRequest) commonRequestModel.getData();
+        System.out.println(jsonHelper.convertToJson(request));
+        ShipmentDetails shipmentDetails = jsonHelper.convertValue(request.getShipmentRequest(), ShipmentDetails.class);
+
+        try {
+            getShipment(shipmentDetails);
+
+            List<AdditionalDetailRequest> additionalDetailRequest = request.getAdditionalDetailRequest();
+            createAdditionalDetailsAsync(shipmentDetails, additionalDetailRequest);
+
+            List<ContainerRequest> containerRequest = request.getContainerRequest();
+            createContainersAsync(shipmentDetails, containerRequest);
+
+
+            List<PackingRequest> packingRequest = request.getPackingRequest();
+            createPackingsAsync(shipmentDetails, packingRequest);
+
+
+            List<BookingCarriageRequest> bookingCarriageRequest = request.getBookingCarriageRequest();
+            createBookingCarriagesAsync(shipmentDetails, bookingCarriageRequest);
+
+
+            List<ELDetailsRequest> elDetailsRequest = request.getElDetailsRequest();
+            createElDetailsAsync(shipmentDetails, elDetailsRequest);
+
+
+            List<EventsRequest> eventsRequest = request.getEventsRequest();
+            createEventsAsync(shipmentDetails, eventsRequest);
+
+
+            List<FileRepoRequest> fileRepoRequest = request.getFileRepoRequest();
+            createFileRepoAsync(shipmentDetails, fileRepoRequest);
+
+
+            List<JobRequest> jobRequest = request.getJobRequest();
+            createJobsAsync(shipmentDetails, jobRequest);
+
+
+            List<NotesRequest> notesRequest = request.getNotesRequest();
+            createNotesAsync(shipmentDetails, notesRequest);
+
+
+            List<ReferenceNumbersRequest> referenceNumbersRequest = request.getReferenceNumbersRequest();
+            createReferenceNumbersAsync(shipmentDetails, referenceNumbersRequest);
+
+
+            List<RoutingsRequest> routingsRequest = request.getRoutingsRequest();
+            createRoutingsAsync(shipmentDetails, routingsRequest);
+
+
+            List<ServiceDetailsRequest> serviceDetailsRequest = request.getServiceDetailsRequest();
+            createServiceDetailsAsync(shipmentDetails, serviceDetailsRequest);
+
+
+            List<PickupDeliveryDetailsRequest> pickupDeliveryDetailsRequest = request.getPickupDeliveryDetailsRequest();
+            createPickupDeliveryAsync(shipmentDetails, pickupDeliveryDetailsRequest);
+
+
+            List<PartiesRequest> partiesRequest = request.getPartiesRequest();
+            createPartiesAsync(shipmentDetails, partiesRequest);
+
+
+            List<CarrierDetailRequest> carrierDetailRequest = request.getCarrierDetailRequest();
+            createCarrierDetailsAsync(shipmentDetails, carrierDetailRequest);
+
+        } catch (Exception e) {
+            log.error(e.getMessage());
+            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+            throw new RuntimeException(e);
+        }
+
+//        CompletableFuture.allOf(createCallToAdditionalDetails, createCallToContainers, createCallToPackings, createCallToBookingCarriages, createCallToElDetails, createCallToEvents, createCallToFileRepos, createCallToJobs, createCallToNotes, createCallToReferenceNumbers, createCallToRoutings, createCallToServiceDetails, createCallToPickupDelivery, createCallToParties, createCallToCarrierDetails).join();
+//        executorService.shutdownNow();
         return ResponseHelper.buildSuccessResponse(jsonHelper.convertValue(shipmentDetails, ShipmentDetailsResponse.class));
+    }
+
+    void getShipment(ShipmentDetails shipmentDetails) {
+        shipmentDao.save(shipmentDetails);
+    }
+
+    private void createCarrierDetailsAsync(ShipmentDetails shipmentDetails, List<CarrierDetailRequest> carrierDetailRequest) {
+        carrierDetailRequest.forEach(carrierDetail -> {
+            createCarrier(shipmentDetails, carrierDetail);
+        });
+    }
+
+    private void createPartiesAsync(ShipmentDetails shipmentDetails, List<PartiesRequest> partiesRequest) {
+        partiesRequest.forEach(parties -> {
+            createParties(shipmentDetails, parties);
+        });
+    }
+
+    private void createPickupDeliveryAsync(ShipmentDetails shipmentDetails, List<PickupDeliveryDetailsRequest> pickupDeliveryDetailsRequest) {
+        pickupDeliveryDetailsRequest.forEach(pickupDelivery -> {
+            createPickupDelivery(shipmentDetails, pickupDelivery);
+        });
+    }
+
+    private void createServiceDetailsAsync(ShipmentDetails shipmentDetails, List<ServiceDetailsRequest> serviceDetailsRequest) {
+        serviceDetailsRequest.forEach(serviceDetails -> {
+            createServiceDetail(shipmentDetails, serviceDetails);
+        });
+    }
+
+    private void createRoutingsAsync(ShipmentDetails shipmentDetails, List<RoutingsRequest> routingsRequest) {
+        routingsRequest.forEach(routing -> {
+            createRouting(shipmentDetails, routing);
+        });
+    }
+
+    private void createReferenceNumbersAsync(ShipmentDetails shipmentDetails, List<ReferenceNumbersRequest> referenceNumbersRequest) {
+        referenceNumbersRequest.forEach(referenceNumber -> {
+            createReferenceNumber(shipmentDetails, referenceNumber);
+        });
+    }
+
+    private void createNotesAsync(ShipmentDetails shipmentDetails, List<NotesRequest> notesRequest) {
+        notesRequest.forEach(notes -> {
+            createNote(shipmentDetails, notes);
+        });
+    }
+
+    private void createJobsAsync(ShipmentDetails shipmentDetails, List<JobRequest> jobRequest) {
+        jobRequest.forEach(jobs -> {
+            createJob(shipmentDetails, jobs);
+        });
+    }
+
+    private void createFileRepoAsync(ShipmentDetails shipmentDetails, List<FileRepoRequest> fileRepoRequest) {
+        fileRepoRequest.forEach(fileRepo -> {
+            createFileRepo(shipmentDetails, fileRepo);
+        });
+    }
+
+    private void createEventsAsync(ShipmentDetails shipmentDetails, List<EventsRequest> eventsRequest) {
+        eventsRequest.forEach(event -> {
+            createEvent(shipmentDetails, event);
+        });
+    }
+
+    private void createElDetailsAsync(ShipmentDetails shipmentDetails, List<ELDetailsRequest> elDetailsRequest) {
+        elDetailsRequest.forEach(elDetails -> {
+            createElDetail(shipmentDetails, elDetails);
+        });
+    }
+
+    private void createBookingCarriagesAsync(ShipmentDetails shipmentDetails, List<BookingCarriageRequest> bookingCarriageRequest) {
+        bookingCarriageRequest.forEach(booking -> {
+            createbookingCarriage(shipmentDetails, booking);
+        });
+    }
+
+    private void createPackingsAsync(ShipmentDetails shipmentDetails, List<PackingRequest> packingRequest) {
+        packingRequest.forEach(packing -> {
+            createPacking(shipmentDetails, packing);
+        });
+
+    }
+
+    private void createContainersAsync(ShipmentDetails shipmentDetails, List<ContainerRequest> containerRequest) {
+        containerRequest.forEach(container -> {
+            createContainer(shipmentDetails, container);
+        });
+    }
+
+    @Transactional
+    private void createAdditionalDetailsAsync(ShipmentDetails shipmentDetails, List<AdditionalDetailRequest> additionalDetailRequest) {
+        additionalDetailRequest.forEach(additionalDetails -> {
+            createAdditionalDetail(shipmentDetails, additionalDetails);
+        });
+    }
+
+    @Transactional
+    public void createbookingCarriage(ShipmentDetails shipmentDetails, BookingCarriageRequest bookingCarriageRequest) {
+        bookingCarriageRequest.setShipmentId(shipmentDetails.getId());
+        bookingCarriageService.create(CommonRequestModel.buildRequest(bookingCarriageRequest));
+    }
+
+    @Transactional
+    public void createElDetail(ShipmentDetails shipmentDetails, ELDetailsRequest elDetailsRequest) {
+        elDetailsRequest.setShipmentId(shipmentDetails.getId());
+        elDetailsService.create(CommonRequestModel.buildRequest(elDetailsRequest));
+    }
+
+    @Transactional
+    public void createEvent(ShipmentDetails shipmentDetails, EventsRequest eventsRequest) {
+        eventsRequest.setShipmentId(shipmentDetails.getId());
+        eventService.create(CommonRequestModel.buildRequest(eventsRequest));
+    }
+
+    @Transactional
+    public void createFileRepo(ShipmentDetails shipmentDetails, FileRepoRequest fileRepoRequest) {
+        fileRepoRequest.setEntityId(shipmentDetails.getId());
+        fileRepoRequest.setEntityType("SHIPMENT");
+        fileRepoService.create(CommonRequestModel.buildRequest(fileRepoRequest));
+    }
+
+    @Transactional
+    public void createJob(ShipmentDetails shipmentDetails, JobRequest jobRequest) {
+        jobRequest.setShipmentId(shipmentDetails.getId());
+        jobService.create(CommonRequestModel.buildRequest(jobRequest));
+    }
+
+    @Transactional
+    public void createNote(ShipmentDetails shipmentDetails, NotesRequest notesRequest) {
+        notesRequest.setEntityId(shipmentDetails.getId());
+        notesRequest.setEntityType("SHIPMENT");
+        notesService.create(CommonRequestModel.buildRequest(notesRequest));
+    }
+
+    @Transactional
+    public void createParties(ShipmentDetails shipmentDetails, PartiesRequest partiesRequest) {
+        partiesRequest.setEntityId(shipmentDetails.getId());
+        partiesRequest.setEntityType("SHIPMENT");
+        partiesDetailsService.create(CommonRequestModel.buildRequest(partiesRequest));
+    }
+
+    @Transactional
+    public void createPickupDelivery(ShipmentDetails shipmentDetails, PickupDeliveryDetailsRequest pickupDeliveryDetailsRequest) {
+        pickupDeliveryDetailsRequest.setShipmentId(shipmentDetails.getId());
+        pickupDeliveryDetailsService.create(CommonRequestModel.buildRequest(pickupDeliveryDetailsRequest));
+    }
+
+    @Transactional
+    public void createReferenceNumber(ShipmentDetails shipmentDetails, ReferenceNumbersRequest referenceNumbersRequest) {
+        referenceNumbersRequest.setShipmentId(shipmentDetails.getId());
+        referenceNumbersService.create(CommonRequestModel.buildRequest(referenceNumbersRequest));
+    }
+
+    @Transactional
+    public void createPacking(ShipmentDetails shipmentDetails, PackingRequest packingRequest) {
+        packingRequest.setShipmentId(shipmentDetails.getId());
+        packingService.create(CommonRequestModel.buildRequest(packingRequest));
+    }
+
+    @Transactional
+    public void createContainer(ShipmentDetails shipmentDetails, ContainerRequest containerRequest) {
+        containerRequest.setShipmentId(shipmentDetails.getId());
+        containerService.create(CommonRequestModel.buildRequest(containerRequest));
+    }
+
+    @Transactional
+    public void createRouting(ShipmentDetails shipmentDetails, RoutingsRequest routingsRequest) {
+        routingsRequest.setShipmentId(shipmentDetails.getId());
+        routingsService.create(CommonRequestModel.buildRequest(routingsRequest));
+    }
+
+    @Transactional
+    public void createServiceDetail(ShipmentDetails shipmentDetails, ServiceDetailsRequest serviceDetailsRequest) {
+        serviceDetailsRequest.setShipmentId(shipmentDetails.getId());
+        serviceDetailsService.create(CommonRequestModel.buildRequest(serviceDetailsRequest));
+    }
+
+    @Transactional
+    public void createAdditionalDetail(ShipmentDetails shipmentDetails, AdditionalDetailRequest additionalDetailRequest) {
+        additionalDetailRequest.setShipmentId(shipmentDetails.getId());
+        additionalDetailService.create(CommonRequestModel.buildRequest(additionalDetailRequest));
+    }
+
+    @Transactional
+    public void createCarrier(ShipmentDetails shipmentDetails, CarrierDetailRequest carrierDetailRequest) {
+        carrierDetailRequest.setShipmentId(shipmentDetails.getId());
+        carrierDetailService.create(CommonRequestModel.buildRequest(carrierDetailRequest));
     }
 
     @Override
     @Transactional
-    public ResponseEntity<?> update(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
         ShipmentRequest request = (ShipmentRequest) commonRequestModel.getData();
         // TODO- implement Validation logic
         long id = request.getId();
@@ -459,68 +788,5 @@ public class ShipmentService implements IShipmentService {
         var runnerListResponse = (RunnerListResponse<T>) responseEntity.get().getBody();
         return (List<T>) runnerListResponse.getData();
     }
-
-    private Map<String, RunnerEntityMapping> tableNames = Map.ofEntries(
-            Map.entry("type", RunnerEntityMapping.builder().tableName("parties").dataType(String.class).build()),
-            Map.entry("orgId", RunnerEntityMapping.builder().tableName("parties").dataType(Integer.class).build()),
-            Map.entry("houseBill", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).build()),
-            Map.entry("hblType", RunnerEntityMapping.builder().tableName("blDetails").dataType(String.class).build()),
-            Map.entry("transportMode", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).build()),
-            Map.entry("releaseType", RunnerEntityMapping.builder().tableName("blDetails").dataType(String.class).build()),
-            Map.entry("deliveryMode", RunnerEntityMapping.builder().tableName("blDetails").dataType(String.class).build()),
-            Map.entry("direction", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).build()),
-            Map.entry("shipmentType", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).build()),
-            Map.entry("status", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(Integer.class).build()),
-            Map.entry("source", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).build()),
-            Map.entry("jobType", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).build()),
-            Map.entry("serviceType", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).build()),
-            Map.entry("masterBill", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).build()),
-            Map.entry("bookingReference", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).build()),
-            Map.entry("consolRef", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).build()),
-            Map.entry("salesAgent", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(Long.class).build()),
-            Map.entry("paymentTerms", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).build()),
-            Map.entry("incoterms", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).build()),
-            Map.entry("shipmentId", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).build()),
-            Map.entry("isDomestic", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(Boolean.class).build()),
-            Map.entry("assignedTo", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(Integer.class).build()),
-            Map.entry("additionalTerms", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).build()),
-            Map.entry("goodsDescription", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).build()),
-            Map.entry("createdAt", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(Date.class).build()),
-            Map.entry("estimatedPickup", RunnerEntityMapping.builder().tableName("pickupDetails").dataType(LocalDateTime.class).build()),
-            Map.entry("actualPickup", RunnerEntityMapping.builder().tableName("pickupDetails").dataType(LocalDateTime.class).build()),
-            Map.entry("estimatedDelivery", RunnerEntityMapping.builder().tableName("deliveryDetails").dataType(LocalDateTime.class).build()),
-            Map.entry("requiredBy", RunnerEntityMapping.builder().tableName("deliveryDetails").dataType(LocalDateTime.class).build()),
-            Map.entry("addressId", RunnerEntityMapping.builder().tableName("parties").dataType(Integer.class).build()),
-            Map.entry("screeningStatus", RunnerEntityMapping.builder().tableName("blDetails").dataType(String.class).build()),
-            Map.entry("paidPlace", RunnerEntityMapping.builder().tableName("blDetails").dataType(Long.class).build()),
-            Map.entry("placeOfIssue", RunnerEntityMapping.builder().tableName("blDetails").dataType(Long.class).build()),
-            Map.entry("dateOfIssue", RunnerEntityMapping.builder().tableName("blDetails").dataType(LocalDateTime.class).build()),
-            Map.entry("dateOfReceipt", RunnerEntityMapping.builder().tableName("blDetails").dataType(LocalDateTime.class).build()),
-            Map.entry("goodsCo", RunnerEntityMapping.builder().tableName("blDetails").dataType(String.class).build()),
-            Map.entry("boeDate", RunnerEntityMapping.builder().tableName("blDetails").dataType(LocalDateTime.class).build()),
-            Map.entry("boeNumber", RunnerEntityMapping.builder().tableName("blDetails").dataType(String.class).build()),
-            Map.entry("shippingLine", RunnerEntityMapping.builder().tableName("carrierDetails").dataType(String.class).build()),
-            Map.entry("vessel", RunnerEntityMapping.builder().tableName("carrierDetails").dataType(String.class).build()),
-            Map.entry("voyage", RunnerEntityMapping.builder().tableName("carrierDetails").dataType(String.class).build()),
-            Map.entry("origin", RunnerEntityMapping.builder().tableName("carrierDetails").dataType(String.class).build()),
-            Map.entry("destination", RunnerEntityMapping.builder().tableName("carrierDetails").dataType(String.class).build()),
-            Map.entry("eta", RunnerEntityMapping.builder().tableName("carrierDetails").dataType(LocalDateTime.class).build()),
-            Map.entry("etd", RunnerEntityMapping.builder().tableName("carrierDetails").dataType(LocalDateTime.class).build()),
-            Map.entry("ata", RunnerEntityMapping.builder().tableName("carrierDetails").dataType(LocalDateTime.class).build()),
-            Map.entry("weight", RunnerEntityMapping.builder().tableName("measurementDetails").dataType(BigDecimal.class).build()),
-            Map.entry("weightUnit", RunnerEntityMapping.builder().tableName("measurementDetails").dataType(String.class).build()),
-            Map.entry("volume", RunnerEntityMapping.builder().tableName("measurementDetails").dataType(BigDecimal.class).build()),
-            Map.entry("volumeUnit", RunnerEntityMapping.builder().tableName("measurementDetails").dataType(String.class).build()),
-            Map.entry("volumetricWeight", RunnerEntityMapping.builder().tableName("measurementDetails").dataType(BigDecimal.class).build()),
-            Map.entry("volumetricWeightUnit", RunnerEntityMapping.builder().tableName("measurementDetails").dataType(String.class).build()),
-            Map.entry("chargable", RunnerEntityMapping.builder().tableName("measurementDetails").dataType(BigDecimal.class).build()),
-            Map.entry("chargeableUnit", RunnerEntityMapping.builder().tableName("measurementDetails").dataType(String.class).build()),
-            Map.entry("netWeight", RunnerEntityMapping.builder().tableName("measurementDetails").dataType(BigDecimal.class).build()),
-            Map.entry("netWeightUnit", RunnerEntityMapping.builder().tableName("measurementDetails").dataType(String.class).build()),
-            Map.entry("noOfPacks", RunnerEntityMapping.builder().tableName("measurementDetails").dataType(Integer.class).build()),
-            Map.entry("packsUnit", RunnerEntityMapping.builder().tableName("measurementDetails").dataType(String.class).build()),
-            Map.entry("innerPacks", RunnerEntityMapping.builder().tableName("measurementDetails").dataType(Integer.class).build()),
-            Map.entry("innerPackUnit", RunnerEntityMapping.builder().tableName("measurementDetails").dataType(String.class).build())
-    );
 
 }

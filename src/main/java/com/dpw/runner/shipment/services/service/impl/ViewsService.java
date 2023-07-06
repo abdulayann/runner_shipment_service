@@ -49,7 +49,7 @@ public class ViewsService implements IViewsService {
     private ModelMapper modelMapper;
 
     @Transactional
-    public ResponseEntity<?> create(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
         ViewsRequest request = null;
         request = (ViewsRequest) commonRequestModel.getData();
         Views views = convertRequestToEntity(request);
@@ -66,7 +66,7 @@ public class ViewsService implements IViewsService {
     }
 
     @Transactional
-    public ResponseEntity<?> update(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
         ViewsRequest request = (ViewsRequest) commonRequestModel.getData();
         long id =request.getId();
         Optional<Views> oldEntity = viewsDao.findById(id);

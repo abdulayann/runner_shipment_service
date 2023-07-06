@@ -12,7 +12,7 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class RunnerResponse<T extends IRunnerResponse>{
+public class RunnerResponse<T> implements IRunnerResponse {
 //    Object data;
 //    long pageNo;
 //    long count;

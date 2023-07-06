@@ -3,14 +3,18 @@ package com.dpw.runner.shipment.services.dto.request;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import io.swagger.annotations.ApiModel;
-import lombok.Getter;
-import lombok.ToString;
+import lombok.*;
 
 import java.math.BigDecimal;
 
 @Getter
+@Setter
 @ApiModel(value = "Packing request model")
 @ToString
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+@Data
 public class PackingRequest extends CommonRequest implements IRunnerRequest {
     private Long id;
     private Long consolidationId;

@@ -23,6 +23,8 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -40,7 +42,8 @@ public class FileRepoService implements IFileRepoService {
     private ModelMapper modelMapper;
 
     @Override
-    public ResponseEntity<?> create(CommonRequestModel commonRequestModel) throws Exception {
+    @Transactional
+    public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
         FileRepoRequest request = null;
         request = (FileRepoRequest) commonRequestModel.getData();
         FileRepo fileRepo  = mapToEntityFromRequest(request);
@@ -49,7 +52,7 @@ public class FileRepoService implements IFileRepoService {
     }
 
     @Override
-    public ResponseEntity<?> update(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
         FileRepoRequest request = (FileRepoRequest) commonRequestModel.getData();
         long id =request.getId();
         Optional<FileRepo> oldEntity = fileRepoDao.findById(id);

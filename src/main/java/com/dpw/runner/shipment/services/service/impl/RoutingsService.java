@@ -23,6 +23,8 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -41,7 +43,8 @@ public class RoutingsService implements IRoutingsService {
     private ModelMapper modelMapper;
 
     @Override
-    public ResponseEntity<?> create(CommonRequestModel commonRequestModel) throws Exception {
+    @Transactional
+    public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
         RoutingsRequest request = (RoutingsRequest) commonRequestModel.getData();
         Routings notes = convertRequestToRoutingsEntity(request);
         notes = routingsDao.save(notes);
@@ -49,7 +52,7 @@ public class RoutingsService implements IRoutingsService {
     }
 
     @Override
-    public ResponseEntity<?> update(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
         RoutingsRequest request = (RoutingsRequest) commonRequestModel.getData();
         long id = request.getId();
         Optional<Routings> oldEntity = routingsDao.findById(id);
