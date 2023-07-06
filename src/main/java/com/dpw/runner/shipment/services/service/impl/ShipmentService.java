@@ -17,7 +17,6 @@ import com.dpw.runner.shipment.services.repository.interfaces.*;
 import com.dpw.runner.shipment.services.service.interfaces.*;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
-import org.aspectj.lang.JoinPoint;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
@@ -34,10 +33,6 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.stream.Collectors;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
@@ -49,6 +44,13 @@ public class ShipmentService implements IShipmentService {
 
     @Autowired
     private IShipmentDao shipmentDao;
+    @Autowired
+    private ICarrierDao carrierDao;
+    @Autowired
+    private IPartiesDao partiesDao;
+
+    @Autowired
+    private JsonHelper jsonHelper;
 
     @Autowired
     private IPackingService packingService;
@@ -94,21 +96,6 @@ public class ShipmentService implements IShipmentService {
 
     @Autowired
     private IPartiesDetailsService partiesDetailsService;
-
-    @Autowired
-    private IBlDetailsDao blDetailsDao;
-
-    @Autowired
-    private IMeasurementDao measurementDao;
-
-    @Autowired
-    private ICarrierDao carrierDao;
-
-    @Autowired
-    private IPartiesDao partiesDao;
-
-    @Autowired
-    private JsonHelper jsonHelper;
 
     @Autowired
     private TransactionTemplate transactionTemplate;
@@ -194,40 +181,6 @@ public class ShipmentService implements IShipmentService {
             Map.entry("containerCode", RunnerEntityMapping.builder().tableName("containers").dataType(String.class).build())
     );
 
-    private static ShipmentDetailsResponse convertEntityToDto(ShipmentDetails shipmentDetails) {
-        ShipmentDetailsResponse response = new ShipmentDetailsResponse();
-        response.setId(shipmentDetails.getId());
-        response.setGuid(shipmentDetails.getGuid());
-        response.setParties(shipmentDetails.getParties());
-        response.setBlDetails(shipmentDetails.getBlDetails());
-        response.setDeliveryDetails(shipmentDetails.getDeliveryDetails());
-        response.setPickupDetails(shipmentDetails.getPickupDetails());
-        response.setGoodsDescription(shipmentDetails.getGoodsDescription());
-        response.setAdditionalTerms(shipmentDetails.getAdditionalTerms());
-        response.setAssignedTo(shipmentDetails.getAssignedTo());
-        response.setIsDomestic(shipmentDetails.getIsDomestic());
-        response.setShipmentId(shipmentDetails.getShipmentId());
-        response.setIncoterms(shipmentDetails.getIncoterms());
-        response.setPaymentTerms(shipmentDetails.getPaymentTerms());
-        response.setSalesAgent(shipmentDetails.getSalesAgent());
-        response.setConsolRef(shipmentDetails.getConsolRef());
-        response.setBookingReference(shipmentDetails.getBookingReference());
-        response.setMasterBill(shipmentDetails.getMasterBill());
-        response.setServiceType(shipmentDetails.getServiceType());
-        response.setJobType(shipmentDetails.getJobType());
-        response.setSource(shipmentDetails.getSource());
-        response.setStatus(shipmentDetails.getStatus());
-        response.setShipmentType(shipmentDetails.getShipmentType());
-        response.setDirection(shipmentDetails.getDirection());
-        response.setTransportMode(shipmentDetails.getTransportMode());
-        response.setHouseBill(shipmentDetails.getHouseBill());
-        response.setMeasurementDetails(shipmentDetails.getMeasurementDetails());
-        response.setCarrierDetails(shipmentDetails.getCarrierDetails());
-
-
-        return response;
-    }
-
     @Override
     @Transactional
     public List<ShipmentDetails> createTestShipment(Integer count) {
@@ -247,30 +200,10 @@ public class ShipmentService implements IShipmentService {
 
             ShipmentDetails shipmentDetail = createShipmentData();
             /**
-             * Bl Details*
-             */
-            BlDetails blDetail = createBlData();
-            shipmentDetail.setBlDetails(blDetail);
-            /**
-             * Measurement Details*
-             */
-            MeasurementDetails measurementDetail = createMeasurement();
-            shipmentDetail.setMeasurementDetails(measurementDetail);
-            /**
              * Carrier Details*
              */
             CarrierDetails carrierDetail = createCarrier();
             shipmentDetail.setCarrierDetails(carrierDetail);
-            /**
-             * * TODO
-             * Pickup Details*
-             */
-            PickupDetails pickupDetail = createPickup();
-            /**
-             * * TODO
-             * Pickup Details*
-             */
-            DeliveryDetails deliveryDetail = createDelivery();
 
             shipmentDetail = shipmentDao.save(shipmentDetail);
             /**
@@ -296,6 +229,36 @@ public class ShipmentService implements IShipmentService {
                 shipmentDetailsPage.getTotalElements());
     }
 
+    private static ShipmentDetailsResponse convertEntityToDto(ShipmentDetails shipmentDetails) {
+        ShipmentDetailsResponse response = new ShipmentDetailsResponse();
+        response.setId(shipmentDetails.getId());
+        response.setGuid(shipmentDetails.getGuid());
+        response.setParties(shipmentDetails.getParties());
+        response.setGoodsDescription(shipmentDetails.getGoodsDescription());
+        response.setAdditionalTerms(shipmentDetails.getAdditionalTerms());
+        response.setAssignedTo(shipmentDetails.getAssignedTo());
+        response.setIsDomestic(shipmentDetails.getIsDomestic());
+        response.setShipmentId(shipmentDetails.getShipmentId());
+        response.setIncoterms(shipmentDetails.getIncoterms());
+        response.setPaymentTerms(shipmentDetails.getPaymentTerms());
+        response.setSalesAgent(shipmentDetails.getSalesAgent());
+        response.setConsolRef(shipmentDetails.getConsolRef());
+        response.setBookingReference(shipmentDetails.getBookingReference());
+        response.setMasterBill(shipmentDetails.getMasterBill());
+        response.setServiceType(shipmentDetails.getServiceType());
+        response.setJobType(shipmentDetails.getJobType());
+        response.setSource(shipmentDetails.getSource());
+        response.setStatus(shipmentDetails.getStatus());
+        response.setShipmentType(shipmentDetails.getShipmentType());
+        response.setDirection(shipmentDetails.getDirection());
+        response.setTransportMode(shipmentDetails.getTransportMode());
+        response.setHouseBill(shipmentDetails.getHouseBill());
+        response.setCarrierDetails(shipmentDetails.getCarrierDetails());
+
+
+        return response;
+    }
+
     private List<IRunnerResponse> convertEntityListToDtoList(List<ShipmentDetails> lst) {
         List<IRunnerResponse> responseList = new ArrayList<>();
         lst.forEach(shipmentDetail -> {
@@ -309,7 +272,7 @@ public class ShipmentService implements IShipmentService {
         int random = new Random().nextInt(100);
         for (String partyType : PARTY_TYPE) {
             Parties party = Parties.builder()
-                    .guid(UUID.randomUUID()).type(partyType).orgId(random).addressId(random)
+                    .type(partyType).orgCode(generateString(7)).addressCode(generateString(7))
                     .orgData(ORG).addressData(ADDRESS)
                     .entityId(shipmentDetails.getId()).entityType("SHIPMENT")
                     .build();
@@ -318,14 +281,6 @@ public class ShipmentService implements IShipmentService {
         }
         parties = partiesDao.saveAll(parties);
         return parties;
-    }
-
-    private DeliveryDetails createDelivery() {
-        return null;
-    }
-
-    private PickupDetails createPickup() {
-        return null;
     }
 
     private CarrierDetails createCarrier() {
@@ -339,32 +294,10 @@ public class ShipmentService implements IShipmentService {
         return carrierDao.save(carrier);
     }
 
-    private MeasurementDetails createMeasurement() {
-        int random = new Random().nextInt(100);
-        MeasurementDetails measurementDetails = MeasurementDetails.builder().guid(UUID.randomUUID())
-                .volume(new BigDecimal(random)).volumeUnit(VOLUME_UNIT.get(new Random().nextInt(100) % VOLUME_UNIT.size()))
-                .volumetricWeight(new BigDecimal(random)).volumetricWeightUnit(WEIGHT_UNIT.get(new Random().nextInt(100) % WEIGHT_UNIT.size()))
-                .chargable(new BigDecimal(random)).chargeableUnit(VOLUME_UNIT.get(new Random().nextInt(100) % VOLUME_UNIT.size()))
-                .netWeight(new BigDecimal(random)).netWeightUnit(WEIGHT_UNIT.get(new Random().nextInt(100) % WEIGHT_UNIT.size()))
-                .noOfPacks(random).packsUnit("BAG")
-                .build();
-        measurementDetails.setTenantId(1);
-        return measurementDao.save(measurementDetails);
-    }
-
-    private BlDetails createBlData() {
-        int random = new Random().nextInt(100);
-        BlDetails blDetails = BlDetails.builder()
-                .guid(UUID.randomUUID()).releaseType(generateString(3)).hblType(generateString(3))
-                .deliveryMode(TRANSPORT_MODES.get(random % TRANSPORT_MODES.size())).screeningStatus(generateString(3))
-                .build();
-        blDetails.setTenantId(1);
-        return blDetailsDao.save(blDetails);
-    }
 
     private ShipmentDetails createShipmentData() {
         int random = new Random().nextInt(100);
-        ShipmentDetails shipmentDetails = ShipmentDetails.builder().guid(UUID.randomUUID()).direction(DIRECTIONS.get(random % DIRECTIONS.size())).status(1)
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().direction(DIRECTIONS.get(random % DIRECTIONS.size())).status(1)
                 .source(SOURCE.get(random % SOURCE.size())).transportMode(TRANSPORT_MODES.get(random % TRANSPORT_MODES.size())).shipmentType(SHIPMENT_TYPE.get(random % SHIPMENT_TYPE.size()))
                 .houseBill(generateString(10)).masterBill(generateString(10)).bookingReference(generateString(10)).consolRef(generateString(10)).paymentTerms(generateString(3))
                 .goodsDescription(generateString(10)).additionalTerms(generateString(10))
@@ -372,19 +305,6 @@ public class ShipmentService implements IShipmentService {
         shipmentDetails.setTenantId(1);
         return shipmentDetails;
     }
-
-
-//    @Transactional
-//    public ResponseEntity<?> createSynchronous(CommonRequestModel commonRequestModel) throws Exception {
-//        CompleteShipmentRequest request = (CompleteShipmentRequest) commonRequestModel.getData();
-//        ShipmentDetails shipmentDetails = jsonHelper.convertValue(request, ShipmentDetails.class);
-//        shipmentDetails = shipmentDao.save(shipmentDetails);
-//        List<AdditionalDetailRequest> additionalDetailRequest = request.getAdditionalDetailRequest();
-//        createAdditionalDetails(shipmentDetails, additionalDetailRequest);
-//        List<ContainerRequest> containerRequest = request.getContainerRequest();
-//        createContainers(shipmentDetails, containerRequest);
-//        return ResponseHelper.buildSuccessResponse(jsonHelper.convertValue(shipmentDetails, ShipmentDetailsResponse.class));
-//    }
 
     private String generateString(int length) {
         String SALTCHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890";
@@ -399,7 +319,7 @@ public class ShipmentService implements IShipmentService {
 
     @Override
     @Transactional
-    public ResponseEntity<?> create(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
         //ExecutorService executorService = Executors.newFixedThreadPool(100);
 
         CompleteShipmentRequest request = (CompleteShipmentRequest) commonRequestModel.getData();
@@ -589,7 +509,7 @@ public class ShipmentService implements IShipmentService {
     @Transactional
     public void createEvent(ShipmentDetails shipmentDetails, EventsRequest eventsRequest) {
         eventsRequest.setShipmentId(shipmentDetails.getId());
-        eventService.create(eventsRequest);
+        eventService.create(CommonRequestModel.buildRequest(eventsRequest));
     }
 
     @Transactional
@@ -669,7 +589,7 @@ public class ShipmentService implements IShipmentService {
 
     @Override
     @Transactional
-    public ResponseEntity<?> update(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
         ShipmentRequest request = (ShipmentRequest) commonRequestModel.getData();
         // TODO- implement Validation logic
         long id = request.getId();
@@ -702,6 +622,27 @@ public class ShipmentService implements IShipmentService {
                     : DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+
+    }
+    @Override
+    @Async
+    public CompletableFuture<ResponseEntity<?>> listAsync(CommonRequestModel commonRequestModel) {
+        String responseMsg;
+        try {
+            ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
+
+            Pair<Specification<ShipmentDetails>, Pageable> tuple = fetchData(request, ShipmentDetails.class, tableNames);
+            Page<ShipmentDetails> shipmentDetailsPage = shipmentDao.findAll(tuple.getLeft(), tuple.getRight());
+            return CompletableFuture.completedFuture(ResponseHelper.buildListSuccessResponse(
+                    convertEntityListToDtoList(shipmentDetailsPage.getContent()),
+                    shipmentDetailsPage.getTotalPages(),
+                    shipmentDetailsPage.getTotalElements()));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return CompletableFuture.completedFuture(ResponseHelper.buildFailedResponse(responseMsg));
         }
 
     }

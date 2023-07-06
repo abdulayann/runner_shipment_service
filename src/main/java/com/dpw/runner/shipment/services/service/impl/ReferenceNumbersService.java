@@ -14,6 +14,7 @@ import com.dpw.runner.shipment.services.repository.interfaces.IReferenceNumbersD
 import com.dpw.runner.shipment.services.service.interfaces.IReferenceNumbersService;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
@@ -41,36 +42,8 @@ public class ReferenceNumbersService implements IReferenceNumbersService {
     @Autowired
     private IReferenceNumbersDao referenceNumbersDao;
 
-    private static ReferenceNumbersResponse convertEntityToDto(ReferenceNumbers referenceNumbers) {
-        ReferenceNumbersResponse response = new ReferenceNumbersResponse();
-        response.setId(referenceNumbers.getId());
-        response.setGuid(referenceNumbers.getGuid());
-        response.setConsolidationId(referenceNumbers.getConsolidationId());
-        response.setShipmentId(referenceNumbers.getShipmentId());
-        response.setCountryOfIssue(referenceNumbers.getCountryOfIssue());
-        response.setType(referenceNumbers.getType());
-        response.setReferenceNumber(referenceNumbers.getReferenceNumber());
-        return response;
-    }
-
-    private static List<IRunnerResponse> convertEntityListToDtoList(List<ReferenceNumbers> lst) {
-        List<IRunnerResponse> responseList = new ArrayList<>();
-        lst.forEach(referenceNumbers -> {
-            responseList.add(convertEntityToDto(referenceNumbers));
-        });
-        return responseList;
-    }
-
-    public static ReferenceNumbers convertRequestToEntity(ReferenceNumbersRequest request) {
-        ReferenceNumbers referenceNumbers = new ReferenceNumbers();
-        referenceNumbers.setGuid(UUID.randomUUID());
-        referenceNumbers.setConsolidationId(request.getConsolidationId());
-        referenceNumbers.setShipmentId(request.getShipmentId());
-        referenceNumbers.setCountryOfIssue(request.getCountryOfIssue());
-        referenceNumbers.setType(request.getType());
-        referenceNumbers.setReferenceNumber(request.getReferenceNumber());
-        return referenceNumbers;
-    }
+    @Autowired
+    private ModelMapper modelMapper;
 
     @Transactional
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
@@ -84,9 +57,9 @@ public class ReferenceNumbersService implements IReferenceNumbersService {
     @Transactional
     public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
         ReferenceNumbersRequest request = (ReferenceNumbersRequest) commonRequestModel.getData();
-        long id = request.getId();
+        long id =request.getId();
         Optional<ReferenceNumbers> oldEntity = referenceNumbersDao.findById(id);
-        if (!oldEntity.isPresent()) {
+        if(!oldEntity.isPresent()) {
             log.debug("Refernece Numbers is null for Id {}", request.getId());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
@@ -97,13 +70,13 @@ public class ReferenceNumbersService implements IReferenceNumbersService {
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(referenceNumbers));
     }
 
-    public ResponseEntity<?> list(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<?> list(CommonRequestModel commonRequestModel){
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
             // construct specifications for filter request
             Pair<Specification<ReferenceNumbers>, Pageable> tuple = fetchData(request, ReferenceNumbers.class);
-            Page<ReferenceNumbers> referenceNumbersPage = referenceNumbersDao.findAll(tuple.getLeft(), tuple.getRight());
+            Page<ReferenceNumbers> referenceNumbersPage  = referenceNumbersDao.findAll(tuple.getLeft(), tuple.getRight());
             return ResponseHelper.buildListSuccessResponse(
                     convertEntityListToDtoList(referenceNumbersPage.getContent()),
                     referenceNumbersPage.getTotalPages(),
@@ -137,13 +110,13 @@ public class ReferenceNumbersService implements IReferenceNumbersService {
         }
     }
 
-    public ResponseEntity<?> delete(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<?> delete(CommonRequestModel commonRequestModel){
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
-            long id = request.getId();
+            long id =request.getId();
             Optional<ReferenceNumbers> referenceNumbers = referenceNumbersDao.findById(id);
-            if (!referenceNumbers.isPresent()) {
+            if(!referenceNumbers.isPresent()) {
                 log.debug("Reference Numbers is null for Id {}", request.getId());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
@@ -157,13 +130,13 @@ public class ReferenceNumbersService implements IReferenceNumbersService {
         }
     }
 
-    public ResponseEntity<?> retrieveById(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<?> retrieveById(CommonRequestModel commonRequestModel){
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
-            long id = request.getId();
+            long id =request.getId();
             Optional<ReferenceNumbers> referenceNumbers = referenceNumbersDao.findById(id);
-            if (!referenceNumbers.isPresent()) {
+            if(!referenceNumbers.isPresent()) {
                 log.debug("Reference Numbers is null for Id {}", request.getId());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
@@ -176,5 +149,21 @@ public class ReferenceNumbersService implements IReferenceNumbersService {
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(responseMsg);
         }
+    }
+
+    private ReferenceNumbersResponse convertEntityToDto(ReferenceNumbers referenceNumbers) {
+        return modelMapper.map(referenceNumbers, ReferenceNumbersResponse.class);
+    }
+
+    private List<IRunnerResponse> convertEntityListToDtoList(List<ReferenceNumbers> lst) {
+        List<IRunnerResponse> responseList = new ArrayList<>();
+        lst.forEach(referenceNumbers -> {
+            responseList.add(convertEntityToDto(referenceNumbers));
+        });
+        return responseList;
+    }
+
+    public ReferenceNumbers convertRequestToEntity(ReferenceNumbersRequest request) {
+        return modelMapper.map(request, ReferenceNumbers.class);
     }
 }

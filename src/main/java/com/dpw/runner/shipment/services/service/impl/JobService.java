@@ -6,6 +6,7 @@ import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.dto.request.BookingCarriageRequest;
 import com.dpw.runner.shipment.services.dto.request.JobRequest;
 import com.dpw.runner.shipment.services.dto.response.JobResponse;
 import com.dpw.runner.shipment.services.entity.BookingCarriage;
@@ -25,6 +26,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -56,29 +58,39 @@ public class JobService implements IJobService {
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(job));
     }
 
-    @Override
+    @Transactional
     public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
         JobRequest request = (JobRequest) commonRequestModel.getData();
-        Jobs updatedEntity = convertRequestToEntity(request);
-        jobDao.save(updatedEntity);
-        return ResponseHelper.buildSuccessResponse(convertEntityToDto(updatedEntity));
+        long id =request.getId();
+        Optional<Jobs> oldEntity = jobDao.findById(id);
+        if(!oldEntity.isPresent()) {
+            log.debug("Jobs is null for Id {}", request.getId());
+            throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+        }
+
+        Jobs jobs = convertRequestToEntity(request);
+        jobs.setId(oldEntity.get().getId());
+        jobs = jobDao.save(jobs);
+        return ResponseHelper.buildSuccessResponse(convertEntityToDto(jobs));
     }
 
-    @Override
-    public ResponseEntity<?> list(CommonRequestModel commonRequestModel) {
-        String responseMessage;
+    public ResponseEntity<?> list(CommonRequestModel commonRequestModel){
+        String responseMsg;
         try {
-            Long id = commonRequestModel.getId();
-            List<Jobs> jobs = jobDao.findByShipmentId(id);
-            List<IRunnerResponse> response = jobs.stream()
-                    .map(this::convertEntityToDto)
-                    .collect(Collectors.toList());
-            return ResponseHelper.buildListSuccessResponse(response);
+            ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
+            // construct specifications for filter request
+            Pair<Specification<Jobs>, Pageable> tuple = fetchData(request, BookingCarriage.class);
+            Page<Jobs> jobsPage  = jobDao.findAll(tuple.getLeft(), tuple.getRight());
+            return ResponseHelper.buildListSuccessResponse(
+                    convertEntityListToDtoList(jobsPage.getContent()),
+                    jobsPage.getTotalPages(),
+                    jobsPage.getTotalElements());
         } catch (Exception e) {
-            responseMessage = e.getMessage();
-            log.debug(responseMessage);
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
         }
-        return ResponseHelper.buildFailedResponse(responseMessage);
     }
 
     @Override
@@ -124,7 +136,7 @@ public class JobService implements IJobService {
             long id = request.getId();
             Optional<Jobs> job = jobDao.findById(id);
             if (job.isEmpty()) {
-                log.debug("Booking Carriage is null for Id {}", request.getId());
+                log.debug("Job is null for Id {}", request.getId());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
 

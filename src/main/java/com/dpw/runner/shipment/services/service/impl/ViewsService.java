@@ -178,9 +178,7 @@ public class ViewsService implements IViewsService {
     }
 
     private ViewsResponse convertEntityToDto(Views view) {
-        ViewsResponse response = new ViewsResponse();
-        modelMapper.map(view, response);
-        return response;
+        return modelMapper.map(view, ViewsResponse.class);
     }
 
     private List<IRunnerResponse> convertEntityListToDtoList(List<Views> lst) {
@@ -192,8 +190,6 @@ public class ViewsService implements IViewsService {
     }
 
     public Views convertRequestToEntity(ViewsRequest request) {
-        Views view = new Views();
-        modelMapper.map(request, view);
-        return view;
+        return modelMapper.map(request, Views.class);
     }
 }

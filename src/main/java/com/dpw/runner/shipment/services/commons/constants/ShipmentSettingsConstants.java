@@ -8,4 +8,5 @@ public class ShipmentSettingsConstants {
     public static final String SHIPMENT_SETTINGS_ID = "Shipment Settings Id";
     public static final String SHIPMENT_SETTINGS_LIST_SUCCESSFUL = "Successful Shipment Settings Data List Retrieval";
     public static final String RESPONSE_CONTAINER_LIST = "List";
+    public static final String SHIPMENT_SETTINGS_DELETE_SUCCESSFUL = "Successful Shipment Settings Data Delete";
 }

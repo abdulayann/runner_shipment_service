@@ -4,10 +4,12 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.entity.enums.ContainerStatus;
 import lombok.*;
 import lombok.experimental.Accessors;
+import org.hibernate.annotations.Where;
 
 import javax.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 @Setter
@@ -230,9 +232,11 @@ public class Containers extends MultiTenancy {
     @Column(name = "volume_utilization")
     private String volumeUtilization;
 
-    @Column(name = "pickup_address")
-    private String pickupAddress;
+    @OneToOne(targetEntity = Parties.class)
+    @JoinColumn(name = "pickup_address_id", referencedColumnName = "id")
+    private Parties pickupAddress;
 
-    @Column(name = "delivery_address")
-    private String deliveryAddress;
+    @OneToOne(targetEntity = Parties.class)
+    @JoinColumn(name = "delivery_address_id", referencedColumnName = "id")
+    private Parties deliveryAddress;
 }

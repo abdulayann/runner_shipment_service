@@ -14,6 +14,7 @@ import com.dpw.runner.shipment.services.repository.interfaces.IServiceDetailsDao
 import com.dpw.runner.shipment.services.service.interfaces.IServiceDetailsService;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
@@ -41,50 +42,8 @@ public class ServiceDetailsService implements IServiceDetailsService {
     @Autowired
     private IServiceDetailsDao serviceDetailsDao;
 
-    private static ServiceDetailsResponse convertEntityToDto(ServiceDetails shipmentServices) {
-        ServiceDetailsResponse response = new ServiceDetailsResponse();
-        response.setId(shipmentServices.getId());
-        response.setGuid(shipmentServices.getGuid());
-        response.setShipmentId(shipmentServices.getShipmentId());
-        response.setConsolidationId(shipmentServices.getConsolidationId());
-        response.setServiceType(shipmentServices.getServiceType());
-        response.setContractorId(shipmentServices.getContractorId());
-        response.setContractorAddressId(shipmentServices.getContractorAddressId());
-        response.setSrvLocation(shipmentServices.getSrvLocation());
-        response.setBookingDate(shipmentServices.getBookingDate());
-        response.setServiceCount(shipmentServices.getServiceCount());
-        response.setServiceDuration(shipmentServices.getServiceDuration());
-        response.setCompletionDate(shipmentServices.getCompletionDate());
-        response.setRefNumber(shipmentServices.getRefNumber());
-        response.setServiceNotes(shipmentServices.getServiceNotes());
-        return response;
-    }
-
-    private static List<IRunnerResponse> convertEntityListToDtoList(List<ServiceDetails> lst) {
-        List<IRunnerResponse> responseList = new ArrayList<>();
-        lst.forEach(shipmentServices -> {
-            responseList.add(convertEntityToDto(shipmentServices));
-        });
-        return responseList;
-    }
-
-    public static ServiceDetails convertRequestToEntity(ServiceDetailsRequest request) {
-        ServiceDetails shipmentServices = new ServiceDetails();
-        shipmentServices.setGuid(UUID.randomUUID());
-        shipmentServices.setShipmentId(request.getShipmentId());
-        shipmentServices.setConsolidationId(request.getConsolidationId());
-        shipmentServices.setServiceType(request.getServiceType());
-        shipmentServices.setContractorId(request.getContractorId());
-        shipmentServices.setContractorAddressId(request.getContractorAddressId());
-        shipmentServices.setSrvLocation(request.getSrvLocation());
-        shipmentServices.setBookingDate(request.getBookingDate());
-        shipmentServices.setServiceCount(request.getServiceCount());
-        shipmentServices.setServiceDuration(request.getServiceDuration());
-        shipmentServices.setCompletionDate(request.getCompletionDate());
-        shipmentServices.setRefNumber(request.getRefNumber());
-        shipmentServices.setServiceNotes(request.getServiceNotes());
-        return shipmentServices;
-    }
+    @Autowired
+    private ModelMapper modelMapper;
 
     @Transactional
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
@@ -98,9 +57,9 @@ public class ServiceDetailsService implements IServiceDetailsService {
     @Transactional
     public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
         ServiceDetailsRequest request = (ServiceDetailsRequest) commonRequestModel.getData();
-        long id = request.getId();
+        long id =request.getId();
         Optional<ServiceDetails> oldEntity = serviceDetailsDao.findById(id);
-        if (!oldEntity.isPresent()) {
+        if(!oldEntity.isPresent()) {
             log.debug("Service Details is null for Id {}", request.getId());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
@@ -111,13 +70,13 @@ public class ServiceDetailsService implements IServiceDetailsService {
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(shipmentServices));
     }
 
-    public ResponseEntity<?> list(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<?> list(CommonRequestModel commonRequestModel){
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
             // construct specifications for filter request
             Pair<Specification<ServiceDetails>, Pageable> tuple = fetchData(request, ServiceDetails.class);
-            Page<ServiceDetails> shipmentServicesPage = serviceDetailsDao.findAll(tuple.getLeft(), tuple.getRight());
+            Page<ServiceDetails> shipmentServicesPage  = serviceDetailsDao.findAll(tuple.getLeft(), tuple.getRight());
             return ResponseHelper.buildListSuccessResponse(
                     convertEntityListToDtoList(shipmentServicesPage.getContent()),
                     shipmentServicesPage.getTotalPages(),
@@ -151,13 +110,13 @@ public class ServiceDetailsService implements IServiceDetailsService {
         }
     }
 
-    public ResponseEntity<?> delete(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<?> delete(CommonRequestModel commonRequestModel){
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
-            long id = request.getId();
+            long id =request.getId();
             Optional<ServiceDetails> shipmentServices = serviceDetailsDao.findById(id);
-            if (!shipmentServices.isPresent()) {
+            if(!shipmentServices.isPresent()) {
                 log.debug("Service Details is null for Id {}", request.getId());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
@@ -171,13 +130,13 @@ public class ServiceDetailsService implements IServiceDetailsService {
         }
     }
 
-    public ResponseEntity<?> retrieveById(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<?> retrieveById(CommonRequestModel commonRequestModel){
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
-            long id = request.getId();
+            long id =request.getId();
             Optional<ServiceDetails> shipmentServices = serviceDetailsDao.findById(id);
-            if (!shipmentServices.isPresent()) {
+            if(!shipmentServices.isPresent()) {
                 log.debug("Service Details is null for Id {}", request.getId());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
@@ -190,5 +149,21 @@ public class ServiceDetailsService implements IServiceDetailsService {
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(responseMsg);
         }
+    }
+
+    private ServiceDetailsResponse convertEntityToDto(ServiceDetails shipmentServices) {
+        return modelMapper.map(shipmentServices, ServiceDetailsResponse.class);
+    }
+
+    private List<IRunnerResponse> convertEntityListToDtoList(List<ServiceDetails> lst) {
+        List<IRunnerResponse> responseList = new ArrayList<>();
+        lst.forEach(shipmentServices -> {
+            responseList.add(convertEntityToDto(shipmentServices));
+        });
+        return responseList;
+    }
+
+    public ServiceDetails convertRequestToEntity(ServiceDetailsRequest request) {
+        return modelMapper.map(request, ServiceDetails.class);
     }
 }

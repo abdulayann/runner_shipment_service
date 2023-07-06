@@ -23,7 +23,6 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
@@ -143,9 +142,7 @@ public class DefaultViewsService implements IDefaultViewsService {
     }
 
     private DefaultViewsResponse convertEntityToDto(DefaultViews view) {
-        DefaultViewsResponse response = new DefaultViewsResponse();
-        modelMapper.map(view, response);
-        return response;
+        return modelMapper.map(view, DefaultViewsResponse.class);
     }
 
     private List<IRunnerResponse> convertEntityListToDtoList(List<DefaultViews> lst) {
@@ -157,8 +154,6 @@ public class DefaultViewsService implements IDefaultViewsService {
     }
 
     public DefaultViews convertRequestToEntity(DefaultViewsRequest request) {
-        DefaultViews view = new DefaultViews();
-        modelMapper.map(request, view);
-        return view;
+        return modelMapper.map(request, DefaultViews.class);
     }
 }

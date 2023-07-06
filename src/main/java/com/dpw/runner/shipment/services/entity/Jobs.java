@@ -22,13 +22,13 @@ public class Jobs extends MultiTenancy {
     @Column(name = "shipment_id")
     private Long shipmentId;
 
-    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER, mappedBy = "entityId")
-    @Where(clause = "entity_type = 'jobs' AND party_type = 'buyer'")
-    private List<Parties> partiesBuyerDetailsList;
+    @OneToOne(targetEntity = Parties.class)
+    @JoinColumn(name = "buyer_detail_id", referencedColumnName = "id")
+    private Parties buyerDetail;
 
-    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER, mappedBy = "entityId")
-    @Where(clause = "entity_type = 'jobs' AND party_type = 'supplier'")
-    private List<Parties> partiesSupplierDetailsList;
+    @OneToOne(targetEntity = Parties.class)
+    @JoinColumn(name = "supplier_detail_id", referencedColumnName = "id")
+    private Parties supplierDetail;
 
     @Column(name = "order_number")
     private String orderNumber;

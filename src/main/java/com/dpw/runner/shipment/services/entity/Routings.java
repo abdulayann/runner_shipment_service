@@ -74,12 +74,6 @@ public class Routings extends MultiTenancy {
     @Column(name = "aircraft_type")
     private String aircraftType;
 
-    @Column(name = "entity_type")
-    private String entityType;
-
-    @Column(name = "entity_id")
-    private Long entityId;
-
     @Column(name = "route_leg_id")
     private Long routeLegId;
 
