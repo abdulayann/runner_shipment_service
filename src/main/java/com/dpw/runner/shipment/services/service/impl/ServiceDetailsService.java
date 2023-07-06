@@ -23,10 +23,15 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 
@@ -40,8 +45,24 @@ public class ServiceDetailsService implements IServiceDetailsService {
     @Autowired
     private ModelMapper modelMapper;
 
+    private ServiceDetailsResponse convertEntityToDto(ServiceDetails shipmentServices) {
+        return modelMapper.map(shipmentServices, ServiceDetailsResponse.class);
+    }
+
+    private List<IRunnerResponse> convertEntityListToDtoList(List<ServiceDetails> lst) {
+        List<IRunnerResponse> responseList = new ArrayList<>();
+        lst.forEach(shipmentServices -> {
+            responseList.add(convertEntityToDto(shipmentServices));
+        });
+        return responseList;
+    }
+
+    public ServiceDetails convertRequestToEntity(ServiceDetailsRequest request) {
+        return modelMapper.map(request, ServiceDetails.class);
+    }
+
     @Transactional
-    public ResponseEntity<?> create(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
         ServiceDetailsRequest request = null;
         request = (ServiceDetailsRequest) commonRequestModel.getData();
         ServiceDetails shipmentServices = convertRequestToEntity(request);
@@ -50,11 +71,11 @@ public class ServiceDetailsService implements IServiceDetailsService {
     }
 
     @Transactional
-    public ResponseEntity<?> update(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
         ServiceDetailsRequest request = (ServiceDetailsRequest) commonRequestModel.getData();
-        long id =request.getId();
+        long id = request.getId();
         Optional<ServiceDetails> oldEntity = serviceDetailsDao.findById(id);
-        if(!oldEntity.isPresent()) {
+        if (!oldEntity.isPresent()) {
             log.debug("Service Details is null for Id {}", request.getId());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
@@ -65,13 +86,13 @@ public class ServiceDetailsService implements IServiceDetailsService {
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(shipmentServices));
     }
 
-    public ResponseEntity<?> list(CommonRequestModel commonRequestModel){
+    public ResponseEntity<?> list(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
             // construct specifications for filter request
             Pair<Specification<ServiceDetails>, Pageable> tuple = fetchData(request, ServiceDetails.class);
-            Page<ServiceDetails> shipmentServicesPage  = serviceDetailsDao.findAll(tuple.getLeft(), tuple.getRight());
+            Page<ServiceDetails> shipmentServicesPage = serviceDetailsDao.findAll(tuple.getLeft(), tuple.getRight());
             return ResponseHelper.buildListSuccessResponse(
                     convertEntityListToDtoList(shipmentServicesPage.getContent()),
                     shipmentServicesPage.getTotalPages(),
@@ -105,13 +126,13 @@ public class ServiceDetailsService implements IServiceDetailsService {
         }
     }
 
-    public ResponseEntity<?> delete(CommonRequestModel commonRequestModel){
+    public ResponseEntity<?> delete(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
-            long id =request.getId();
+            long id = request.getId();
             Optional<ServiceDetails> shipmentServices = serviceDetailsDao.findById(id);
-            if(!shipmentServices.isPresent()) {
+            if (!shipmentServices.isPresent()) {
                 log.debug("Service Details is null for Id {}", request.getId());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
@@ -125,13 +146,13 @@ public class ServiceDetailsService implements IServiceDetailsService {
         }
     }
 
-    public ResponseEntity<?> retrieveById(CommonRequestModel commonRequestModel){
+    public ResponseEntity<?> retrieveById(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
-            long id =request.getId();
+            long id = request.getId();
             Optional<ServiceDetails> shipmentServices = serviceDetailsDao.findById(id);
-            if(!shipmentServices.isPresent()) {
+            if (!shipmentServices.isPresent()) {
                 log.debug("Service Details is null for Id {}", request.getId());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
@@ -144,21 +165,5 @@ public class ServiceDetailsService implements IServiceDetailsService {
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(responseMsg);
         }
-    }
-
-    private ServiceDetailsResponse convertEntityToDto(ServiceDetails shipmentServices) {
-        return modelMapper.map(shipmentServices, ServiceDetailsResponse.class);
-    }
-
-    private List<IRunnerResponse> convertEntityListToDtoList(List<ServiceDetails> lst) {
-        List<IRunnerResponse> responseList = new ArrayList<>();
-        lst.forEach(shipmentServices -> {
-            responseList.add(convertEntityToDto(shipmentServices));
-        });
-        return responseList;
-    }
-
-    public ServiceDetails convertRequestToEntity(ServiceDetailsRequest request) {
-        return modelMapper.map(request, ServiceDetails.class);
     }
 }

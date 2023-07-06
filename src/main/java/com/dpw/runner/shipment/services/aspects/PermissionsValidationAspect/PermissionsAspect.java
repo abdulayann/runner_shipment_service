@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.aspects.PermissionsValidationAspect;
 
 
+import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.Criteria;
 import com.dpw.runner.shipment.services.commons.requests.FilterCriteria;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
@@ -28,8 +29,12 @@ public class PermissionsAspect {
     @Autowired
     private EntityManager entityManager;
 
-    @Before("execution(* com.dpw.runner.shipment.services.service.interfaces.IShipmentService+.*(..)) && args(listCommonRequest)")
-    public void beforeFindOfMultiTenancyRepository(JoinPoint joinPoint, ListCommonRequest listCommonRequest) {
+    @Before("execution(* com.dpw.runner.shipment.services.service.interfaces.IShipmentService+.*(..)) && args(commonRequestModel)")
+    public void beforeFindOfMultiTenancyRepository(JoinPoint joinPoint, CommonRequestModel commonRequestModel) {
+        if (commonRequestModel.getData() == null || !commonRequestModel.getData().getClass().isAssignableFrom(ListCommonRequest.class)) {
+            return;
+        }
+        ListCommonRequest listCommonRequest = (ListCommonRequest) commonRequestModel.getData();
         List<String> permissionList = PermissionsContext.getPermissions();
         permissionList.sort(new Comparator<String>() {
             @Override

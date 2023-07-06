@@ -24,6 +24,8 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -43,7 +45,8 @@ public class PartiesService implements IPartiesDetailsService {
     private ModelMapper modelMapper;
 
     @Override
-    public ResponseEntity<?> create(CommonRequestModel commonRequestModel) throws Exception {
+    @Transactional
+    public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
         PartiesRequest request = (PartiesRequest) commonRequestModel.getData();
         Parties notes = convertRequestToPartiesDetailsEntity(request);
         notes = partiesDao.save(notes);
@@ -51,7 +54,7 @@ public class PartiesService implements IPartiesDetailsService {
     }
 
     @Override
-    public ResponseEntity<?> update(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
         PartiesRequest request = (PartiesRequest) commonRequestModel.getData();
         long id = request.getId();
         Optional<Parties> oldEntity = partiesDao.findById(id);

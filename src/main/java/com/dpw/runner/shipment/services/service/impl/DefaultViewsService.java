@@ -23,6 +23,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
@@ -43,7 +44,7 @@ public class DefaultViewsService implements IDefaultViewsService {
     private ModelMapper modelMapper;
 
     @Transactional
-    public ResponseEntity<?> create(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
         DefaultViewsRequest request = null;
         request = (DefaultViewsRequest) commonRequestModel.getData();
         DefaultViews defaultView = convertRequestToEntity(request);
@@ -52,7 +53,7 @@ public class DefaultViewsService implements IDefaultViewsService {
     }
 
     @Transactional
-    public ResponseEntity<?> update(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
         DefaultViewsRequest request = (DefaultViewsRequest) commonRequestModel.getData();
         long id =request.getId();
         Optional<DefaultViews> oldEntity = defaultViewsDao.findById(id);

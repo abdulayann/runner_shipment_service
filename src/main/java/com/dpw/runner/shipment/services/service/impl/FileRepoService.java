@@ -23,6 +23,8 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -40,20 +42,21 @@ public class FileRepoService implements IFileRepoService {
     private ModelMapper modelMapper;
 
     @Override
-    public ResponseEntity<?> create(CommonRequestModel commonRequestModel) throws Exception {
+    @Transactional
+    public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
         FileRepoRequest request = null;
         request = (FileRepoRequest) commonRequestModel.getData();
-        FileRepo fileRepo  = mapToEntityFromRequest(request);
+        FileRepo fileRepo = mapToEntityFromRequest(request);
         fileRepo = fileRepoDao.save(fileRepo);
         return ResponseHelper.buildSuccessResponse(convertToResponse(fileRepo));
     }
 
     @Override
-    public ResponseEntity<?> update(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
         FileRepoRequest request = (FileRepoRequest) commonRequestModel.getData();
-        long id =request.getId();
+        long id = request.getId();
         Optional<FileRepo> oldEntity = fileRepoDao.findById(id);
-        if(!oldEntity.isPresent()) {
+        if (!oldEntity.isPresent()) {
             log.debug("File Repo is null for Id {}", request.getId());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
@@ -65,12 +68,12 @@ public class FileRepoService implements IFileRepoService {
     }
 
     @Override
-    public ResponseEntity<?> list(CommonRequestModel commonRequestModel){
+    public ResponseEntity<?> list(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
             Pair<Specification<FileRepo>, Pageable> tuple = fetchData(request, FileRepo.class);
-            Page<FileRepo> FileRepoPage  = fileRepoDao.findAll(tuple.getLeft(), tuple.getRight());
+            Page<FileRepo> FileRepoPage = fileRepoDao.findAll(tuple.getLeft(), tuple.getRight());
             return ResponseHelper.buildListSuccessResponse(
                     convertListResponse(FileRepoPage.getContent()),
                     FileRepoPage.getTotalPages(),
@@ -110,7 +113,7 @@ public class FileRepoService implements IFileRepoService {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
             long id = request.getId();
             Optional<FileRepo> fileRepo = fileRepoDao.findById(id);
-            if(!fileRepo.isPresent()) {
+            if (!fileRepo.isPresent()) {
                 log.debug("File Repo is null for Id {}", request.getId());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
@@ -131,7 +134,7 @@ public class FileRepoService implements IFileRepoService {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
             long id = request.getId();
             Optional<FileRepo> fileRepo = fileRepoDao.findById(id);
-            if(!fileRepo.isPresent()) {
+            if (!fileRepo.isPresent()) {
                 log.debug("File Repo is null for Id {}", request.getId());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
@@ -152,7 +155,7 @@ public class FileRepoService implements IFileRepoService {
         try {
             EntityIdAndTypeRequest request = (EntityIdAndTypeRequest) commonRequestModel.getData();
             List<FileRepo> fileRepoList = fileRepoDao.findByEntityIdAndEntityType(request.getEntityId(), request.getEntityType());
-            if(fileRepoList.size() == 0){
+            if (fileRepoList.size() == 0) {
                 ResponseHelper.buildListSuccessResponse(null);
             }
             return ResponseHelper.buildListSuccessResponse(convertListResponse(fileRepoList));

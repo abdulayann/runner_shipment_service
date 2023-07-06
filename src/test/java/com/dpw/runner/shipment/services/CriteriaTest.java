@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services;
 
+import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.Criteria;
 import com.dpw.runner.shipment.services.commons.requests.FilterCriteria;
 import com.dpw.runner.shipment.services.aspects.PermissionsValidationAspect.PermissionsAspect;
@@ -36,33 +37,33 @@ class CriteriaTest {
         pageable.setFilterCriteria(new ArrayList<>());
 
         // Act
-        permissionsAspect.beforeFindOfMultiTenancyRepository(mock(JoinPoint.class), pageable);
+        permissionsAspect.beforeFindOfMultiTenancyRepository(mock(JoinPoint.class), CommonRequestModel.builder().data(pageable).build());
 
         List<FilterCriteria> criterias = new ArrayList<>();
         List<FilterCriteria> innerFilters = new ArrayList();
 
-        innerFilters.add(constructCriteria("transportMode", "AIR","=" , null));
-        innerFilters.add(constructCriteria("direction", "EXP","=" , "and"));
-        innerFilters.add(constructCriteria("shipmentType", "FCL","=" , "and"));
+        innerFilters.add(constructCriteria("transportMode", "AIR", "=", null));
+        innerFilters.add(constructCriteria("direction", "EXP", "=", "and"));
+        innerFilters.add(constructCriteria("shipmentType", "FCL", "=", "and"));
         criterias.add(FilterCriteria.builder().innerFilter(innerFilters).logicOperator(criterias.isEmpty() ? null : "or").build());
 
         innerFilters.clear();
-        innerFilters.add(constructCriteria("transportMode", "AIR","=" , null));
-        innerFilters.add(constructCriteria("direction", "EXP","=" , "and"));
-        innerFilters.add(constructCriteria("shipmentType", "LCL","=" , "and"));
+        innerFilters.add(constructCriteria("transportMode", "AIR", "=", null));
+        innerFilters.add(constructCriteria("direction", "EXP", "=", "and"));
+        innerFilters.add(constructCriteria("shipmentType", "LCL", "=", "and"));
         criterias.add(FilterCriteria.builder().innerFilter(innerFilters).logicOperator(criterias.isEmpty() ? null : "or").build());
 
         innerFilters.clear();
-        innerFilters.add(constructCriteria("transportMode", "AIR","=" , null));
-        innerFilters.add(constructCriteria("direction", "IMP","=" , "and"));
-        innerFilters.add(constructCriteria("shipmentType", "FCL","=" , "and"));
+        innerFilters.add(constructCriteria("transportMode", "AIR", "=", null));
+        innerFilters.add(constructCriteria("direction", "IMP", "=", "and"));
+        innerFilters.add(constructCriteria("shipmentType", "FCL", "=", "and"));
         criterias.add(FilterCriteria.builder().innerFilter(innerFilters).logicOperator(criterias.isEmpty() ? null : "or").build());
 
 
         FilterCriteria criteria1 = FilterCriteria.builder().innerFilter(pageable.getFilterCriteria()).build();
         FilterCriteria criteria2 = FilterCriteria.builder().innerFilter(criterias).logicOperator("AND").build();
 
-        permissionsAspect.beforeFindOfMultiTenancyRepository(mock(JoinPoint.class), pageable);
+        permissionsAspect.beforeFindOfMultiTenancyRepository(mock(JoinPoint.class), CommonRequestModel.builder().data(pageable).build());
 
         //it should populate the pageable and change its criterias
         verify(permissionsContext, times(1)).getPermissions();

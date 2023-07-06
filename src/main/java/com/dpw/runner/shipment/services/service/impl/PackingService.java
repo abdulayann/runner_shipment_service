@@ -28,6 +28,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
@@ -47,16 +48,16 @@ public class PackingService implements IPackingService {
     ModelMapper modelMapper;
 
     @Transactional
-    public ResponseEntity<?> create(CommonRequestModel commonRequestModel) throws Exception {
-        PackingRequest request = null;
-        request = (PackingRequest) commonRequestModel.getData();
+    public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
+        PackingRequest request = (PackingRequest) commonRequestModel.getData();
+
         Packing packing = convertRequestToEntity(request);
         packing = packingDao.save(packing);
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(packing));
     }
 
     @Transactional
-    public ResponseEntity<?> update(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
         PackingRequest request = (PackingRequest) commonRequestModel.getData();
         long id = request.getId();
         Optional<Packing> oldEntity = packingDao.findById(id);

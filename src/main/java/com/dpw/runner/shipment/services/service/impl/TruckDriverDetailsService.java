@@ -25,6 +25,8 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -43,7 +45,8 @@ public class TruckDriverDetailsService implements ITruckDriverDetailsService {
     private ModelMapper modelMapper;
 
     @Override
-    public ResponseEntity<?> create(CommonRequestModel commonRequestModel) throws Exception {
+    @Transactional
+    public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
         TruckDriverDetailsRequest request = (TruckDriverDetailsRequest) commonRequestModel.getData();
         TruckDriverDetails notes = convertRequestToTruckDriverDetailsEntity(request);
         notes = truckDriverDetailsDao.save(notes);
@@ -51,7 +54,7 @@ public class TruckDriverDetailsService implements ITruckDriverDetailsService {
     }
 
     @Override
-    public ResponseEntity<?> update(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
         TruckDriverDetailsRequest request = (TruckDriverDetailsRequest) commonRequestModel.getData();
         long id = request.getId();
         Optional<TruckDriverDetails> oldEntity = truckDriverDetailsDao.findById(id);

@@ -24,6 +24,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
@@ -43,7 +44,7 @@ public class ContainerService implements IContainerService {
     ModelMapper modelMapper;
 
     @Transactional
-    public ResponseEntity<?> create(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
         ContainerRequest request = (ContainerRequest) commonRequestModel.getData();
 
         Containers container = convertRequestToEntity(request);
@@ -52,7 +53,7 @@ public class ContainerService implements IContainerService {
     }
 
     @Transactional
-    public ResponseEntity<?> update(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
         ContainerRequest request = (ContainerRequest) commonRequestModel.getData();
         long id = request.getId();
         Optional<Containers> oldEntity = containerDao.findById(id);

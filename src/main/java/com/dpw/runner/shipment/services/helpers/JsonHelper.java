@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.helpers;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
@@ -25,6 +26,7 @@ public class JsonHelper {
 
     public <T> String convertToJson(T object) {
         try {
+            mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
             return mapper.writeValueAsString(object);
         } catch (JsonProcessingException e) {
             log.error("Failed to Parse given Json");
@@ -33,7 +35,7 @@ public class JsonHelper {
     }
 
     public <T,F> F convertValue(T object, Class<F> clazz) {
-            return mapper.convertValue(object, clazz);
+        return mapper.convertValue(object, clazz);
     }
 
 }

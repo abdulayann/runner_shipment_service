@@ -2,7 +2,6 @@ package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
-import com.dpw.runner.shipment.services.commons.constants.JobConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
@@ -27,6 +26,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
@@ -48,7 +48,8 @@ public class JobService implements IJobService {
     ModelMapper modelMapper;
 
     @Override
-    public ResponseEntity<?> create(CommonRequestModel commonRequestModel) throws Exception {
+    @Transactional
+    public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
         JobRequest request = (JobRequest) commonRequestModel.getData();
 
         Jobs job = convertRequestToEntity(request);
@@ -56,8 +57,8 @@ public class JobService implements IJobService {
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(job));
     }
 
-    @Transactional
-    public ResponseEntity<?> update(CommonRequestModel commonRequestModel) throws Exception {
+    @Override
+    public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
         JobRequest request = (JobRequest) commonRequestModel.getData();
         long id =request.getId();
         Optional<Jobs> oldEntity = jobDao.findById(id);

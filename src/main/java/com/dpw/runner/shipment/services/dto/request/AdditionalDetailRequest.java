@@ -6,16 +6,18 @@ import com.dpw.runner.shipment.services.entity.enums.AndesStatus;
 import com.dpw.runner.shipment.services.entity.enums.LGDStatus;
 import com.dpw.runner.shipment.services.entity.enums.Ownership;
 import io.swagger.annotations.ApiModel;
-import lombok.Getter;
-import lombok.ToString;
+import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Date;
 
-@Getter
+@Data
 @ApiModel("Shipment Additional Details Request Model")
 @ToString
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class AdditionalDetailRequest extends CommonRequest implements IRunnerRequest {
     private Long id;
     private LocalDateTime customsNoIssueDate;
@@ -98,6 +100,6 @@ public class AdditionalDetailRequest extends CommonRequest implements IRunnerReq
     private Boolean WBLPrinted;
     private Boolean draftPrinted;
     private Boolean surrenderPrinted;
-    private long shipmentId;
+    private Long shipmentId;
 
 }
