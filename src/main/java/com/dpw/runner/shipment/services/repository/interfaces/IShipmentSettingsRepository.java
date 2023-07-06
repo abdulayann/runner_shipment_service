@@ -6,6 +6,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface IShipmentSettingsDao extends JpaRepository<ShipmentSettingsDetails, Long> {
+public interface IShipmentSettingsRepository extends JpaRepository<ShipmentSettingsDetails, Long> {
     Page<ShipmentSettingsDetails> findAll(Specification<ShipmentSettingsDetails> spec, Pageable pageable);
 }

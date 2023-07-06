@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.dto.response;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.entity.enums.GenerationType;
 import lombok.Data;
 
 import java.util.List;
@@ -32,4 +33,7 @@ public class ShipmentSettingsDetailsResponse implements IRunnerResponse {
     private Boolean IsAtdAtaAutoPopulateEnabled;
     private List<Integer> Restricted_Locations;
     private String ShipmentImportApproverRole;
+    private GenerationType shipmentIdGenerationType;
+    private String shipmentIdGenerationPrefix;
+    private String shipmentIdGenerationCounter;
 }

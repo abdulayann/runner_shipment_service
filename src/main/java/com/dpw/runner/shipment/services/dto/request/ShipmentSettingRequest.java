@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.dto.request;
 
 import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
+import com.dpw.runner.shipment.services.entity.enums.GenerationType;
 import io.swagger.annotations.ApiModel;
 import lombok.Getter;
 import lombok.ToString;
@@ -35,4 +36,7 @@ public class ShipmentSettingRequest extends CommonRequest implements IRunnerRequ
     public Boolean IsAtdAtaAutoPopulateEnabled;
     public List<Integer> Restricted_Locations;
     public String ShipmentImportApproverRole;
+    private GenerationType shipmentIdGenerationType;
+    private String shipmentIdGenerationPrefix;
+    private String shipmentIdGenerationCounter;
 }

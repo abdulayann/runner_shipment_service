@@ -33,4 +33,8 @@ public class StringUtility {
                 .collect(StringBuilder::new, StringBuilder::appendCodePoint, StringBuilder::append)
                 .toString();
     }
+
+    public static String getEmptyString() {
+        return "";
+    }
 }

@@ -6,15 +6,18 @@ import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
+import com.dpw.runner.shipment.services.dao.IShipmentSettingsDao;
 import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
 import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entity.enums.GenerationType;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.*;
 import com.dpw.runner.shipment.services.service.interfaces.*;
+import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,6 +31,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.interceptor.TransactionAspectSupport;
 import org.springframework.transaction.support.TransactionTemplate;
+import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -99,6 +103,9 @@ public class ShipmentService implements IShipmentService {
 
     @Autowired
     private TransactionTemplate transactionTemplate;
+
+    @Autowired
+    private IShipmentSettingsDao shipmentSettingsDao;
 
     private List<String> TRANSPORT_MODES = Arrays.asList("SEA", "ROAD", "RAIL", "AIR");
     private List<String> SHIPMENT_TYPE = Arrays.asList("FCL", "LCL");
@@ -399,6 +406,7 @@ public class ShipmentService implements IShipmentService {
     }
 
     void getShipment(ShipmentDetails shipmentDetails) {
+        shipmentDetails.setShipmentId(generateShipmentId());
         shipmentDao.save(shipmentDetails);
     }
 
@@ -789,4 +797,34 @@ public class ShipmentService implements IShipmentService {
         return (List<T>) runnerListResponse.getData();
     }
 
+    private String generateShipmentId() {
+        List<ShipmentSettingsDetails> shipmentSettingsList = shipmentSettingsDao.list();
+        if (shipmentSettingsList.isEmpty())
+            return StringUtility.getRandomString(10);
+        return createShipmentSequence(shipmentSettingsList.get(0));
+    }
+
+    private String createShipmentSequence(ShipmentSettingsDetails shipmentSetting) {
+        String sequence = generateSequence(shipmentSetting.getShipmentIdGenerationType(), shipmentSetting.getShipmentIdGenerationPrefix(), shipmentSetting.getShipmentIdGenerationCounter());
+        if (shipmentSetting.getShipmentIdGenerationType() == GenerationType.SERIAL) {
+            shipmentSetting.setShipmentIdGenerationCounter(shipmentSetting.getShipmentIdGenerationCounter() + 1);
+            shipmentSettingsDao.save(shipmentSetting);
+        }
+        return sequence;
+    }
+
+    private String generateSequence(GenerationType generationType, String prefix, Integer counter) {
+        String suffix;
+        switch (generationType) {
+            case RANDOM:
+                suffix = StringUtility.getRandomString(10);
+                break;
+            case SERIAL:
+                suffix = String.valueOf(counter);
+                break;
+            default:
+                suffix = StringUtility.getEmptyString();
+        }
+        return !StringUtils.isEmpty(prefix) ? prefix + suffix : suffix;
+    }
 }
