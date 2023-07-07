@@ -93,4 +93,5 @@ public class ShipmentRequest extends CommonRequest implements IRunnerRequest {
     private List<BookingCarriageRequest> bookingCarriagesList;
     private CarrierDetailRequest carrierDetails;
     private List<JobRequest> jobsList;
+    private List<ContainerRequest> containersList;
 }
