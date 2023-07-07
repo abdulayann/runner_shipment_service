@@ -4,6 +4,9 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancyR
 import com.dpw.runner.shipment.services.entity.Events;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
+
 @Repository
 public interface IEventDao extends MultiTenancyRepository<Events> {
+    List<Events> findByShipmentId(Long shipmentId);
 }

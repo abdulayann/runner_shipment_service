@@ -8,7 +8,6 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.ELDetailsRequest;
 import com.dpw.runner.shipment.services.dto.request.ElNumbersRequest;
 import com.dpw.runner.shipment.services.dto.response.ELDetailsResponse;
-import com.dpw.runner.shipment.services.entity.BookingCarriage;
 import com.dpw.runner.shipment.services.entity.ELDetails;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.IELDetailsDao;
@@ -26,12 +25,15 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 
 @Service
 @Slf4j
@@ -88,14 +90,14 @@ public class ELDetailsService implements IELDetailsService {
 
     @Override
     @Async
-    public CompletableFuture<ResponseEntity<?>> listAsync(CommonRequestModel commonRequestModel){
+    public CompletableFuture<ResponseEntity<?>> listAsync(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
 
             Pair<Specification<ELDetails>, Pageable> tuple = fetchData(request, ELDetails.class);
             Page<ELDetails> elDetailsPage = elDetailsDao.findAll(tuple.getLeft(), tuple.getRight());
-            return CompletableFuture.completedFuture( ResponseHelper.buildListSuccessResponse(
+            return CompletableFuture.completedFuture(ResponseHelper.buildListSuccessResponse(
                     convertEntityListToDtoList(elDetailsPage.getContent()),
                     elDetailsPage.getTotalPages(),
                     elDetailsPage.getTotalElements()));
@@ -167,6 +169,74 @@ public class ELDetailsService implements IELDetailsService {
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
+    public ResponseEntity<?> updateEntityFromShipment(CommonRequestModel commonRequestModel, Long shipmentId) {
+        String responseMsg;
+        List<ELDetails> responseELDetails = new ArrayList<>();
+        try {
+            // TODO- Handle Transactions here
+            ListCommonRequest listCommonRequest = constructListCommonRequest("shipmentId",shipmentId,"=");
+            Pair<Specification<ELDetails>, Pageable> pair = fetchData(listCommonRequest, ELDetails.class);
+            Page<ELDetails> elDetails = elDetailsDao.findAll(pair.getLeft(), pair.getRight());
+            HashSet<Long> existingIds = new HashSet<>(elDetails
+                    .stream()
+                    .map(ELDetails::getId)
+                    .collect(Collectors.toList()));
+            List<ELDetailsRequest> containerList = new ArrayList<>();
+            List<ELDetailsRequest> requestList = (List<ELDetailsRequest>) commonRequestModel.getDataList();
+            if (requestList != null && requestList.size() != 0) {
+                for (ELDetailsRequest request : requestList) {
+                    Long id = request.getId();
+                    if (id != null) {
+                        existingIds.remove(id);
+                    }
+                    containerList.add(request);
+                }
+                responseELDetails = saveELDetails(containerList);
+            }
+            deleteELDetails(existingIds);
+            return ResponseHelper.buildListSuccessResponse(convertEntityListToDtoList(responseELDetails));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
+    private List<ELDetails> saveELDetails(List<ELDetailsRequest> elDetails) {
+        List<ELDetails> res = new ArrayList<>();
+        for(ELDetailsRequest req : elDetails){
+            ELDetails saveEntity = convertRequestToELDetails(req);
+            if(req.getId() != null){
+                long id = req.getId();
+                Optional<ELDetails> oldEntity = elDetailsDao.findById(id);
+                if (!oldEntity.isPresent()) {
+                    log.debug("El Details is null for Id {}", req.getId());
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
+                saveEntity = oldEntity.get();
+            }
+            saveEntity = elDetailsDao.save(saveEntity);
+            res.add(saveEntity);
+        }
+        return res;
+    }
+
+    private ResponseEntity<?> deleteELDetails(HashSet<Long> existingIds) {
+        String responseMsg;
+        try {
+            for (Long id : existingIds) {
+                delete(CommonRequestModel.buildRequest(CommonGetRequest.builder().id(id).build()));
+            }
+            return ResponseHelper.buildSuccessResponse();
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_DELETE_EXCEPTION_MSG;
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(responseMsg);
         }

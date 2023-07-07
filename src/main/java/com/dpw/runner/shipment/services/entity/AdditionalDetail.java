@@ -305,4 +305,7 @@ public class AdditionalDetail extends MultiTenancy {
     @JoinColumn(name = "receiving_agent_id", referencedColumnName = "id")
     private Parties receivingAgent;
 
+    @Column(name = "shipment_id")
+    private Long shipmentId;
+
 }

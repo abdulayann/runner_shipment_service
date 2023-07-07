@@ -30,12 +30,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 
 
 @Slf4j
@@ -78,7 +80,7 @@ public class JobService implements IJobService {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
             // construct specifications for filter request
             Pair<Specification<Jobs>, Pageable> tuple = fetchData(request, BookingCarriage.class);
-            Page<Jobs> jobsPage  = jobDao.findAll(tuple.getLeft(), tuple.getRight());
+            Page<Jobs> jobsPage = jobDao.findAll(tuple.getLeft(), tuple.getRight());
             return ResponseHelper.buildListSuccessResponse(
                     convertEntityListToDtoList(jobsPage.getContent()),
                     jobsPage.getTotalPages(),
@@ -93,13 +95,13 @@ public class JobService implements IJobService {
 
     @Override
     @Async
-    public CompletableFuture<ResponseEntity<?>> listAsync(CommonRequestModel commonRequestModel){
+    public CompletableFuture<ResponseEntity<?>> listAsync(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
             // construct specifications for filter request
             Pair<Specification<Jobs>, Pageable> tuple = fetchData(request, Jobs.class);
-            Page<Jobs> jobsPage  = jobDao.findAll(tuple.getLeft(), tuple.getRight());
+            Page<Jobs> jobsPage = jobDao.findAll(tuple.getLeft(), tuple.getRight());
             return CompletableFuture.completedFuture(
                     ResponseHelper
                             .buildListSuccessResponse(
@@ -143,6 +145,74 @@ public class JobService implements IJobService {
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
+    public ResponseEntity<?> updateEntityFromShipment(CommonRequestModel commonRequestModel, Long shipmentId) {
+        String responseMsg;
+        List<Jobs> responseJobs = new ArrayList<>();
+        try {
+            // TODO- Handle Transactions here
+            ListCommonRequest listCommonRequest = constructListCommonRequest("shipmentId", shipmentId, "=");
+            Pair<Specification<Jobs>, Pageable> pair = fetchData(listCommonRequest, Jobs.class);
+            Page<Jobs> jobs = jobDao.findAll(pair.getLeft(), pair.getRight());
+            HashSet<Long> existingIds = new HashSet<>(jobs
+                    .stream()
+                    .map(Jobs::getId)
+                    .collect(Collectors.toList()));
+            List<JobRequest> containerList = new ArrayList<>();
+            List<JobRequest> requestList = (List<JobRequest>) commonRequestModel.getDataList();
+            if (requestList != null && requestList.size() != 0) {
+                for (JobRequest request : requestList) {
+                    Long id = request.getId();
+                    if (id != null) {
+                        existingIds.remove(id);
+                    }
+                    containerList.add(request);
+                }
+                responseJobs = saveJobs(containerList);
+            }
+            deleteJobs(existingIds);
+            return ResponseHelper.buildListSuccessResponse(convertEntityListToDtoList(responseJobs));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
+    private List<Jobs> saveJobs(List<JobRequest> jobs) {
+        List<Jobs> res = new ArrayList<>();
+        for(JobRequest req : jobs){
+            Jobs saveEntity = convertRequestToEntity(req);
+            if(req.getId() != null){
+                long id = req.getId();
+                Optional<Jobs> oldEntity = jobDao.findById(id);
+                if (!oldEntity.isPresent()) {
+                    log.debug("Job is null for Id {}", req.getId());
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
+                saveEntity = oldEntity.get();
+            }
+            saveEntity = jobDao.save(saveEntity);
+            res.add(saveEntity);
+        }
+        return res;
+    }
+
+    private ResponseEntity<?> deleteJobs(HashSet<Long> existingIds) {
+        String responseMsg;
+        try {
+            for (Long id : existingIds) {
+                delete(CommonRequestModel.buildRequest(CommonGetRequest.builder().id(id).build()));
+            }
+            return ResponseHelper.buildSuccessResponse();
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_DELETE_EXCEPTION_MSG;
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(responseMsg);
         }

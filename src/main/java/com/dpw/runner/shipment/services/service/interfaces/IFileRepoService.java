@@ -8,6 +8,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 @Service
-public interface IFileRepoService extends ICommonService{
+public interface IFileRepoService extends ICommonService, IShipStitchService{
     ResponseEntity<?> retrieveByEntityIdAndEntityType(CommonRequestModel commonRequestModel);
 }
