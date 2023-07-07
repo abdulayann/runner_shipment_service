@@ -940,3 +940,11 @@ ALTER TABLE  shipment_details
 
 ALTER TABLE  shipment_details
     ADD CONSTRAINT shipment_measurement_detail FOREIGN KEY (measurement_detail_id) REFERENCES measurment_details(id);
+
+CREATE TABLE IF NOT EXISTS public.shipments_containers_mapping (
+	container_id bigint,
+	FOREIGN KEY (container_id) REFERENCES containers(id),
+	shipment_id bigint,
+	FOREIGN KEY (shipment_id) REFERENCES shipment_details(id),
+	PRIMARY KEY(shipment_id, container_id)
+)

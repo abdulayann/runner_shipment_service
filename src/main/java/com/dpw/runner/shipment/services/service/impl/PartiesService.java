@@ -7,8 +7,6 @@ import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
 import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
-import com.dpw.runner.shipment.services.entity.BookingCarriage;
-import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.entity.Parties;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.IPartiesDao;
@@ -27,9 +25,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
@@ -91,14 +87,14 @@ public class PartiesService implements IPartiesDetailsService {
 
     @Override
     @Async
-    public CompletableFuture<ResponseEntity<?>> listAsync(CommonRequestModel commonRequestModel){
+    public CompletableFuture<ResponseEntity<?>> listAsync(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
 
             Pair<Specification<Parties>, Pageable> tuple = fetchData(request, Parties.class);
             Page<Parties> partiesPage = partiesDao.findAll(tuple.getLeft(), tuple.getRight());
-            return CompletableFuture.completedFuture( ResponseHelper.buildListSuccessResponse(
+            return CompletableFuture.completedFuture(ResponseHelper.buildListSuccessResponse(
                     convertEntityListToDtoList(partiesPage.getContent()),
                     partiesPage.getTotalPages(),
                     partiesPage.getTotalElements()));
@@ -153,6 +149,31 @@ public class PartiesService implements IPartiesDetailsService {
         }
     }
 
+    public ResponseEntity<?> updateEntityFromShipment(CommonRequestModel commonRequestModel, Long shipmentId) {
+        String responseMsg;
+        try {
+            // TODO- Handle Transactions here
+            PartiesRequest partiesRequest = (PartiesRequest) commonRequestModel.getData();
+            if (partiesRequest.getId() != null) {
+                long id = partiesRequest.getId();
+                Optional<Parties> oldEntity = partiesDao.findById(id);
+                if (!oldEntity.isPresent()) {
+                    log.debug("Parties is null for Id {}", id);
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
+            }
+            Parties parties = convertRequestToPartiesDetailsEntity(partiesRequest);
+            parties = partiesDao.save(parties);
+            return ResponseHelper.buildSuccessResponse(convertEntityToDto(parties));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
+
     private PartiesResponse convertEntityToDto(Parties notes) {
         return modelMapper.map(notes, PartiesResponse.class);
     }
@@ -167,11 +188,4 @@ public class PartiesService implements IPartiesDetailsService {
                 .collect(Collectors.toList());
     }
 
-//    private List<IRunnerResponse> convertEntityListToDtoList(List<Parties> lst) {
-//        List<IRunnerResponse> responseList = new ArrayList<>();
-//        lst.forEach(party -> {
-//            responseList.add(convertEntityToDto(party));
-//        });
-//        return responseList;
-//    }
 }

@@ -7,7 +7,7 @@ import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
-import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
+import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
@@ -16,8 +16,11 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.*;
 import com.dpw.runner.shipment.services.service.interfaces.*;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
+import org.aspectj.lang.JoinPoint;
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
@@ -35,13 +38,18 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 
 @SuppressWarnings("ALL")
 @Service
 @Slf4j
 public class ShipmentService implements IShipmentService {
+
+    @Autowired
+    private ModelMapper modelMapper;
 
     @Autowired
     private IShipmentDao shipmentDao;
@@ -581,10 +589,91 @@ public class ShipmentService implements IShipmentService {
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
 
-        ShipmentDetails entity = jsonHelper.convertValue(request, ShipmentDetails.class);
+        ShipmentDetails entity = modelMapper.map(request, ShipmentDetails.class);
         entity.setId(oldEntity.get().getId());
+        if(entity.getContainers() == null)
+            entity.setContainers(oldEntity.get().getContainers());
         entity = shipmentDao.save(entity);
-        return ResponseHelper.buildSuccessResponse(jsonHelper.convertValue(entity, ShipmentDetailsResponse.class));
+        return ResponseHelper.buildSuccessResponse(modelMapper.map(entity, ShipmentDetailsResponse.class));
+    }
+
+    @Transactional
+    public ResponseEntity<?> completeUpdate(CommonRequestModel commonRequestModel) throws Exception {
+
+        CompleteShipmentRequest completeShipmentRequest = (CompleteShipmentRequest) commonRequestModel.getData();
+        ShipmentRequest request = (ShipmentRequest) completeShipmentRequest.getShipmentRequest();
+
+        List<BookingCarriageRequest> bookingCarriageRequestList = completeShipmentRequest.getBookingCarriageRequest();
+        List<PackingRequest> packingRequestList = completeShipmentRequest.getPackingRequest();
+//        List<AdditionalDetailRequest> additionalDetailRequestList = Arrays.asList(request.getAdditionalDetailRequest());
+        List<ContainerRequest> containerRequestList = completeShipmentRequest.getContainerRequest();
+        List<ELDetailsRequest> elDetailsRequestList = completeShipmentRequest.getElDetailsRequest();
+        List<EventsRequest> eventsRequestList = completeShipmentRequest.getEventsRequest();
+        List<FileRepoRequest> fileRepoRequestList = completeShipmentRequest.getFileRepoRequest();
+        List<JobRequest> jobRequestList = completeShipmentRequest.getJobRequest();
+        List<NotesRequest> notesRequestList = completeShipmentRequest.getNotesRequest();
+        List<ReferenceNumbersRequest> referenceNumbersRequestList = completeShipmentRequest.getReferenceNumbersRequest();
+        List<RoutingsRequest> routingsRequestList = completeShipmentRequest.getRoutingsRequest();
+        List<ServiceDetailsRequest> serviceDetailsRequestList = completeShipmentRequest.getServiceDetailsRequest();
+//        List<CarrierDetailRequest> carrierDetailRequestList = Arrays.asList(request.getCarrierDetailRequest());
+        List<PickupDeliveryDetailsRequest> pickupDeliveryDetailsRequestList = completeShipmentRequest.getPickupDeliveryDetailsRequest();
+        List<PartiesRequest> partiesRequestList = completeShipmentRequest.getPartiesRequest();
+
+        // TODO- implement Validation logic
+        long id = request.getId();
+        Optional<ShipmentDetails> oldEntity = shipmentDao.findById(id);
+        if (!oldEntity.isPresent()) {
+            log.debug("Shipment Details is null for Id {}", request.getId());
+            throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+        }
+
+        try {
+            ResponseEntity<?> updatedBookingCarriages = bookingCarriageService.updateEntityFromShipment(CommonRequestModel.buildRequest(bookingCarriageRequestList), id);
+            ResponseEntity<?> updatedPackings = packingService.updateEntityFromShipment(CommonRequestModel.buildRequest(packingRequestList), id);
+//            ResponseEntity<?> updatedAdditionalDetails = additionalDetailService.updateEntityFromShipment(CommonRequestModel.buildRequest(additionalDetailRequestList), id);
+            ResponseEntity<?> updatedContainers = containerService.updateEntityFromShipment(CommonRequestModel.buildRequest(containerRequestList), id);
+            ResponseEntity<?> updatedELDetails = elDetailsService.updateEntityFromShipment(CommonRequestModel.buildRequest(elDetailsRequestList), id);
+            ResponseEntity<?> updatedEvents = eventService.updateEntityFromShipment(CommonRequestModel.buildRequest(eventsRequestList), id);
+            ResponseEntity<?> updatedFileRepos = fileRepoService.updateEntityFromShipment(CommonRequestModel.buildRequest(fileRepoRequestList), id);
+            ResponseEntity<?> updatedJobs = jobService.updateEntityFromShipment(CommonRequestModel.buildRequest(jobRequestList), id);
+            ResponseEntity<?> updatedNotes = notesService.updateEntityFromShipment(CommonRequestModel.buildRequest(notesRequestList), id);
+            ResponseEntity<?> updatedReferenceNumbers = referenceNumbersService.updateEntityFromShipment(CommonRequestModel.buildRequest(referenceNumbersRequestList), id);
+            ResponseEntity<?> updatedRoutings = routingsService.updateEntityFromShipment(CommonRequestModel.buildRequest(routingsRequestList), id);
+            ResponseEntity<?> updatedServiceDetails = serviceDetailsService.updateEntityFromShipment(CommonRequestModel.buildRequest(serviceDetailsRequestList), id);
+//            ResponseEntity<?> updatedCarrierDetails = carrierDetailService.updateEntityFromShipment(CommonRequestModel.buildRequest(carrierDetailRequestList), id);
+            ResponseEntity<?> updatedPickupDeliveryDetails = pickupDeliveryDetailsService.updateEntityFromShipment(CommonRequestModel.buildRequest(pickupDeliveryDetailsRequestList), id);
+            ResponseEntity<?> updatedPartiesDetails = partiesDetailsService.updateEntityFromShipment(CommonRequestModel.buildRequest(partiesRequestList), id);
+
+            ShipmentDetails entity = jsonHelper.convertValue(request, ShipmentDetails.class);
+            entity.setId(oldEntity.get().getId());
+            List<Containers> containers = getResponse(updatedContainers).stream().map(e -> modelMapper.map(e, Containers.class)).collect(Collectors.toList());
+            entity.setContainers(containers);
+            entity = shipmentDao.save(entity);
+            CompleteShipmentResponse response = CompleteShipmentResponse.builder().
+                    bookingCarriages(getResponse(updatedBookingCarriages)).
+                    packings(getResponse(updatedPackings)).
+//                    additionalDetails(getResponse(updatedAdditionalDetails)).
+                    containers(getResponse(updatedContainers)).
+                    elDetails(getResponse(updatedELDetails)).
+                    events(getResponse(updatedEvents)).
+                    fileRepo(getResponse(updatedFileRepos)).
+                    job(getResponse(updatedJobs)).
+                    notes(getResponse(updatedNotes)).
+                    referenceNumbers(getResponse(updatedReferenceNumbers)).
+                    routings(getResponse(updatedRoutings)).
+                    serviceDetails(getResponse(updatedServiceDetails)).
+//                    carrierDetails(getResponse(updatedCarrierDetails)).
+                    pickupDeliveryDetails(getResponse(updatedPickupDeliveryDetails)).
+                    parties(getResponse(updatedPartiesDetails)).
+
+                    shipment(convertEntityToDto(entity)).build();
+            return ResponseHelper.buildSuccessResponse(response);
+        } catch (ExecutionException e) {
+            String responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
     }
 
     public ResponseEntity<?> list(CommonRequestModel commonRequestModel) {
@@ -713,21 +802,6 @@ public class ShipmentService implements IShipmentService {
         }
     }
 
-    private ListCommonRequest constructListCommonRequest(String fieldName, Object value, String operator){
-        ListCommonRequest request = new ListCommonRequest();
-        request.setPageNo(0);
-        request.setLimit(Integer.MAX_VALUE);
-
-
-        List<FilterCriteria> criterias = new ArrayList<>();
-        List<FilterCriteria> innerFilters = new ArrayList();
-        Criteria criteria = Criteria.builder().fieldName(fieldName).operator(operator).value(value).build();
-        FilterCriteria filterCriteria = FilterCriteria.builder().criteria(criteria).build();
-        innerFilters.add(filterCriteria);
-        criterias.add(FilterCriteria.builder().innerFilter(innerFilters).logicOperator(criterias.isEmpty() ? null : "or").build());
-        request.setFilterCriteria(criterias);
-        return request;
-    }
 
     private <T extends IRunnerResponse> List<T> getResponse(CompletableFuture<ResponseEntity<?>> responseEntity) throws ExecutionException, InterruptedException {
         var runnerListResponse = (RunnerListResponse<T>) responseEntity.get().getBody();

@@ -1,4 +1,4 @@
 package com.dpw.runner.shipment.services.service.interfaces;
 
-public interface IReferenceNumbersService extends ICommonService{
+public interface IReferenceNumbersService extends ICommonService, IShipStitchService{
 }

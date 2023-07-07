@@ -28,9 +28,11 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 
@@ -144,6 +146,40 @@ public class ContainerService implements IContainerService {
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(responseMsg);
         }
+    }
+
+    public ResponseEntity<?> updateEntityFromShipment(CommonRequestModel commonRequestModel, Long shipmentId)
+    {
+        String responseMsg;
+        List<Containers> responseContainers = new ArrayList<>();
+        try {
+            // TODO- Handle Transactions here
+            List<ContainerRequest> containerList = new ArrayList<>();
+            List<ContainerRequest> requestList = (List<ContainerRequest>) commonRequestModel.getDataList();
+            if(requestList != null && requestList.size() != 0)
+            {
+                for(ContainerRequest request: requestList)
+                {
+                    Long id = request.getId();
+                    containerList.add(request);
+                }
+                responseContainers = saveContainers(containerList);
+            }
+            return ResponseHelper.buildListSuccessResponse(convertEntityListToDtoList(responseContainers));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
+    private List<Containers> saveContainers(List<ContainerRequest> containers)
+    {
+        return containerDao.saveAll(containers
+                .stream()
+                .map(this::convertRequestToEntity)
+                .collect(Collectors.toList()));
     }
 
     private IRunnerResponse convertEntityToDto(Containers container) {
