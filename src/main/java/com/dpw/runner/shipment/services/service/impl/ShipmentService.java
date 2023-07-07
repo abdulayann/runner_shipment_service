@@ -333,7 +333,7 @@ public class ShipmentService implements IShipmentService {
 
         ShipmentDetails entity = jsonHelper.convertValue(request, ShipmentDetails.class);
         entity.setId(oldEntity.get().getId());
-        List<Containers> containers = getResponse(updatedContainers).stream().map(e -> jsonHelper.convertValue(e, Containers.class)).collect(Collectors.toList());
+        List<Containers> containers = getResponse(updatedContainers).stream().map(e -> modelMapper.map(e, Containers.class)).collect(Collectors.toList());
         entity.setContainers(containers);
         entity = shipmentDao.save(entity);
         CompleteShipmentResponse response = CompleteShipmentResponse.builder().
