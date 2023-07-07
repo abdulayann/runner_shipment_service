@@ -9,10 +9,13 @@ import lombok.Data;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Date;
+import java.util.UUID;
 
 @Data
 public class AdditionalDetailResponse implements IRunnerResponse {
 
+    private Long id;
+    private UUID guid;
     private LocalDateTime customsNoIssueDate;
     private LocalDateTime expiryDate;
     private String inspection;

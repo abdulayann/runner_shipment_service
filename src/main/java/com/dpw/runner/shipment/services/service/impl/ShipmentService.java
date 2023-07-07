@@ -235,35 +235,6 @@ public class ShipmentService implements IShipmentService {
                 shipmentDetailsPage.getTotalElements());
     }
 
-    private static ShipmentDetailsResponse convertEntityToDto(ShipmentDetails shipmentDetails) {
-        ShipmentDetailsResponse response = new ShipmentDetailsResponse();
-        response.setId(shipmentDetails.getId());
-        response.setGuid(shipmentDetails.getGuid());
-        response.setGoodsDescription(shipmentDetails.getGoodsDescription());
-        response.setAdditionalTerms(shipmentDetails.getAdditionalTerms());
-        response.setAssignedTo(shipmentDetails.getAssignedTo());
-        response.setIsDomestic(shipmentDetails.getIsDomestic());
-        response.setShipmentId(shipmentDetails.getShipmentId());
-        response.setIncoterms(shipmentDetails.getIncoterms());
-        response.setPaymentTerms(shipmentDetails.getPaymentTerms());
-        response.setSalesAgent(shipmentDetails.getSalesAgent());
-        response.setConsolRef(shipmentDetails.getConsolRef());
-        response.setBookingReference(shipmentDetails.getBookingReference());
-        response.setMasterBill(shipmentDetails.getMasterBill());
-        response.setServiceType(shipmentDetails.getServiceType());
-        response.setJobType(shipmentDetails.getJobType());
-        response.setSource(shipmentDetails.getSource());
-        response.setStatus(shipmentDetails.getStatus());
-        response.setShipmentType(shipmentDetails.getShipmentType());
-        response.setDirection(shipmentDetails.getDirection());
-        response.setTransportMode(shipmentDetails.getTransportMode());
-        response.setHouseBill(shipmentDetails.getHouseBill());
-        response.setCarrierDetails(shipmentDetails.getCarrierDetails());
-
-
-        return response;
-    }
-
     private List<IRunnerResponse> convertEntityListToDtoList(List<ShipmentDetails> lst) {
         List<IRunnerResponse> responseList = new ArrayList<>();
         lst.forEach(shipmentDetail -> {
@@ -551,7 +522,8 @@ public class ShipmentService implements IShipmentService {
 
     @Transactional
     public void createContainer(ShipmentDetails shipmentDetails, ContainerRequest containerRequest) {
-        containerRequest.setShipmentId(shipmentDetails.getId());
+        // TODO- Important! Set Shipment in Container Mapping
+//        containerRequest.setShipmentId(shipmentDetails.getId());
         containerService.create(CommonRequestModel.buildRequest(containerRequest));
     }
 
@@ -600,37 +572,35 @@ public class ShipmentService implements IShipmentService {
     @Transactional
     public ResponseEntity<?> completeUpdate(CommonRequestModel commonRequestModel) throws Exception {
 
-        CompleteShipmentRequest completeShipmentRequest = (CompleteShipmentRequest) commonRequestModel.getData();
-        ShipmentRequest request = (ShipmentRequest) completeShipmentRequest.getShipmentRequest();
+        ShipmentRequest shipmentRequest = (ShipmentRequest) commonRequestModel.getData();
 
-        List<BookingCarriageRequest> bookingCarriageRequestList = completeShipmentRequest.getBookingCarriageRequest();
-        List<PackingRequest> packingRequestList = completeShipmentRequest.getPackingRequest();
-//        List<AdditionalDetailRequest> additionalDetailRequestList = Arrays.asList(request.getAdditionalDetailRequest());
-        List<ContainerRequest> containerRequestList = completeShipmentRequest.getContainerRequest();
-        List<ELDetailsRequest> elDetailsRequestList = completeShipmentRequest.getElDetailsRequest();
-        List<EventsRequest> eventsRequestList = completeShipmentRequest.getEventsRequest();
-        List<FileRepoRequest> fileRepoRequestList = completeShipmentRequest.getFileRepoRequest();
-        List<JobRequest> jobRequestList = completeShipmentRequest.getJobRequest();
-        List<NotesRequest> notesRequestList = completeShipmentRequest.getNotesRequest();
-        List<ReferenceNumbersRequest> referenceNumbersRequestList = completeShipmentRequest.getReferenceNumbersRequest();
-        List<RoutingsRequest> routingsRequestList = completeShipmentRequest.getRoutingsRequest();
-        List<ServiceDetailsRequest> serviceDetailsRequestList = completeShipmentRequest.getServiceDetailsRequest();
-//        List<CarrierDetailRequest> carrierDetailRequestList = Arrays.asList(request.getCarrierDetailRequest());
-        List<PickupDeliveryDetailsRequest> pickupDeliveryDetailsRequestList = completeShipmentRequest.getPickupDeliveryDetailsRequest();
-        List<PartiesRequest> partiesRequestList = completeShipmentRequest.getPartiesRequest();
+        List<BookingCarriageRequest> bookingCarriageRequestList = shipmentRequest.getBookingCarriagesList();
+        List<PackingRequest> packingRequestList = shipmentRequest.getPackingList();
+        AdditionalDetailRequest additionalDetailRequest = shipmentRequest.getAdditionalDetail();
+        List<ContainerRequest> containerRequestList = shipmentRequest.getContainersList();
+        List<ELDetailsRequest> elDetailsRequestList = shipmentRequest.getElDetailsList();
+        List<EventsRequest> eventsRequestList = shipmentRequest.getEventsList();
+        List<FileRepoRequest> fileRepoRequestList = shipmentRequest.getFileRepoList();
+        List<JobRequest> jobRequestList = shipmentRequest.getJobsList();
+        List<NotesRequest> notesRequestList = shipmentRequest.getNotesList();
+        List<ReferenceNumbersRequest> referenceNumbersRequestList = shipmentRequest.getReferenceNumbersList();
+        List<RoutingsRequest> routingsRequestList = shipmentRequest.getRoutingsList();
+        List<ServiceDetailsRequest> serviceDetailsRequestList = shipmentRequest.getServicesList();
+        CarrierDetailRequest carrierDetailRequest = shipmentRequest.getCarrierDetails();
+        List<PickupDeliveryDetailsRequest> pickupDeliveryDetailsRequestList = shipmentRequest.getPickupDeliveryDetailsList();
 
         // TODO- implement Validation logic
-        long id = request.getId();
+        long id = shipmentRequest.getId();
         Optional<ShipmentDetails> oldEntity = shipmentDao.findById(id);
         if (!oldEntity.isPresent()) {
-            log.debug("Shipment Details is null for Id {}", request.getId());
+            log.debug("Shipment Details is null for Id {}", shipmentRequest.getId());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
 
         try {
             ResponseEntity<?> updatedBookingCarriages = bookingCarriageService.updateEntityFromShipment(CommonRequestModel.buildRequest(bookingCarriageRequestList), id);
             ResponseEntity<?> updatedPackings = packingService.updateEntityFromShipment(CommonRequestModel.buildRequest(packingRequestList), id);
-//            ResponseEntity<?> updatedAdditionalDetails = additionalDetailService.updateEntityFromShipment(CommonRequestModel.buildRequest(additionalDetailRequestList), id);
+            ResponseEntity<?> updatedAdditionalDetails = additionalDetailService.updateEntityFromShipment(CommonRequestModel.buildRequest(additionalDetailRequest), id);
             ResponseEntity<?> updatedContainers = containerService.updateEntityFromShipment(CommonRequestModel.buildRequest(containerRequestList), id);
             ResponseEntity<?> updatedELDetails = elDetailsService.updateEntityFromShipment(CommonRequestModel.buildRequest(elDetailsRequestList), id);
             ResponseEntity<?> updatedEvents = eventService.updateEntityFromShipment(CommonRequestModel.buildRequest(eventsRequestList), id);
@@ -640,33 +610,32 @@ public class ShipmentService implements IShipmentService {
             ResponseEntity<?> updatedReferenceNumbers = referenceNumbersService.updateEntityFromShipment(CommonRequestModel.buildRequest(referenceNumbersRequestList), id);
             ResponseEntity<?> updatedRoutings = routingsService.updateEntityFromShipment(CommonRequestModel.buildRequest(routingsRequestList), id);
             ResponseEntity<?> updatedServiceDetails = serviceDetailsService.updateEntityFromShipment(CommonRequestModel.buildRequest(serviceDetailsRequestList), id);
-//            ResponseEntity<?> updatedCarrierDetails = carrierDetailService.updateEntityFromShipment(CommonRequestModel.buildRequest(carrierDetailRequestList), id);
+            ResponseEntity<?> updatedCarrierDetails = carrierDetailService.updateEntityFromShipment(CommonRequestModel.buildRequest(carrierDetailRequest), id);
             ResponseEntity<?> updatedPickupDeliveryDetails = pickupDeliveryDetailsService.updateEntityFromShipment(CommonRequestModel.buildRequest(pickupDeliveryDetailsRequestList), id);
-            ResponseEntity<?> updatedPartiesDetails = partiesDetailsService.updateEntityFromShipment(CommonRequestModel.buildRequest(partiesRequestList), id);
 
-            ShipmentDetails entity = jsonHelper.convertValue(request, ShipmentDetails.class);
+            ShipmentDetails entity = modelMapper.map(shipmentRequest, ShipmentDetails.class);
             entity.setId(oldEntity.get().getId());
             List<Containers> containers = getResponse(updatedContainers).stream().map(e -> modelMapper.map(e, Containers.class)).collect(Collectors.toList());
             entity.setContainers(containers);
+            entity.setAdditionalDetail(modelMapper.map(getResponseEntity(updatedAdditionalDetails), AdditionalDetail.class));
+            entity.setCarrierDetails(modelMapper.map(getResponseEntity(updatedCarrierDetails), CarrierDetails.class));
             entity = shipmentDao.save(entity);
-            CompleteShipmentResponse response = CompleteShipmentResponse.builder().
-                    bookingCarriages(getResponse(updatedBookingCarriages)).
-                    packings(getResponse(updatedPackings)).
-//                    additionalDetails(getResponse(updatedAdditionalDetails)).
-                    containers(getResponse(updatedContainers)).
-                    elDetails(getResponse(updatedELDetails)).
-                    events(getResponse(updatedEvents)).
-                    fileRepo(getResponse(updatedFileRepos)).
-                    job(getResponse(updatedJobs)).
-                    notes(getResponse(updatedNotes)).
-                    referenceNumbers(getResponse(updatedReferenceNumbers)).
-                    routings(getResponse(updatedRoutings)).
-                    serviceDetails(getResponse(updatedServiceDetails)).
-//                    carrierDetails(getResponse(updatedCarrierDetails)).
-                    pickupDeliveryDetails(getResponse(updatedPickupDeliveryDetails)).
-                    parties(getResponse(updatedPartiesDetails)).
 
-                    shipment(convertEntityToDto(entity)).build();
+            ShipmentDetailsResponse response = modelMapper.map(entity, ShipmentDetailsResponse.class);
+            response.setBookingCarriagesList(getResponse(updatedBookingCarriages));
+            response.setPackingList(getResponse(updatedPackings));
+            response.setAdditionalDetail(getResponseEntity(updatedAdditionalDetails));
+            response.setContainersList(getResponse(updatedContainers));
+            response.setElDetailsList(getResponse(updatedELDetails));
+            response.setEventsList(getResponse(updatedEvents));
+            response.setFileRepoList(getResponse(updatedFileRepos));
+            response.setJobsList(getResponse(updatedJobs));
+            response.setNotesList(getResponse(updatedNotes));
+            response.setReferenceNumbersList(getResponse(updatedReferenceNumbers));
+            response.setRoutingsList(getResponse(updatedRoutings));
+            response.setServicesList(getResponse(updatedServiceDetails));
+            response.setCarrierDetails(getResponseEntity(updatedCarrierDetails));
+            response.setPickupDeliveryDetailsList(getResponse(updatedPickupDeliveryDetails));
             return ResponseHelper.buildSuccessResponse(response);
         } catch (ExecutionException e) {
             String responseMsg = e.getMessage() != null ? e.getMessage()
@@ -806,6 +775,16 @@ public class ShipmentService implements IShipmentService {
     private <T extends IRunnerResponse> List<T> getResponse(CompletableFuture<ResponseEntity<?>> responseEntity) throws ExecutionException, InterruptedException {
         var runnerListResponse = (RunnerListResponse<T>) responseEntity.get().getBody();
         return (List<T>) runnerListResponse.getData();
+    }
+
+    private <T extends IRunnerResponse> List<T> getResponse(ResponseEntity<?> responseEntity) throws ExecutionException, InterruptedException {
+        var runnerListResponse = (RunnerListResponse<T>) responseEntity.getBody();
+        return (List<T>) runnerListResponse.getData();
+    }
+
+    private <T extends IRunnerResponse> T getResponseEntity(ResponseEntity<?> responseEntity) throws ExecutionException, InterruptedException {
+        var runnerResponse = (RunnerResponse<T>) responseEntity.getBody();
+        return (T) runnerResponse.getData();
     }
 
 }
