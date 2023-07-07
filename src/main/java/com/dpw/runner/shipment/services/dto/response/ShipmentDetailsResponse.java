@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.dto.response;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.entity.*;
 import lombok.Data;
 
@@ -13,7 +14,6 @@ import java.util.UUID;
 public class ShipmentDetailsResponse implements IRunnerResponse {
     private Long id;
     private UUID guid;
-    private List<Parties> parties;
     private CarrierDetails carrierDetails;
     private String houseBill;
     private String transportMode;
@@ -74,4 +74,20 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     private LocalDateTime shipmentCompletedOn;
     private String financeClosedBy;
     private LocalDateTime financeClosedOn;
+    private PartiesResponse client;
+    private PartiesResponse consigner;
+    private PartiesResponse consignee;
+    private AdditionalDetailResponse additionalDetail;
+    private List<PickupDeliveryDetailsResponse> pickupDeliveryDetailsList;
+    private List<NotesResponse> notesList;
+    private List<TruckDriverDetailsResponse> truckDriverDetails;
+    private List<ServiceDetailsResponse> servicesList;
+    private List<RoutingsResponse> routingsList;
+    private List<ReferenceNumbersResponse> referenceNumbersList;
+    private List<PackingResponse> packingList;
+    private List<FileRepoResponse> fileRepoList;
+    private List<EventsResponse> eventsList;
+    private List<ELDetailsResponse> elDetailsList;
+    private List<BookingCarriageResponse> bookingCarriagesList;
+    private List<JobResponse> jobsList;
 }

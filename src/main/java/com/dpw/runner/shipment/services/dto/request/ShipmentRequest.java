@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @Builder
@@ -75,4 +76,21 @@ public class ShipmentRequest extends CommonRequest implements IRunnerRequest {
     private LocalDateTime shipmentCompletedOn;
     private String financeClosedBy;
     private LocalDateTime financeClosedOn;
+    private PartiesRequest client;
+    private PartiesRequest consigner;
+    private PartiesRequest consignee;
+    private AdditionalDetailRequest additionalDetail;
+    private List<PickupDeliveryDetailsRequest> pickupDeliveryDetailsList;
+    private List<NotesRequest> notesList;
+    private List<TruckDriverDetailsRequest> truckDriverDetails;
+    private List<ServiceDetailsRequest> servicesList;
+    private List<RoutingsRequest> routingsList;
+    private List<ReferenceNumbersRequest> referenceNumbersList;
+    private List<PackingRequest> packingList;
+    private List<FileRepoRequest> fileRepoList;
+    private List<EventsRequest> eventsList;
+    private List<ELDetailsRequest> elDetailsList;
+    private List<BookingCarriageRequest> bookingCarriagesList;
+    private CarrierDetailRequest carrierDetails;
+    private List<JobRequest> jobsList;
 }

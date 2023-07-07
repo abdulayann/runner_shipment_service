@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.dto.response;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
 import lombok.Data;
 
 import java.time.Duration;
@@ -14,8 +15,7 @@ public class ServiceDetailsResponse implements IRunnerResponse {
     private Long shipmentId;
     private Long consolidationId;
     private String serviceType;
-    private Long contractorId;
-    private Long contractorAddressId;
+    private PartiesResponse contractor;
     private int srvLocation;
     private Date bookingDate;
     private String serviceCount;

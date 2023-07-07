@@ -91,6 +91,6 @@ public class ContainerRequest extends CommonRequest implements IRunnerRequest {
     private String achievedVolumeUnit;
     private String weightUtilization;
     private String volumeUtilization;
-    private String pickupAddress;
-    private String deliveryAddress;
+    private PartiesRequest pickupAddress;
+    private PartiesRequest deliveryAddress;
 }

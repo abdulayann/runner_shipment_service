@@ -93,5 +93,15 @@ public class AdditionalDetailResponse implements IRunnerResponse {
     private Boolean WBLPrinted;
     private Boolean draftPrinted;
     private Boolean surrenderPrinted;
+    private PartiesResponse notifyParty;
+    private PartiesResponse importBroker;
+    private PartiesResponse exportBroker;
+    private PartiesResponse sendingForwarder;
+    private PartiesResponse receivingForwarder;
+    private PartiesResponse traderOrSupplier;
+    private PartiesResponse eTailor;
+    private PartiesResponse borrowedFrom;
+    private PartiesResponse sendingAgent;
+    private PartiesResponse receivingAgent;
 
 }

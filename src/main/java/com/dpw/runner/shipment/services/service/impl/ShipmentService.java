@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
@@ -48,6 +49,9 @@ public class ShipmentService implements IShipmentService {
     private ICarrierDao carrierDao;
     @Autowired
     private IPartiesDao partiesDao;
+
+    @Autowired
+    private IAdditionalDetailDao additionalDetailDao;
 
     @Autowired
     private JsonHelper jsonHelper;
@@ -206,12 +210,6 @@ public class ShipmentService implements IShipmentService {
             shipmentDetail.setCarrierDetails(carrierDetail);
 
             shipmentDetail = shipmentDao.save(shipmentDetail);
-            /**
-             * Parties Details*
-             */
-            List<Parties> partiesDetails = createParties(shipmentDetail);
-            shipmentDetail.setParties(partiesDetails);
-            response.add(shipmentDetail);
         }
 
         return response;
@@ -233,7 +231,6 @@ public class ShipmentService implements IShipmentService {
         ShipmentDetailsResponse response = new ShipmentDetailsResponse();
         response.setId(shipmentDetails.getId());
         response.setGuid(shipmentDetails.getGuid());
-        response.setParties(shipmentDetails.getParties());
         response.setGoodsDescription(shipmentDetails.getGoodsDescription());
         response.setAdditionalTerms(shipmentDetails.getAdditionalTerms());
         response.setAssignedTo(shipmentDetails.getAssignedTo());
@@ -322,70 +319,67 @@ public class ShipmentService implements IShipmentService {
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
         //ExecutorService executorService = Executors.newFixedThreadPool(100);
 
-        CompleteShipmentRequest request = (CompleteShipmentRequest) commonRequestModel.getData();
+        ShipmentRequest request = (ShipmentRequest) commonRequestModel.getData();
         System.out.println(jsonHelper.convertToJson(request));
-        ShipmentDetails shipmentDetails = jsonHelper.convertValue(request.getShipmentRequest(), ShipmentDetails.class);
+        ShipmentDetails shipmentDetails = jsonHelper.convertValue(request, ShipmentDetails.class);
+        AdditionalDetail additionalDetail = jsonHelper.convertValue(request.getAdditionalDetail(), AdditionalDetail.class);
+        CarrierDetails carrierDetails = jsonHelper.convertValue(request.getCarrierDetails(), CarrierDetails.class);
 
         try {
+            createAdditionalDetail(shipmentDetails, additionalDetail);
+            shipmentDetails.setAdditionalDetail(additionalDetail);
+
+            createCarrier(shipmentDetails, carrierDetails);
+            shipmentDetails.setCarrierDetails(carrierDetails);
+
             getShipment(shipmentDetails);
 
-            List<AdditionalDetailRequest> additionalDetailRequest = request.getAdditionalDetailRequest();
-            createAdditionalDetailsAsync(shipmentDetails, additionalDetailRequest);
-
-            List<ContainerRequest> containerRequest = request.getContainerRequest();
-            createContainersAsync(shipmentDetails, containerRequest);
+//            List<ContainerRequest> containerRequest = request.getContainerRequest();
+//            createContainersAsync(shipmentDetails, containerRequest);
 
 
-            List<PackingRequest> packingRequest = request.getPackingRequest();
+            List<PackingRequest> packingRequest = request.getPackingList();
             createPackingsAsync(shipmentDetails, packingRequest);
 
 
-            List<BookingCarriageRequest> bookingCarriageRequest = request.getBookingCarriageRequest();
+            List<BookingCarriageRequest> bookingCarriageRequest = request.getBookingCarriagesList();
             createBookingCarriagesAsync(shipmentDetails, bookingCarriageRequest);
 
 
-            List<ELDetailsRequest> elDetailsRequest = request.getElDetailsRequest();
+            List<ELDetailsRequest> elDetailsRequest = request.getElDetailsList();
             createElDetailsAsync(shipmentDetails, elDetailsRequest);
 
 
-            List<EventsRequest> eventsRequest = request.getEventsRequest();
+            List<EventsRequest> eventsRequest = request.getEventsList();
             createEventsAsync(shipmentDetails, eventsRequest);
 
 
-            List<FileRepoRequest> fileRepoRequest = request.getFileRepoRequest();
+            List<FileRepoRequest> fileRepoRequest = request.getFileRepoList();
             createFileRepoAsync(shipmentDetails, fileRepoRequest);
 
 
-            List<JobRequest> jobRequest = request.getJobRequest();
+            List<JobRequest> jobRequest = request.getJobsList();
             createJobsAsync(shipmentDetails, jobRequest);
 
 
-            List<NotesRequest> notesRequest = request.getNotesRequest();
+            List<NotesRequest> notesRequest = request.getNotesList();
             createNotesAsync(shipmentDetails, notesRequest);
 
 
-            List<ReferenceNumbersRequest> referenceNumbersRequest = request.getReferenceNumbersRequest();
+            List<ReferenceNumbersRequest> referenceNumbersRequest = request.getReferenceNumbersList();
             createReferenceNumbersAsync(shipmentDetails, referenceNumbersRequest);
 
 
-            List<RoutingsRequest> routingsRequest = request.getRoutingsRequest();
+            List<RoutingsRequest> routingsRequest = request.getRoutingsList();
             createRoutingsAsync(shipmentDetails, routingsRequest);
 
 
-            List<ServiceDetailsRequest> serviceDetailsRequest = request.getServiceDetailsRequest();
+            List<ServiceDetailsRequest> serviceDetailsRequest = request.getServicesList();
             createServiceDetailsAsync(shipmentDetails, serviceDetailsRequest);
 
 
-            List<PickupDeliveryDetailsRequest> pickupDeliveryDetailsRequest = request.getPickupDeliveryDetailsRequest();
+            List<PickupDeliveryDetailsRequest> pickupDeliveryDetailsRequest = request.getPickupDeliveryDetailsList();
             createPickupDeliveryAsync(shipmentDetails, pickupDeliveryDetailsRequest);
-
-
-            List<PartiesRequest> partiesRequest = request.getPartiesRequest();
-            createPartiesAsync(shipmentDetails, partiesRequest);
-
-
-            List<CarrierDetailRequest> carrierDetailRequest = request.getCarrierDetailRequest();
-            createCarrierDetailsAsync(shipmentDetails, carrierDetailRequest);
 
         } catch (Exception e) {
             log.error(e.getMessage());
@@ -402,11 +396,6 @@ public class ShipmentService implements IShipmentService {
         shipmentDao.save(shipmentDetails);
     }
 
-    private void createCarrierDetailsAsync(ShipmentDetails shipmentDetails, List<CarrierDetailRequest> carrierDetailRequest) {
-        carrierDetailRequest.forEach(carrierDetail -> {
-            createCarrier(shipmentDetails, carrierDetail);
-        });
-    }
 
     private void createPartiesAsync(ShipmentDetails shipmentDetails, List<PartiesRequest> partiesRequest) {
         partiesRequest.forEach(parties -> {
@@ -487,12 +476,7 @@ public class ShipmentService implements IShipmentService {
         });
     }
 
-    @Transactional
-    private void createAdditionalDetailsAsync(ShipmentDetails shipmentDetails, List<AdditionalDetailRequest> additionalDetailRequest) {
-        additionalDetailRequest.forEach(additionalDetails -> {
-            createAdditionalDetail(shipmentDetails, additionalDetails);
-        });
-    }
+
 
     @Transactional
     public void createbookingCarriage(ShipmentDetails shipmentDetails, BookingCarriageRequest bookingCarriageRequest) {
@@ -515,7 +499,7 @@ public class ShipmentService implements IShipmentService {
     @Transactional
     public void createFileRepo(ShipmentDetails shipmentDetails, FileRepoRequest fileRepoRequest) {
         fileRepoRequest.setEntityId(shipmentDetails.getId());
-        fileRepoRequest.setEntityType("SHIPMENT");
+        fileRepoRequest.setEntityType(Constants.SHIPMENT);
         fileRepoService.create(CommonRequestModel.buildRequest(fileRepoRequest));
     }
 
@@ -528,7 +512,7 @@ public class ShipmentService implements IShipmentService {
     @Transactional
     public void createNote(ShipmentDetails shipmentDetails, NotesRequest notesRequest) {
         notesRequest.setEntityId(shipmentDetails.getId());
-        notesRequest.setEntityType("SHIPMENT");
+        notesRequest.setEntityType(Constants.SHIPMENT);
         notesService.create(CommonRequestModel.buildRequest(notesRequest));
     }
 
@@ -576,15 +560,13 @@ public class ShipmentService implements IShipmentService {
     }
 
     @Transactional
-    public void createAdditionalDetail(ShipmentDetails shipmentDetails, AdditionalDetailRequest additionalDetailRequest) {
-        additionalDetailRequest.setShipmentId(shipmentDetails.getId());
-        additionalDetailService.create(CommonRequestModel.buildRequest(additionalDetailRequest));
+    public void createAdditionalDetail(ShipmentDetails shipmentDetails, AdditionalDetail additionalDetail) {
+        additionalDetailDao.save(additionalDetail);
     }
 
     @Transactional
-    public void createCarrier(ShipmentDetails shipmentDetails, CarrierDetailRequest carrierDetailRequest) {
-        carrierDetailRequest.setShipmentId(shipmentDetails.getId());
-        carrierDetailService.create(CommonRequestModel.buildRequest(carrierDetailRequest));
+    public void createCarrier(ShipmentDetails shipmentDetails, CarrierDetails carrierDetails) {
+        carrierDao.save(carrierDetails);
     }
 
     @Override
@@ -720,46 +702,9 @@ public class ShipmentService implements IShipmentService {
         CommonRequestModel commonListRequestModelbyEntityId = CommonRequestModel.buildRequest(constructListCommonRequest("entityId",id,"=" ));
 
         CompletableFuture<ResponseEntity<?>> shipmentsFuture = retrieveByIdAsync(commonRequestModel);
-        CompletableFuture<ResponseEntity<?>> packingsFuture = packingService.listAsync(commonListRequestModel);
-        CompletableFuture<ResponseEntity<?>> additionalDetailsFuture = additionalDetailService.listAsync(commonListRequestModel);
-        CompletableFuture<ResponseEntity<?>> bookingCarriagesFuture = bookingCarriageService.listAsync(commonListRequestModel);
-        CompletableFuture<ResponseEntity<?>> containersFuture = containerService.listAsync(commonListRequestModel);
-        CompletableFuture<ResponseEntity<?>> elDetailsFuture = elDetailsService.listAsync(commonListRequestModel);
-        CompletableFuture<ResponseEntity<?>> eventsFuture = eventService.listAsync(commonListRequestModel);
-        CompletableFuture<ResponseEntity<?>> fileRepoFuture = fileRepoService.listAsync(commonListRequestModelbyEntityId);
-        CompletableFuture<ResponseEntity<?>> jobsFuture = jobService.listAsync(commonListRequestModel);
-        CompletableFuture<ResponseEntity<?>> notesFuture = notesService.listAsync(commonListRequestModelbyEntityId);
-        CompletableFuture<ResponseEntity<?>> referenceNumbersFuture = referenceNumbersService.listAsync(commonListRequestModel);
-        CompletableFuture<ResponseEntity<?>> routingsFuture = routingsService.listAsync(commonListRequestModel);
-        CompletableFuture<ResponseEntity<?>> serviceDetailsFuture = serviceDetailsService.listAsync(commonListRequestModel);
-        CompletableFuture<ResponseEntity<?>> carrierDetailsFuture = carrierDetailService.listAsync(commonListRequestModel);
-        CompletableFuture<ResponseEntity<?>> pickupDeliveryDetailsFuture =pickupDeliveryDetailsService.listAsync(commonListRequestModel);
-        CompletableFuture<ResponseEntity<?>> partiesFuture = partiesDetailsService.listAsync(commonListRequestModelbyEntityId);
-
-        CompletableFuture.allOf(shipmentsFuture, packingsFuture, additionalDetailsFuture, bookingCarriagesFuture, containersFuture,
-                elDetailsFuture, eventsFuture, fileRepoFuture, jobsFuture, notesFuture, referenceNumbersFuture, routingsFuture,
-                serviceDetailsFuture, pickupDeliveryDetailsFuture, partiesFuture).join();
-
-        var response = new CompleteShipmentResponse();
         var res = (RunnerResponse<ShipmentDetailsResponse>) shipmentsFuture.get().getBody();
 
-        response.setShipment(res.getData());
-        response.setPackings(getResponse(packingsFuture));
-        response.setAdditionalDetails(getResponse(additionalDetailsFuture));
-        response.setBookingCarriages(getResponse(bookingCarriagesFuture));
-        response.setContainers(getResponse(containersFuture));
-        response.setElDetails(getResponse(elDetailsFuture));
-        response.setEvents(getResponse( eventsFuture));
-        response.setFileRepo(getResponse(fileRepoFuture));
-        response.setJob(getResponse(jobsFuture));
-        response.setNotes(getResponse(notesFuture));
-        response.setReferenceNumbers(getResponse(referenceNumbersFuture));
-        response.setRoutings(getResponse( routingsFuture));
-        response.setServiceDetails(getResponse( serviceDetailsFuture));
-        response.setPickupDeliveryDetails(getResponse( pickupDeliveryDetailsFuture));
-        response.setParties(getResponse(partiesFuture));
-
-        return ResponseHelper.buildSuccessResponse(response);
+        return ResponseHelper.buildSuccessResponse(res.getData());
         } catch (Exception e) {
             String responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;

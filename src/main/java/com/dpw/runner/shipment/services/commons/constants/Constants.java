@@ -13,6 +13,7 @@ public class Constants {
     public static final String USER_SERVICE_V1 = "v1";
     public static final String USER_SERVICE_MAVANI = "mavani";
     public static final String NO_DATA = "Not Found!";
+    public static final String SHIPMENT = "SHIPMENT";
 
     //MasterDataFactory
     public static final String MAPPER_MASTER_DATA = "Mapper";
