@@ -4,13 +4,13 @@ import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
-import com.dpw.runner.shipment.services.commons.requests.RunnerEntityMapping;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.dao.IShipmentSettingsDao;
 import com.dpw.runner.shipment.services.dto.request.ShipmentSettingRequest;
 import com.dpw.runner.shipment.services.dto.response.ShipmentSettingsDetailsResponse;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
-import com.dpw.runner.shipment.services.repository.interfaces.IShipmentSettingsDao;
+import com.dpw.runner.shipment.services.repository.interfaces.IShipmentSettingsRepository;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentSettingsService;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
@@ -28,7 +28,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
@@ -94,7 +93,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
             Pair<Specification<ShipmentSettingsDetails>, Pageable> tuple = fetchData(request, ShipmentSettingsDetails.class);
-            Page<ShipmentSettingsDetails> shipmentSettingsPage  = shipmentSettingsDao.findAll(tuple.getLeft(), tuple.getRight());
+            Page<ShipmentSettingsDetails> shipmentSettingsPage  = shipmentSettingsDao.list(tuple.getLeft(), tuple.getRight());
             return ResponseHelper.buildListSuccessResponse(
                     convertEntityListToDtoList(shipmentSettingsPage.getContent()),
                     shipmentSettingsPage.getTotalPages(),
@@ -114,7 +113,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
             Pair<Specification<ShipmentSettingsDetails>, Pageable> tuple = fetchData(request, ShipmentSettingsDetails.class);
-            Page<ShipmentSettingsDetails> shipmentSettingsPage  = shipmentSettingsDao.findAll(tuple.getLeft(), tuple.getRight());
+            Page<ShipmentSettingsDetails> shipmentSettingsPage  = shipmentSettingsDao.list(tuple.getLeft(), tuple.getRight());
             return CompletableFuture.completedFuture(ResponseHelper.buildListSuccessResponse(
                     convertEntityListToDtoList(shipmentSettingsPage.getContent()),
                     shipmentSettingsPage.getTotalPages(),

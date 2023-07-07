@@ -1,13 +1,12 @@
 package com.dpw.runner.shipment.services.entity;
 
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
+import com.dpw.runner.shipment.services.entity.enums.GenerationType;
 import lombok.*;
 import lombok.experimental.Accessors;
 
-import javax.persistence.Column;
-import javax.persistence.ElementCollection;
-import javax.persistence.Entity;
-import javax.persistence.Table;
+import javax.persistence.*;
 import java.util.List;
 
 @Entity
@@ -18,7 +17,7 @@ import java.util.List;
 @ToString(onlyExplicitlyIncluded = true)
 @NoArgsConstructor
 @AllArgsConstructor
-public class ShipmentSettingsDetails extends BaseEntity {
+public class ShipmentSettingsDetails extends MultiTenancy {
     @Column(name = "house_bill_number_lock")
     private Boolean houseBillNumberLock;
 
@@ -85,4 +84,14 @@ public class ShipmentSettingsDetails extends BaseEntity {
 
     @Column(name = "shipment_import_approver_role")
     private String shipmentImportApproverRole;
+
+    @Enumerated(EnumType.ORDINAL)
+    @Column(name = "shipment_id_generation_type")
+    private GenerationType shipmentIdGenerationType;
+
+    @Column(name = "shipment_id_generation_prefix")
+    private String shipmentIdGenerationPrefix;
+
+    @Column(name = "shipment_id_generation_counter")
+    private Integer shipmentIdGenerationCounter;
 }
