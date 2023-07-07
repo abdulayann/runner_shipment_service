@@ -4,7 +4,6 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import lombok.Data;
 
 import java.time.LocalDateTime;
-import java.util.Date;
 
 @Data
 public class EventsResponse implements IRunnerResponse {
@@ -13,8 +12,8 @@ public class EventsResponse implements IRunnerResponse {
     private String masterList;
     private Long shipmentId;
     private String description;
-    private Date estimated;
-    private Date actual;
+    private LocalDateTime estimated;
+    private LocalDateTime actual;
     private Boolean isPublicTrackingEvent;
     private String tenantId;
     private String placeName;

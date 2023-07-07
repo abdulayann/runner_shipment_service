@@ -13,7 +13,6 @@ import javax.persistence.Table;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.UUID;
 
 
 @Entity
@@ -247,9 +246,9 @@ public class ShipmentDetails extends MultiTenancy {
     @Column(name = "finance_closed_on")
     private LocalDateTime financeClosedOn;
 
-    @OneToOne(targetEntity = AdditionalDetail.class)
+    @OneToOne(targetEntity = AdditionalDetails.class)
     @JoinColumn(name = "additional_details_id", referencedColumnName = "id")
-    private AdditionalDetail additionalDetail;
+    private AdditionalDetails additionalDetails;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "entityId")
     @Where(clause = "entity_name = 'shipments'")

@@ -9,6 +9,7 @@ import lombok.*;
 import lombok.experimental.Accessors;
 import org.hibernate.annotations.Where;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 
@@ -36,7 +37,7 @@ public class ELDetails extends MultiTenancy {
     private String unit;
 
     @Column(name = "weight")
-    private Long weight;
+    private BigDecimal weight;
 
     @Column(name = "weight_unit")
     private String weightUnit;

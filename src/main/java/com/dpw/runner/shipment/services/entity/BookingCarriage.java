@@ -7,11 +7,10 @@ import lombok.experimental.Accessors;
 
 import javax.persistence.*;
 import java.time.LocalDateTime;
-import java.util.Date;
+
 
 @Entity
-@Setter
-@Getter
+@Data
 @Table(name = "booking_carriage")
 @Accessors(chain = true)
 @ToString(onlyExplicitlyIncluded = true)
@@ -26,10 +25,10 @@ public class BookingCarriage extends MultiTenancy {
     private Long podId;
 
     @Column(name = "eta")
-    private Date eta;
+    private LocalDateTime eta;
 
     @Column(name = "etd")
-    private Date etd;
+    private LocalDateTime etd;
 
     @Column(name = "vessel")
     private String vessel;

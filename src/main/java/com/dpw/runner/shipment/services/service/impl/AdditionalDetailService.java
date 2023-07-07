@@ -8,7 +8,7 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IAdditionalDetailDao;
 import com.dpw.runner.shipment.services.dto.request.AdditionalDetailRequest;
 import com.dpw.runner.shipment.services.dto.response.AdditionalDetailResponse;
-import com.dpw.runner.shipment.services.entity.AdditionalDetail;
+import com.dpw.runner.shipment.services.entity.AdditionalDetails;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IAdditionalDetailService;
 import com.nimbusds.jose.util.Pair;
@@ -45,7 +45,7 @@ public class AdditionalDetailService implements IAdditionalDetailService {
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
         AdditionalDetailRequest request = (AdditionalDetailRequest) commonRequestModel.getData();
         // TODO- implement validator
-        AdditionalDetail additionalDetails = convertRequestToEntity(request);
+        AdditionalDetails additionalDetails = convertRequestToEntity(request);
         additionalDetails = additionalDetailDao.save(additionalDetails);
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(additionalDetails));
     }
@@ -56,13 +56,13 @@ public class AdditionalDetailService implements IAdditionalDetailService {
         AdditionalDetailRequest request = (AdditionalDetailRequest) commonRequestModel.getData();
         // TODO- implement Validation logic
         long id = request.getId();
-        Optional<AdditionalDetail> oldEntity = additionalDetailDao.findById(id);
+        Optional<AdditionalDetails> oldEntity = additionalDetailDao.findById(id);
         if (!oldEntity.isPresent()) {
             log.debug("Shipment Additional detail is null for Id {}", request.getId());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
 
-        AdditionalDetail additionalDetails = convertRequestToEntity(request);
+        AdditionalDetails additionalDetails = convertRequestToEntity(request);
         additionalDetails.setId(oldEntity.get().getId());
         additionalDetails = additionalDetailDao.save(additionalDetails);
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(additionalDetails));
@@ -73,8 +73,8 @@ public class AdditionalDetailService implements IAdditionalDetailService {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
-            Pair<Specification<AdditionalDetail>, Pageable> tuple = fetchData(request, AdditionalDetail.class);
-            Page<AdditionalDetail> additionalDetailsPage = additionalDetailDao.findAll(tuple.getLeft(), tuple.getRight());
+            Pair<Specification<AdditionalDetails>, Pageable> tuple = fetchData(request, AdditionalDetails.class);
+            Page<AdditionalDetails> additionalDetailsPage = additionalDetailDao.findAll(tuple.getLeft(), tuple.getRight());
             return ResponseHelper.buildListSuccessResponse(
                     convertEntityListToDtoList(additionalDetailsPage.getContent()),
                     additionalDetailsPage.getTotalPages(),
@@ -89,12 +89,12 @@ public class AdditionalDetailService implements IAdditionalDetailService {
 
     @Override
     @Async
-    public CompletableFuture<ResponseEntity<?>> listAsync(CommonRequestModel commonRequestModel){
+    public CompletableFuture<ResponseEntity<?>> listAsync(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
-            Pair<Specification<AdditionalDetail>, Pageable> tuple = fetchData(request, AdditionalDetail.class);
-            Page<AdditionalDetail> additionalDetailsPage  = additionalDetailDao.findAll(tuple.getLeft(), tuple.getRight());
+            Pair<Specification<AdditionalDetails>, Pageable> tuple = fetchData(request, AdditionalDetails.class);
+            Page<AdditionalDetails> additionalDetailsPage = additionalDetailDao.findAll(tuple.getLeft(), tuple.getRight());
             return CompletableFuture.completedFuture(ResponseHelper.buildListSuccessResponse(
                     convertEntityListToDtoList(additionalDetailsPage.getContent()),
                     additionalDetailsPage.getTotalPages(),
@@ -115,7 +115,7 @@ public class AdditionalDetailService implements IAdditionalDetailService {
             // TODO- implement Validation logic
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
             long id = request.getId();
-            Optional<AdditionalDetail> additionalDetails = additionalDetailDao.findById(id);
+            Optional<AdditionalDetails> additionalDetails = additionalDetailDao.findById(id);
             if (!additionalDetails.isPresent()) {
                 log.debug("Shipment Additional detail is null for Id {}", request.getId());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
@@ -136,7 +136,7 @@ public class AdditionalDetailService implements IAdditionalDetailService {
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
             long id = request.getId();
-            Optional<AdditionalDetail> additionalDetails = additionalDetailDao.findById(id);
+            Optional<AdditionalDetails> additionalDetails = additionalDetailDao.findById(id);
             if (!additionalDetails.isPresent()) {
                 log.debug("Shipment Additional detail is null for Id {}", request.getId());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
@@ -151,21 +151,20 @@ public class AdditionalDetailService implements IAdditionalDetailService {
         }
     }
 
-    public ResponseEntity<?> updateEntityFromShipment(CommonRequestModel commonRequestModel, Long shipmentId)
-    {
+    public ResponseEntity<?> updateEntityFromShipment(CommonRequestModel commonRequestModel, Long shipmentId) {
         String responseMsg;
         try {
             // TODO- Handle Transactions here
             AdditionalDetailRequest additionalDetailRequest = (AdditionalDetailRequest) commonRequestModel.getData();
             if (additionalDetailRequest.getId() != null) {
                 long id = additionalDetailRequest.getId();
-                Optional<AdditionalDetail> oldEntity = additionalDetailDao.findById(id);
+                Optional<AdditionalDetails> oldEntity = additionalDetailDao.findById(id);
                 if (!oldEntity.isPresent()) {
                     log.debug("AdditionalDetail is null for Id {}", id);
                     throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
                 }
             }
-            AdditionalDetail parties = convertRequestToEntity(additionalDetailRequest);
+            AdditionalDetails parties = convertRequestToEntity(additionalDetailRequest);
             parties = additionalDetailDao.save(parties);
             return ResponseHelper.buildSuccessResponse(convertEntityToDto(parties));
         } catch (Exception e) {
@@ -176,15 +175,15 @@ public class AdditionalDetailService implements IAdditionalDetailService {
         }
     }
 
-    private AdditionalDetailResponse convertEntityToDto(AdditionalDetail additionalDetail) {
-            return modelMapper.map(additionalDetail, AdditionalDetailResponse.class);
+    private AdditionalDetailResponse convertEntityToDto(AdditionalDetails additionalDetails) {
+        return modelMapper.map(additionalDetails, AdditionalDetailResponse.class);
     }
 
-    private AdditionalDetail convertRequestToEntity(AdditionalDetailRequest request) {
-        return modelMapper.map(request, AdditionalDetail.class);
+    private AdditionalDetails convertRequestToEntity(AdditionalDetailRequest request) {
+        return modelMapper.map(request, AdditionalDetails.class);
     }
 
-    private List<IRunnerResponse> convertEntityListToDtoList(List<AdditionalDetail> list) {
+    private List<IRunnerResponse> convertEntityListToDtoList(List<AdditionalDetails> list) {
         List<IRunnerResponse> responseList = new ArrayList<>();
         list.forEach(additionalDetail -> {
             responseList.add(convertEntityToDto(additionalDetail));

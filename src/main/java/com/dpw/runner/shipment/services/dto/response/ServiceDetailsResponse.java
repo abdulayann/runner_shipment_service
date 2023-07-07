@@ -5,7 +5,7 @@ import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
 import lombok.Data;
 
 import java.time.Duration;
-import java.util.Date;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Data
@@ -17,10 +17,10 @@ public class ServiceDetailsResponse implements IRunnerResponse {
     private String serviceType;
     private PartiesResponse contractor;
     private int srvLocation;
-    private Date bookingDate;
-    private String serviceCount;
+    private LocalDateTime bookingDate;
+    private Long serviceCount;
     private Duration serviceDuration;
-    private Date completionDate;
+    private LocalDateTime completionDate;
     private String refNumber;
     private String serviceNotes;
 }
