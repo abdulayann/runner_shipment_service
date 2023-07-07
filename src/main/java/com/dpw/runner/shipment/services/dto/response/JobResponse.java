@@ -13,8 +13,8 @@ public class JobResponse implements IRunnerResponse {
     private Long id;
     private UUID guid;
     private Long shipmentId;
-    private List<Parties> partiesBuyerDetailsList;
-    private List<Parties> partiesSupplierDetailsList;
+    private PartiesResponse buyerDetail;
+    private PartiesResponse supplierDetail;
     private String orderNumber;
     private Date orderDate;
     private String confirmNumber;

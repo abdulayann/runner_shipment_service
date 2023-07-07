@@ -100,6 +100,15 @@ public class AdditionalDetailRequest extends CommonRequest implements IRunnerReq
     private Boolean WBLPrinted;
     private Boolean draftPrinted;
     private Boolean surrenderPrinted;
-    private Long shipmentId;
+    private PartiesRequest notifyParty;
+    private PartiesRequest importBroker;
+    private PartiesRequest exportBroker;
+    private PartiesRequest sendingForwarder;
+    private PartiesRequest receivingForwarder;
+    private PartiesRequest traderOrSupplier;
+    private PartiesRequest eTailor;
+    private PartiesRequest borrowedFrom;
+    private PartiesRequest sendingAgent;
+    private PartiesRequest receivingAgent;
 
 }

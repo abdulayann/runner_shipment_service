@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.dto.response;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
 import com.dpw.runner.shipment.services.entity.Parties;
 import lombok.*;
 
@@ -18,10 +19,11 @@ public class PickupDeliveryDetailsResponse implements IRunnerResponse {
     private LocalDateTime portTransportAdvised;
     private LocalDateTime actualPickupOrDelivery;
     private LocalDateTime pickupOrDelivery;
-    private List<Parties> partiesBrokerDetailsList;
-    private List<Parties> partiesAgentDetailsList;
-    private List<Parties> partiesTransporterDetailsList;
-    private List<Parties> partiesDestinationDetailsList;
+    private PartiesResponse transporterDetail;
+    private PartiesResponse brokerDetail;
+    private PartiesResponse destinationDetail;
+    private PartiesResponse sourceDetail;
+    private PartiesResponse agentDetail;
     private String type;
     private Long shipmentId;
 }

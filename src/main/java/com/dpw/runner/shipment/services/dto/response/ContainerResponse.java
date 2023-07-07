@@ -86,6 +86,6 @@ public class ContainerResponse implements IRunnerResponse {
     private String achievedVolumeUnit;
     private String weightUtilization;
     private String volumeUtilization;
-    private String pickupAddress;
-    private String deliveryAddress;
+    private PartiesResponse pickupAddress;
+    private PartiesResponse deliveryAddress;
 }
