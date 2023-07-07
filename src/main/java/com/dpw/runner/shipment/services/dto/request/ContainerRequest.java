@@ -19,7 +19,6 @@ public class ContainerRequest extends CommonRequest implements IRunnerRequest {
     private Long id;
     private UUID guid;
     private Long consolidationId;
-    private Long shipmentId;
     private Long loggingId;
     private String containerCode;
     private String containerNumber;

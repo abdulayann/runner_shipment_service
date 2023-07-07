@@ -153,8 +153,6 @@ public class ContainerService implements IContainerService {
         List<Containers> responseContainers = new ArrayList<>();
         try {
             // TODO- Handle Transactions here
-            List<Containers> existingList = containerDao.findByShipmentId(shipmentId);
-            HashSet<Long> existingIds = new HashSet<>( existingList.stream().map(Containers::getId).collect(Collectors.toList()) );
             List<ContainerRequest> containerList = new ArrayList<>();
             List<ContainerRequest> requestList = (List<ContainerRequest>) commonRequestModel.getDataList();
             if(requestList != null && requestList.size() != 0)
@@ -162,14 +160,10 @@ public class ContainerService implements IContainerService {
                 for(ContainerRequest request: requestList)
                 {
                     Long id = request.getId();
-                    if(id != null) {
-                        existingIds.remove(id);
-                    }
                     containerList.add(request);
                 }
                 responseContainers = saveContainers(containerList);
             }
-            deleteContainers(existingIds);
             return ResponseHelper.buildListSuccessResponse(convertEntityListToDtoList(responseContainers));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -185,23 +179,6 @@ public class ContainerService implements IContainerService {
                 .stream()
                 .map(this::convertRequestToEntity)
                 .collect(Collectors.toList()));
-    }
-
-    private ResponseEntity<?> deleteContainers(HashSet<Long> existingIds)
-    {
-        String responseMsg;
-        try {
-            for(Long id: existingIds)
-            {
-                delete(CommonRequestModel.buildRequest(CommonGetRequest.builder().id(id).build()));
-            }
-            return ResponseHelper.buildSuccessResponse();
-        } catch (Exception e) {
-            responseMsg = e.getMessage() != null ? e.getMessage()
-                    : DaoConstants.DAO_GENERIC_DELETE_EXCEPTION_MSG;
-            log.error(responseMsg, e);
-            return ResponseHelper.buildFailedResponse(responseMsg);
-        }
     }
 
     private IRunnerResponse convertEntityToDto(Containers container) {

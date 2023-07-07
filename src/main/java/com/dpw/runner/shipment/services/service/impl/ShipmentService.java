@@ -17,6 +17,7 @@ import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.JoinPoint;
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
@@ -32,6 +33,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
@@ -40,6 +42,9 @@ import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCo
 @Service
 @Slf4j
 public class ShipmentService implements IShipmentService {
+
+    @Autowired
+    private ModelMapper modelMapper;
 
     @Autowired
     private IShipmentDao shipmentDao;
@@ -272,10 +277,12 @@ public class ShipmentService implements IShipmentService {
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
 
-        ShipmentDetails entity = jsonHelper.convertValue(request, ShipmentDetails.class);
+        ShipmentDetails entity = modelMapper.map(request, ShipmentDetails.class);
         entity.setId(oldEntity.get().getId());
+        if(entity.getContainers() == null)
+            entity.setContainers(oldEntity.get().getContainers());
         entity = shipmentDao.save(entity);
-        return ResponseHelper.buildSuccessResponse(jsonHelper.convertValue(entity, ShipmentDetailsResponse.class));
+        return ResponseHelper.buildSuccessResponse(modelMapper.map(entity, ShipmentDetailsResponse.class));
     }
 
     @Transactional
@@ -326,6 +333,8 @@ public class ShipmentService implements IShipmentService {
 
         ShipmentDetails entity = jsonHelper.convertValue(request, ShipmentDetails.class);
         entity.setId(oldEntity.get().getId());
+        List<Containers> containers = getResponse(updatedContainers).stream().map(e -> jsonHelper.convertValue(e, Containers.class)).collect(Collectors.toList());
+        entity.setContainers(containers);
         entity = shipmentDao.save(entity);
         CompleteShipmentResponse response = CompleteShipmentResponse.builder().
                 bookingCarriages(getResponse(updatedBookingCarriages)).
@@ -582,7 +591,8 @@ public class ShipmentService implements IShipmentService {
             Map.entry("noOfPacks", RunnerEntityMapping.builder().tableName("measurementDetails").dataType(Integer.class).build()),
             Map.entry("packsUnit", RunnerEntityMapping.builder().tableName("measurementDetails").dataType(String.class).build()),
             Map.entry("innerPacks", RunnerEntityMapping.builder().tableName("measurementDetails").dataType(Integer.class).build()),
-            Map.entry("innerPackUnit", RunnerEntityMapping.builder().tableName("measurementDetails").dataType(String.class).build())
+            Map.entry("innerPackUnit", RunnerEntityMapping.builder().tableName("measurementDetails").dataType(String.class).build()),
+            Map.entry("containerNumber", RunnerEntityMapping.builder().tableName("containers").dataType(String.class).build())
     );
 
 }
