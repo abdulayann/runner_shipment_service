@@ -7,7 +7,6 @@ import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.RoutingsRequest;
 import com.dpw.runner.shipment.services.dto.response.RoutingsResponse;
-import com.dpw.runner.shipment.services.entity.ReferenceNumbers;
 import com.dpw.runner.shipment.services.entity.Routings;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.IRoutingsDao;
@@ -32,6 +31,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 
 @Service
 @Slf4j
@@ -88,14 +88,14 @@ public class RoutingsService implements IRoutingsService {
 
     @Override
     @Async
-    public CompletableFuture<ResponseEntity<?>> listAsync(CommonRequestModel commonRequestModel){
+    public CompletableFuture<ResponseEntity<?>> listAsync(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
 
             Pair<Specification<Routings>, Pageable> tuple = fetchData(request, Routings.class);
             Page<Routings> notesPage = routingsDao.findAll(tuple.getLeft(), tuple.getRight());
-            return CompletableFuture.completedFuture( ResponseHelper.buildListSuccessResponse(
+            return CompletableFuture.completedFuture(ResponseHelper.buildListSuccessResponse(
                     convertEntityListToDtoList(notesPage.getContent()),
                     notesPage.getTotalPages(),
                     notesPage.getTotalElements()));
@@ -150,27 +150,29 @@ public class RoutingsService implements IRoutingsService {
         }
     }
 
-    public ResponseEntity<?> updateEntityFromShipment(CommonRequestModel commonRequestModel, Long shipmentId)
-    {
+    public ResponseEntity<?> updateEntityFromShipment(CommonRequestModel commonRequestModel, Long shipmentId) {
         String responseMsg;
         List<Routings> responseRoutings = new ArrayList<>();
         try {
             // TODO- Handle Transactions here
-            List<Routings> existingList = routingsDao.findByShipmentId(shipmentId);
-            HashSet<Long> existingIds = new HashSet<>( existingList.stream().map(Routings::getId).collect(Collectors.toList()) );
-            List<RoutingsRequest> containerList = new ArrayList<>();
+            ListCommonRequest listCommonRequest = constructListCommonRequest("shipmentId", shipmentId, "=");
+            Pair<Specification<Routings>, Pageable> pair = fetchData(listCommonRequest, Routings.class);
+            Page<Routings> routings = routingsDao.findAll(pair.getLeft(), pair.getRight());
+            HashSet<Long> existingIds = new HashSet<>(routings
+                    .stream()
+                    .map(Routings::getId)
+                    .collect(Collectors.toList()));
+            List<RoutingsRequest> routingsRequestList = new ArrayList<>();
             List<RoutingsRequest> requestList = (List<RoutingsRequest>) commonRequestModel.getDataList();
-            if(requestList != null && requestList.size() != 0)
-            {
-                for(RoutingsRequest request: requestList)
-                {
+            if (requestList != null && requestList.size() != 0) {
+                for (RoutingsRequest request : requestList) {
                     Long id = request.getId();
-                    if(id != null) {
+                    if (id != null) {
                         existingIds.remove(id);
                     }
-                    containerList.add(request);
+                    routingsRequestList.add(request);
                 }
-                responseRoutings = saveRoutings(containerList);
+                responseRoutings = saveRoutings(routingsRequestList);
             }
             deleteRoutings(existingIds);
             return ResponseHelper.buildListSuccessResponse(convertEntityListToDtoList(responseRoutings));
@@ -182,20 +184,29 @@ public class RoutingsService implements IRoutingsService {
         }
     }
 
-    private List<Routings> saveRoutings(List<RoutingsRequest> containers)
-    {
-        return routingsDao.saveAll(containers
-                .stream()
-                .map(this::convertRequestToRoutingsEntity)
-                .collect(Collectors.toList()));
+    private List<Routings> saveRoutings(List<RoutingsRequest> routings) {
+        List<Routings> res = new ArrayList<>();
+        for(RoutingsRequest req : routings){
+            Routings saveEntity = convertRequestToRoutingsEntity(req);
+            if(req.getId() != null){
+                long id = req.getId();
+                Optional<Routings> oldEntity = routingsDao.findById(id);
+                if (!oldEntity.isPresent()) {
+                    log.debug("Booking Carriage is null for Id {}", req.getId());
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
+                saveEntity = oldEntity.get();
+            }
+            saveEntity = routingsDao.save(saveEntity);
+            res.add(saveEntity);
+        }
+        return res;
     }
 
-    private ResponseEntity<?> deleteRoutings(HashSet<Long> existingIds)
-    {
+    private ResponseEntity<?> deleteRoutings(HashSet<Long> existingIds) {
         String responseMsg;
         try {
-            for(Long id: existingIds)
-            {
+            for (Long id : existingIds) {
                 delete(CommonRequestModel.buildRequest(CommonGetRequest.builder().id(id).build()));
             }
             return ResponseHelper.buildSuccessResponse();

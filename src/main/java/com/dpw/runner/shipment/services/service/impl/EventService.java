@@ -32,6 +32,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 
 @Slf4j
 @Service
@@ -158,8 +159,13 @@ public class EventService implements IEventService {
         List<Events> responseEvents = new ArrayList<>();
         try {
             // TODO- Handle Transactions here
-            List<Events> existingList = eventDao.findByShipmentId(shipmentId);
-            HashSet<Long> existingIds = new HashSet<>(existingList.stream().map(Events::getId).collect(Collectors.toList()));
+            ListCommonRequest listCommonRequest = constructListCommonRequest("shipmentId",shipmentId,"=");
+            Pair<Specification<Events>, Pageable> pair = fetchData(listCommonRequest, Events.class);
+            Page<Events> events = eventDao.findAll(pair.getLeft(), pair.getRight());
+            HashSet<Long> existingIds = new HashSet<>(events
+                    .stream()
+                    .map(Events::getId)
+                    .collect(Collectors.toList()));
             List<EventsRequest> containerList = new ArrayList<>();
             List<EventsRequest> requestList = (List<EventsRequest>) commonRequestModel.getDataList();
             if (requestList != null && requestList.size() != 0) {
@@ -182,11 +188,23 @@ public class EventService implements IEventService {
         }
     }
 
-    private List<Events> saveEvents(List<EventsRequest> elDetails) {
-        return eventDao.saveAll(elDetails
-                .stream()
-                .map(this::convertRequestToEntity)
-                .collect(Collectors.toList()));
+    private List<Events> saveEvents(List<EventsRequest> events) {
+        List<Events> res = new ArrayList<>();
+        for(EventsRequest req : events){
+            Events saveEntity = convertRequestToEntity(req);
+            if(req.getId() != null){
+                long id = req.getId();
+                Optional<Events> oldEntity = eventDao.findById(id);
+                if (!oldEntity.isPresent()) {
+                    log.debug("Event is null for Id {}", req.getId());
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
+                saveEntity = oldEntity.get();
+            }
+            saveEntity = eventDao.save(saveEntity);
+            res.add(saveEntity);
+        }
+        return res;
     }
 
     private ResponseEntity<?> deleteEvents(HashSet<Long> existingIds) {

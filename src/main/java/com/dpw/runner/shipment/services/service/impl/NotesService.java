@@ -8,7 +8,6 @@ import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.NotesRequest;
 import com.dpw.runner.shipment.services.dto.response.NotesResponse;
-import com.dpw.runner.shipment.services.entity.FileRepo;
 import com.dpw.runner.shipment.services.entity.Notes;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.INotesDao;
@@ -33,6 +32,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListRequestFromEntityId;
 
 @Service
 @Slf4j
@@ -89,7 +89,7 @@ public class NotesService implements INotesService {
 
     @Override
     @Async
-    public CompletableFuture<ResponseEntity<?>> listAsync(CommonRequestModel commonRequestModel){
+    public CompletableFuture<ResponseEntity<?>> listAsync(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
@@ -151,27 +151,29 @@ public class NotesService implements INotesService {
         }
     }
 
-    public ResponseEntity<?> updateEntityFromShipment(CommonRequestModel commonRequestModel, Long shipmentId)
-    {
+    public ResponseEntity<?> updateEntityFromShipment(CommonRequestModel commonRequestModel, Long shipmentId) {
         String responseMsg;
         List<Notes> responseNotes = new ArrayList<>();
         try {
             // TODO- Handle Transactions here
-            List<Notes> existingList = notesDao.findByEntityIdAndEntityType(shipmentId, Constants.SHIPMENT_TYPE);
-            HashSet<Long> existingIds = new HashSet<>( existingList.stream().map(Notes::getId).collect(Collectors.toList()) );
-            List<NotesRequest> containerList = new ArrayList<>();
+            ListCommonRequest listCommonRequest = constructListRequestFromEntityId(shipmentId, Constants.SHIPMENT_TYPE);
+            Pair<Specification<Notes>, Pageable> pair = fetchData(listCommonRequest, Notes.class);
+            Page<Notes> notes = notesDao.findAll(pair.getLeft(), pair.getRight());
+            HashSet<Long> existingIds = new HashSet<>(notes.getContent()
+                    .stream()
+                    .map(Notes::getId)
+                    .collect(Collectors.toList()));
+            List<NotesRequest> saveNotes = new ArrayList<>();
             List<NotesRequest> requestList = (List<NotesRequest>) commonRequestModel.getDataList();
-            if(requestList != null && requestList.size() != 0)
-            {
-                for(NotesRequest request: requestList)
-                {
+            if (requestList != null && requestList.size() != 0) {
+                for (NotesRequest request : requestList) {
                     Long id = request.getId();
-                    if(id != null) {
+                    if (id != null) {
                         existingIds.remove(id);
                     }
-                    containerList.add(request);
+                    saveNotes.add(request);
                 }
-                responseNotes = saveNotes(containerList);
+                responseNotes = saveNotes(saveNotes);
             }
             deleteNotes(existingIds);
             return ResponseHelper.buildListSuccessResponse(convertEntityListToDtoList(responseNotes));
@@ -183,20 +185,29 @@ public class NotesService implements INotesService {
         }
     }
 
-    private List<Notes> saveNotes(List<NotesRequest> containers)
-    {
-        return notesDao.saveAll(containers
-                .stream()
-                .map(this::convertRequestToNotesEntity)
-                .collect(Collectors.toList()));
+    private List<Notes> saveNotes(List<NotesRequest> notes) {
+        List<Notes> res = new ArrayList<>();
+        for(NotesRequest req : notes){
+            Notes saveEntity = convertRequestToNotesEntity(req);
+            if(req.getId() != null){
+                long id = req.getId();
+                Optional<Notes> oldEntity = notesDao.findById(id);
+                if (!oldEntity.isPresent()) {
+                    log.debug("Notes is null for Id {}", req.getId());
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
+                saveEntity = oldEntity.get();
+            }
+            saveEntity = notesDao.save(saveEntity);
+            res.add(saveEntity);
+        }
+        return res;
     }
 
-    private ResponseEntity<?> deleteNotes(HashSet<Long> existingIds)
-    {
+    private ResponseEntity<?> deleteNotes(HashSet<Long> existingIds) {
         String responseMsg;
         try {
-            for(Long id: existingIds)
-            {
+            for (Long id : existingIds) {
                 delete(CommonRequestModel.buildRequest(CommonGetRequest.builder().id(id).build()));
             }
             return ResponseHelper.buildSuccessResponse();

@@ -104,7 +104,8 @@ public class CommonUtils {
         }
         return parameterValue;
     }
-    public static ListCommonRequest constructListCommonRequest(String fieldName, Object value, String operator){
+
+    public static ListCommonRequest constructListCommonRequest(String fieldName, Object value, String operator) {
         ListCommonRequest request = new ListCommonRequest();
         request.setPageNo(0);
         request.setLimit(Integer.MAX_VALUE);
@@ -119,4 +120,32 @@ public class CommonUtils {
         request.setFilterCriteria(criterias);
         return request;
     }
+
+    public static ListCommonRequest constructListRequestFromEntityId(Long entityId, String entityType) {
+        FilterCriteria entityIdCriteria = FilterCriteria.builder()
+                .innerFilter(Arrays.asList(FilterCriteria.builder()
+                                .criteria(Criteria.builder()
+                                        .fieldName("entityId")
+                                        .operator("=")
+                                        .value(entityId)
+                                        .build()).build(),
+                        FilterCriteria.builder()
+                                .logicOperator("AND")
+                                .criteria(Criteria.builder()
+                                        .fieldName("entityType")
+                                        .operator("=")
+                                        .value(entityType)
+                                        .build())
+                                .build()))
+                .build();
+
+        ListCommonRequest listCommonRequest = ListCommonRequest.builder()
+                .pageNo(0)
+                .limit(Integer.MAX_VALUE)
+                .filterCriteria(Arrays.asList(entityIdCriteria))
+                .build();
+
+        return listCommonRequest;
+    }
+
 }

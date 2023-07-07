@@ -33,6 +33,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 
 @Service
 @Slf4j
@@ -178,8 +179,13 @@ public class ELDetailsService implements IELDetailsService {
         List<ELDetails> responseELDetails = new ArrayList<>();
         try {
             // TODO- Handle Transactions here
-            List<ELDetails> existingList = elDetailsDao.findByShipmentId(shipmentId);
-            HashSet<Long> existingIds = new HashSet<>(existingList.stream().map(ELDetails::getId).collect(Collectors.toList()));
+            ListCommonRequest listCommonRequest = constructListCommonRequest("shipmentId",shipmentId,"=");
+            Pair<Specification<ELDetails>, Pageable> pair = fetchData(listCommonRequest, ELDetails.class);
+            Page<ELDetails> elDetails = elDetailsDao.findAll(pair.getLeft(), pair.getRight());
+            HashSet<Long> existingIds = new HashSet<>(elDetails
+                    .stream()
+                    .map(ELDetails::getId)
+                    .collect(Collectors.toList()));
             List<ELDetailsRequest> containerList = new ArrayList<>();
             List<ELDetailsRequest> requestList = (List<ELDetailsRequest>) commonRequestModel.getDataList();
             if (requestList != null && requestList.size() != 0) {
@@ -203,10 +209,22 @@ public class ELDetailsService implements IELDetailsService {
     }
 
     private List<ELDetails> saveELDetails(List<ELDetailsRequest> elDetails) {
-        return elDetailsDao.saveAll(elDetails
-                .stream()
-                .map(this::convertRequestToELDetails)
-                .collect(Collectors.toList()));
+        List<ELDetails> res = new ArrayList<>();
+        for(ELDetailsRequest req : elDetails){
+            ELDetails saveEntity = convertRequestToELDetails(req);
+            if(req.getId() != null){
+                long id = req.getId();
+                Optional<ELDetails> oldEntity = elDetailsDao.findById(id);
+                if (!oldEntity.isPresent()) {
+                    log.debug("El Details is null for Id {}", req.getId());
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
+                saveEntity = oldEntity.get();
+            }
+            saveEntity = elDetailsDao.save(saveEntity);
+            res.add(saveEntity);
+        }
+        return res;
     }
 
     private ResponseEntity<?> deleteELDetails(HashSet<Long> existingIds) {

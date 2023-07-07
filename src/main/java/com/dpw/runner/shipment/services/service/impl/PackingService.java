@@ -8,7 +8,6 @@ import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.PackingRequest;
 import com.dpw.runner.shipment.services.dto.response.PackingResponse;
-import com.dpw.runner.shipment.services.entity.BookingCarriage;
 import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.IPackingDao;
@@ -34,6 +33,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 
 @Slf4j
 @Service
@@ -73,7 +73,7 @@ public class PackingService implements IPackingService {
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
             // construct specifications for filter request
-            Pair<Specification<Packing>, Pageable> tuple = fetchData(request, BookingCarriage.class);
+            Pair<Specification<Packing>, Pageable> tuple = fetchData(request, Packing.class);
             Page<Packing> packingPage = packingDao.findAll(tuple.getLeft(), tuple.getRight());
             return ResponseHelper.buildListSuccessResponse(
                     convertEntityListToDtoList(packingPage.getContent()),
@@ -151,8 +151,13 @@ public class PackingService implements IPackingService {
         List<Packing> responsePacking = new ArrayList<>();
         try {
             // TODO- Handle Transactions here
-            List<Packing> existingList = packingDao.findByShipmentId(shipmentId);
-            HashSet<Long> existingIds = new HashSet<>( existingList.stream().map(Packing::getId).collect(Collectors.toList()) );
+            ListCommonRequest listCommonRequest = constructListCommonRequest("shipmentId",shipmentId,"=");
+            Pair<Specification<Packing>, Pageable> pair = fetchData(listCommonRequest, Packing.class);
+            Page<Packing> packings = packingDao.findAll(pair.getLeft(), pair.getRight());
+            HashSet<Long> existingIds = new HashSet<>(packings
+                    .stream()
+                    .map(Packing::getId)
+                    .collect(Collectors.toList()));
             List<PackingRequest> packingList = new ArrayList<>();
             List<PackingRequest> requestList = (List<PackingRequest>) commonRequestModel.getDataList();
             if(requestList != null && requestList.size() != 0)
@@ -179,10 +184,22 @@ public class PackingService implements IPackingService {
 
     private List<Packing> savePackings(List<PackingRequest> packings)
     {
-        return packingDao.saveAll(packings
-                .stream()
-                .map(this::convertRequestToEntity)
-                .collect(Collectors.toList()));
+        List<Packing> res = new ArrayList<>();
+        for(PackingRequest req : packings){
+            Packing saveEntity = convertRequestToEntity(req);
+            if(req.getId() != null){
+                long id = req.getId();
+                Optional<Packing> oldEntity = packingDao.findById(id);
+                if (!oldEntity.isPresent()) {
+                    log.debug("Packing is null for Id {}", req.getId());
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
+                saveEntity = oldEntity.get();
+            }
+            saveEntity = packingDao.save(saveEntity);
+            res.add(saveEntity);
+        }
+        return res;
     }
 
     private ResponseEntity<?> deletePackings(HashSet<Long> existingIds)

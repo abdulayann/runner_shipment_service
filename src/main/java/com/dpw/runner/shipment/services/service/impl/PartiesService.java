@@ -1,6 +1,5 @@
 package com.dpw.runner.shipment.services.service.impl;
 
-import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
@@ -8,8 +7,6 @@ import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
 import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
-import com.dpw.runner.shipment.services.entity.BookingCarriage;
-import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.entity.Parties;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.IPartiesDao;
@@ -26,10 +23,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
@@ -90,14 +84,14 @@ public class PartiesService implements IPartiesDetailsService {
 
     @Override
     @Async
-    public CompletableFuture<ResponseEntity<?>> listAsync(CommonRequestModel commonRequestModel){
+    public CompletableFuture<ResponseEntity<?>> listAsync(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
 
             Pair<Specification<Parties>, Pageable> tuple = fetchData(request, Parties.class);
             Page<Parties> partiesPage = partiesDao.findAll(tuple.getLeft(), tuple.getRight());
-            return CompletableFuture.completedFuture( ResponseHelper.buildListSuccessResponse(
+            return CompletableFuture.completedFuture(ResponseHelper.buildListSuccessResponse(
                     convertEntityListToDtoList(partiesPage.getContent()),
                     partiesPage.getTotalPages(),
                     partiesPage.getTotalElements()));
@@ -152,30 +146,22 @@ public class PartiesService implements IPartiesDetailsService {
         }
     }
 
-    public ResponseEntity<?> updateEntityFromShipment(CommonRequestModel commonRequestModel, Long shipmentId)
-    {
+    public ResponseEntity<?> updateEntityFromShipment(CommonRequestModel commonRequestModel, Long shipmentId) {
         String responseMsg;
-        List<Parties> responseParties = new ArrayList<>();
         try {
             // TODO- Handle Transactions here
-            List<Parties> existingList = partiesDao.findByEntityIdAndEntityType(shipmentId, Constants.SHIPMENT_TYPE);
-            HashSet<Long> existingIds = new HashSet<>( existingList.stream().map(Parties::getId).collect(Collectors.toList()) );
-            List<PartiesRequest> containerList = new ArrayList<>();
-            List<PartiesRequest> requestList = (List<PartiesRequest>) commonRequestModel.getDataList();
-            if(requestList != null && requestList.size() != 0)
-            {
-                for(PartiesRequest request: requestList)
-                {
-                    Long id = request.getId();
-                    if(id != null) {
-                        existingIds.remove(id);
-                    }
-                    containerList.add(request);
+            PartiesRequest partiesRequest = (PartiesRequest) commonRequestModel.getData();
+            if (partiesRequest.getId() != null) {
+                long id = partiesRequest.getId();
+                Optional<Parties> oldEntity = partiesDao.findById(id);
+                if (!oldEntity.isPresent()) {
+                    log.debug("Parties is null for Id {}", id);
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
                 }
-                responseParties = saveParties(containerList);
             }
-            deleteParties(existingIds);
-            return ResponseHelper.buildListSuccessResponse(convertEntityListToDtoList(responseParties));
+            Parties parties = convertRequestToPartiesDetailsEntity(partiesRequest);
+            parties = partiesDao.save(parties);
+            return ResponseHelper.buildSuccessResponse(convertEntityToDto(parties));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
@@ -184,30 +170,6 @@ public class PartiesService implements IPartiesDetailsService {
         }
     }
 
-    private List<Parties> saveParties(List<PartiesRequest> containers)
-    {
-        return partiesDao.saveAll(containers
-                .stream()
-                .map(this::convertRequestToPartiesDetailsEntity)
-                .collect(Collectors.toList()));
-    }
-
-    private ResponseEntity<?> deleteParties(HashSet<Long> existingIds)
-    {
-        String responseMsg;
-        try {
-            for(Long id: existingIds)
-            {
-                delete(CommonRequestModel.buildRequest(CommonGetRequest.builder().id(id).build()));
-            }
-            return ResponseHelper.buildSuccessResponse();
-        } catch (Exception e) {
-            responseMsg = e.getMessage() != null ? e.getMessage()
-                    : DaoConstants.DAO_GENERIC_DELETE_EXCEPTION_MSG;
-            log.error(responseMsg, e);
-            return ResponseHelper.buildFailedResponse(responseMsg);
-        }
-    }
 
     private PartiesResponse convertEntityToDto(Parties notes) {
         return modelMapper.map(notes, PartiesResponse.class);
