@@ -8,8 +8,8 @@ import java.util.List;
 @Setter
 @ToString
 @Builder
-@NoArgsConstructor
 @AllArgsConstructor
+@NoArgsConstructor
 public class ListCommonRequest implements IRunnerRequest{
     private List<FilterCriteria> filterCriteria;
     private SortRequest sortRequest;

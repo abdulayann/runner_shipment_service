@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.dto.request;
 
+import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import io.swagger.annotations.ApiModel;
 import lombok.*;
@@ -9,9 +10,10 @@ import java.util.List;
 @Data
 @ApiModel("Complete Shipment Request Model")
 @ToString
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class CompleteShipmentRequest implements IRunnerRequest {
+public class CompleteShipmentRequest extends CommonRequest implements IRunnerRequest {
     private List<PackingRequest> packingRequest;
     private List<AdditionalDetailRequest> additionalDetailRequest;
     private List<BookingCarriageRequest>  bookingCarriageRequest;
@@ -29,4 +31,3 @@ public class CompleteShipmentRequest implements IRunnerRequest {
     private List<PartiesRequest> partiesRequest;
     private ShipmentRequest shipmentRequest;
 }
-

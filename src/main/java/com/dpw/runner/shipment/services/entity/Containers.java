@@ -24,9 +24,6 @@ public class Containers extends MultiTenancy {
     @Column(name = "consolidation_id")
     private Long consolidationId;
 
-    @Column(name = "shipment_id")
-    private Long shipmentId;
-
     @Column(name = "logging_id")
     private Long loggingId;
 
