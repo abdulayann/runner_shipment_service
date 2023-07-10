@@ -27,7 +27,7 @@ public class ServiceDetails extends MultiTenancy {
     @Column(name = "service_type")
     private String serviceType;
 
-    @OneToOne(targetEntity = Parties.class)
+    @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "contractor_id", referencedColumnName = "id")
     private Parties contractor;
 

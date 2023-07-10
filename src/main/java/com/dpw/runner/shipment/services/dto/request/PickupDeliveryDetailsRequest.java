@@ -23,10 +23,11 @@ public class PickupDeliveryDetailsRequest extends CommonRequest implements IRunn
     private LocalDateTime portTransportAdvised;
     private LocalDateTime actualPickupOrDelivery;
     private LocalDateTime pickupOrDelivery;
-    private List<Parties> partiesBrokerDetailsList;
-    private List<Parties> partiesAgentDetailsList;
-    private List<Parties> partiesTransporterDetailsList;
-    private List<Parties> partiesDestinationDetailsList;
+    private PartiesRequest transporterDetail;
+    private PartiesRequest brokerDetail;
+    private PartiesRequest destinationDetail;
+    private PartiesRequest sourceDetail;
+    private PartiesRequest agentDetail;
     private String type;
     private Long shipmentId;
 }

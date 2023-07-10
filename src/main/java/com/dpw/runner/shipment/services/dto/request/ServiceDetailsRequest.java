@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.dto.request;
 
 import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
+import com.dpw.runner.shipment.services.entity.Parties;
 import io.swagger.annotations.ApiModel;
 import lombok.*;
 
@@ -20,8 +21,7 @@ public class ServiceDetailsRequest extends CommonRequest implements IRunnerReque
     private Long shipmentId;
     private Long consolidationId;
     private String serviceType;
-    private Long contractorId;
-    private Long contractorAddressId;
+    private PartiesRequest contractor;
     private int srvLocation;
     private Date bookingDate;
     private String serviceCount;

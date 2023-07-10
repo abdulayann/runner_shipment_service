@@ -40,23 +40,23 @@ public class PickupDeliveryDetails extends MultiTenancy {
     @Column(name = "shipment_id")
     private Long shipmentId;
 
-    @OneToOne(targetEntity = Parties.class)
+    @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "transporter_id", referencedColumnName = "id")
     private Parties transporterDetail;
 
-    @OneToOne(targetEntity = Parties.class)
+    @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "broker_id", referencedColumnName = "id")
     private Parties brokerDetail;
 
-    @OneToOne(targetEntity = Parties.class)
+    @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "destination_id", referencedColumnName = "id")
     private Parties destinationDetail;
 
-    @OneToOne(targetEntity = Parties.class)
+    @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "source_id", referencedColumnName = "id")
     private Parties sourceDetail;
 
-    @OneToOne(targetEntity = Parties.class)
+    @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "agent_id", referencedColumnName = "id")
     private Parties agentDetail;
 

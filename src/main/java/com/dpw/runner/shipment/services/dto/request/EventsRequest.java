@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import lombok.*;
 
+import java.time.LocalDateTime;
 import java.util.Date;
 
 @Getter
@@ -19,8 +20,8 @@ public class EventsRequest extends CommonRequest implements IRunnerRequest {
     private Long tenantId;
     private Long shipmentId;
     private String description;
-    private Date estimated;
-    private Date actual;
+    private LocalDateTime estimated;
+    private LocalDateTime actual;
     private Boolean isPublicTrackingEvent;
     private String placeName;
     private String placeDescription;

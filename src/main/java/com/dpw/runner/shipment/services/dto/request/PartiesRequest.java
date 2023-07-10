@@ -20,9 +20,9 @@ public class PartiesRequest extends CommonRequest implements IRunnerRequest {
     private Long entityId;
     private String entityType;
     private String type;
-    private Integer orgId;
+    private String orgCode;
     private Integer tenantId;
-    private Integer addressId;
+    private String addressCode;
     private Map<String, Object> orgData;
     private Map<String, Object> addressData;
 }

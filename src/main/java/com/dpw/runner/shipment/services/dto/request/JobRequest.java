@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import com.dpw.runner.shipment.services.entity.Parties;
 import lombok.*;
 
+import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.List;
 
@@ -17,17 +18,17 @@ import java.util.List;
 public class JobRequest extends CommonRequest implements IRunnerRequest {
     private Long id;
     private Long shipmentId;
-    private List<Parties> partiesBuyerDetailsList;
-    private List<Parties> partiesSupplierDetailsList;
+    private PartiesRequest buyerDetail;
+    private PartiesRequest supplierDetail;
     private String orderNumber;
-    private Date orderDate;
+    private LocalDateTime orderDate;
     private String confirmNumber;
-    private Date confirmDate;
+    private LocalDateTime confirmDate;
     private String invoiceNumber;
-    private Date invoiceDate;
+    private LocalDateTime invoiceDate;
     private Long buyerId;
     private String orderStatus;
-    private Date followUpDate;
+    private LocalDateTime followUpDate;
     private String description;
     private String currency;
     private String serviceMode;

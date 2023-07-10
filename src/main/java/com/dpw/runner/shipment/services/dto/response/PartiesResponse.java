@@ -6,6 +6,7 @@ import io.swagger.annotations.ApiModel;
 import lombok.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Data
@@ -20,9 +21,9 @@ public class PartiesResponse implements IRunnerResponse {
     private Long entityId;
     private String entityType;
     private String type;
-    private Integer orgId;
+    private String orgCode;
     private Integer tenantId;
-    private Integer addressId;
-    private List<Containers> containersPickupAddress;
-    private List<Containers> containersDeliveryAddress;
+    private String addressCode;
+    private Map<String, Object> orgData;
+    private Map<String, Object> addressData;
 }

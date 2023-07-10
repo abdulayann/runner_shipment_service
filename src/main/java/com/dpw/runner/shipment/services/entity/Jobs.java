@@ -22,11 +22,11 @@ public class Jobs extends MultiTenancy {
     @Column(name = "shipment_id")
     private Long shipmentId;
 
-    @OneToOne(targetEntity = Parties.class)
+    @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "buyer_detail_id", referencedColumnName = "id")
     private Parties buyerDetail;
 
-    @OneToOne(targetEntity = Parties.class)
+    @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "supplier_detail_id", referencedColumnName = "id")
     private Parties supplierDetail;
 
