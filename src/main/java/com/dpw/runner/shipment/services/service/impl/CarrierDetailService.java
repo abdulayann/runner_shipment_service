@@ -44,15 +44,35 @@ public class CarrierDetailService implements ICarrierDetailService {
 
     @Transactional
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
+        String responseMsg;
         CarrierDetailRequest request = (CarrierDetailRequest) commonRequestModel.getData();
+        if(request == null) {
+            log.debug("Request is empty for Carrier Details Create");
+        }
         CarrierDetails carrierDetails = convertRequestToCarrierDetail(request);
-        carrierDetails = carrierDao.save(carrierDetails);
+        try {
+            carrierDetails = carrierDao.save(carrierDetails);
+            log.info("Carrier Details Saved Successfully for Id {}", carrierDetails.getId());
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(carrierDetails));
     }
 
     @Transactional
     public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
+        String responseMsg;
         CarrierDetailRequest request = (CarrierDetailRequest) commonRequestModel.getData();
+        if(request == null) {
+            log.error("Request is empty for Carrier Detail Update");
+        }
+
+        if(request.getId() == null) {
+            log.error("Request Id is null for Carrier Detail Update");
+        }
         long id = request.getId();
         Optional<CarrierDetails> oldEntity = carrierDao.findById(id);
         if (oldEntity.isEmpty()) {
@@ -62,7 +82,15 @@ public class CarrierDetailService implements ICarrierDetailService {
 
         CarrierDetails carrierDetails = convertRequestToCarrierDetail(request);
         carrierDetails.setId(oldEntity.get().getId());
-        carrierDetails = carrierDao.save(carrierDetails);
+        try {
+            carrierDetails = carrierDao.save(carrierDetails);
+            log.info("Updating the carrier details for Id {} ",id);
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(carrierDetails));
     }
 
@@ -71,9 +99,12 @@ public class CarrierDetailService implements ICarrierDetailService {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
-
+            if(request == null) {
+                log.error("Request is empty for carrier details list");
+            }
             Pair<Specification<CarrierDetails>, Pageable> tuple = fetchData(request, CarrierDetails.class);
             Page<CarrierDetails> carrierDetailsPage = carrierDao.findAll(tuple.getLeft(), tuple.getRight());
+            log.info("Carrier detail list retrieved successfully");
             return ResponseHelper.buildListSuccessResponse(
                     convertEntityListToDtoList(carrierDetailsPage.getContent()),
                     carrierDetailsPage.getTotalPages(),
@@ -92,9 +123,12 @@ public class CarrierDetailService implements ICarrierDetailService {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
-
+            if(request == null) {
+                log.error("Request is empty for carrier details async list");
+            }
             Pair<Specification<CarrierDetails>, Pageable> tuple = fetchData(request, CarrierDetails.class);
             Page<CarrierDetails> carrierDetailsPage = carrierDao.findAll(tuple.getLeft(), tuple.getRight());
+            log.info("Carrier detail async list retrieved successfully");
             return CompletableFuture.completedFuture(ResponseHelper.buildListSuccessResponse(
                     convertEntityListToDtoList(carrierDetailsPage.getContent()),
                     carrierDetailsPage.getTotalPages(),
@@ -113,12 +147,19 @@ public class CarrierDetailService implements ICarrierDetailService {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
+            if(request == null) {
+                log.error("Request is empty for Carrier Details Delete");
+            }
+            if(request.getId() == null) {
+                log.error("Request Id is null for Carrier Details Delete");
+            }
             long id = request.getId();
             Optional<CarrierDetails> carrierDetails = carrierDao.findById(id);
             if (carrierDetails.isEmpty()) {
                 log.debug("Carrier Details is null for Id {}", request.getId());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
+            log.info("Deleted carrier details for Id {}", id);
             carrierDao.delete(carrierDetails.get());
             return ResponseHelper.buildSuccessResponse();
         } catch (Exception e) {
@@ -134,13 +175,19 @@ public class CarrierDetailService implements ICarrierDetailService {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
+            if(request == null) {
+                log.error("Request is empty for Carrier Detail retrieve");
+            }
+            if(request.getId() == null) {
+                log.error("Request Id is null for Carrier Detail retrieve");
+            }
             long id = request.getId();
             Optional<CarrierDetails> carrierDetail = carrierDao.findById(id);
             if (carrierDetail.isEmpty()) {
                 log.debug("Carrier Detail is null for Id {}", request.getId());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
-
+            log.info("Carrier Detail fetched successfully for Id {}", id);
             CarrierDetailResponse response = convertEntityToDto(carrierDetail.get());
             return ResponseHelper.buildSuccessResponse(response);
         } catch (Exception e) {

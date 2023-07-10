@@ -49,19 +49,37 @@ public class JobService implements IJobService {
     ModelMapper modelMapper;
 
     @Override
-    @Transactional
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
+        String responseMsg;
         JobRequest request = (JobRequest) commonRequestModel.getData();
-
+        if(request == null) {
+            log.debug("Request is empty for Job create");
+        }
         Jobs job = convertRequestToEntity(request);
-        job = jobDao.save(job);
+        try {
+            job = jobDao.save(job);
+            log.info("Job created successfully for Id {}", job.getId());
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(job));
     }
 
     @Transactional
     public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
+        String responseMsg;
         JobRequest request = (JobRequest) commonRequestModel.getData();
-        long id =request.getId();
+        if(request == null) {
+            log.debug("Request is empty for Job update");
+        }
+
+        if(request.getId() == null) {
+            log.debug("Request Id is null Job update");
+        }
+        long id = request.getId();
         Optional<Jobs> oldEntity = jobDao.findById(id);
         if(!oldEntity.isPresent()) {
             log.debug("Jobs is null for Id {}", request.getId());
@@ -70,7 +88,15 @@ public class JobService implements IJobService {
 
         Jobs jobs = convertRequestToEntity(request);
         jobs.setId(oldEntity.get().getId());
-        jobs = jobDao.save(jobs);
+        try {
+            jobs = jobDao.save(jobs);
+            log.info("Updated the job details for Id {} ",id);
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(jobs));
     }
 
@@ -78,9 +104,13 @@ public class JobService implements IJobService {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
+            if(request == null) {
+                log.error("Request is empty for Job list");
+            }
             // construct specifications for filter request
             Pair<Specification<Jobs>, Pageable> tuple = fetchData(request, BookingCarriage.class);
             Page<Jobs> jobsPage  = jobDao.findAll(tuple.getLeft(), tuple.getRight());
+            log.info("Job list retrieved successfully");
             return ResponseHelper.buildListSuccessResponse(
                     convertEntityListToDtoList(jobsPage.getContent()),
                     jobsPage.getTotalPages(),
@@ -99,9 +129,13 @@ public class JobService implements IJobService {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
+            if(request == null) {
+                log.error("Request is empty for Job async list");
+            }
             // construct specifications for filter request
             Pair<Specification<Jobs>, Pageable> tuple = fetchData(request, Jobs.class);
             Page<Jobs> jobsPage  = jobDao.findAll(tuple.getLeft(), tuple.getRight());
+            log.info("Job async list retrieved successfully");
             return CompletableFuture.completedFuture(
                     ResponseHelper
                             .buildListSuccessResponse(
@@ -118,13 +152,29 @@ public class JobService implements IJobService {
 
     @Override
     public ResponseEntity<?> delete(CommonRequestModel commonRequestModel) {
+        String responseMsg;
+        if(commonRequestModel == null) {
+            log.debug("Request is empty for Job delete");
+        }
+        if(commonRequestModel.getId() == null) {
+            log.debug("Request Id is null for Job delete");
+        }
         Long id = commonRequestModel.getId();
+
         Optional<Jobs> targetJob = jobDao.findById(id);
         if (targetJob.isEmpty()) {
             log.debug("No entity present for id {} ", id);
             return ResponseHelper.buildFailedResponse(Constants.NO_DATA);
         }
-        jobDao.delete(targetJob.get());
+        try {
+            jobDao.delete(targetJob.get());
+            log.info("Deleted job for Id {}", id);
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_DELETE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
         return ResponseHelper.buildSuccessResponse();
     }
 
@@ -133,13 +183,19 @@ public class JobService implements IJobService {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
+            if(request == null) {
+                log.error("Request is empty for Job retrieve");
+            }
+            if(request.getId() == null) {
+                log.error("Request Id is null for Job retrieve");
+            }
             long id = request.getId();
             Optional<Jobs> job = jobDao.findById(id);
             if (job.isEmpty()) {
                 log.debug("Job is null for Id {}", request.getId());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
-
+            log.info("Job details fetched successfully for Id {}", id);
             JobResponse response = (JobResponse) convertEntityToDto(job.get());
             return ResponseHelper.buildSuccessResponse(response);
         } catch (Exception e) {

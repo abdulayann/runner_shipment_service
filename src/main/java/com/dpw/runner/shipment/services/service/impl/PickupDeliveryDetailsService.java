@@ -46,17 +46,37 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
 
     @Transactional
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
+        String responseMsg;
         PickupDeliveryDetailsRequest request = null;
         request = (PickupDeliveryDetailsRequest) commonRequestModel.getData();
+        if(request == null) {
+            log.debug("Request is empty for Pickup Delivery create");
+        }
         PickupDeliveryDetails pickupDeliveryDetails = convertRequestToEntity(request);
-        pickupDeliveryDetails = pickupDeliveryDetailsDao.save(pickupDeliveryDetails);
+        try {
+            pickupDeliveryDetails = pickupDeliveryDetailsDao.save(pickupDeliveryDetails);
+            log.info("Pickup Delivery Details created successfully for Id {}", pickupDeliveryDetails.getId());
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(pickupDeliveryDetails));
     }
 
     @Transactional
     public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
+        String responseMsg;
         PickupDeliveryDetailsRequest request = (PickupDeliveryDetailsRequest) commonRequestModel.getData();
-        long id =request.getId();
+        if(request == null) {
+            log.debug("Request is empty for Pickup Delivery update");
+        }
+
+        if(request.getId() == null) {
+            log.debug("Request Id is null for Pickup Delivery update");
+        }
+        long id = request.getId();
         Optional<PickupDeliveryDetails> oldEntity = pickupDeliveryDetailsDao.findById(id);
         if(!oldEntity.isPresent()) {
             log.debug("Pickup Delivery Details is null for Id {}", request.getId());
@@ -65,7 +85,15 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
 
         PickupDeliveryDetails pickupDeliveryDetails = convertRequestToEntity(request);
         pickupDeliveryDetails.setId(oldEntity.get().getId());
-        pickupDeliveryDetails = pickupDeliveryDetailsDao.save(pickupDeliveryDetails);
+        try {
+            pickupDeliveryDetails = pickupDeliveryDetailsDao.save(pickupDeliveryDetails);
+            log.info("Updated the pickup delivery details for Id {} ", id);
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(pickupDeliveryDetails));
     }
 
@@ -73,9 +101,13 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
+            if(request == null) {
+                log.error("Request is empty for Pickup Delivery list");
+            }
             // construct specifications for filter request
             Pair<Specification<PickupDeliveryDetails>, Pageable> tuple = fetchData(request, PickupDeliveryDetails.class);
             Page<PickupDeliveryDetails> pickupDeliveryDetailsPage  = pickupDeliveryDetailsDao.findAll(tuple.getLeft(), tuple.getRight());
+            log.info("Pickup Delivery list retrieved successfully");
             return ResponseHelper.buildListSuccessResponse(
                     convertEntityListToDtoList(pickupDeliveryDetailsPage.getContent()),
                     pickupDeliveryDetailsPage.getTotalPages(),
@@ -94,9 +126,13 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
+            if(request == null) {
+                log.error("Request is empty for Pickup Delivery async list");
+            }
             // construct specifications for filter request
             Pair<Specification<PickupDeliveryDetails>, Pageable> tuple = fetchData(request, PickupDeliveryDetails.class);
             Page<PickupDeliveryDetails> pickupDeliveryDetailsPage  = pickupDeliveryDetailsDao.findAll(tuple.getLeft(), tuple.getRight());
+            log.info("Pickup Delivery async list retrieved successfully");
             return CompletableFuture.completedFuture(ResponseHelper.buildListSuccessResponse(
                     convertEntityListToDtoList(pickupDeliveryDetailsPage.getContent()),
                     pickupDeliveryDetailsPage.getTotalPages(),
@@ -113,13 +149,21 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
-            long id =request.getId();
+            if(request == null) {
+                log.debug("Request is empty for Pickup Delivery delete");
+            }
+            if(request.getId() == null) {
+                log.debug("Request Id is null for Pickup Delivery delete");
+            }
+            long id = request.getId();
+
             Optional<PickupDeliveryDetails> pickupDeliveryDetails = pickupDeliveryDetailsDao.findById(id);
             if(!pickupDeliveryDetails.isPresent()) {
                 log.debug("pickup Delivery Details is null for Id {}", request.getId());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
             pickupDeliveryDetailsDao.delete(pickupDeliveryDetails.get());
+            log.info("Deleted pickup delivery details for Id {}", id);
             return ResponseHelper.buildSuccessResponse();
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -133,13 +177,19 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
-            long id =request.getId();
+            if(request == null) {
+                log.error("Request is empty for Pickup Delivery retrieve");
+            }
+            if(request.getId() == null) {
+                log.error("Request Id is null for Pickup Delivery retrieve");
+            }
+            long id = request.getId();
             Optional<PickupDeliveryDetails> pickupDeliveryDetails = pickupDeliveryDetailsDao.findById(id);
             if(!pickupDeliveryDetails.isPresent()) {
                 log.debug("Pickup Delivery Details is null for Id {}", request.getId());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
-
+            log.info("Pickup Delivery details fetched successfully for Id {}", id);
             PickupDeliveryDetailsResponse response = convertEntityToDto(pickupDeliveryDetails.get());
             return ResponseHelper.buildSuccessResponse(response);
         } catch (Exception e) {

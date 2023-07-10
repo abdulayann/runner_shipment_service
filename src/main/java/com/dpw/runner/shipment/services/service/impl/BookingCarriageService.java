@@ -45,16 +45,36 @@ public class BookingCarriageService implements IBookingCarriageService {
 
     @Transactional
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
+        String responseMsg;
         BookingCarriageRequest request = null;
         request = (BookingCarriageRequest) commonRequestModel.getData();
+        if(request == null) {
+            log.debug("Request is empty for Booking Carriage Create ");
+        }
         BookingCarriage bookingCarriage = convertRequestToEntity(request);
-        bookingCarriage = bookingCarriageDao.save(bookingCarriage);
+        try {
+            bookingCarriage = bookingCarriageDao.save(bookingCarriage);
+            log.info("Booking Carriage created successfully for Id {}", bookingCarriage.getId());
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(bookingCarriage));
     }
 
     @Transactional
     public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
+        String responseMsg;
         BookingCarriageRequest request = (BookingCarriageRequest) commonRequestModel.getData();
+        if(request == null) {
+            log.error("Request is empty for booking carriage update");
+        }
+
+        if(request.getId() == null) {
+            log.error("Request Id is null for booking carriage update");
+        }
         long id = request.getId();
         Optional<BookingCarriage> oldEntity = bookingCarriageDao.findById(id);
         if (!oldEntity.isPresent()) {
@@ -64,7 +84,15 @@ public class BookingCarriageService implements IBookingCarriageService {
 
         BookingCarriage bookingCarriage = convertRequestToEntity(request);
         bookingCarriage.setId(oldEntity.get().getId());
-        bookingCarriage = bookingCarriageDao.save(bookingCarriage);
+        try {
+            bookingCarriage = bookingCarriageDao.save(bookingCarriage);
+            log.info("Updated the booking carriage details for Id {} ",id);
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(bookingCarriage));
     }
 
@@ -72,9 +100,13 @@ public class BookingCarriageService implements IBookingCarriageService {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
+            if(request == null) {
+                log.error("Request is empty for booking carriage list");
+            }
             // construct specifications for filter request
             Pair<Specification<BookingCarriage>, Pageable> tuple = fetchData(request, BookingCarriage.class);
-            Page<BookingCarriage> bookingCarriagePage = bookingCarriageDao.findAll(tuple.getLeft(), tuple.getRight());
+            Page<BookingCarriage> bookingCarriagePage  = bookingCarriageDao.findAll(tuple.getLeft(), tuple.getRight());
+            log.info("Booking carriage list retrieved successfully");
             return ResponseHelper.buildListSuccessResponse(
                     convertEntityListToDtoList(bookingCarriagePage.getContent()),
                     bookingCarriagePage.getTotalPages(),
@@ -94,9 +126,13 @@ public class BookingCarriageService implements IBookingCarriageService {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
+            if(request == null) {
+                log.error("Request is empty for booking carriage async list");
+            }
             // construct specifications for filter request
             Pair<Specification<BookingCarriage>, Pageable> tuple = fetchData(request, BookingCarriage.class);
             Page<BookingCarriage> bookingCarriagePage  = bookingCarriageDao.findAll(tuple.getLeft(), tuple.getRight());
+            log.info("Booking carriage async list retrieved successfully");
             return CompletableFuture.completedFuture(
                     ResponseHelper
                             .buildListSuccessResponse(
@@ -116,6 +152,12 @@ public class BookingCarriageService implements IBookingCarriageService {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
+            if(request == null) {
+                log.error("Request is empty for booking carriage delete");
+            }
+            if(request.getId() == null) {
+                log.error("Request Id is null for booking carriage delete");
+            }
             long id = request.getId();
             Optional<BookingCarriage> bookingCarriage = bookingCarriageDao.findById(id);
             if (!bookingCarriage.isPresent()) {
@@ -123,6 +165,7 @@ public class BookingCarriageService implements IBookingCarriageService {
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
             bookingCarriageDao.delete(bookingCarriage.get());
+            log.info("Deleted booking carriage for Id {}", id);
             return ResponseHelper.buildSuccessResponse();
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -136,13 +179,19 @@ public class BookingCarriageService implements IBookingCarriageService {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
+            if(request == null) {
+                log.error("Request is empty for booking carriage retrieve");
+            }
+            if(request.getId() == null) {
+                log.error("Request Id is null for booking carriage retrieve");
+            }
             long id = request.getId();
             Optional<BookingCarriage> bookingCarriage = bookingCarriageDao.findById(id);
             if (!bookingCarriage.isPresent()) {
                 log.debug("Booking Carriage is null for Id {}", request.getId());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
-
+            log.info("Booking carriage fetched successfully for Id {}", id);
             BookingCarriageResponse response = convertEntityToDto(bookingCarriage.get());
             return ResponseHelper.buildSuccessResponse(response);
         } catch (Exception e) {

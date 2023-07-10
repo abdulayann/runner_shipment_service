@@ -49,16 +49,36 @@ public class PackingService implements IPackingService {
 
     @Transactional
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
+        String responseMsg;
         PackingRequest request = null;
         request = (PackingRequest) commonRequestModel.getData();
+        if(request == null) {
+            log.debug("Request is empty for Packing create");
+        }
         Packing packing = convertRequestToEntity(request);
-        packing = packingDao.save(packing);
+        try {
+            packing = packingDao.save(packing);
+            log.info("Packing Details created successfully for Id {}", packing.getId());
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(packing));
     }
 
     @Transactional
     public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
+        String responseMsg;
         PackingRequest request = (PackingRequest) commonRequestModel.getData();
+        if(request == null) {
+            log.debug("Request is empty for Packing update");
+        }
+
+        if(request.getId() == null) {
+            log.debug("Request Id is null for Packing update");
+        }
         long id = request.getId();
         Optional<Packing> oldEntity = packingDao.findById(id);
         if (!oldEntity.isPresent()) {
@@ -68,7 +88,15 @@ public class PackingService implements IPackingService {
 
         Packing packing = convertRequestToEntity(request);
         packing.setId(oldEntity.get().getId());
-        packing = packingDao.save(packing);
+        try {
+            packing = packingDao.save(packing);
+            log.info("Updated the packing details for Id {} ", id);
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(packing));
     }
 
@@ -76,9 +104,13 @@ public class PackingService implements IPackingService {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
+            if(request == null) {
+                log.error("Request is empty for Packing list");
+            }
             // construct specifications for filter request
             Pair<Specification<Packing>, Pageable> tuple = fetchData(request, BookingCarriage.class);
             Page<Packing> packingPage = packingDao.findAll(tuple.getLeft(), tuple.getRight());
+            log.info("Packing list retrieved successfully");
             return ResponseHelper.buildListSuccessResponse(
                     convertEntityListToDtoList(packingPage.getContent()),
                     packingPage.getTotalPages(),
@@ -98,9 +130,13 @@ public class PackingService implements IPackingService {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
+            if(request == null) {
+                log.error("Request is empty for Packing async list");
+            }
             // construct specifications for filter request
             Pair<Specification<Packing>, Pageable> tuple = fetchData(request, Packing.class);
             Page<Packing> packingPage = packingDao.findAll(tuple.getLeft(), tuple.getRight());
+            log.info("Packing async list retrieved successfully");
             return CompletableFuture.completedFuture(
                     ResponseHelper
                             .buildListSuccessResponse(
@@ -117,13 +153,29 @@ public class PackingService implements IPackingService {
 
     @Override
     public ResponseEntity<?> delete(CommonRequestModel commonRequestModel) {
+        String responseMsg;
+        if(commonRequestModel == null) {
+            log.debug("Request is empty for Packing delete");
+        }
+        if(commonRequestModel.getId() == null) {
+            log.debug("Request Id is null for Packing delete");
+        }
         Long id = commonRequestModel.getId();
+
         Optional<Packing> targetPacking = packingDao.findById(id);
         if (targetPacking.isEmpty()) {
             log.debug("No entity present for id {} ", id);
             return ResponseHelper.buildFailedResponse(PackingConstants.NO_DATA);
         }
-        packingDao.delete(targetPacking.get());
+        try {
+            packingDao.delete(targetPacking.get());
+            log.info("Deleted packing for Id {}", id);
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_DELETE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
         return ResponseHelper.buildSuccessResponse();
     }
 
@@ -132,13 +184,19 @@ public class PackingService implements IPackingService {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
+            if(request == null) {
+                log.error("Request is empty for Packing retrieve");
+            }
+            if(request.getId() == null) {
+                log.error("Request Id is null for Packing retrieve");
+            }
             long id = request.getId();
             Optional<Packing> packing = packingDao.findById(id);
             if (packing.isEmpty()) {
                 log.debug("Packing is null for Id {}", request.getId());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
-
+            log.info("Packing details fetched successfully for Id {}", id);
             PackingResponse response = (PackingResponse) convertEntityToDto(packing.get());
             return ResponseHelper.buildSuccessResponse(response);
         } catch (Exception e) {

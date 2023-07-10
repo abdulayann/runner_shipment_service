@@ -45,15 +45,35 @@ public class ELDetailsService implements IELDetailsService {
 
     @Transactional
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
+        String responseMsg;
         ELDetailsRequest request = (ELDetailsRequest) commonRequestModel.getData();
+        if(request == null) {
+            log.debug("Request is empty for EL Details create");
+        }
         ELDetails elDetails = convertRequestToELDetails(request);
-        elDetails = elDetailsDao.save(elDetails);
+        try {
+            elDetails = elDetailsDao.save(elDetails);
+            log.info("EL Details created successfully for Id {}", elDetails.getId());
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(elDetails));
     }
 
     @Transactional
     public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
+        String responseMsg;
         ELDetailsRequest request = (ELDetailsRequest) commonRequestModel.getData();
+        if(request == null) {
+            log.debug("Request is empty for EL details update");
+        }
+
+        if(request.getId() == null) {
+            log.debug("Request Id is null for EL details update");
+        }
         long id = request.getId();
         Optional<ELDetails> oldEntity = elDetailsDao.findById(id);
         if (oldEntity.isEmpty()) {
@@ -63,7 +83,15 @@ public class ELDetailsService implements IELDetailsService {
 
         ELDetails elDetails = convertRequestToELDetails(request);
         elDetails.setId(oldEntity.get().getId());
-        elDetails = elDetailsDao.save(elDetails);
+        try {
+            elDetails = elDetailsDao.save(elDetails);
+            log.info("Updated the EL details for Id {} ", id);
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(elDetails));
     }
 
@@ -72,9 +100,12 @@ public class ELDetailsService implements IELDetailsService {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
-
+            if(request == null) {
+                log.error("Request is empty for EL details list");
+            }
             Pair<Specification<ELDetails>, Pageable> tuple = fetchData(request, ELDetails.class);
             Page<ELDetails> elDetailsPage = elDetailsDao.findAll(tuple.getLeft(), tuple.getRight());
+            log.info("EL details list retrieved successfully");
             return ResponseHelper.buildListSuccessResponse(
                     convertEntityListToDtoList(elDetailsPage.getContent()),
                     elDetailsPage.getTotalPages(),
@@ -93,9 +124,12 @@ public class ELDetailsService implements IELDetailsService {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
-
+            if(request == null) {
+                log.error("Request is empty for EL details async list");
+            }
             Pair<Specification<ELDetails>, Pageable> tuple = fetchData(request, ELDetails.class);
             Page<ELDetails> elDetailsPage = elDetailsDao.findAll(tuple.getLeft(), tuple.getRight());
+            log.info("EL details async list retrieved successfully");
             return CompletableFuture.completedFuture( ResponseHelper.buildListSuccessResponse(
                     convertEntityListToDtoList(elDetailsPage.getContent()),
                     elDetailsPage.getTotalPages(),
@@ -114,13 +148,21 @@ public class ELDetailsService implements IELDetailsService {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
+            if(request == null) {
+                log.debug("Request is empty for EL details delete");
+            }
+            if(request.getId() == null) {
+                log.debug("Request Id is null for EL details delete");
+            }
             long id = request.getId();
+
             Optional<ELDetails> elDetails = elDetailsDao.findById(id);
             if (elDetails.isEmpty()) {
                 log.debug("El Details is null for Id {}", request.getId());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
             elDetailsDao.delete(elDetails.get());
+            log.info("Deleted EL detail for Id {}", id);
             return ResponseHelper.buildSuccessResponse();
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -135,12 +177,19 @@ public class ELDetailsService implements IELDetailsService {
         String responseMsg;
         try {
             ElNumbersRequest request = (ElNumbersRequest) (requestModel.getData());
+            if(request == null) {
+                log.debug("Request is empty for EL details validate number request");
+            }
+            if(request.getElNumber() == null) {
+                log.debug("EL number is empty for EL details validate number request");
+            }
             String elNumber = request.getElNumber();
             Optional<ELDetails> elDetails = elDetailsDao.findByElNumber(elNumber);
             if (elDetails.isEmpty()) {
                 log.debug("El Detail is null for El Number {}", request.getElNumber());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
+            log.info("EL details exist for EL number {}", elNumber);
             ELDetailsResponse response = convertEntityToDto(elDetails.get());
             return ResponseHelper.buildSuccessResponse(response);
         } catch (Exception e) {
@@ -156,13 +205,19 @@ public class ELDetailsService implements IELDetailsService {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
+            if(request == null) {
+                log.error("Request is empty for EL details retrieve");
+            }
+            if(request.getId() == null) {
+                log.error("Request Id is null for EL details retrieve");
+            }
             long id = request.getId();
             Optional<ELDetails> elDetail = elDetailsDao.findById(id);
             if (elDetail.isEmpty()) {
                 log.debug("El Detail is null for Id {}", request.getId());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
-
+            log.info("EL details fetched successfully for Id {}", id);
             ELDetailsResponse response = convertEntityToDto(elDetail.get());
             return ResponseHelper.buildSuccessResponse(response);
         } catch (Exception e) {

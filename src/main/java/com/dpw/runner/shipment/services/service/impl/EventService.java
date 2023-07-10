@@ -46,16 +46,36 @@ public class EventService implements IEventService {
 
     @Transactional
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
+        String responseMsg;
         EventsRequest request = null;
         request = (EventsRequest) commonRequestModel.getData();
+        if(request == null) {
+            log.debug("Request is empty for Event create");
+        }
         Events bookingCarriage = convertRequestToEntity(request);
-        bookingCarriage = eventDao.save(bookingCarriage);
+        try {
+            bookingCarriage = eventDao.save(bookingCarriage);
+            log.info("Event Details created successfully for Id {}", bookingCarriage.getId());
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(bookingCarriage));
     }
 
     @Transactional
     public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
+        String responseMsg;
         EventsRequest request = (EventsRequest) commonRequestModel.getData();
+        if(request == null) {
+            log.debug("Request is empty for Event update");
+        }
+
+        if(request.getId() == null) {
+            log.debug("Request Id is null for Event update");
+        }
         long id = request.getId();
         Optional<Events> oldEntity = eventDao.findById(id);
         if (!oldEntity.isPresent()) {
@@ -65,7 +85,15 @@ public class EventService implements IEventService {
 
         Events events = convertRequestToEntity(request);
         events.setId(oldEntity.get().getId());
-        events = eventDao.save(events);
+        try {
+            events = eventDao.save(events);
+            log.info("Updated the event details for Id {} ", id);
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(events));
     }
 
@@ -73,9 +101,13 @@ public class EventService implements IEventService {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
+            if(request == null) {
+                log.error("Request is empty for Event list");
+            }
             // construct specifications for filter request
             Pair<Specification<Events>, Pageable> tuple = fetchData(request, Events.class);
             Page<Events> bookingCarriagePage = eventDao.findAll(tuple.getLeft(), tuple.getRight());
+            log.info("Event list retrieved successfully");
             return ResponseHelper.buildListSuccessResponse(
                     convertEntityListToDtoList(bookingCarriagePage.getContent()),
                     bookingCarriagePage.getTotalPages(),
@@ -95,9 +127,13 @@ public class EventService implements IEventService {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
+            if(request == null) {
+                log.error("Request is empty for Event async list");
+            }
             // construct specifications for filter request
             Pair<Specification<Events>, Pageable> tuple = fetchData(request, Events.class);
             Page<Events> eventsPage = eventDao.findAll(tuple.getLeft(), tuple.getRight());
+            log.info("Event async list retrieved successfully");
             return CompletableFuture.completedFuture(
                     ResponseHelper
                             .buildListSuccessResponse(
@@ -116,13 +152,21 @@ public class EventService implements IEventService {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
+            if(request == null) {
+                log.debug("Request is empty for Event delete");
+            }
+            if(request.getId() == null) {
+                log.debug("Request Id is null for Event delete");
+            }
             long id = request.getId();
+
             Optional<Events> events = eventDao.findById(id);
             if (!events.isPresent()) {
                 log.debug("Event is null for Id {}", request.getId());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
             eventDao.delete(events.get());
+            log.info("Deleted Event for Id {}", id);
             return ResponseHelper.buildSuccessResponse();
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -137,13 +181,19 @@ public class EventService implements IEventService {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
+            if(request == null) {
+                log.error("Request is empty for Event retrieve");
+            }
+            if(request.getId() == null) {
+                log.error("Request Id is null for Event retrieve");
+            }
             long id = request.getId();
             Optional<Events> events = eventDao.findById(id);
             if (events.isEmpty()) {
                 log.debug("Event is null for Id {}", request.getId());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
-
+            log.info("Event details fetched successfully for Id {}", id);
             EventsResponse response = (EventsResponse) convertEntityToDto(events.get());
             return ResponseHelper.buildSuccessResponse(response);
         } catch (Exception e) {

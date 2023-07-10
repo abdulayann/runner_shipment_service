@@ -45,27 +45,54 @@ public class TruckDriverDetailsService implements ITruckDriverDetailsService {
     private ModelMapper modelMapper;
 
     @Override
-    @Transactional
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
+        String responseMsg;
         TruckDriverDetailsRequest request = (TruckDriverDetailsRequest) commonRequestModel.getData();
-        TruckDriverDetails notes = convertRequestToTruckDriverDetailsEntity(request);
-        notes = truckDriverDetailsDao.save(notes);
-        return ResponseHelper.buildSuccessResponse(convertEntityToDto(notes));
+        if(request == null) {
+            log.debug("Request is empty for Truck Driver Details create");
+        }
+        TruckDriverDetails truckDriverDetails = convertRequestToTruckDriverDetailsEntity(request);
+        try {
+            truckDriverDetails = truckDriverDetailsDao.save(truckDriverDetails);
+            log.info("Truck Driver Details created successfully for Id {}", truckDriverDetails.getId());
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+        return ResponseHelper.buildSuccessResponse(convertEntityToDto(truckDriverDetails));
     }
 
     @Override
     public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
+        String responseMsg;
         TruckDriverDetailsRequest request = (TruckDriverDetailsRequest) commonRequestModel.getData();
+        if(request == null) {
+            log.error("Request is empty for Truck Driver Details update");
+        }
+
+        if(request.getId() == null) {
+            log.error("Request Id is null for Truck Driver Details update");
+        }
         long id = request.getId();
         Optional<TruckDriverDetails> oldEntity = truckDriverDetailsDao.findById(id);
         if (oldEntity.isEmpty()) {
-            log.debug("TruckDriverDetails is null for Id {}", request.getId());
+            log.debug("Truck Driver Details is null for Id {}", request.getId());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
 
         TruckDriverDetails notes = convertRequestToTruckDriverDetailsEntity(request);
         notes.setId(oldEntity.get().getId());
-        notes = truckDriverDetailsDao.save(notes);
+        try {
+            notes = truckDriverDetailsDao.save(notes);
+            log.info("Updated the Truck Driver Details for Id {} ",id);
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(notes));
     }
 
@@ -74,9 +101,12 @@ public class TruckDriverDetailsService implements ITruckDriverDetailsService {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
-
+            if(request == null) {
+                log.error("Request is empty for Truck Driver Details list");
+            }
             Pair<Specification<TruckDriverDetails>, Pageable> tuple = fetchData(request, TruckDriverDetails.class);
             Page<TruckDriverDetails> notesPage = truckDriverDetailsDao.findAll(tuple.getLeft(), tuple.getRight());
+            log.info("Truck Driver Details list retrieved successfully");
             return ResponseHelper.buildListSuccessResponse(
                     convertEntityListToDtoList(notesPage.getContent()),
                     notesPage.getTotalPages(),
@@ -95,9 +125,12 @@ public class TruckDriverDetailsService implements ITruckDriverDetailsService {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
-
+            if(request == null) {
+                log.error("Request is empty for Truck Driver Details async list");
+            }
             Pair<Specification<TruckDriverDetails>, Pageable> tuple = fetchData(request, TruckDriverDetails.class);
             Page<TruckDriverDetails> notesPage = truckDriverDetailsDao.findAll(tuple.getLeft(), tuple.getRight());
+            log.info("Truck Driver Details async list retrieved successfully");
             return CompletableFuture.completedFuture( ResponseHelper.buildListSuccessResponse(
                     convertEntityListToDtoList(notesPage.getContent()),
                     notesPage.getTotalPages(),
@@ -115,6 +148,12 @@ public class TruckDriverDetailsService implements ITruckDriverDetailsService {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
+            if(request == null) {
+                log.debug("Request is empty for Truck Driver Details delete");
+            }
+            if(request.getId() == null) {
+                log.debug("Request Id is null for Truck Driver Details delete");
+            }
             long id = request.getId();
             Optional<TruckDriverDetails> note = truckDriverDetailsDao.findById(id);
             if (note.isEmpty()) {
@@ -122,6 +161,7 @@ public class TruckDriverDetailsService implements ITruckDriverDetailsService {
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
             truckDriverDetailsDao.delete(note.get());
+            log.info("Deleted Truck Driver Details for Id {}", id);
             return ResponseHelper.buildSuccessResponse();
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -136,13 +176,19 @@ public class TruckDriverDetailsService implements ITruckDriverDetailsService {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
+            if(request == null) {
+                log.error("Request is empty for Truck Driver Details retrieve");
+            }
+            if(request.getId() == null) {
+                log.error("Request Id is null for Truck Driver Details retrieve");
+            }
             long id = request.getId();
             Optional<TruckDriverDetails> notes = truckDriverDetailsDao.findById(id);
             if (notes.isEmpty()) {
-                log.debug("TruckDriverDetails is null for Id {}", request.getId());
+                log.debug("Truck Driver Details is null for Id {}", request.getId());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
-
+            log.info("Truck Driver Details fetched successfully for Id {}", id);
             TruckDriverDetailsResponse response = convertEntityToDto(notes.get());
             return ResponseHelper.buildSuccessResponse(response);
         } catch (Exception e) {

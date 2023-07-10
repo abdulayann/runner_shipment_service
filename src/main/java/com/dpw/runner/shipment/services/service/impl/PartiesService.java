@@ -45,27 +45,54 @@ public class PartiesService implements IPartiesDetailsService {
     private ModelMapper modelMapper;
 
     @Override
-    @Transactional
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
+        String responseMsg;
         PartiesRequest request = (PartiesRequest) commonRequestModel.getData();
+        if(request == null) {
+            log.debug("Request is empty for Parties create");
+        }
         Parties notes = convertRequestToPartiesDetailsEntity(request);
-        notes = partiesDao.save(notes);
+        try {
+            notes = partiesDao.save(notes);
+            log.info("Parties Details created successfully for Id {}", notes.getId());
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(notes));
     }
 
     @Override
     public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
+        String responseMsg;
         PartiesRequest request = (PartiesRequest) commonRequestModel.getData();
+        if(request == null) {
+            log.debug("Request is empty for Parties update");
+        }
+
+        if(request.getId() == null) {
+            log.debug("Request Id is null for Parties update");
+        }
         long id = request.getId();
         Optional<Parties> oldEntity = partiesDao.findById(id);
         if (oldEntity.isEmpty()) {
-            log.debug("PartiesDetails is null for Id {}", request.getId());
+            log.debug("Parties Details is null for Id {}", request.getId());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
 
         Parties notes = convertRequestToPartiesDetailsEntity(request);
         notes.setId(oldEntity.get().getId());
-        notes = partiesDao.save(notes);
+        try {
+            notes = partiesDao.save(notes);
+            log.info("Updated the Parties details for Id {} ", id);
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(notes));
     }
 
@@ -74,9 +101,12 @@ public class PartiesService implements IPartiesDetailsService {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
-
+            if(request == null) {
+                log.error("Request is empty for Parties list");
+            }
             Pair<Specification<Parties>, Pageable> tuple = fetchData(request, Parties.class);
             Page<Parties> notesPage = partiesDao.findAll(tuple.getLeft(), tuple.getRight());
+            log.info("Parties list retrieved successfully");
             return ResponseHelper.buildListSuccessResponse(
                     convertEntityListToDtoList(notesPage.getContent()),
                     notesPage.getTotalPages(),
@@ -95,9 +125,12 @@ public class PartiesService implements IPartiesDetailsService {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
-
+            if(request == null) {
+                log.error("Request is empty for Parties async list");
+            }
             Pair<Specification<Parties>, Pageable> tuple = fetchData(request, Parties.class);
             Page<Parties> partiesPage = partiesDao.findAll(tuple.getLeft(), tuple.getRight());
+            log.info("Parties async list retrieved successfully");
             return CompletableFuture.completedFuture( ResponseHelper.buildListSuccessResponse(
                     convertEntityListToDtoList(partiesPage.getContent()),
                     partiesPage.getTotalPages(),
@@ -115,13 +148,21 @@ public class PartiesService implements IPartiesDetailsService {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
+            if(request == null) {
+                log.debug("Request is empty for Parties delete");
+            }
+            if(request.getId() == null) {
+                log.debug("Request Id is null for Parties delete");
+            }
             long id = request.getId();
+
             Optional<Parties> note = partiesDao.findById(id);
             if (note.isEmpty()) {
                 log.debug("PartiesDetails is null for Id {}", request.getId());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
             partiesDao.delete(note.get());
+            log.info("Deleted party detail for Id {}", id);
             return ResponseHelper.buildSuccessResponse();
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -136,13 +177,19 @@ public class PartiesService implements IPartiesDetailsService {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
+            if(request == null) {
+                log.error("Request is empty for Parties details retrieve");
+            }
+            if(request.getId() == null) {
+                log.error("Request Id is null for Parties details retrieve");
+            }
             long id = request.getId();
             Optional<Parties> notes = partiesDao.findById(id);
             if (notes.isEmpty()) {
                 log.debug("PartiesDetails is null for Id {}", request.getId());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
-
+            log.info("Parties details fetched successfully for Id {}", id);
             PartiesResponse response = convertEntityToDto(notes.get());
             return ResponseHelper.buildSuccessResponse(response);
         } catch (Exception e) {

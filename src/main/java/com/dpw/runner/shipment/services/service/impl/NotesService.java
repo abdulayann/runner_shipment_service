@@ -43,17 +43,36 @@ public class NotesService implements INotesService {
     private ModelMapper modelMapper;
 
     @Override
-    @Transactional
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
+        String responseMsg;
         NotesRequest request = (NotesRequest) commonRequestModel.getData();
+        if(request == null) {
+            log.debug("Request is empty for Notes create");
+        }
         Notes notes = convertRequestToNotesEntity(request);
-        notes = notesDao.save(notes);
+        try {
+            notes = notesDao.save(notes);
+            log.info("Notes Details created successfully for Id {}", notes.getId());
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(notes));
     }
 
     @Override
     public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
+        String responseMsg;
         NotesRequest request = (NotesRequest) commonRequestModel.getData();
+        if(request == null) {
+            log.debug("Request is empty for Notes update");
+        }
+
+        if(request.getId() == null) {
+            log.debug("Request Id is null for Notes update");
+        }
         long id = request.getId();
         Optional<Notes> oldEntity = notesDao.findById(id);
         if (oldEntity.isEmpty()) {
@@ -63,7 +82,15 @@ public class NotesService implements INotesService {
 
         Notes notes = convertRequestToNotesEntity(request);
         notes.setId(oldEntity.get().getId());
-        notes = notesDao.save(notes);
+        try {
+            notes = notesDao.save(notes);
+            log.info("Updated the Notes details for Id {} ",id);
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(notes));
     }
 
@@ -72,9 +99,12 @@ public class NotesService implements INotesService {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
-
+            if(request == null) {
+                log.error("Request is empty for Notes list");
+            }
             Pair<Specification<Notes>, Pageable> tuple = fetchData(request, Notes.class);
             Page<Notes> notesPage = notesDao.findAll(tuple.getLeft(), tuple.getRight());
+            log.info("Notes list retrieved successfully");
             return ResponseHelper.buildListSuccessResponse(
                     convertEntityListToDtoList(notesPage.getContent()),
                     notesPage.getTotalPages(),
@@ -93,9 +123,12 @@ public class NotesService implements INotesService {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
-
+            if(request == null) {
+                log.error("Request is empty for Notes async list");
+            }
             Pair<Specification<Notes>, Pageable> tuple = fetchData(request, Notes.class);
             Page<Notes> notesPage = notesDao.findAll(tuple.getLeft(), tuple.getRight());
+            log.info("Notes async list retrieved successfully");
             return CompletableFuture.completedFuture(ResponseHelper.buildListSuccessResponse(
                     convertEntityListToDtoList(notesPage.getContent()),
                     notesPage.getTotalPages(),
@@ -113,13 +146,21 @@ public class NotesService implements INotesService {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
+            if(request == null) {
+                log.debug("Request is empty for Notes delete");
+            }
+            if(request.getId() == null) {
+                log.debug("Request Id is null for Notes delete");
+            }
             long id = request.getId();
+
             Optional<Notes> note = notesDao.findById(id);
             if (note.isEmpty()) {
                 log.debug("Notes is null for Id {}", request.getId());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
             notesDao.delete(note.get());
+            log.info("Deleted notes for Id {}", id);
             return ResponseHelper.buildSuccessResponse();
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -134,13 +175,19 @@ public class NotesService implements INotesService {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
+            if(request == null) {
+                log.error("Request is empty for Notes retrieve");
+            }
+            if(request.getId() == null) {
+                log.error("Request Id is null for Notes retrieve");
+            }
             long id = request.getId();
             Optional<Notes> notes = notesDao.findById(id);
             if (notes.isEmpty()) {
                 log.debug("Notes is null for Id {}", request.getId());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
-
+            log.info("Notes details fetched successfully for Id {}", id);
             NotesResponse response = convertEntityToDto(notes.get());
             return ResponseHelper.buildSuccessResponse(response);
         } catch (Exception e) {

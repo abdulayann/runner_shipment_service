@@ -9,6 +9,7 @@ import com.dpw.runner.shipment.services.dto.request.EntityIdAndTypeRequest;
 import com.dpw.runner.shipment.services.dto.request.FileRepoRequest;
 import com.dpw.runner.shipment.services.dto.response.FileRepoResponse;
 import com.dpw.runner.shipment.services.entity.FileRepo;
+import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.IFileRepoDao;
 import com.dpw.runner.shipment.services.service.interfaces.IFileRepoService;
@@ -42,19 +43,38 @@ public class FileRepoService implements IFileRepoService {
     private ModelMapper modelMapper;
 
     @Override
-    @Transactional
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
+        String responseMsg;
         FileRepoRequest request = null;
         request = (FileRepoRequest) commonRequestModel.getData();
+        if(request == null) {
+            log.debug("Request is empty for File create");
+        }
         FileRepo fileRepo  = mapToEntityFromRequest(request);
-        fileRepo = fileRepoDao.save(fileRepo);
+        try {
+            fileRepo = fileRepoDao.save(fileRepo);
+            log.info("File created for successfully for Id {}", fileRepo.getId());
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
         return ResponseHelper.buildSuccessResponse(convertToResponse(fileRepo));
     }
 
     @Override
     public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
+        String responseMsg;
         FileRepoRequest request = (FileRepoRequest) commonRequestModel.getData();
-        long id =request.getId();
+        if(request == null) {
+            log.debug("Request is empty for File update");
+        }
+
+        if(request.getId() == null) {
+            log.debug("Request Id is null for File update");
+        }
+        long id = request.getId();
         Optional<FileRepo> oldEntity = fileRepoDao.findById(id);
         if(!oldEntity.isPresent()) {
             log.debug("File Repo is null for Id {}", request.getId());
@@ -63,7 +83,15 @@ public class FileRepoService implements IFileRepoService {
 
         FileRepo fileRepo = mapToEntityFromRequest(request);
         fileRepo.setId(oldEntity.get().getId());
-        fileRepo = fileRepoDao.save(fileRepo);
+        try {
+            fileRepo = fileRepoDao.save(fileRepo);
+            log.info("Updated the File details for Id {} ",id);
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
         return ResponseHelper.buildSuccessResponse(convertToResponse(fileRepo));
     }
 
@@ -72,8 +100,12 @@ public class FileRepoService implements IFileRepoService {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
+            if(request == null) {
+                log.error("Request is empty for list File");
+            }
             Pair<Specification<FileRepo>, Pageable> tuple = fetchData(request, FileRepo.class);
             Page<FileRepo> FileRepoPage  = fileRepoDao.findAll(tuple.getLeft(), tuple.getRight());
+            log.info("File list retrieved successfully");
             return ResponseHelper.buildListSuccessResponse(
                     convertListResponse(FileRepoPage.getContent()),
                     FileRepoPage.getTotalPages(),
@@ -92,8 +124,13 @@ public class FileRepoService implements IFileRepoService {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
+            if(request == null) {
+                log.error("Request is empty for async list File");
+            }
+            log.info("Retrieving File details");
             Pair<Specification<FileRepo>, Pageable> tuple = fetchData(request, FileRepo.class);
             Page<FileRepo> FileRepoPage  = fileRepoDao.findAll(tuple.getLeft(), tuple.getRight());
+            log.info("File async list retrieved successfully");
             return CompletableFuture.completedFuture(ResponseHelper.buildListSuccessResponse(
                     convertListResponse(FileRepoPage.getContent()),
                     FileRepoPage.getTotalPages(),
@@ -111,13 +148,21 @@ public class FileRepoService implements IFileRepoService {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
+            if(request == null) {
+                log.debug("Request is empty");
+            }
+            if(request.getId() == null) {
+                log.debug("Request Id is null");
+            }
             long id = request.getId();
+
             Optional<FileRepo> fileRepo = fileRepoDao.findById(id);
             if(!fileRepo.isPresent()) {
                 log.debug("File Repo is null for Id {}", request.getId());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
             fileRepoDao.delete(fileRepo.get());
+            log.info("Deleted file for Id {}", id);
             return ResponseHelper.buildSuccessResponse();
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -132,13 +177,19 @@ public class FileRepoService implements IFileRepoService {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
+            if(request == null) {
+                log.error("Request is empty for File retrieve");
+            }
+            if(request.getId() == null) {
+                log.error("Request Id is null for File retrieve");
+            }
             long id = request.getId();
             Optional<FileRepo> fileRepo = fileRepoDao.findById(id);
             if(!fileRepo.isPresent()) {
                 log.debug("File Repo is null for Id {}", request.getId());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
-
+            log.info("File details fetched successfully for Id {}", id);
             FileRepoResponse response = convertToResponse(fileRepo.get());
             return ResponseHelper.buildSuccessResponse(response);
         } catch (Exception e) {

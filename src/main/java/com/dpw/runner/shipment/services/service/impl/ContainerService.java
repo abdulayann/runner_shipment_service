@@ -45,16 +45,35 @@ public class ContainerService implements IContainerService {
 
     @Transactional
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
+        String responseMsg;
         ContainerRequest request = (ContainerRequest) commonRequestModel.getData();
-
+        if(request == null) {
+            log.debug("Request is empty for Container Create");
+        }
         Containers container = convertRequestToEntity(request);
-        container = containerDao.save(container);
+        try {
+            container = containerDao.save(container);
+            log.info("Container Details Saved Successfully for Id {}", container.getId());
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(container));
     }
 
     @Transactional
     public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
+        String responseMsg;
         ContainerRequest request = (ContainerRequest) commonRequestModel.getData();
+        if(request == null) {
+            log.debug("Request is empty for Container Update");
+        }
+
+        if(request.getId() == null) {
+            log.debug("Request Id is null for Container Update");
+        }
         long id = request.getId();
         Optional<Containers> oldEntity = containerDao.findById(id);
         if (!oldEntity.isPresent()) {
@@ -64,7 +83,15 @@ public class ContainerService implements IContainerService {
 
         Containers containers = convertRequestToEntity(request);
         containers.setId(oldEntity.get().getId());
-        containers = containerDao.save(containers);
+        try {
+            containers = containerDao.save(containers);
+            log.info("Updated the container details for Id {} ", id);
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(containers));
     }
 
@@ -72,9 +99,13 @@ public class ContainerService implements IContainerService {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
+            if(request == null) {
+                log.error("Request is empty for Containers List");
+            }
             // construct specifications for filter request
             Pair<Specification<Containers>, Pageable> tuple = fetchData(request, Containers.class);
             Page<Containers> containersPage = containerDao.findAll(tuple.getLeft(), tuple.getRight());
+            log.info("Container detail list retrieved successfully");
             return ResponseHelper.buildListSuccessResponse(
                     convertEntityListToDtoList(containersPage.getContent()),
                     containersPage.getTotalPages(),
@@ -85,7 +116,6 @@ public class ContainerService implements IContainerService {
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(responseMsg);
         }
-
     }
 
     @Override
@@ -94,9 +124,13 @@ public class ContainerService implements IContainerService {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
+            if(request == null) {
+                log.error("Request is empty for Containers async list");
+            }
             // construct specifications for filter request
             Pair<Specification<Containers>, Pageable> tuple = fetchData(request, Containers.class);
             Page<Containers> containersPage  = containerDao.findAll(tuple.getLeft(), tuple.getRight());
+            log.info("Container detail async list retrieved successfully");
             return CompletableFuture.completedFuture(
                     ResponseHelper
                             .buildListSuccessResponse(
@@ -109,18 +143,32 @@ public class ContainerService implements IContainerService {
             log.error(responseMsg, e);
             return CompletableFuture.completedFuture(ResponseHelper.buildFailedResponse(responseMsg));
         }
-
     }
 
     @Override
     public ResponseEntity<?> delete(CommonRequestModel commonRequestModel) {
+        String responseMsg;
+        if(commonRequestModel == null) {
+            log.debug("Request is empty for Containers delete");
+        }
+        if(commonRequestModel.getId() == null) {
+            log.debug("Request Id is null for Containers delete");
+        }
         Long id = commonRequestModel.getId();
         Optional<Containers> container = containerDao.findById(id);
         if (container.isEmpty()) {
-            log.debug("No entity present for id {} ", id);
+            log.debug("Container details are null for id {} ", id);
             return ResponseHelper.buildFailedResponse(Constants.NO_DATA);
         }
-        containerDao.delete(container.get());
+        try {
+            containerDao.delete(container.get());
+            log.info("Deleted container for Id {}", id);
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_DELETE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
         return ResponseHelper.buildSuccessResponse();
     }
 
@@ -129,13 +177,19 @@ public class ContainerService implements IContainerService {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
+            if(request == null) {
+                log.error("Request is empty for Container retrieve");
+            }
+            if(request.getId() == null) {
+                log.error("Request Id is null for Container retrieve");
+            }
             long id = request.getId();
             Optional<Containers> container = containerDao.findById(id);
             if (container.isEmpty()) {
                 log.debug("Container is null for Id {}", request.getId());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
-
+            log.info("Container detail fetched successfully for Id {}", id);
             JobResponse response = (JobResponse) convertEntityToDto(container.get());
             return ResponseHelper.buildSuccessResponse(response);
         } catch (Exception e) {
