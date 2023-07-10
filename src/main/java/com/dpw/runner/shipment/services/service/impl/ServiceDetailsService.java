@@ -194,7 +194,7 @@ public class ServiceDetailsService implements IServiceDetailsService {
                 long id = req.getId();
                 Optional<ServiceDetails> oldEntity = serviceDetailsDao.findById(id);
                 if (!oldEntity.isPresent()) {
-                    log.debug("Booking Carriage is null for Id {}", req.getId());
+                    log.debug("Service Detail is null for Id {}", req.getId());
                     throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
                 }
                 saveEntity = oldEntity.get();

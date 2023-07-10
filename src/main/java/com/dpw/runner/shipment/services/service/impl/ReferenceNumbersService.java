@@ -194,7 +194,7 @@ public class ReferenceNumbersService implements IReferenceNumbersService {
                 long id = req.getId();
                 Optional<ReferenceNumbers> oldEntity = referenceNumbersDao.findById(id);
                 if (!oldEntity.isPresent()) {
-                    log.debug("Booking Carriage is null for Id {}", req.getId());
+                    log.debug("Reference Number is null for Id {}", req.getId());
                     throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
                 }
                 saveEntity = oldEntity.get();

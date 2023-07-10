@@ -195,7 +195,7 @@ public class RoutingsService implements IRoutingsService {
                 long id = req.getId();
                 Optional<Routings> oldEntity = routingsDao.findById(id);
                 if (!oldEntity.isPresent()) {
-                    log.debug("Booking Carriage is null for Id {}", req.getId());
+                    log.debug("Routing is null for Id {}", req.getId());
                     throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
                 }
                 saveEntity = oldEntity.get();
