@@ -1,25 +1,12 @@
 package com.dpw.runner.shipment.services;
 
-import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
-import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
-import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.*;
-import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.entity.*;
-import com.dpw.runner.shipment.services.entity.enums.*;
-import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.*;
-import com.nimbusds.jose.util.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.domain.Specification;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -27,9 +14,9 @@ import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 
 @Component
 public class TestDataGenerator {
-    public IShipmentDao shipmentDao;
-    private ICarrierDao carrierDao;
-    private IPartiesDao partiesDao;
+    public IShipmentRepository shipmentRepository;
+    private ICarrierRepository carrierRepository;
+    private IPartiesRepository partiesRepository;
 
     private List<String> TRANSPORT_MODES = Arrays.asList("SEA", "ROAD", "RAIL", "AIR");
     private List<String> SHIPMENT_TYPE = Arrays.asList("FCL", "LCL");
@@ -60,13 +47,13 @@ public class TestDataGenerator {
     );
 
     @Autowired
-    public TestDataGenerator(IShipmentDao shipmentDao,
-                             ICarrierDao carrierDao,
-                             IPartiesDao partiesDao) {
-        this.shipmentDao = shipmentDao;
+    public TestDataGenerator(IShipmentRepository shipmentRepository,
+                             ICarrierRepository carrierRepository,
+                             IPartiesRepository partiesRepository) {
+        this.shipmentRepository = shipmentRepository;
 
-        this.carrierDao = carrierDao;
-        this.partiesDao = partiesDao;
+        this.carrierRepository = carrierRepository;
+        this.partiesRepository = partiesRepository;
     }
 
     public List<ShipmentDetails> populateH2WithTestData() {
@@ -87,7 +74,7 @@ public class TestDataGenerator {
                 .additionalTerms("ACJ6O7ZVX2")
                 .build();
         shipmentDetail1.setTenantId(1);
-        shipmentDao.save(shipmentDetail1);
+        shipmentRepository.save(shipmentDetail1);
         response.add(shipmentDetail1);
 
         //**************END
@@ -109,7 +96,7 @@ public class TestDataGenerator {
                 .build();
         shipmentDetail2.setTenantId(1);
 
-        shipmentDao.save(shipmentDetail2);
+        shipmentRepository.save(shipmentDetail2);
         response.add(shipmentDetail2);
 
         //*************END
@@ -131,7 +118,7 @@ public class TestDataGenerator {
                 .build();
         shipmentDetail3.setTenantId(1);
 
-        shipmentDao.save(shipmentDetail3);
+        shipmentRepository.save(shipmentDetail3);
         response.add(shipmentDetail3);
 
         //*************END
@@ -153,7 +140,7 @@ public class TestDataGenerator {
                 .build();
         shipmentDetail4.setTenantId(1);
 
-        shipmentDao.save(shipmentDetail4);
+        shipmentRepository.save(shipmentDetail4);
         response.add(shipmentDetail4);
 
         //****END
@@ -175,7 +162,7 @@ public class TestDataGenerator {
                 .additionalTerms("ACJ6O7ZVX4")
                 .build();
         shipmentDetail5.setTenantId(1);
-        shipmentDao.save(shipmentDetail5);
+        shipmentRepository.save(shipmentDetail5);
         response.add(shipmentDetail5);
 
         return response;
@@ -311,11 +298,11 @@ public class TestDataGenerator {
         for (int i = 0; i < count; i++) {
             int random = new Random().nextInt(10);
             jobRequests.add(JobRequest.builder()
-                    .orderDate(new Date())
+                    .orderDate(LocalDateTime.now())
                     .orderNumber(generateString(10))
-                    .confirmDate(new Date())
+                    .confirmDate(LocalDateTime.now())
                     .confirmNumber(generateString(10))
-                    .invoiceDate(new Date())
+                    .invoiceDate(LocalDateTime.now())
                     .invoiceNumber(generateString(10))
                     .additionalTerms(generateString(10))
                     .build());
@@ -344,8 +331,8 @@ public class TestDataGenerator {
             int random = new Random().nextInt(10);
             eventsRequests.add(EventsRequest.builder()
                     .description(generateString(10))
-                    .estimated(new Date())
-                    .actual(new Date())
+                    .estimated(LocalDateTime.now())
+                    .actual(LocalDateTime.now())
                     .isPublicTrackingEvent(random % 2 == 0)
                     .placeName(generateString(10))
                     .placeDescription(generateString(10))
@@ -457,8 +444,8 @@ public class TestDataGenerator {
         for (String partyType : PARTY_TYPE) {
             PartiesRequest party = PartiesRequest.builder()
                     .type(partyType)
-                    .orgId(random)
-                    .addressId(random)
+                    .orgCode(generateString(10))
+                    .addressCode(generateString(10))
                     .orgData(ORG)
                     .addressData(ADDRESS)
                     .build();

@@ -7,9 +7,11 @@ import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
+import com.dpw.runner.shipment.services.dao.IAdditionalDetailDao;
+import com.dpw.runner.shipment.services.dao.ICarrierDao;
+import com.dpw.runner.shipment.services.dao.IPartiesDao;
 import com.dpw.runner.shipment.services.dao.IShipmentSettingsDao;
 import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
-import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.entity.*;
@@ -48,7 +50,7 @@ import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 public class ShipmentService implements IShipmentService {
 
     @Autowired
-    private IShipmentDao shipmentDao;
+    private IShipmentRepository shipmentRepository;
     @Autowired
     private ICarrierDao carrierDao;
     @Autowired
@@ -129,7 +131,7 @@ public class ShipmentService implements IShipmentService {
     );
     private Map<String, RunnerEntityMapping> tableNames = Map.ofEntries(
             Map.entry("type", RunnerEntityMapping.builder().tableName("parties").dataType(String.class).build()),
-            Map.entry("orgId", RunnerEntityMapping.builder().tableName("parties").dataType(Integer.class).build()),
+            Map.entry("orgCode", RunnerEntityMapping.builder().tableName("parties").dataType(Integer.class).build()),
             Map.entry("houseBill", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).build()),
             Map.entry("hblType", RunnerEntityMapping.builder().tableName("additionalDetails").dataType(String.class).build()),
             Map.entry("transportMode", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).build()),
@@ -153,11 +155,10 @@ public class ShipmentService implements IShipmentService {
             Map.entry("additionalTerms", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).build()),
             Map.entry("goodsDescription", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).build()),
             Map.entry("createdAt", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(Date.class).build()),
-            Map.entry("estimatedPickup", RunnerEntityMapping.builder().tableName("pickupDetails").dataType(LocalDateTime.class).build()),
-            Map.entry("actualPickup", RunnerEntityMapping.builder().tableName("pickupDetails").dataType(LocalDateTime.class).build()),
-            Map.entry("estimatedDelivery", RunnerEntityMapping.builder().tableName("deliveryDetails").dataType(LocalDateTime.class).build()),
-            Map.entry("requiredBy", RunnerEntityMapping.builder().tableName("deliveryDetails").dataType(LocalDateTime.class).build()),
-            Map.entry("addressId", RunnerEntityMapping.builder().tableName("parties").dataType(Integer.class).build()),
+            Map.entry("estimatedPickupOrDelivery", RunnerEntityMapping.builder().tableName("pickupDeliveryDetails").dataType(LocalDateTime.class).build()),
+            Map.entry("actualPickupOrDelivery", RunnerEntityMapping.builder().tableName("pickupDeliveryDetails").dataType(LocalDateTime.class).build()),
+            Map.entry("requiredBy", RunnerEntityMapping.builder().tableName("pickupDeliveryDetails").dataType(LocalDateTime.class).build()),
+            Map.entry("addressCode", RunnerEntityMapping.builder().tableName("parties").dataType(Integer.class).build()),
             Map.entry("screeningStatus", RunnerEntityMapping.builder().tableName("additionalDetails").dataType(String.class).build()),
             Map.entry("paidPlace", RunnerEntityMapping.builder().tableName("additionalDetails").dataType(Long.class).build()),
             Map.entry("placeOfIssue", RunnerEntityMapping.builder().tableName("additionalDetails").dataType(Long.class).build()),
@@ -216,7 +217,7 @@ public class ShipmentService implements IShipmentService {
             CarrierDetails carrierDetail = createCarrier();
             shipmentDetail.setCarrierDetails(carrierDetail);
 
-            shipmentDetail = shipmentDao.save(shipmentDetail);
+            shipmentDetail = shipmentRepository.save(shipmentDetail);
         }
 
         return response;
@@ -227,7 +228,7 @@ public class ShipmentService implements IShipmentService {
         ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
 
         Pair<Specification<ShipmentDetails>, Pageable> tuple = fetchData(request, ShipmentDetails.class, tableNames);
-        Page<ShipmentDetails> shipmentDetailsPage = shipmentDao.findAll(tuple.getLeft(), tuple.getRight());
+        Page<ShipmentDetails> shipmentDetailsPage = shipmentRepository.findAll(tuple.getLeft(), tuple.getRight());
         return ResponseHelper.buildListSuccessResponse(
                 convertEntityListToDtoList(shipmentDetailsPage.getContent()),
                 shipmentDetailsPage.getTotalPages(),
@@ -401,7 +402,7 @@ public class ShipmentService implements IShipmentService {
 
     void getShipment(ShipmentDetails shipmentDetails) {
         shipmentDetails.setShipmentId(generateShipmentId());
-        shipmentDao.save(shipmentDetails);
+        shipmentRepository.save(shipmentDetails);
     }
 
 
@@ -583,7 +584,7 @@ public class ShipmentService implements IShipmentService {
         ShipmentRequest request = (ShipmentRequest) commonRequestModel.getData();
         // TODO- implement Validation logic
         long id = request.getId();
-        Optional<ShipmentDetails> oldEntity = shipmentDao.findById(id);
+        Optional<ShipmentDetails> oldEntity = shipmentRepository.findById(id);
         if (!oldEntity.isPresent()) {
             log.debug("Shipment Details is null for Id {}", request.getId());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
@@ -591,7 +592,7 @@ public class ShipmentService implements IShipmentService {
 
         ShipmentDetails entity = jsonHelper.convertValue(request, ShipmentDetails.class);
         entity.setId(oldEntity.get().getId());
-        entity = shipmentDao.save(entity);
+        entity = shipmentRepository.save(entity);
         return ResponseHelper.buildSuccessResponse(jsonHelper.convertValue(entity, ShipmentDetailsResponse.class));
     }
 
@@ -602,7 +603,7 @@ public class ShipmentService implements IShipmentService {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
 
             Pair<Specification<ShipmentDetails>, Pageable> tuple = fetchData(request, ShipmentDetails.class, tableNames);
-            Page<ShipmentDetails> shipmentDetailsPage = shipmentDao.findAll(tuple.getLeft(), tuple.getRight());
+            Page<ShipmentDetails> shipmentDetailsPage = shipmentRepository.findAll(tuple.getLeft(), tuple.getRight());
             return ResponseHelper.buildListSuccessResponse(
                     convertEntityListToDtoList(shipmentDetailsPage.getContent()),
                     shipmentDetailsPage.getTotalPages(),
@@ -623,7 +624,7 @@ public class ShipmentService implements IShipmentService {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
 
             Pair<Specification<ShipmentDetails>, Pageable> tuple = fetchData(request, ShipmentDetails.class, tableNames);
-            Page<ShipmentDetails> shipmentDetailsPage = shipmentDao.findAll(tuple.getLeft(), tuple.getRight());
+            Page<ShipmentDetails> shipmentDetailsPage = shipmentRepository.findAll(tuple.getLeft(), tuple.getRight());
             return CompletableFuture.completedFuture(ResponseHelper.buildListSuccessResponse(
                     convertEntityListToDtoList(shipmentDetailsPage.getContent()),
                     shipmentDetailsPage.getTotalPages(),
@@ -643,12 +644,12 @@ public class ShipmentService implements IShipmentService {
             // TODO- implement Validation logic
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
             long id = request.getId();
-            Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(id);
+            Optional<ShipmentDetails> shipmentDetails = shipmentRepository.findById(id);
             if (!shipmentDetails.isPresent()) {
                 log.debug("Shipment Details is null for Id {}", request.getId());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
-            shipmentDao.delete(shipmentDetails.get());
+            shipmentRepository.delete(shipmentDetails.get());
             return ResponseHelper.buildSuccessResponse();
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -663,7 +664,7 @@ public class ShipmentService implements IShipmentService {
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
             long id = request.getId();
-            Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(id);
+            Optional<ShipmentDetails> shipmentDetails = shipmentRepository.findById(id);
             if (!shipmentDetails.isPresent()) {
                 log.debug("Shipment Details is null for Id {}", request.getId());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
@@ -685,7 +686,7 @@ public class ShipmentService implements IShipmentService {
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
             long id = request.getId();
-            Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(id);
+            Optional<ShipmentDetails> shipmentDetails = shipmentRepository.findById(id);
             if (!shipmentDetails.isPresent()) {
                 log.debug("Shipment Details is null for Id {}", request.getId());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);

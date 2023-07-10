@@ -23,13 +23,13 @@ import static org.mockito.Mockito.*;
 public class ShipmentServiceTests {
 
     @Mock
-    private IShipmentDao shipmentDao;
+    private IShipmentRepository shipmentRepository;
 
     @Mock
-    private ICarrierDao carrierDao;
+    private ICarrierRepository carrierRepository;
 
     @Mock
-    private IPartiesDao partiesDao;
+    private IPartiesRepository partiesRepository;
 
     @InjectMocks
     private ShipmentService shipmentService;
@@ -38,9 +38,9 @@ public class ShipmentServiceTests {
     public void testCreateTestShipment() {
         int count = 1;
         List<ShipmentDetails> expectedResponse = createDummyShipmentDetails(count);
-        when(shipmentDao.save(any(ShipmentDetails.class))).thenReturn(expectedResponse.get(0));
-        when(carrierDao.save(any(CarrierDetails.class))).thenReturn(expectedResponse.get(0).getCarrierDetails());
-        when(partiesDao.saveAll(anyList())).thenReturn(expectedResponse.get(0).getParties());
+        when(shipmentRepository.save(any(ShipmentDetails.class))).thenReturn(expectedResponse.get(0));
+        when(carrierRepository.save(any(CarrierDetails.class))).thenReturn(expectedResponse.get(0).getCarrierDetails());
+        when(partiesRepository.saveAll(anyList())).thenReturn(expectedResponse.get(0).getParties());
 
         List<ShipmentDetails> actualResponse = shipmentService.createTestShipment(count);
 
@@ -52,9 +52,9 @@ public class ShipmentServiceTests {
             assertEquals(expectedShipment.getParties(), actualShipment.getParties());
         }
 
-        verify(shipmentDao, times(count)).save(any(ShipmentDetails.class));
-        verify(carrierDao, times(count)).save(any(CarrierDetails.class));
-        verify(partiesDao, times(count)).saveAll(anyList());
+        verify(shipmentRepository, times(count)).save(any(ShipmentDetails.class));
+        verify(carrierRepository, times(count)).save(any(CarrierDetails.class));
+        verify(partiesRepository, times(count)).saveAll(anyList());
     }
 
     private List<ShipmentDetails> createDummyShipmentDetails(int count) {

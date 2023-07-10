@@ -6,19 +6,15 @@ import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.dto.request.BookingCarriageRequest;
-import com.dpw.runner.shipment.services.dto.request.JobRequest;
 import com.dpw.runner.shipment.services.dto.request.PackingRequest;
 import com.dpw.runner.shipment.services.dto.response.PackingResponse;
 import com.dpw.runner.shipment.services.entity.BookingCarriage;
-import com.dpw.runner.shipment.services.entity.Jobs;
 import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
-import com.dpw.runner.shipment.services.repository.interfaces.IPackingDao;
+import com.dpw.runner.shipment.services.repository.interfaces.IPackingRepository;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingService;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
-import org.bouncycastle.util.Pack;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
@@ -28,14 +24,12 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 
@@ -43,7 +37,7 @@ import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 @Service
 public class PackingService implements IPackingService {
     @Autowired
-    IPackingDao packingDao;
+    IPackingRepository packingRepository;
     @Autowired
     ModelMapper modelMapper;
 
@@ -52,7 +46,7 @@ public class PackingService implements IPackingService {
         PackingRequest request = null;
         request = (PackingRequest) commonRequestModel.getData();
         Packing packing = convertRequestToEntity(request);
-        packing = packingDao.save(packing);
+        packing = packingRepository.save(packing);
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(packing));
     }
 
@@ -60,7 +54,7 @@ public class PackingService implements IPackingService {
     public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
         PackingRequest request = (PackingRequest) commonRequestModel.getData();
         long id = request.getId();
-        Optional<Packing> oldEntity = packingDao.findById(id);
+        Optional<Packing> oldEntity = packingRepository.findById(id);
         if (!oldEntity.isPresent()) {
             log.debug("Packing is null for Id {}", request.getId());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
@@ -68,7 +62,7 @@ public class PackingService implements IPackingService {
 
         Packing packing = convertRequestToEntity(request);
         packing.setId(oldEntity.get().getId());
-        packing = packingDao.save(packing);
+        packing = packingRepository.save(packing);
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(packing));
     }
 
@@ -78,7 +72,7 @@ public class PackingService implements IPackingService {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
             // construct specifications for filter request
             Pair<Specification<Packing>, Pageable> tuple = fetchData(request, BookingCarriage.class);
-            Page<Packing> packingPage = packingDao.findAll(tuple.getLeft(), tuple.getRight());
+            Page<Packing> packingPage = packingRepository.findAll(tuple.getLeft(), tuple.getRight());
             return ResponseHelper.buildListSuccessResponse(
                     convertEntityListToDtoList(packingPage.getContent()),
                     packingPage.getTotalPages(),
@@ -100,7 +94,7 @@ public class PackingService implements IPackingService {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
             // construct specifications for filter request
             Pair<Specification<Packing>, Pageable> tuple = fetchData(request, Packing.class);
-            Page<Packing> packingPage = packingDao.findAll(tuple.getLeft(), tuple.getRight());
+            Page<Packing> packingPage = packingRepository.findAll(tuple.getLeft(), tuple.getRight());
             return CompletableFuture.completedFuture(
                     ResponseHelper
                             .buildListSuccessResponse(
@@ -118,12 +112,12 @@ public class PackingService implements IPackingService {
     @Override
     public ResponseEntity<?> delete(CommonRequestModel commonRequestModel) {
         Long id = commonRequestModel.getId();
-        Optional<Packing> targetPacking = packingDao.findById(id);
+        Optional<Packing> targetPacking = packingRepository.findById(id);
         if (targetPacking.isEmpty()) {
             log.debug("No entity present for id {} ", id);
             return ResponseHelper.buildFailedResponse(PackingConstants.NO_DATA);
         }
-        packingDao.delete(targetPacking.get());
+        packingRepository.delete(targetPacking.get());
         return ResponseHelper.buildSuccessResponse();
     }
 
@@ -133,7 +127,7 @@ public class PackingService implements IPackingService {
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
             long id = request.getId();
-            Optional<Packing> packing = packingDao.findById(id);
+            Optional<Packing> packing = packingRepository.findById(id);
             if (packing.isEmpty()) {
                 log.debug("Packing is null for Id {}", request.getId());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);

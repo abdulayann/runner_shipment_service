@@ -5,7 +5,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancyR
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface ICarrierDao extends MultiTenancyRepository<CarrierDetails> {
+public interface ICarrierRepository extends MultiTenancyRepository<CarrierDetails> {
 
 
 

@@ -7,10 +7,9 @@ import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.PickupDeliveryDetailsRequest;
 import com.dpw.runner.shipment.services.dto.response.PickupDeliveryDetailsResponse;
-import com.dpw.runner.shipment.services.entity.Parties;
 import com.dpw.runner.shipment.services.entity.PickupDeliveryDetails;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
-import com.dpw.runner.shipment.services.repository.interfaces.IPickupDeliveryDetailsDao;
+import com.dpw.runner.shipment.services.repository.interfaces.IPickupDeliveryDetailsRepository;
 import com.dpw.runner.shipment.services.service.interfaces.IPickupDeliveryDetailsService;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
@@ -23,10 +22,8 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -39,7 +36,7 @@ import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 @Slf4j
 public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsService {
     @Autowired
-    private IPickupDeliveryDetailsDao pickupDeliveryDetailsDao;
+    private IPickupDeliveryDetailsRepository pickupDeliveryDetailsRepository;
 
     @Autowired
     private ModelMapper modelMapper;
@@ -49,7 +46,7 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
         PickupDeliveryDetailsRequest request = null;
         request = (PickupDeliveryDetailsRequest) commonRequestModel.getData();
         PickupDeliveryDetails pickupDeliveryDetails = convertRequestToEntity(request);
-        pickupDeliveryDetails = pickupDeliveryDetailsDao.save(pickupDeliveryDetails);
+        pickupDeliveryDetails = pickupDeliveryDetailsRepository.save(pickupDeliveryDetails);
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(pickupDeliveryDetails));
     }
 
@@ -57,7 +54,7 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
     public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
         PickupDeliveryDetailsRequest request = (PickupDeliveryDetailsRequest) commonRequestModel.getData();
         long id =request.getId();
-        Optional<PickupDeliveryDetails> oldEntity = pickupDeliveryDetailsDao.findById(id);
+        Optional<PickupDeliveryDetails> oldEntity = pickupDeliveryDetailsRepository.findById(id);
         if(!oldEntity.isPresent()) {
             log.debug("Pickup Delivery Details is null for Id {}", request.getId());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
@@ -65,7 +62,7 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
 
         PickupDeliveryDetails pickupDeliveryDetails = convertRequestToEntity(request);
         pickupDeliveryDetails.setId(oldEntity.get().getId());
-        pickupDeliveryDetails = pickupDeliveryDetailsDao.save(pickupDeliveryDetails);
+        pickupDeliveryDetails = pickupDeliveryDetailsRepository.save(pickupDeliveryDetails);
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(pickupDeliveryDetails));
     }
 
@@ -75,7 +72,7 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
             // construct specifications for filter request
             Pair<Specification<PickupDeliveryDetails>, Pageable> tuple = fetchData(request, PickupDeliveryDetails.class);
-            Page<PickupDeliveryDetails> pickupDeliveryDetailsPage  = pickupDeliveryDetailsDao.findAll(tuple.getLeft(), tuple.getRight());
+            Page<PickupDeliveryDetails> pickupDeliveryDetailsPage  = pickupDeliveryDetailsRepository.findAll(tuple.getLeft(), tuple.getRight());
             return ResponseHelper.buildListSuccessResponse(
                     convertEntityListToDtoList(pickupDeliveryDetailsPage.getContent()),
                     pickupDeliveryDetailsPage.getTotalPages(),
@@ -96,7 +93,7 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
             // construct specifications for filter request
             Pair<Specification<PickupDeliveryDetails>, Pageable> tuple = fetchData(request, PickupDeliveryDetails.class);
-            Page<PickupDeliveryDetails> pickupDeliveryDetailsPage  = pickupDeliveryDetailsDao.findAll(tuple.getLeft(), tuple.getRight());
+            Page<PickupDeliveryDetails> pickupDeliveryDetailsPage  = pickupDeliveryDetailsRepository.findAll(tuple.getLeft(), tuple.getRight());
             return CompletableFuture.completedFuture(ResponseHelper.buildListSuccessResponse(
                     convertEntityListToDtoList(pickupDeliveryDetailsPage.getContent()),
                     pickupDeliveryDetailsPage.getTotalPages(),
@@ -114,12 +111,12 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
             long id =request.getId();
-            Optional<PickupDeliveryDetails> pickupDeliveryDetails = pickupDeliveryDetailsDao.findById(id);
+            Optional<PickupDeliveryDetails> pickupDeliveryDetails = pickupDeliveryDetailsRepository.findById(id);
             if(!pickupDeliveryDetails.isPresent()) {
                 log.debug("pickup Delivery Details is null for Id {}", request.getId());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
-            pickupDeliveryDetailsDao.delete(pickupDeliveryDetails.get());
+            pickupDeliveryDetailsRepository.delete(pickupDeliveryDetails.get());
             return ResponseHelper.buildSuccessResponse();
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -134,7 +131,7 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
             long id =request.getId();
-            Optional<PickupDeliveryDetails> pickupDeliveryDetails = pickupDeliveryDetailsDao.findById(id);
+            Optional<PickupDeliveryDetails> pickupDeliveryDetails = pickupDeliveryDetailsRepository.findById(id);
             if(!pickupDeliveryDetails.isPresent()) {
                 log.debug("Pickup Delivery Details is null for Id {}", request.getId());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);

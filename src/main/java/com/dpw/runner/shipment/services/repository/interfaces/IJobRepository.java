@@ -7,6 +7,6 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 @Repository
-public interface IJobDao extends MultiTenancyRepository<Jobs> {
+public interface IJobRepository extends MultiTenancyRepository<Jobs> {
     List<Jobs> findByShipmentId(Long id);
 }

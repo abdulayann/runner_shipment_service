@@ -11,7 +11,7 @@ import java.util.Optional;
 
 import static com.dpw.runner.shipment.services.commons.constants.DBQueryConstants.ELDETAILS_SELECT_ELNUMBERS_QUERY;
 
-public interface IELDetailsDao extends JpaRepository<ELDetails, Long> {
+public interface IELDetailsRepository extends JpaRepository<ELDetails, Long> {
     Page<ELDetails> findAll(Specification<ELDetails> spec, Pageable pageable);
 
     @Query(ELDETAILS_SELECT_ELNUMBERS_QUERY)

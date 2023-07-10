@@ -1,12 +1,14 @@
 package com.dpw.runner.shipment.services.repository.interfaces;
 
-import com.dpw.runner.shipment.services.entity.TruckDriverDetails;
+import com.dpw.runner.shipment.services.entity.Routings;
 import org.springframework.data.domain.Page;
+
+
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface ITruckDriverDetailsDao extends JpaRepository<TruckDriverDetails, Long> {
-    Page<TruckDriverDetails> findAll(Specification<TruckDriverDetails> spec, Pageable pageable);
+public interface IRoutingsRepository extends JpaRepository<Routings, Long> {
+    Page<Routings> findAll(Specification<Routings> spec, Pageable pageable);
 
 }

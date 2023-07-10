@@ -8,10 +8,9 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.ELDetailsRequest;
 import com.dpw.runner.shipment.services.dto.request.ElNumbersRequest;
 import com.dpw.runner.shipment.services.dto.response.ELDetailsResponse;
-import com.dpw.runner.shipment.services.entity.BookingCarriage;
 import com.dpw.runner.shipment.services.entity.ELDetails;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
-import com.dpw.runner.shipment.services.repository.interfaces.IELDetailsDao;
+import com.dpw.runner.shipment.services.repository.interfaces.IELDetailsRepository;
 import com.dpw.runner.shipment.services.service.interfaces.IELDetailsService;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
@@ -24,7 +23,6 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
@@ -38,7 +36,7 @@ import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 @Slf4j
 public class ELDetailsService implements IELDetailsService {
     @Autowired
-    private IELDetailsDao elDetailsDao;
+    private IELDetailsRepository elDetailsRepository;
 
     @Autowired
     private ModelMapper modelMapper;
@@ -47,7 +45,7 @@ public class ELDetailsService implements IELDetailsService {
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
         ELDetailsRequest request = (ELDetailsRequest) commonRequestModel.getData();
         ELDetails elDetails = convertRequestToELDetails(request);
-        elDetails = elDetailsDao.save(elDetails);
+        elDetails = elDetailsRepository.save(elDetails);
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(elDetails));
     }
 
@@ -55,7 +53,7 @@ public class ELDetailsService implements IELDetailsService {
     public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
         ELDetailsRequest request = (ELDetailsRequest) commonRequestModel.getData();
         long id = request.getId();
-        Optional<ELDetails> oldEntity = elDetailsDao.findById(id);
+        Optional<ELDetails> oldEntity = elDetailsRepository.findById(id);
         if (oldEntity.isEmpty()) {
             log.debug("EL Details is null for Id {}", request.getId());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
@@ -63,7 +61,7 @@ public class ELDetailsService implements IELDetailsService {
 
         ELDetails elDetails = convertRequestToELDetails(request);
         elDetails.setId(oldEntity.get().getId());
-        elDetails = elDetailsDao.save(elDetails);
+        elDetails = elDetailsRepository.save(elDetails);
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(elDetails));
     }
 
@@ -74,7 +72,7 @@ public class ELDetailsService implements IELDetailsService {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
 
             Pair<Specification<ELDetails>, Pageable> tuple = fetchData(request, ELDetails.class);
-            Page<ELDetails> elDetailsPage = elDetailsDao.findAll(tuple.getLeft(), tuple.getRight());
+            Page<ELDetails> elDetailsPage = elDetailsRepository.findAll(tuple.getLeft(), tuple.getRight());
             return ResponseHelper.buildListSuccessResponse(
                     convertEntityListToDtoList(elDetailsPage.getContent()),
                     elDetailsPage.getTotalPages(),
@@ -95,7 +93,7 @@ public class ELDetailsService implements IELDetailsService {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
 
             Pair<Specification<ELDetails>, Pageable> tuple = fetchData(request, ELDetails.class);
-            Page<ELDetails> elDetailsPage = elDetailsDao.findAll(tuple.getLeft(), tuple.getRight());
+            Page<ELDetails> elDetailsPage = elDetailsRepository.findAll(tuple.getLeft(), tuple.getRight());
             return CompletableFuture.completedFuture( ResponseHelper.buildListSuccessResponse(
                     convertEntityListToDtoList(elDetailsPage.getContent()),
                     elDetailsPage.getTotalPages(),
@@ -115,12 +113,12 @@ public class ELDetailsService implements IELDetailsService {
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
             long id = request.getId();
-            Optional<ELDetails> elDetails = elDetailsDao.findById(id);
+            Optional<ELDetails> elDetails = elDetailsRepository.findById(id);
             if (elDetails.isEmpty()) {
                 log.debug("El Details is null for Id {}", request.getId());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
-            elDetailsDao.delete(elDetails.get());
+            elDetailsRepository.delete(elDetails.get());
             return ResponseHelper.buildSuccessResponse();
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -136,7 +134,7 @@ public class ELDetailsService implements IELDetailsService {
         try {
             ElNumbersRequest request = (ElNumbersRequest) (requestModel.getData());
             String elNumber = request.getElNumber();
-            Optional<ELDetails> elDetails = elDetailsDao.findByElNumber(elNumber);
+            Optional<ELDetails> elDetails = elDetailsRepository.findByElNumber(elNumber);
             if (elDetails.isEmpty()) {
                 log.debug("El Detail is null for El Number {}", request.getElNumber());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
@@ -157,7 +155,7 @@ public class ELDetailsService implements IELDetailsService {
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
             long id = request.getId();
-            Optional<ELDetails> elDetail = elDetailsDao.findById(id);
+            Optional<ELDetails> elDetail = elDetailsRepository.findById(id);
             if (elDetail.isEmpty()) {
                 log.debug("El Detail is null for Id {}", request.getId());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);

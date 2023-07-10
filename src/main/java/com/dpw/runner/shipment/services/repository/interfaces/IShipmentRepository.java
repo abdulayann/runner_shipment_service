@@ -10,6 +10,6 @@ import org.springframework.stereotype.Repository;
 
 
 @Repository
-public interface IShipmentDao extends MultiTenancyRepository<ShipmentDetails>, PermissionsRepository<ShipmentDetails> {
+public interface IShipmentRepository extends MultiTenancyRepository<ShipmentDetails>, PermissionsRepository<ShipmentDetails> {
     Page<ShipmentDetails> findAll(Specification<ShipmentDetails> spec, Pageable pageable);
 }

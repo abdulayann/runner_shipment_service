@@ -3,7 +3,7 @@ package com.dpw.runner.shipment.services;
 import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
-import com.dpw.runner.shipment.services.repository.interfaces.IShipmentDao;
+import com.dpw.runner.shipment.services.repository.interfaces.IShipmentRepository;
 import com.dpw.runner.shipment.services.service.impl.ShipmentService;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -57,7 +57,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 public class IntegrationTest {
 
     @Autowired
-    private IShipmentDao shipmentRepo;
+    private IShipmentRepository shipmentRepo;
 
     @Autowired
     private TestDataGenerator testDataGenerator;

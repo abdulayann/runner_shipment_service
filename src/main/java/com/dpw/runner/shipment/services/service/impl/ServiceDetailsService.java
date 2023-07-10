@@ -7,10 +7,9 @@ import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.ServiceDetailsRequest;
 import com.dpw.runner.shipment.services.dto.response.ServiceDetailsResponse;
-import com.dpw.runner.shipment.services.entity.Routings;
 import com.dpw.runner.shipment.services.entity.ServiceDetails;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
-import com.dpw.runner.shipment.services.repository.interfaces.IServiceDetailsDao;
+import com.dpw.runner.shipment.services.repository.interfaces.IServiceDetailsRepository;
 import com.dpw.runner.shipment.services.service.interfaces.IServiceDetailsService;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
@@ -23,15 +22,12 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 
@@ -40,7 +36,7 @@ import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 @Slf4j
 public class ServiceDetailsService implements IServiceDetailsService {
     @Autowired
-    private IServiceDetailsDao serviceDetailsDao;
+    private IServiceDetailsRepository serviceDetailsRepository;
 
     @Autowired
     private ModelMapper modelMapper;
@@ -50,7 +46,7 @@ public class ServiceDetailsService implements IServiceDetailsService {
         ServiceDetailsRequest request = null;
         request = (ServiceDetailsRequest) commonRequestModel.getData();
         ServiceDetails shipmentServices = convertRequestToEntity(request);
-        shipmentServices = serviceDetailsDao.save(shipmentServices);
+        shipmentServices = serviceDetailsRepository.save(shipmentServices);
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(shipmentServices));
     }
 
@@ -58,7 +54,7 @@ public class ServiceDetailsService implements IServiceDetailsService {
     public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
         ServiceDetailsRequest request = (ServiceDetailsRequest) commonRequestModel.getData();
         long id =request.getId();
-        Optional<ServiceDetails> oldEntity = serviceDetailsDao.findById(id);
+        Optional<ServiceDetails> oldEntity = serviceDetailsRepository.findById(id);
         if(!oldEntity.isPresent()) {
             log.debug("Service Details is null for Id {}", request.getId());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
@@ -66,7 +62,7 @@ public class ServiceDetailsService implements IServiceDetailsService {
 
         ServiceDetails shipmentServices = convertRequestToEntity(request);
         shipmentServices.setId(oldEntity.get().getId());
-        shipmentServices = serviceDetailsDao.save(shipmentServices);
+        shipmentServices = serviceDetailsRepository.save(shipmentServices);
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(shipmentServices));
     }
 
@@ -76,7 +72,7 @@ public class ServiceDetailsService implements IServiceDetailsService {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
             // construct specifications for filter request
             Pair<Specification<ServiceDetails>, Pageable> tuple = fetchData(request, ServiceDetails.class);
-            Page<ServiceDetails> shipmentServicesPage  = serviceDetailsDao.findAll(tuple.getLeft(), tuple.getRight());
+            Page<ServiceDetails> shipmentServicesPage  = serviceDetailsRepository.findAll(tuple.getLeft(), tuple.getRight());
             return ResponseHelper.buildListSuccessResponse(
                     convertEntityListToDtoList(shipmentServicesPage.getContent()),
                     shipmentServicesPage.getTotalPages(),
@@ -97,7 +93,7 @@ public class ServiceDetailsService implements IServiceDetailsService {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
             // construct specifications for filter request
             Pair<Specification<ServiceDetails>, Pageable> tuple = fetchData(request, ServiceDetails.class);
-            Page<ServiceDetails> shipmentServicesPage  = serviceDetailsDao.findAll(tuple.getLeft(), tuple.getRight());
+            Page<ServiceDetails> shipmentServicesPage  = serviceDetailsRepository.findAll(tuple.getLeft(), tuple.getRight());
             return CompletableFuture.completedFuture( ResponseHelper.buildListSuccessResponse(
                     convertEntityListToDtoList(shipmentServicesPage.getContent()),
                     shipmentServicesPage.getTotalPages(),
@@ -115,12 +111,12 @@ public class ServiceDetailsService implements IServiceDetailsService {
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
             long id =request.getId();
-            Optional<ServiceDetails> shipmentServices = serviceDetailsDao.findById(id);
+            Optional<ServiceDetails> shipmentServices = serviceDetailsRepository.findById(id);
             if(!shipmentServices.isPresent()) {
                 log.debug("Service Details is null for Id {}", request.getId());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
-            serviceDetailsDao.delete(shipmentServices.get());
+            serviceDetailsRepository.delete(shipmentServices.get());
             return ResponseHelper.buildSuccessResponse();
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -135,7 +131,7 @@ public class ServiceDetailsService implements IServiceDetailsService {
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
             long id =request.getId();
-            Optional<ServiceDetails> shipmentServices = serviceDetailsDao.findById(id);
+            Optional<ServiceDetails> shipmentServices = serviceDetailsRepository.findById(id);
             if(!shipmentServices.isPresent()) {
                 log.debug("Service Details is null for Id {}", request.getId());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);

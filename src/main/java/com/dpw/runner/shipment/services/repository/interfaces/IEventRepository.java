@@ -5,5 +5,5 @@ import com.dpw.runner.shipment.services.entity.Events;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface IEventDao extends MultiTenancyRepository<Events> {
+public interface IEventRepository extends MultiTenancyRepository<Events> {
 }

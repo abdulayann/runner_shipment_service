@@ -6,14 +6,12 @@ import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.dto.request.BookingCarriageRequest;
 import com.dpw.runner.shipment.services.dto.request.JobRequest;
 import com.dpw.runner.shipment.services.dto.response.JobResponse;
 import com.dpw.runner.shipment.services.entity.BookingCarriage;
 import com.dpw.runner.shipment.services.entity.Jobs;
-import com.dpw.runner.shipment.services.entity.Notes;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
-import com.dpw.runner.shipment.services.repository.interfaces.IJobDao;
+import com.dpw.runner.shipment.services.repository.interfaces.IJobRepository;
 import com.dpw.runner.shipment.services.service.interfaces.IJobService;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
@@ -27,14 +25,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 
@@ -43,7 +38,7 @@ import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 @Service
 public class JobService implements IJobService {
     @Autowired
-    IJobDao jobDao;
+    IJobRepository jobRepository;
 
     @Autowired
     ModelMapper modelMapper;
@@ -54,7 +49,7 @@ public class JobService implements IJobService {
         JobRequest request = (JobRequest) commonRequestModel.getData();
 
         Jobs job = convertRequestToEntity(request);
-        job = jobDao.save(job);
+        job = jobRepository.save(job);
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(job));
     }
 
@@ -62,7 +57,7 @@ public class JobService implements IJobService {
     public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
         JobRequest request = (JobRequest) commonRequestModel.getData();
         long id =request.getId();
-        Optional<Jobs> oldEntity = jobDao.findById(id);
+        Optional<Jobs> oldEntity = jobRepository.findById(id);
         if(!oldEntity.isPresent()) {
             log.debug("Jobs is null for Id {}", request.getId());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
@@ -70,7 +65,7 @@ public class JobService implements IJobService {
 
         Jobs jobs = convertRequestToEntity(request);
         jobs.setId(oldEntity.get().getId());
-        jobs = jobDao.save(jobs);
+        jobs = jobRepository.save(jobs);
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(jobs));
     }
 
@@ -80,7 +75,7 @@ public class JobService implements IJobService {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
             // construct specifications for filter request
             Pair<Specification<Jobs>, Pageable> tuple = fetchData(request, BookingCarriage.class);
-            Page<Jobs> jobsPage  = jobDao.findAll(tuple.getLeft(), tuple.getRight());
+            Page<Jobs> jobsPage  = jobRepository.findAll(tuple.getLeft(), tuple.getRight());
             return ResponseHelper.buildListSuccessResponse(
                     convertEntityListToDtoList(jobsPage.getContent()),
                     jobsPage.getTotalPages(),
@@ -101,7 +96,7 @@ public class JobService implements IJobService {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
             // construct specifications for filter request
             Pair<Specification<Jobs>, Pageable> tuple = fetchData(request, Jobs.class);
-            Page<Jobs> jobsPage  = jobDao.findAll(tuple.getLeft(), tuple.getRight());
+            Page<Jobs> jobsPage  = jobRepository.findAll(tuple.getLeft(), tuple.getRight());
             return CompletableFuture.completedFuture(
                     ResponseHelper
                             .buildListSuccessResponse(
@@ -119,12 +114,12 @@ public class JobService implements IJobService {
     @Override
     public ResponseEntity<?> delete(CommonRequestModel commonRequestModel) {
         Long id = commonRequestModel.getId();
-        Optional<Jobs> targetJob = jobDao.findById(id);
+        Optional<Jobs> targetJob = jobRepository.findById(id);
         if (targetJob.isEmpty()) {
             log.debug("No entity present for id {} ", id);
             return ResponseHelper.buildFailedResponse(Constants.NO_DATA);
         }
-        jobDao.delete(targetJob.get());
+        jobRepository.delete(targetJob.get());
         return ResponseHelper.buildSuccessResponse();
     }
 
@@ -134,7 +129,7 @@ public class JobService implements IJobService {
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
             long id = request.getId();
-            Optional<Jobs> job = jobDao.findById(id);
+            Optional<Jobs> job = jobRepository.findById(id);
             if (job.isEmpty()) {
                 log.debug("Job is null for Id {}", request.getId());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
