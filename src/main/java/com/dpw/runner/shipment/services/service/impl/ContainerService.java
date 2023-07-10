@@ -174,12 +174,24 @@ public class ContainerService implements IContainerService {
         }
     }
 
-    private List<Containers> saveContainers(List<ContainerRequest> containers)
+    public List<Containers> saveContainers(List<ContainerRequest> containers)
     {
-        return containerDao.saveAll(containers
-                .stream()
-                .map(this::convertRequestToEntity)
-                .collect(Collectors.toList()));
+        List<Containers> res = new ArrayList<>();
+        for(ContainerRequest req : containers){
+            Containers saveEntity = convertRequestToEntity(req);
+            if(req.getId() != null){
+                long id = req.getId();
+                Optional<Containers> oldEntity = containerDao.findById(id);
+                if (!oldEntity.isPresent()) {
+                    log.debug("Container is null for Id {}", req.getId());
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
+                saveEntity = oldEntity.get();
+            }
+            saveEntity = containerDao.save(saveEntity);
+            res.add(saveEntity);
+        }
+        return res;
     }
 
     private IRunnerResponse convertEntityToDto(Containers container) {
