@@ -5,11 +5,11 @@ import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.dao.interfaces.IBookingCarriageDao;
 import com.dpw.runner.shipment.services.dto.request.BookingCarriageRequest;
 import com.dpw.runner.shipment.services.dto.response.BookingCarriageResponse;
 import com.dpw.runner.shipment.services.entity.BookingCarriage;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
-import com.dpw.runner.shipment.services.repository.interfaces.IBookingCarriageRepository;
 import com.dpw.runner.shipment.services.service.interfaces.IBookingCarriageService;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
@@ -36,7 +36,7 @@ import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 @Slf4j
 public class BookingCarriageService implements IBookingCarriageService {
     @Autowired
-    private IBookingCarriageRepository bookingCarriageRepository;
+    private IBookingCarriageDao bookingCarriageDao;
 
     @Autowired
     private ModelMapper modelMapper;
@@ -46,7 +46,7 @@ public class BookingCarriageService implements IBookingCarriageService {
         BookingCarriageRequest request = null;
         request = (BookingCarriageRequest) commonRequestModel.getData();
         BookingCarriage bookingCarriage = convertRequestToEntity(request);
-        bookingCarriage = bookingCarriageRepository.save(bookingCarriage);
+        bookingCarriage = bookingCarriageDao.save(bookingCarriage);
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(bookingCarriage));
     }
 
@@ -54,7 +54,7 @@ public class BookingCarriageService implements IBookingCarriageService {
     public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
         BookingCarriageRequest request = (BookingCarriageRequest) commonRequestModel.getData();
         long id = request.getId();
-        Optional<BookingCarriage> oldEntity = bookingCarriageRepository.findById(id);
+        Optional<BookingCarriage> oldEntity = bookingCarriageDao.findById(id);
         if (!oldEntity.isPresent()) {
             log.debug("Booking Carriage is null for Id {}", request.getId());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
@@ -62,7 +62,7 @@ public class BookingCarriageService implements IBookingCarriageService {
 
         BookingCarriage bookingCarriage = convertRequestToEntity(request);
         bookingCarriage.setId(oldEntity.get().getId());
-        bookingCarriage = bookingCarriageRepository.save(bookingCarriage);
+        bookingCarriage = bookingCarriageDao.save(bookingCarriage);
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(bookingCarriage));
     }
 
@@ -72,7 +72,7 @@ public class BookingCarriageService implements IBookingCarriageService {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
             // construct specifications for filter request
             Pair<Specification<BookingCarriage>, Pageable> tuple = fetchData(request, BookingCarriage.class);
-            Page<BookingCarriage> bookingCarriagePage = bookingCarriageRepository.findAll(tuple.getLeft(), tuple.getRight());
+            Page<BookingCarriage> bookingCarriagePage = bookingCarriageDao.findAll(tuple.getLeft(), tuple.getRight());
             return ResponseHelper.buildListSuccessResponse(
                     convertEntityListToDtoList(bookingCarriagePage.getContent()),
                     bookingCarriagePage.getTotalPages(),
@@ -94,7 +94,7 @@ public class BookingCarriageService implements IBookingCarriageService {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
             // construct specifications for filter request
             Pair<Specification<BookingCarriage>, Pageable> tuple = fetchData(request, BookingCarriage.class);
-            Page<BookingCarriage> bookingCarriagePage  = bookingCarriageRepository.findAll(tuple.getLeft(), tuple.getRight());
+            Page<BookingCarriage> bookingCarriagePage  = bookingCarriageDao.findAll(tuple.getLeft(), tuple.getRight());
             return CompletableFuture.completedFuture(
                     ResponseHelper
                             .buildListSuccessResponse(
@@ -115,12 +115,12 @@ public class BookingCarriageService implements IBookingCarriageService {
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
             long id = request.getId();
-            Optional<BookingCarriage> bookingCarriage = bookingCarriageRepository.findById(id);
+            Optional<BookingCarriage> bookingCarriage = bookingCarriageDao.findById(id);
             if (!bookingCarriage.isPresent()) {
                 log.debug("Booking Carriage is null for Id {}", request.getId());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
-            bookingCarriageRepository.delete(bookingCarriage.get());
+            bookingCarriageDao.delete(bookingCarriage.get());
             return ResponseHelper.buildSuccessResponse();
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -135,7 +135,7 @@ public class BookingCarriageService implements IBookingCarriageService {
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
             long id = request.getId();
-            Optional<BookingCarriage> bookingCarriage = bookingCarriageRepository.findById(id);
+            Optional<BookingCarriage> bookingCarriage = bookingCarriageDao.findById(id);
             if (!bookingCarriage.isPresent()) {
                 log.debug("Booking Carriage is null for Id {}", request.getId());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);

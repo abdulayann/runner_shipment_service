@@ -5,12 +5,12 @@ import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.dao.interfaces.IFileRepoDao;
 import com.dpw.runner.shipment.services.dto.request.EntityIdAndTypeRequest;
 import com.dpw.runner.shipment.services.dto.request.FileRepoRequest;
 import com.dpw.runner.shipment.services.dto.response.FileRepoResponse;
 import com.dpw.runner.shipment.services.entity.FileRepo;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
-import com.dpw.runner.shipment.services.repository.interfaces.IFileRepoRepository;
 import com.dpw.runner.shipment.services.service.interfaces.IFileRepoService;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
@@ -36,7 +36,7 @@ import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 @Slf4j
 public class FileRepoService implements IFileRepoService {
     @Autowired
-    private IFileRepoRepository fileRepoRepository;
+    private IFileRepoDao fileRepoDao;
     @Autowired
     private ModelMapper modelMapper;
 
@@ -46,7 +46,7 @@ public class FileRepoService implements IFileRepoService {
         FileRepoRequest request = null;
         request = (FileRepoRequest) commonRequestModel.getData();
         FileRepo fileRepo  = mapToEntityFromRequest(request);
-        fileRepo = fileRepoRepository.save(fileRepo);
+        fileRepo = fileRepoDao.save(fileRepo);
         return ResponseHelper.buildSuccessResponse(convertToResponse(fileRepo));
     }
 
@@ -54,7 +54,7 @@ public class FileRepoService implements IFileRepoService {
     public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
         FileRepoRequest request = (FileRepoRequest) commonRequestModel.getData();
         long id =request.getId();
-        Optional<FileRepo> oldEntity = fileRepoRepository.findById(id);
+        Optional<FileRepo> oldEntity = fileRepoDao.findById(id);
         if(!oldEntity.isPresent()) {
             log.debug("File Repo is null for Id {}", request.getId());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
@@ -62,7 +62,7 @@ public class FileRepoService implements IFileRepoService {
 
         FileRepo fileRepo = mapToEntityFromRequest(request);
         fileRepo.setId(oldEntity.get().getId());
-        fileRepo = fileRepoRepository.save(fileRepo);
+        fileRepo = fileRepoDao.save(fileRepo);
         return ResponseHelper.buildSuccessResponse(convertToResponse(fileRepo));
     }
 
@@ -72,7 +72,7 @@ public class FileRepoService implements IFileRepoService {
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
             Pair<Specification<FileRepo>, Pageable> tuple = fetchData(request, FileRepo.class);
-            Page<FileRepo> FileRepoPage  = fileRepoRepository.findAll(tuple.getLeft(), tuple.getRight());
+            Page<FileRepo> FileRepoPage  = fileRepoDao.findAll(tuple.getLeft(), tuple.getRight());
             return ResponseHelper.buildListSuccessResponse(
                     convertListResponse(FileRepoPage.getContent()),
                     FileRepoPage.getTotalPages(),
@@ -92,7 +92,7 @@ public class FileRepoService implements IFileRepoService {
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
             Pair<Specification<FileRepo>, Pageable> tuple = fetchData(request, FileRepo.class);
-            Page<FileRepo> FileRepoPage  = fileRepoRepository.findAll(tuple.getLeft(), tuple.getRight());
+            Page<FileRepo> FileRepoPage  = fileRepoDao.findAll(tuple.getLeft(), tuple.getRight());
             return CompletableFuture.completedFuture(ResponseHelper.buildListSuccessResponse(
                     convertListResponse(FileRepoPage.getContent()),
                     FileRepoPage.getTotalPages(),
@@ -111,12 +111,12 @@ public class FileRepoService implements IFileRepoService {
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
             long id = request.getId();
-            Optional<FileRepo> fileRepo = fileRepoRepository.findById(id);
+            Optional<FileRepo> fileRepo = fileRepoDao.findById(id);
             if(!fileRepo.isPresent()) {
                 log.debug("File Repo is null for Id {}", request.getId());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
-            fileRepoRepository.delete(fileRepo.get());
+            fileRepoDao.delete(fileRepo.get());
             return ResponseHelper.buildSuccessResponse();
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -132,7 +132,7 @@ public class FileRepoService implements IFileRepoService {
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
             long id = request.getId();
-            Optional<FileRepo> fileRepo = fileRepoRepository.findById(id);
+            Optional<FileRepo> fileRepo = fileRepoDao.findById(id);
             if(!fileRepo.isPresent()) {
                 log.debug("File Repo is null for Id {}", request.getId());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
@@ -153,7 +153,7 @@ public class FileRepoService implements IFileRepoService {
         String responseMsg;
         try {
             EntityIdAndTypeRequest request = (EntityIdAndTypeRequest) commonRequestModel.getData();
-            List<FileRepo> fileRepoList = fileRepoRepository.findByEntityIdAndEntityType(request.getEntityId(), request.getEntityType());
+            List<FileRepo> fileRepoList = fileRepoDao.findByEntityIdAndEntityType(request.getEntityId(), request.getEntityType());
             if(fileRepoList.size() == 0){
                 ResponseHelper.buildListSuccessResponse(null);
             }

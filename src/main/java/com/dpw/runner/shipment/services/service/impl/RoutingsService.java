@@ -5,11 +5,11 @@ import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.dao.interfaces.IRoutingsDao;
 import com.dpw.runner.shipment.services.dto.request.RoutingsRequest;
 import com.dpw.runner.shipment.services.dto.response.RoutingsResponse;
 import com.dpw.runner.shipment.services.entity.Routings;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
-import com.dpw.runner.shipment.services.repository.interfaces.IRoutingsRepository;
 import com.dpw.runner.shipment.services.service.interfaces.IRoutingsService;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
@@ -35,7 +35,7 @@ import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 @Slf4j
 public class RoutingsService implements IRoutingsService {
     @Autowired
-    private IRoutingsRepository routingsRepository;
+    private IRoutingsDao routingsDao;
 
     @Autowired
     private ModelMapper modelMapper;
@@ -45,7 +45,7 @@ public class RoutingsService implements IRoutingsService {
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
         RoutingsRequest request = (RoutingsRequest) commonRequestModel.getData();
         Routings notes = convertRequestToRoutingsEntity(request);
-        notes = routingsRepository.save(notes);
+        notes = routingsDao.save(notes);
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(notes));
     }
 
@@ -53,7 +53,7 @@ public class RoutingsService implements IRoutingsService {
     public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
         RoutingsRequest request = (RoutingsRequest) commonRequestModel.getData();
         long id = request.getId();
-        Optional<Routings> oldEntity = routingsRepository.findById(id);
+        Optional<Routings> oldEntity = routingsDao.findById(id);
         if (oldEntity.isEmpty()) {
             log.debug("Routings is null for Id {}", request.getId());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
@@ -61,7 +61,7 @@ public class RoutingsService implements IRoutingsService {
 
         Routings notes = convertRequestToRoutingsEntity(request);
         notes.setId(oldEntity.get().getId());
-        notes = routingsRepository.save(notes);
+        notes = routingsDao.save(notes);
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(notes));
     }
 
@@ -72,7 +72,7 @@ public class RoutingsService implements IRoutingsService {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
 
             Pair<Specification<Routings>, Pageable> tuple = fetchData(request, Routings.class);
-            Page<Routings> notesPage = routingsRepository.findAll(tuple.getLeft(), tuple.getRight());
+            Page<Routings> notesPage = routingsDao.findAll(tuple.getLeft(), tuple.getRight());
             return ResponseHelper.buildListSuccessResponse(
                     convertEntityListToDtoList(notesPage.getContent()),
                     notesPage.getTotalPages(),
@@ -93,7 +93,7 @@ public class RoutingsService implements IRoutingsService {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
 
             Pair<Specification<Routings>, Pageable> tuple = fetchData(request, Routings.class);
-            Page<Routings> notesPage = routingsRepository.findAll(tuple.getLeft(), tuple.getRight());
+            Page<Routings> notesPage = routingsDao.findAll(tuple.getLeft(), tuple.getRight());
             return CompletableFuture.completedFuture( ResponseHelper.buildListSuccessResponse(
                     convertEntityListToDtoList(notesPage.getContent()),
                     notesPage.getTotalPages(),
@@ -112,12 +112,12 @@ public class RoutingsService implements IRoutingsService {
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
             long id = request.getId();
-            Optional<Routings> note = routingsRepository.findById(id);
+            Optional<Routings> note = routingsDao.findById(id);
             if (note.isEmpty()) {
                 log.debug("Routings is null for Id {}", request.getId());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
-            routingsRepository.delete(note.get());
+            routingsDao.delete(note.get());
             return ResponseHelper.buildSuccessResponse();
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -133,7 +133,7 @@ public class RoutingsService implements IRoutingsService {
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
             long id = request.getId();
-            Optional<Routings> notes = routingsRepository.findById(id);
+            Optional<Routings> notes = routingsDao.findById(id);
             if (notes.isEmpty()) {
                 log.debug("Routings is null for Id {}", request.getId());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);

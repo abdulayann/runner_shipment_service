@@ -6,12 +6,12 @@ import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
 import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
 import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.JobResponse;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
-import com.dpw.runner.shipment.services.repository.interfaces.IContainerRepository;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerService;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
@@ -38,7 +38,7 @@ import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 public class ContainerService implements IContainerService {
 
     @Autowired
-    IContainerRepository containerRepository;
+    IContainerDao containerDao;
     @Autowired
     ModelMapper modelMapper;
 
@@ -47,7 +47,7 @@ public class ContainerService implements IContainerService {
         ContainerRequest request = (ContainerRequest) commonRequestModel.getData();
 
         Containers container = convertRequestToEntity(request);
-        container = containerRepository.save(container);
+        container = containerDao.save(container);
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(container));
     }
 
@@ -55,7 +55,7 @@ public class ContainerService implements IContainerService {
     public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
         ContainerRequest request = (ContainerRequest) commonRequestModel.getData();
         long id = request.getId();
-        Optional<Containers> oldEntity = containerRepository.findById(id);
+        Optional<Containers> oldEntity = containerDao.findById(id);
         if (!oldEntity.isPresent()) {
             log.debug("Container is null for Id {}", request.getId());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
@@ -63,7 +63,7 @@ public class ContainerService implements IContainerService {
 
         Containers containers = convertRequestToEntity(request);
         containers.setId(oldEntity.get().getId());
-        containers = containerRepository.save(containers);
+        containers = containerDao.save(containers);
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(containers));
     }
 
@@ -73,7 +73,7 @@ public class ContainerService implements IContainerService {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
             // construct specifications for filter request
             Pair<Specification<Containers>, Pageable> tuple = fetchData(request, Containers.class);
-            Page<Containers> containersPage = containerRepository.findAll(tuple.getLeft(), tuple.getRight());
+            Page<Containers> containersPage = containerDao.findAll(tuple.getLeft(), tuple.getRight());
             return ResponseHelper.buildListSuccessResponse(
                     convertEntityListToDtoList(containersPage.getContent()),
                     containersPage.getTotalPages(),
@@ -95,7 +95,7 @@ public class ContainerService implements IContainerService {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
             // construct specifications for filter request
             Pair<Specification<Containers>, Pageable> tuple = fetchData(request, Containers.class);
-            Page<Containers> containersPage  = containerRepository.findAll(tuple.getLeft(), tuple.getRight());
+            Page<Containers> containersPage  = containerDao.findAll(tuple.getLeft(), tuple.getRight());
             return CompletableFuture.completedFuture(
                     ResponseHelper
                             .buildListSuccessResponse(
@@ -114,12 +114,12 @@ public class ContainerService implements IContainerService {
     @Override
     public ResponseEntity<?> delete(CommonRequestModel commonRequestModel) {
         Long id = commonRequestModel.getId();
-        Optional<Containers> container = containerRepository.findById(id);
+        Optional<Containers> container = containerDao.findById(id);
         if (container.isEmpty()) {
             log.debug("No entity present for id {} ", id);
             return ResponseHelper.buildFailedResponse(Constants.NO_DATA);
         }
-        containerRepository.delete(container.get());
+        containerDao.delete(container.get());
         return ResponseHelper.buildSuccessResponse();
     }
 
@@ -129,7 +129,7 @@ public class ContainerService implements IContainerService {
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
             long id = request.getId();
-            Optional<Containers> container = containerRepository.findById(id);
+            Optional<Containers> container = containerDao.findById(id);
             if (container.isEmpty()) {
                 log.debug("Container is null for Id {}", request.getId());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);

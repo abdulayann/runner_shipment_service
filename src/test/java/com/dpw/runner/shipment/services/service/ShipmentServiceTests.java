@@ -1,9 +1,11 @@
 
 package com.dpw.runner.shipment.services.service;
 
+import com.dpw.runner.shipment.services.dao.interfaces.ICarrierDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IPartiesDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.entity.CarrierDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
-import com.dpw.runner.shipment.services.repository.interfaces.*;
 import com.dpw.runner.shipment.services.service.impl.ShipmentService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -23,13 +25,13 @@ import static org.mockito.Mockito.*;
 public class ShipmentServiceTests {
 
     @Mock
-    private IShipmentRepository shipmentRepository;
+    private IShipmentDao shipmentDao;
 
     @Mock
-    private ICarrierRepository carrierRepository;
+    private ICarrierDao carrierDao;
 
     @Mock
-    private IPartiesRepository partiesRepository;
+    private IPartiesDao partiesDao;
 
     @InjectMocks
     private ShipmentService shipmentService;
@@ -38,9 +40,9 @@ public class ShipmentServiceTests {
     public void testCreateTestShipment() {
         int count = 1;
         List<ShipmentDetails> expectedResponse = createDummyShipmentDetails(count);
-        when(shipmentRepository.save(any(ShipmentDetails.class))).thenReturn(expectedResponse.get(0));
-        when(carrierRepository.save(any(CarrierDetails.class))).thenReturn(expectedResponse.get(0).getCarrierDetails());
-        when(partiesRepository.saveAll(anyList())).thenReturn(expectedResponse.get(0).getParties());
+        when(shipmentDao.save(any(ShipmentDetails.class))).thenReturn(expectedResponse.get(0));
+        when(carrierDao.save(any(CarrierDetails.class))).thenReturn(expectedResponse.get(0).getCarrierDetails());
+        when(partiesDao.saveAll(anyList())).thenReturn(expectedResponse.get(0).getParties());
 
         List<ShipmentDetails> actualResponse = shipmentService.createTestShipment(count);
 
@@ -52,9 +54,9 @@ public class ShipmentServiceTests {
             assertEquals(expectedShipment.getParties(), actualShipment.getParties());
         }
 
-        verify(shipmentRepository, times(count)).save(any(ShipmentDetails.class));
-        verify(carrierRepository, times(count)).save(any(CarrierDetails.class));
-        verify(partiesRepository, times(count)).saveAll(anyList());
+        verify(shipmentDao, times(count)).save(any(ShipmentDetails.class));
+        verify(carrierDao, times(count)).save(any(CarrierDetails.class));
+        verify(partiesDao, times(count)).saveAll(anyList());
     }
 
     private List<ShipmentDetails> createDummyShipmentDetails(int count) {

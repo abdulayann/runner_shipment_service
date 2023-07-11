@@ -5,11 +5,11 @@ import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.dao.interfaces.ITruckDriverDetailsDao;
 import com.dpw.runner.shipment.services.dto.request.TruckDriverDetailsRequest;
 import com.dpw.runner.shipment.services.dto.response.TruckDriverDetailsResponse;
 import com.dpw.runner.shipment.services.entity.TruckDriverDetails;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
-import com.dpw.runner.shipment.services.repository.interfaces.ITruckDriverDetailsRepository;
 import com.dpw.runner.shipment.services.service.interfaces.ITruckDriverDetailsService;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
@@ -35,7 +35,7 @@ import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 @Slf4j
 public class TruckDriverDetailsService implements ITruckDriverDetailsService {
     @Autowired
-    private ITruckDriverDetailsRepository truckDriverDetailsRepository;
+    private ITruckDriverDetailsDao truckDriverDetailsDao;
 
     @Autowired
     private ModelMapper modelMapper;
@@ -45,7 +45,7 @@ public class TruckDriverDetailsService implements ITruckDriverDetailsService {
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
         TruckDriverDetailsRequest request = (TruckDriverDetailsRequest) commonRequestModel.getData();
         TruckDriverDetails notes = convertRequestToTruckDriverDetailsEntity(request);
-        notes = truckDriverDetailsRepository.save(notes);
+        notes = truckDriverDetailsDao.save(notes);
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(notes));
     }
 
@@ -53,7 +53,7 @@ public class TruckDriverDetailsService implements ITruckDriverDetailsService {
     public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
         TruckDriverDetailsRequest request = (TruckDriverDetailsRequest) commonRequestModel.getData();
         long id = request.getId();
-        Optional<TruckDriverDetails> oldEntity = truckDriverDetailsRepository.findById(id);
+        Optional<TruckDriverDetails> oldEntity = truckDriverDetailsDao.findById(id);
         if (oldEntity.isEmpty()) {
             log.debug("TruckDriverDetails is null for Id {}", request.getId());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
@@ -61,7 +61,7 @@ public class TruckDriverDetailsService implements ITruckDriverDetailsService {
 
         TruckDriverDetails notes = convertRequestToTruckDriverDetailsEntity(request);
         notes.setId(oldEntity.get().getId());
-        notes = truckDriverDetailsRepository.save(notes);
+        notes = truckDriverDetailsDao.save(notes);
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(notes));
     }
 
@@ -72,7 +72,7 @@ public class TruckDriverDetailsService implements ITruckDriverDetailsService {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
 
             Pair<Specification<TruckDriverDetails>, Pageable> tuple = fetchData(request, TruckDriverDetails.class);
-            Page<TruckDriverDetails> notesPage = truckDriverDetailsRepository.findAll(tuple.getLeft(), tuple.getRight());
+            Page<TruckDriverDetails> notesPage = truckDriverDetailsDao.findAll(tuple.getLeft(), tuple.getRight());
             return ResponseHelper.buildListSuccessResponse(
                     convertEntityListToDtoList(notesPage.getContent()),
                     notesPage.getTotalPages(),
@@ -93,7 +93,7 @@ public class TruckDriverDetailsService implements ITruckDriverDetailsService {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
 
             Pair<Specification<TruckDriverDetails>, Pageable> tuple = fetchData(request, TruckDriverDetails.class);
-            Page<TruckDriverDetails> notesPage = truckDriverDetailsRepository.findAll(tuple.getLeft(), tuple.getRight());
+            Page<TruckDriverDetails> notesPage = truckDriverDetailsDao.findAll(tuple.getLeft(), tuple.getRight());
             return CompletableFuture.completedFuture( ResponseHelper.buildListSuccessResponse(
                     convertEntityListToDtoList(notesPage.getContent()),
                     notesPage.getTotalPages(),
@@ -112,12 +112,12 @@ public class TruckDriverDetailsService implements ITruckDriverDetailsService {
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
             long id = request.getId();
-            Optional<TruckDriverDetails> note = truckDriverDetailsRepository.findById(id);
+            Optional<TruckDriverDetails> note = truckDriverDetailsDao.findById(id);
             if (note.isEmpty()) {
                 log.debug("TruckDriverDetails is null for Id {}", request.getId());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
-            truckDriverDetailsRepository.delete(note.get());
+            truckDriverDetailsDao.delete(note.get());
             return ResponseHelper.buildSuccessResponse();
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -133,7 +133,7 @@ public class TruckDriverDetailsService implements ITruckDriverDetailsService {
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
             long id = request.getId();
-            Optional<TruckDriverDetails> notes = truckDriverDetailsRepository.findById(id);
+            Optional<TruckDriverDetails> notes = truckDriverDetailsDao.findById(id);
             if (notes.isEmpty()) {
                 log.debug("TruckDriverDetails is null for Id {}", request.getId());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);

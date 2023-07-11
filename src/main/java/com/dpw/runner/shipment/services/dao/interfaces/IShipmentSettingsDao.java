@@ -1,4 +1,4 @@
-package com.dpw.runner.shipment.services.dao;
+package com.dpw.runner.shipment.services.dao.interfaces;
 
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import org.springframework.data.domain.Page;

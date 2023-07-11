@@ -5,11 +5,11 @@ import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.dao.interfaces.IPartiesDao;
 import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
 import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
 import com.dpw.runner.shipment.services.entity.Parties;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
-import com.dpw.runner.shipment.services.repository.interfaces.IPartiesRepository;
 import com.dpw.runner.shipment.services.service.interfaces.IPartiesDetailsService;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
@@ -35,7 +35,7 @@ import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 @Slf4j
 public class PartiesService implements IPartiesDetailsService {
     @Autowired
-    private IPartiesRepository partiesRepository;
+    private IPartiesDao partiesDao;
 
     @Autowired
     private ModelMapper modelMapper;
@@ -45,7 +45,7 @@ public class PartiesService implements IPartiesDetailsService {
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
         PartiesRequest request = (PartiesRequest) commonRequestModel.getData();
         Parties notes = convertRequestToPartiesDetailsEntity(request);
-        notes = partiesRepository.save(notes);
+        notes = partiesDao.save(notes);
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(notes));
     }
 
@@ -53,7 +53,7 @@ public class PartiesService implements IPartiesDetailsService {
     public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
         PartiesRequest request = (PartiesRequest) commonRequestModel.getData();
         long id = request.getId();
-        Optional<Parties> oldEntity = partiesRepository.findById(id);
+        Optional<Parties> oldEntity = partiesDao.findById(id);
         if (oldEntity.isEmpty()) {
             log.debug("PartiesDetails is null for Id {}", request.getId());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
@@ -61,7 +61,7 @@ public class PartiesService implements IPartiesDetailsService {
 
         Parties notes = convertRequestToPartiesDetailsEntity(request);
         notes.setId(oldEntity.get().getId());
-        notes = partiesRepository.save(notes);
+        notes = partiesDao.save(notes);
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(notes));
     }
 
@@ -72,7 +72,7 @@ public class PartiesService implements IPartiesDetailsService {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
 
             Pair<Specification<Parties>, Pageable> tuple = fetchData(request, Parties.class);
-            Page<Parties> notesPage = partiesRepository.findAll(tuple.getLeft(), tuple.getRight());
+            Page<Parties> notesPage = partiesDao.findAll(tuple.getLeft(), tuple.getRight());
             return ResponseHelper.buildListSuccessResponse(
                     convertEntityListToDtoList(notesPage.getContent()),
                     notesPage.getTotalPages(),
@@ -93,7 +93,7 @@ public class PartiesService implements IPartiesDetailsService {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
 
             Pair<Specification<Parties>, Pageable> tuple = fetchData(request, Parties.class);
-            Page<Parties> partiesPage = partiesRepository.findAll(tuple.getLeft(), tuple.getRight());
+            Page<Parties> partiesPage = partiesDao.findAll(tuple.getLeft(), tuple.getRight());
             return CompletableFuture.completedFuture( ResponseHelper.buildListSuccessResponse(
                     convertEntityListToDtoList(partiesPage.getContent()),
                     partiesPage.getTotalPages(),
@@ -112,12 +112,12 @@ public class PartiesService implements IPartiesDetailsService {
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
             long id = request.getId();
-            Optional<Parties> note = partiesRepository.findById(id);
+            Optional<Parties> note = partiesDao.findById(id);
             if (note.isEmpty()) {
                 log.debug("PartiesDetails is null for Id {}", request.getId());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
-            partiesRepository.delete(note.get());
+            partiesDao.delete(note.get());
             return ResponseHelper.buildSuccessResponse();
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -133,7 +133,7 @@ public class PartiesService implements IPartiesDetailsService {
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
             long id = request.getId();
-            Optional<Parties> notes = partiesRepository.findById(id);
+            Optional<Parties> notes = partiesDao.findById(id);
             if (notes.isEmpty()) {
                 log.debug("PartiesDetails is null for Id {}", request.getId());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);

@@ -5,11 +5,11 @@ import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.dao.interfaces.ICarrierDao;
 import com.dpw.runner.shipment.services.dto.request.CarrierDetailRequest;
 import com.dpw.runner.shipment.services.dto.response.CarrierDetailResponse;
 import com.dpw.runner.shipment.services.entity.CarrierDetails;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
-import com.dpw.runner.shipment.services.repository.interfaces.ICarrierRepository;
 import com.dpw.runner.shipment.services.service.interfaces.ICarrierDetailService;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
@@ -36,7 +36,7 @@ import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 public class CarrierDetailService implements ICarrierDetailService {
 
     @Autowired
-    ICarrierRepository carrierRepository;
+    ICarrierDao carrierDao;
     @Autowired
     ModelMapper modelMapper;
 
@@ -44,7 +44,7 @@ public class CarrierDetailService implements ICarrierDetailService {
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
         CarrierDetailRequest request = (CarrierDetailRequest) commonRequestModel.getData();
         CarrierDetails carrierDetails = convertRequestToCarrierDetail(request);
-        carrierDetails = carrierRepository.save(carrierDetails);
+        carrierDetails = carrierDao.save(carrierDetails);
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(carrierDetails));
     }
 
@@ -52,7 +52,7 @@ public class CarrierDetailService implements ICarrierDetailService {
     public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
         CarrierDetailRequest request = (CarrierDetailRequest) commonRequestModel.getData();
         long id = request.getId();
-        Optional<CarrierDetails> oldEntity = carrierRepository.findById(id);
+        Optional<CarrierDetails> oldEntity = carrierDao.findById(id);
         if (oldEntity.isEmpty()) {
             log.debug("Carrier Details is null for Id {}", request.getId());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
@@ -60,7 +60,7 @@ public class CarrierDetailService implements ICarrierDetailService {
 
         CarrierDetails carrierDetails = convertRequestToCarrierDetail(request);
         carrierDetails.setId(oldEntity.get().getId());
-        carrierDetails = carrierRepository.save(carrierDetails);
+        carrierDetails = carrierDao.save(carrierDetails);
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(carrierDetails));
     }
 
@@ -71,7 +71,7 @@ public class CarrierDetailService implements ICarrierDetailService {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
 
             Pair<Specification<CarrierDetails>, Pageable> tuple = fetchData(request, CarrierDetails.class);
-            Page<CarrierDetails> carrierDetailsPage = carrierRepository.findAll(tuple.getLeft(), tuple.getRight());
+            Page<CarrierDetails> carrierDetailsPage = carrierDao.findAll(tuple.getLeft(), tuple.getRight());
             return ResponseHelper.buildListSuccessResponse(
                     convertEntityListToDtoList(carrierDetailsPage.getContent()),
                     carrierDetailsPage.getTotalPages(),
@@ -92,7 +92,7 @@ public class CarrierDetailService implements ICarrierDetailService {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
 
             Pair<Specification<CarrierDetails>, Pageable> tuple = fetchData(request, CarrierDetails.class);
-            Page<CarrierDetails> carrierDetailsPage = carrierRepository.findAll(tuple.getLeft(), tuple.getRight());
+            Page<CarrierDetails> carrierDetailsPage = carrierDao.findAll(tuple.getLeft(), tuple.getRight());
             return CompletableFuture.completedFuture(ResponseHelper.buildListSuccessResponse(
                     convertEntityListToDtoList(carrierDetailsPage.getContent()),
                     carrierDetailsPage.getTotalPages(),
@@ -112,12 +112,12 @@ public class CarrierDetailService implements ICarrierDetailService {
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
             long id = request.getId();
-            Optional<CarrierDetails> carrierDetails = carrierRepository.findById(id);
+            Optional<CarrierDetails> carrierDetails = carrierDao.findById(id);
             if (carrierDetails.isEmpty()) {
                 log.debug("Carrier Details is null for Id {}", request.getId());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
-            carrierRepository.delete(carrierDetails.get());
+            carrierDao.delete(carrierDetails.get());
             return ResponseHelper.buildSuccessResponse();
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -133,7 +133,7 @@ public class CarrierDetailService implements ICarrierDetailService {
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
             long id = request.getId();
-            Optional<CarrierDetails> carrierDetail = carrierRepository.findById(id);
+            Optional<CarrierDetails> carrierDetail = carrierDao.findById(id);
             if (carrierDetail.isEmpty()) {
                 log.debug("Carrier Detail is null for Id {}", request.getId());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);

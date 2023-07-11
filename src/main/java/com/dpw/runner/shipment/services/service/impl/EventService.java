@@ -5,11 +5,11 @@ import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.dao.interfaces.IEventDao;
 import com.dpw.runner.shipment.services.dto.request.EventsRequest;
 import com.dpw.runner.shipment.services.dto.response.EventsResponse;
 import com.dpw.runner.shipment.services.entity.Events;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
-import com.dpw.runner.shipment.services.repository.interfaces.IEventRepository;
 import com.dpw.runner.shipment.services.service.interfaces.IEventService;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
@@ -36,7 +36,7 @@ import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 public class EventService implements IEventService {
 
     @Autowired
-    private IEventRepository eventRepository;
+    private IEventDao eventDao;
 
     @Autowired
     private ModelMapper modelMapper;
@@ -46,7 +46,7 @@ public class EventService implements IEventService {
         EventsRequest request = null;
         request = (EventsRequest) commonRequestModel.getData();
         Events bookingCarriage = convertRequestToEntity(request);
-        bookingCarriage = eventRepository.save(bookingCarriage);
+        bookingCarriage = eventDao.save(bookingCarriage);
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(bookingCarriage));
     }
 
@@ -54,7 +54,7 @@ public class EventService implements IEventService {
     public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
         EventsRequest request = (EventsRequest) commonRequestModel.getData();
         long id = request.getId();
-        Optional<Events> oldEntity = eventRepository.findById(id);
+        Optional<Events> oldEntity = eventDao.findById(id);
         if (!oldEntity.isPresent()) {
             log.debug("Event is null for Id {}", request.getId());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
@@ -62,7 +62,7 @@ public class EventService implements IEventService {
 
         Events events = convertRequestToEntity(request);
         events.setId(oldEntity.get().getId());
-        events = eventRepository.save(events);
+        events = eventDao.save(events);
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(events));
     }
 
@@ -72,7 +72,7 @@ public class EventService implements IEventService {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
             // construct specifications for filter request
             Pair<Specification<Events>, Pageable> tuple = fetchData(request, Events.class);
-            Page<Events> bookingCarriagePage = eventRepository.findAll(tuple.getLeft(), tuple.getRight());
+            Page<Events> bookingCarriagePage = eventDao.findAll(tuple.getLeft(), tuple.getRight());
             return ResponseHelper.buildListSuccessResponse(
                     convertEntityListToDtoList(bookingCarriagePage.getContent()),
                     bookingCarriagePage.getTotalPages(),
@@ -94,7 +94,7 @@ public class EventService implements IEventService {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
             // construct specifications for filter request
             Pair<Specification<Events>, Pageable> tuple = fetchData(request, Events.class);
-            Page<Events> eventsPage = eventRepository.findAll(tuple.getLeft(), tuple.getRight());
+            Page<Events> eventsPage = eventDao.findAll(tuple.getLeft(), tuple.getRight());
             return CompletableFuture.completedFuture(
                     ResponseHelper
                             .buildListSuccessResponse(
@@ -114,12 +114,12 @@ public class EventService implements IEventService {
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
             long id = request.getId();
-            Optional<Events> events = eventRepository.findById(id);
+            Optional<Events> events = eventDao.findById(id);
             if (!events.isPresent()) {
                 log.debug("Event is null for Id {}", request.getId());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
-            eventRepository.delete(events.get());
+            eventDao.delete(events.get());
             return ResponseHelper.buildSuccessResponse();
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -135,7 +135,7 @@ public class EventService implements IEventService {
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
             long id = request.getId();
-            Optional<Events> events = eventRepository.findById(id);
+            Optional<Events> events = eventDao.findById(id);
             if (events.isEmpty()) {
                 log.debug("Event is null for Id {}", request.getId());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);

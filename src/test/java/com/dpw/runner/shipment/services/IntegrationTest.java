@@ -2,21 +2,16 @@ package com.dpw.runner.shipment.services;
 
 import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
-import com.dpw.runner.shipment.services.repository.interfaces.IShipmentRepository;
-import com.dpw.runner.shipment.services.service.impl.ShipmentService;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.vladmihalcea.hibernate.type.json.JsonType;
-import org.hibernate.annotations.Filter;
-import org.hibernate.annotations.TypeDef;
 import org.junit.jupiter.api.*;
 import org.springframework.core.env.Environment;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.domain.Page;
@@ -40,7 +35,6 @@ import org.h2.tools.Server;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import org.testcontainers.containers.ContainerFetchException;
 //import org.testcontainers.containers.PostgreSQLContainer;
 
 
@@ -57,7 +51,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 public class IntegrationTest {
 
     @Autowired
-    private IShipmentRepository shipmentRepo;
+    private IShipmentDao shipmentDao;
 
     @Autowired
     private TestDataGenerator testDataGenerator;

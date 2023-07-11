@@ -1,6 +1,6 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
-import com.dpw.runner.shipment.services.dao.IShipmentSettingsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.repository.interfaces.IShipmentSettingsRepository;
 import org.springframework.beans.factory.annotation.Autowired;

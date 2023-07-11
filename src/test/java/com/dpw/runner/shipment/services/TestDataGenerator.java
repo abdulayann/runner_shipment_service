@@ -1,8 +1,10 @@
 package com.dpw.runner.shipment.services;
 
+import com.dpw.runner.shipment.services.dao.interfaces.ICarrierDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IPartiesDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.entity.*;
-import com.dpw.runner.shipment.services.repository.interfaces.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -14,9 +16,9 @@ import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 
 @Component
 public class TestDataGenerator {
-    public IShipmentRepository shipmentRepository;
-    private ICarrierRepository carrierRepository;
-    private IPartiesRepository partiesRepository;
+    public IShipmentDao shipmentDao;
+    private ICarrierDao carrierDao;
+    private IPartiesDao partiesDao;
 
     private List<String> TRANSPORT_MODES = Arrays.asList("SEA", "ROAD", "RAIL", "AIR");
     private List<String> SHIPMENT_TYPE = Arrays.asList("FCL", "LCL");
@@ -47,13 +49,13 @@ public class TestDataGenerator {
     );
 
     @Autowired
-    public TestDataGenerator(IShipmentRepository shipmentRepository,
-                             ICarrierRepository carrierRepository,
-                             IPartiesRepository partiesRepository) {
-        this.shipmentRepository = shipmentRepository;
+    public TestDataGenerator(IShipmentDao shipmentDao,
+                             ICarrierDao carrierDao,
+                             IPartiesDao partiesDao) {
+        this.shipmentDao = shipmentDao;
 
-        this.carrierRepository = carrierRepository;
-        this.partiesRepository = partiesRepository;
+        this.carrierDao = carrierDao;
+        this.partiesDao = partiesDao;
     }
 
     public List<ShipmentDetails> populateH2WithTestData() {
@@ -74,7 +76,7 @@ public class TestDataGenerator {
                 .additionalTerms("ACJ6O7ZVX2")
                 .build();
         shipmentDetail1.setTenantId(1);
-        shipmentRepository.save(shipmentDetail1);
+        shipmentDao.save(shipmentDetail1);
         response.add(shipmentDetail1);
 
         //**************END
@@ -96,7 +98,7 @@ public class TestDataGenerator {
                 .build();
         shipmentDetail2.setTenantId(1);
 
-        shipmentRepository.save(shipmentDetail2);
+        shipmentDao.save(shipmentDetail2);
         response.add(shipmentDetail2);
 
         //*************END
@@ -118,7 +120,7 @@ public class TestDataGenerator {
                 .build();
         shipmentDetail3.setTenantId(1);
 
-        shipmentRepository.save(shipmentDetail3);
+        shipmentDao.save(shipmentDetail3);
         response.add(shipmentDetail3);
 
         //*************END
@@ -140,7 +142,7 @@ public class TestDataGenerator {
                 .build();
         shipmentDetail4.setTenantId(1);
 
-        shipmentRepository.save(shipmentDetail4);
+        shipmentDao.save(shipmentDetail4);
         response.add(shipmentDetail4);
 
         //****END
@@ -162,7 +164,7 @@ public class TestDataGenerator {
                 .additionalTerms("ACJ6O7ZVX4")
                 .build();
         shipmentDetail5.setTenantId(1);
-        shipmentRepository.save(shipmentDetail5);
+        shipmentDao.save(shipmentDetail5);
         response.add(shipmentDetail5);
 
         return response;
