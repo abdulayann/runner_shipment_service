@@ -12,6 +12,7 @@ import com.dpw.runner.shipment.services.dto.request.ViewsRequest;
 import com.dpw.runner.shipment.services.dto.response.ViewsResponse;
 import com.dpw.runner.shipment.services.entity.DefaultViews;
 import com.dpw.runner.shipment.services.entity.Views;
+import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IViewsService;
 import lombok.extern.slf4j.Slf4j;
@@ -45,50 +46,81 @@ public class ViewsService implements IViewsService {
 
     @Transactional
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
+        String responseMsg;
         ViewsRequest request = null;
         request = (ViewsRequest) commonRequestModel.getData();
+        if(request == null) {
+            log.debug("Request is empty for Views create with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+        }
         Views views = convertRequestToEntity(request);
-        views = viewsDao.save(views);
-        if(request.getIsDefault() == true)
-        {
-            DefaultViews defaultView = new DefaultViews();
-            defaultView.setDefaultViewId(views.getId());
-            defaultView.setEntity(views.getEntity());
-            defaultView.setUsername(UserContext.getUser().getUserName());
-            defaultViewsDao.save(defaultView);
+        try {
+            views = viewsDao.save(views);
+            log.info("Views Details created successfully for Id {} with Request Id {}", views.getId(), LoggerHelper.getRequestIdFromMDC());
+            if(request.getIsDefault() == true)
+            {
+                DefaultViews defaultView = new DefaultViews();
+                defaultView.setDefaultViewId(views.getId());
+                defaultView.setEntity(views.getEntity());
+                defaultView.setUsername(UserContext.getUser().getUserName());
+                defaultViewsDao.save(defaultView);
+                log.info("Default Views Details created successfully for Id {} with Request Id {}", views.getId(), LoggerHelper.getRequestIdFromMDC());
+            }
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
         }
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(views));
     }
 
     @Transactional
     public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
+        String responseMsg;
         ViewsRequest request = (ViewsRequest) commonRequestModel.getData();
-        long id =request.getId();
+        if(request == null) {
+            log.error("Request is empty for Views create with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+        }
+
+        if(request.getId() == null) {
+            log.error("Request Id is null for Views create with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+        }
+        long id = request.getId();
         Optional<Views> oldEntity = viewsDao.findById(id);
         if(!oldEntity.isPresent()) {
-            log.debug("View is null for Id {}", request.getId());
+            log.debug("View is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
 
         Views view = convertRequestToEntity(request);
         view.setId(oldEntity.get().getId());
-        view = viewsDao.save(view);
-        Optional<DefaultViews> oldDefaultView = defaultViewsDao.findByUsername(UserContext.getUser().getUserName());
-        if(oldDefaultView.isPresent())
-        {
-            if(oldDefaultView.get().getDefaultViewId() != view.getId())
+        try {
+            view = viewsDao.save(view);
+            log.info("Updated the view details for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
+            Optional<DefaultViews> oldDefaultView = defaultViewsDao.findByUsername(UserContext.getUser().getUserName());
+            if(oldDefaultView.isPresent())
             {
-                oldDefaultView.get().setDefaultViewId(view.getId());
-                defaultViewsDao.save(oldDefaultView.get());
+                if(oldDefaultView.get().getDefaultViewId() != view.getId())
+                {
+                    oldDefaultView.get().setDefaultViewId(view.getId());
+                    defaultViewsDao.save(oldDefaultView.get());
+                    log.info("Updated the Default View details for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
+                }
             }
-        }
-        else
-        {
-            DefaultViews defaultView = new DefaultViews();
-            defaultView.setDefaultViewId(view.getId());
-            defaultView.setEntity(view.getEntity());
-            defaultView.setUsername(UserContext.getUser().getUserName());
-            defaultViewsDao.save(defaultView);
+            else
+            {
+                DefaultViews defaultView = new DefaultViews();
+                defaultView.setDefaultViewId(view.getId());
+                defaultView.setEntity(view.getEntity());
+                defaultView.setUsername(UserContext.getUser().getUserName());
+                defaultViewsDao.save(defaultView);
+                log.info("Created the Default View details for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
+            }
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
         }
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(view));
     }
@@ -97,8 +129,11 @@ public class ViewsService implements IViewsService {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
+            if(request == null) {
+                log.error("Request is empty for Views Details list with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            }
             List<Views> viewsList = viewsDao.findAll();
-
+            log.info("Views Details list retrieved successfully for Request Id {} ", LoggerHelper.getRequestIdFromMDC());
             return ResponseHelper.buildListSuccessResponse(convertEntityListToDtoList(viewsList), request.getPageNo(), viewsList.size());
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -115,8 +150,11 @@ public class ViewsService implements IViewsService {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
+            if(request == null) {
+                log.error("Request is empty for Views Details async list with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            }
             List<Views> viewsList = viewsDao.findAll();
-
+            log.info("Views Details async list retrieved successfully for Request Id {} ", LoggerHelper.getRequestIdFromMDC());
             return CompletableFuture.completedFuture(
                     ResponseHelper.buildListSuccessResponse(convertEntityListToDtoList(viewsList), request.getPageNo(), viewsList.size()));
         } catch (Exception e) {
@@ -131,10 +169,16 @@ public class ViewsService implements IViewsService {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
-            long id =request.getId();
+            if(request == null) {
+                log.debug("Request is empty for Views delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            }
+            if(request.getId() == null) {
+                log.debug("Request Id is null for Views delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            }
+            long id = request.getId();
             Optional<Views> view = viewsDao.findById(id);
             if(!view.isPresent()) {
-                log.debug("View is null for Id {}", request.getId());
+                log.debug("View is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
             if(defaultViewsDao.findByDefaultViewId(view.get().getId()).isPresent())
@@ -142,6 +186,7 @@ public class ViewsService implements IViewsService {
                 defaultViewsDao.delete(defaultViewsDao.findByDefaultViewId(view.get().getId()).get());
             }
             viewsDao.delete(view.get());
+            log.info("Deleted views for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
             return ResponseHelper.buildSuccessResponse();
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -155,13 +200,19 @@ public class ViewsService implements IViewsService {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
-            long id =request.getId();
+            if(request == null) {
+                log.error("Request is empty for Views retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            }
+            if(request.getId() == null) {
+                log.error("Request Id is null for Views retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            }
+            long id = request.getId();
             Optional<Views> view = viewsDao.findById(id);
             if(!view.isPresent()) {
-                log.debug("View is null for Id {}", request.getId());
+                log.debug("View is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
-
+            log.info("Views Details fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
             ViewsResponse response = convertEntityToDto(view.get());
             return ResponseHelper.buildSuccessResponse(response);
         } catch (Exception e) {
