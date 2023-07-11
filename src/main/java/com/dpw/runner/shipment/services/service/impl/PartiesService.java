@@ -197,31 +197,6 @@ public class PartiesService implements IPartiesDetailsService {
         }
     }
 
-    public ResponseEntity<?> updateEntityFromShipment(CommonRequestModel commonRequestModel, Long shipmentId) {
-        String responseMsg;
-        try {
-            // TODO- Handle Transactions here
-            PartiesRequest partiesRequest = (PartiesRequest) commonRequestModel.getData();
-            if (partiesRequest.getId() != null) {
-                long id = partiesRequest.getId();
-                Optional<Parties> oldEntity = partiesDao.findById(id);
-                if (!oldEntity.isPresent()) {
-                    log.debug("Parties is null for Id {}", id);
-                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
-                }
-            }
-            Parties parties = convertRequestToPartiesDetailsEntity(partiesRequest);
-            parties = partiesDao.save(parties);
-            return ResponseHelper.buildSuccessResponse(convertEntityToDto(parties));
-        } catch (Exception e) {
-            responseMsg = e.getMessage() != null ? e.getMessage()
-                    : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
-            log.error(responseMsg, e);
-            return ResponseHelper.buildFailedResponse(responseMsg);
-        }
-    }
-
-
     private PartiesResponse convertEntityToDto(Parties notes) {
         return modelMapper.map(notes, PartiesResponse.class);
     }
