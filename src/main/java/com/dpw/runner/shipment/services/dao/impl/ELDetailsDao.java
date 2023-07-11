@@ -74,6 +74,7 @@ public class ELDetailsDao implements IELDetailsDao {
             if (requestList != null && requestList.size() != 0) {
                 for (ELDetailsRequest request : requestList) {
                     Long id = request.getId();
+                    request.setShipmentId(shipmentId);
                     if (id != null) {
                         hashMap.remove(id);
                     }
@@ -102,7 +103,6 @@ public class ELDetailsDao implements IELDetailsDao {
                     log.debug("EL Detail is null for Id {}", req.getId());
                     throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
                 }
-                saveEntity = oldEntity.get();
             }
             saveEntity = save(saveEntity);
             res.add(saveEntity);

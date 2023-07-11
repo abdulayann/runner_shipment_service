@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
@@ -68,6 +69,8 @@ public class NotesDao implements INotesDao {
             if (requestList != null && requestList.size() != 0) {
                 for (NotesRequest request : requestList) {
                     Long id = request.getId();
+                    request.setEntityId(shipmentId);
+                    request.setEntityType(Constants.SHIPMENT_TYPE);
                     if (id != null) {
                         hashMap.remove(id);
                     }
@@ -96,7 +99,6 @@ public class NotesDao implements INotesDao {
                     log.debug("Notes is null for Id {}", req.getId());
                     throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
                 }
-                saveEntity = oldEntity.get();
             }
             saveEntity = save(saveEntity);
             res.add(saveEntity);

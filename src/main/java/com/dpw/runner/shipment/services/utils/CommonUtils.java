@@ -4,21 +4,11 @@ import com.dpw.runner.shipment.services.commons.requests.Criteria;
 import com.dpw.runner.shipment.services.commons.requests.FilterCriteria;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-<<<<<<< Updated upstream
-=======
-import com.dpw.runner.shipment.services.dto.request.PackingRequest;
-import com.dpw.runner.shipment.services.dto.response.PackingResponse;
-import com.dpw.runner.shipment.services.entity.Packing;
->>>>>>> Stashed changes
 import org.modelmapper.ModelMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-<<<<<<< Updated upstream
 import org.springframework.stereotype.Component;
-=======
->>>>>>> Stashed changes
-
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -27,12 +17,7 @@ import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
 @Component
 public class CommonUtils {
 
-<<<<<<< Updated upstream
     private static ModelMapper mapper;
-=======
-    @Autowired
-    private static ModelMapper modelMapper;
->>>>>>> Stashed changes
 
     private static final Logger LOG = LoggerFactory.getLogger(CommonUtils.class);
     private static final String resourcePath = String.format("%s%s", System.getProperty("user.dir"), "/src/main/resources/");
@@ -174,26 +159,12 @@ public class CommonUtils {
     }
 
     public static <T,P> P convertToClass(T obj, Class<P> clazz) {
-<<<<<<< Updated upstream
         return mapper.map(obj, clazz);
     }
 
-    public static <T,P extends IRunnerResponse > List<IRunnerResponse> convertToDtoList(final List<T> lst, Class<P> clazz) {
+    public static <T,P extends IRunnerResponse > List<P> convertToDtoList(final List<T> lst, Class<P> clazz) {
         return  lst.stream()
                 .map(item -> convertToClass(item, clazz))
                 .collect(Collectors.toList());
     }
-=======
-        return modelMapper.map(obj, clazz);
-    }
-
-    private List<IRunnerResponse> convertEntityListToDtoList(List<Packing> lst) {
-        List<IRunnerResponse> responseList = new ArrayList<>();
-        lst.forEach(packing -> {
-            responseList.add(convertToClass(packing, PackingResponse.class));
-        });
-        return responseList;
-    }
-
->>>>>>> Stashed changes
 }

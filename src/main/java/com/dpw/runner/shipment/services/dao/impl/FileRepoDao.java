@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
@@ -24,8 +25,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.convertToClass;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.*;
 
 @Repository
 @Slf4j
@@ -63,7 +63,7 @@ public class FileRepoDao implements IFileRepoDao {
         List<FileRepo> responseFileRepo = new ArrayList<>();
         try {
             // TODO- Handle Transactions here
-            ListCommonRequest listCommonRequest = constructListCommonRequest("shipmentId", shipmentId, "=");
+            ListCommonRequest listCommonRequest = constructListRequestFromEntityId(shipmentId, Constants.SHIPMENT_TYPE);
             Pair<Specification<FileRepo>, Pageable> pair = fetchData(listCommonRequest, FileRepo.class);
             Page<FileRepo> fileRepos = findAll(pair.getLeft(), pair.getRight());
             Map<Long, FileRepo> hashMap = fileRepos.stream()
@@ -73,6 +73,8 @@ public class FileRepoDao implements IFileRepoDao {
             if (requestList != null && requestList.size() != 0) {
                 for (FileRepoRequest request : requestList) {
                     Long id = request.getId();
+                    request.setEntityId(shipmentId);
+                    request.setEntityType(Constants.SHIPMENT_TYPE);
                     if (id != null) {
                         hashMap.remove(id);
                     }
@@ -101,7 +103,6 @@ public class FileRepoDao implements IFileRepoDao {
                     log.debug("Routing is null for Id {}", req.getId());
                     throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
                 }
-                saveEntity = oldEntity.get();
             }
             saveEntity = save(saveEntity);
             res.add(saveEntity);
