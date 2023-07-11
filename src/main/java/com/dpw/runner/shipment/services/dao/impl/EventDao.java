@@ -1,10 +1,8 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
-import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IEventDao;
-import com.dpw.runner.shipment.services.dto.request.EventsRequest;
 import com.dpw.runner.shipment.services.entity.Events;
 import com.dpw.runner.shipment.services.repository.interfaces.IEventRepository;
 import com.nimbusds.jose.util.Pair;
@@ -53,7 +51,7 @@ public class EventDao implements IEventDao {
         eventRepository.delete(events);
     }
 
-    public List<Events> updateEntityFromShipment(CommonRequestModel commonRequestModel, Long shipmentId) throws Exception {
+    public List<Events> updateEntityFromShipment(List<Events> eventsList, Long shipmentId) throws Exception {
         String responseMsg;
         List<Events> responseEvents = new ArrayList<>();
         try {
@@ -63,10 +61,9 @@ public class EventDao implements IEventDao {
             Page<Events> events = findAll(pair.getLeft(), pair.getRight());
             Map<Long, Events> hashMap = events.stream()
                     .collect(Collectors.toMap(Events::getId, Function.identity()));
-            List<EventsRequest> eventsRequestList = new ArrayList<>();
-            List<EventsRequest> requestList = (List<EventsRequest>) commonRequestModel.getDataList();
-            if (requestList != null && requestList.size() != 0) {
-                for (EventsRequest request : requestList) {
+            List<Events> eventsRequestList = new ArrayList<>();
+            if (eventsList != null && eventsList.size() != 0) {
+                for (Events request : eventsList) {
                     Long id = request.getId();
                     request.setShipmentId(shipmentId);
                     if (id != null) {
@@ -86,20 +83,19 @@ public class EventDao implements IEventDao {
         }
     }
 
-    private List<Events> saveEvents(List<EventsRequest> events) {
+    private List<Events> saveEvents(List<Events> events) {
         List<Events> res = new ArrayList<>();
-        for(EventsRequest req : events){
-            Events saveEntity = convertToClass(req, Events.class);
+        for(Events req : events){
             if(req.getId() != null){
                 long id = req.getId();
                 Optional<Events> oldEntity = findById(id);
                 if (!oldEntity.isPresent()) {
-                    log.debug("Routing is null for Id {}", req.getId());
+                    log.debug("Events is null for Id {}", req.getId());
                     throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
                 }
             }
-            saveEntity = save(saveEntity);
-            res.add(saveEntity);
+            req = save(req);
+            res.add(req);
         }
         return res;
     }

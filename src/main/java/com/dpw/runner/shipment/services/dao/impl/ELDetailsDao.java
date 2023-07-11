@@ -1,11 +1,8 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
-import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
-import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IELDetailsDao;
-import com.dpw.runner.shipment.services.dto.request.ELDetailsRequest;
 import com.dpw.runner.shipment.services.entity.ELDetails;
 import com.dpw.runner.shipment.services.repository.interfaces.IELDetailsRepository;
 import com.nimbusds.jose.util.Pair;
@@ -59,7 +56,7 @@ public class ELDetailsDao implements IELDetailsDao {
         return elDetailsRepository.findByElNumber(elNumber);
     }
 
-    public List<ELDetails> updateEntityFromShipment(CommonRequestModel commonRequestModel, Long shipmentId) throws Exception {
+    public List<ELDetails> updateEntityFromShipment(List<ELDetails> elDetailsList, Long shipmentId) throws Exception {
         String responseMsg;
         List<ELDetails> responseELDetails = new ArrayList<>();
         try {
@@ -69,10 +66,9 @@ public class ELDetailsDao implements IELDetailsDao {
             Page<ELDetails> elDetails = findAll(pair.getLeft(), pair.getRight());
             Map<Long, ELDetails> hashMap = elDetails.stream()
                     .collect(Collectors.toMap(ELDetails::getId, Function.identity()));
-            List<ELDetailsRequest> elDetailsRequestList = new ArrayList<>();
-            List<ELDetailsRequest> requestList = (List<ELDetailsRequest>) commonRequestModel.getDataList();
-            if (requestList != null && requestList.size() != 0) {
-                for (ELDetailsRequest request : requestList) {
+            List<ELDetails> elDetailsRequestList = new ArrayList<>();
+            if (elDetailsList != null && elDetailsList.size() != 0) {
+                for (ELDetails request : elDetailsList) {
                     Long id = request.getId();
                     request.setShipmentId(shipmentId);
                     if (id != null) {
@@ -92,10 +88,9 @@ public class ELDetailsDao implements IELDetailsDao {
         }
     }
 
-    private List<ELDetails> saveELDetails(List<ELDetailsRequest> elDetails) {
+    private List<ELDetails> saveELDetails(List<ELDetails> elDetails) {
         List<ELDetails> res = new ArrayList<>();
-        for(ELDetailsRequest req : elDetails){
-            ELDetails saveEntity = convertToClass(req, ELDetails.class);
+        for(ELDetails req : elDetails){
             if(req.getId() != null){
                 long id = req.getId();
                 Optional<ELDetails> oldEntity = findById(id);
@@ -104,8 +99,8 @@ public class ELDetailsDao implements IELDetailsDao {
                     throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
                 }
             }
-            saveEntity = save(saveEntity);
-            res.add(saveEntity);
+            req = save(req);
+            res.add(req);
         }
         return res;
     }

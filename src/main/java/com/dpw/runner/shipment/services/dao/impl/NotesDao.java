@@ -2,10 +2,8 @@ package com.dpw.runner.shipment.services.dao.impl;
 
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
-import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.INotesDao;
-import com.dpw.runner.shipment.services.dto.request.NotesRequest;
 import com.dpw.runner.shipment.services.entity.Notes;
 import com.dpw.runner.shipment.services.repository.interfaces.INotesRepository;
 import com.nimbusds.jose.util.Pair;
@@ -54,7 +52,7 @@ public class NotesDao implements INotesDao {
         notesRepository.delete(notes);
     }
 
-    public List<Notes> updateEntityFromShipment(CommonRequestModel commonRequestModel, Long shipmentId) throws Exception {
+    public List<Notes> updateEntityFromShipment(List<Notes> notesList, Long shipmentId) throws Exception {
         String responseMsg;
         List<Notes> responseNotes = new ArrayList<>();
         try {
@@ -64,10 +62,9 @@ public class NotesDao implements INotesDao {
             Page<Notes> routings = findAll(pair.getLeft(), pair.getRight());
             Map<Long, Notes> hashMap = routings.stream()
                     .collect(Collectors.toMap(Notes::getId, Function.identity()));
-            List<NotesRequest> notesRequestList = new ArrayList<>();
-            List<NotesRequest> requestList = (List<NotesRequest>) commonRequestModel.getDataList();
-            if (requestList != null && requestList.size() != 0) {
-                for (NotesRequest request : requestList) {
+            List<Notes> notesRequestList = new ArrayList<>();
+            if (notesList != null && notesList.size() != 0) {
+                for (Notes request : notesList) {
                     Long id = request.getId();
                     request.setEntityId(shipmentId);
                     request.setEntityType(Constants.SHIPMENT_TYPE);
@@ -88,10 +85,9 @@ public class NotesDao implements INotesDao {
         }
     }
 
-    private List<Notes> saveNotes(List<NotesRequest> notesRequests) {
+    private List<Notes> saveNotes(List<Notes> notesRequests) {
         List<Notes> res = new ArrayList<>();
-        for(NotesRequest req : notesRequests){
-            Notes saveEntity = convertToClass(req, Notes.class);
+        for(Notes req : notesRequests){
             if(req.getId() != null){
                 long id = req.getId();
                 Optional<Notes> oldEntity = findById(id);
@@ -100,8 +96,8 @@ public class NotesDao implements INotesDao {
                     throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
                 }
             }
-            saveEntity = save(saveEntity);
-            res.add(saveEntity);
+            req = save(req);
+            res.add(req);
         }
         return res;
     }

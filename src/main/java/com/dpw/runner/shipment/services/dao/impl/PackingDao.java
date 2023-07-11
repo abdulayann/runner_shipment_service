@@ -1,15 +1,12 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
-import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IPackingDao;
-import com.dpw.runner.shipment.services.dto.request.PackingRequest;
 import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.repository.interfaces.IPackingRepository;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
-import org.bouncycastle.util.Pack;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
@@ -54,7 +51,7 @@ public class PackingDao implements IPackingDao {
         packingRepository.delete(packing);
     }
 
-    public List<Packing> updateEntityFromShipment(CommonRequestModel commonRequestModel, Long shipmentId) throws Exception {
+    public List<Packing> updateEntityFromShipment(List<Packing> packingList, Long shipmentId) throws Exception {
         String responseMsg;
         List<Packing> responsePackings = new ArrayList<>();
         try {
@@ -64,10 +61,9 @@ public class PackingDao implements IPackingDao {
             Page<Packing> packings = findAll(pair.getLeft(), pair.getRight());
             Map<Long, Packing> hashMap = packings.stream()
                     .collect(Collectors.toMap(Packing::getId, Function.identity()));
-            List<PackingRequest> packingRequestList = new ArrayList<>();
-            List<PackingRequest> requestList = (List<PackingRequest>) commonRequestModel.getDataList();
-            if (requestList != null && requestList.size() != 0) {
-                for (PackingRequest request : requestList) {
+            List<Packing> packingRequestList = new ArrayList<>();
+            if (packingList != null && packingList.size() != 0) {
+                for (Packing request : packingList) {
                     Long id = request.getId();
                     request.setShipmentId(shipmentId);
                     if (id != null) {
@@ -87,10 +83,9 @@ public class PackingDao implements IPackingDao {
         }
     }
 
-    private List<Packing> savePackings(List<PackingRequest> packings) {
+    private List<Packing> savePackings(List<Packing> packings) {
         List<Packing> res = new ArrayList<>();
-        for(PackingRequest req : packings){
-            Packing saveEntity = convertToClass(req, Packing.class);
+        for(Packing req : packings){
             if(req.getId() != null){
                 long id = req.getId();
                 Optional<Packing> oldEntity = findById(id);
@@ -99,8 +94,8 @@ public class PackingDao implements IPackingDao {
                     throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
                 }
             }
-            saveEntity = save(saveEntity);
-            res.add(saveEntity);
+            req = save(req);
+            res.add(req);
         }
         return res;
     }

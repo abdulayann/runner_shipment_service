@@ -1,16 +1,10 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
-import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
-import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IRoutingsDao;
-import com.dpw.runner.shipment.services.dto.request.RoutingsRequest;
-import com.dpw.runner.shipment.services.dto.response.RoutingsResponse;
 import com.dpw.runner.shipment.services.entity.Routings;
-import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.IRoutingsRepository;
-import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,7 +12,6 @@ import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Repository;
 
 import java.util.*;
@@ -55,7 +48,7 @@ public class RoutingsDao implements IRoutingsDao {
         routingsRepository.delete(routings);
     }
 
-    public List<Routings> updateEntityFromShipment(CommonRequestModel commonRequestModel, Long shipmentId) throws Exception {
+    public List<Routings> updateEntityFromShipment(List<Routings> routingsList, Long shipmentId) throws Exception {
         String responseMsg;
         List<Routings> responseRoutings = new ArrayList<>();
         try {
@@ -65,10 +58,9 @@ public class RoutingsDao implements IRoutingsDao {
             Page<Routings> routings = findAll(pair.getLeft(), pair.getRight());
             Map<Long, Routings> hashMap = routings.stream()
                     .collect(Collectors.toMap(Routings::getId, Function.identity()));
-            List<RoutingsRequest> routingsRequestList = new ArrayList<>();
-            List<RoutingsRequest> requestList = (List<RoutingsRequest>) commonRequestModel.getDataList();
-            if (requestList != null && requestList.size() != 0) {
-                for (RoutingsRequest request : requestList) {
+            List<Routings> routingsRequestList = new ArrayList<>();
+            if (routingsList != null && routingsList.size() != 0) {
+                for (Routings request : routingsList) {
                     Long id = request.getId();
                     request.setShipmentId(shipmentId);
                     if (id != null) {
@@ -88,10 +80,9 @@ public class RoutingsDao implements IRoutingsDao {
         }
     }
 
-    private List<Routings> saveRoutings(List<RoutingsRequest> routings) {
+    private List<Routings> saveRoutings(List<Routings> routings) {
         List<Routings> res = new ArrayList<>();
-        for(RoutingsRequest req : routings){
-            Routings saveEntity = convertToClass(req, Routings.class);
+        for(Routings req : routings){
             if(req.getId() != null){
                 long id = req.getId();
                 Optional<Routings> oldEntity = findById(id);
@@ -100,8 +91,8 @@ public class RoutingsDao implements IRoutingsDao {
                     throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
                 }
             }
-            saveEntity = save(saveEntity);
-            res.add(saveEntity);
+            req = save(req);
+            res.add(req);
         }
         return res;
     }

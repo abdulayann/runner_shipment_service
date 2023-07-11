@@ -2,10 +2,8 @@ package com.dpw.runner.shipment.services.dao.impl;
 
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
-import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IFileRepoDao;
-import com.dpw.runner.shipment.services.dto.request.FileRepoRequest;
 import com.dpw.runner.shipment.services.entity.FileRepo;
 import com.dpw.runner.shipment.services.repository.interfaces.IFileRepoRepository;
 import com.nimbusds.jose.util.Pair;
@@ -58,7 +56,7 @@ public class FileRepoDao implements IFileRepoDao {
         return fileRepoRepository.findByEntityIdAndEntityType(entityId, entityType);
     }
 
-    public List<FileRepo> updateEntityFromShipment(CommonRequestModel commonRequestModel, Long shipmentId) throws Exception {
+    public List<FileRepo> updateEntityFromShipment(List<FileRepo> fileRepoList, Long shipmentId) throws Exception {
         String responseMsg;
         List<FileRepo> responseFileRepo = new ArrayList<>();
         try {
@@ -68,10 +66,9 @@ public class FileRepoDao implements IFileRepoDao {
             Page<FileRepo> fileRepos = findAll(pair.getLeft(), pair.getRight());
             Map<Long, FileRepo> hashMap = fileRepos.stream()
                     .collect(Collectors.toMap(FileRepo::getId, Function.identity()));
-            List<FileRepoRequest> fileReposRequestList = new ArrayList<>();
-            List<FileRepoRequest> requestList = (List<FileRepoRequest>) commonRequestModel.getDataList();
-            if (requestList != null && requestList.size() != 0) {
-                for (FileRepoRequest request : requestList) {
+            List<FileRepo> fileReposRequestList = new ArrayList<>();
+            if (fileRepoList != null && fileRepoList.size() != 0) {
+                for (FileRepo request : fileRepoList) {
                     Long id = request.getId();
                     request.setEntityId(shipmentId);
                     request.setEntityType(Constants.SHIPMENT_TYPE);
@@ -92,20 +89,19 @@ public class FileRepoDao implements IFileRepoDao {
         }
     }
 
-    private List<FileRepo> saveFileRepo(List<FileRepoRequest> fileRepos) {
+    private List<FileRepo> saveFileRepo(List<FileRepo> fileRepos) {
         List<FileRepo> res = new ArrayList<>();
-        for(FileRepoRequest req : fileRepos){
-            FileRepo saveEntity = convertToClass(req, FileRepo.class);
+        for(FileRepo req : fileRepos){
             if(req.getId() != null){
                 long id = req.getId();
                 Optional<FileRepo> oldEntity = findById(id);
                 if (!oldEntity.isPresent()) {
-                    log.debug("Routing is null for Id {}", req.getId());
+                    log.debug("File Repo is null for Id {}", req.getId());
                     throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
                 }
             }
-            saveEntity = save(saveEntity);
-            res.add(saveEntity);
+            req = save(req);
+            res.add(req);
         }
         return res;
     }
