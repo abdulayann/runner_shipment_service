@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.utils;
 
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.commons.requests.Criteria;
 import com.dpw.runner.shipment.services.commons.requests.FilterCriteria;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
@@ -163,6 +164,12 @@ public class CommonUtils {
     }
 
     public static <T,P extends IRunnerResponse > List<P> convertToDtoList(final List<T> lst, Class<P> clazz) {
+        return  lst.stream()
+                .map(item -> convertToClass(item, clazz))
+                .collect(Collectors.toList());
+    }
+
+    public static <T,P extends MultiTenancy> List<P> convertToEntityList(final List<T> lst, Class<P> clazz) {
         return  lst.stream()
                 .map(item -> convertToClass(item, clazz))
                 .collect(Collectors.toList());
