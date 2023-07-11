@@ -248,7 +248,7 @@ public class ShipmentDetails extends MultiTenancy {
 
     @OneToOne(targetEntity = AdditionalDetails.class)
     @JoinColumn(name = "additional_details_id", referencedColumnName = "id")
-    private AdditionalDetails additionalDetails;
+    private AdditionalDetails additionalDetail;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "entityId")
     @Where(clause = "entity_name = 'shipments'")
