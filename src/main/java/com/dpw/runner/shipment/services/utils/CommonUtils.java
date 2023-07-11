@@ -22,6 +22,10 @@ public class CommonUtils {
     private static final Logger LOG = LoggerFactory.getLogger(CommonUtils.class);
     private static final String resourcePath = String.format("%s%s", System.getProperty("user.dir"), "/src/main/resources/");
 
+    public CommonUtils(ModelMapper mapper) {
+        this.mapper = mapper;
+    }
+
     public static List<FilterCriteria> generateFilterCriteriaFromPermissions(List<String> permissionList) {
 
         List<FilterCriteria> criterias = new ArrayList<>();
