@@ -5,5 +5,5 @@ import org.springframework.http.ResponseEntity;
 
 import java.util.concurrent.CompletableFuture;
 
-public interface IBookingCarriageService extends ICommonService, IShipStitchService {
+public interface IBookingCarriageService extends ICommonService {
 }

@@ -5,6 +5,5 @@ import com.dpw.runner.shipment.services.entity.Containers;
 
 import java.util.List;
 
-public interface IContainerService extends ICommonService, IShipStitchService{
-    List<Containers> saveContainers(List<ContainerRequest> containers);
+public interface IContainerService extends ICommonService {
 }
