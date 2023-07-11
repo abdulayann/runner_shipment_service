@@ -1,11 +1,8 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
-import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
-import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
 import com.dpw.runner.shipment.services.entity.Containers;
-import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.IContainerRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,14 +10,12 @@ import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Repository;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-import static com.dpw.runner.shipment.services.utils.CommonUtils.convertToClass;
 
 @Repository
 @Slf4j
@@ -52,20 +47,15 @@ public class ContainerDao implements IContainerDao {
         containerRepository.delete(containers);
     }
 
-    public List<Containers> updateEntityFromShipment(CommonRequestModel commonRequestModel) throws Exception
+    public List<Containers> updateEntityFromShipment(List<Containers> containersList) throws Exception
     {
         String responseMsg;
         List<Containers> responseContainers = new ArrayList<>();
         try {
             // TODO- Handle Transactions here
-            List<ContainerRequest> containerList = new ArrayList<>();
-            List<ContainerRequest> requestList = (List<ContainerRequest>) commonRequestModel.getDataList();
-            if(requestList != null && requestList.size() != 0)
+            if(containersList != null && containersList.size() != 0)
             {
-                for(ContainerRequest request: requestList)
-                {
-                    containerList.add(request);
-                }
+                List<Containers> containerList = new ArrayList<>(containersList);
                 responseContainers = saveContainers(containerList);
             }
             return responseContainers;
@@ -77,11 +67,10 @@ public class ContainerDao implements IContainerDao {
         }
     }
 
-    public List<Containers> saveContainers(List<ContainerRequest> containers)
+    public List<Containers> saveContainers(List<Containers> containers)
     {
         List<Containers> res = new ArrayList<>();
-        for(ContainerRequest req : containers){
-            Containers saveEntity = convertToClass(req, Containers.class);
+        for(Containers req : containers){
             if(req.getId() != null){
                 long id = req.getId();
                 Optional<Containers> oldEntity = findById(id);
@@ -90,8 +79,8 @@ public class ContainerDao implements IContainerDao {
                     throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
                 }
             }
-            saveEntity = save(saveEntity);
-            res.add(saveEntity);
+            req = save(req);
+            res.add(req);
         }
         return res;
     }

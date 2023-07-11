@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.dao.interfaces.ICarrierDao;
 import com.dpw.runner.shipment.services.dto.request.CarrierDetailRequest;
+import com.dpw.runner.shipment.services.entity.AdditionalDetail;
 import com.dpw.runner.shipment.services.entity.CarrierDetails;
 import com.dpw.runner.shipment.services.repository.interfaces.ICarrierRepository;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
@@ -43,20 +44,18 @@ public class CarrierDao implements ICarrierDao {
         carrierRepository.delete(carrierDetails);
     }
 
-    public CarrierDetails updateEntityFromShipment(CommonRequestModel commonRequestModel, Long shipmentId) throws Exception {
+    public CarrierDetails updateEntityFromShipment(CarrierDetails carrierDetails, Long shipmentId) throws Exception {
         String responseMsg;
         try {
             // TODO- Handle Transactions here
-            CarrierDetailRequest carrierDetailRequest = (CarrierDetailRequest) commonRequestModel.getData();
-            if (carrierDetailRequest.getId() != null) {
-                long id = carrierDetailRequest.getId();
+            if (carrierDetails.getId() != null) {
+                long id = carrierDetails.getId();
                 Optional<CarrierDetails> oldEntity = findById(id);
                 if (!oldEntity.isPresent()) {
-                    log.debug("CarrierDetails is null for Id {}", id);
+                    log.debug("Carrier Detail is null for Id {}", id);
                     throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
                 }
             }
-            CarrierDetails carrierDetails = CommonUtils.convertToClass(carrierDetailRequest, CarrierDetails.class);
             carrierDetails = save(carrierDetails);
             return carrierDetails;
         } catch (Exception e) {

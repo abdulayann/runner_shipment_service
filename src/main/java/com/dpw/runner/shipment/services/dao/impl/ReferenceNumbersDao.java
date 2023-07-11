@@ -1,10 +1,8 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
-import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IReferenceNumbersDao;
-import com.dpw.runner.shipment.services.dto.request.ReferenceNumbersRequest;
 import com.dpw.runner.shipment.services.entity.ReferenceNumbers;
 import com.dpw.runner.shipment.services.repository.interfaces.IReferenceNumbersRepository;
 import com.nimbusds.jose.util.Pair;
@@ -53,7 +51,7 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
         referenceNumbersRepository.delete(referenceNumbers);
     }
 
-    public List<ReferenceNumbers> updateEntityFromShipment(CommonRequestModel commonRequestModel, Long shipmentId) throws Exception {
+    public List<ReferenceNumbers> updateEntityFromShipment(List<ReferenceNumbers> referenceNumbersList, Long shipmentId) throws Exception {
         String responseMsg;
         List<ReferenceNumbers> responseReferenceNumbers = new ArrayList<>();
         try {
@@ -63,10 +61,9 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
             Page<ReferenceNumbers> routings = findAll(pair.getLeft(), pair.getRight());
             Map<Long, ReferenceNumbers> hashMap = routings.stream()
                     .collect(Collectors.toMap(ReferenceNumbers::getId, Function.identity()));
-            List<ReferenceNumbersRequest> referenceNumbersRequests = new ArrayList<>();
-            List<ReferenceNumbersRequest> requestList = (List<ReferenceNumbersRequest>) commonRequestModel.getDataList();
-            if (requestList != null && requestList.size() != 0) {
-                for (ReferenceNumbersRequest request : requestList) {
+            List<ReferenceNumbers> referenceNumbersRequests = new ArrayList<>();
+            if (referenceNumbersList != null && referenceNumbersList.size() != 0) {
+                for (ReferenceNumbers request : referenceNumbersList) {
                     Long id = request.getId();
                     request.setShipmentId(shipmentId);
                     if (id != null) {
@@ -86,10 +83,9 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
         }
     }
 
-    private List<ReferenceNumbers> saveReferenceNumbers(List<ReferenceNumbersRequest> referenceNumbersRequests) {
+    private List<ReferenceNumbers> saveReferenceNumbers(List<ReferenceNumbers> referenceNumbersRequests) {
         List<ReferenceNumbers> res = new ArrayList<>();
-        for(ReferenceNumbersRequest req : referenceNumbersRequests){
-            ReferenceNumbers saveEntity = convertToClass(req, ReferenceNumbers.class);
+        for(ReferenceNumbers req : referenceNumbersRequests){
             if(req.getId() != null){
                 long id = req.getId();
                 Optional<ReferenceNumbers> oldEntity = findById(id);
@@ -98,8 +94,8 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
                     throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
                 }
             }
-            saveEntity = save(saveEntity);
-            res.add(saveEntity);
+            req = save(req);
+            res.add(req);
         }
         return res;
     }

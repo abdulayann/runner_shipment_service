@@ -1,12 +1,9 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
-import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.dao.interfaces.IPartiesDao;
-import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
 import com.dpw.runner.shipment.services.entity.Parties;
 import com.dpw.runner.shipment.services.repository.interfaces.IPartiesRepository;
-import com.dpw.runner.shipment.services.utils.CommonUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
@@ -49,20 +46,18 @@ public class PartiesDao implements IPartiesDao {
         partiesRepository.delete(parties);
     }
 
-    public Parties updateEntityFromShipment(CommonRequestModel commonRequestModel, Long shipmentId) throws Exception {
+    public Parties updateEntityFromShipment(Parties parties, Long shipmentId) throws Exception {
         String responseMsg;
         try {
             // TODO- Handle Transactions here
-            PartiesRequest partiesRequest = (PartiesRequest) commonRequestModel.getData();
-            if (partiesRequest.getId() != null) {
-                long id = partiesRequest.getId();
+            if (parties.getId() != null) {
+                long id = parties.getId();
                 Optional<Parties> oldEntity = findById(id);
                 if (!oldEntity.isPresent()) {
                     log.debug("Parties is null for Id {}", id);
                     throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
                 }
             }
-            Parties parties = CommonUtils.convertToClass(partiesRequest, Parties.class);
             parties = save(parties);
             return parties;
         } catch (Exception e) {

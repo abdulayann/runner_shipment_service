@@ -1,10 +1,8 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
-import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IPickupDeliveryDetailsDao;
-import com.dpw.runner.shipment.services.dto.request.PickupDeliveryDetailsRequest;
 import com.dpw.runner.shipment.services.entity.PickupDeliveryDetails;
 import com.dpw.runner.shipment.services.repository.interfaces.IPickupDeliveryDetailsRepository;
 import com.nimbusds.jose.util.Pair;
@@ -53,7 +51,7 @@ public class PickupDeliveryDetailsDao implements IPickupDeliveryDetailsDao {
         pickupDeliveryDetailsRepository.delete(pickupDeliveryDetails);
     }
 
-    public List<PickupDeliveryDetails> updateEntityFromShipment(CommonRequestModel commonRequestModel, Long shipmentId) throws Exception {
+    public List<PickupDeliveryDetails> updateEntityFromShipment(List<PickupDeliveryDetails> pickupDeliveryDetailsList, Long shipmentId) throws Exception {
         String responseMsg;
         List<PickupDeliveryDetails> responsePickupDeliveryDetails = new ArrayList<>();
         try {
@@ -63,18 +61,17 @@ public class PickupDeliveryDetailsDao implements IPickupDeliveryDetailsDao {
             Page<PickupDeliveryDetails> pickupDeliveryDetailsPage = findAll(pair.getLeft(), pair.getRight());
             Map<Long, PickupDeliveryDetails> hashMap = pickupDeliveryDetailsPage.stream()
                     .collect(Collectors.toMap(PickupDeliveryDetails::getId, Function.identity()));
-            List<PickupDeliveryDetailsRequest> serviceDetailsRequests = new ArrayList<>();
-            List<PickupDeliveryDetailsRequest> requestList = (List<PickupDeliveryDetailsRequest>) commonRequestModel.getDataList();
-            if (requestList != null && requestList.size() != 0) {
-                for (PickupDeliveryDetailsRequest request : requestList) {
+            List<PickupDeliveryDetails> pickupDeliveryDetails = new ArrayList<>();
+            if (pickupDeliveryDetailsList != null && pickupDeliveryDetailsList.size() != 0) {
+                for (PickupDeliveryDetails request : pickupDeliveryDetailsList) {
                     Long id = request.getId();
                     request.setShipmentId(shipmentId);
                     if (id != null) {
                         hashMap.remove(id);
                     }
-                    serviceDetailsRequests.add(request);
+                    pickupDeliveryDetails.add(request);
                 }
-                responsePickupDeliveryDetails = savePickupDeliveryDetails(serviceDetailsRequests);
+                responsePickupDeliveryDetails = savePickupDeliveryDetails(pickupDeliveryDetails);
             }
             deletePickupDeliveryDetails(hashMap);
             return responsePickupDeliveryDetails;
@@ -86,10 +83,9 @@ public class PickupDeliveryDetailsDao implements IPickupDeliveryDetailsDao {
         }
     }
 
-    private List<PickupDeliveryDetails> savePickupDeliveryDetails(List<PickupDeliveryDetailsRequest> pickupDeliveryDetailsRequests) {
+    private List<PickupDeliveryDetails> savePickupDeliveryDetails(List<PickupDeliveryDetails> pickupDeliveryDetailsRequests) {
         List<PickupDeliveryDetails> res = new ArrayList<>();
-        for(PickupDeliveryDetailsRequest req : pickupDeliveryDetailsRequests){
-            PickupDeliveryDetails saveEntity = convertToClass(req, PickupDeliveryDetails.class);
+        for(PickupDeliveryDetails req : pickupDeliveryDetailsRequests){
             if(req.getId() != null){
                 long id = req.getId();
                 Optional<PickupDeliveryDetails> oldEntity = findById(id);
@@ -98,8 +94,8 @@ public class PickupDeliveryDetailsDao implements IPickupDeliveryDetailsDao {
                     throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
                 }
             }
-            saveEntity = save(saveEntity);
-            res.add(saveEntity);
+            req = save(req);
+            res.add(req);
         }
         return res;
     }

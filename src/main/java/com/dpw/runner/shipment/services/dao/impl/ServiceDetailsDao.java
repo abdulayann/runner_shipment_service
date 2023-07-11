@@ -1,10 +1,8 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
-import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IServiceDetailsDao;
-import com.dpw.runner.shipment.services.dto.request.ServiceDetailsRequest;
 import com.dpw.runner.shipment.services.entity.ServiceDetails;
 import com.dpw.runner.shipment.services.repository.interfaces.IServiceDetailsRepository;
 import com.nimbusds.jose.util.Pair;
@@ -53,7 +51,7 @@ public class ServiceDetailsDao implements IServiceDetailsDao {
         serviceDetailsRepository.delete(serviceDetails);
     }
 
-    public List<ServiceDetails> updateEntityFromShipment(CommonRequestModel commonRequestModel, Long shipmentId) throws Exception {
+    public List<ServiceDetails> updateEntityFromShipment(List<ServiceDetails> serviceDetailsList, Long shipmentId) throws Exception {
         String responseMsg;
         List<ServiceDetails> responseServiceDetails = new ArrayList<>();
         try {
@@ -63,10 +61,9 @@ public class ServiceDetailsDao implements IServiceDetailsDao {
             Page<ServiceDetails> serviceDetailsPage = findAll(pair.getLeft(), pair.getRight());
             Map<Long, ServiceDetails> hashMap = serviceDetailsPage.stream()
                     .collect(Collectors.toMap(ServiceDetails::getId, Function.identity()));
-            List<ServiceDetailsRequest> serviceDetailsRequests = new ArrayList<>();
-            List<ServiceDetailsRequest> requestList = (List<ServiceDetailsRequest>) commonRequestModel.getDataList();
-            if (requestList != null && requestList.size() != 0) {
-                for (ServiceDetailsRequest request : requestList) {
+            List<ServiceDetails> serviceDetailsRequests = new ArrayList<>();
+            if (serviceDetailsList != null && serviceDetailsList.size() != 0) {
+                for (ServiceDetails request : serviceDetailsList) {
                     Long id = request.getId();
                     request.setShipmentId(shipmentId);
                     if (id != null) {
@@ -86,10 +83,9 @@ public class ServiceDetailsDao implements IServiceDetailsDao {
         }
     }
 
-    private List<ServiceDetails> saveServiceDetails(List<ServiceDetailsRequest> serviceDetailsRequests) {
+    private List<ServiceDetails> saveServiceDetails(List<ServiceDetails> serviceDetailsRequests) {
         List<ServiceDetails> res = new ArrayList<>();
-        for(ServiceDetailsRequest req : serviceDetailsRequests){
-            ServiceDetails saveEntity = convertToClass(req, ServiceDetails.class);
+        for(ServiceDetails req : serviceDetailsRequests){
             if(req.getId() != null){
                 long id = req.getId();
                 Optional<ServiceDetails> oldEntity = findById(id);
@@ -98,8 +94,8 @@ public class ServiceDetailsDao implements IServiceDetailsDao {
                     throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
                 }
             }
-            saveEntity = save(saveEntity);
-            res.add(saveEntity);
+            req = save(req);
+            res.add(req);
         }
         return res;
     }

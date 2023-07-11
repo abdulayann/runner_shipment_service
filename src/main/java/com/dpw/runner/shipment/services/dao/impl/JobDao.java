@@ -1,10 +1,8 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
-import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IJobDao;
-import com.dpw.runner.shipment.services.dto.request.JobRequest;
 import com.dpw.runner.shipment.services.entity.Jobs;
 import com.dpw.runner.shipment.services.repository.interfaces.IJobRepository;
 import com.nimbusds.jose.util.Pair;
@@ -53,7 +51,7 @@ public class JobDao implements IJobDao {
         jobRepository.delete(jobs);
     }
 
-    public List<Jobs> updateEntityFromShipment(CommonRequestModel commonRequestModel, Long shipmentId) throws Exception {
+    public List<Jobs> updateEntityFromShipment(List<Jobs>jobsList, Long shipmentId) throws Exception {
         String responseMsg;
         List<Jobs> responseJobs = new ArrayList<>();
         try {
@@ -63,10 +61,9 @@ public class JobDao implements IJobDao {
             Page<Jobs> routings = findAll(pair.getLeft(), pair.getRight());
             Map<Long, Jobs> hashMap = routings.stream()
                     .collect(Collectors.toMap(Jobs::getId, Function.identity()));
-            List<JobRequest> jobRequestList = new ArrayList<>();
-            List<JobRequest> requestList = (List<JobRequest>) commonRequestModel.getDataList();
-            if (requestList != null && requestList.size() != 0) {
-                for (JobRequest request : requestList) {
+            List<Jobs> jobRequestList = new ArrayList<>();
+            if (jobsList != null && jobsList.size() != 0) {
+                for (Jobs request : jobsList) {
                     Long id = request.getId();
                     request.setShipmentId(shipmentId);
                     if (id != null) {
@@ -86,10 +83,9 @@ public class JobDao implements IJobDao {
         }
     }
 
-    private List<Jobs> saveJobs(List<JobRequest> jobRequests) {
+    private List<Jobs> saveJobs(List<Jobs> jobRequests) {
         List<Jobs> res = new ArrayList<>();
-        for(JobRequest req : jobRequests){
-            Jobs saveEntity = convertToClass(req, Jobs.class);
+        for(Jobs req : jobRequests){
             if(req.getId() != null){
                 long id = req.getId();
                 Optional<Jobs> oldEntity = findById(id);
@@ -98,8 +94,8 @@ public class JobDao implements IJobDao {
                     throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
                 }
             }
-            saveEntity = save(saveEntity);
-            res.add(saveEntity);
+            req = save(req);
+            res.add(req);
         }
         return res;
     }
