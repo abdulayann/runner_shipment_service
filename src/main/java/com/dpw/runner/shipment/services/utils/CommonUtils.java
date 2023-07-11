@@ -3,18 +3,29 @@ package com.dpw.runner.shipment.services.utils;
 import com.dpw.runner.shipment.services.commons.requests.Criteria;
 import com.dpw.runner.shipment.services.commons.requests.FilterCriteria;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import org.modelmapper.ModelMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
 
+@Component
 public class CommonUtils {
+
+    private static ModelMapper mapper;
 
     private static final Logger LOG = LoggerFactory.getLogger(CommonUtils.class);
     private static final String resourcePath = String.format("%s%s", System.getProperty("user.dir"), "/src/main/resources/");
+
+    public CommonUtils(ModelMapper mapper) {
+        this.mapper = mapper;
+    }
 
     public static List<FilterCriteria> generateFilterCriteriaFromPermissions(List<String> permissionList) {
 
@@ -148,4 +159,13 @@ public class CommonUtils {
         return listCommonRequest;
     }
 
+    public static <T,P> P convertToClass(T obj, Class<P> clazz) {
+        return mapper.map(obj, clazz);
+    }
+
+    public static <T,P extends IRunnerResponse > List<IRunnerResponse> convertToDtoList(final List<T> lst, Class<P> clazz) {
+        return  lst.stream()
+                .map(item -> convertToClass(item, clazz))
+                .collect(Collectors.toList());
+    }
 }
