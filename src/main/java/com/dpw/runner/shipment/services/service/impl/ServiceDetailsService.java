@@ -9,6 +9,7 @@ import com.dpw.runner.shipment.services.dao.interfaces.IServiceDetailsDao;
 import com.dpw.runner.shipment.services.dto.request.ServiceDetailsRequest;
 import com.dpw.runner.shipment.services.dto.response.ServiceDetailsResponse;
 import com.dpw.runner.shipment.services.entity.ServiceDetails;
+import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IServiceDetailsService;
 import com.nimbusds.jose.util.Pair;
@@ -47,26 +48,54 @@ public class ServiceDetailsService implements IServiceDetailsService {
 
     @Transactional
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
+        String responseMsg;
         ServiceDetailsRequest request = null;
         request = (ServiceDetailsRequest) commonRequestModel.getData();
+        if(request == null) {
+            log.debug("Request is empty for Service create with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+        }
         ServiceDetails shipmentServices = convertRequestToEntity(request);
-        shipmentServices = serviceDetailsDao.save(shipmentServices);
+        try {
+            shipmentServices = serviceDetailsDao.save(shipmentServices);
+            log.info("Service details created successfully for Id {} with Request Id {}", shipmentServices.getId(), LoggerHelper.getRequestIdFromMDC());
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(shipmentServices));
     }
 
     @Transactional
     public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
+        String responseMsg;
         ServiceDetailsRequest request = (ServiceDetailsRequest) commonRequestModel.getData();
+        if(request == null) {
+            log.error("Request is empty for Service update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+        }
+
+        if(request.getId() == null) {
+            log.error("Request Id is null for Service update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+        }
         long id = request.getId();
         Optional<ServiceDetails> oldEntity = serviceDetailsDao.findById(id);
-        if (!oldEntity.isPresent()) {
-            log.debug("Service Details is null for Id {}", request.getId());
+        if(!oldEntity.isPresent()) {
+            log.debug("Service Details is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
 
         ServiceDetails shipmentServices = convertRequestToEntity(request);
         shipmentServices.setId(oldEntity.get().getId());
-        shipmentServices = serviceDetailsDao.save(shipmentServices);
+        try {
+            shipmentServices = serviceDetailsDao.save(shipmentServices);
+            log.info("Updated the service details for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(shipmentServices));
     }
 
@@ -74,9 +103,13 @@ public class ServiceDetailsService implements IServiceDetailsService {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
+            if(request == null) {
+                log.error("Request is empty for Service list with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            }
             // construct specifications for filter request
             Pair<Specification<ServiceDetails>, Pageable> tuple = fetchData(request, ServiceDetails.class);
-            Page<ServiceDetails> shipmentServicesPage = serviceDetailsDao.findAll(tuple.getLeft(), tuple.getRight());
+            Page<ServiceDetails> shipmentServicesPage  = serviceDetailsDao.findAll(tuple.getLeft(), tuple.getRight());
+            log.info("Service list retrieved successfully for Request Id {} ", LoggerHelper.getRequestIdFromMDC());
             return ResponseHelper.buildListSuccessResponse(
                     convertEntityListToDtoList(shipmentServicesPage.getContent()),
                     shipmentServicesPage.getTotalPages(),
@@ -95,10 +128,14 @@ public class ServiceDetailsService implements IServiceDetailsService {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
+            if(request == null) {
+                log.error("Request is empty for Service async list with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            }
             // construct specifications for filter request
             Pair<Specification<ServiceDetails>, Pageable> tuple = fetchData(request, ServiceDetails.class);
-            Page<ServiceDetails> shipmentServicesPage = serviceDetailsDao.findAll(tuple.getLeft(), tuple.getRight());
-            return CompletableFuture.completedFuture(ResponseHelper.buildListSuccessResponse(
+            Page<ServiceDetails> shipmentServicesPage  = serviceDetailsDao.findAll(tuple.getLeft(), tuple.getRight());
+            log.info("Service async list retrieved successfully for Request Id {} ", LoggerHelper.getRequestIdFromMDC());
+            return CompletableFuture.completedFuture( ResponseHelper.buildListSuccessResponse(
                     convertEntityListToDtoList(shipmentServicesPage.getContent()),
                     shipmentServicesPage.getTotalPages(),
                     shipmentServicesPage.getTotalElements()));
@@ -114,13 +151,20 @@ public class ServiceDetailsService implements IServiceDetailsService {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
+            if(request == null) {
+                log.debug("Request is empty for Service delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            }
+            if(request.getId() == null) {
+                log.debug("Request Id is null for Service delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            }
             long id = request.getId();
             Optional<ServiceDetails> shipmentServices = serviceDetailsDao.findById(id);
-            if (!shipmentServices.isPresent()) {
-                log.debug("Service Details is null for Id {}", request.getId());
+            if(!shipmentServices.isPresent()) {
+                log.debug("Service Details is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
             serviceDetailsDao.delete(shipmentServices.get());
+            log.info("Deleted service details for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
             return ResponseHelper.buildSuccessResponse();
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -134,13 +178,19 @@ public class ServiceDetailsService implements IServiceDetailsService {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
+            if(request == null) {
+                log.error("Request is empty for Service retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            }
+            if(request.getId() == null) {
+                log.error("Request Id is null for Service retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            }
             long id = request.getId();
             Optional<ServiceDetails> shipmentServices = serviceDetailsDao.findById(id);
-            if (!shipmentServices.isPresent()) {
-                log.debug("Service Details is null for Id {}", request.getId());
+            if(!shipmentServices.isPresent()) {
+                log.debug("Service Details is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
-
+            log.info("Service details fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
             ServiceDetailsResponse response = convertEntityToDto(shipmentServices.get());
             return ResponseHelper.buildSuccessResponse(response);
         } catch (Exception e) {

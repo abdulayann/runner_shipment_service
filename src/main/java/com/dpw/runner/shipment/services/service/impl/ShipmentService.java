@@ -11,15 +11,20 @@ import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
 import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.response.*;
+import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.GenerationType;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import com.dpw.runner.shipment.services.repository.interfaces.*;
 import com.dpw.runner.shipment.services.service.interfaces.*;
 import com.dpw.runner.shipment.services.utils.StringUtility;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
+import org.aspectj.lang.JoinPoint;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
@@ -133,13 +138,13 @@ public class ShipmentService implements IShipmentService {
             Map.entry("TenantName", "DP WORLD LOGISTICS CANADA INC")
     );
     private Map<String, RunnerEntityMapping> tableNames = Map.ofEntries(
-            Map.entry("type", RunnerEntityMapping.builder().tableName("client").dataType(String.class).build()),
-            Map.entry("orgCode", RunnerEntityMapping.builder().tableName("client").dataType(String.class).build()),
+            Map.entry("type", RunnerEntityMapping.builder().tableName("parties").dataType(String.class).build()),
+            Map.entry("orgCode", RunnerEntityMapping.builder().tableName("parties").dataType(Integer.class).build()),
             Map.entry("houseBill", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).build()),
-            Map.entry("hblType", RunnerEntityMapping.builder().tableName("additionalDetail").dataType(String.class).build()),
+            Map.entry("hblType", RunnerEntityMapping.builder().tableName("additionalDetails").dataType(String.class).build()),
             Map.entry("transportMode", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).build()),
-            Map.entry("releaseType", RunnerEntityMapping.builder().tableName("additionalDetail").dataType(String.class).build()),
-            Map.entry("deliveryMode", RunnerEntityMapping.builder().tableName("additionalDetail").dataType(String.class).build()),
+            Map.entry("releaseType", RunnerEntityMapping.builder().tableName("additionalDetails").dataType(String.class).build()),
+            Map.entry("deliveryMode", RunnerEntityMapping.builder().tableName("additionalDetails").dataType(String.class).build()),
             Map.entry("direction", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).build()),
             Map.entry("shipmentType", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).build()),
             Map.entry("status", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(Integer.class).build()),
@@ -158,18 +163,18 @@ public class ShipmentService implements IShipmentService {
             Map.entry("additionalTerms", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).build()),
             Map.entry("goodsDescription", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).build()),
             Map.entry("createdAt", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(Date.class).build()),
-            Map.entry("estimatedPickupOrDelivery", RunnerEntityMapping.builder().tableName("pickupDeliveryDetailsList").dataType(LocalDateTime.class).build()),
-            Map.entry("actualPickupOrDelivery", RunnerEntityMapping.builder().tableName("pickupDeliveryDetailsList").dataType(LocalDateTime.class).build()),
-            Map.entry("requiredBy", RunnerEntityMapping.builder().tableName("pickupDeliveryDetailsList").dataType(LocalDateTime.class).build()),
-            Map.entry("addressCode", RunnerEntityMapping.builder().tableName("client").dataType(String.class).build()),
-            Map.entry("screeningStatus", RunnerEntityMapping.builder().tableName("additionalDetail").dataType(String.class).build()),
-            Map.entry("paidPlace", RunnerEntityMapping.builder().tableName("additionalDetail").dataType(Long.class).build()),
-            Map.entry("placeOfIssue", RunnerEntityMapping.builder().tableName("additionalDetail").dataType(Long.class).build()),
-            Map.entry("dateOfIssue", RunnerEntityMapping.builder().tableName("additionalDetail").dataType(LocalDateTime.class).build()),
-            Map.entry("dateOfReceipt", RunnerEntityMapping.builder().tableName("additionalDetail").dataType(LocalDateTime.class).build()),
-            Map.entry("goodsCo", RunnerEntityMapping.builder().tableName("additionalDetail").dataType(String.class).build()),
-            Map.entry("boeDate", RunnerEntityMapping.builder().tableName("additionalDetail").dataType(LocalDateTime.class).build()),
-            Map.entry("boeNumber", RunnerEntityMapping.builder().tableName("additionalDetail").dataType(String.class).build()),
+            Map.entry("estimatedPickupOrDelivery", RunnerEntityMapping.builder().tableName("pickupDeliveryDetails").dataType(LocalDateTime.class).build()),
+            Map.entry("actualPickupOrDelivery", RunnerEntityMapping.builder().tableName("pickupDeliveryDetails").dataType(LocalDateTime.class).build()),
+            Map.entry("requiredBy", RunnerEntityMapping.builder().tableName("pickupDeliveryDetails").dataType(LocalDateTime.class).build()),
+            Map.entry("addressCode", RunnerEntityMapping.builder().tableName("parties").dataType(Integer.class).build()),
+            Map.entry("screeningStatus", RunnerEntityMapping.builder().tableName("additionalDetails").dataType(String.class).build()),
+            Map.entry("paidPlace", RunnerEntityMapping.builder().tableName("additionalDetails").dataType(Long.class).build()),
+            Map.entry("placeOfIssue", RunnerEntityMapping.builder().tableName("additionalDetails").dataType(Long.class).build()),
+            Map.entry("dateOfIssue", RunnerEntityMapping.builder().tableName("additionalDetails").dataType(LocalDateTime.class).build()),
+            Map.entry("dateOfReceipt", RunnerEntityMapping.builder().tableName("additionalDetails").dataType(LocalDateTime.class).build()),
+            Map.entry("goodsCo", RunnerEntityMapping.builder().tableName("additionalDetails").dataType(String.class).build()),
+            Map.entry("boeDate", RunnerEntityMapping.builder().tableName("additionalDetails").dataType(LocalDateTime.class).build()),
+            Map.entry("boeNumber", RunnerEntityMapping.builder().tableName("additionalDetails").dataType(String.class).build()),
             Map.entry("shippingLine", RunnerEntityMapping.builder().tableName("carrierDetails").dataType(String.class).build()),
             Map.entry("vessel", RunnerEntityMapping.builder().tableName("carrierDetails").dataType(String.class).build()),
             Map.entry("voyage", RunnerEntityMapping.builder().tableName("carrierDetails").dataType(String.class).build()),
@@ -302,19 +307,22 @@ public class ShipmentService implements IShipmentService {
         //ExecutorService executorService = Executors.newFixedThreadPool(100);
 
         ShipmentRequest request = (ShipmentRequest) commonRequestModel.getData();
+        if(request == null) {
+            log.error("Request is null for Shipment Create with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+        }
         System.out.println(jsonHelper.convertToJson(request));
         ShipmentDetails shipmentDetails = jsonHelper.convertValue(request, ShipmentDetails.class);
-        AdditionalDetails additionalDetails = jsonHelper.convertValue(request.getAdditionalDetail(), AdditionalDetails.class);
+        AdditionalDetail additionalDetail = jsonHelper.convertValue(request.getAdditionalDetail(), AdditionalDetail.class);
         CarrierDetails carrierDetails = jsonHelper.convertValue(request.getCarrierDetails(), CarrierDetails.class);
 
         try {
 
-            if (additionalDetails != null) {
-                createAdditionalDetail(shipmentDetails, additionalDetails);
-                shipmentDetails.setAdditionalDetail(additionalDetails);
+            if(additionalDetail != null) {
+                createAdditionalDetail(shipmentDetails, additionalDetail);
+                shipmentDetails.setAdditionalDetail(additionalDetail);
             }
 
-            if (carrierDetails != null) {
+            if(carrierDetails != null) {
                 createCarrier(shipmentDetails, carrierDetails);
                 shipmentDetails.setCarrierDetails(carrierDetails);
             }
@@ -325,58 +333,59 @@ public class ShipmentService implements IShipmentService {
             getShipment(shipmentDetails);
 
 
+
             List<PackingRequest> packingRequest = request.getPackingList();
-            if (packingRequest != null)
+            if(packingRequest != null)
                 createPackingsAsync(shipmentDetails, packingRequest);
 
 
             List<BookingCarriageRequest> bookingCarriageRequest = request.getBookingCarriagesList();
-            if (bookingCarriageRequest != null)
+            if(bookingCarriageRequest != null)
                 createBookingCarriagesAsync(shipmentDetails, bookingCarriageRequest);
 
 
             List<ELDetailsRequest> elDetailsRequest = request.getElDetailsList();
-            if (elDetailsRequest != null)
+            if(elDetailsRequest != null)
                 createElDetailsAsync(shipmentDetails, elDetailsRequest);
 
 
             List<EventsRequest> eventsRequest = request.getEventsList();
-            if (eventsRequest != null)
+            if(eventsRequest != null)
                 createEventsAsync(shipmentDetails, eventsRequest);
 
 
             List<FileRepoRequest> fileRepoRequest = request.getFileRepoList();
-            if (fileRepoRequest != null)
+            if(fileRepoRequest != null)
                 createFileRepoAsync(shipmentDetails, fileRepoRequest);
 
 
             List<JobRequest> jobRequest = request.getJobsList();
-            if (jobRequest != null)
+            if(jobRequest != null)
                 createJobsAsync(shipmentDetails, jobRequest);
 
 
             List<NotesRequest> notesRequest = request.getNotesList();
-            if (notesRequest != null)
+            if(notesRequest != null)
                 createNotesAsync(shipmentDetails, notesRequest);
 
 
             List<ReferenceNumbersRequest> referenceNumbersRequest = request.getReferenceNumbersList();
-            if (referenceNumbersRequest != null)
+            if(referenceNumbersRequest != null)
                 createReferenceNumbersAsync(shipmentDetails, referenceNumbersRequest);
 
 
             List<RoutingsRequest> routingsRequest = request.getRoutingsList();
-            if (routingsRequest != null)
+            if(routingsRequest != null)
                 createRoutingsAsync(shipmentDetails, routingsRequest);
 
 
             List<ServiceDetailsRequest> serviceDetailsRequest = request.getServicesList();
-            if (serviceDetailsRequest != null)
+            if(serviceDetailsRequest != null)
                 createServiceDetailsAsync(shipmentDetails, serviceDetailsRequest);
 
 
             List<PickupDeliveryDetailsRequest> pickupDeliveryDetailsRequest = request.getPickupDeliveryDetailsList();
-            if (pickupDeliveryDetailsRequest != null)
+            if(pickupDeliveryDetailsRequest != null)
                 createPickupDeliveryAsync(shipmentDetails, pickupDeliveryDetailsRequest);
 
         } catch (Exception e) {
@@ -392,8 +401,7 @@ public class ShipmentService implements IShipmentService {
 
     void getShipment(ShipmentDetails shipmentDetails) {
         shipmentDetails.setShipmentId(generateShipmentId());
-        shipmentDetails = shipmentDao.save(shipmentDetails);
-        shipmentDetails = shipmentDao.findById(shipmentDetails.getId()).get();
+        shipmentDao.save(shipmentDetails);
     }
 
 
@@ -473,7 +481,6 @@ public class ShipmentService implements IShipmentService {
     private List<Containers> createContainersAsync(ShipmentDetails shipmentDetails, List<ContainerRequest> containerRequest) {
         return containerService.saveContainers(containerRequest);
     }
-
 
     @Transactional
     public void createbookingCarriage(ShipmentDetails shipmentDetails, BookingCarriageRequest bookingCarriageRequest) {
@@ -558,8 +565,8 @@ public class ShipmentService implements IShipmentService {
     }
 
     @Transactional
-    public void createAdditionalDetail(ShipmentDetails shipmentDetails, AdditionalDetails additionalDetails) {
-        additionalDetailDao.save(additionalDetails);
+    public void createAdditionalDetail(ShipmentDetails shipmentDetails, AdditionalDetail additionalDetail) {
+        additionalDetailDao.save(additionalDetail);
     }
 
     @Transactional
@@ -570,18 +577,25 @@ public class ShipmentService implements IShipmentService {
     @Override
     @Transactional
     public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
+        String responseMsg;
         ShipmentRequest request = (ShipmentRequest) commonRequestModel.getData();
+        if(request == null) {
+            log.error("Request is empty for Shipment update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+        }
+        if(request.getId() == null) {
+            log.error("Request Id is null for Shipment update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+        }
         // TODO- implement Validation logic
         long id = request.getId();
         Optional<ShipmentDetails> oldEntity = shipmentDao.findById(id);
         if (!oldEntity.isPresent()) {
-            log.debug("Shipment Details is null for Id {}", request.getId());
+            log.debug("Shipment Details is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
 
         ShipmentDetails entity = modelMapper.map(request, ShipmentDetails.class);
         entity.setId(oldEntity.get().getId());
-        if (entity.getContainers() == null)
+        if(entity.getContainers() == null)
             entity.setContainers(oldEntity.get().getContainers());
         entity = shipmentDao.save(entity);
         return ResponseHelper.buildSuccessResponse(modelMapper.map(entity, ShipmentDetailsResponse.class));
@@ -621,20 +635,21 @@ public class ShipmentService implements IShipmentService {
             entity.setId(oldEntity.get().getId());
             List<Containers> containers = null;
             ResponseEntity<?> updatedContainers = null;
-            if (containerRequestList != null) {
+            if(containerRequestList != null) {
                 updatedContainers = containerService.updateEntityFromShipment(CommonRequestModel.buildRequest(containerRequestList), id);
                 containers = getResponse(updatedContainers).stream().map(e -> modelMapper.map(e, Containers.class)).collect(Collectors.toList());
-            } else {
+            }
+            else {
                 containers = oldEntity.get().getContainers();
             }
             entity.setContainers(containers);
             ResponseEntity<?> updatedAdditionalDetails = null;
-            if (additionalDetailRequest != null) {
+            if(additionalDetailRequest != null) {
                 updatedAdditionalDetails = additionalDetailService.updateEntityFromShipment(CommonRequestModel.buildRequest(additionalDetailRequest), id);
-                entity.setAdditionalDetail(modelMapper.map(getResponseEntity(updatedAdditionalDetails), AdditionalDetails.class));
+                entity.setAdditionalDetail(modelMapper.map(getResponseEntity(updatedAdditionalDetails), AdditionalDetail.class));
             }
             ResponseEntity<?> updatedCarrierDetails = null;
-            if (carrierDetailRequest != null) {
+            if(carrierDetailRequest != null) {
                 updatedCarrierDetails = carrierDetailService.updateEntityFromShipment(CommonRequestModel.buildRequest(carrierDetailRequest), id);
                 entity.setCarrierDetails(modelMapper.map(getResponseEntity(updatedCarrierDetails), CarrierDetails.class));
             }
@@ -642,53 +657,53 @@ public class ShipmentService implements IShipmentService {
 
             ShipmentDetailsResponse response = modelMapper.map(entity, ShipmentDetailsResponse.class);
             response.setContainersList(containers.stream().map(e -> modelMapper.map(e, ContainerResponse.class)).collect(Collectors.toList()));
-            if (additionalDetailRequest != null) {
+            if(additionalDetailRequest != null) {
                 response.setAdditionalDetail(getResponseEntity(updatedAdditionalDetails));
             }
-            if (carrierDetailRequest != null) {
+            if(carrierDetailRequest != null) {
                 response.setCarrierDetails(getResponseEntity(updatedCarrierDetails));
             }
-            if (bookingCarriageRequestList != null) {
+            if(bookingCarriageRequestList != null) {
                 ResponseEntity<?> updatedBookingCarriages = bookingCarriageService.updateEntityFromShipment(CommonRequestModel.buildRequest(bookingCarriageRequestList), id);
                 response.setBookingCarriagesList(getResponse(updatedBookingCarriages));
             }
-            if (packingRequestList != null) {
+            if(packingRequestList != null) {
                 ResponseEntity<?> updatedPackings = packingService.updateEntityFromShipment(CommonRequestModel.buildRequest(packingRequestList), id);
                 response.setPackingList(getResponse(updatedPackings));
             }
-            if (elDetailsRequestList != null) {
+            if(elDetailsRequestList != null) {
                 ResponseEntity<?> updatedELDetails = elDetailsService.updateEntityFromShipment(CommonRequestModel.buildRequest(elDetailsRequestList), id);
                 response.setElDetailsList(getResponse(updatedELDetails));
             }
-            if (eventsRequestList != null) {
+            if(eventsRequestList != null) {
                 ResponseEntity<?> updatedEvents = eventService.updateEntityFromShipment(CommonRequestModel.buildRequest(eventsRequestList), id);
                 response.setEventsList(getResponse(updatedEvents));
             }
-            if (fileRepoRequestList != null) {
+            if(fileRepoRequestList != null) {
                 ResponseEntity<?> updatedFileRepos = fileRepoService.updateEntityFromShipment(CommonRequestModel.buildRequest(fileRepoRequestList), id);
                 response.setFileRepoList(getResponse(updatedFileRepos));
             }
-            if (jobRequestList != null) {
+            if(jobRequestList != null) {
                 ResponseEntity<?> updatedJobs = jobService.updateEntityFromShipment(CommonRequestModel.buildRequest(jobRequestList), id);
                 response.setJobsList(getResponse(updatedJobs));
             }
-            if (notesRequestList != null) {
+            if(notesRequestList != null) {
                 ResponseEntity<?> updatedNotes = notesService.updateEntityFromShipment(CommonRequestModel.buildRequest(notesRequestList), id);
                 response.setNotesList(getResponse(updatedNotes));
             }
-            if (referenceNumbersRequestList != null) {
+            if(referenceNumbersRequestList != null) {
                 ResponseEntity<?> updatedReferenceNumbers = referenceNumbersService.updateEntityFromShipment(CommonRequestModel.buildRequest(referenceNumbersRequestList), id);
                 response.setReferenceNumbersList(getResponse(updatedReferenceNumbers));
             }
-            if (routingsRequestList != null) {
+            if(routingsRequestList != null) {
                 ResponseEntity<?> updatedRoutings = routingsService.updateEntityFromShipment(CommonRequestModel.buildRequest(routingsRequestList), id);
                 response.setRoutingsList(getResponse(updatedRoutings));
             }
-            if (serviceDetailsRequestList != null) {
+            if(serviceDetailsRequestList != null) {
                 ResponseEntity<?> updatedServiceDetails = serviceDetailsService.updateEntityFromShipment(CommonRequestModel.buildRequest(serviceDetailsRequestList), id);
                 response.setServicesList(getResponse(updatedServiceDetails));
             }
-            if (pickupDeliveryDetailsRequestList != null) {
+            if(pickupDeliveryDetailsRequestList != null) {
                 ResponseEntity<?> updatedPickupDeliveryDetails = pickupDeliveryDetailsService.updateEntityFromShipment(CommonRequestModel.buildRequest(pickupDeliveryDetailsRequestList), id);
                 response.setPickupDeliveryDetailsList(getResponse(updatedPickupDeliveryDetails));
             }
@@ -707,9 +722,12 @@ public class ShipmentService implements IShipmentService {
         try {
             // TODO- implement actual logic with filters
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
-
+            if(request == null) {
+                log.error("Request is empty for Shipment list with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            }
             Pair<Specification<ShipmentDetails>, Pageable> tuple = fetchData(request, ShipmentDetails.class, tableNames);
             Page<ShipmentDetails> shipmentDetailsPage = shipmentDao.findAll(tuple.getLeft(), tuple.getRight());
+            log.info("Shipment list retrieved successfully for Request Id {} ", LoggerHelper.getRequestIdFromMDC());
             return ResponseHelper.buildListSuccessResponse(
                     convertEntityListToDtoList(shipmentDetailsPage.getContent()),
                     shipmentDetailsPage.getTotalPages(),
@@ -722,16 +740,18 @@ public class ShipmentService implements IShipmentService {
         }
 
     }
-
     @Override
     @Async
     public CompletableFuture<ResponseEntity<?>> listAsync(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
-
+            if(request == null) {
+                log.error("Request is empty for Shipment async list for Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            }
             Pair<Specification<ShipmentDetails>, Pageable> tuple = fetchData(request, ShipmentDetails.class, tableNames);
             Page<ShipmentDetails> shipmentDetailsPage = shipmentDao.findAll(tuple.getLeft(), tuple.getRight());
+            log.info("Shipment async list retrieved successfully for Request Id {} ", LoggerHelper.getRequestIdFromMDC());
             return CompletableFuture.completedFuture(ResponseHelper.buildListSuccessResponse(
                     convertEntityListToDtoList(shipmentDetailsPage.getContent()),
                     shipmentDetailsPage.getTotalPages(),
@@ -750,13 +770,20 @@ public class ShipmentService implements IShipmentService {
         try {
             // TODO- implement Validation logic
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
+            if(request == null) {
+                log.debug("Request is empty for Shipment delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            }
+            if(request.getId() == null) {
+                log.debug("Request Id is null for Shipment delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            }
             long id = request.getId();
             Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(id);
             if (!shipmentDetails.isPresent()) {
-                log.debug("Shipment Details is null for Id {}", request.getId());
+                log.debug("Shipment Details is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
             shipmentDao.delete(shipmentDetails.get());
+            log.info("Deleted Shipment details for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
             return ResponseHelper.buildSuccessResponse();
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -770,13 +797,19 @@ public class ShipmentService implements IShipmentService {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
+            if(request == null) {
+                log.error("Request is empty for Shipment retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            }
+            if(request.getId() == null) {
+                log.error("Request Id is null for Shipment retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            }
             long id = request.getId();
             Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(id);
             if (!shipmentDetails.isPresent()) {
-                log.debug("Shipment Details is null for Id {}", request.getId());
+                log.debug("Shipment Details is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
-
+            log.info("Shipment details fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
             ShipmentDetailsResponse response = jsonHelper.convertValue(shipmentDetails.get(), ShipmentDetailsResponse.class);
             return ResponseHelper.buildSuccessResponse(response);
         } catch (Exception e) {
@@ -792,13 +825,19 @@ public class ShipmentService implements IShipmentService {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
+            if(request == null) {
+                log.error("Request is empty for Shipment async retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            }
+            if(request.getId() == null) {
+                log.error("Request Id is null for Shipment async retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            }
             long id = request.getId();
             Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(id);
             if (!shipmentDetails.isPresent()) {
-                log.debug("Shipment Details is null for Id {}", request.getId());
+                log.debug("Shipment Details is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
-
+            log.info("Shipment details async fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
             ShipmentDetailsResponse response = jsonHelper.convertValue(shipmentDetails.get(), ShipmentDetailsResponse.class);
             return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(response));
         } catch (Exception e) {
@@ -810,17 +849,23 @@ public class ShipmentService implements IShipmentService {
     }
 
     public ResponseEntity<?> completeRetrieveById(CommonRequestModel commonRequestModel) throws ExecutionException, InterruptedException {
-        try {
-            // create common list request for shipment id
-            CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
-            long id = request.getId();
-            CommonRequestModel commonListRequestModel = CommonRequestModel.buildRequest(constructListCommonRequest("shipmentId", id, "="));
-            CommonRequestModel commonListRequestModelbyEntityId = CommonRequestModel.buildRequest(constructListCommonRequest("entityId", id, "="));
+        try{
+        // create common list request for shipment id
+        CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
+            if(request == null) {
+                log.error("Request is empty for Shipment complete retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            }
+            if(request.getId() == null) {
+                log.error("Request Id is null for Shipment complete retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            }
+        long id = request.getId();
+        CommonRequestModel commonListRequestModel = CommonRequestModel.buildRequest(constructListCommonRequest("shipmentId",id,"=" ));
+        CommonRequestModel commonListRequestModelbyEntityId = CommonRequestModel.buildRequest(constructListCommonRequest("entityId",id,"=" ));
 
-            CompletableFuture<ResponseEntity<?>> shipmentsFuture = retrieveByIdAsync(commonRequestModel);
-            var res = (RunnerResponse<ShipmentDetailsResponse>) shipmentsFuture.get().getBody();
+        CompletableFuture<ResponseEntity<?>> shipmentsFuture = retrieveByIdAsync(commonRequestModel);
+        var res = (RunnerResponse<ShipmentDetailsResponse>) shipmentsFuture.get().getBody();
 
-            return ResponseHelper.buildSuccessResponse(res.getData());
+        return ResponseHelper.buildSuccessResponse(res.getData());
         } catch (Exception e) {
             String responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;

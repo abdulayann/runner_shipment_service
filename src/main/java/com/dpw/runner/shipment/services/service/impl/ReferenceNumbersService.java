@@ -9,6 +9,7 @@ import com.dpw.runner.shipment.services.dao.interfaces.IReferenceNumbersDao;
 import com.dpw.runner.shipment.services.dto.request.ReferenceNumbersRequest;
 import com.dpw.runner.shipment.services.dto.response.ReferenceNumbersResponse;
 import com.dpw.runner.shipment.services.entity.ReferenceNumbers;
+import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IReferenceNumbersService;
 import com.nimbusds.jose.util.Pair;
@@ -47,26 +48,54 @@ public class ReferenceNumbersService implements IReferenceNumbersService {
 
     @Transactional
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
+        String responseMsg;
         ReferenceNumbersRequest request = null;
         request = (ReferenceNumbersRequest) commonRequestModel.getData();
+        if(request == null) {
+            log.debug("Request is empty for Reference Number create with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+        }
         ReferenceNumbers referenceNumbers = convertRequestToEntity(request);
-        referenceNumbers = referenceNumbersDao.save(referenceNumbers);
+        try {
+            referenceNumbers = referenceNumbersDao.save(referenceNumbers);
+            log.info("Reference Number Details created successfully for Id {} with Request Id {}", referenceNumbers.getId(), LoggerHelper.getRequestIdFromMDC());
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(referenceNumbers));
     }
 
     @Transactional
     public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
+        String responseMsg;
         ReferenceNumbersRequest request = (ReferenceNumbersRequest) commonRequestModel.getData();
+        if(request == null) {
+            log.debug("Request is empty for Reference Number update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+        }
+
+        if(request.getId() == null) {
+            log.debug("Request Id is null for Reference Number update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+        }
         long id = request.getId();
         Optional<ReferenceNumbers> oldEntity = referenceNumbersDao.findById(id);
-        if (!oldEntity.isPresent()) {
-            log.debug("Refernece Numbers is null for Id {}", request.getId());
+        if(!oldEntity.isPresent()) {
+            log.debug("Refernece Numbers is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
 
         ReferenceNumbers referenceNumbers = convertRequestToEntity(request);
         referenceNumbers.setId(oldEntity.get().getId());
-        referenceNumbers = referenceNumbersDao.save(referenceNumbers);
+        try {
+            referenceNumbers = referenceNumbersDao.save(referenceNumbers);
+            log.info("Updated the Reference Number details for Id {} with Requestr Id {}", id, LoggerHelper.getRequestIdFromMDC());
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(referenceNumbers));
     }
 
@@ -74,9 +103,13 @@ public class ReferenceNumbersService implements IReferenceNumbersService {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
+            if(request == null) {
+                log.error("Request is empty for Reference Number list with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            }
             // construct specifications for filter request
             Pair<Specification<ReferenceNumbers>, Pageable> tuple = fetchData(request, ReferenceNumbers.class);
-            Page<ReferenceNumbers> referenceNumbersPage = referenceNumbersDao.findAll(tuple.getLeft(), tuple.getRight());
+            Page<ReferenceNumbers> referenceNumbersPage  = referenceNumbersDao.findAll(tuple.getLeft(), tuple.getRight());
+            log.info("Reference Number list retrieved successfully for RequestId {} ", LoggerHelper.getRequestIdFromMDC());
             return ResponseHelper.buildListSuccessResponse(
                     convertEntityListToDtoList(referenceNumbersPage.getContent()),
                     referenceNumbersPage.getTotalPages(),
@@ -95,10 +128,14 @@ public class ReferenceNumbersService implements IReferenceNumbersService {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
+            if(request == null) {
+                log.error("Request is empty for Reference Number async list with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            }
             // construct specifications for filter request
             Pair<Specification<ReferenceNumbers>, Pageable> tuple = fetchData(request, ReferenceNumbers.class);
-            Page<ReferenceNumbers> referenceNumbersPage = referenceNumbersDao.findAll(tuple.getLeft(), tuple.getRight());
-            return CompletableFuture.completedFuture(ResponseHelper.buildListSuccessResponse(
+            Page<ReferenceNumbers> referenceNumbersPage  = referenceNumbersDao.findAll(tuple.getLeft(), tuple.getRight());
+            log.info("Reference Number async list retrieved successfully for Request Id {} ", LoggerHelper.getRequestIdFromMDC());
+            return CompletableFuture.completedFuture( ResponseHelper.buildListSuccessResponse(
                     convertEntityListToDtoList(referenceNumbersPage.getContent()),
                     referenceNumbersPage.getTotalPages(),
                     referenceNumbersPage.getTotalElements()));
@@ -114,13 +151,21 @@ public class ReferenceNumbersService implements IReferenceNumbersService {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
+            if(request == null) {
+                log.debug("Request is empty for Reference Number delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            }
+            if(request.getId() == null) {
+                log.debug("Request Id is null for Reference Number delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            }
             long id = request.getId();
+
             Optional<ReferenceNumbers> referenceNumbers = referenceNumbersDao.findById(id);
-            if (!referenceNumbers.isPresent()) {
-                log.debug("Reference Numbers is null for Id {}", request.getId());
+            if(!referenceNumbers.isPresent()) {
+                log.debug("Reference Numbers is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
             referenceNumbersDao.delete(referenceNumbers.get());
+            log.info("Deleted reference number for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
             return ResponseHelper.buildSuccessResponse();
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -134,13 +179,19 @@ public class ReferenceNumbersService implements IReferenceNumbersService {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
+            if(request == null) {
+                log.error("Request is empty for Reference Number retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            }
+            if(request.getId() == null) {
+                log.error("Request Id is null for Reference Number retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            }
             long id = request.getId();
             Optional<ReferenceNumbers> referenceNumbers = referenceNumbersDao.findById(id);
-            if (!referenceNumbers.isPresent()) {
-                log.debug("Reference Numbers is null for Id {}", request.getId());
+            if(!referenceNumbers.isPresent()) {
+                log.debug("Reference Numbers is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
-
+            log.info("Reference Number details fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
             ReferenceNumbersResponse response = convertEntityToDto(referenceNumbers.get());
             return ResponseHelper.buildSuccessResponse(response);
         } catch (Exception e) {
