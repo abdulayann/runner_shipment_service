@@ -9,6 +9,7 @@ import com.dpw.runner.shipment.services.dao.interfaces.IEventDao;
 import com.dpw.runner.shipment.services.dto.request.EventsRequest;
 import com.dpw.runner.shipment.services.dto.response.EventsResponse;
 import com.dpw.runner.shipment.services.entity.Events;
+import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IEventService;
 import com.nimbusds.jose.util.Pair;
@@ -46,26 +47,54 @@ public class EventService implements IEventService {
 
     @Transactional
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
+        String responseMsg;
         EventsRequest request = null;
         request = (EventsRequest) commonRequestModel.getData();
+        if(request == null) {
+            log.debug("Request is empty for Event create with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+        }
         Events bookingCarriage = convertRequestToEntity(request);
-        bookingCarriage = eventDao.save(bookingCarriage);
+        try {
+            bookingCarriage = eventDao.save(bookingCarriage);
+            log.info("Event Details created successfully for Id {} with Request Id {}", bookingCarriage.getId(), LoggerHelper.getRequestIdFromMDC());
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(bookingCarriage));
     }
 
     @Transactional
     public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
+        String responseMsg;
         EventsRequest request = (EventsRequest) commonRequestModel.getData();
+        if(request == null) {
+            log.debug("Request is empty for Event update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+        }
+
+        if(request.getId() == null) {
+            log.debug("Request Id is null for Event update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+        }
         long id = request.getId();
         Optional<Events> oldEntity = eventDao.findById(id);
         if (!oldEntity.isPresent()) {
-            log.debug("Event is null for Id {}", request.getId());
+            log.debug("Event is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
 
         Events events = convertRequestToEntity(request);
         events.setId(oldEntity.get().getId());
-        events = eventDao.save(events);
+        try {
+            events = eventDao.save(events);
+            log.info("Updated the event details for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(events));
     }
 
@@ -73,9 +102,13 @@ public class EventService implements IEventService {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
+            if(request == null) {
+                log.error("Request is empty for Event list with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            }
             // construct specifications for filter request
             Pair<Specification<Events>, Pageable> tuple = fetchData(request, Events.class);
             Page<Events> bookingCarriagePage = eventDao.findAll(tuple.getLeft(), tuple.getRight());
+            log.info("Event list retrieved successfully for Request Id {} ", LoggerHelper.getRequestIdFromMDC());
             return ResponseHelper.buildListSuccessResponse(
                     convertEntityListToDtoList(bookingCarriagePage.getContent()),
                     bookingCarriagePage.getTotalPages(),
@@ -95,9 +128,13 @@ public class EventService implements IEventService {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
+            if(request == null) {
+                log.error("Request is empty for Event async list with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            }
             // construct specifications for filter request
             Pair<Specification<Events>, Pageable> tuple = fetchData(request, Events.class);
             Page<Events> eventsPage = eventDao.findAll(tuple.getLeft(), tuple.getRight());
+            log.info("Event async list retrieved successfully for Request Id {} ", LoggerHelper.getRequestIdFromMDC());
             return CompletableFuture.completedFuture(
                     ResponseHelper
                             .buildListSuccessResponse(
@@ -116,13 +153,21 @@ public class EventService implements IEventService {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
+            if(request == null) {
+                log.debug("Request is empty for Event delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            }
+            if(request.getId() == null) {
+                log.debug("Request Id is null for Event delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            }
             long id = request.getId();
+
             Optional<Events> events = eventDao.findById(id);
             if (!events.isPresent()) {
-                log.debug("Event is null for Id {}", request.getId());
+                log.debug("Event is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
             eventDao.delete(events.get());
+            log.info("Deleted Event for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
             return ResponseHelper.buildSuccessResponse();
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -137,13 +182,19 @@ public class EventService implements IEventService {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
+            if(request == null) {
+                log.error("Request is empty for Event retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            }
+            if(request.getId() == null) {
+                log.error("Request Id is null for Event retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            }
             long id = request.getId();
             Optional<Events> events = eventDao.findById(id);
             if (events.isEmpty()) {
-                log.debug("Event is null for Id {}", request.getId());
+                log.debug("Event is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
-
+            log.info("Event details fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
             EventsResponse response = (EventsResponse) convertEntityToDto(events.get());
             return ResponseHelper.buildSuccessResponse(response);
         } catch (Exception e) {

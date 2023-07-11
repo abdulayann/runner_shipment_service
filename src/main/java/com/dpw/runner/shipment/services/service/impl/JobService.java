@@ -11,6 +11,8 @@ import com.dpw.runner.shipment.services.dto.request.JobRequest;
 import com.dpw.runner.shipment.services.dto.response.JobResponse;
 import com.dpw.runner.shipment.services.entity.BookingCarriage;
 import com.dpw.runner.shipment.services.entity.Jobs;
+import com.dpw.runner.shipment.services.entity.Notes;
+import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IJobService;
 import com.nimbusds.jose.util.Pair;
@@ -47,28 +49,54 @@ public class JobService implements IJobService {
     ModelMapper modelMapper;
 
     @Override
-    @Transactional
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
+        String responseMsg;
         JobRequest request = (JobRequest) commonRequestModel.getData();
-
+        if(request == null) {
+            log.debug("Request is empty for Job create with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+        }
         Jobs job = convertRequestToEntity(request);
-        job = jobDao.save(job);
+        try {
+            job = jobDao.save(job);
+            log.info("Job created successfully for Id {} with Request Id {}", job.getId(), LoggerHelper.getRequestIdFromMDC());
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(job));
     }
 
     @Transactional
     public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
+        String responseMsg;
         JobRequest request = (JobRequest) commonRequestModel.getData();
-        long id =request.getId();
+        if(request == null) {
+            log.debug("Request is empty for Job update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+        }
+
+        if(request.getId() == null) {
+            log.debug("Request Id is null Job update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+        }
+        long id = request.getId();
         Optional<Jobs> oldEntity = jobDao.findById(id);
         if(!oldEntity.isPresent()) {
-            log.debug("Jobs is null for Id {}", request.getId());
+            log.debug("Jobs is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
 
         Jobs jobs = convertRequestToEntity(request);
         jobs.setId(oldEntity.get().getId());
-        jobs = jobDao.save(jobs);
+        try {
+            jobs = jobDao.save(jobs);
+            log.info("Updated the job details for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(jobs));
     }
 
@@ -76,9 +104,13 @@ public class JobService implements IJobService {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
+            if(request == null) {
+                log.error("Request is empty for Job list with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            }
             // construct specifications for filter request
             Pair<Specification<Jobs>, Pageable> tuple = fetchData(request, BookingCarriage.class);
-            Page<Jobs> jobsPage = jobDao.findAll(tuple.getLeft(), tuple.getRight());
+            Page<Jobs> jobsPage  = jobDao.findAll(tuple.getLeft(), tuple.getRight());
+            log.info("Job list retrieved successfully with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             return ResponseHelper.buildListSuccessResponse(
                     convertEntityListToDtoList(jobsPage.getContent()),
                     jobsPage.getTotalPages(),
@@ -97,9 +129,13 @@ public class JobService implements IJobService {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
+            if(request == null) {
+                log.error("Request is empty for Job async list with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            }
             // construct specifications for filter request
             Pair<Specification<Jobs>, Pageable> tuple = fetchData(request, Jobs.class);
-            Page<Jobs> jobsPage = jobDao.findAll(tuple.getLeft(), tuple.getRight());
+            Page<Jobs> jobsPage  = jobDao.findAll(tuple.getLeft(), tuple.getRight());
+            log.info("Job async list retrieved successfully with Request Id {}",LoggerHelper.getRequestIdFromMDC());
             return CompletableFuture.completedFuture(
                     ResponseHelper
                             .buildListSuccessResponse(
@@ -116,13 +152,29 @@ public class JobService implements IJobService {
 
     @Override
     public ResponseEntity<?> delete(CommonRequestModel commonRequestModel) {
+        String responseMsg;
+        if(commonRequestModel == null) {
+            log.debug("Request is empty for Job delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+        }
+        if(commonRequestModel.getId() == null) {
+            log.debug("Request Id is null for Job delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+        }
         Long id = commonRequestModel.getId();
+
         Optional<Jobs> targetJob = jobDao.findById(id);
         if (targetJob.isEmpty()) {
-            log.debug("No entity present for id {} ", id);
+            log.debug("No entity present for id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
             return ResponseHelper.buildFailedResponse(Constants.NO_DATA);
         }
-        jobDao.delete(targetJob.get());
+        try {
+            jobDao.delete(targetJob.get());
+            log.info("Deleted job for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_DELETE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
         return ResponseHelper.buildSuccessResponse();
     }
 
@@ -131,13 +183,19 @@ public class JobService implements IJobService {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
+            if(request == null) {
+                log.error("Request is empty for Job retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            }
+            if(request.getId() == null) {
+                log.error("Request Id is null for Job retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            }
             long id = request.getId();
             Optional<Jobs> job = jobDao.findById(id);
             if (job.isEmpty()) {
-                log.debug("Job is null for Id {}", request.getId());
+                log.debug("Job is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
-
+            log.info("Job details fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
             JobResponse response = (JobResponse) convertEntityToDto(job.get());
             return ResponseHelper.buildSuccessResponse(response);
         } catch (Exception e) {

@@ -16,6 +16,7 @@ import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.GenerationType;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.*;
 import com.dpw.runner.shipment.services.service.interfaces.*;
@@ -306,6 +307,9 @@ public class ShipmentService implements IShipmentService {
         //ExecutorService executorService = Executors.newFixedThreadPool(100);
 
         ShipmentRequest request = (ShipmentRequest) commonRequestModel.getData();
+        if(request == null) {
+            log.error("Request is null for Shipment Create with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+        }
         System.out.println(jsonHelper.convertToJson(request));
         ShipmentDetails shipmentDetails = jsonHelper.convertValue(request, ShipmentDetails.class);
         AdditionalDetail additionalDetail = jsonHelper.convertValue(request.getAdditionalDetail(), AdditionalDetail.class);
@@ -573,12 +577,19 @@ public class ShipmentService implements IShipmentService {
     @Override
     @Transactional
     public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
+        String responseMsg;
         ShipmentRequest request = (ShipmentRequest) commonRequestModel.getData();
+        if(request == null) {
+            log.error("Request is empty for Shipment update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+        }
+        if(request.getId() == null) {
+            log.error("Request Id is null for Shipment update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+        }
         // TODO- implement Validation logic
         long id = request.getId();
         Optional<ShipmentDetails> oldEntity = shipmentDao.findById(id);
         if (!oldEntity.isPresent()) {
-            log.debug("Shipment Details is null for Id {}", request.getId());
+            log.debug("Shipment Details is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
 
@@ -711,9 +722,12 @@ public class ShipmentService implements IShipmentService {
         try {
             // TODO- implement actual logic with filters
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
-
+            if(request == null) {
+                log.error("Request is empty for Shipment list with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            }
             Pair<Specification<ShipmentDetails>, Pageable> tuple = fetchData(request, ShipmentDetails.class, tableNames);
             Page<ShipmentDetails> shipmentDetailsPage = shipmentDao.findAll(tuple.getLeft(), tuple.getRight());
+            log.info("Shipment list retrieved successfully for Request Id {} ", LoggerHelper.getRequestIdFromMDC());
             return ResponseHelper.buildListSuccessResponse(
                     convertEntityListToDtoList(shipmentDetailsPage.getContent()),
                     shipmentDetailsPage.getTotalPages(),
@@ -732,9 +746,12 @@ public class ShipmentService implements IShipmentService {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
-
+            if(request == null) {
+                log.error("Request is empty for Shipment async list for Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            }
             Pair<Specification<ShipmentDetails>, Pageable> tuple = fetchData(request, ShipmentDetails.class, tableNames);
             Page<ShipmentDetails> shipmentDetailsPage = shipmentDao.findAll(tuple.getLeft(), tuple.getRight());
+            log.info("Shipment async list retrieved successfully for Request Id {} ", LoggerHelper.getRequestIdFromMDC());
             return CompletableFuture.completedFuture(ResponseHelper.buildListSuccessResponse(
                     convertEntityListToDtoList(shipmentDetailsPage.getContent()),
                     shipmentDetailsPage.getTotalPages(),
@@ -753,13 +770,20 @@ public class ShipmentService implements IShipmentService {
         try {
             // TODO- implement Validation logic
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
+            if(request == null) {
+                log.debug("Request is empty for Shipment delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            }
+            if(request.getId() == null) {
+                log.debug("Request Id is null for Shipment delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            }
             long id = request.getId();
             Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(id);
             if (!shipmentDetails.isPresent()) {
-                log.debug("Shipment Details is null for Id {}", request.getId());
+                log.debug("Shipment Details is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
             shipmentDao.delete(shipmentDetails.get());
+            log.info("Deleted Shipment details for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
             return ResponseHelper.buildSuccessResponse();
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -773,13 +797,19 @@ public class ShipmentService implements IShipmentService {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
+            if(request == null) {
+                log.error("Request is empty for Shipment retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            }
+            if(request.getId() == null) {
+                log.error("Request Id is null for Shipment retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            }
             long id = request.getId();
             Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(id);
             if (!shipmentDetails.isPresent()) {
-                log.debug("Shipment Details is null for Id {}", request.getId());
+                log.debug("Shipment Details is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
-
+            log.info("Shipment details fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
             ShipmentDetailsResponse response = jsonHelper.convertValue(shipmentDetails.get(), ShipmentDetailsResponse.class);
             return ResponseHelper.buildSuccessResponse(response);
         } catch (Exception e) {
@@ -795,13 +825,19 @@ public class ShipmentService implements IShipmentService {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
+            if(request == null) {
+                log.error("Request is empty for Shipment async retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            }
+            if(request.getId() == null) {
+                log.error("Request Id is null for Shipment async retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            }
             long id = request.getId();
             Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(id);
             if (!shipmentDetails.isPresent()) {
-                log.debug("Shipment Details is null for Id {}", request.getId());
+                log.debug("Shipment Details is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
-
+            log.info("Shipment details async fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
             ShipmentDetailsResponse response = jsonHelper.convertValue(shipmentDetails.get(), ShipmentDetailsResponse.class);
             return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(response));
         } catch (Exception e) {
@@ -816,6 +852,12 @@ public class ShipmentService implements IShipmentService {
         try{
         // create common list request for shipment id
         CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
+            if(request == null) {
+                log.error("Request is empty for Shipment complete retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            }
+            if(request.getId() == null) {
+                log.error("Request Id is null for Shipment complete retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            }
         long id = request.getId();
         CommonRequestModel commonListRequestModel = CommonRequestModel.buildRequest(constructListCommonRequest("shipmentId",id,"=" ));
         CommonRequestModel commonListRequestModelbyEntityId = CommonRequestModel.buildRequest(constructListCommonRequest("entityId",id,"=" ));

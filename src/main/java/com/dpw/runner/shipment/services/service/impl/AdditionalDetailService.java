@@ -9,6 +9,9 @@ import com.dpw.runner.shipment.services.dao.interfaces.IAdditionalDetailDao;
 import com.dpw.runner.shipment.services.dto.request.AdditionalDetailRequest;
 import com.dpw.runner.shipment.services.dto.response.AdditionalDetailResponse;
 import com.dpw.runner.shipment.services.entity.AdditionalDetail;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IAdditionalDetailService;
 import com.nimbusds.jose.util.Pair;
@@ -43,28 +46,57 @@ public class AdditionalDetailService implements IAdditionalDetailService {
     @Transactional
     @Override
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
+        String responseMsg;
         AdditionalDetailRequest request = (AdditionalDetailRequest) commonRequestModel.getData();
         // TODO- implement validator
+        if(request == null) {
+            log.error("Request is empty for Shipment Additional Details create for Request Id {}", LoggerHelper.getRequestIdFromMDC());
+        }
         AdditionalDetail additionalDetails = convertRequestToEntity(request);
-        additionalDetails = additionalDetailDao.save(additionalDetails);
+        try {
+            additionalDetails = additionalDetailDao.save(additionalDetails);
+            log.info("Shipment Additional Details Saved Successfully for Id {} with Request Id {}", additionalDetails.getId(), LoggerHelper.getRequestIdFromMDC());
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(additionalDetails));
     }
 
     @Transactional
     @Override
     public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
+        String responseMsg;
         AdditionalDetailRequest request = (AdditionalDetailRequest) commonRequestModel.getData();
         // TODO- implement Validation logic
+        if(request == null) {
+            log.error("Request is empty for shipment additional details update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+        }
+
+        if(request.getId() == null) {
+            log.error("Request Id is null for shipment additional details update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+        }
+
         long id = request.getId();
         Optional<AdditionalDetail> oldEntity = additionalDetailDao.findById(id);
         if (!oldEntity.isPresent()) {
-            log.debug("Shipment Additional detail is null for Id {}", request.getId());
+            log.debug("Shipment Additional detail is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
 
         AdditionalDetail additionalDetails = convertRequestToEntity(request);
         additionalDetails.setId(oldEntity.get().getId());
-        additionalDetails = additionalDetailDao.save(additionalDetails);
+        try {
+            additionalDetails = additionalDetailDao.save(additionalDetails);
+            log.info("Updated the shipment additional detail for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }    
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(additionalDetails));
     }
 
@@ -73,8 +105,12 @@ public class AdditionalDetailService implements IAdditionalDetailService {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
+            if(request == null) {
+                log.error("Request is empty for additional details list with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            }
             Pair<Specification<AdditionalDetail>, Pageable> tuple = fetchData(request, AdditionalDetail.class);
             Page<AdditionalDetail> additionalDetailsPage = additionalDetailDao.findAll(tuple.getLeft(), tuple.getRight());
+            log.info("Additional details list retrieved successfully successfully for Request Id {} ", LoggerHelper.getRequestIdFromMDC());
             return ResponseHelper.buildListSuccessResponse(
                     convertEntityListToDtoList(additionalDetailsPage.getContent()),
                     additionalDetailsPage.getTotalPages(),
@@ -93,8 +129,12 @@ public class AdditionalDetailService implements IAdditionalDetailService {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
+            if(request == null) {
+                log.error("Request is empty for additional details async list for Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            }
             Pair<Specification<AdditionalDetail>, Pageable> tuple = fetchData(request, AdditionalDetail.class);
             Page<AdditionalDetail> additionalDetailsPage  = additionalDetailDao.findAll(tuple.getLeft(), tuple.getRight());
+            log.info("Additional details async list retrieved successfully for Request Id {} ", LoggerHelper.getRequestIdFromMDC());
             return CompletableFuture.completedFuture(ResponseHelper.buildListSuccessResponse(
                     convertEntityListToDtoList(additionalDetailsPage.getContent()),
                     additionalDetailsPage.getTotalPages(),
@@ -114,13 +154,20 @@ public class AdditionalDetailService implements IAdditionalDetailService {
         try {
             // TODO- implement Validation logic
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
+            if(request == null) {
+                log.error("Request is empty for additional details delete for Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            }
+            if(request.getId() == null) {
+                log.error("Request Id is null for additional details delete for Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            }
             long id = request.getId();
             Optional<AdditionalDetail> additionalDetails = additionalDetailDao.findById(id);
             if (!additionalDetails.isPresent()) {
-                log.debug("Shipment Additional detail is null for Id {}", request.getId());
+                log.debug("Shipment Additional detail is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
             additionalDetailDao.delete(additionalDetails.get());
+            log.info("Deleted additional detail service for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
             return ResponseHelper.buildSuccessResponse();
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -135,12 +182,19 @@ public class AdditionalDetailService implements IAdditionalDetailService {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
+            if(request == null) {
+                log.debug("Request is empty for additional details retrieve for Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            }
+            if(request.getId() == null) {
+                log.debug("Request Id is null for additional details retrieve for Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            }
             long id = request.getId();
             Optional<AdditionalDetail> additionalDetails = additionalDetailDao.findById(id);
             if (!additionalDetails.isPresent()) {
-                log.debug("Shipment Additional detail is null for Id {}", request.getId());
+                log.debug("Shipment Additional detail is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
+            log.info("Additional details fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
             AdditionalDetailResponse response = convertEntityToDto(additionalDetails.get());
             return ResponseHelper.buildSuccessResponse(response);
         } catch (Exception e) {
