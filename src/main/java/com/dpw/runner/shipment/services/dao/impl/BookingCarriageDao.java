@@ -68,6 +68,7 @@ public class BookingCarriageDao implements IBookingCarriageDao {
             if (requestList != null && requestList.size() != 0) {
                 for (BookingCarriageRequest request : requestList) {
                     Long id = request.getId();
+                    request.setShipmentId(shipmentId);
                     if (id != null) {
                         hashMap.remove(id);
                     }
@@ -93,10 +94,9 @@ public class BookingCarriageDao implements IBookingCarriageDao {
                 long id = req.getId();
                 Optional<BookingCarriage> oldEntity = findById(id);
                 if (!oldEntity.isPresent()) {
-                    log.debug("Routing is null for Id {}", req.getId());
+                    log.debug("Booking Carriage is null for Id {}", req.getId());
                     throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
                 }
-                saveEntity = oldEntity.get();
             }
             saveEntity = save(saveEntity);
             res.add(saveEntity);

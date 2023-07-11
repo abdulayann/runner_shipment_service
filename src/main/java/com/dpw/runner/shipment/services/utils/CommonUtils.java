@@ -4,9 +4,6 @@ import com.dpw.runner.shipment.services.commons.requests.Criteria;
 import com.dpw.runner.shipment.services.commons.requests.FilterCriteria;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.dto.request.PackingRequest;
-import com.dpw.runner.shipment.services.dto.response.PackingResponse;
-import com.dpw.runner.shipment.services.entity.Packing;
 import org.modelmapper.ModelMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -165,13 +162,5 @@ public class CommonUtils {
         return  lst.stream()
                 .map(item -> convertToClass(item, clazz))
                 .collect(Collectors.toList());
-    }
-
-    private List<IRunnerResponse> convertEntityListToDtoList(List<Packing> lst) {
-        List<IRunnerResponse> responseList = new ArrayList<>();
-        lst.forEach(packing -> {
-            responseList.add(convertToClass(packing, PackingResponse.class));
-        });
-        return responseList;
     }
 }

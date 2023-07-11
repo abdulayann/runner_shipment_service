@@ -68,6 +68,7 @@ public class EventDao implements IEventDao {
             if (requestList != null && requestList.size() != 0) {
                 for (EventsRequest request : requestList) {
                     Long id = request.getId();
+                    request.setShipmentId(shipmentId);
                     if (id != null) {
                         hashMap.remove(id);
                     }
@@ -96,7 +97,6 @@ public class EventDao implements IEventDao {
                     log.debug("Routing is null for Id {}", req.getId());
                     throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
                 }
-                saveEntity = oldEntity.get();
             }
             saveEntity = save(saveEntity);
             res.add(saveEntity);

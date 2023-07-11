@@ -69,6 +69,7 @@ public class PackingDao implements IPackingDao {
             if (requestList != null && requestList.size() != 0) {
                 for (PackingRequest request : requestList) {
                     Long id = request.getId();
+                    request.setShipmentId(shipmentId);
                     if (id != null) {
                         hashMap.remove(id);
                     }
@@ -97,7 +98,6 @@ public class PackingDao implements IPackingDao {
                     log.debug("Packing is null for Id {}", req.getId());
                     throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
                 }
-                saveEntity = oldEntity.get();
             }
             saveEntity = save(saveEntity);
             res.add(saveEntity);
