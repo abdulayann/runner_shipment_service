@@ -1,5 +1,5 @@
 package com.dpw.runner.shipment.services.service.interfaces;
 
-public interface INotesService extends ICommonService, IShipStitchService {
+public interface INotesService extends ICommonService {
 
 }

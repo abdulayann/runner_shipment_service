@@ -147,52 +147,6 @@ public class ContainerService implements IContainerService {
         }
     }
 
-    public ResponseEntity<?> updateEntityFromShipment(CommonRequestModel commonRequestModel, Long shipmentId)
-    {
-        String responseMsg;
-        List<Containers> responseContainers = new ArrayList<>();
-        try {
-            // TODO- Handle Transactions here
-            List<ContainerRequest> containerList = new ArrayList<>();
-            List<ContainerRequest> requestList = (List<ContainerRequest>) commonRequestModel.getDataList();
-            if(requestList != null && requestList.size() != 0)
-            {
-                for(ContainerRequest request: requestList)
-                {
-                    Long id = request.getId();
-                    containerList.add(request);
-                }
-                responseContainers = saveContainers(containerList);
-            }
-            return ResponseHelper.buildListSuccessResponse(convertEntityListToDtoList(responseContainers));
-        } catch (Exception e) {
-            responseMsg = e.getMessage() != null ? e.getMessage()
-                    : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
-            log.error(responseMsg, e);
-            return ResponseHelper.buildFailedResponse(responseMsg);
-        }
-    }
-
-    public List<Containers> saveContainers(List<ContainerRequest> containers)
-    {
-        List<Containers> res = new ArrayList<>();
-        for(ContainerRequest req : containers){
-            Containers saveEntity = convertRequestToEntity(req);
-            if(req.getId() != null){
-                long id = req.getId();
-                Optional<Containers> oldEntity = containerDao.findById(id);
-                if (!oldEntity.isPresent()) {
-                    log.debug("Container is null for Id {}", req.getId());
-                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
-                }
-                saveEntity = oldEntity.get();
-            }
-            saveEntity = containerDao.save(saveEntity);
-            res.add(saveEntity);
-        }
-        return res;
-    }
-
     private IRunnerResponse convertEntityToDto(Containers container) {
         return modelMapper.map(container, ContainerResponse.class);
     }
