@@ -8,5 +8,4 @@ import java.util.List;
 
 public interface IContainerDao extends MultiTenancyRepository<Containers> {
 
-    List<Containers> findByShipmentId(Long shipmentId);
 }

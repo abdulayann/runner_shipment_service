@@ -7,7 +7,6 @@ import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.RoutingsRequest;
 import com.dpw.runner.shipment.services.dto.response.RoutingsResponse;
-import com.dpw.runner.shipment.services.entity.ReferenceNumbers;
 import com.dpw.runner.shipment.services.entity.Routings;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.IRoutingsDao;
@@ -26,12 +25,15 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 
 @Service
 @Slf4j
@@ -89,14 +91,14 @@ public class RoutingsService implements IRoutingsService {
 
     @Override
     @Async
-    public CompletableFuture<ResponseEntity<?>> listAsync(CommonRequestModel commonRequestModel){
+    public CompletableFuture<ResponseEntity<?>> listAsync(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
 
             Pair<Specification<Routings>, Pageable> tuple = fetchData(request, Routings.class);
             Page<Routings> notesPage = routingsDao.findAll(tuple.getLeft(), tuple.getRight());
-            return CompletableFuture.completedFuture( ResponseHelper.buildListSuccessResponse(
+            return CompletableFuture.completedFuture(ResponseHelper.buildListSuccessResponse(
                     convertEntityListToDtoList(notesPage.getContent()),
                     notesPage.getTotalPages(),
                     notesPage.getTotalElements()));
@@ -146,6 +148,74 @@ public class RoutingsService implements IRoutingsService {
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
+    public ResponseEntity<?> updateEntityFromShipment(CommonRequestModel commonRequestModel, Long shipmentId) {
+        String responseMsg;
+        List<Routings> responseRoutings = new ArrayList<>();
+        try {
+            // TODO- Handle Transactions here
+            ListCommonRequest listCommonRequest = constructListCommonRequest("shipmentId", shipmentId, "=");
+            Pair<Specification<Routings>, Pageable> pair = fetchData(listCommonRequest, Routings.class);
+            Page<Routings> routings = routingsDao.findAll(pair.getLeft(), pair.getRight());
+            HashSet<Long> existingIds = new HashSet<>(routings
+                    .stream()
+                    .map(Routings::getId)
+                    .collect(Collectors.toList()));
+            List<RoutingsRequest> routingsRequestList = new ArrayList<>();
+            List<RoutingsRequest> requestList = (List<RoutingsRequest>) commonRequestModel.getDataList();
+            if (requestList != null && requestList.size() != 0) {
+                for (RoutingsRequest request : requestList) {
+                    Long id = request.getId();
+                    if (id != null) {
+                        existingIds.remove(id);
+                    }
+                    routingsRequestList.add(request);
+                }
+                responseRoutings = saveRoutings(routingsRequestList);
+            }
+            deleteRoutings(existingIds);
+            return ResponseHelper.buildListSuccessResponse(convertEntityListToDtoList(responseRoutings));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
+    private List<Routings> saveRoutings(List<RoutingsRequest> routings) {
+        List<Routings> res = new ArrayList<>();
+        for(RoutingsRequest req : routings){
+            Routings saveEntity = convertRequestToRoutingsEntity(req);
+            if(req.getId() != null){
+                long id = req.getId();
+                Optional<Routings> oldEntity = routingsDao.findById(id);
+                if (!oldEntity.isPresent()) {
+                    log.debug("Routing is null for Id {}", req.getId());
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
+                saveEntity = oldEntity.get();
+            }
+            saveEntity = routingsDao.save(saveEntity);
+            res.add(saveEntity);
+        }
+        return res;
+    }
+
+    private ResponseEntity<?> deleteRoutings(HashSet<Long> existingIds) {
+        String responseMsg;
+        try {
+            for (Long id : existingIds) {
+                delete(CommonRequestModel.buildRequest(CommonGetRequest.builder().id(id).build()));
+            }
+            return ResponseHelper.buildSuccessResponse();
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_DELETE_EXCEPTION_MSG;
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(responseMsg);
         }

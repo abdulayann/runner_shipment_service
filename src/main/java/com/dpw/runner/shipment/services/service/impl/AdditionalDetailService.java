@@ -27,9 +27,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
@@ -156,8 +154,33 @@ public class AdditionalDetailService implements IAdditionalDetailService {
         }
     }
 
+    public ResponseEntity<?> updateEntityFromShipment(CommonRequestModel commonRequestModel, Long shipmentId)
+    {
+        String responseMsg;
+        try {
+            // TODO- Handle Transactions here
+            AdditionalDetailRequest additionalDetailRequest = (AdditionalDetailRequest) commonRequestModel.getData();
+            if (additionalDetailRequest.getId() != null) {
+                long id = additionalDetailRequest.getId();
+                Optional<AdditionalDetail> oldEntity = additionalDetailDao.findById(id);
+                if (!oldEntity.isPresent()) {
+                    log.debug("AdditionalDetail is null for Id {}", id);
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
+            }
+            AdditionalDetail parties = convertRequestToEntity(additionalDetailRequest);
+            parties = additionalDetailDao.save(parties);
+            return ResponseHelper.buildSuccessResponse(convertEntityToDto(parties));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
     private AdditionalDetailResponse convertEntityToDto(AdditionalDetail additionalDetail) {
-        return modelMapper.map(additionalDetail, AdditionalDetailResponse.class);
+            return modelMapper.map(additionalDetail, AdditionalDetailResponse.class);
     }
 
     private AdditionalDetail convertRequestToEntity(AdditionalDetailRequest request) {

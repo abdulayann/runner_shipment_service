@@ -3,5 +3,6 @@ package com.dpw.runner.shipment.services.service.interfaces;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import org.springframework.http.ResponseEntity;
 
-public interface IServiceDetailsService extends ICommonService, IShipStitchService{
+public interface IShipStitchService {
+    ResponseEntity<?> updateEntityFromShipment(CommonRequestModel commonRequestModel, Long id);
 }

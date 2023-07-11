@@ -1,6 +1,5 @@
 package com.dpw.runner.shipment.services.repository.interfaces;
 
-import com.dpw.runner.shipment.services.entity.BookingCarriage;
 import com.dpw.runner.shipment.services.entity.FileRepo;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
