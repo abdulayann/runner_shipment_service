@@ -1,5 +1,5 @@
 package com.dpw.runner.shipment.services.service.interfaces;
 
 
-public interface IEventService extends ICommonService, IShipStitchService{
+public interface IEventService extends ICommonService {
 }

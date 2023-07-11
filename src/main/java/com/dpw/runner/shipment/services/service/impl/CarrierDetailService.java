@@ -196,31 +196,6 @@ public class CarrierDetailService implements ICarrierDetailService {
         }
     }
 
-    public ResponseEntity<?> updateEntityFromShipment(CommonRequestModel commonRequestModel, Long shipmentId)
-    {
-        String responseMsg;
-        try {
-            // TODO- Handle Transactions here
-            CarrierDetailRequest carrierDetailRequest = (CarrierDetailRequest) commonRequestModel.getData();
-            if (carrierDetailRequest.getId() != null) {
-                long id = carrierDetailRequest.getId();
-                Optional<CarrierDetails> oldEntity = carrierDao.findById(id);
-                if (!oldEntity.isPresent()) {
-                    log.debug("CarrierDetails is null for Id {}", id);
-                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
-                }
-            }
-            CarrierDetails parties = convertRequestToCarrierDetail(carrierDetailRequest);
-            parties = carrierDao.save(parties);
-            return ResponseHelper.buildSuccessResponse(convertEntityToDto(parties));
-        } catch (Exception e) {
-            responseMsg = e.getMessage() != null ? e.getMessage()
-                    : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
-            log.error(responseMsg, e);
-            return ResponseHelper.buildFailedResponse(responseMsg);
-        }
-    }
-
     private CarrierDetailResponse convertEntityToDto(CarrierDetails carrierDetails) {
         return modelMapper.map(carrierDetails, CarrierDetailResponse.class);
     }
