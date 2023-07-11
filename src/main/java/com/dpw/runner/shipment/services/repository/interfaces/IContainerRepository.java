@@ -8,5 +8,4 @@ import java.util.List;
 
 public interface IContainerRepository extends MultiTenancyRepository<Containers> {
 
-    List<Containers> findByShipmentId(Long shipmentId);
 }

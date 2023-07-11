@@ -25,11 +25,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 
 @SuppressWarnings("ALL")
 @Service
@@ -88,17 +91,17 @@ public class BookingCarriageService implements IBookingCarriageService {
 
     @Override
     @Async
-    public CompletableFuture<ResponseEntity<?>> listAsync(CommonRequestModel commonRequestModel){
+    public CompletableFuture<ResponseEntity<?>> listAsync(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
             // construct specifications for filter request
             Pair<Specification<BookingCarriage>, Pageable> tuple = fetchData(request, BookingCarriage.class);
-            Page<BookingCarriage> bookingCarriagePage  = bookingCarriageDao.findAll(tuple.getLeft(), tuple.getRight());
+            Page<BookingCarriage> bookingCarriagePage = bookingCarriageDao.findAll(tuple.getLeft(), tuple.getRight());
             return CompletableFuture.completedFuture(
                     ResponseHelper
                             .buildListSuccessResponse(
-                            convertEntityListToDtoList(bookingCarriagePage.getContent()),
+                                    convertEntityListToDtoList(bookingCarriagePage.getContent()),
                                     bookingCarriagePage.getTotalPages(),
                                     bookingCarriagePage.getTotalElements()));
         } catch (Exception e) {
@@ -110,7 +113,7 @@ public class BookingCarriageService implements IBookingCarriageService {
 
     }
 
-    public ResponseEntity<?> delete(CommonRequestModel commonRequestModel){
+    public ResponseEntity<?> delete(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
@@ -146,6 +149,74 @@ public class BookingCarriageService implements IBookingCarriageService {
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
+    public ResponseEntity<?> updateEntityFromShipment(CommonRequestModel commonRequestModel, Long shipmentId) {
+        String responseMsg;
+        List<BookingCarriage> bookingCarriagesResponse = new ArrayList<>();
+        try {
+            // TODO- Handle Transactions here
+            ListCommonRequest listCommonRequest = constructListCommonRequest("shipmentId",shipmentId,"=");
+            Pair<Specification<BookingCarriage>, Pageable> pair = fetchData(listCommonRequest, BookingCarriage.class);
+            Page<BookingCarriage> bookingCarriages = bookingCarriageDao.findAll(pair.getLeft(), pair.getRight());
+            HashSet<Long> existingIds = new HashSet<>(bookingCarriages.getContent()
+                    .stream()
+                    .map(BookingCarriage::getId)
+                    .collect(Collectors.toList()));
+            List<BookingCarriageRequest> saveBookingCarriages = new ArrayList<>();
+            List<BookingCarriageRequest> requestList = (List<BookingCarriageRequest>) commonRequestModel.getDataList();
+            if (requestList != null && requestList.size() != 0) {
+                for (BookingCarriageRequest request : requestList) {
+                    Long id = request.getId();
+                    if (id != null) {
+                        existingIds.remove(id);
+                    }
+                    saveBookingCarriages.add(request);
+                }
+                bookingCarriagesResponse = saveBookingCarriages(saveBookingCarriages);
+            }
+            deleteBookingCarriages(existingIds);
+            return ResponseHelper.buildListSuccessResponse(convertEntityListToDtoList(bookingCarriagesResponse));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
+    private List<BookingCarriage> saveBookingCarriages(List<BookingCarriageRequest> newBookingCarriages) {
+        List<BookingCarriage> res = new ArrayList<>();
+        for(BookingCarriageRequest req : newBookingCarriages){
+            BookingCarriage saveEntity = convertRequestToEntity(req);
+            if(req.getId() != null){
+                long id = req.getId();
+                Optional<BookingCarriage> oldEntity = bookingCarriageDao.findById(id);
+                if (!oldEntity.isPresent()) {
+                    log.debug("Booking Carriage is null for Id {}", req.getId());
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
+                saveEntity = oldEntity.get();
+            }
+            saveEntity = bookingCarriageDao.save(saveEntity);
+            res.add(saveEntity);
+        }
+        return res;
+    }
+
+    private ResponseEntity<?> deleteBookingCarriages(HashSet<Long> existingIds) {
+        String responseMsg;
+        try {
+            for (Long id : existingIds) {
+                delete(CommonRequestModel.buildRequest(CommonGetRequest.builder().id(id).build()));
+            }
+            return ResponseHelper.buildSuccessResponse();
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_DELETE_EXCEPTION_MSG;
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(responseMsg);
         }

@@ -21,4 +21,6 @@ public class DaoConstants {
     public static final String DAO_INCORRECT_RESULT_SIZE_EXCEPTION_MSG = "Multiple entries found for unique field, data issue found.";
 
     public static final String DAO_INVALID_REQUEST_MSG = "Undefined Request. Request Processing failed.";
+
+    public static final String DAO_FAILED_ENTITY_UPDATE = "Error occurred while trying to save/delete some entity. Exception raised is: ";
 }

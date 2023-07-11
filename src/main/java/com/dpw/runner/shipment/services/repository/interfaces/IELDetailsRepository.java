@@ -7,6 +7,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
+import java.util.List;
 import java.util.Optional;
 
 import static com.dpw.runner.shipment.services.commons.constants.DBQueryConstants.ELDETAILS_SELECT_ELNUMBERS_QUERY;
@@ -16,4 +17,7 @@ public interface IELDetailsRepository extends JpaRepository<ELDetails, Long> {
 
     @Query(ELDETAILS_SELECT_ELNUMBERS_QUERY)
     Optional<ELDetails> findByElNumber(String elNumber);
+
+    List<ELDetails> findByShipmentId(Long shipmentId);
+
 }

@@ -16,7 +16,7 @@ public class CompleteShipmentResponse implements IRunnerResponse {
     private ShipmentDetailsResponse shipment;
     private List<PackingResponse> packings;
     private List<AdditionalDetailResponse> additionalDetails;
-    private List<BookingCarriageResponse>  bookingCarriages;
+    private List<BookingCarriageResponse> bookingCarriages;
     private List<ContainerResponse> containers;
     private List<ELDetailsResponse> elDetails;
     private List<EventsResponse> events;
@@ -26,7 +26,7 @@ public class CompleteShipmentResponse implements IRunnerResponse {
     private List<ReferenceNumbersResponse> referenceNumbers;
     private List<RoutingsResponse> routings;
     private List<ServiceDetailsResponse> serviceDetails;
-    // private List<CarrierDetailResponse> carrierDetails;
+    private List<CarrierDetailResponse> carrierDetails;
     private List<PickupDeliveryDetailsResponse> pickupDeliveryDetails;
     private List<PartiesResponse> parties;
 

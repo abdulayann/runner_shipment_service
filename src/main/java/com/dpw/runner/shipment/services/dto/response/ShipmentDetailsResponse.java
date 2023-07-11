@@ -3,18 +3,22 @@ package com.dpw.runner.shipment.services.dto.response;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.entity.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
-
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 @Data
 public class ShipmentDetailsResponse implements IRunnerResponse {
     private Long id;
     private UUID guid;
-    private CarrierDetails carrierDetails;
     private String houseBill;
     private String transportMode;
     private String direction;
@@ -78,6 +82,7 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     private PartiesResponse consigner;
     private PartiesResponse consignee;
     private AdditionalDetailResponse additionalDetail;
+    private CarrierDetailResponse carrierDetails;
     private List<PickupDeliveryDetailsResponse> pickupDeliveryDetailsList;
     private List<NotesResponse> notesList;
     private List<TruckDriverDetailsResponse> truckDriverDetails;
@@ -90,4 +95,5 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     private List<ELDetailsResponse> elDetailsList;
     private List<BookingCarriageResponse> bookingCarriagesList;
     private List<JobResponse> jobsList;
+    private List<ContainerResponse> containersList;
 }
