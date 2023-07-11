@@ -7,6 +7,7 @@ import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
+import com.dpw.runner.shipment.services.dao.impl.*;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
 import com.dpw.runner.shipment.services.dto.request.*;
@@ -47,6 +48,7 @@ import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.convertToClass;
 
 @SuppressWarnings("ALL")
 @Service
@@ -64,55 +66,46 @@ public class ShipmentService implements IShipmentService {
     private IPartiesDao partiesDao;
 
     @Autowired
-    private IAdditionalDetailDao additionalDetailDao;
+    private AdditionalDetailDao additionalDetailDao;
 
     @Autowired
     private JsonHelper jsonHelper;
 
     @Autowired
-    private IPackingService packingService;
+    private PackingDao packingDao;
 
     @Autowired
-    private IBookingCarriageService bookingCarriageService;
+    private BookingCarriageDao bookingCarriageDao;
 
     @Autowired
-    private ICarrierDetailService carrierDetailService;
+    private ELDetailsDao elDetailsDao;
 
     @Autowired
-    private IELDetailsService elDetailsService;
+    private EventDao eventDao;
 
     @Autowired
-    private IEventService eventService;
+    private FileRepoDao fileRepoDao;
 
     @Autowired
-    private IFileRepoService fileRepoService;
+    private JobDao jobDao;
 
     @Autowired
-    private IJobService jobService;
+    private NotesDao notesDao;
 
     @Autowired
-    private INotesService notesService;
+    private PickupDeliveryDetailsDao pickupDeliveryDetailsDao;
 
     @Autowired
-    private IPickupDeliveryDetailsService pickupDeliveryDetailsService;
+    private ReferenceNumbersDao referenceNumbersDao;
 
     @Autowired
-    private IReferenceNumbersService referenceNumbersService;
+    private RoutingsDao routingsDao;
 
     @Autowired
-    private IRoutingsService routingsService;
+    private ServiceDetailsDao serviceDetailsDao;
 
     @Autowired
-    private IServiceDetailsService serviceDetailsService;
-
-    @Autowired
-    private IAdditionalDetailService additionalDetailService;
-
-    @Autowired
-    private IContainerService containerService;
-
-    @Autowired
-    private IPartiesDetailsService partiesDetailsService;
+    private ContainerDao containerDao;
 
     @Autowired
     private TransactionTemplate transactionTemplate;
@@ -475,89 +468,82 @@ public class ShipmentService implements IShipmentService {
     }
 
     private List<Containers> createContainersAsync(ShipmentDetails shipmentDetails, List<ContainerRequest> containerRequest) {
-        return containerService.saveContainers(containerRequest);
+        return containerDao.saveAll(containerRequest.stream().map(e -> modelMapper.map(e, Containers.class)).collect(Collectors.toList()));
     }
 
     @Transactional
     public void createbookingCarriage(ShipmentDetails shipmentDetails, BookingCarriageRequest bookingCarriageRequest) {
         bookingCarriageRequest.setShipmentId(shipmentDetails.getId());
-        bookingCarriageService.create(CommonRequestModel.buildRequest(bookingCarriageRequest));
+        bookingCarriageDao.save(modelMapper.map(bookingCarriageRequest, BookingCarriage.class));
     }
 
     @Transactional
     public void createElDetail(ShipmentDetails shipmentDetails, ELDetailsRequest elDetailsRequest) {
         elDetailsRequest.setShipmentId(shipmentDetails.getId());
-        elDetailsService.create(CommonRequestModel.buildRequest(elDetailsRequest));
+        elDetailsDao.save(modelMapper.map(elDetailsRequest, ELDetails.class));
     }
 
     @Transactional
     public void createEvent(ShipmentDetails shipmentDetails, EventsRequest eventsRequest) {
         eventsRequest.setShipmentId(shipmentDetails.getId());
-        eventService.create(CommonRequestModel.buildRequest(eventsRequest));
+        eventDao.save(modelMapper.map(eventsRequest, Events.class));
     }
 
     @Transactional
     public void createFileRepo(ShipmentDetails shipmentDetails, FileRepoRequest fileRepoRequest) {
         fileRepoRequest.setEntityId(shipmentDetails.getId());
         fileRepoRequest.setEntityType(Constants.SHIPMENT);
-        fileRepoService.create(CommonRequestModel.buildRequest(fileRepoRequest));
+        fileRepoDao.save(modelMapper.map(fileRepoRequest, FileRepo.class));
     }
 
     @Transactional
     public void createJob(ShipmentDetails shipmentDetails, JobRequest jobRequest) {
         jobRequest.setShipmentId(shipmentDetails.getId());
-        jobService.create(CommonRequestModel.buildRequest(jobRequest));
+        jobDao.save(modelMapper.map(jobRequest, Jobs.class));
     }
 
     @Transactional
     public void createNote(ShipmentDetails shipmentDetails, NotesRequest notesRequest) {
         notesRequest.setEntityId(shipmentDetails.getId());
         notesRequest.setEntityType(Constants.SHIPMENT);
-        notesService.create(CommonRequestModel.buildRequest(notesRequest));
+        notesDao.save(modelMapper.map(notesRequest, Notes.class));
     }
 
     @Transactional
     public void createParties(ShipmentDetails shipmentDetails, PartiesRequest partiesRequest) {
         partiesRequest.setEntityId(shipmentDetails.getId());
         partiesRequest.setEntityType("SHIPMENT");
-        partiesDetailsService.create(CommonRequestModel.buildRequest(partiesRequest));
+        packingDao.save(modelMapper.map(partiesRequest, Packing.class));
     }
 
     @Transactional
     public void createPickupDelivery(ShipmentDetails shipmentDetails, PickupDeliveryDetailsRequest pickupDeliveryDetailsRequest) {
         pickupDeliveryDetailsRequest.setShipmentId(shipmentDetails.getId());
-        pickupDeliveryDetailsService.create(CommonRequestModel.buildRequest(pickupDeliveryDetailsRequest));
+        pickupDeliveryDetailsDao.save(modelMapper.map(pickupDeliveryDetailsRequest, PickupDeliveryDetails.class));
     }
 
     @Transactional
     public void createReferenceNumber(ShipmentDetails shipmentDetails, ReferenceNumbersRequest referenceNumbersRequest) {
         referenceNumbersRequest.setShipmentId(shipmentDetails.getId());
-        referenceNumbersService.create(CommonRequestModel.buildRequest(referenceNumbersRequest));
+        referenceNumbersDao.save(modelMapper.map(referenceNumbersRequest, ReferenceNumbers.class));
     }
 
     @Transactional
     public void createPacking(ShipmentDetails shipmentDetails, PackingRequest packingRequest) {
         packingRequest.setShipmentId(shipmentDetails.getId());
-        packingService.create(CommonRequestModel.buildRequest(packingRequest));
-    }
-
-    @Transactional
-    public ResponseEntity<?> createContainer(ShipmentDetails shipmentDetails, ContainerRequest containerRequest) {
-        // TODO- Important! Set Shipment in Container Mapping
-//        containerRequest.setShipmentId(shipmentDetails.getId());
-        return containerService.create(CommonRequestModel.buildRequest(containerRequest));
+        packingDao.save(modelMapper.map(packingRequest, Packing.class));
     }
 
     @Transactional
     public void createRouting(ShipmentDetails shipmentDetails, RoutingsRequest routingsRequest) {
         routingsRequest.setShipmentId(shipmentDetails.getId());
-        routingsService.create(CommonRequestModel.buildRequest(routingsRequest));
+        routingsDao.save(modelMapper.map(routingsRequest, Routings.class));
     }
 
     @Transactional
     public void createServiceDetail(ShipmentDetails shipmentDetails, ServiceDetailsRequest serviceDetailsRequest) {
         serviceDetailsRequest.setShipmentId(shipmentDetails.getId());
-        serviceDetailsService.create(CommonRequestModel.buildRequest(serviceDetailsRequest));
+        serviceDetailsDao.save(modelMapper.map(serviceDetailsRequest, ServiceDetails.class));
     }
 
     @Transactional
@@ -622,20 +608,18 @@ public class ShipmentService implements IShipmentService {
 
             ShipmentDetails entity = modelMapper.map(shipmentRequest, ShipmentDetails.class);
             entity.setId(oldEntity.get().getId());
-            List<Containers> containers = null;
-            ResponseEntity<?> updatedContainers = null;
+            List<Containers> updatedContainers = null;
             if(containerRequestList != null) {
-                updatedContainers = containerService.updateEntityFromShipment(CommonRequestModel.buildRequest(containerRequestList), id);
-                containers = getResponse(updatedContainers).stream().map(e -> modelMapper.map(e, Containers.class)).collect(Collectors.toList());
+                updatedContainers = containerDao.updateEntityFromShipment(CommonRequestModel.buildRequest(containerRequestList));
             }
             else {
-                containers = oldEntity.get().getContainers();
+                updatedContainers = oldEntity.get().getContainers();
             }
-            entity.setContainers(containers);
-            ResponseEntity<?> updatedAdditionalDetails = null;
+            entity.setContainers(updatedContainers);
+            AdditionalDetail updatedAdditionalDetails = null;
             if(additionalDetailRequest != null) {
-                updatedAdditionalDetails = additionalDetailService.updateEntityFromShipment(CommonRequestModel.buildRequest(additionalDetailRequest), id);
-                entity.setAdditionalDetail(modelMapper.map(getResponseEntity(updatedAdditionalDetails), AdditionalDetail.class));
+                updatedAdditionalDetails = additionalDetailDao.updateEntityFromShipment(CommonRequestModel.buildRequest(additionalDetailRequest), id);
+                entity.setAdditionalDetail(updatedAdditionalDetails);
             }
             ResponseEntity<?> updatedCarrierDetails = null;
             if(carrierDetailRequest != null) {
@@ -645,32 +629,32 @@ public class ShipmentService implements IShipmentService {
             entity = shipmentDao.save(entity);
 
             ShipmentDetailsResponse response = modelMapper.map(entity, ShipmentDetailsResponse.class);
-            response.setContainersList(containers.stream().map(e -> modelMapper.map(e, ContainerResponse.class)).collect(Collectors.toList()));
+            response.setContainersList(updatedContainers.stream().map(e -> modelMapper.map(e, ContainerResponse.class)).collect(Collectors.toList()));
             if(additionalDetailRequest != null) {
-                response.setAdditionalDetail(getResponseEntity(updatedAdditionalDetails));
+                response.setAdditionalDetail(convertToClass(updatedAdditionalDetails, AdditionalDetailResponse.class));
             }
             if(carrierDetailRequest != null) {
                 response.setCarrierDetails(getResponseEntity(updatedCarrierDetails));
             }
             if(bookingCarriageRequestList != null) {
-                ResponseEntity<?> updatedBookingCarriages = bookingCarriageService.updateEntityFromShipment(CommonRequestModel.buildRequest(bookingCarriageRequestList), id);
-                response.setBookingCarriagesList(getResponse(updatedBookingCarriages));
+                List<BookingCarriage> updatedBookingCarriages = bookingCarriageDao.updateEntityFromShipment(CommonRequestModel.buildRequest(bookingCarriageRequestList), id);
+                response.setBookingCarriagesList(updatedBookingCarriages.stream().map(e -> convertToClass(e, BookingCarriageResponse.class)).collect(Collectors.toList()));
             }
             if(packingRequestList != null) {
-                ResponseEntity<?> updatedPackings = packingService.updateEntityFromShipment(CommonRequestModel.buildRequest(packingRequestList), id);
-                response.setPackingList(getResponse(updatedPackings));
+                List<Packing> updatedPackings = packingDao.updateEntityFromShipment(CommonRequestModel.buildRequest(packingRequestList), id);
+                response.setPackingList(updatedPackings.stream().map(e -> convertToClass(e, PackingResponse.class)).collect(Collectors.toList()));
             }
             if(elDetailsRequestList != null) {
-                ResponseEntity<?> updatedELDetails = elDetailsService.updateEntityFromShipment(CommonRequestModel.buildRequest(elDetailsRequestList), id);
-                response.setElDetailsList(getResponse(updatedELDetails));
+                List<ELDetails> updatedELDetails = elDetailsDao.updateEntityFromShipment(CommonRequestModel.buildRequest(elDetailsRequestList), id);
+                response.setElDetailsList(updatedELDetails.stream().map(e -> convertToClass(e, ELDetailsResponse.class)).collect(Collectors.toList()));
             }
             if(eventsRequestList != null) {
-                ResponseEntity<?> updatedEvents = eventService.updateEntityFromShipment(CommonRequestModel.buildRequest(eventsRequestList), id);
-                response.setEventsList(getResponse(updatedEvents));
+                List<Events> updatedEvents = eventDao.updateEntityFromShipment(CommonRequestModel.buildRequest(eventsRequestList), id);
+                response.setEventsList(updatedEvents.stream().map(e -> convertToClass(e, EventsResponse.class)).collect(Collectors.toList()));
             }
             if(fileRepoRequestList != null) {
-                ResponseEntity<?> updatedFileRepos = fileRepoService.updateEntityFromShipment(CommonRequestModel.buildRequest(fileRepoRequestList), id);
-                response.setFileRepoList(getResponse(updatedFileRepos));
+                List<FileRepo> updatedFileRepos = fileRepoDao.updateEntityFromShipment(CommonRequestModel.buildRequest(fileRepoRequestList), id);
+                response.setFileRepoList(updatedFileRepos.stream().map(e -> convertToClass(e, FileRepoResponse.class)).collect(Collectors.toList()));
             }
             if(jobRequestList != null) {
                 ResponseEntity<?> updatedJobs = jobService.updateEntityFromShipment(CommonRequestModel.buildRequest(jobRequestList), id);
