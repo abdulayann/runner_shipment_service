@@ -102,7 +102,7 @@ public class RoutingsService implements IRoutingsService {
                 log.error("Request is empty for Routing list with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
             Pair<Specification<Routings>, Pageable> tuple = fetchData(request, Routings.class);
-            Page<Routings> notesPage = routingsDao.findAll(tuple.getLeft(), tuple.getRight());
+            Page<Routings> routingsPage = routingsDao.findAll(tuple.getLeft(), tuple.getRight());
             log.info("Routing list retrieved successfully for Request Id {} ", LoggerHelper.getRequestIdFromMDC());
             return ResponseHelper.buildListSuccessResponse(
                     convertEntityListToDtoList(routingsPage.getContent()),
