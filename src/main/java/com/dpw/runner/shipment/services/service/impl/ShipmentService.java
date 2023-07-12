@@ -238,10 +238,50 @@ public class ShipmentService implements IShipmentService {
     private List<IRunnerResponse> convertEntityListToDtoList(List<ShipmentDetails> lst) {
         List<IRunnerResponse> responseList = new ArrayList<>();
         lst.forEach(shipmentDetail -> {
-            responseList.add(jsonHelper.convertValue(shipmentDetail, ShipmentDetailsResponse.class));
+            ShipmentDetailsResponse shipmentDetailsResponse = modelMapper.map(shipmentDetail, ShipmentDetailsResponse.class);
+            containerCountUpdate(shipmentDetail, shipmentDetailsResponse);
+            responseList.add(shipmentDetailsResponse);
         });
         return responseList;
     }
+
+    private void containerCountUpdate(ShipmentDetails shipmentDetail, ShipmentDetailsResponse shipmentDetailsResponse) {
+        Integer container20Count = 0;
+        Integer container40Count = 0;
+        Integer container20GPCount = 0;
+        Integer container20RECount = 0;
+        Integer container40GPCount = 0;
+        Integer container40RECount = 0;
+        if(shipmentDetail.getContainers() != null) {
+            for (Containers container : shipmentDetail.getContainers()) {
+                if(container.getContainerCode() == null){
+                    continue;
+                }
+                if (container.getContainerCode().contains("20")) {
+                    container20Count++;
+                }
+                if (container.getContainerCode().contains("40")) {
+                    container40Count++;
+                }
+                if (container.getContainerCode().equals("20GP")) {
+                    container20GPCount++;
+                } else if (container.getContainerCode().equals("20RE")) {
+                    container20RECount++;
+                } else if (container.getContainerCode().equals("40GP")) {
+                    container40GPCount++;
+                } else if (container.getContainerCode().equals("40RE")) {
+                    container40RECount++;
+                }
+            }
+        }
+        shipmentDetailsResponse.setContainer20Count(container20Count);
+        shipmentDetailsResponse.setContainer40Count(container40Count);
+        shipmentDetailsResponse.setContainer20GPCount(container20GPCount);
+        shipmentDetailsResponse.setContainer20RECount(container20RECount);
+        shipmentDetailsResponse.setContainer40GPCount(container40GPCount);
+        shipmentDetailsResponse.setContainer40RECount(container40RECount);
+    }
+
 
     private List<Parties> createParties(ShipmentDetails shipmentDetails) {
         List<Parties> parties = new ArrayList<>();
@@ -796,7 +836,8 @@ public class ShipmentService implements IShipmentService {
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
             log.info("Shipment details fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
-            ShipmentDetailsResponse response = jsonHelper.convertValue(shipmentDetails.get(), ShipmentDetailsResponse.class);
+            ShipmentDetailsResponse response = modelMapper.map(shipmentDetails.get(), ShipmentDetailsResponse.class);
+            containerCountUpdate(shipmentDetails.get(), response);
             return ResponseHelper.buildSuccessResponse(response);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -824,7 +865,8 @@ public class ShipmentService implements IShipmentService {
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
             log.info("Shipment details async fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
-            ShipmentDetailsResponse response = jsonHelper.convertValue(shipmentDetails.get(), ShipmentDetailsResponse.class);
+            ShipmentDetailsResponse response = modelMapper.map(shipmentDetails.get(), ShipmentDetailsResponse.class);
+            containerCountUpdate(shipmentDetails.get(), response);
             return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(response));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
