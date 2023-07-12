@@ -7,7 +7,7 @@ import io.swagger.annotations.ApiModel;
 import lombok.*;
 
 import java.math.BigDecimal;
-import java.util.Date;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Getter
@@ -55,7 +55,7 @@ public class ContainerRequest extends CommonRequest implements IRunnerRequest {
     private BigDecimal maxTemp;
     private String maxTempUnit;
     private String hblDeliveryMode;
-    private Date allocationDate;
+    private LocalDateTime allocationDate;
     private String dgClass;
     private Boolean hazardous;
     private String hazardousUn;

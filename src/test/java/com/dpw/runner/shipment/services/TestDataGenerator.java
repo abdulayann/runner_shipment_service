@@ -53,7 +53,6 @@ public class TestDataGenerator {
                              ICarrierDao carrierDao,
                              IPartiesDao partiesDao) {
         this.shipmentDao = shipmentDao;
-
         this.carrierDao = carrierDao;
         this.partiesDao = partiesDao;
     }
@@ -170,9 +169,9 @@ public class TestDataGenerator {
         return response;
     }
 
-    public List<CompleteShipmentRequest> createTestShipment(Integer count) {
+    public List<ShipmentRequest> createTestShipment(int count) {
 
-        List<CompleteShipmentRequest> requests = new ArrayList<>();
+        List<ShipmentRequest> requests = new ArrayList<>();
         /**
          * BL details
          * Measurements
@@ -185,29 +184,36 @@ public class TestDataGenerator {
          * * * */
 
         for (int i = 0; i < count; i++) {
-            CompleteShipmentRequest shipmentRequest1 = new CompleteShipmentRequest();
+            ShipmentRequest shipmentRequest1 = createShipmentData();
 
-            shipmentRequest1.setShipmentRequest(createShipmentData());
-
-            shipmentRequest1.setCarrierDetailRequest(List.of(createCarrier()));
+            shipmentRequest1.setCarrierDetails(createCarrier());
 
             /**
              * Parties Details*
              */
-            shipmentRequest1.setPartiesRequest(createParties());
-            shipmentRequest1.setPackingRequest(createPackingRequest(new Random().nextInt(10)));
-            shipmentRequest1.setAdditionalDetailRequest(List.of(createAdditionalData()));
-            shipmentRequest1.setBookingCarriageRequest(createBookingCarriageRequest(new Random().nextInt(10)));
-            shipmentRequest1.setContainerRequest(createContainerRequest(new Random().nextInt(10)));
-            shipmentRequest1.setElDetailsRequest(createElDetailsRequest(new Random().nextInt(10)));
-            shipmentRequest1.setEventsRequest(createEventsRequest(new Random().nextInt(10)));
-            shipmentRequest1.setFileRepoRequest(createFileRepoRequest(new Random().nextInt(10)));
-            shipmentRequest1.setJobRequest(createJobRequest(new Random().nextInt(10)));
-            shipmentRequest1.setNotesRequest(createNotesRequest(new Random().nextInt(10)));
-            shipmentRequest1.setReferenceNumbersRequest(createReferenceNumberRequest(new Random().nextInt(10)));
-            shipmentRequest1.setRoutingsRequest(createRountingsRequest(new Random().nextInt(10)));
-            shipmentRequest1.setPickupDeliveryDetailsRequest(createPickupDeliverDetailsRequest(10));
-            shipmentRequest1.setServiceDetailsRequest(createServiceDetailsRequest(10));
+            List<PartiesRequest> partiesRequestsList = createParties();
+
+            PartiesRequest client = partiesRequestsList.stream().filter(o -> o.getType() == "CLIENT").findFirst().get();
+            PartiesRequest consigner = partiesRequestsList.stream().filter(o -> o.getType() == "CLIENT").findFirst().get();
+            PartiesRequest consignee = partiesRequestsList.stream().filter(o -> o.getType() == "CLIENT").findFirst().get();
+
+            shipmentRequest1.setClient(client);
+            shipmentRequest1.setConsignee(consignee);
+            shipmentRequest1.setConsigner(consigner);
+
+            shipmentRequest1.setPackingList(createPackingRequest(new Random().nextInt(10)));
+            shipmentRequest1.setAdditionalDetail(createAdditionalData());
+            shipmentRequest1.setBookingCarriagesList(createBookingCarriageRequest(new Random().nextInt(10)));
+            shipmentRequest1.setContainersList(createContainerRequest(new Random().nextInt(10)));
+            shipmentRequest1.setElDetailsList(createElDetailsRequest(new Random().nextInt(10)));
+            shipmentRequest1.setEventsList(createEventsRequest(new Random().nextInt(10)));
+            shipmentRequest1.setFileRepoList(createFileRepoRequest(new Random().nextInt(10)));
+            shipmentRequest1.setJobsList(createJobRequest(new Random().nextInt(10)));
+            shipmentRequest1.setNotesList(createNotesRequest(new Random().nextInt(10)));
+            shipmentRequest1.setReferenceNumbersList(createReferenceNumberRequest(new Random().nextInt(10)));
+            shipmentRequest1.setRoutingsList(createRountingsRequest(new Random().nextInt(10)));
+            shipmentRequest1.setPickupDeliveryDetailsList(createPickupDeliverDetailsRequest(10));
+            shipmentRequest1.setServicesList(createServiceDetailsRequest(10));
 
             requests.add(shipmentRequest1);
         }
@@ -222,9 +228,9 @@ public class TestDataGenerator {
             list.add(ServiceDetailsRequest.builder()
                     .serviceType(SERVICE_TYPES.get(new Random().nextInt(100) % SERVICE_TYPES.size()))
                     .srvLocation(random)
-                    .bookingDate(new Date())
-                    .serviceCount(String.valueOf(random))
-                    .completionDate(new Date())
+                    .bookingDate(LocalDateTime.now())
+                    .serviceCount((long) (random))
+                    .completionDate(LocalDateTime.now())
                     .refNumber(generateString(7))
                     .serviceNotes(generateString(15))
                     .build());
@@ -414,7 +420,7 @@ public class TestDataGenerator {
         for (int i = 0; i < count; i++) {
             int random = new Random().nextInt(10);
             bookingCarriageRequests.add(BookingCarriageRequest.builder().vesselId((long) random)
-                    .podId((long) random).podId((long) random).eta(new Date()).etd(new Date())
+                    .podId((long) random).podId((long) random).eta(LocalDateTime.now()).etd(LocalDateTime.now())
                     .vessel(generateString(5)).voyage(generateString(5))
                     .carriageType(CARRIAGE_TYPES.get(new Random().nextInt(10) % CARRIAGE_TYPES.size()))
                     .build());
@@ -470,7 +476,8 @@ public class TestDataGenerator {
 
     private ShipmentRequest createShipmentData() {
         int random = new Random().nextInt(100);
-        ShipmentRequest shipmentRequest = ShipmentRequest.builder().direction(DIRECTIONS.get(random % DIRECTIONS.size())).status(random % 2)
+        ShipmentRequest shipmentRequest = ShipmentRequest.builder()
+                .direction(DIRECTIONS.get(random % DIRECTIONS.size())).status(random % 2)
                 .source(SOURCE.get(random % SOURCE.size())).transportMode(TRANSPORT_MODES.get(random % TRANSPORT_MODES.size())).shipmentType(SHIPMENT_TYPE.get(random % SHIPMENT_TYPE.size()))
                 .houseBill(generateString(10)).masterBill(generateString(10)).bookingReference(generateString(10)).consolRef(generateString(10)).paymentTerms(generateString(3))
                 .goodsDescription(generateString(10)).additionalTerms(generateString(10)).volume(new BigDecimal(random)).volumeUnit(VOLUME_UNIT.get(new Random().nextInt(100) % VOLUME_UNIT.size()))

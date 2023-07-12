@@ -29,8 +29,8 @@ public class DbAccessHelper {
     public static <T> Pair<Specification<T>, Pageable> fetchData(ListCommonRequest request, Class className, Map<String, RunnerEntityMapping> tableName) {
         tableNames = tableName;
         Pageable pages;
-        if(request.getSortRequest() != null && request.getFilterCriteria() != null && request.getFilterCriteria().size() == 0) {
-            Sort sortRequest = Sort.by(tableNames.get(request.getSortRequest().getFieldName()) +"."+ request.getSortRequest().getFieldName());
+        if (request.getSortRequest() != null && request.getFilterCriteria() != null && request.getFilterCriteria().size() == 0) {
+            Sort sortRequest = Sort.by(tableNames.get(request.getSortRequest().getFieldName()) + "." + request.getSortRequest().getFieldName());
             sortRequest = sortRequest.descending();
             pages = PageRequest.of(request.getPageNo(), request.getLimit(), sortRequest);
         } else {
@@ -42,7 +42,7 @@ public class DbAccessHelper {
         Specification<T> specification = null;
         Map<String, Join<Class, T>> map = new HashMap<>();
         for (FilterCriteria filters : filterCriteria) {
-            if(filters.getLogicOperator() == null) {
+            if (filters.getLogicOperator() == null) {
                 specification =
                         where(getSpecificationFromFilters(filters.getInnerFilter(), sortRequest, map, className.getSimpleName()));
             } else if (filters.getLogicOperator().equalsIgnoreCase("OR")) {
@@ -51,12 +51,12 @@ public class DbAccessHelper {
                 specification = specification.and(getSpecificationFromFilters(filters.getInnerFilter(), null, map, className.getSimpleName()));
             }
         }
-        return Pair.of(specification,pages);
+        return Pair.of(specification, pages);
     }
 
     public static <T> Pair<Specification<T>, Pageable> fetchData(ListCommonRequest request, Class className) {
         Pageable pages;
-        if(request.getSortRequest() != null && request.getFilterCriteria() != null && request.getFilterCriteria().size() == 0) {
+        if (request.getSortRequest() != null && request.getFilterCriteria() != null && request.getFilterCriteria().size() == 0) {
             Sort sortRequest = Sort.by(request.getSortRequest().getFieldName());
             sortRequest = sortRequest.descending();
             pages = PageRequest.of(request.getPageNo(), request.getLimit(), sortRequest);
@@ -72,7 +72,7 @@ public class DbAccessHelper {
         Specification<T> specification = null;
         Map<String, Join<Class, T>> map = new HashMap<>();
         for (FilterCriteria filters : filterCriteria) {
-            if(filters.getLogicOperator() == null) {
+            if (filters.getLogicOperator() == null) {
                 specification =
                         where(getSpecificationFromFiltersWithoutMapping(filters.getInnerFilter(), sortRequest, map, className.getSimpleName(), dataTypeMap));
             } else if (filters.getLogicOperator().equalsIgnoreCase("OR")) {
@@ -81,37 +81,36 @@ public class DbAccessHelper {
                 specification = specification.and(getSpecificationFromFiltersWithoutMapping(filters.getInnerFilter(), null, map, className.getSimpleName(), dataTypeMap));
             }
         }
-        return Pair.of(specification,pages);
+        return Pair.of(specification, pages);
     }
 
-    private static <T> Specification<T> getSpecificationFromFilters(List<FilterCriteria> filter, SortRequest sortRequest, Map<String, Join<Class, T>> map, String className){
-        if(filter == null || filter.size()==0) {
+    private static <T> Specification<T> getSpecificationFromFilters(List<FilterCriteria> filter, SortRequest sortRequest, Map<String, Join<Class, T>> map, String className) {
+        if (filter == null || filter.size() == 0) {
             return null;
         }
 
         Specification<T> specification = null;
 
         for (FilterCriteria input : filter) {
-            if(input.getInnerFilter() != null && input.getInnerFilter().size() > 0) {
-                if(input.getLogicOperator() != null) {
+            if (input.getInnerFilter() != null && input.getInnerFilter().size() > 0) {
+                if (input.getLogicOperator() != null) {
                     if (input.getLogicOperator().equalsIgnoreCase("OR")) {
                         specification = specification.or(getSpecificationFromFilters(input.getInnerFilter(), null, map, className));
                     } else if (input.getLogicOperator().equalsIgnoreCase("AND")) {
                         specification = specification.and(getSpecificationFromFilters(input.getInnerFilter(), null, map, className));
                     }
-                }
-                else {
+                } else {
                     specification =
                             where(getSpecificationFromFilters(input.getInnerFilter(), sortRequest, map, className));
                 }
             } else {
-                if(input.getLogicOperator() != null) {
+                if (input.getLogicOperator() != null) {
                     if (input.getLogicOperator().equalsIgnoreCase("OR")) {
                         specification = specification.or(createSpecification(input.getCriteria(), null, map, className));
                     } else if (input.getLogicOperator().equalsIgnoreCase("AND")) {
                         specification = specification.and(createSpecification(input.getCriteria(), null, map, className));
                     }
-                }else {
+                } else {
                     specification =
                             where(createSpecification(input.getCriteria(), sortRequest, map, className));
                 }
@@ -133,21 +132,20 @@ public class DbAccessHelper {
                     map.put(tableNames.get(input.getFieldName()).getTableName(), join);
                     path = join;
                     query.distinct(true);
-                }
-                else {
+                } else {
                     path = map.get(tableNames.get(input.getFieldName()).getTableName());
                 }
             }
 
-            if(!query.getResultType().isAssignableFrom(Long.class) && sortRequest != null && (query.getOrderList() == null ||query.getOrderList().size() == 0)) {
+            if (!query.getResultType().isAssignableFrom(Long.class) && sortRequest != null && (query.getOrderList() == null || query.getOrderList().size() == 0)) {
                 if (tableNames.get(sortRequest.getFieldName()).getTableName().equalsIgnoreCase(className)) {
-                    if(sortRequest.getOrder().equalsIgnoreCase("DESC")) {
+                    if (sortRequest.getOrder().equalsIgnoreCase("DESC")) {
                         query.orderBy(Arrays.asList(criteriaBuilder.desc(root.get(sortRequest.getFieldName()))));
                     } else {
                         query.orderBy(Arrays.asList(criteriaBuilder.asc(root.get(sortRequest.getFieldName()))));
                     }
                 } else {
-                    if(sortRequest.getOrder().equalsIgnoreCase("DESC")) {
+                    if (sortRequest.getOrder().equalsIgnoreCase("DESC")) {
                         query.orderBy(Arrays.asList(criteriaBuilder.desc(((Join) root.fetch(tableNames.get(sortRequest.getFieldName()).getTableName(), JoinType.LEFT)).get(sortRequest.getFieldName()))));
                     } else {
                         query.orderBy(Arrays.asList(criteriaBuilder.asc(((Join) root.fetch(tableNames.get(sortRequest.getFieldName()).getTableName(), JoinType.LEFT)).get(sortRequest.getFieldName()))));
@@ -160,46 +158,46 @@ public class DbAccessHelper {
     }
 
     private static <T> Predicate createSpecification(Class dataType, Criteria input, Path path, CriteriaBuilder criteriaBuilder) {
-        switch (input.getOperator()){
+        switch (input.getOperator()) {
             case "=":
-                if(dataType.isAssignableFrom(String.class)) {
-                    return criteriaBuilder.equal(criteriaBuilder.lower(path.get(input.getFieldName())),(((String) input.getValue()).toLowerCase()));
+                if (dataType.isAssignableFrom(String.class)) {
+                    return criteriaBuilder.equal(criteriaBuilder.lower(path.get(input.getFieldName())), (((String) input.getValue()).toLowerCase()));
                 }
-                return criteriaBuilder.equal(path.get(input.getFieldName()),input.getValue());
+                return criteriaBuilder.equal(path.get(input.getFieldName()), input.getValue());
 
             case "!=":
-                if(dataType.isAssignableFrom(String.class)) {
-                    return criteriaBuilder.notEqual(criteriaBuilder.lower(path.get(input.getFieldName())),(((String) input.getValue()).toLowerCase()));
+                if (dataType.isAssignableFrom(String.class)) {
+                    return criteriaBuilder.notEqual(criteriaBuilder.lower(path.get(input.getFieldName())), (((String) input.getValue()).toLowerCase()));
                 }
                 return criteriaBuilder.notEqual(path.get(input.getFieldName()), input.getValue());
 
             case ">":
-                if(dataType.isAssignableFrom(String.class)) {
-                    return criteriaBuilder.greaterThan(path.get(input.getFieldName()),(String) input.getValue());
+                if (dataType.isAssignableFrom(String.class)) {
+                    return criteriaBuilder.greaterThan(path.get(input.getFieldName()), (String) input.getValue());
                 }
-                if(dataType.isAssignableFrom(Date.class)) {
-                    return criteriaBuilder.greaterThan(path.get(input.getFieldName()),covertStringToData((String) input.getValue(), "yyyy-MM-dd"));
+                if (dataType.isAssignableFrom(Date.class)) {
+                    return criteriaBuilder.greaterThan(path.get(input.getFieldName()), covertStringToData((String) input.getValue(), "yyyy-MM-dd"));
                 }
-                if(dataType.isAssignableFrom(LocalDateTime.class)) {
-                    return criteriaBuilder.greaterThan(path.get(input.getFieldName()),covertStringToLocalDate((String) input.getValue(), "yyyy-MM-dd"));
+                if (dataType.isAssignableFrom(LocalDateTime.class)) {
+                    return criteriaBuilder.greaterThan(path.get(input.getFieldName()), covertStringToLocalDate((String) input.getValue(), "yyyy-MM-dd"));
                 }
-                return criteriaBuilder.gt(path.get(input.getFieldName()),(Number) input.getValue());
+                return criteriaBuilder.gt(path.get(input.getFieldName()), (Number) input.getValue());
 
             case "<":
-                if(dataType.isAssignableFrom(String.class)) {
-                    return criteriaBuilder.lessThan(path.get(input.getFieldName()),(String) input.getValue());
+                if (dataType.isAssignableFrom(String.class)) {
+                    return criteriaBuilder.lessThan(path.get(input.getFieldName()), (String) input.getValue());
                 }
-                if(dataType.isAssignableFrom(Date.class)) {
-                    return criteriaBuilder.lessThan(path.get(input.getFieldName()),covertStringToData((String) input.getValue(), "yyyy-MM-dd"));
+                if (dataType.isAssignableFrom(Date.class)) {
+                    return criteriaBuilder.lessThan(path.get(input.getFieldName()), covertStringToData((String) input.getValue(), "yyyy-MM-dd"));
                 }
-                if(dataType.isAssignableFrom(LocalDateTime.class)) {
-                    return criteriaBuilder.lessThan(path.get(input.getFieldName()),covertStringToLocalDate((String) input.getValue(), "yyyy-MM-dd"));
+                if (dataType.isAssignableFrom(LocalDateTime.class)) {
+                    return criteriaBuilder.lessThan(path.get(input.getFieldName()), covertStringToLocalDate((String) input.getValue(), "yyyy-MM-dd"));
                 }
                 return criteriaBuilder.lt(path.get(input.getFieldName()), (Number) input.getValue());
 
             case "LIKE":
                 return criteriaBuilder.like(criteriaBuilder.lower(path.get(input.getFieldName())),
-                        "%"+((String) input.getValue()).toLowerCase()+"%");
+                        "%" + ((String) input.getValue()).toLowerCase() + "%");
 
             case "IN":
                 return criteriaBuilder.in(path.get(input.getFieldName()))
@@ -209,34 +207,33 @@ public class DbAccessHelper {
         }
     }
 
-    private static <T> Specification<T> getSpecificationFromFiltersWithoutMapping(List<FilterCriteria> filter, SortRequest sortRequest, Map<String, Join<Class, T>> map, String className, Map<String, Class> dataTypeMap){
-        if(filter == null || filter.size()==0) {
+    private static <T> Specification<T> getSpecificationFromFiltersWithoutMapping(List<FilterCriteria> filter, SortRequest sortRequest, Map<String, Join<Class, T>> map, String className, Map<String, Class> dataTypeMap) {
+        if (filter == null || filter.size() == 0) {
             return null;
         }
 
         Specification<T> specification = null;
 
         for (FilterCriteria input : filter) {
-            if(input.getInnerFilter() != null && input.getInnerFilter().size() > 0) {
-                if(input.getLogicOperator() != null) {
+            if (input.getInnerFilter() != null && input.getInnerFilter().size() > 0) {
+                if (input.getLogicOperator() != null) {
                     if (input.getLogicOperator().equalsIgnoreCase("OR")) {
                         specification = specification.or(getSpecificationFromFiltersWithoutMapping(input.getInnerFilter(), null, map, className, dataTypeMap));
                     } else if (input.getLogicOperator().equalsIgnoreCase("AND")) {
                         specification = specification.and(getSpecificationFromFiltersWithoutMapping(input.getInnerFilter(), null, map, className, dataTypeMap));
                     }
-                }
-                else {
+                } else {
                     specification =
                             where(getSpecificationFromFiltersWithoutMapping(input.getInnerFilter(), sortRequest, map, className, dataTypeMap));
                 }
             } else {
-                if(input.getLogicOperator() != null) {
+                if (input.getLogicOperator() != null) {
                     if (input.getLogicOperator().equalsIgnoreCase("OR")) {
                         specification = specification.or(createSpecificationWithoutFilter(input.getCriteria(), null, map, className, dataTypeMap));
                     } else if (input.getLogicOperator().equalsIgnoreCase("AND")) {
                         specification = specification.and(createSpecificationWithoutFilter(input.getCriteria(), null, map, className, dataTypeMap));
                     }
-                }else {
+                } else {
                     specification =
                             where(createSpecificationWithoutFilter(input.getCriteria(), sortRequest, map, className, dataTypeMap));
                 }
@@ -249,8 +246,8 @@ public class DbAccessHelper {
         return (root, query, criteriaBuilder) -> {
             Path path = root;
 
-            if(!query.getResultType().isAssignableFrom(Long.class) && sortRequest != null && (query.getOrderList() == null ||query.getOrderList().size() == 0)) {
-                if(sortRequest.getOrder().equalsIgnoreCase("DESC")) {
+            if (!query.getResultType().isAssignableFrom(Long.class) && sortRequest != null && (query.getOrderList() == null || query.getOrderList().size() == 0)) {
+                if (sortRequest.getOrder().equalsIgnoreCase("DESC")) {
                     query.orderBy(Arrays.asList(criteriaBuilder.desc(root.get(sortRequest.getFieldName()))));
                 } else {
                     query.orderBy(Arrays.asList(criteriaBuilder.asc(root.get(sortRequest.getFieldName()))));
@@ -261,18 +258,18 @@ public class DbAccessHelper {
         };
     }
 
-    private static LocalDateTime covertStringToLocalDate(String date, String pattern){
+    private static LocalDateTime covertStringToLocalDate(String date, String pattern) {
 
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern(pattern);
 
         try {
             return LocalDate.parse(date, formatter).atStartOfDay();
-        } catch (Exception e){
+        } catch (Exception e) {
             return null;
         }
     }
 
-    private static Date covertStringToData(String date, String pattern){
+    private static Date covertStringToData(String date, String pattern) {
 
         SimpleDateFormat formatter = new SimpleDateFormat(pattern, Locale.ENGLISH);
         try {

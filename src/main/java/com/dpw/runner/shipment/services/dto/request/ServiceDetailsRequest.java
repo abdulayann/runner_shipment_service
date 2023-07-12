@@ -7,7 +7,7 @@ import io.swagger.annotations.ApiModel;
 import lombok.*;
 
 import java.time.Duration;
-import java.util.Date;
+import java.time.LocalDateTime;
 
 @Getter
 @Setter
@@ -23,10 +23,10 @@ public class ServiceDetailsRequest extends CommonRequest implements IRunnerReque
     private String serviceType;
     private PartiesRequest contractor;
     private int srvLocation;
-    private Date bookingDate;
-    private String serviceCount;
+    private LocalDateTime bookingDate;
+    private Long serviceCount;
     private Duration serviceDuration;
-    private Date completionDate;
+    private LocalDateTime completionDate;
     private String refNumber;
     private String serviceNotes;
 }
