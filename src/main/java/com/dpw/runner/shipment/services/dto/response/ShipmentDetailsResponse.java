@@ -96,10 +96,10 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     private List<BookingCarriageResponse> bookingCarriagesList;
     private List<JobResponse> jobsList;
     private List<ContainerResponse> containersList;
-    private Integer container20Count;
-    private Integer container40Count;
-    private Integer container20GPCount;
-    private Integer container20RECount;
-    private Integer container40GPCount;
-    private Integer container40RECount;
+    private Long container20Count;
+    private Long container40Count;
+    private Long container20GPCount;
+    private Long container20RECount;
+    private Long container40GPCount;
+    private Long container40RECount;
 }

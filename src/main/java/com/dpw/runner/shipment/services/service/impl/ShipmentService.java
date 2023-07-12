@@ -246,33 +246,19 @@ public class ShipmentService implements IShipmentService {
     }
 
     private void containerCountUpdate(ShipmentDetails shipmentDetail, ShipmentDetailsResponse shipmentDetailsResponse) {
-        Integer container20Count = 0;
-        Integer container40Count = 0;
-        Integer container20GPCount = 0;
-        Integer container20RECount = 0;
-        Integer container40GPCount = 0;
-        Integer container40RECount = 0;
+        Long container20Count = 0L;
+        Long container40Count = 0L;
+        Long container20GPCount = 0L;
+        Long container20RECount = 0L;
+        Long container40GPCount = 0L;
+        Long container40RECount = 0L;
         if(shipmentDetail.getContainers() != null) {
-            for (Containers container : shipmentDetail.getContainers()) {
-                if(container.getContainerCode() == null){
-                    continue;
-                }
-                if (container.getContainerCode().contains("20")) {
-                    container20Count++;
-                }
-                if (container.getContainerCode().contains("40")) {
-                    container40Count++;
-                }
-                if (container.getContainerCode().equals("20GP")) {
-                    container20GPCount++;
-                } else if (container.getContainerCode().equals("20RE")) {
-                    container20RECount++;
-                } else if (container.getContainerCode().equals("40GP")) {
-                    container40GPCount++;
-                } else if (container.getContainerCode().equals("40RE")) {
-                    container40RECount++;
-                }
-            }
+            container20Count = shipmentDetail.getContainers().stream().filter(container -> container.getContainerCode() != null && container.getContainerCode().contains("20")).count();
+            container40Count = shipmentDetail.getContainers().stream().filter(container -> container.getContainerCode() != null && container.getContainerCode().contains("40")).count();
+            container20GPCount = shipmentDetail.getContainers().stream().filter(container -> container.getContainerCode() != null && container.getContainerCode().equals("20GP")).count();
+            container20RECount = shipmentDetail.getContainers().stream().filter(container -> container.getContainerCode() != null && container.getContainerCode().equals("20RE")).count();
+            container40GPCount = shipmentDetail.getContainers().stream().filter(container -> container.getContainerCode() != null && container.getContainerCode().equals("40GP")).count();
+            container40RECount = shipmentDetail.getContainers().stream().filter(container -> container.getContainerCode() != null && container.getContainerCode().equals("40RE")).count();
         }
         shipmentDetailsResponse.setContainer20Count(container20Count);
         shipmentDetailsResponse.setContainer40Count(container40Count);
