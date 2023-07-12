@@ -23,8 +23,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.convertToClass;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.*;
 
 @Repository
 @Slf4j
@@ -57,10 +56,10 @@ public class NotesDao implements INotesDao {
         List<Notes> responseNotes = new ArrayList<>();
         try {
             // TODO- Handle Transactions here
-            ListCommonRequest listCommonRequest = constructListCommonRequest("shipmentId", shipmentId, "=");
+            ListCommonRequest listCommonRequest = constructListRequestFromEntityId(shipmentId, Constants.SHIPMENT_TYPE);
             Pair<Specification<Notes>, Pageable> pair = fetchData(listCommonRequest, Notes.class);
-            Page<Notes> routings = findAll(pair.getLeft(), pair.getRight());
-            Map<Long, Notes> hashMap = routings.stream()
+            Page<Notes> notes = findAll(pair.getLeft(), pair.getRight());
+            Map<Long, Notes> hashMap = notes.stream()
                     .collect(Collectors.toMap(Notes::getId, Function.identity()));
             List<Notes> notesRequestList = new ArrayList<>();
             if (notesList != null && notesList.size() != 0) {

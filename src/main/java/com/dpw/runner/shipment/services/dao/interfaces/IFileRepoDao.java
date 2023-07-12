@@ -14,4 +14,5 @@ public interface IFileRepoDao {
     Optional<FileRepo> findById(Long id);
     void delete(FileRepo fileRepo);
     List<FileRepo> findByEntityIdAndEntityType(Long entityId, String entityType);
+    List<FileRepo> updateEntityFromShipment(List<FileRepo> fileRepoList, Long shipmentId) throws Exception;
 }

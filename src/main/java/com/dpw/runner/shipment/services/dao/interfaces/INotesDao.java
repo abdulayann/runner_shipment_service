@@ -5,6 +5,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface INotesDao {
@@ -12,4 +13,5 @@ public interface INotesDao {
     Page<Notes> findAll(Specification<Notes> spec, Pageable pageable);
     Optional<Notes> findById(Long id);
     void delete(Notes notes);
+    List<Notes> updateEntityFromShipment(List<Notes> notesList, Long shipmentId) throws Exception;
 }

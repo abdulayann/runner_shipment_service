@@ -5,6 +5,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface IJobDao {
@@ -12,4 +13,5 @@ public interface IJobDao {
     Page<Jobs> findAll(Specification<Jobs> spec, Pageable pageable);
     Optional<Jobs> findById(Long id);
     void delete(Jobs jobs);
+    List<Jobs> updateEntityFromShipment(List<Jobs>jobsList, Long shipmentId) throws Exception;
 }
