@@ -12,4 +12,5 @@ public interface ICarrierDao {
     Page<CarrierDetails> findAll(Specification<CarrierDetails> spec, Pageable pageable);
     Optional<CarrierDetails> findById(Long id);
     void delete(CarrierDetails carrierDetails);
+    CarrierDetails updateEntityFromShipment(CarrierDetails carrierDetails, Long shipmentId) throws Exception;
 }

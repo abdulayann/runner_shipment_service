@@ -5,6 +5,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface IPickupDeliveryDetailsDao {
@@ -12,4 +13,5 @@ public interface IPickupDeliveryDetailsDao {
     Page<PickupDeliveryDetails> findAll(Specification<PickupDeliveryDetails> spec, Pageable pageable);
     Optional<PickupDeliveryDetails> findById(Long id);
     void delete(PickupDeliveryDetails pickupDeliveryDetails);
+    List<PickupDeliveryDetails> updateEntityFromShipment(List<PickupDeliveryDetails> pickupDeliveryDetailsList, Long shipmentId) throws Exception;
 }

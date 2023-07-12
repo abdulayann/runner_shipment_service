@@ -5,6 +5,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface IRoutingsDao {
@@ -12,4 +13,5 @@ public interface IRoutingsDao {
     Page<Routings> findAll(Specification<Routings> spec, Pageable pageable);
     Optional<Routings> findById(Long id);
     void delete(Routings routings);
+    List<Routings> updateEntityFromShipment(List<Routings> routingsList, Long shipmentId) throws Exception;
 }

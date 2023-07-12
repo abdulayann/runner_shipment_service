@@ -5,6 +5,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface IBookingCarriageDao {
@@ -12,4 +13,5 @@ public interface IBookingCarriageDao {
     Page<BookingCarriage> findAll(Specification<BookingCarriage> spec, Pageable pageable);
     Optional<BookingCarriage> findById(Long id);
     void delete(BookingCarriage bookingCarriage);
+    List<BookingCarriage> updateEntityFromShipment(List<BookingCarriage> bookingCarriageList, Long shipmentId) throws Exception;
 }

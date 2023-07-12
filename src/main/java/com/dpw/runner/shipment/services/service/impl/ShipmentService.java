@@ -61,51 +61,51 @@ public class ShipmentService implements IShipmentService {
     @Autowired
     private IShipmentDao shipmentDao;
     @Autowired
-    private CarrierDao carrierDao;
+    private ICarrierDao carrierDao;
     @Autowired
     private IPartiesDao partiesDao;
 
     @Autowired
-    private AdditionalDetailDao additionalDetailDao;
+    private IAdditionalDetailDao additionalDetailDao;
 
     @Autowired
     private JsonHelper jsonHelper;
 
     @Autowired
-    private PackingDao packingDao;
+    private IPackingDao packingDao;
 
     @Autowired
-    private BookingCarriageDao bookingCarriageDao;
+    private IBookingCarriageDao bookingCarriageDao;
 
     @Autowired
-    private ELDetailsDao elDetailsDao;
+    private IELDetailsDao elDetailsDao;
 
     @Autowired
-    private EventDao eventDao;
+    private IEventDao eventDao;
 
     @Autowired
-    private FileRepoDao fileRepoDao;
+    private IFileRepoDao fileRepoDao;
 
     @Autowired
-    private JobDao jobDao;
+    private IJobDao jobDao;
 
     @Autowired
-    private NotesDao notesDao;
+    private INotesDao notesDao;
 
     @Autowired
-    private PickupDeliveryDetailsDao pickupDeliveryDetailsDao;
+    private IPickupDeliveryDetailsDao pickupDeliveryDetailsDao;
 
     @Autowired
-    private ReferenceNumbersDao referenceNumbersDao;
+    private IReferenceNumbersDao referenceNumbersDao;
 
     @Autowired
-    private RoutingsDao routingsDao;
+    private IRoutingsDao routingsDao;
 
     @Autowired
-    private ServiceDetailsDao serviceDetailsDao;
+    private IServiceDetailsDao serviceDetailsDao;
 
     @Autowired
-    private ContainerDao containerDao;
+    private IContainerDao containerDao;
 
     @Autowired
     private TransactionTemplate transactionTemplate;

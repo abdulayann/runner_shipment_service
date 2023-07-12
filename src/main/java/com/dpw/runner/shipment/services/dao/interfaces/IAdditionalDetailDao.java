@@ -12,4 +12,5 @@ public interface IAdditionalDetailDao {
     Page<AdditionalDetail> findAll(Specification<AdditionalDetail> spec, Pageable pageable);
     Optional<AdditionalDetail> findById(Long id);
     void delete(AdditionalDetail additionalDetail);
+    AdditionalDetail updateEntityFromShipment(AdditionalDetail additionalDetail, Long shipmentId) throws Exception;
 }
