@@ -5,6 +5,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface IContainerDao {
@@ -12,4 +13,6 @@ public interface IContainerDao {
     Page<Containers> findAll(Specification<Containers> spec, Pageable pageable);
     Optional<Containers> findById(Long id);
     void delete(Containers containers);
+    List<Containers> saveAll(List<Containers> containersList);
+    List<Containers> updateEntityFromShipment(List<Containers> containersList) throws Exception;
 }
