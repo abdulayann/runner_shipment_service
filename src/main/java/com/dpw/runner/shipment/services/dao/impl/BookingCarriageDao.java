@@ -1,17 +1,32 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
+import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IBookingCarriageDao;
 import com.dpw.runner.shipment.services.entity.BookingCarriage;
 import com.dpw.runner.shipment.services.repository.interfaces.IBookingCarriageRepository;
+import com.nimbusds.jose.util.Pair;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
+import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.convertToClass;
 
 @Repository
+@Slf4j
 public class BookingCarriageDao implements IBookingCarriageDao {
     @Autowired
     private IBookingCarriageRepository bookingCarriageRepository;
@@ -34,5 +49,65 @@ public class BookingCarriageDao implements IBookingCarriageDao {
     @Override
     public void delete(BookingCarriage bookingCarriage) {
         bookingCarriageRepository.delete(bookingCarriage);
+    }
+
+    public List<BookingCarriage> updateEntityFromShipment(List<BookingCarriage> bookingCarriageList, Long shipmentId) throws Exception {
+        String responseMsg;
+        List<BookingCarriage> responseBookingCarriage = new ArrayList<>();
+        try {
+            // TODO- Handle Transactions here
+            ListCommonRequest listCommonRequest = constructListCommonRequest("shipmentId", shipmentId, "=");
+            Pair<Specification<BookingCarriage>, Pageable> pair = fetchData(listCommonRequest, BookingCarriage.class);
+            Page<BookingCarriage> bookingCarriages = findAll(pair.getLeft(), pair.getRight());
+            Map<Long, BookingCarriage> hashMap = bookingCarriages.stream()
+                    .collect(Collectors.toMap(BookingCarriage::getId, Function.identity()));
+            List<BookingCarriage> bookingCarriagesRequestList = new ArrayList<>();
+            if (bookingCarriageList != null && bookingCarriageList.size() != 0) {
+                for (BookingCarriage request : bookingCarriageList) {
+                    Long id = request.getId();
+                    request.setShipmentId(shipmentId);
+                    if (id != null) {
+                        hashMap.remove(id);
+                    }
+                    bookingCarriagesRequestList.add(request);
+                }
+                responseBookingCarriage = saveBookingCarriage(bookingCarriagesRequestList);
+            }
+            deleteBookingCarriage(hashMap);
+            return responseBookingCarriage;
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
+            log.error(responseMsg, e);
+            throw new Exception(e);
+        }
+    }
+
+    private List<BookingCarriage> saveBookingCarriage(List<BookingCarriage> bookingCarriages) {
+        List<BookingCarriage> res = new ArrayList<>();
+        for(BookingCarriage req : bookingCarriages){
+            if(req.getId() != null){
+                long id = req.getId();
+                Optional<BookingCarriage> oldEntity = findById(id);
+                if (!oldEntity.isPresent()) {
+                    log.debug("Booking Carriage is null for Id {}", req.getId());
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
+            }
+            req = save(req);
+            res.add(req);
+        }
+        return res;
+    }
+
+    private void deleteBookingCarriage(Map<Long, BookingCarriage> hashMap) {
+        String responseMsg;
+        try {
+            hashMap.values().forEach(this::delete);
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_DELETE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+        }
     }
 }

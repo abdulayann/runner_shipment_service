@@ -1,4 +1,4 @@
 package com.dpw.runner.shipment.services.service.interfaces;
 
-public interface IPartiesDetailsService extends ICommonService, IShipStitchService {
+public interface IPartiesDetailsService extends ICommonService {
 }
