@@ -14,6 +14,14 @@ public class Constants {
     public static final String USER_SERVICE_MAVANI = "mavani";
     public static final String NO_DATA = "Not Found!";
     public static final String SHIPMENT = "SHIPMENT";
+    public static final String Cont20 = "20";
+    public static final String Cont40 = "40";
+    public static final String Cont20GP = "20GP";
+    public static final String Cont20RE = "20RE";
+    public static final String Cont40GP = "40GP";
+    public static final String Cont40RE = "40RE";
+
+
 
     //MasterDataFactory
     public static final String MAPPER_MASTER_DATA = "Mapper";
