@@ -234,10 +234,36 @@ public class ShipmentService implements IShipmentService {
     private List<IRunnerResponse> convertEntityListToDtoList(List<ShipmentDetails> lst) {
         List<IRunnerResponse> responseList = new ArrayList<>();
         lst.forEach(shipmentDetail -> {
-            responseList.add(jsonHelper.convertValue(shipmentDetail, ShipmentDetailsResponse.class));
+            ShipmentDetailsResponse shipmentDetailsResponse = modelMapper.map(shipmentDetail, ShipmentDetailsResponse.class);
+            containerCountUpdate(shipmentDetail, shipmentDetailsResponse);
+            responseList.add(shipmentDetailsResponse);
         });
         return responseList;
     }
+
+    private void containerCountUpdate(ShipmentDetails shipmentDetail, ShipmentDetailsResponse shipmentDetailsResponse) {
+        Long container20Count = 0L;
+        Long container40Count = 0L;
+        Long container20GPCount = 0L;
+        Long container20RECount = 0L;
+        Long container40GPCount = 0L;
+        Long container40RECount = 0L;
+        if(shipmentDetail.getContainers() != null) {
+            container20Count = shipmentDetail.getContainers().stream().filter(container -> container.getContainerCode() != null && container.getContainerCode().contains(Constants.Cont20)).count();
+            container40Count = shipmentDetail.getContainers().stream().filter(container -> container.getContainerCode() != null && container.getContainerCode().contains(Constants.Cont40)).count();
+            container20GPCount = shipmentDetail.getContainers().stream().filter(container -> container.getContainerCode() != null && container.getContainerCode().equals(Constants.Cont20GP)).count();
+            container20RECount = shipmentDetail.getContainers().stream().filter(container -> container.getContainerCode() != null && container.getContainerCode().equals(Constants.Cont20RE)).count();
+            container40GPCount = shipmentDetail.getContainers().stream().filter(container -> container.getContainerCode() != null && container.getContainerCode().equals(Constants.Cont40GP)).count();
+            container40RECount = shipmentDetail.getContainers().stream().filter(container -> container.getContainerCode() != null && container.getContainerCode().equals(Constants.Cont40RE)).count();
+        }
+        shipmentDetailsResponse.setContainer20Count(container20Count);
+        shipmentDetailsResponse.setContainer40Count(container40Count);
+        shipmentDetailsResponse.setContainer20GPCount(container20GPCount);
+        shipmentDetailsResponse.setContainer20RECount(container20RECount);
+        shipmentDetailsResponse.setContainer40GPCount(container40GPCount);
+        shipmentDetailsResponse.setContainer40RECount(container40RECount);
+    }
+
 
     private List<Parties> createParties(ShipmentDetails shipmentDetails) {
         List<Parties> parties = new ArrayList<>();
@@ -793,7 +819,8 @@ public class ShipmentService implements IShipmentService {
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
             log.info("Shipment details fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
-            ShipmentDetailsResponse response = jsonHelper.convertValue(shipmentDetails.get(), ShipmentDetailsResponse.class);
+            ShipmentDetailsResponse response = modelMapper.map(shipmentDetails.get(), ShipmentDetailsResponse.class);
+            containerCountUpdate(shipmentDetails.get(), response);
             return ResponseHelper.buildSuccessResponse(response);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -821,7 +848,8 @@ public class ShipmentService implements IShipmentService {
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
             log.info("Shipment details async fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
-            ShipmentDetailsResponse response = jsonHelper.convertValue(shipmentDetails.get(), ShipmentDetailsResponse.class);
+            ShipmentDetailsResponse response = modelMapper.map(shipmentDetails.get(), ShipmentDetailsResponse.class);
+            containerCountUpdate(shipmentDetails.get(), response);
             return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(response));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
