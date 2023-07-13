@@ -10,7 +10,6 @@ import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.Date;
 
 @Data
 @ApiModel("Shipment Additional Details Request Model")
@@ -81,7 +80,7 @@ public class AdditionalDetailRequest extends CommonRequest implements IRunnerReq
     private String releaseType;
     private String houseBillType;
     private String onBoard;
-    private Date onBoardDate;
+    private LocalDateTime onBoardDate;
     private String deliveryMode;
     private Integer original;
     private Integer copy;
@@ -91,11 +90,11 @@ public class AdditionalDetailRequest extends CommonRequest implements IRunnerReq
     private Long paidPlace;
     private Long placeOfIssue;
     private Long placeOfSupply;
-    private Date dateOfIssue;
-    private Date dateOfReceipt;
+    private LocalDateTime dateOfIssue;
+    private LocalDateTime dateOfReceipt;
     private String goodsCO;
     private String BOENumber;
-    private Date BOEDate;
+    private LocalDateTime BOEDate;
     private Boolean printedOriginal;
     private Boolean WBLPrinted;
     private Boolean draftPrinted;

@@ -77,7 +77,7 @@ public class AdditionalDetailResponse implements IRunnerResponse {
     private String releaseType;
     private String houseBillType;
     private String onBoard;
-    private Date onBoardDate;
+    private LocalDateTime onBoardDate;
     private String deliveryMode;
     private Integer original;
     private Integer copy;
@@ -87,11 +87,11 @@ public class AdditionalDetailResponse implements IRunnerResponse {
     private Long paidPlace;
     private Long placeOfIssue;
     private Long placeOfSupply;
-    private Date dateOfIssue;
-    private Date dateOfReceipt;
+    private LocalDateTime dateOfIssue;
+    private LocalDateTime dateOfReceipt;
     private String goodsCO;
     private String BOENumber;
-    private Date BOEDate;
+    private LocalDateTime BOEDate;
     private Boolean printedOriginal;
     private Boolean WBLPrinted;
     private Boolean draftPrinted;

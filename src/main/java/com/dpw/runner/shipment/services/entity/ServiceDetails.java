@@ -6,7 +6,8 @@ import lombok.*;
 
 import javax.persistence.*;
 import java.time.Duration;
-import java.util.Date;
+import java.time.LocalDateTime;
+
 
 @Entity
 @Setter
@@ -17,7 +18,7 @@ import java.util.Date;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ServiceDetails extends MultiTenancy {
-    
+
     @Column(name = "shipment_id")
     private Long shipmentId;
 
@@ -35,16 +36,16 @@ public class ServiceDetails extends MultiTenancy {
     private int srvLocation;
 
     @Column(name = "booking_date")
-    private Date bookingDate;
+    private LocalDateTime bookingDate;
 
     @Column(name = "service_count")
-    private String serviceCount;
+    private Long serviceCount;
 
     @Column(name = "service_duration")
     private Duration serviceDuration;
 
     @Column(name = "completion_date")
-    private Date completionDate;
+    private LocalDateTime completionDate;
 
     @Column(name = "ref_number")
     private String refNumber;

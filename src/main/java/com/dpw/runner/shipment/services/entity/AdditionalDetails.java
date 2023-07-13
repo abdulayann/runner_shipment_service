@@ -10,17 +10,17 @@ import lombok.experimental.Accessors;
 import javax.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.Date;
 
 @Entity
 @Table(name = "shipment_additional_details")
 @Getter
 @Setter
+@Data
 @ToString(onlyExplicitlyIncluded = true)
 @NoArgsConstructor
 @AllArgsConstructor
 @Accessors(chain = true)
-public class AdditionalDetail extends MultiTenancy {
+public class AdditionalDetails extends MultiTenancy {
 
     @Column(name = "customs_no_issue_date")
     private LocalDateTime customsNoIssueDate;
@@ -209,7 +209,7 @@ public class AdditionalDetail extends MultiTenancy {
     private String onBoard;
 
     @Column(name = "on_board_date")
-    private Date onBoardDate;
+    private LocalDateTime onBoardDate;
 
     @Column(name = "delivery_mode_id")
     private String deliveryMode;
@@ -239,10 +239,10 @@ public class AdditionalDetail extends MultiTenancy {
     private Long placeOfSupply;
 
     @Column(name = "date_of_issue")
-    private Date dateOfIssue;
+    private LocalDateTime dateOfIssue;
 
     @Column(name = "date_of_receipt")
-    private Date dateOfReceipt;
+    private LocalDateTime dateOfReceipt;
 
     @Column(name = "goods_co_id")
     private String goodsCO;
@@ -251,7 +251,7 @@ public class AdditionalDetail extends MultiTenancy {
     private String BOENumber;
 
     @Column(name = "boe_date")
-    private Date BOEDate;
+    private LocalDateTime BOEDate;
 
     @Column(name = "printed_original")
     private Boolean printedOriginal;

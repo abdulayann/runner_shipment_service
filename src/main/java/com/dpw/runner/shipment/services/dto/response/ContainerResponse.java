@@ -7,7 +7,7 @@ import lombok.Data;
 import lombok.Setter;
 
 import java.math.BigDecimal;
-import java.util.Date;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Data
@@ -50,7 +50,7 @@ public class ContainerResponse implements IRunnerResponse {
     private BigDecimal maxTemp;
     private String maxTempUnit;
     private String hblDeliveryMode;
-    private Date allocationDate;
+    private LocalDateTime allocationDate;
     private String dgClass;
     private Boolean hazardous;
     private String hazardousUn;

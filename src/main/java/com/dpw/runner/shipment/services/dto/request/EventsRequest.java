@@ -5,7 +5,6 @@ import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import lombok.*;
 
 import java.time.LocalDateTime;
-import java.util.Date;
 
 @Getter
 @Setter

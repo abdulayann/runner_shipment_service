@@ -5,6 +5,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface IELDetailsDao {
@@ -13,4 +14,5 @@ public interface IELDetailsDao {
     Optional<ELDetails> findById(Long id);
     void delete(ELDetails elDetails);
     Optional<ELDetails> findByElNumber(String elNumber);
+    List<ELDetails> updateEntityFromShipment(List<ELDetails> elDetailsList, Long shipmentId) throws Exception;
 }

@@ -4,7 +4,7 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.entity.Parties;
 import lombok.Data;
 
-import java.util.Date;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -16,14 +16,14 @@ public class JobResponse implements IRunnerResponse {
     private PartiesResponse buyerDetail;
     private PartiesResponse supplierDetail;
     private String orderNumber;
-    private Date orderDate;
+    private LocalDateTime orderDate;
     private String confirmNumber;
-    private Date confirmDate;
+    private LocalDateTime confirmDate;
     private String invoiceNumber;
-    private Date invoiceDate;
+    private LocalDateTime invoiceDate;
     private Long buyerId;
     private String orderStatus;
-    private Date followUpDate;
+    private LocalDateTime followUpDate;
     private String description;
     private String currency;
     private String serviceMode;
