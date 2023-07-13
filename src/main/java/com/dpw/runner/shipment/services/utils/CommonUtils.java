@@ -117,7 +117,7 @@ public class CommonUtils {
 
     public static ListCommonRequest constructListCommonRequest(String fieldName, Object value, String operator) {
         ListCommonRequest request = new ListCommonRequest();
-        request.setPageNo(0);
+        request.setPageNo(1);
         request.setPageSize(Integer.MAX_VALUE);
 
 
@@ -150,7 +150,7 @@ public class CommonUtils {
                 .build();
 
         ListCommonRequest listCommonRequest = ListCommonRequest.builder()
-                .pageNo(0)
+                .pageNo(1)
                 .pageSize(Integer.MAX_VALUE)
                 .filterCriteria(Arrays.asList(entityIdCriteria))
                 .build();
