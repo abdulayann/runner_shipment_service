@@ -14,5 +14,5 @@ public class ListCommonRequest implements IRunnerRequest{
     private List<FilterCriteria> filterCriteria;
     private SortRequest sortRequest;
     private int pageNo;
-    private int limit;
+    private int pageSize;
 }

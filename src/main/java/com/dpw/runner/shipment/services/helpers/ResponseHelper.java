@@ -50,7 +50,7 @@ public class ResponseHelper {
         log.debug("Return Response with data {}", data);
         RunnerListResponse runnerResponse = RunnerListResponse.builder().success(true)
                 .requestId(LoggerHelper.getRequestIdFromMDC())
-                .data(data).count(count).pageNo(pageNo).build();
+                .data(data).numberOfRecords(count).totalPages(pageNo).build();
         return new ResponseEntity<>(runnerResponse, HttpStatus.OK);
     }
 

@@ -8,7 +8,6 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import org.modelmapper.ModelMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -119,7 +118,7 @@ public class CommonUtils {
     public static ListCommonRequest constructListCommonRequest(String fieldName, Object value, String operator) {
         ListCommonRequest request = new ListCommonRequest();
         request.setPageNo(0);
-        request.setLimit(Integer.MAX_VALUE);
+        request.setPageSize(Integer.MAX_VALUE);
 
 
         List<FilterCriteria> criterias = new ArrayList<>();
@@ -152,7 +151,7 @@ public class CommonUtils {
 
         ListCommonRequest listCommonRequest = ListCommonRequest.builder()
                 .pageNo(0)
-                .limit(Integer.MAX_VALUE)
+                .pageSize(Integer.MAX_VALUE)
                 .filterCriteria(Arrays.asList(entityIdCriteria))
                 .build();
 

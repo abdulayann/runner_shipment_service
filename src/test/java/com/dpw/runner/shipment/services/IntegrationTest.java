@@ -418,7 +418,7 @@ public class IntegrationTest {
     private ListCommonRequest createSamplePageable_AllNull_StatusIs0() {
         ListCommonRequest requestPayload = ListCommonRequest.builder()
                 .pageNo(0)
-                .limit(10)
+                .pageSize(10)
                 .sortRequest(SortRequest.builder()
                         .fieldName("deliveryMode")
                         .order("DESC")
@@ -440,7 +440,7 @@ public class IntegrationTest {
     private ListCommonRequest createSamplePageable_AllNull_StatusIs0_TransportModeIsSEA() {
         ListCommonRequest requestPayload = ListCommonRequest.builder()
                 .pageNo(0)
-                .limit(10)
+                .pageSize(10)
                 .sortRequest(SortRequest.builder()
                         .fieldName("deliveryMode")
                         .order("DESC")
@@ -476,7 +476,7 @@ public class IntegrationTest {
     private ListCommonRequest createSamplePageable_AllNull_ShipmentTypeIsEXP_StatusIs0_TransportModeIsSEA() {
         ListCommonRequest requestPayload = ListCommonRequest.builder()
                 .pageNo(0)
-                .limit(10)
+                .pageSize(10)
                 .sortRequest(SortRequest.builder()
                         .fieldName("deliveryMode")
                         .order("DESC")
@@ -527,7 +527,7 @@ public class IntegrationTest {
     private ListCommonRequest createSamplePageable_AllNull_ShipmentIdIsNonNull() {
         ListCommonRequest requestPayload = ListCommonRequest.builder()
                 .pageNo(0)
-                .limit(10)
+                .pageSize(10)
                 .sortRequest(SortRequest.builder()
                         .fieldName("deliveryMode")
                         .order("DESC")
@@ -554,7 +554,7 @@ public class IntegrationTest {
     private ListCommonRequest createSamplePageable_AllNull_ContainerNumbersIsNonNull() {
         ListCommonRequest requestPayload = ListCommonRequest.builder()
                 .pageNo(0)
-                .limit(10)
+                .pageSize(10)
                 .sortRequest(SortRequest.builder()
                         .fieldName("deliveryMode")
                         .order("DESC")
@@ -576,7 +576,7 @@ public class IntegrationTest {
     private ListCommonRequest createSamplePageable_AllNull_MasterBillisNonNull_StatusIs1_TransportModeIsNonNull() {
         ListCommonRequest requestPayload = ListCommonRequest.builder()
                 .pageNo(0)
-                .limit(10)
+                .pageSize(10)
                 .sortRequest(SortRequest.builder()
                         .fieldName("deliveryMode")
                         .order("DESC")
@@ -627,7 +627,7 @@ public class IntegrationTest {
     private ListCommonRequest createSamplePageable_AllNull_HouseBillIsNonNull() {
         ListCommonRequest requestPayload = ListCommonRequest.builder()
                 .pageNo(0)
-                .limit(10)
+                .pageSize(10)
                 .sortRequest(SortRequest.builder()
                         .fieldName("deliveryMode")
                         .order("DESC")
@@ -653,7 +653,7 @@ public class IntegrationTest {
     private ListCommonRequest createSamplePageable_AllNull_ClientIdIsNonNull() {
         ListCommonRequest requestPayload = ListCommonRequest.builder()
                 .pageNo(0)
-                .limit(10)
+                .pageSize(10)
                 .sortRequest(SortRequest.builder()
                         .fieldName("deliveryMode")
                         .order("DESC")
@@ -680,7 +680,7 @@ public class IntegrationTest {
     private ListCommonRequest createSamplePageable_AllNull_ConsignerIsNonNull_ConsigneeIsNonNull() {
         ListCommonRequest requestPayload = ListCommonRequest.builder()
                 .pageNo(0)
-                .limit(10)
+                .pageSize(10)
                 .sortRequest(SortRequest.builder()
                         .fieldName("deliveryMode")
                         .order("DESC")
@@ -715,7 +715,7 @@ public class IntegrationTest {
     private ListCommonRequest createSamplePageable_AllNull_ConsolidationNumberIsNonNull_ShipmentTypeIsFCL_TransportModeIsAIR() {
         ListCommonRequest requestPayload = ListCommonRequest.builder()
                 .pageNo(0)
-                .limit(10)
+                .pageSize(10)
                 .sortRequest(SortRequest.builder()
                         .fieldName("deliveryMode")
                         .order("DESC")
@@ -766,7 +766,7 @@ public class IntegrationTest {
     private ListCommonRequest createSamplePageable_AllNull_TransportModeIsNonNull_WayBillNumberIsNonNull() {
         ListCommonRequest requestPayload = ListCommonRequest.builder()
                 .pageNo(0)
-                .limit(10)
+                .pageSize(10)
                 .sortRequest(SortRequest.builder()
                         .fieldName("deliveryMode")
                         .order("DESC")
@@ -795,7 +795,7 @@ public class IntegrationTest {
     private ListCommonRequest createSamplePageable1() {
         ListCommonRequest listCommonRequest = ListCommonRequest.builder()
                 .pageNo(0)
-                .limit(10)
+                .pageSize(10)
                 .sortRequest(SortRequest.builder()
                         .fieldName("deliveryMode")
                         .order("DESC")
@@ -827,7 +827,7 @@ public class IntegrationTest {
     private ListCommonRequest createSamplePageable2() {
         ListCommonRequest listCommonRequest = ListCommonRequest.builder()
                 .pageNo(0)
-                .limit(10)
+                .pageSize(10)
                 .sortRequest(SortRequest.builder()
                         .fieldName("deliveryMode")
                         .order("DESC")

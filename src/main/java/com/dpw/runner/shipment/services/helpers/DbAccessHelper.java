@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.helpers;
 
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.requests.Criteria;
 import com.dpw.runner.shipment.services.commons.requests.FilterCriteria;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
@@ -26,15 +27,18 @@ import static org.springframework.data.jpa.domain.Specification.where;
 public class DbAccessHelper {
     private static Map<String, RunnerEntityMapping> tableNames = new HashMap<>();
 
-    public static <T> Pair<Specification<T>, Pageable> fetchData(ListCommonRequest request, Class className, Map<String, RunnerEntityMapping> tableName) {
+    public static <T> Pair<Specification<T>, Pageable> fetchData(ListCommonRequest request, Class className, Map<String, RunnerEntityMapping> tableName) throws Exception {
         tableNames = tableName;
         Pageable pages;
+        if(request != null && request.getPageNo() < 1){
+            throw new Exception(Constants.PageNumberError);
+        }
         if(request.getSortRequest() != null && request.getFilterCriteria() != null && request.getFilterCriteria().size() == 0) {
             Sort sortRequest = Sort.by(tableNames.get(request.getSortRequest().getFieldName()) +"."+ request.getSortRequest().getFieldName());
             sortRequest = sortRequest.descending();
-            pages = PageRequest.of(request.getPageNo(), request.getLimit(), sortRequest);
+            pages = PageRequest.of(request.getPageNo() - 1, request.getPageSize(), sortRequest);
         } else {
-            pages = PageRequest.of(request.getPageNo(), request.getLimit());
+            pages = PageRequest.of(request.getPageNo() - 1, request.getPageSize());
         }
         List<FilterCriteria> filterCriteria = (request.getFilterCriteria() == null ? new ArrayList<FilterCriteria>() : request.getFilterCriteria());
         SortRequest sortRequest = request.getSortRequest();
@@ -54,14 +58,17 @@ public class DbAccessHelper {
         return Pair.of(specification,pages);
     }
 
-    public static <T> Pair<Specification<T>, Pageable> fetchData(ListCommonRequest request, Class className) {
+    public static <T> Pair<Specification<T>, Pageable> fetchData(ListCommonRequest request, Class className) throws Exception {
         Pageable pages;
+        if(request != null && request.getPageNo() < 1){
+            throw new Exception(Constants.PageNumberError);
+        }
         if(request.getSortRequest() != null && request.getFilterCriteria() != null && request.getFilterCriteria().size() == 0) {
             Sort sortRequest = Sort.by(request.getSortRequest().getFieldName());
             sortRequest = sortRequest.descending();
-            pages = PageRequest.of(request.getPageNo(), request.getLimit(), sortRequest);
+            pages = PageRequest.of(request.getPageNo() - 1, request.getPageSize(), sortRequest);
         } else {
-            pages = PageRequest.of(request.getPageNo(), request.getLimit());
+            pages = PageRequest.of(request.getPageNo() - 1, request.getPageSize());
         }
         List<FilterCriteria> filterCriteria = (request.getFilterCriteria() == null ? new ArrayList<FilterCriteria>() : request.getFilterCriteria());
         SortRequest sortRequest = request.getSortRequest();
