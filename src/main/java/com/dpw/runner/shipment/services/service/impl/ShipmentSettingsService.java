@@ -15,6 +15,7 @@ import com.dpw.runner.shipment.services.service.interfaces.IShipmentSettingsServ
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
+import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
@@ -28,7 +29,11 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+
+import org.slf4j.LoggerFactory;
+
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 
@@ -42,22 +47,32 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
     @Autowired
     private ModelMapper modelMapper;
 
+    private Logger logger = (Logger) LoggerFactory.getLogger(ShipmentSettingsService.class);
+
+
     @Transactional
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
+        logger.error("Working");
+        logger.info("Working");
+        logger.debug("Working");
+        log.info("Working only log");
+        log.debug("Working only log");
+        log.error("Working only log");
+        log.trace("Working only log");
         String responseMsg;
         ShipmentSettingRequest request = null;
         request = (ShipmentSettingRequest) commonRequestModel.getData();
         if(request == null) {
-            log.debug("Request is empty for Shipment Settings create with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            logger.debug("Request is empty for Shipment Settings create with Request Id {}", LoggerHelper.getRequestIdFromMDC());
         }
         ShipmentSettingsDetails shipmentSettingsDetails = convertRequestToEntity(request);
         try {
             shipmentSettingsDetails = shipmentSettingsDao.save(shipmentSettingsDetails);
-            log.info("Shipment Setting Details created successfully for Id {} with Request Id {}", shipmentSettingsDetails.getId(), LoggerHelper.getRequestIdFromMDC());
+            logger.info("Shipment Setting Details created successfully for Id {} with Request Id {}", shipmentSettingsDetails.getId(), LoggerHelper.getRequestIdFromMDC());
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
-            log.error(responseMsg, e);
+            logger.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(responseMsg);
         }
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(shipmentSettingsDetails));
@@ -75,6 +90,8 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
             log.error("Request Id is null for Shipment Settings update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
         }
         long id = request.getId();
+        UUID guid = request.getGuid();
+
         Optional<ShipmentSettingsDetails> oldEntity = shipmentSettingsDao.findById(id);
         if(!oldEntity.isPresent()) {
             log.debug("Shipment Setting is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
@@ -120,6 +137,12 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(responseMsg);
         }
+    }
+
+    public ResponseEntity<?> retrieveByGuid(UUID guid) {
+        Optional<ShipmentSettingsDetails> shipmentSettingsDetails = shipmentSettingsDao.findByGuid(guid);
+        ShipmentSettingsDetailsResponse response = convertEntityToDto(shipmentSettingsDetails.get());
+        return ResponseHelper.buildSuccessResponse(response);
     }
 
     public ResponseEntity<?> list(CommonRequestModel commonRequestModel){

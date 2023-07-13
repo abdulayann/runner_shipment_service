@@ -16,4 +16,6 @@ public class ApiConstants {
     public static final String API_LIST = "/list";
 
     public static final String API_DELETE = "/delete";
+
+    public static final String API_RETRIEVE_BY_GUID = "/retrieve/guid";
 }
