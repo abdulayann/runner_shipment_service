@@ -16,6 +16,7 @@ import java.time.LocalDateTime;
 @ToString(onlyExplicitlyIncluded = true)
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class BookingCarriage extends MultiTenancy {
 
     @Column(name = "pol_id")

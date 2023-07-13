@@ -7,7 +7,6 @@ import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
-import com.dpw.runner.shipment.services.dao.impl.*;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
 import com.dpw.runner.shipment.services.dto.request.*;
@@ -23,6 +22,7 @@ import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
+import org.openapitools.jackson.nullable.JsonNullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
@@ -502,7 +502,7 @@ public class ShipmentService implements IShipmentService {
 
     @Transactional
     public void createbookingCarriage(ShipmentDetails shipmentDetails, BookingCarriageRequest bookingCarriageRequest) {
-        bookingCarriageRequest.setShipmentId(shipmentDetails.getId());
+        bookingCarriageRequest.setShipmentId(JsonNullable.of(shipmentDetails.getId()));
         bookingCarriageDao.save(modelMapper.map(bookingCarriageRequest, BookingCarriage.class));
     }
 
@@ -874,7 +874,7 @@ public class ShipmentService implements IShipmentService {
             CommonRequestModel commonListRequestModelbyEntityId = CommonRequestModel.buildRequest(constructListCommonRequest("entityId", id, "="));
 
             CompletableFuture<ResponseEntity<?>> shipmentsFuture = retrieveByIdAsync(commonRequestModel);
-            var res = (RunnerResponse<ShipmentDetailsResponse>) shipmentsFuture.get().getBody();
+            RunnerResponse<ShipmentDetailsResponse> res = (RunnerResponse<ShipmentDetailsResponse>) shipmentsFuture.get().getBody();
 
             return ResponseHelper.buildSuccessResponse(res.getData());
         } catch (Exception e) {
@@ -887,17 +887,17 @@ public class ShipmentService implements IShipmentService {
 
 
     private <T extends IRunnerResponse> List<T> getResponse(CompletableFuture<ResponseEntity<?>> responseEntity) throws ExecutionException, InterruptedException {
-        var runnerListResponse = (RunnerListResponse<T>) responseEntity.get().getBody();
+        RunnerListResponse runnerListResponse = (RunnerListResponse<T>) responseEntity.get().getBody();
         return (List<T>) runnerListResponse.getData();
     }
 
     private <T extends IRunnerResponse> List<T> getResponse(ResponseEntity<?> responseEntity) throws ExecutionException, InterruptedException {
-        var runnerListResponse = (RunnerListResponse<T>) responseEntity.getBody();
+        RunnerListResponse runnerListResponse = (RunnerListResponse<T>) responseEntity.getBody();
         return (List<T>) runnerListResponse.getData();
     }
 
     private <T extends IRunnerResponse> T getResponseEntity(ResponseEntity<?> responseEntity) throws ExecutionException, InterruptedException {
-        var runnerResponse = (RunnerResponse<T>) responseEntity.getBody();
+        RunnerResponse runnerResponse = (RunnerResponse<T>) responseEntity.getBody();
         return (T) runnerResponse.getData();
     }
 
