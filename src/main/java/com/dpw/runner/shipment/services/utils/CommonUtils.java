@@ -118,8 +118,8 @@ public class CommonUtils {
 
     public static ListCommonRequest constructListCommonRequest(String fieldName, Object value, String operator) {
         ListCommonRequest request = new ListCommonRequest();
-        request.setPageNo(0);
-        request.setLimit(Integer.MAX_VALUE);
+        request.setPageNo(1);
+        request.setPageSize(Integer.MAX_VALUE);
 
 
         List<FilterCriteria> criterias = new ArrayList<>();
@@ -151,8 +151,8 @@ public class CommonUtils {
                 .build();
 
         ListCommonRequest listCommonRequest = ListCommonRequest.builder()
-                .pageNo(0)
-                .limit(Integer.MAX_VALUE)
+                .pageNo(1)
+                .pageSize(Integer.MAX_VALUE)
                 .filterCriteria(Arrays.asList(entityIdCriteria))
                 .build();
 

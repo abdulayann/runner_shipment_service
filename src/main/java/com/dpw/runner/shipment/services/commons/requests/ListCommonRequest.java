@@ -1,7 +1,9 @@
 package com.dpw.runner.shipment.services.commons.requests;
 
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import lombok.*;
 
+import javax.validation.constraints.Min;
 import java.util.List;
 
 @Getter
@@ -13,6 +15,7 @@ import java.util.List;
 public class ListCommonRequest implements IRunnerRequest{
     private List<FilterCriteria> filterCriteria;
     private SortRequest sortRequest;
+    @Min(value = 1, message = Constants.PageNumberError)
     private int pageNo;
-    private int limit;
+    private int pageSize;
 }

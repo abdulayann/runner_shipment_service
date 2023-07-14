@@ -57,7 +57,7 @@ public class ServiceDetailsController {
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = ServiceDetailsConstants.SERVICE_DETAILS_LIST_SUCCESSFUL, responseContainer = ServiceDetailsConstants.RESPONSE_CONTAINER_LIST)})
     @PostMapping(ApiConstants.API_LIST)
-    public ResponseEntity<RunnerListResponse<ServiceDetailsResponse>> list(@RequestBody ListCommonRequest listCommonRequest) {
+    public ResponseEntity<RunnerListResponse<ServiceDetailsResponse>> list(@RequestBody @Valid ListCommonRequest listCommonRequest) {
         return (ResponseEntity<RunnerListResponse<ServiceDetailsResponse>>) serviceDetailsService.list(CommonRequestModel.buildRequest(listCommonRequest));
     }
 

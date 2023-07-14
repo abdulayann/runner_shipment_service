@@ -39,7 +39,7 @@ public class ShipmentController {
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = "Successful Shipment Details Data List Retrieval", responseContainer = "List")})
     @PostMapping(value = "/list-shipment")
-    public ResponseEntity<RunnerListResponse<ShipmentDetailsResponse>> fetchByQuery(@RequestBody @NonNull ListCommonRequest listCommonRequest) {
+    public ResponseEntity<RunnerListResponse<ShipmentDetailsResponse>> fetchByQuery(@Valid @RequestBody @NonNull ListCommonRequest listCommonRequest) {
         return (ResponseEntity<RunnerListResponse<ShipmentDetailsResponse>>) shipmentService.fetchShipments(CommonRequestModel.buildRequest(listCommonRequest));
     }
 
@@ -78,7 +78,7 @@ public class ShipmentController {
     // @PreAuthorize("hasAuthority('"+ Permissions.AdministrationGeneral+"')") //TODO-Authorization
     @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.LIST_SUCCESSFUL, responseContainer = ShipmentConstants.RESPONSE_CONTAINER_LIST)})
     @PostMapping(ApiConstants.API_LIST)
-    public ResponseEntity<RunnerListResponse<ShipmentDetailsResponse>> list(@RequestBody ListCommonRequest listCommonRequest) {
+    public ResponseEntity<RunnerListResponse<ShipmentDetailsResponse>> list(@RequestBody @Valid ListCommonRequest listCommonRequest) {
         return (ResponseEntity<RunnerListResponse<ShipmentDetailsResponse>>) shipmentService.list(CommonRequestModel.buildRequest(listCommonRequest));
     }
 

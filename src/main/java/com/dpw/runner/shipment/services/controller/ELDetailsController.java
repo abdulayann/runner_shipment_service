@@ -80,7 +80,7 @@ public class ELDetailsController {
             @ApiResponse(code = 200, message = ELDetailsConstants.ELDETAILS_LIST_SUCCESSFUL, responseContainer = ELDetailsConstants.ELDETAILS_LIST_SUCCESSFUL)
     })
     @PostMapping(ApiConstants.API_LIST)
-    public ResponseEntity list(@RequestBody @NonNull ListCommonRequest listCommonRequest) {
+    public ResponseEntity list(@RequestBody @NonNull @Valid ListCommonRequest listCommonRequest) {
         return (ResponseEntity<RunnerListResponse<ELDetailsResponse>>) elDetailsService.list(CommonRequestModel.buildRequest(listCommonRequest));
     }
 

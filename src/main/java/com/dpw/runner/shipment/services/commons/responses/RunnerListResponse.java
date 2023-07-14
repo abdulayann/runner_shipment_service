@@ -23,8 +23,8 @@ public class RunnerListResponse<T extends IRunnerResponse> {
     private boolean success;
     private String requestId;
     private List<? extends T> data;
-    private int pageNo;
-    private long count;
+    private int totalPages;
+    private long numberOfRecords;
     private ApiError error;
 
     public List<T> getData(Class clazz) {

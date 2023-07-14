@@ -83,7 +83,7 @@ public class RoutingsController {
             @ApiResponse(code = 200, message = RoutingsConstants.ROUTINGS_LIST_SUCCESSFUL, responseContainer = RoutingsConstants.ROUTINGS_LIST_SUCCESSFUL)
     })
     @PostMapping(ApiConstants.API_LIST)
-    public ResponseEntity list(@RequestBody @NonNull ListCommonRequest listCommonRequest) {
+    public ResponseEntity list(@RequestBody @NonNull @Valid ListCommonRequest listCommonRequest) {
         return (ResponseEntity<RunnerListResponse<RoutingsResponse>>) routingsService.list(CommonRequestModel.buildRequest(listCommonRequest));
     }
 

@@ -50,7 +50,7 @@ public class ResponseHelper {
         log.debug("Return Response with data {}", data);
         RunnerListResponse runnerResponse = RunnerListResponse.builder().success(true)
                 .requestId(LoggerHelper.getRequestIdFromMDC())
-                .data(data).count(count).pageNo(pageNo).build();
+                .data(data).numberOfRecords(count).totalPages(pageNo).build();
         return new ResponseEntity<>(runnerResponse, HttpStatus.OK);
     }
 
@@ -65,6 +65,12 @@ public class ResponseHelper {
     public static ResponseEntity<?> buildFailedResponse(String msg) {
         log.debug("Return Response with error {}", msg);
         RunnerResponse runnerResponse = buildFailResponse(new ApiError(HttpStatus.BAD_REQUEST, msg));
+        return new ResponseEntity<>(runnerResponse, HttpStatus.BAD_REQUEST);
+    }
+
+    public static ResponseEntity<?> buildFailedResponse(String msg, List<String> error) {
+        log.debug("Return Response with error {}", msg);
+        RunnerResponse runnerResponse = buildFailResponse(new ApiError(HttpStatus.BAD_REQUEST, msg, error));
         return new ResponseEntity<>(runnerResponse, HttpStatus.BAD_REQUEST);
     }
 
