@@ -132,9 +132,7 @@ public class ValidatorUtility {
                         errors.addAll(validateCompare(jsonObject, schemaObject.getJsonObject(field), field, jsonMap));
                         break;
                 }
-
             }
-
         }
 
         return errors;
@@ -156,6 +154,7 @@ public class ValidatorUtility {
         JsonValue fieldValue = jsonObject.get(at);
         if (fieldValue != null) {
             String pattern = jsonSchema.getString(ValidatorConstants.PATTERN);
+
             if (fieldValue != null && fieldValue.getValueType() == JsonValue.ValueType.STRING) {
                 String fieldValueString = jsonObject.getString(at);
                 if (!Pattern.matches(pattern, fieldValueString)) {
@@ -178,6 +177,7 @@ public class ValidatorUtility {
                         errors.add(String.format(ErrorConstants.INVALID_MIN_SIZE_VALIDATION, at, fieldValueString.length(), size));
                     }
                     break;
+
                 case ARRAY:
                     JsonArray fieldValueArray = fieldValue.asJsonArray();
                     if (fieldValueArray != null && size != null && fieldValueArray.size() < size) {
@@ -203,6 +203,7 @@ public class ValidatorUtility {
 
                     }
                     break;
+
                 case ARRAY:
                     JsonArray fieldValueArray = fieldValue.asJsonArray();
                     if (fieldValueArray != null && size != null && fieldValueArray.size() > size) {
@@ -220,6 +221,7 @@ public class ValidatorUtility {
         Set<String> errors = new LinkedHashSet();
         JsonValue fieldValue = jsonObject.get(at);
         if (fieldValue != null) {
+
             if (fieldValue.getValueType() == JsonValue.ValueType.NUMBER) {
                 Integer fieldValueInteger = jsonObject.getInt(at);
                 Integer size = jsonObject.getInt(ValidatorConstants.MIN_VALUE);
@@ -236,6 +238,7 @@ public class ValidatorUtility {
         Set<String> errors = new LinkedHashSet();
         JsonValue fieldValue = jsonObject.get(at);
         if (fieldValue != null) {
+
             if (fieldValue.getValueType() == JsonValue.ValueType.NUMBER) {
                 Integer fieldValueInteger = jsonObject.getInt(at);
                 Integer size = jsonSchema.getInt(ValidatorConstants.MAX_VALUE);
@@ -253,6 +256,7 @@ public class ValidatorUtility {
         Set<String> errors = new LinkedHashSet();
         JsonValue fieldValue = jsonObject.get(at);
         if (fieldValue != null) {
+
             JsonArray enumList = jsonSchema.getJsonArray(ValidatorConstants.ENUM);
             switch (fieldValue.getValueType()) {
                 case STRING:
@@ -278,45 +282,48 @@ public class ValidatorUtility {
         JsonValue fieldValue = jsonObject.get(at);
         if (fieldValue != null) {
             JsonTypes schemaValue = JsonTypes.fromValue(jsonSchema.getString(ValidatorConstants.TYPE));
+
             switch (schemaValue) {
                 case OBJECT:
                     if (fieldValue.getValueType() != JsonValue.ValueType.OBJECT)
                         errors.add(String.format(ErrorConstants.INVALID_FIELD_TYPE_VALIDATION, at, fieldValue.getValueType(), schemaValue));
                     break;
+
                 case ARRAY:
                     if (fieldValue.getValueType() != JsonValue.ValueType.ARRAY)
                         errors.add(String.format(ErrorConstants.INVALID_FIELD_TYPE_VALIDATION, at, fieldValue.getValueType(), schemaValue));
                     break;
+
                 case STRING:
                     if (fieldValue.getValueType() != JsonValue.ValueType.STRING)
                         errors.add(String.format(ErrorConstants.INVALID_FIELD_TYPE_VALIDATION, at, fieldValue.getValueType(), schemaValue));
                     break;
+
                 case NUMBER:
                     if (fieldValue.getValueType() != JsonValue.ValueType.NUMBER)
                         errors.add(String.format(ErrorConstants.INVALID_FIELD_TYPE_VALIDATION, at, fieldValue.getValueType(), schemaValue));
                     break;
+
                 case DATE:
-                    try {
-                        LocalDate.parse(jsonObject.getString(at));
-                    } catch (Exception ex) {
+                    if (! isValidaDate(jsonSchema.getString(at)))
                         errors.add(String.format(ErrorConstants.INVALID_FIELD_TYPE_VALIDATION, at, fieldValue.getValueType(), schemaValue));
-                    }
                     break;
+
                 case DATE_TIME:
-                    try {
-                        LocalDateTime.parse(jsonObject.getString(at));
-                    } catch (Exception ex) {
-                        errors.add(String.format(ErrorConstants.INVALID_FIELD_TYPE_VALIDATION, at, fieldValue.getValueType(), schemaValue));
-                    }
+                   if (! isValidaDateTime(jsonSchema.getString(at)))
+                       errors.add(String.format(ErrorConstants.INVALID_FIELD_TYPE_VALIDATION, at, fieldValue.getValueType(), schemaValue));
                     break;
+
                 case BOOLEAN:
-                    if (fieldValue.getValueType() == JsonValue.ValueType.TRUE || fieldValue.getValueType() == JsonValue.ValueType.FALSE)
+                    if (fieldValue.getValueType() != JsonValue.ValueType.TRUE && fieldValue.getValueType() != JsonValue.ValueType.FALSE)
                         errors.add(String.format(ErrorConstants.INVALID_FIELD_TYPE_VALIDATION, at, fieldValue.getValueType(), schemaValue));
                     break;
+
                 case NULL:
                     if (fieldValue.getValueType() != JsonValue.ValueType.NULL)
                         errors.add(String.format(ErrorConstants.INVALID_FIELD_TYPE_VALIDATION, at, fieldValue.getValueType(), schemaValue));
                     break;
+
                 default:
             }
         }
@@ -346,6 +353,7 @@ public class ValidatorUtility {
                 String compareWith = compareWithJson.getString(ValidatorConstants.COMPARE_WITH);
                 Operators operator = Operators.fromValue(compareWithJson.getString(ValidatorConstants.OPERATOR));
                 switch (operator) {
+
                     case EQUALS:
                         switch (currentValue.getValueType()) {
                             // For comparing String & Date-time, behaviour would be similar as both are coming as type string and comparison process is same.
@@ -353,6 +361,7 @@ public class ValidatorUtility {
                                 if (!jsonMap.containsKey(compareWith) || !jsonMap.get(compareWith).toString().equalsIgnoreCase(jsonObject.getString(at)))
                                     errors.add(String.format(ErrorConstants.INVALID_COMPARISION_VALIDATION, at, compareWith));
                                 break;
+
                             case NUMBER:
                                 if (!jsonMap.containsKey(compareWith) || ((Integer) jsonMap.get(compareWith) != jsonObject.getInt(at)))
                                     errors.add(String.format(ErrorConstants.INVALID_COMPARISION_VALIDATION, at, compareWith));
@@ -368,6 +377,7 @@ public class ValidatorUtility {
                                 if (!jsonMap.containsKey(compareWith) || jsonMap.get(compareWith).toString().equalsIgnoreCase(jsonObject.getString(at)))
                                     errors.add(String.format(ErrorConstants.INVALID_COMPARISION_VALIDATION, at, compareWith));
                                 break;
+
                             case NUMBER:
                                 if (!jsonMap.containsKey(compareWith) || ((Integer) jsonMap.get(compareWith) == jsonObject.getInt(at)))
                                     errors.add(String.format(ErrorConstants.INVALID_COMPARISION_VALIDATION, at, compareWith));
@@ -384,7 +394,7 @@ public class ValidatorUtility {
 
                             // Comparison of Date-time fields
                             case STRING:
-                                if (!jsonMap.containsKey(compareWith) && isValidaDate(jsonObject.getString(at)) && isValidaDate(jsonObject.getString(compareWith))
+                                if (!jsonMap.containsKey(compareWith) && isValidaDateTime(jsonObject.getString(at)) && isValidaDateTime(jsonObject.getString(compareWith))
                                         && !isValidDateComparison(jsonObject.getString(at), jsonObject.getString(compareWith), Operators.LESSER_THAN)) {
                                     errors.add(String.format(ErrorConstants.INVALID_COMPARISION_VALIDATION, at, compareWith));
                                 }
@@ -402,7 +412,7 @@ public class ValidatorUtility {
 
                             // Comparison of Date-time fields
                             case STRING:
-                                if (!jsonMap.containsKey(compareWith) && isValidaDate(jsonObject.getString(at)) && isValidaDate(jsonObject.getString(compareWith))
+                                if (!jsonMap.containsKey(compareWith) && isValidaDateTime(jsonObject.getString(at)) && isValidaDateTime(jsonObject.getString(compareWith))
                                         && !isValidDateComparison(jsonObject.getString(at), jsonObject.getString(compareWith), Operators.LESSER_THAN_EQUALS)) {
                                     errors.add(String.format(ErrorConstants.INVALID_COMPARISION_VALIDATION, at, compareWith));
                                 }
@@ -411,7 +421,6 @@ public class ValidatorUtility {
                         break;
 
                     case GREATER_THAN:
-
                         switch (currentValue.getValueType()) {
                             case NUMBER:
                                 if (!jsonMap.containsKey(compareWith) || jsonObject.getInt(at) <= ((Integer) jsonMap.get(compareWith))) {
@@ -421,7 +430,7 @@ public class ValidatorUtility {
 
                             // Comparison of Date-time fields
                             case STRING:
-                                if (!jsonMap.containsKey(compareWith) && isValidaDate(jsonObject.getString(at)) && isValidaDate(jsonObject.getString(compareWith))
+                                if (!jsonMap.containsKey(compareWith) && isValidaDateTime(jsonObject.getString(at)) && isValidaDateTime(jsonObject.getString(compareWith))
                                         && !isValidDateComparison(jsonObject.getString(at), jsonObject.getString(compareWith), Operators.GREATER_THAN)) {
                                     errors.add(String.format(ErrorConstants.INVALID_COMPARISION_VALIDATION, at, compareWith));
                                 }
@@ -439,7 +448,7 @@ public class ValidatorUtility {
 
                             // Comparison of Date-time fields
                             case STRING:
-                                if (!jsonMap.containsKey(compareWith) && isValidaDate(jsonObject.getString(at)) && isValidaDate(jsonObject.getString(compareWith))
+                                if (!jsonMap.containsKey(compareWith) && isValidaDateTime(jsonObject.getString(at)) && isValidaDateTime(jsonObject.getString(compareWith))
                                         && !isValidDateComparison(jsonObject.getString(at), jsonObject.getString(compareWith), Operators.GREATER_THAN_EQUALS)) {
                                     errors.add(String.format(ErrorConstants.INVALID_COMPARISION_VALIDATION, at, compareWith));
                                 }
@@ -447,10 +456,8 @@ public class ValidatorUtility {
                         }
                         break;
                 }
-
             }
         }
-
 
         return errors;
     }
@@ -459,6 +466,7 @@ public class ValidatorUtility {
         LocalDateTime valueDate = LocalDateTime.parse(value);
         LocalDateTime compareToData = LocalDateTime.parse(compareTo);
         int compare = valueDate.compareTo(compareToData);
+
         switch (operators) {
             case EQUALS:
                 return compare == 0;
@@ -476,9 +484,18 @@ public class ValidatorUtility {
         return false;
     }
 
-    private boolean isValidaDate(String date) {
+    private boolean isValidaDateTime(String date) {
         try {
             LocalDateTime.parse(date);
+        } catch (Exception ex) {
+            return false;
+        }
+        return true;
+    }
+
+    private boolean isValidaDate(String date) {
+        try {
+            LocalDate.parse(date);
         } catch (Exception ex) {
             return false;
         }
