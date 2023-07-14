@@ -57,7 +57,7 @@ public class ReferenceNumbersController {
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = ReferenceNumbersConstants.REFERENCE_NUMBERS_LIST_SUCCESSFUL, responseContainer = ReferenceNumbersConstants.RESPONSE_CONTAINER_LIST)})
     @PostMapping(ApiConstants.API_LIST)
-    public ResponseEntity<RunnerListResponse<ReferenceNumbersResponse>> list(@RequestBody ListCommonRequest listCommonRequest) {
+    public ResponseEntity<RunnerListResponse<ReferenceNumbersResponse>> list(@RequestBody @Valid ListCommonRequest listCommonRequest) {
         return (ResponseEntity<RunnerListResponse<ReferenceNumbersResponse>>) referenceNumbersService.list(CommonRequestModel.buildRequest(listCommonRequest));
     }
 

@@ -57,7 +57,7 @@ public class ViewsController {
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = ViewsConstants.VIEW_LIST_SUCCESSFUL, responseContainer = ViewsConstants.RESPONSE_CONTAINER_LIST)})
     @PostMapping(ApiConstants.API_LIST)
-    public ResponseEntity<RunnerListResponse<ViewsResponse>> list(@RequestBody ListCommonRequest listCommonRequest) {
+    public ResponseEntity<RunnerListResponse<ViewsResponse>> list(@RequestBody @Valid ListCommonRequest listCommonRequest) {
         return (ResponseEntity<RunnerListResponse<ViewsResponse>>) viewsService.list(CommonRequestModel.buildRequest(listCommonRequest));
     }
 

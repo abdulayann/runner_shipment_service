@@ -78,7 +78,7 @@ public class NotesController {
             @ApiResponse(code = 200, message = NotesConstants.NOTES_LIST_SUCCESSFUL, responseContainer = NotesConstants.NOTES_LIST_SUCCESSFUL)
     })
     @PostMapping(ApiConstants.API_LIST)
-    public ResponseEntity list(@RequestBody @NonNull ListCommonRequest listCommonRequest) {
+    public ResponseEntity list(@RequestBody @NonNull @Valid ListCommonRequest listCommonRequest) {
         return (ResponseEntity<RunnerListResponse<NotesResponse>>) notesService.list(CommonRequestModel.buildRequest(listCommonRequest));
     }
 

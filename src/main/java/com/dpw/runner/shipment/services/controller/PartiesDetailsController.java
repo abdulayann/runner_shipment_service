@@ -83,7 +83,7 @@ public class PartiesDetailsController {
             @ApiResponse(code = 200, message = PartiesConstants.PARTIES_LIST_SUCCESSFUL, responseContainer = PartiesConstants.PARTIES_LIST_SUCCESSFUL)
     })
     @PostMapping(ApiConstants.API_LIST)
-    public ResponseEntity list(@RequestBody @NonNull ListCommonRequest listCommonRequest) {
+    public ResponseEntity list(@RequestBody @NonNull @Valid ListCommonRequest listCommonRequest) {
         return (ResponseEntity<RunnerListResponse<PartiesResponse>>) partiesService.list(CommonRequestModel.buildRequest(listCommonRequest));
     }
 

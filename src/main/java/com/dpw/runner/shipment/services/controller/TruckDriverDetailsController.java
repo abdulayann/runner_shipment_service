@@ -83,7 +83,7 @@ public class TruckDriverDetailsController {
             @ApiResponse(code = 200, message = TruckDriverDetailsConstants.TRUCK_DRIVER_DETAILS_LIST_SUCCESSFUL, responseContainer = TruckDriverDetailsConstants.TRUCK_DRIVER_DETAILS_LIST_SUCCESSFUL)
     })
     @PostMapping(ApiConstants.API_LIST)
-    public ResponseEntity list(@RequestBody @NonNull ListCommonRequest listCommonRequest) {
+    public ResponseEntity list(@RequestBody @NonNull @Valid ListCommonRequest listCommonRequest) {
         return (ResponseEntity<RunnerListResponse<TruckDriverDetailsResponse>>) truckDriverDetailsService.list(CommonRequestModel.buildRequest(listCommonRequest));
     }
 

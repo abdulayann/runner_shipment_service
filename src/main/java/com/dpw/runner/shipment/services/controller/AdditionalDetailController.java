@@ -58,7 +58,7 @@ public class AdditionalDetailController {
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = AdditionalDetailConstants.ADDITIONAL_DETAILS_LIST_SUCCESSFUL)})
     @PostMapping(ApiConstants.API_LIST)
-    public ResponseEntity<RunnerListResponse<AdditionalDetailResponse>> list(@RequestBody ListCommonRequest listCommonRequest) {
+    public ResponseEntity<RunnerListResponse<AdditionalDetailResponse>> list(@RequestBody @Valid ListCommonRequest listCommonRequest) {
         return (ResponseEntity<RunnerListResponse<AdditionalDetailResponse>>) additionalDetailService.list(CommonRequestModel.buildRequest(listCommonRequest));
     }
 

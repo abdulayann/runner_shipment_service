@@ -84,7 +84,7 @@ public class CarrierDetailController {
             @ApiResponse(code = 200, message = CarrierDetailConstants.CARRIER_DETAIL_LIST_SUCCESSFUL, responseContainer = CarrierDetailConstants.CARRIER_DETAIL_LIST_SUCCESSFUL)
     })
     @PostMapping(ApiConstants.API_LIST)
-    public ResponseEntity list(@RequestBody @NonNull ListCommonRequest listCommonRequest) {
+    public ResponseEntity list(@RequestBody @NonNull @Valid ListCommonRequest listCommonRequest) {
         return (ResponseEntity<RunnerListResponse<CarrierDetailResponse>>) carrierDetailService.list(CommonRequestModel.buildRequest(listCommonRequest));
     }
 }

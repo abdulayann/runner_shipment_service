@@ -72,7 +72,7 @@ public class CustomExceptionHandler extends ResponseEntityExceptionHandler {
                 .stream()
                 .map(DefaultMessageSourceResolvable::getDefaultMessage)
                 .collect(Collectors.toList());
-        log.debug("Return Response with data {}", errors.toString());
+        log.error("Return Response with data {}", errors.toString());
 
         return (ResponseEntity<Object>) ResponseHelper.buildFailedResponse(Constants.Validation_Exception, errors);
     }

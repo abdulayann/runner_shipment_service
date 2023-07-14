@@ -88,7 +88,7 @@ public class FileRepoController {
 
     @ApiResponses(value = { @ApiResponse(code = 200, message = FileRepoConstants.FILE_REPO_LIST_SUCCESSFUL, responseContainer = FileRepoConstants.RESPONSE_CONTAINER_LIST) })
     @PostMapping(ApiConstants.API_LIST)
-    public ResponseEntity<RunnerListResponse<FileRepoResponse>> list(@RequestBody ListCommonRequest listCommonRequest) {
+    public ResponseEntity<RunnerListResponse<FileRepoResponse>> list(@RequestBody @Valid ListCommonRequest listCommonRequest) {
         return (ResponseEntity<RunnerListResponse<FileRepoResponse>>) fileRepoService.list(CommonRequestModel.buildRequest(listCommonRequest));
     }
 }

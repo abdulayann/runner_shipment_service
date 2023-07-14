@@ -67,7 +67,7 @@ public class ShipmentSettingsController {
 
     @ApiResponses(value = { @ApiResponse(code = 200, message = ShipmentSettingsConstants.SHIPMENT_SETTINGS_LIST_SUCCESSFUL, responseContainer = ShipmentSettingsConstants.RESPONSE_CONTAINER_LIST) })
     @PostMapping(ApiConstants.API_LIST)
-    public ResponseEntity<RunnerListResponse<ShipmentSettingsDetailsResponse>> list(@RequestBody ListCommonRequest listCommonRequest) {
+    public ResponseEntity<RunnerListResponse<ShipmentSettingsDetailsResponse>> list(@RequestBody @Valid ListCommonRequest listCommonRequest) {
         return (ResponseEntity<RunnerListResponse<ShipmentSettingsDetailsResponse>>) shipmentSettingsService.list(CommonRequestModel.buildRequest(listCommonRequest));
     }
 
