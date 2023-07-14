@@ -20,7 +20,8 @@ public class Constants {
     public static final String Cont20RE = "20RE";
     public static final String Cont40GP = "40GP";
     public static final String Cont40RE = "40RE";
-
+    public static final String PageNumberError = "Page Number should be Greater than or equal to 1";
+    public static final String Validation_Exception = "Validation errors occurred.";
 
 
     //MasterDataFactory

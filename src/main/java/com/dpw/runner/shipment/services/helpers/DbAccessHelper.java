@@ -32,9 +32,9 @@ public class DbAccessHelper {
         if (request.getSortRequest() != null && request.getFilterCriteria() != null && request.getFilterCriteria().size() == 0) {
             Sort sortRequest = Sort.by(tableNames.get(request.getSortRequest().getFieldName()) + "." + request.getSortRequest().getFieldName());
             sortRequest = sortRequest.descending();
-            pages = PageRequest.of(request.getPageNo(), request.getLimit(), sortRequest);
+            pages = PageRequest.of(request.getPageNo() - 1, request.getPageSize(), sortRequest);
         } else {
-            pages = PageRequest.of(request.getPageNo(), request.getLimit());
+            pages = PageRequest.of(request.getPageNo() - 1, request.getPageSize());
         }
         List<FilterCriteria> filterCriteria = (request.getFilterCriteria() == null ? new ArrayList<FilterCriteria>() : request.getFilterCriteria());
         SortRequest sortRequest = request.getSortRequest();
@@ -59,9 +59,9 @@ public class DbAccessHelper {
         if (request.getSortRequest() != null && request.getFilterCriteria() != null && request.getFilterCriteria().size() == 0) {
             Sort sortRequest = Sort.by(request.getSortRequest().getFieldName());
             sortRequest = sortRequest.descending();
-            pages = PageRequest.of(request.getPageNo(), request.getLimit(), sortRequest);
+            pages = PageRequest.of(request.getPageNo() - 1, request.getPageSize(), sortRequest);
         } else {
-            pages = PageRequest.of(request.getPageNo(), request.getLimit());
+            pages = PageRequest.of(request.getPageNo() - 1, request.getPageSize());
         }
         List<FilterCriteria> filterCriteria = (request.getFilterCriteria() == null ? new ArrayList<FilterCriteria>() : request.getFilterCriteria());
         SortRequest sortRequest = request.getSortRequest();
