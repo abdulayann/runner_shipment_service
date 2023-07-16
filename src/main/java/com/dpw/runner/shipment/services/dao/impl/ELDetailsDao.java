@@ -70,13 +70,12 @@ public class ELDetailsDao implements IELDetailsDao {
             if (elDetailsList != null && elDetailsList.size() != 0) {
                 for (ELDetails request : elDetailsList) {
                     Long id = request.getId();
-                    request.setShipmentId(shipmentId);
                     if (id != null) {
                         hashMap.remove(id);
                     }
                     elDetailsRequestList.add(request);
                 }
-                responseELDetails = saveELDetails(elDetailsRequestList);
+                responseELDetails = saveELDetails(elDetailsRequestList, shipmentId);
             }
             deleteELDetails(hashMap);
             return responseELDetails;
@@ -88,7 +87,7 @@ public class ELDetailsDao implements IELDetailsDao {
         }
     }
 
-    private List<ELDetails> saveELDetails(List<ELDetails> elDetails) {
+    public List<ELDetails> saveELDetails(List<ELDetails> elDetails, Long shipmentId) {
         List<ELDetails> res = new ArrayList<>();
         for(ELDetails req : elDetails){
             if(req.getId() != null){
@@ -99,6 +98,7 @@ public class ELDetailsDao implements IELDetailsDao {
                     throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
                 }
             }
+            req.setShipmentId(shipmentId);
             req = save(req);
             res.add(req);
         }

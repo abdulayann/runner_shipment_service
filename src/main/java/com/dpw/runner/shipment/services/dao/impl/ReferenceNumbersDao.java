@@ -65,13 +65,12 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
             if (referenceNumbersList != null && referenceNumbersList.size() != 0) {
                 for (ReferenceNumbers request : referenceNumbersList) {
                     Long id = request.getId();
-                    request.setShipmentId(shipmentId);
                     if (id != null) {
                         hashMap.remove(id);
                     }
                     referenceNumbersRequests.add(request);
                 }
-                responseReferenceNumbers = saveReferenceNumbers(referenceNumbersRequests);
+                responseReferenceNumbers = saveReferenceNumbers(referenceNumbersRequests, shipmentId);
             }
             deleteReferenceNumbers(hashMap);
             return responseReferenceNumbers;
@@ -83,7 +82,7 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
         }
     }
 
-    private List<ReferenceNumbers> saveReferenceNumbers(List<ReferenceNumbers> referenceNumbersRequests) {
+    public List<ReferenceNumbers> saveReferenceNumbers(List<ReferenceNumbers> referenceNumbersRequests, Long shipmentId) {
         List<ReferenceNumbers> res = new ArrayList<>();
         for(ReferenceNumbers req : referenceNumbersRequests){
             if(req.getId() != null){
@@ -94,6 +93,7 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
                     throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
                 }
             }
+            req.setShipmentId(shipmentId);
             req = save(req);
             res.add(req);
         }

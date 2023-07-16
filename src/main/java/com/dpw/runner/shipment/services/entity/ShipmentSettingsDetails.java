@@ -5,6 +5,8 @@ import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.entity.enums.GenerationType;
 import lombok.*;
 import lombok.experimental.Accessors;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.Where;
 
 import javax.persistence.*;
 import java.util.List;
@@ -17,6 +19,8 @@ import java.util.List;
 @ToString(onlyExplicitlyIncluded = true)
 @NoArgsConstructor
 @AllArgsConstructor
+@SQLDelete(sql = "UPDATE shipment_setting SET is_deleted = true WHERE id=?")
+@Where(clause = "is_deleted = false")
 public class ShipmentSettingsDetails extends MultiTenancy {
     @Column(name = "house_bill_number_lock")
     private Boolean houseBillNumberLock;
@@ -94,4 +98,7 @@ public class ShipmentSettingsDetails extends MultiTenancy {
 
     @Column(name = "shipment_id_generation_counter")
     private Integer shipmentIdGenerationCounter;
+
+    @Column(name = "is_deleted")
+    private Boolean isDeleted = Boolean.FALSE;
 }

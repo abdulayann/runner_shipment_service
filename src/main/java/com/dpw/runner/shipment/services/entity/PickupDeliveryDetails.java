@@ -7,6 +7,7 @@ import java.util.List;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import lombok.*;
 import lombok.experimental.Accessors;
+import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Where;
 
 @Entity
@@ -17,6 +18,8 @@ import org.hibernate.annotations.Where;
 @ToString(onlyExplicitlyIncluded = true)
 @NoArgsConstructor
 @AllArgsConstructor
+@SQLDelete(sql = "UPDATE pickup_delivery_details SET is_deleted = true WHERE id=?")
+@Where(clause = "is_deleted = false")
 public class PickupDeliveryDetails extends MultiTenancy {
 
     @Column(name = "estimated_pickup_or_delivery")
@@ -60,5 +63,6 @@ public class PickupDeliveryDetails extends MultiTenancy {
     @JoinColumn(name = "agent_id", referencedColumnName = "id")
     private Parties agentDetail;
 
-
+    @Column(name = "is_deleted")
+    private Boolean isDeleted = Boolean.FALSE;
 }

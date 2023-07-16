@@ -3,6 +3,8 @@ package com.dpw.runner.shipment.services.entity;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import lombok.*;
 import lombok.experimental.Accessors;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.Where;
 
 import javax.persistence.*;
 import java.time.LocalDateTime;
@@ -16,6 +18,8 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@SQLDelete(sql = "UPDATE notes SET is_deleted = true WHERE id=?")
+@Where(clause = "is_deleted = false")
 public class Notes extends MultiTenancy {
 
     @Column(name = "text")
@@ -42,4 +46,6 @@ public class Notes extends MultiTenancy {
     @Column(name = "is_active")
     private Boolean isActive;
 
+    @Column(name = "is_deleted")
+    private Boolean isDeleted = Boolean.FALSE;
 }

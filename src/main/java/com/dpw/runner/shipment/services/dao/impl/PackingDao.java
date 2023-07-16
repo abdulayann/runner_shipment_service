@@ -65,13 +65,12 @@ public class PackingDao implements IPackingDao {
             if (packingList != null && packingList.size() != 0) {
                 for (Packing request : packingList) {
                     Long id = request.getId();
-                    request.setShipmentId(shipmentId);
                     if (id != null) {
                         hashMap.remove(id);
                     }
                     packingRequestList.add(request);
                 }
-                responsePackings = savePackings(packingRequestList);
+                responsePackings = savePackings(packingRequestList, shipmentId);
             }
             deletePackings(hashMap);
             return responsePackings;
@@ -83,7 +82,7 @@ public class PackingDao implements IPackingDao {
         }
     }
 
-    private List<Packing> savePackings(List<Packing> packings) {
+    public List<Packing> savePackings(List<Packing> packings, Long shipmentId) {
         List<Packing> res = new ArrayList<>();
         for(Packing req : packings){
             if(req.getId() != null){
@@ -94,6 +93,7 @@ public class PackingDao implements IPackingDao {
                     throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
                 }
             }
+            req.setShipmentId(shipmentId);
             req = save(req);
             res.add(req);
         }

@@ -65,13 +65,12 @@ public class PickupDeliveryDetailsDao implements IPickupDeliveryDetailsDao {
             if (pickupDeliveryDetailsList != null && pickupDeliveryDetailsList.size() != 0) {
                 for (PickupDeliveryDetails request : pickupDeliveryDetailsList) {
                     Long id = request.getId();
-                    request.setShipmentId(shipmentId);
                     if (id != null) {
                         hashMap.remove(id);
                     }
                     pickupDeliveryDetails.add(request);
                 }
-                responsePickupDeliveryDetails = savePickupDeliveryDetails(pickupDeliveryDetails);
+                responsePickupDeliveryDetails = savePickupDeliveryDetails(pickupDeliveryDetails, shipmentId);
             }
             deletePickupDeliveryDetails(hashMap);
             return responsePickupDeliveryDetails;
@@ -83,7 +82,7 @@ public class PickupDeliveryDetailsDao implements IPickupDeliveryDetailsDao {
         }
     }
 
-    private List<PickupDeliveryDetails> savePickupDeliveryDetails(List<PickupDeliveryDetails> pickupDeliveryDetailsRequests) {
+    public List<PickupDeliveryDetails> savePickupDeliveryDetails(List<PickupDeliveryDetails> pickupDeliveryDetailsRequests, Long shipmentId) {
         List<PickupDeliveryDetails> res = new ArrayList<>();
         for(PickupDeliveryDetails req : pickupDeliveryDetailsRequests){
             if(req.getId() != null){
@@ -94,6 +93,7 @@ public class PickupDeliveryDetailsDao implements IPickupDeliveryDetailsDao {
                     throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
                 }
             }
+            req.setShipmentId(shipmentId);
             req = save(req);
             res.add(req);
         }

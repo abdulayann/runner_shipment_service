@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.entity.enums.ContainerStatus;
 import lombok.*;
 import lombok.experimental.Accessors;
+import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Where;
 
 import javax.persistence.*;
@@ -19,6 +20,8 @@ import java.util.List;
 @ToString(onlyExplicitlyIncluded = true)
 @NoArgsConstructor
 @AllArgsConstructor
+@SQLDelete(sql = "UPDATE containers SET is_deleted = true WHERE id=?")
+@Where(clause = "is_deleted = false")
 public class Containers extends MultiTenancy {
 
     @Column(name = "consolidation_id")
@@ -236,4 +239,7 @@ public class Containers extends MultiTenancy {
     @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "delivery_address_id", referencedColumnName = "id")
     private Parties deliveryAddress;
+
+    @Column(name = "is_deleted")
+    private Boolean isDeleted = Boolean.FALSE;
 }

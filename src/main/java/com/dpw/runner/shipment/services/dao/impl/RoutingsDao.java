@@ -62,13 +62,12 @@ public class RoutingsDao implements IRoutingsDao {
             if (routingsList != null && routingsList.size() != 0) {
                 for (Routings request : routingsList) {
                     Long id = request.getId();
-                    request.setShipmentId(shipmentId);
                     if (id != null) {
                         hashMap.remove(id);
                     }
                     routingsRequestList.add(request);
                 }
-                responseRoutings = saveRoutings(routingsRequestList);
+                responseRoutings = saveRoutings(routingsRequestList, shipmentId);
             }
             deleteRoutings(hashMap);
             return responseRoutings;
@@ -80,7 +79,7 @@ public class RoutingsDao implements IRoutingsDao {
         }
     }
 
-    private List<Routings> saveRoutings(List<Routings> routings) {
+    public List<Routings> saveRoutings(List<Routings> routings, Long shipmentId) {
         List<Routings> res = new ArrayList<>();
         for(Routings req : routings){
             if(req.getId() != null){
@@ -91,6 +90,7 @@ public class RoutingsDao implements IRoutingsDao {
                     throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
                 }
             }
+            req.setShipmentId(shipmentId);
             req = save(req);
             res.add(req);
         }

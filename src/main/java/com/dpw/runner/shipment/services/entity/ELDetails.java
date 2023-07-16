@@ -7,6 +7,7 @@ import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.entity.enums.MergeClass;
 import lombok.*;
 import lombok.experimental.Accessors;
+import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Where;
 
 import java.math.BigDecimal;
@@ -22,6 +23,8 @@ import java.util.List;
 @ToString(onlyExplicitlyIncluded = true)
 @NoArgsConstructor
 @AllArgsConstructor
+@SQLDelete(sql = "UPDATE el_details SET is_deleted = true WHERE id=?")
+@Where(clause = "is_deleted = false")
 public class ELDetails extends MultiTenancy {
 
     @Column(name = "shipment_id")
@@ -58,4 +61,6 @@ public class ELDetails extends MultiTenancy {
     @Column(name = "partition_seq_number")
     private Long partitionSeqNumber;
 
+    @Column(name = "is_deleted")
+    private Boolean isDeleted = Boolean.FALSE;
 }
