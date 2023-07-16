@@ -151,7 +151,7 @@ public class CommonUtils {
                 .build();
 
         ListCommonRequest listCommonRequest = ListCommonRequest.builder()
-                .pageNo(1)
+                .pageNo(0)
                 .limit(Integer.MAX_VALUE)
                 .filterCriteria(Arrays.asList(entityIdCriteria))
                 .build();

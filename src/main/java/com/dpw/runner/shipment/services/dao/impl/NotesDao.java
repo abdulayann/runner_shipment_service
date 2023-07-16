@@ -4,7 +4,6 @@ import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.INotesDao;
-import com.dpw.runner.shipment.services.entity.FileRepo;
 import com.dpw.runner.shipment.services.entity.Notes;
 import com.dpw.runner.shipment.services.repository.interfaces.INotesRepository;
 import com.nimbusds.jose.util.Pair;
