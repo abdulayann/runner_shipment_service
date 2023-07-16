@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.dao.interfaces;
 
 import com.dpw.runner.shipment.services.entity.Containers;
+import com.dpw.runner.shipment.services.entity.Packing;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -15,4 +16,5 @@ public interface IContainerDao {
     void delete(Containers containers);
     List<Containers> saveAll(List<Containers> containersList);
     List<Containers> updateEntityFromShipment(List<Containers> containersList) throws Exception;
+    List<Containers> saveContainers(List<Containers> containers);
 }

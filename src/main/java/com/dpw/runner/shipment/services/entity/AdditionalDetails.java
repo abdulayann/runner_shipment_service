@@ -6,6 +6,8 @@ import com.dpw.runner.shipment.services.entity.enums.LGDStatus;
 import com.dpw.runner.shipment.services.entity.enums.Ownership;
 import lombok.*;
 import lombok.experimental.Accessors;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.Where;
 
 import javax.persistence.*;
 import java.math.BigDecimal;
@@ -20,6 +22,8 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Accessors(chain = true)
+@SQLDelete(sql = "UPDATE shipment_additional_details SET is_deleted = true WHERE id=?")
+@Where(clause = "is_deleted = false")
 public class AdditionalDetails extends MultiTenancy {
 
     @Column(name = "customs_no_issue_date")
@@ -308,4 +312,6 @@ public class AdditionalDetails extends MultiTenancy {
     @Column(name = "shipment_id")
     private Long shipmentId;
 
+    @Column(name = "is_deleted")
+    private Boolean isDeleted = Boolean.FALSE;
 }

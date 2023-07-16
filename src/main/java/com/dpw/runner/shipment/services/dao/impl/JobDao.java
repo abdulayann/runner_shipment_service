@@ -65,13 +65,12 @@ public class JobDao implements IJobDao {
             if (jobsList != null && jobsList.size() != 0) {
                 for (Jobs request : jobsList) {
                     Long id = request.getId();
-                    request.setShipmentId(shipmentId);
                     if (id != null) {
                         hashMap.remove(id);
                     }
                     jobRequestList.add(request);
                 }
-                responseJobs = saveJobs(jobRequestList);
+                responseJobs = saveJobs(jobRequestList, shipmentId);
             }
             deleteJobs(hashMap);
             return responseJobs;
@@ -83,7 +82,7 @@ public class JobDao implements IJobDao {
         }
     }
 
-    private List<Jobs> saveJobs(List<Jobs> jobRequests) {
+    public List<Jobs> saveJobs(List<Jobs> jobRequests, Long shipmentId) {
         List<Jobs> res = new ArrayList<>();
         for(Jobs req : jobRequests){
             if(req.getId() != null){
@@ -94,6 +93,7 @@ public class JobDao implements IJobDao {
                     throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
                 }
             }
+            req.setShipmentId(shipmentId);
             req = save(req);
             res.add(req);
         }

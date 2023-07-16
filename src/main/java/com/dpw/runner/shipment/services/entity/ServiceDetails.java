@@ -3,6 +3,8 @@ package com.dpw.runner.shipment.services.entity;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import lombok.experimental.Accessors;
 import lombok.*;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.Where;
 
 import javax.persistence.*;
 import java.time.Duration;
@@ -17,6 +19,8 @@ import java.time.LocalDateTime;
 @ToString(onlyExplicitlyIncluded = true)
 @NoArgsConstructor
 @AllArgsConstructor
+@SQLDelete(sql = "UPDATE services SET is_deleted = true WHERE id=?")
+@Where(clause = "is_deleted = false")
 public class ServiceDetails extends MultiTenancy {
 
     @Column(name = "shipment_id")
@@ -52,4 +56,7 @@ public class ServiceDetails extends MultiTenancy {
 
     @Column(name = "service_notes")
     private String serviceNotes;
+
+    @Column(name = "is_deleted")
+    private Boolean isDeleted = Boolean.FALSE;
 }

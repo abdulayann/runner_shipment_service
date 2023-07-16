@@ -4,6 +4,8 @@ import javax.persistence.*;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import lombok.*;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.Where;
 
 import java.math.BigDecimal;
 
@@ -14,6 +16,8 @@ import java.math.BigDecimal;
 @ToString(onlyExplicitlyIncluded = true)
 @NoArgsConstructor
 @AllArgsConstructor
+@SQLDelete(sql = "UPDATE packing SET is_deleted = true WHERE id=?")
+@Where(clause = "is_deleted = false")
 public class Packing extends MultiTenancy {
 
     @Column(name = "consolidation_id")
@@ -168,5 +172,8 @@ public class Packing extends MultiTenancy {
 
     @Column(name = "inner_packs_count")
     private Long innerPacksCount;
+
+    @Column(name = "is_deleted")
+    private Boolean isDeleted = Boolean.FALSE;
 }
 
