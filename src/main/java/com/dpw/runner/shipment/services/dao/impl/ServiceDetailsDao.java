@@ -65,13 +65,12 @@ public class ServiceDetailsDao implements IServiceDetailsDao {
             if (serviceDetailsList != null && serviceDetailsList.size() != 0) {
                 for (ServiceDetails request : serviceDetailsList) {
                     Long id = request.getId();
-                    request.setShipmentId(shipmentId);
                     if (id != null) {
                         hashMap.remove(id);
                     }
                     serviceDetailsRequests.add(request);
                 }
-                responseServiceDetails = saveServiceDetails(serviceDetailsRequests);
+                responseServiceDetails = saveServiceDetails(serviceDetailsRequests, shipmentId);
             }
             deleteServiceDetails(hashMap);
             return responseServiceDetails;
@@ -83,7 +82,7 @@ public class ServiceDetailsDao implements IServiceDetailsDao {
         }
     }
 
-    private List<ServiceDetails> saveServiceDetails(List<ServiceDetails> serviceDetailsRequests) {
+    public List<ServiceDetails> saveServiceDetails(List<ServiceDetails> serviceDetailsRequests, Long shipmentId) {
         List<ServiceDetails> res = new ArrayList<>();
         for(ServiceDetails req : serviceDetailsRequests){
             if(req.getId() != null){
@@ -94,6 +93,7 @@ public class ServiceDetailsDao implements IServiceDetailsDao {
                     throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
                 }
             }
+            req.setShipmentId(shipmentId);
             req = save(req);
             res.add(req);
         }

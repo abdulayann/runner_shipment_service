@@ -15,4 +15,6 @@ public interface IContainerDao {
     void delete(Containers containers);
     List<Containers> saveAll(List<Containers> containersList);
     List<Containers> updateEntityFromShipmentConsole(List<Containers> containersList) throws Exception;
+    List<Containers> updateEntityFromShipment(List<Containers> containersList) throws Exception;
+    List<Containers> saveContainers(List<Containers> containers);
 }

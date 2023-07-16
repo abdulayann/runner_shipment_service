@@ -6,8 +6,10 @@ import com.dpw.runner.shipment.services.commons.requests.FilterCriteria;
 import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
 import lombok.*;
 import lombok.experimental.Accessors;
+import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Type;
 import org.hibernate.annotations.TypeDef;
+import org.hibernate.annotations.Where;
 
 import javax.persistence.*;
 import java.time.LocalDateTime;
@@ -25,6 +27,8 @@ import java.util.UUID;
 @AllArgsConstructor
 @Builder
 @TypeDef(name = "jsonb", typeClass = JsonBinaryType.class )
+@SQLDelete(sql = "UPDATE views SET is_deleted = true WHERE id=?")
+@Where(clause = "is_deleted = false")
 public class Views extends MultiTenancy {
 
     private static final long serialVersionUID = 190794279984274725L;
@@ -43,4 +47,6 @@ public class Views extends MultiTenancy {
     @Column(name = "entity")
     private String entity;
 
+    @Column(name = "is_deleted")
+    private Boolean isDeleted = Boolean.FALSE;
 }

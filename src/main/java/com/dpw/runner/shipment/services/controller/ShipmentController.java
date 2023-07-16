@@ -105,7 +105,7 @@ public class ShipmentController {
 
     // @PreAuthorize("hasAuthority('"+ Permissions.AdministrationGeneral+"')") //TODO-Authorization
     @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.UPDATE_SUCCESSFUL, response = RunnerResponse.class)})
-    @PutMapping(ApiConstants.API_UPDATE)
+    @PutMapping(ApiConstants.API_UPDATE_SHIPMENT)
     public ResponseEntity<RunnerResponse> update(@RequestBody @Valid Object request) {
         String responseMsg;
         try {
@@ -121,7 +121,7 @@ public class ShipmentController {
 
     // @PreAuthorize("hasAuthority('"+ Permissions.AdministrationGeneral+"')") //TODO-Authorization
     @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.UPDATE_SUCCESSFUL, response = RunnerResponse.class)})
-    @PutMapping(ApiConstants.API_COMPLETE_UPDATE)
+    @PutMapping(ApiConstants.API_UPDATE)
     public ResponseEntity<RunnerResponse> completeUpdate(@RequestBody @Valid Object request) {
         String responseMsg;
         try {
