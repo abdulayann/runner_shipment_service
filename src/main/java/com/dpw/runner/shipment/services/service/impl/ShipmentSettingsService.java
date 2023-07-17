@@ -28,6 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
@@ -102,17 +103,36 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
             if(request == null) {
                 log.error("Request is empty for Shipment Settings retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
+            if(request.getId() == null && request.getGuid() == null) {
+                log.error("Request Id and Guid is null for Shipment Settings retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            }
             if(request.getId() == null) {
                 log.error("Request Id is null for Shipment Settings retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
-            long id = request.getId();
-            Optional<ShipmentSettingsDetails> shipmentSettingsDetails = shipmentSettingsDao.findById(id);
-            if(!shipmentSettingsDetails.isPresent()) {
-                log.debug("Shipment Setting is null for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
-                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+            if(request.getGuid() == null) {
+                log.error("GUID is null for Shipment Settings retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
-            log.info("Shipment Settings details fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
-            ShipmentSettingsDetailsResponse response = convertEntityToDto(shipmentSettingsDetails.get());
+            ShipmentSettingsDetailsResponse response;
+            if(request.getId() != null) {
+                long id = request.getId();
+                Optional<ShipmentSettingsDetails> shipmentSettingsDetails = shipmentSettingsDao.findById(id);
+                if(!shipmentSettingsDetails.isPresent()) {
+                    log.debug("Shipment Setting is null for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
+                log.info("Shipment Settings details fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
+                response = convertEntityToDto(shipmentSettingsDetails.get());
+            } else {
+                UUID guid = UUID.fromString(request.getGuid());
+                Optional<ShipmentSettingsDetails> shipmentSettingsDetails = shipmentSettingsDao.findByGuid(guid);
+                if(!shipmentSettingsDetails.isPresent()) {
+                    log.debug("Shipment Setting is null for Guid {} with Request Id {}", guid, LoggerHelper.getRequestIdFromMDC());
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
+                log.info("Shipment Settings details fetched successfully for Guid {} with Request Id {}", guid, LoggerHelper.getRequestIdFromMDC());
+                response = convertEntityToDto(shipmentSettingsDetails.get());
+                return ResponseHelper.buildSuccessResponse(response);
+            }
             return ResponseHelper.buildSuccessResponse(response);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -121,6 +141,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
             return ResponseHelper.buildFailedResponse(responseMsg);
         }
     }
+
 
     public ResponseEntity<?> list(CommonRequestModel commonRequestModel){
         String responseMsg;
@@ -176,17 +197,34 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
             if(request == null) {
                 log.debug("Request is empty for Shipment Settings delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
+            if(request.getId() == null && request.getGuid() == null) {
+                log.error("Request Id and Guid is null for Shipment Settings delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            }
             if(request.getId() == null) {
-                log.debug("Request Id is null for Shipment Settings delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+                log.error("Request Id is null for Shipment Settings delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
-            long id = request.getId();
-            Optional<ShipmentSettingsDetails> note = shipmentSettingsDao.findById(id);
-            if (note.isEmpty()) {
-                log.debug("ShipmentSettingsDetails is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
-                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+            if(request.getGuid() == null) {
+                log.error("GUID is null for Shipment Settings delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
-            shipmentSettingsDao.delete(note.get());
-            log.info("Deleted Shipment Settings for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
+            if(request.getId() != null) {
+                long id = request.getId();
+                Optional<ShipmentSettingsDetails> note = shipmentSettingsDao.findById(id);
+                if (note.isEmpty()) {
+                    log.debug("ShipmentSettingsDetails is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
+                shipmentSettingsDao.delete(note.get());
+                log.info("Deleted Shipment Settings for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
+            } else {
+                UUID guid = UUID.fromString(request.getGuid());
+                Optional<ShipmentSettingsDetails> shipmentSettingsDetails = shipmentSettingsDao.findByGuid(guid);
+                if (shipmentSettingsDetails.isEmpty()) {
+                    log.debug("ShipmentSettingsDetails is null for Guid {} with Request Id {}", guid, LoggerHelper.getRequestIdFromMDC());
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
+                shipmentSettingsDao.deleteByGuid(shipmentSettingsDetails.get().getGuid());
+                log.info("Deleted Shipment Settings for Guid {} with Request Id {}", guid, LoggerHelper.getRequestIdFromMDC());
+            }
             return ResponseHelper.buildSuccessResponse();
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()

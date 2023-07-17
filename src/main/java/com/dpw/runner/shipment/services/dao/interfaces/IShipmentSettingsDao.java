@@ -7,6 +7,7 @@ import org.springframework.data.jpa.domain.Specification;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 public interface IShipmentSettingsDao {
 
@@ -15,4 +16,6 @@ public interface IShipmentSettingsDao {
     Page<ShipmentSettingsDetails> list(Specification<ShipmentSettingsDetails> spec, Pageable pageable);
     void delete(ShipmentSettingsDetails shipmentSetting);
     List<ShipmentSettingsDetails> list();
+    Optional<ShipmentSettingsDetails> findByGuid(UUID guid);
+    void deleteByGuid(UUID guid);
 }
