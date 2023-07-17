@@ -5,6 +5,9 @@ import com.dpw.runner.shipment.services.dao.interfaces.IPartiesDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.entity.*;
+//import org.openapitools.jackson.nullable.JsonNullable;
+import com.dpw.runner.shipment.services.mapper.BookingCarriageMapper;
+import org.mapstruct.factory.Mappers;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -415,15 +418,16 @@ public class TestDataGenerator {
     }
 
     private List<BookingCarriageRequest> createBookingCarriageRequest(int count) {
+        BookingCarriageMapper mapper = Mappers.getMapper(BookingCarriageMapper.class);
 
         List<BookingCarriageRequest> bookingCarriageRequests = new ArrayList<>();
         for (int i = 0; i < count; i++) {
             int random = new Random().nextInt(10);
-            bookingCarriageRequests.add(BookingCarriageRequest.builder().vesselId((long) random)
+            bookingCarriageRequests.add(mapper.getRequest(BookingCarriage.builder().vesselId((long) random)
                     .podId((long) random).podId((long) random).eta(LocalDateTime.now()).etd(LocalDateTime.now())
                     .vessel(generateString(5)).voyage(generateString(5))
                     .carriageType(CARRIAGE_TYPES.get(new Random().nextInt(10) % CARRIAGE_TYPES.size()))
-                    .build());
+                    .build()));
         }
         return bookingCarriageRequests;
     }
