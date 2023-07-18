@@ -22,8 +22,6 @@ import java.util.UUID;
 @Accessors(chain = true)
 public class Allocations extends MultiTenancy {
 
-    private static final long serialVersionUID = 190794279984274725L;
-
     @Column(name = "shipments_count")
     private Integer shipmentsCount;
 
