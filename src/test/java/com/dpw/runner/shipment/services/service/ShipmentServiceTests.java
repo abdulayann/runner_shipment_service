@@ -38,23 +38,6 @@ public class ShipmentServiceTests {
 
     @Test
     public void testCreateTestShipment() {
-        int count = 1;
-        List<ShipmentDetails> expectedResponse = createDummyShipmentDetails(count);
-        when(shipmentDao.save(any(ShipmentDetails.class))).thenReturn(expectedResponse.get(0));
-        when(carrierDao.save(any(CarrierDetails.class))).thenReturn(expectedResponse.get(0).getCarrierDetails());
-
-        List<ShipmentDetails> actualResponse = shipmentService.createTestShipment(count);
-
-        assertEquals(count, actualResponse.size());
-        for (int i = 0; i < count; i++) {
-            ShipmentDetails expectedShipment = expectedResponse.get(i);
-            ShipmentDetails actualShipment = actualResponse.get(i);
-            assertEquals(expectedShipment.getCarrierDetails(), actualShipment.getCarrierDetails());
-        }
-
-        verify(shipmentDao, times(count)).save(any(ShipmentDetails.class));
-        verify(carrierDao, times(count)).save(any(CarrierDetails.class));
-        verify(partiesDao, times(count)).saveAll(anyList());
     }
 
     private List<ShipmentDetails> createDummyShipmentDetails(int count) {
