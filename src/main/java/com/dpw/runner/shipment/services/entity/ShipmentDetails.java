@@ -48,7 +48,7 @@ public class ShipmentDetails extends MultiTenancy {
     @Column(name = "shipment_type")
     private String shipmentType;
 
-    @ManyToMany(targetEntity = Containers.class)
+    @ManyToMany
     @JoinTable(name = "shipments_containers_mapping",
             joinColumns = @JoinColumn(name = "shipment_id"),
             inverseJoinColumns = @JoinColumn(name = "container_id"))
