@@ -21,8 +21,6 @@ import java.util.UUID;
 @Accessors(chain = true)
 public class AchievedQuantities extends MultiTenancy {
 
-    private static final long serialVersionUID = 190794279984274725L;
-
     @Column(name = "weight_volume")
     private BigDecimal weightVolume;
 

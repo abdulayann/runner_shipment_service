@@ -25,8 +25,6 @@ import java.util.UUID;
 @Accessors(chain = true)
 public class ArrivalDepartureDetails extends MultiTenancy {
 
-    private static final long serialVersionUID = 190794279984274725L;
-
     @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "departure_container_yard_id", referencedColumnName = "id")
     private Parties dContainerYardId;

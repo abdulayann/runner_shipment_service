@@ -19,8 +19,6 @@ import javax.persistence.Table;
 @Accessors(chain = true)
 public class DGMapping extends MultiTenancy {
 
-    private static final long serialVersionUID = 190794279984274725L;
-
     @Column(name = "class_name")
     private String className;
 
