@@ -36,12 +36,6 @@ public class ShipmentSettingsDao implements IShipmentSettingsDao {
     }
 
     @Override
-    @Transactional
-    public void deleteByGuid(UUID guid) {
-        shipmentSettingsRepository.deleteByGuid(guid);
-    }
-
-    @Override
     public Page<ShipmentSettingsDetails> list(Specification<ShipmentSettingsDetails> spec, Pageable pageable) {
         return shipmentSettingsRepository.findAll(spec, pageable);
     }
