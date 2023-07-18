@@ -13,6 +13,6 @@ public class ValidatorConstants {
     public static final String MAX_VALUE = "maxValue";
     public static final String ENUM = "enum";
     public static final String OPERATOR = "operator";
-    public static final String COMPARE_WITH = "compareWith";
+    public static final String COMPARE_TO = "compareTo";
 
 }
