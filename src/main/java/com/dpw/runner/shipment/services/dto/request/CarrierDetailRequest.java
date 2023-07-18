@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import io.swagger.annotations.ApiModel;
 import lombok.*;
 
+import javax.persistence.Column;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -20,6 +21,12 @@ public class CarrierDetailRequest implements IRunnerRequest {
     private String shippingLine;
     private String vessel;
     private String voyage;
+    private String flightNumber;
+    private String aircraftType;
+    private String aircraftRegistration;
+    private String truckRefNumber;
+    private String journeyNumber;
+    private String journeyRefNumber;
     private String origin;
     private String destination;
     private LocalDateTime eta;

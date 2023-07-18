@@ -14,5 +14,5 @@ public interface IContainerDao {
     Optional<Containers> findById(Long id);
     void delete(Containers containers);
     List<Containers> saveAll(List<Containers> containersList);
-    List<Containers> updateEntityFromShipment(List<Containers> containersList) throws Exception;
+    List<Containers> updateEntityFromShipmentConsole(List<Containers> containersList) throws Exception;
 }

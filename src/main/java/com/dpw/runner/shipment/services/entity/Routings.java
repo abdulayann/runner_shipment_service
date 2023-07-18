@@ -57,7 +57,7 @@ public class Routings extends MultiTenancy {
     private LocalDateTime atd;
 
     @Column(name = "consolidation_id")
-    private Long consolidation_id;
+    private Long consolidationId;
 
     @Column(name = "is_linked")
     private Boolean isLinked;

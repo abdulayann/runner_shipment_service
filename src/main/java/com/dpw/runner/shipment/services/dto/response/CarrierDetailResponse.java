@@ -19,6 +19,12 @@ public class CarrierDetailResponse implements IRunnerResponse {
     private String shippingLine;
     private String vessel;
     private String voyage;
+    private String flightNumber;
+    private String aircraftType;
+    private String aircraftRegistration;
+    private String truckRefNumber;
+    private String journeyNumber;
+    private String journeyRefNumber;
     private String origin;
     private String destination;
     private LocalDateTime eta;

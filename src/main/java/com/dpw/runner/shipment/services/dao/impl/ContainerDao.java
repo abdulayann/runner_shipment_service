@@ -47,7 +47,7 @@ public class ContainerDao implements IContainerDao {
         containerRepository.delete(containers);
     }
 
-    public List<Containers> updateEntityFromShipment(List<Containers> containersList) throws Exception
+    public List<Containers> updateEntityFromShipmentConsole(List<Containers> containersList) throws Exception
     {
         String responseMsg;
         List<Containers> responseContainers = new ArrayList<>();
