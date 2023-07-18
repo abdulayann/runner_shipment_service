@@ -651,7 +651,7 @@ public class ShipmentService implements IShipmentService {
             entity.setId(oldEntity.get().getId());
             List<Containers> updatedContainers = null;
             if (containerRequestList != null) {
-                updatedContainers = containerDao.updateEntityFromShipment(convertToEntityList(containerRequestList, Containers.class));
+                updatedContainers = containerDao.updateEntityFromShipmentConsole(convertToEntityList(containerRequestList, Containers.class));
             } else {
                 updatedContainers = oldEntity.get().getContainers();
             }
@@ -663,7 +663,7 @@ public class ShipmentService implements IShipmentService {
             }
             CarrierDetails updatedCarrierDetails = null;
             if (carrierDetailRequest != null) {
-                updatedCarrierDetails = carrierDao.updateEntityFromShipment(convertToClass(carrierDetailRequest, CarrierDetails.class), id);
+                updatedCarrierDetails = carrierDao.updateEntityFromShipmentConsole(convertToClass(carrierDetailRequest, CarrierDetails.class));
                 entity.setCarrierDetails(updatedCarrierDetails);
             }
             entity = shipmentDao.save(entity);

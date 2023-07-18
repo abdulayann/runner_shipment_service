@@ -18,6 +18,7 @@ public class EventsRequest extends CommonRequest implements IRunnerRequest {
     private String masterList;
     private Long tenantId;
     private Long shipmentId;
+    private Long consolidationId;
     private String description;
     private LocalDateTime estimated;
     private LocalDateTime actual;
