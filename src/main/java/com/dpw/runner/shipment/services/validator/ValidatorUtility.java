@@ -54,22 +54,19 @@ public class ValidatorUtility {
 
             try {
                 JsonObject schemaObject = Json.createReader(new StringReader(objectMapper.writeValueAsString(validation.getJsonSchema()))).readObject();
-                errors.addAll(validateJson(jsonObject, schemaObject, jsonMap));
+                errors.addAll(validateJson(jsonObject, schemaObject, jsonMap, failOnFirst));
             } catch (JsonProcessingException e) {
                 throw new RuntimeException(e);
             }
-            /** Whenever fails-on-first will be enabled */
-            if (failOnFirst && ! errors.isEmpty())
-                return errors;
         }
 
         return errors;
 
     }
 
-    private Set<String> validateJson(JsonObject jsonObject, JsonObject schemaObject, Map<String, Object> jsonMap) {
+    private Set<String> validateJson(JsonObject jsonObject, JsonObject schemaObject, Map<String, Object> jsonMap, boolean failOnFirst) {
         try {
-            return validateFields(jsonObject, schemaObject.getJsonObject(ValidatorConstants.PROPERTIES), jsonMap);
+            return validateFields(jsonObject, schemaObject.getJsonObject(ValidatorConstants.PROPERTIES), jsonMap, failOnFirst);
         }
         catch (Exception ex) {
             log.error("Validation failed due to {}", ex.getMessage());
@@ -89,7 +86,7 @@ public class ValidatorUtility {
     }
 
 
-    private Set<String> validateFields(JsonObject jsonObject, JsonObject schemaObject, Map<String, Object> jsonMap) {
+    private Set<String> validateFields(JsonObject jsonObject, JsonObject schemaObject, Map<String, Object> jsonMap, boolean failOnFirst) {
         Set<String> errors = new LinkedHashSet<String>();
         if (schemaObject == null) {
             return errors;
@@ -102,7 +99,7 @@ public class ValidatorUtility {
                 switch (validationProperty) {
 
                     case ValidatorConstants.PROPERTIES:
-                        errors.addAll(validateFields(jsonObject.getJsonObject(field), fieldSchema.getJsonObject(ValidatorConstants.PROPERTIES), jsonMap));
+                        errors.addAll(validateFields(jsonObject.getJsonObject(field), fieldSchema.getJsonObject(ValidatorConstants.PROPERTIES), jsonMap, failOnFirst));
                         break;
 
                     case ValidatorConstants.REQUIRED:
@@ -141,6 +138,10 @@ public class ValidatorUtility {
                         errors.addAll(validateCompare(jsonObject, schemaObject.getJsonObject(field), field, jsonMap));
                         break;
                 }
+
+                /** Whenever fails-on-first will be enabled, rest of the validations will not be checked */
+                if (failOnFirst && ! errors.isEmpty())
+                    return errors;
             }
         }
 
