@@ -246,11 +246,11 @@
                 <configuration>
                     <fork>true</fork>
                     <skip>false</skip>
-                    <layers>
+                    <!-- <layers>
                         <enabled>true</enabled>
                         <includeLayerTools>true</includeLayerTools>
                         <configuration>${project.basedir}/src/layers/layers.xml</configuration>
-                    </layers>
+                    </layers> -->
                 </configuration>
                 <executions>
                     <execution>
