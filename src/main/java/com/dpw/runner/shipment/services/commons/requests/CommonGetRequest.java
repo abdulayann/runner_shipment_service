@@ -8,5 +8,5 @@ import lombok.Data;
 @Builder
 public class CommonGetRequest implements IRunnerRequest {
     private Long id;
-
+    private String guid;
 }

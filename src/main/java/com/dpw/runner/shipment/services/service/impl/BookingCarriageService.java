@@ -11,7 +11,9 @@ import com.dpw.runner.shipment.services.dto.response.BookingCarriageResponse;
 import com.dpw.runner.shipment.services.entity.BookingCarriage;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import com.dpw.runner.shipment.services.mapper.BookingCarriageMapper;
 import com.dpw.runner.shipment.services.service.interfaces.IBookingCarriageService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
@@ -25,6 +27,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.swing.text.html.Option;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -45,6 +48,9 @@ public class BookingCarriageService implements IBookingCarriageService {
     @Autowired
     private ModelMapper modelMapper;
 
+    @Autowired
+    private BookingCarriageMapper bookingCarriageMapper;
+
     @Transactional
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
         String responseMsg;
@@ -53,7 +59,7 @@ public class BookingCarriageService implements IBookingCarriageService {
         if(request == null) {
             log.debug("Request is empty for Booking Carriage Create for Request Id {}", LoggerHelper.getRequestIdFromMDC());
         }
-        BookingCarriage bookingCarriage = convertRequestToEntity(request);
+        BookingCarriage bookingCarriage = bookingCarriageMapper.map(request);
         try {
             bookingCarriage = bookingCarriageDao.save(bookingCarriage);
             log.info("Booking Carriage created successfully for Id {} with Request Id {}", bookingCarriage.getId(), LoggerHelper.getRequestIdFromMDC());
@@ -84,7 +90,7 @@ public class BookingCarriageService implements IBookingCarriageService {
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
 
-        BookingCarriage bookingCarriage = convertRequestToEntity(request);
+        BookingCarriage bookingCarriage = bookingCarriageMapper.map(request);
         bookingCarriage.setId(oldEntity.get().getId());
         try {
             bookingCarriage = bookingCarriageDao.save(bookingCarriage);
@@ -202,6 +208,38 @@ public class BookingCarriageService implements IBookingCarriageService {
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(responseMsg);
         }
+    }
+
+    @Transactional
+    public ResponseEntity<?> partialUpdate(CommonRequestModel commonRequestModel) {
+        String responseMsg;
+        BookingCarriageRequest request = (BookingCarriageRequest) commonRequestModel.getData();
+        if(request == null) {
+            log.error("Request is empty for booking carriage update for Request Id {}", LoggerHelper.getRequestIdFromMDC());
+        }
+        if(request.getId() == null) {
+            log.error("Request Id is null for booking carriage update for Request Id {}", LoggerHelper.getRequestIdFromMDC());
+        }
+        long id = request.getId();
+        Optional<BookingCarriage> oldEntity = bookingCarriageDao.findById(id);
+        if (!oldEntity.isPresent()) {
+            log.debug("Booking Carriage is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
+            throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+        }
+
+        BookingCarriage existingEntity = bookingCarriageDao.findById(id).get();
+        bookingCarriageMapper.update(request, existingEntity);
+        try {
+            existingEntity = bookingCarriageDao.save(existingEntity);
+            log.info("Updated the booking carriage details for Id {} with Request Id {}",id, LoggerHelper.getRequestIdFromMDC());
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+        // This can be achieved by model mapper also
+        return ResponseHelper.buildSuccessResponse(bookingCarriageMapper.map(existingEntity));
     }
 
     private BookingCarriageResponse convertEntityToDto(BookingCarriage bookingCarriage) {
