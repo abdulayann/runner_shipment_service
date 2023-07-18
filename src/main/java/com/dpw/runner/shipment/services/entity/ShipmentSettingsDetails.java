@@ -78,9 +78,9 @@ public class ShipmentSettingsDetails extends MultiTenancy {
     @Column(name = "is_atd_ata_auto_populate_enabled")
     private Boolean isAtdAtaAutoPopulateEnabled;
 
-//    @Column(name = "restricted_locations")
-//    @ElementCollection
-//    private List<Integer> restrictedLocations;
+    @Column(name = "restricted_locations")
+    @ElementCollection
+    private List<Integer> restrictedLocations;
 
     @Column(name = "shipment_import_approver_role")
     private String shipmentImportApproverRole;
