@@ -12,5 +12,4 @@ import java.util.UUID;
 public interface IShipmentSettingsRepository extends JpaRepository<ShipmentSettingsDetails, Long> {
     Page<ShipmentSettingsDetails> findAll(Specification<ShipmentSettingsDetails> spec, Pageable pageable);
     Optional<ShipmentSettingsDetails> findByGuid(UUID guid);
-    Optional<ShipmentSettingsDetails> deleteByGuid(UUID guid);
 }

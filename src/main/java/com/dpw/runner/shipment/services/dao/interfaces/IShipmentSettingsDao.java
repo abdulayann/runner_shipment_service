@@ -17,5 +17,4 @@ public interface IShipmentSettingsDao {
     void delete(ShipmentSettingsDetails shipmentSetting);
     List<ShipmentSettingsDetails> list();
     Optional<ShipmentSettingsDetails> findByGuid(UUID guid);
-    void deleteByGuid(UUID guid);
 }
