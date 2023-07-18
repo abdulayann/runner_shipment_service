@@ -79,7 +79,7 @@ public class ShipmentRequest extends CommonRequest implements IRunnerRequest {
     private PartiesRequest client;
     private PartiesRequest consigner;
     private PartiesRequest consignee;
-    private AdditionalDetailRequest additionalDetail;
+    private AdditionalDetailRequest additionalDetails;
     private List<PickupDeliveryDetailsRequest> pickupDeliveryDetailsList;
     private List<NotesRequest> notesList;
     private List<TruckDriverDetailsRequest> truckDriverDetails;

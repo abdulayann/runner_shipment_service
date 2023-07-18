@@ -248,7 +248,7 @@ public class ShipmentService implements IShipmentService {
         Long container20RECount = 0L;
         Long container40GPCount = 0L;
         Long container40RECount = 0L;
-        if(shipmentDetail.getContainers() != null) {
+        if (shipmentDetail.getContainers() != null) {
             container20Count = shipmentDetail.getContainers().stream().filter(container -> container.getContainerCode() != null && container.getContainerCode().contains(Constants.Cont20)).count();
             container40Count = shipmentDetail.getContainers().stream().filter(container -> container.getContainerCode() != null && container.getContainerCode().contains(Constants.Cont40)).count();
             container20GPCount = shipmentDetail.getContainers().stream().filter(container -> container.getContainerCode() != null && container.getContainerCode().equals(Constants.Cont20GP)).count();
@@ -326,7 +326,7 @@ public class ShipmentService implements IShipmentService {
         }
         System.out.println(jsonHelper.convertToJson(request));
         ShipmentDetails shipmentDetails = jsonHelper.convertValue(request, ShipmentDetails.class);
-        AdditionalDetails additionalDetails = jsonHelper.convertValue(request.getAdditionalDetail(), AdditionalDetails.class);
+        AdditionalDetails additionalDetails = jsonHelper.convertValue(request.getAdditionalDetails(), AdditionalDetails.class);
         CarrierDetails carrierDetails = jsonHelper.convertValue(request.getCarrierDetails(), CarrierDetails.class);
 
         try {
@@ -619,7 +619,7 @@ public class ShipmentService implements IShipmentService {
 
         List<BookingCarriageRequest> bookingCarriageRequestList = shipmentRequest.getBookingCarriagesList();
         List<PackingRequest> packingRequestList = shipmentRequest.getPackingList();
-        AdditionalDetailRequest additionalDetailRequest = shipmentRequest.getAdditionalDetail();
+        AdditionalDetailRequest additionalDetailRequest = shipmentRequest.getAdditionalDetails();
         List<ContainerRequest> containerRequestList = shipmentRequest.getContainersList();
         List<ELDetailsRequest> elDetailsRequestList = shipmentRequest.getElDetailsList();
         List<EventsRequest> eventsRequestList = shipmentRequest.getEventsList();

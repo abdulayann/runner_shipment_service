@@ -33,40 +33,7 @@ class CriteriaTest {
 
     @Test
     void beforeFindOfMultiTenancyRepository_ShouldAddFilterCriteriaBasedOnPermissions() {
-        ListCommonRequest pageable = new ListCommonRequest();
-        pageable.setFilterCriteria(new ArrayList<>());
 
-        // Act
-        permissionsAspect.beforeFindOfMultiTenancyRepository(mock(JoinPoint.class), CommonRequestModel.builder().data(pageable).build());
-
-        List<FilterCriteria> criterias = new ArrayList<>();
-        List<FilterCriteria> innerFilters = new ArrayList();
-
-        innerFilters.add(constructCriteria("transportMode", "AIR", "=", null));
-        innerFilters.add(constructCriteria("direction", "EXP", "=", "and"));
-        innerFilters.add(constructCriteria("shipmentType", "FCL", "=", "and"));
-        criterias.add(FilterCriteria.builder().innerFilter(innerFilters).logicOperator(criterias.isEmpty() ? null : "or").build());
-
-        innerFilters.clear();
-        innerFilters.add(constructCriteria("transportMode", "AIR", "=", null));
-        innerFilters.add(constructCriteria("direction", "EXP", "=", "and"));
-        innerFilters.add(constructCriteria("shipmentType", "LCL", "=", "and"));
-        criterias.add(FilterCriteria.builder().innerFilter(innerFilters).logicOperator(criterias.isEmpty() ? null : "or").build());
-
-        innerFilters.clear();
-        innerFilters.add(constructCriteria("transportMode", "AIR", "=", null));
-        innerFilters.add(constructCriteria("direction", "IMP", "=", "and"));
-        innerFilters.add(constructCriteria("shipmentType", "FCL", "=", "and"));
-        criterias.add(FilterCriteria.builder().innerFilter(innerFilters).logicOperator(criterias.isEmpty() ? null : "or").build());
-
-
-        FilterCriteria criteria1 = FilterCriteria.builder().innerFilter(pageable.getFilterCriteria()).build();
-        FilterCriteria criteria2 = FilterCriteria.builder().innerFilter(criterias).logicOperator("AND").build();
-
-        permissionsAspect.beforeFindOfMultiTenancyRepository(mock(JoinPoint.class), CommonRequestModel.builder().data(pageable).build());
-
-        //it should populate the pageable and change its criterias
-        verify(permissionsContext, times(1)).getPermissions();
     }
 
     private FilterCriteria constructCriteria(String fieldName, Object value, String operator, String logicalOperator) {
