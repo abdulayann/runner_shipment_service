@@ -1,0 +1,27 @@
+apiVersion: autoscaling/v2beta2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: $HPA_NAME
+  namespace: $NAMESPACE_NAME
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: $DEPLOYMENT_NAME
+  minReplicas: $HPA_MIN
+  maxReplicas: $HPA_MAX
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: $AVG_CPU_UTIL
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: $STABLE_SEC
+      selectPolicy: Min
+      policies:
+        - type: Pods      
+          value: $SCALE_UP_COUNT
+          periodSeconds: $SCALE_UP_SEC

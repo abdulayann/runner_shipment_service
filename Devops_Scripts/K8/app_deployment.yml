@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: runner-shipment-service-deployment
+  namespace: NAMESPACE_NAME
+  labels:
+    app: runner-shipment-service
+spec:
+  replicas: REPLICA_COUNT
+  selector:
+    matchLabels:
+      app: runner-shipment-service
+  template:
+    metadata:
+      labels:
+        app: runner-shipment-service
+    spec:
+      containers:
+        - name: runner-shipment-service
+          image: ContainerRegistryURL/ACR_NAME:LATEST_IMAGE
+          imagePullPolicy: Always
+          command: ["/bin/sh","-c"]
+          args: ["java HEAP_MIN HEAP_MAX -jar /usr/local/lib/runner-shipment-services-0.0.1.jar"]
+          resources:
+            requests:
+              cpu: MIN_CPU
+              memory: MIN_MEM
+            limits:
+              cpu: MAX_CPU
+              memory: MAX_MEM
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: runner-shipment-service-cm
