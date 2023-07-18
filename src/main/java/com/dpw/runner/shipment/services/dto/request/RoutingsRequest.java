@@ -28,7 +28,7 @@ public class RoutingsRequest extends CommonRequest implements IRunnerRequest {
     private LocalDateTime etd;
     private LocalDateTime ata;
     private LocalDateTime atd;
-    private Long consolidation_id;
+    private Long consolidationId;
     private Boolean isLinked;
     private String voyage;
     private String aircraftRegistration;

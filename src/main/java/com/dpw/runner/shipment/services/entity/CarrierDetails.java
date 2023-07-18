@@ -31,6 +31,24 @@ public class CarrierDetails extends MultiTenancy {
     @Column(name = "voyage")
     private String voyage;
 
+    @Column(name = "flight_number")
+    private String flightNumber;
+
+    @Column(name = "aircraft_type")
+    private String aircraftType;
+
+    @Column(name = "aircraft_registration")
+    private String aircraftRegistration;
+
+    @Column(name = "truck_ref_number")
+    private String truckRefNumber;
+
+    @Column(name = "journey_number")
+    private String journeyNumber;
+
+    @Column(name = "journey_ref_number")
+    private String journeyRefNumber;
+
     @Column(name = "origin")
     private String origin;
 

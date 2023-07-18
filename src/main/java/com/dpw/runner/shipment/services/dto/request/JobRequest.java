@@ -15,6 +15,7 @@ import java.time.LocalDateTime;
 public class JobRequest extends CommonRequest implements IRunnerRequest {
     private Long id;
     private Long shipmentId;
+    private Long consolidationId;
     private PartiesRequest buyerDetail;
     private PartiesRequest supplierDetail;
     private String orderNumber;
