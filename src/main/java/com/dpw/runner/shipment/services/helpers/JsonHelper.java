@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.helpers;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.json.JsonParseException;
@@ -27,6 +28,7 @@ public class JsonHelper {
     public <T> String convertToJson(T object) {
         try {
             mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+            mapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
             return mapper.writeValueAsString(object);
         } catch (JsonProcessingException e) {
             log.error("Failed to Parse given Json");
