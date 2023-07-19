@@ -214,7 +214,7 @@ public class ShipmentDetails extends MultiTenancy {
     private String route;
 
     @Column(name = "source_tenant_id")
-    private long SourceTenantId;
+    private long sourceTenantId;
 
     @Column(name = "documentation_partner")
     private long documentationPartner;

@@ -7,6 +7,7 @@ import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.entity.*;
 //import org.openapitools.jackson.nullable.JsonNullable;
 import com.dpw.runner.shipment.services.mapper.BookingCarriageMapper;
+import com.dpw.runner.shipment.services.mapper.ShipmentDetailsMapper;
 import org.mapstruct.factory.Mappers;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -22,6 +23,8 @@ public class TestDataGenerator {
     public IShipmentDao shipmentDao;
     private ICarrierDao carrierDao;
     private IPartiesDao partiesDao;
+    private BookingCarriageMapper bookingCarriageMapper;
+    private ShipmentDetailsMapper shipmentDetailsMapper;
 
     private List<String> TRANSPORT_MODES = Arrays.asList("SEA", "ROAD", "RAIL", "AIR");
     private List<String> SHIPMENT_TYPE = Arrays.asList("FCL", "LCL");
@@ -54,10 +57,12 @@ public class TestDataGenerator {
     @Autowired
     public TestDataGenerator(IShipmentDao shipmentDao,
                              ICarrierDao carrierDao,
-                             IPartiesDao partiesDao) {
+                             IPartiesDao partiesDao, BookingCarriageMapper bookingCarriageMapper, ShipmentDetailsMapper shipmentDetailsMapper) {
         this.shipmentDao = shipmentDao;
         this.carrierDao = carrierDao;
         this.partiesDao = partiesDao;
+        this.bookingCarriageMapper = bookingCarriageMapper;
+        this.shipmentDetailsMapper = shipmentDetailsMapper;
     }
 
     public List<ShipmentDetails> populateH2WithTestData() {
@@ -480,7 +485,7 @@ public class TestDataGenerator {
 
     private ShipmentRequest createShipmentData() {
         int random = new Random().nextInt(100);
-        ShipmentRequest shipmentRequest = ShipmentRequest.builder()
+        return shipmentDetailsMapper.getRequest(ShipmentDetails.builder()
                 .direction(DIRECTIONS.get(random % DIRECTIONS.size())).status(random % 2)
                 .source(SOURCE.get(random % SOURCE.size())).transportMode(TRANSPORT_MODES.get(random % TRANSPORT_MODES.size())).shipmentType(SHIPMENT_TYPE.get(random % SHIPMENT_TYPE.size()))
                 .houseBill(generateString(10)).masterBill(generateString(10)).bookingReference(generateString(10)).consolRef(generateString(10)).paymentTerms(generateString(3))
@@ -489,8 +494,7 @@ public class TestDataGenerator {
                 .chargable(new BigDecimal(random)).chargeableUnit(VOLUME_UNIT.get(new Random().nextInt(100) % VOLUME_UNIT.size()))
                 .netWeight(new BigDecimal(random)).netWeightUnit(WEIGHT_UNIT.get(new Random().nextInt(100) % WEIGHT_UNIT.size()))
                 .noOfPacks(random).packsUnit("BAG").shipmentId("SHP000" + new Random().nextInt(40))
-                .build();
-        return shipmentRequest;
+                .build());
     }
 
 

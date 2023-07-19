@@ -15,6 +15,7 @@ public interface ShipmentDetailsMapper {
 
     ShipmentDetails map(ShipmentRequest req);
     ShipmentDetailsResponse map(ShipmentDetails entity);
+    ShipmentRequest getRequest(ShipmentDetails shipmentDetails);
 
     // Mappers for nested entities
     Parties map(PartiesRequest req);
@@ -33,7 +34,6 @@ public interface ShipmentDetailsMapper {
     CarrierDetails map(CarrierDetailRequest req);
     Jobs map(JobRequest req);
     Containers map(ContainerRequest req);
-
 
     @InheritConfiguration
     void update(ShipmentRequest update, @MappingTarget ShipmentDetails destination);

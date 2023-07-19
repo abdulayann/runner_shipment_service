@@ -5,10 +5,9 @@ import com.dpw.runner.shipment.services.commons.requests.Criteria;
 import com.dpw.runner.shipment.services.commons.requests.FilterCriteria;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import org.modelmapper.ModelMapper;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -18,12 +17,12 @@ import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
 @Component
 public class CommonUtils {
 
-    private static ModelMapper mapper;
+    private static ObjectMapper mapper;
 
     private static final Logger LOG = LoggerFactory.getLogger(CommonUtils.class);
     private static final String resourcePath = String.format("%s%s", System.getProperty("user.dir"), "/src/main/resources/");
 
-    public CommonUtils(ModelMapper mapper) {
+    public CommonUtils(ObjectMapper mapper) {
         this.mapper = mapper;
     }
 
@@ -160,7 +159,7 @@ public class CommonUtils {
     }
 
     public static <T,P> P convertToClass(T obj, Class<P> clazz) {
-        return mapper.map(obj, clazz);
+        return mapper.convertValue(obj, clazz);
     }
 
     public static <T,P extends IRunnerResponse > List<P> convertToDtoList(final List<T> lst, Class<P> clazz) {
