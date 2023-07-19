@@ -211,6 +211,18 @@
             <version>1.0.4</version>
         </dependency>
 
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-csv</artifactId>
+            <version>1.1</version>
+        </dependency>
+        
+        <dependency>
+            <groupId>com.opencsv</groupId>
+            <artifactId>opencsv</artifactId>
+            <version>5.5.2</version> <!-- Use the latest version available -->
+        </dependency>
+
     </dependencies>
 
     <repositories>
