@@ -12,10 +12,9 @@ import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
 import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
-import com.dpw.runner.shipment.services.mapper.ShipmentDetailsMapper;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
@@ -41,9 +40,7 @@ public class ShipmentController {
     @Autowired
     private IShipmentService shipmentService;
     @Autowired
-    ObjectMapper objectMapper;
-    @Autowired
-    ShipmentDetailsMapper shipmentDetailsMapper;
+    JsonHelper jsonHelper;
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = "Successful Shipment Details Data List Retrieval", responseContainer = "List")})
     @PostMapping(value = "/list-shipment")
@@ -67,7 +64,7 @@ public class ShipmentController {
     public ResponseEntity<RunnerResponse<ShipmentDetailsResponse>> create(@RequestBody @Valid Object request) {
         String responseMsg;
         try {
-            ShipmentRequest req = objectMapper.convertValue(request, ShipmentRequest.class);
+            ShipmentRequest req = jsonHelper.convertValue(request, ShipmentRequest.class);
             return (ResponseEntity<RunnerResponse<ShipmentDetailsResponse>>) shipmentService.create(CommonRequestModel.buildRequest(req));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -112,7 +109,7 @@ public class ShipmentController {
     public ResponseEntity<RunnerResponse> update(@RequestBody @Valid Object request) {
         String responseMsg;
         try {
-            ShipmentRequest req = objectMapper.convertValue(request, ShipmentRequest.class);
+            ShipmentRequest req = jsonHelper.convertValue(request, ShipmentRequest.class);
             return (ResponseEntity<RunnerResponse>) shipmentService.update(CommonRequestModel.buildRequest(req));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -128,7 +125,7 @@ public class ShipmentController {
     public ResponseEntity<RunnerResponse> completeUpdate(@RequestBody @Valid Object request) {
         String responseMsg;
         try {
-            ShipmentRequest req = objectMapper.convertValue(request, ShipmentRequest.class);
+            ShipmentRequest req = jsonHelper.convertValue(request, ShipmentRequest.class);
             return (ResponseEntity<RunnerResponse>) shipmentService.completeUpdate(CommonRequestModel.buildRequest(req));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -144,7 +141,7 @@ public class ShipmentController {
     public ResponseEntity<RunnerResponse> partialUpdate(@RequestBody @Valid Object request) {
         String responseMsg;
         try {
-            ShipmentRequest req = objectMapper.convertValue(request, ShipmentRequest.class);
+            ShipmentRequest req = jsonHelper.convertValue(request, ShipmentRequest.class);
             return (ResponseEntity<RunnerResponse>) shipmentService.partialUpdate(CommonRequestModel.buildRequest(req));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
