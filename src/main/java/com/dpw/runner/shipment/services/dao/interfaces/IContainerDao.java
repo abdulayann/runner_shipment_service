@@ -10,9 +10,16 @@ import java.util.Optional;
 
 public interface IContainerDao {
     Containers save(Containers containers);
+
     Page<Containers> findAll(Specification<Containers> spec, Pageable pageable);
+
+    List<Containers> getAllContainers();
+
     Optional<Containers> findById(Long id);
+
     void delete(Containers containers);
+
     List<Containers> saveAll(List<Containers> containersList);
+
     List<Containers> updateEntityFromShipmentConsole(List<Containers> containersList) throws Exception;
 }

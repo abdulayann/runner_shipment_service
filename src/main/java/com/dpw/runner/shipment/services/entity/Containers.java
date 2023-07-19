@@ -14,6 +14,7 @@ import java.util.List;
 @Entity
 @Setter
 @Getter
+@Builder
 @Table(name = "containers")
 @Accessors(chain = true)
 @ToString(onlyExplicitlyIncluded = true)

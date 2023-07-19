@@ -11,11 +11,17 @@ import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
 import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.JobResponse;
 import com.dpw.runner.shipment.services.entity.Containers;
+import com.dpw.runner.shipment.services.entity.enums.ContainerStatus;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerService;
 import com.nimbusds.jose.util.Pair;
+import com.opencsv.CSVReader;
+import com.opencsv.exceptions.CsvException;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVParser;
+import org.apache.commons.csv.CSVRecord;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
@@ -26,11 +32,16 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.lang.reflect.Field;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
@@ -49,13 +60,14 @@ public class ContainerService implements IContainerService {
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
         String responseMsg;
         ContainerRequest request = (ContainerRequest) commonRequestModel.getData();
-        if(request == null) {
+        if (request == null) {
             log.debug("Request is empty for Container Create with Request Id {}", LoggerHelper.getRequestIdFromMDC());
         }
         Containers container = convertRequestToEntity(request);
         try {
             container = containerDao.save(container);
-            log.info("Container Details Saved Successfully for Id {} with Request Id {}", container.getId(), LoggerHelper.getRequestIdFromMDC());
+            log.info("Container Details Saved Successfully for Id {} with Request Id {}", container.getId(),
+                    LoggerHelper.getRequestIdFromMDC());
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
@@ -65,15 +77,116 @@ public class ContainerService implements IContainerService {
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(container));
     }
 
+    @Override
+    public void uploadContainers(MultipartFile file) throws Exception {
+        List<Containers> containersList = parseCSVFile(file);
+        containerDao.saveAll(containersList);
+    }
+
+    @Override
+    public void downloadContainers(HttpServletResponse response) throws Exception {
+        List<Containers> containersList = containerDao.getAllContainers(); // Retrieve all containers from the database
+
+        response.setContentType("text/csv");
+        response.setHeader("Content-Disposition", "attachment; filename=\"containers.csv\"");
+
+        try (PrintWriter writer = response.getWriter()) {
+            writer.println(generateCSVHeader());
+            for (Containers container : containersList) {
+                writer.println(formatContainerAsCSVLine(container));
+            }
+        }
+    }
+
+    private String generateCSVHeader() {
+        StringBuilder headerBuilder = new StringBuilder();
+        Field[] fields = Containers.class.getDeclaredFields();
+        for (Field field : fields) {
+            if (headerBuilder.length() > 0) {
+                headerBuilder.append(",");
+            }
+            headerBuilder.append(field.getName());
+        }
+        return headerBuilder.toString();
+    }
+
+    private String formatContainerAsCSVLine(Containers container) {
+        StringBuilder lineBuilder = new StringBuilder();
+        Field[] fields = Containers.class.getDeclaredFields();
+        for (Field field : fields) {
+            field.setAccessible(true);
+            try {
+                Object value = field.get(container);
+                if (lineBuilder.length() > 0) {
+                    lineBuilder.append(",");
+                }
+                lineBuilder.append(value != null ? value.toString() : "");
+            } catch (IllegalAccessException e) {
+                e.printStackTrace();
+            }
+        }
+        return lineBuilder.toString();
+    }
+
+    private List<Containers> parseCSVFile(MultipartFile file) throws IOException, CsvException {
+        List<Containers> containersList = new ArrayList<>();
+        List<String> mandatoryColumns = List.of("ContainerNumber", "ContainerCount", "ContainerCode");
+        try (CSVReader csvReader = new CSVReader(new InputStreamReader(file.getInputStream()))) {
+            String[] header = csvReader.readNext();
+            log.info("PARSED HEADER : " + Arrays.asList(header).toString());
+            List<String[]> records = csvReader.readAll();
+            for (String[] record : records) {
+                Containers containers = new Containers();
+                for (int i = 0; i < record.length; i++) {
+                    setField(containers, header[i], record[i]);
+                }
+                containersList.add(containers);
+            }
+        } catch (NoSuchFieldException | IllegalAccessException e) {
+            log.error(e.getMessage());
+            throw new RuntimeException(e);
+        }
+        return containersList;
+    }
+
+    private void setField(Containers containers, String attributeName, String attributeValue) throws NoSuchFieldException, IllegalAccessException {
+        Field field = containers.getClass().getDeclaredField(attributeName);
+        field.setAccessible(true);
+
+        Class<?> fieldType = field.getType();
+        Object parsedValue = null;
+
+        if (fieldType == int.class || fieldType == Integer.class) {
+            parsedValue = Integer.parseInt(attributeValue);
+        } else if (fieldType == String.class) {
+            parsedValue = attributeValue;
+        } else if (fieldType == Long.class || fieldType == long.class) {
+            parsedValue = Long.parseLong(attributeValue);
+        } else if (fieldType == boolean.class || fieldType == Boolean.class) {
+            parsedValue = Boolean.parseBoolean(attributeValue);
+        } else if (fieldType == BigDecimal.class) {
+            parsedValue = BigDecimal.valueOf(Double.valueOf(attributeValue));
+        } else if (fieldType == ContainerStatus.class) {
+            parsedValue = ContainerStatus.valueOf(attributeValue);
+        } else if (fieldType == LocalDateTime.class) {
+            parsedValue = LocalDateTime.parse(attributeValue);
+        } else {
+            throw new NoSuchFieldException();
+        }
+
+        field.set(containers, parsedValue);
+        log.info("SAVING CONTAINER : " + containers.toString());
+    }
+
     @Transactional
     public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
         String responseMsg;
         ContainerRequest request = (ContainerRequest) commonRequestModel.getData();
-        if(request == null) {
+        if (request == null) {
             log.debug("Request is empty for Container Update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
         }
 
-        if(request.getId() == null) {
+        if (request.getId() == null) {
             log.debug("Request Id is null for Container Update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
         }
         long id = request.getId();
@@ -101,7 +214,7 @@ public class ContainerService implements IContainerService {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
-            if(request == null) {
+            if (request == null) {
                 log.error("Request is empty for Containers List with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
             // construct specifications for filter request
@@ -122,16 +235,16 @@ public class ContainerService implements IContainerService {
 
     @Override
     @Async
-    public CompletableFuture<ResponseEntity<?>> listAsync(CommonRequestModel commonRequestModel){
+    public CompletableFuture<ResponseEntity<?>> listAsync(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
-            if(request == null) {
+            if (request == null) {
                 log.error("Request is empty for Containers async list with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
             // construct specifications for filter request
             Pair<Specification<Containers>, Pageable> tuple = fetchData(request, Containers.class);
-            Page<Containers> containersPage  = containerDao.findAll(tuple.getLeft(), tuple.getRight());
+            Page<Containers> containersPage = containerDao.findAll(tuple.getLeft(), tuple.getRight());
             log.info("Container detail async list retrieved successfully for Request Id {} ", LoggerHelper.getRequestIdFromMDC());
             return CompletableFuture.completedFuture(
                     ResponseHelper
@@ -150,10 +263,10 @@ public class ContainerService implements IContainerService {
     @Override
     public ResponseEntity<?> delete(CommonRequestModel commonRequestModel) {
         String responseMsg;
-        if(commonRequestModel == null) {
+        if (commonRequestModel == null) {
             log.debug("Request is empty for Containers delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
         }
-        if(commonRequestModel.getId() == null) {
+        if (commonRequestModel.getId() == null) {
             log.debug("Request Id is null for Containers delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
         }
         Long id = commonRequestModel.getId();
@@ -179,10 +292,10 @@ public class ContainerService implements IContainerService {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
-            if(request == null) {
+            if (request == null) {
                 log.error("Request is empty for Container retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
-            if(request.getId() == null) {
+            if (request.getId() == null) {
                 log.error("Request Id is null for Container retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
             long id = request.getId();
