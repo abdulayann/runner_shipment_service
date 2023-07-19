@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<configuration>
+    <appender name="PAPERTRAIL" class="ch.qos.logback.classic.net.SyslogAppender">
+        <syslogHost>logs4.papertrailapp.com</syslogHost>
+        <port>17831</port>
+        <facility>USER</facility>
+        <suffixPattern>my-app: %logger %msg</suffixPattern>
+    </appender>
+    <appender name="PAPERTRAIL2" class="ch.qos.logback.classic.net.SyslogAppender">
+        <syslogHost>logs3.papertrailapp.com</syslogHost>
+        <port>22299</port>
+        <facility>USER</facility>
+        <suffixPattern>my-app: %logger %msg</suffixPattern>
+    </appender>
+    <root level="DEBUG">
+        <appender-ref ref="PAPERTRAIL" />
+        <appender-ref ref="PAPERTRAIL2" />
+    </root>
+</configuration>
