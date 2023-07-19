@@ -514,7 +514,7 @@ public class ShipmentService implements IShipmentService {
 
     @Transactional
     public void createElDetail(ShipmentDetails shipmentDetails, ELDetailsRequest elDetailsRequest) {
-        elDetailsRequest.setShipmentId(JsonNullable.of(shipmentDetails.getId()));
+        elDetailsRequest.setShipmentId(shipmentDetails.getId());
         elDetailsDao.save(objectMapper.convertValue(elDetailsRequest, ELDetails.class));
     }
 
@@ -894,7 +894,10 @@ public class ShipmentService implements IShipmentService {
     public ResponseEntity<?> partialUpdate(CommonRequestModel commonRequestModel) throws Exception {
 
         ShipmentRequest shipmentRequest = (ShipmentRequest) commonRequestModel.getData();
-
+        if(shipmentRequest.getId() == null){
+            log.error("Request Id is null for update request with Id {}", LoggerHelper.getRequestIdFromMDC());
+            throw new Exception("Request Id is null");
+        }
         List<BookingCarriageRequest> bookingCarriageRequestList = shipmentRequest.getBookingCarriagesList();
         List<PackingRequest> packingRequestList = shipmentRequest.getPackingList();
         AdditionalDetailRequest additionalDetailRequest = shipmentRequest.getAdditionalDetail();
@@ -924,7 +927,7 @@ public class ShipmentService implements IShipmentService {
             entity.setId(oldEntity.get().getId());
             List<Containers> updatedContainers = null;
             if (containerRequestList != null) {
-                updatedContainers = containerDao.updateEntityFromShipment(convertToEntityList(containerRequestList, Containers.class));
+                updatedContainers = containerDao.updateEntityFromShipmentConsole(convertToEntityList(containerRequestList, Containers.class));
             } else {
                 updatedContainers = oldEntity.get().getContainers();
             }
@@ -936,7 +939,7 @@ public class ShipmentService implements IShipmentService {
             }
             CarrierDetails updatedCarrierDetails = null;
             if (carrierDetailRequest != null) {
-                updatedCarrierDetails = carrierDao.updateEntityFromShipment(convertToClass(carrierDetailRequest, CarrierDetails.class), id);
+                updatedCarrierDetails = carrierDao.updateEntityFromShipmentConsole(convertToClass(carrierDetailRequest, CarrierDetails.class));
                 entity.setCarrierDetails(updatedCarrierDetails);
             }
             entity = shipmentDao.save(entity);
