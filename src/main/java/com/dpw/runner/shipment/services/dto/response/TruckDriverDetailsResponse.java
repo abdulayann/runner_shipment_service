@@ -1,11 +1,11 @@
 package com.dpw.runner.shipment.services.dto.response;
 
-import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
-import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.entity.enums.Ownership;
 import io.swagger.annotations.ApiModel;
 import lombok.*;
+
+import java.util.UUID;
 
 @Data
 @Builder
@@ -16,7 +16,7 @@ import lombok.*;
 public class TruckDriverDetailsResponse implements IRunnerResponse {
     private Long id;
     private Long shipmentId;
-    private Long guid;
+    private UUID guid;
     private Ownership transporterType;
     private String transporterName;
     private String driverName;
