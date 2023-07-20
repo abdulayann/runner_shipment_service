@@ -30,6 +30,13 @@ spec:
               memory: MAX_MEM
           ports:
             - containerPort: 8080
+          readinessProbe:
+            httpGet:
+              path: /shipment-service/actuator
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 10
           envFrom:
             - configMapRef:
                 name: runner-shipment-service-cm
