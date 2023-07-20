@@ -686,33 +686,69 @@ public class ShipmentService implements IShipmentService {
 
             ShipmentDetailsResponse response = shipmentDetailsMapper.map(entity);
 
+            if(bookingCarriageRequestList == null) {
+                response.setBookingCarriagesList(convertToDtoList(oldBookingCarriages, BookingCarriageResponse.class));
+            }
+            if (packingRequestList == null) {
+                response.setPackingList(convertToDtoList(oldPackings, PackingResponse.class));
+            }
+            if (elDetailsRequestList == null) {
+                response.setElDetailsList(convertToDtoList(oldELDetails, ELDetailsResponse.class));
+            }
+            if (eventsRequestList == null) {
+                response.setEventsList(convertToDtoList(oldEvents, EventsResponse.class));
+            }
+            if (jobRequestList == null) {
+                response.setJobsList(convertToDtoList(oldJobs, JobResponse.class));
+            }
+            if (referenceNumbersRequestList == null) {
+                response.setReferenceNumbersList(convertToDtoList(oldReferenceNumbers, ReferenceNumbersResponse.class));
+            }
+            if (routingsRequestList == null) {
+                response.setRoutingsList(convertToDtoList(oldRoutings, RoutingsResponse.class));
+            }
+            if (serviceDetailsRequestList == null) {
+                response.setServicesList(convertToDtoList(oldServiceDetails, ServiceDetailsResponse.class));
+            }
+            if (pickupDeliveryDetailsRequestList == null) {
+                response.setPickupDeliveryDetailsList(convertToDtoList(oldPickupDeliveryDetails, PickupDeliveryDetailsResponse.class));
+            }
+
             if (bookingCarriageRequestList != null) {
                 List<BookingCarriage> updatedBookingCarriages = bookingCarriageDao.updateEntityFromShipment(convertToEntityList(bookingCarriageRequestList, BookingCarriage.class), id);
                 response.setBookingCarriagesList(convertToDtoList(updatedBookingCarriages, BookingCarriageResponse.class));
-            }
-            else {
-                response.setBookingCarriagesList(convertToDtoList(oldBookingCarriages, BookingCarriageResponse.class));
             }
             if (packingRequestList != null) {
                 List<Packing> updatedPackings = packingDao.updateEntityFromShipment(convertToEntityList(packingRequestList, Packing.class), id);
                 response.setPackingList(convertToDtoList(updatedPackings, PackingResponse.class));
             }
-            else {
-                response.setPackingList(convertToDtoList(oldPackings, PackingResponse.class));
-            }
             if (elDetailsRequestList != null) {
                 List<ELDetails> updatedELDetails = elDetailsDao.updateEntityFromShipment(convertToEntityList(elDetailsRequestList, ELDetails.class), id);
                 response.setElDetailsList(convertToDtoList(updatedELDetails, ELDetailsResponse.class));
-            }
-            else {
-                response.setElDetailsList(convertToDtoList(oldELDetails, ELDetailsResponse.class));
             }
             if (eventsRequestList != null) {
                 List<Events> updatedEvents = eventDao.updateEntityFromShipment(convertToEntityList(eventsRequestList, Events.class), id);
                 response.setEventsList(convertToDtoList(updatedEvents, EventsResponse.class));
             }
-            else {
-                response.setEventsList(convertToDtoList(oldEvents, EventsResponse.class));
+            if (jobRequestList != null) {
+                List<Jobs> updatedJobs = jobDao.updateEntityFromShipment(convertToEntityList(jobRequestList, Jobs.class), id);
+                response.setJobsList(convertToDtoList(updatedJobs, JobResponse.class));
+            }
+            if (referenceNumbersRequestList != null) {
+                List<ReferenceNumbers> updatedReferenceNumbers = referenceNumbersDao.updateEntityFromShipment(convertToEntityList(referenceNumbersRequestList, ReferenceNumbers.class), id);
+                response.setReferenceNumbersList(convertToDtoList(updatedReferenceNumbers, ReferenceNumbersResponse.class));
+            }
+            if (routingsRequestList != null) {
+                List<Routings> updatedRoutings = routingsDao.updateEntityFromShipment(convertToEntityList(routingsRequestList, Routings.class), id);
+                response.setRoutingsList(convertToDtoList(updatedRoutings, RoutingsResponse.class));
+            }
+            if (serviceDetailsRequestList != null) {
+                List<ServiceDetails> updatedServiceDetails = serviceDetailsDao.updateEntityFromShipment(convertToEntityList(serviceDetailsRequestList, ServiceDetails.class), id);
+                response.setServicesList(convertToDtoList(updatedServiceDetails, ServiceDetailsResponse.class));
+            }
+            if (pickupDeliveryDetailsRequestList != null) {
+                List<PickupDeliveryDetails> updatedPickupDeliveryDetails = pickupDeliveryDetailsDao.updateEntityFromShipment(convertToEntityList(pickupDeliveryDetailsRequestList, PickupDeliveryDetails.class), id);
+                response.setPickupDeliveryDetailsList(convertToDtoList(updatedPickupDeliveryDetails, PickupDeliveryDetailsResponse.class));
             }
             if (fileRepoRequestList != null) {
                 List<FileRepo> updatedFileRepos = fileRepoDao.updateEntityFromShipment(convertToEntityList(fileRepoRequestList, FileRepo.class), id);
@@ -721,47 +757,12 @@ public class ShipmentService implements IShipmentService {
             else {
                 response.setFileRepoList(convertToDtoList(fileRepoDao.findByEntityIdAndEntityType(id, Constants.SHIPMENT_TYPE), FileRepoResponse.class));
             }
-            if (jobRequestList != null) {
-                List<Jobs> updatedJobs = jobDao.updateEntityFromShipment(convertToEntityList(jobRequestList, Jobs.class), id);
-                response.setJobsList(convertToDtoList(updatedJobs, JobResponse.class));
-            }
-            else {
-                response.setJobsList(convertToDtoList(oldJobs, JobResponse.class));
-            }
             if (notesRequestList != null) {
                 List<Notes> updatedNotes = notesDao.updateEntityFromShipment(convertToEntityList(notesRequestList, Notes.class), id);
                 response.setNotesList(convertToDtoList(updatedNotes, NotesResponse.class));
             }
             else {
                 response.setNotesList(convertToDtoList(notesDao.findByEntityIdAndEntityType(id, Constants.SHIPMENT_TYPE), NotesResponse.class));
-            }
-            if (referenceNumbersRequestList != null) {
-                List<ReferenceNumbers> updatedReferenceNumbers = referenceNumbersDao.updateEntityFromShipment(convertToEntityList(referenceNumbersRequestList, ReferenceNumbers.class), id);
-                response.setReferenceNumbersList(convertToDtoList(updatedReferenceNumbers, ReferenceNumbersResponse.class));
-            }
-            else {
-                response.setReferenceNumbersList(convertToDtoList(oldReferenceNumbers, ReferenceNumbersResponse.class));
-            }
-            if (routingsRequestList != null) {
-                List<Routings> updatedRoutings = routingsDao.updateEntityFromShipment(convertToEntityList(routingsRequestList, Routings.class), id);
-                response.setRoutingsList(convertToDtoList(updatedRoutings, RoutingsResponse.class));
-            }
-            else {
-                response.setRoutingsList(convertToDtoList(oldRoutings, RoutingsResponse.class));
-            }
-            if (serviceDetailsRequestList != null) {
-                List<ServiceDetails> updatedServiceDetails = serviceDetailsDao.updateEntityFromShipment(convertToEntityList(serviceDetailsRequestList, ServiceDetails.class), id);
-                response.setServicesList(convertToDtoList(updatedServiceDetails, ServiceDetailsResponse.class));
-            }
-            else {
-                response.setServicesList(convertToDtoList(oldServiceDetails, ServiceDetailsResponse.class));
-            }
-            if (pickupDeliveryDetailsRequestList != null) {
-                List<PickupDeliveryDetails> updatedPickupDeliveryDetails = pickupDeliveryDetailsDao.updateEntityFromShipment(convertToEntityList(pickupDeliveryDetailsRequestList, PickupDeliveryDetails.class), id);
-                response.setPickupDeliveryDetailsList(convertToDtoList(updatedPickupDeliveryDetails, PickupDeliveryDetailsResponse.class));
-            }
-            else {
-                response.setPickupDeliveryDetailsList(convertToDtoList(oldPickupDeliveryDetails, PickupDeliveryDetailsResponse.class));
             }
 
             return ResponseHelper.buildSuccessResponse(response);
