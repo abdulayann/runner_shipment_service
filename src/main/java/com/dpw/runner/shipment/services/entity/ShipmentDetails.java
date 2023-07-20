@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
 import lombok.*;
 import lombok.experimental.Accessors;
+import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.TypeDef;
 import org.hibernate.annotations.Where;
 
@@ -25,6 +26,8 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 @TypeDef(name = "jsonb", typeClass = JsonBinaryType.class)
+@SQLDelete(sql = "UPDATE shipment_details SET is_deleted = true WHERE id=?")
+@Where(clause = "is_deleted = false")
 public class ShipmentDetails extends MultiTenancy {
 
     private static final long serialVersionUID = 190794279984274725L;
@@ -45,11 +48,11 @@ public class ShipmentDetails extends MultiTenancy {
     @Column(name = "shipment_type")
     private String shipmentType;
 
-    @ManyToMany(targetEntity = Containers.class)
+    @ManyToMany
     @JoinTable(name = "shipments_containers_mapping",
             joinColumns = @JoinColumn(name = "shipment_id"),
             inverseJoinColumns = @JoinColumn(name = "container_id"))
-    private List<Containers> containers;
+    private List<Containers> containersList;
 
     @Column(name = "status")
     private Integer status;
@@ -276,4 +279,6 @@ public class ShipmentDetails extends MultiTenancy {
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "shipmentId")
     private List<Jobs> jobsList;
 
+    @Column(name = "is_deleted")
+    private Boolean isDeleted = Boolean.FALSE;
 }

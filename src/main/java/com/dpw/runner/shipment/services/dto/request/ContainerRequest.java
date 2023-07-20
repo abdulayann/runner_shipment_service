@@ -8,6 +8,7 @@ import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @Getter
@@ -27,6 +28,7 @@ public class ContainerRequest extends CommonRequest implements IRunnerRequest {
     private String containerNumber;
     private String sealNumber;
     private String descriptionOfGoods;
+    private List<Long> shipmentIds;
     private Long noOfPackages;
     private BigDecimal netWeight;
     private String netWeightUnit;

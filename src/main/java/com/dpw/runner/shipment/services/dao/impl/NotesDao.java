@@ -51,6 +51,11 @@ public class NotesDao implements INotesDao {
         notesRepository.delete(notes);
     }
 
+    @Override
+    public List<Notes> findByEntityIdAndEntityType(Long entityId, String entityType) {
+        return notesRepository.findByEntityIdAndEntityType(entityId, entityType);
+    }
+
     public List<Notes> updateEntityFromShipment(List<Notes> notesList, Long shipmentId) throws Exception {
         String responseMsg;
         List<Notes> responseNotes = new ArrayList<>();
@@ -65,14 +70,12 @@ public class NotesDao implements INotesDao {
             if (notesList != null && notesList.size() != 0) {
                 for (Notes request : notesList) {
                     Long id = request.getId();
-                    request.setEntityId(shipmentId);
-                    request.setEntityType(Constants.SHIPMENT_TYPE);
                     if (id != null) {
                         hashMap.remove(id);
                     }
                     notesRequestList.add(request);
                 }
-                responseNotes = saveNotes(notesRequestList);
+                responseNotes = saveEntityFromShipment(notesRequestList, shipmentId, Constants.SHIPMENT_TYPE);
             }
             deleteNotes(hashMap);
             return responseNotes;
@@ -84,7 +87,7 @@ public class NotesDao implements INotesDao {
         }
     }
 
-    private List<Notes> saveNotes(List<Notes> notesRequests) {
+    public List<Notes> saveEntityFromShipment(List<Notes> notesRequests, Long entityId, String entityType) {
         List<Notes> res = new ArrayList<>();
         for(Notes req : notesRequests){
             if(req.getId() != null){
@@ -95,6 +98,8 @@ public class NotesDao implements INotesDao {
                     throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
                 }
             }
+            req.setEntityId(entityId);
+            req.setEntityType(entityType);
             req = save(req);
             res.add(req);
         }

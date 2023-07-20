@@ -70,14 +70,12 @@ public class FileRepoDao implements IFileRepoDao {
             if (fileRepoList != null && fileRepoList.size() != 0) {
                 for (FileRepo request : fileRepoList) {
                     Long id = request.getId();
-                    request.setEntityId(shipmentId);
-                    request.setEntityType(Constants.SHIPMENT_TYPE);
                     if (id != null) {
                         hashMap.remove(id);
                     }
                     fileReposRequestList.add(request);
                 }
-                responseFileRepo = saveFileRepo(fileReposRequestList);
+                responseFileRepo = saveEntityFromShipment(fileReposRequestList, shipmentId, Constants.SHIPMENT_TYPE);
             }
             deleteFileRepo(hashMap);
             return responseFileRepo;
@@ -89,7 +87,7 @@ public class FileRepoDao implements IFileRepoDao {
         }
     }
 
-    private List<FileRepo> saveFileRepo(List<FileRepo> fileRepos) {
+    public List<FileRepo> saveEntityFromShipment(List<FileRepo> fileRepos, Long entityId, String entityType) {
         List<FileRepo> res = new ArrayList<>();
         for(FileRepo req : fileRepos){
             if(req.getId() != null){
@@ -100,6 +98,8 @@ public class FileRepoDao implements IFileRepoDao {
                     throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
                 }
             }
+            req.setEntityId(entityId);
+            req.setEntityType(entityType);
             req = save(req);
             res.add(req);
         }

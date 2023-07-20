@@ -14,4 +14,5 @@ public interface IBookingCarriageDao {
     Optional<BookingCarriage> findById(Long id);
     void delete(BookingCarriage bookingCarriage);
     List<BookingCarriage> updateEntityFromShipment(List<BookingCarriage> bookingCarriageList, Long shipmentId) throws Exception;
+    List<BookingCarriage> saveEntityFromShipment(List<BookingCarriage> bookingCarriages, Long shipmentId);
 }

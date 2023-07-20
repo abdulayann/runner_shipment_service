@@ -1,8 +1,6 @@
 package com.dpw.runner.shipment.services.dto.response;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.dto.request.*;
-import com.dpw.runner.shipment.services.entity.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -81,7 +79,7 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     private PartiesResponse client;
     private PartiesResponse consigner;
     private PartiesResponse consignee;
-    private AdditionalDetailResponse additionalDetail;
+    private AdditionalDetailResponse additionalDetails;
     private CarrierDetailResponse carrierDetails;
     private List<PickupDeliveryDetailsResponse> pickupDeliveryDetailsList;
     private List<NotesResponse> notesList;

@@ -11,7 +11,9 @@ public class ApiConstants {
 
     public static final String API_COMPLETE_RETRIEVE_BY_ID = "/retrieve/complete/id";
 
-    public static final String API_COMPLETE_UPDATE = "/update/complete";
+    public static final String API_UPDATE_SHIPMENT = "/update/shipment";
+
+    public static final String API_UPDATE_CONSOLIDATION = "/update/consolidation";
 
     public static final String API_LIST = "/list";
 

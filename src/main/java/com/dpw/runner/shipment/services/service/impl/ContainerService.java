@@ -7,6 +7,7 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentsContainersMappingDao;
 import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
 import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.JobResponse;
@@ -44,6 +45,8 @@ public class ContainerService implements IContainerService {
     IContainerDao containerDao;
     @Autowired
     ModelMapper modelMapper;
+    @Autowired
+    IShipmentsContainersMappingDao shipmentsContainersMappingDao;
 
     @Transactional
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
@@ -55,6 +58,9 @@ public class ContainerService implements IContainerService {
         Containers container = convertRequestToEntity(request);
         try {
             container = containerDao.save(container);
+            if(request.getShipmentIds() != null) {
+                shipmentsContainersMappingDao.updateShipmentsMappings(container.getId(), request.getShipmentIds());
+            }
             log.info("Container Details Saved Successfully for Id {} with Request Id {}", container.getId(), LoggerHelper.getRequestIdFromMDC());
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -87,6 +93,9 @@ public class ContainerService implements IContainerService {
         containers.setId(oldEntity.get().getId());
         try {
             containers = containerDao.save(containers);
+            if(request.getShipmentIds() != null) {
+                shipmentsContainersMappingDao.updateShipmentsMappings(containers.getId(), request.getShipmentIds());
+            }
             log.info("Updated the container details for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()

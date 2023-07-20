@@ -23,7 +23,6 @@ import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.convertToClass;
 
 @Repository
 @Slf4j
@@ -65,13 +64,12 @@ public class BookingCarriageDao implements IBookingCarriageDao {
             if (bookingCarriageList != null && bookingCarriageList.size() != 0) {
                 for (BookingCarriage request : bookingCarriageList) {
                     Long id = request.getId();
-                    request.setShipmentId(shipmentId);
                     if (id != null) {
                         hashMap.remove(id);
                     }
                     bookingCarriagesRequestList.add(request);
                 }
-                responseBookingCarriage = saveBookingCarriage(bookingCarriagesRequestList);
+                responseBookingCarriage = saveEntityFromShipment(bookingCarriagesRequestList, shipmentId);
             }
             deleteBookingCarriage(hashMap);
             return responseBookingCarriage;
@@ -83,7 +81,7 @@ public class BookingCarriageDao implements IBookingCarriageDao {
         }
     }
 
-    private List<BookingCarriage> saveBookingCarriage(List<BookingCarriage> bookingCarriages) {
+    public List<BookingCarriage> saveEntityFromShipment(List<BookingCarriage> bookingCarriages, Long shipmentId) {
         List<BookingCarriage> res = new ArrayList<>();
         for(BookingCarriage req : bookingCarriages){
             if(req.getId() != null){
@@ -94,6 +92,7 @@ public class BookingCarriageDao implements IBookingCarriageDao {
                     throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
                 }
             }
+            req.setShipmentId(shipmentId);
             req = save(req);
             res.add(req);
         }

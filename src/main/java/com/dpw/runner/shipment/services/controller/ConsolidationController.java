@@ -91,7 +91,7 @@ public class ConsolidationController {
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = ConsolidationConstants.UPDATE_SUCCESSFUL, response = RunnerResponse.class)})
-    @PutMapping(ApiConstants.API_UPDATE)
+    @PutMapping(ApiConstants.API_UPDATE_CONSOLIDATION)
     public ResponseEntity<RunnerResponse> update(@RequestBody @Valid ConsolidationDetailsRequest request) {
         String responseMsg;
         try {
@@ -105,7 +105,7 @@ public class ConsolidationController {
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = ConsolidationConstants.UPDATE_SUCCESSFUL, response = RunnerResponse.class)})
-    @PutMapping(ApiConstants.API_COMPLETE_UPDATE)
+    @PutMapping(ApiConstants.API_UPDATE)
     public ResponseEntity<RunnerResponse> completeUpdate(@RequestBody @Valid ConsolidationDetailsRequest request) {
         String responseMsg;
         try {

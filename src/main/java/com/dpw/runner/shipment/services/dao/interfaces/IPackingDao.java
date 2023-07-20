@@ -14,4 +14,5 @@ public interface IPackingDao {
     Optional<Packing> findById(Long id);
     void delete(Packing packing);
     List<Packing> updateEntityFromShipment(List<Packing> packingList, Long shipmentId) throws Exception;
+    List<Packing> saveEntityFromShipment(List<Packing> packings, Long shipmentId);
 }
