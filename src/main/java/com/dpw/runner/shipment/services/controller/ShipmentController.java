@@ -9,6 +9,7 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
+import com.dpw.runner.shipment.services.dto.patchRequest.ShipmentPatchRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
 import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
@@ -61,7 +62,7 @@ public class ShipmentController {
             @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
     })
     @PostMapping(ApiConstants.API_CREATE)
-    public ResponseEntity<RunnerResponse<ShipmentDetailsResponse>> create(@RequestBody @Valid Object request) {
+    public ResponseEntity<RunnerResponse<ShipmentDetailsResponse>> create(@RequestBody @Valid ShipmentRequest request) {
         String responseMsg;
         try {
             ShipmentRequest req = jsonHelper.convertValue(request, ShipmentRequest.class);
@@ -106,7 +107,7 @@ public class ShipmentController {
     // @PreAuthorize("hasAuthority('"+ Permissions.AdministrationGeneral+"')") //TODO-Authorization
     @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.UPDATE_SUCCESSFUL, response = RunnerResponse.class)})
     @PutMapping(ApiConstants.API_UPDATE_SHIPMENT)
-    public ResponseEntity<RunnerResponse> update(@RequestBody @Valid Object request) {
+    public ResponseEntity<RunnerResponse> update(@RequestBody @Valid ShipmentRequest request) {
         String responseMsg;
         try {
             ShipmentRequest req = jsonHelper.convertValue(request, ShipmentRequest.class);
@@ -122,7 +123,7 @@ public class ShipmentController {
     // @PreAuthorize("hasAuthority('"+ Permissions.AdministrationGeneral+"')") //TODO-Authorization
     @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.UPDATE_SUCCESSFUL, response = RunnerResponse.class)})
     @PutMapping(ApiConstants.API_UPDATE)
-    public ResponseEntity<RunnerResponse> completeUpdate(@RequestBody @Valid Object request) {
+    public ResponseEntity<RunnerResponse> completeUpdate(@RequestBody @Valid ShipmentRequest request) {
         String responseMsg;
         try {
             ShipmentRequest req = jsonHelper.convertValue(request, ShipmentRequest.class);
@@ -141,7 +142,7 @@ public class ShipmentController {
     public ResponseEntity<RunnerResponse> partialUpdate(@RequestBody @Valid Object request) {
         String responseMsg;
         try {
-            ShipmentRequest req = jsonHelper.convertValue(request, ShipmentRequest.class);
+            ShipmentPatchRequest req = jsonHelper.convertValue(request, ShipmentPatchRequest.class);
             return (ResponseEntity<RunnerResponse>) shipmentService.partialUpdate(CommonRequestModel.buildRequest(req));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()

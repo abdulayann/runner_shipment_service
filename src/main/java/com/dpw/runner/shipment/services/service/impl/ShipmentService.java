@@ -8,6 +8,7 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
+import com.dpw.runner.shipment.services.dto.patchRequest.ShipmentPatchRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
 import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.response.*;
@@ -24,7 +25,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
-import org.openapitools.jackson.nullable.JsonNullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
@@ -498,7 +498,7 @@ public class ShipmentService implements IShipmentService {
 
     @Transactional
     public void createbookingCarriage(ShipmentDetails shipmentDetails, BookingCarriageRequest bookingCarriageRequest) {
-        bookingCarriageRequest.setShipmentId(JsonNullable.of(shipmentDetails.getId()));
+        bookingCarriageRequest.setShipmentId(shipmentDetails.getId());
         bookingCarriageDao.save(objectMapper.convertValue(bookingCarriageRequest, BookingCarriage.class));
     }
 
@@ -593,7 +593,7 @@ public class ShipmentService implements IShipmentService {
             log.error("Request Id is null for Shipment update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
         }
         // TODO- implement Validation logic
-        long id = request.getId().get();
+        long id = request.getId();
         Optional<ShipmentDetails> oldEntity = shipmentDao.findById(id);
         if (!oldEntity.isPresent()) {
             log.debug("Shipment Details is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
@@ -629,7 +629,7 @@ public class ShipmentService implements IShipmentService {
         List<PickupDeliveryDetailsRequest> pickupDeliveryDetailsRequestList = shipmentRequest.getPickupDeliveryDetailsList();
 
         // TODO- implement Validation logic
-        long id = shipmentRequest.getId().get();
+        long id = shipmentRequest.getId();
         Optional<ShipmentDetails> oldEntity = shipmentDao.findById(id);
         if (!oldEntity.isPresent()) {
             log.debug("Shipment Details is null for Id {}", shipmentRequest.getId());
@@ -939,7 +939,7 @@ public class ShipmentService implements IShipmentService {
     @Transactional
     public ResponseEntity<?> partialUpdate(CommonRequestModel commonRequestModel) throws Exception {
 
-        ShipmentRequest shipmentRequest = (ShipmentRequest) commonRequestModel.getData();
+        ShipmentPatchRequest shipmentRequest = (ShipmentPatchRequest) commonRequestModel.getData();
         if(shipmentRequest.getId() == null){
             log.error("Request Id is null for update request with Id {}", LoggerHelper.getRequestIdFromMDC());
             throw new Exception("Request Id is null");

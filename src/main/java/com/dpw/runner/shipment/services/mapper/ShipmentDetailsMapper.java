@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.mapper;
 
+import com.dpw.runner.shipment.services.dto.patchRequest.ShipmentPatchRequest;
 import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.entity.*;
@@ -36,5 +37,5 @@ public interface ShipmentDetailsMapper {
     Containers map(ContainerRequest req);
 
     @InheritConfiguration
-    void update(ShipmentRequest update, @MappingTarget ShipmentDetails destination);
+    void update(ShipmentPatchRequest update, @MappingTarget ShipmentDetails destination);
 }

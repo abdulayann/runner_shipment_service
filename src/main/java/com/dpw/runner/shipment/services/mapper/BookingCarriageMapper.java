@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.mapper;
 
+import com.dpw.runner.shipment.services.dto.patchRequest.BookingCarriagePatchRequest;
 import com.dpw.runner.shipment.services.dto.request.BookingCarriageRequest;
 import com.dpw.runner.shipment.services.dto.response.BookingCarriageResponse;
 import com.dpw.runner.shipment.services.entity.BookingCarriage;
@@ -17,5 +18,5 @@ public interface BookingCarriageMapper {
     BookingCarriageRequest getRequest(BookingCarriage entity);
 
     @InheritConfiguration
-    void update(BookingCarriageRequest update, @MappingTarget BookingCarriage destination);
+    void update(BookingCarriagePatchRequest update, @MappingTarget BookingCarriage destination);
 }
