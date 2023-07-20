@@ -154,17 +154,33 @@ public class ServiceDetailsService implements IServiceDetailsService {
             if(request == null) {
                 log.debug("Request is empty for Service delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
-            if(request.getId() == null) {
-                log.debug("Request Id is null for Service delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            if(request.getId() == null && request.getGuid() == null) {
+                log.error("Request Id and Guid is null for Service delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
-            long id = request.getId();
-            Optional<ServiceDetails> shipmentServices = serviceDetailsDao.findById(id);
-            if(!shipmentServices.isPresent()) {
-                log.debug("Service Details is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
-                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+            if(request.getId() == null) {
+                log.error("Request Id is null for Service delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            }
+            if(request.getGuid() == null) {
+                log.error("GUID is null for Service delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            }
+            Optional<ServiceDetails> shipmentServices;
+            if(request.getId() != null) {
+                long id = request.getId();
+                shipmentServices = serviceDetailsDao.findById(id);
+                if(!shipmentServices.isPresent()) {
+                    log.debug("Service Details is null for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
+            } else {
+                UUID guid = UUID.fromString(request.getGuid());
+                shipmentServices = serviceDetailsDao.findByGuid(guid);
+                if(!shipmentServices.isPresent()) {
+                    log.debug("Service Details is null for GUId {} with Request Id {}", guid, LoggerHelper.getRequestIdFromMDC());
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
             }
             serviceDetailsDao.delete(shipmentServices.get());
-            log.info("Deleted service details for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
+            log.info("Deleted service details for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
             return ResponseHelper.buildSuccessResponse();
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -181,17 +197,35 @@ public class ServiceDetailsService implements IServiceDetailsService {
             if(request == null) {
                 log.error("Request is empty for Service retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
+            if(request.getId() == null && request.getGuid() == null) {
+                log.error("Request Id and Guid is null for Service retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            }
             if(request.getId() == null) {
                 log.error("Request Id is null for Service retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
-            long id = request.getId();
-            Optional<ServiceDetails> shipmentServices = serviceDetailsDao.findById(id);
-            if(!shipmentServices.isPresent()) {
-                log.debug("Service Details is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
-                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+            if(request.getGuid() == null) {
+                log.error("GUID is null for Service retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
-            log.info("Service details fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
-            ServiceDetailsResponse response = convertEntityToDto(shipmentServices.get());
+            Optional<ServiceDetails> shipmentServices;
+            ServiceDetailsResponse response;
+            if(request.getId() != null) {
+                long id = request.getId();
+                shipmentServices = serviceDetailsDao.findById(id);
+                if(!shipmentServices.isPresent()) {
+                    log.debug("Service Details is null for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
+                log.info("Service details fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
+            } else {
+                UUID guid = UUID.fromString(request.getGuid());
+                shipmentServices = serviceDetailsDao.findByGuid(guid);
+                if(!shipmentServices.isPresent()) {
+                    log.debug("Service Details is null for GUId {} with Request Id {}", guid, LoggerHelper.getRequestIdFromMDC());
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
+                log.info("Service details fetched successfully for GUId {} with Request Id {}", guid, LoggerHelper.getRequestIdFromMDC());
+            }
+            response = convertEntityToDto(shipmentServices.get());
             return ResponseHelper.buildSuccessResponse(response);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()

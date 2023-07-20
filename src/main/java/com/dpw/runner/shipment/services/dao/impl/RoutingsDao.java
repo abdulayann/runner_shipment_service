@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.dao.impl;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IRoutingsDao;
+import com.dpw.runner.shipment.services.entity.ReferenceNumbers;
 import com.dpw.runner.shipment.services.entity.Routings;
 import com.dpw.runner.shipment.services.repository.interfaces.IRoutingsRepository;
 import com.nimbusds.jose.util.Pair;
@@ -41,6 +42,11 @@ public class RoutingsDao implements IRoutingsDao {
     @Override
     public Optional<Routings> findById(Long id) {
         return routingsRepository.findById(id);
+    }
+
+    @Override
+    public Optional<Routings> findByGuid(UUID guid) {
+        return routingsRepository.findByGuid(guid);
     }
 
     @Override

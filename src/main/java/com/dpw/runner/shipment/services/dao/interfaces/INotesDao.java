@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.dao.interfaces;
 
+import com.dpw.runner.shipment.services.entity.Jobs;
 import com.dpw.runner.shipment.services.entity.Notes;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -7,6 +8,7 @@ import org.springframework.data.jpa.domain.Specification;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 public interface INotesDao {
     Notes save(Notes notes);
@@ -14,4 +16,5 @@ public interface INotesDao {
     Optional<Notes> findById(Long id);
     void delete(Notes notes);
     List<Notes> updateEntityFromShipment(List<Notes> notesList, Long shipmentId) throws Exception;
+    Optional<Notes> findByGuid(UUID guid);
 }

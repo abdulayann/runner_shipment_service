@@ -160,19 +160,36 @@ public class AdditionalDetailService implements IAdditionalDetailService {
             // TODO- implement Validation logic
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
             if(request == null) {
-                log.error("Request is empty for additional details delete for Request Id {}", LoggerHelper.getRequestIdFromMDC());
+                log.error("Request is empty for Additional Details delete for Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            }
+            if(request.getId() == null && request.getGuid() == null) {
+                log.error("Request Id and Guid is null for Additional Details delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
             if(request.getId() == null) {
-                log.error("Request Id is null for additional details delete for Request Id {}", LoggerHelper.getRequestIdFromMDC());
+                log.error("Request Id is null for Additional Details delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
-            long id = request.getId();
-            Optional<AdditionalDetails> additionalDetails = additionalDetailDao.findById(id);
-            if (!additionalDetails.isPresent()) {
-                log.debug("Shipment Additional detail is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
-                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+            if(request.getGuid() == null) {
+                log.error("GUID is null for Additional Details delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
-            additionalDetailDao.delete(additionalDetails.get());
-            log.info("Deleted additional detail service for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
+            if(request.getId() != null) {
+                long id = request.getId();
+                Optional<AdditionalDetails> additionalDetails = additionalDetailDao.findById(id);
+                if (!additionalDetails.isPresent()) {
+                    log.debug("Shipment Additional detail is null for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
+                additionalDetailDao.delete(additionalDetails.get());
+                log.info("Deleted additional detail service for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
+            } else {
+                UUID guid = UUID.fromString(request.getGuid());
+                Optional<AdditionalDetails> additionalDetails = additionalDetailDao.findByGuid(guid);
+                if (!additionalDetails.isPresent()) {
+                    log.debug("Shipment Additional detail is null for GUId {} with Request Id {}", guid, LoggerHelper.getRequestIdFromMDC());
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
+                additionalDetailDao.delete(additionalDetails.get());
+                log.info("Deleted additional detail service for GUId {} with Request Id {}", guid, LoggerHelper.getRequestIdFromMDC());
+            }
             return ResponseHelper.buildSuccessResponse();
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -188,20 +205,40 @@ public class AdditionalDetailService implements IAdditionalDetailService {
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
             if(request == null) {
-                log.debug("Request is empty for additional details retrieve for Request Id {}", LoggerHelper.getRequestIdFromMDC());
+                log.debug("Request is empty for Additional Details retrieve for Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            }
+            if(request.getId() == null && request.getGuid() == null) {
+                log.error("Request Id and Guid is null for Additional Details retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
             if(request.getId() == null) {
-                log.debug("Request Id is null for additional details retrieve for Request Id {}", LoggerHelper.getRequestIdFromMDC());
+                log.error("Request Id is null for Additional Details retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
-            long id = request.getId();
-            Optional<AdditionalDetails> additionalDetails = additionalDetailDao.findById(id);
-            if (!additionalDetails.isPresent()) {
-                log.debug("Shipment Additional detail is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
-                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+            if(request.getGuid() == null) {
+                log.error("GUID is null for Additional Details retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
-            log.info("Additional details fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
-            AdditionalDetailResponse response = convertEntityToDto(additionalDetails.get());
+
+            Optional<AdditionalDetails> additionalDetails;
+            AdditionalDetailResponse response;
+            if(request.getId() != null) {
+                long id = request.getId();
+                additionalDetails = additionalDetailDao.findById(id);
+                if(!additionalDetails.isPresent()) {
+                    log.debug("Shipment Additional Detail is null for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
+                log.info("Additional Details fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
+            } else {
+                UUID guid = UUID.fromString(request.getGuid());
+                additionalDetails = additionalDetailDao.findByGuid(guid);
+                if(!additionalDetails.isPresent()) {
+                    log.debug("Shipment Additional detail is null for Guid {} with Request Id {}", guid, LoggerHelper.getRequestIdFromMDC());
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
+                log.info("Shipment Additional detail fetched successfully for Guid {} with Request Id {}", guid, LoggerHelper.getRequestIdFromMDC());
+            }
+            response = convertEntityToDto(additionalDetails.get());
             return ResponseHelper.buildSuccessResponse(response);
+
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;

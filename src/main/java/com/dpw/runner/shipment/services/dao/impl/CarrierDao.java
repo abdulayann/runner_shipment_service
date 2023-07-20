@@ -2,6 +2,9 @@ package com.dpw.runner.shipment.services.dao.impl;
 
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.dao.interfaces.ICarrierDao;
+import com.dpw.runner.shipment.services.dto.request.CarrierDetailRequest;
+import com.dpw.runner.shipment.services.entity.AdditionalDetails;
+import com.dpw.runner.shipment.services.entity.BookingCarriage;
 import com.dpw.runner.shipment.services.entity.CarrierDetails;
 import com.dpw.runner.shipment.services.repository.interfaces.ICarrierRepository;
 import lombok.extern.slf4j.Slf4j;
@@ -13,6 +16,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
+import java.util.UUID;
 
 @Repository
 @Slf4j
@@ -33,6 +37,11 @@ public class CarrierDao implements ICarrierDao {
     @Override
     public Optional<CarrierDetails> findById(Long id) {
         return carrierRepository.findById(id);
+    }
+
+    @Override
+    public Optional<CarrierDetails> findByGuid(UUID guid) {
+        return carrierRepository.findByGuid(guid);
     }
 
     @Override

@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import javax.validation.Valid;
+import java.util.Optional;
 
 @RestController
 @RequestMapping(ELDetailsConstants.ELDETAILS_API_HANDLE)
@@ -63,16 +64,20 @@ public class ELDetailsController {
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = ELDetailsConstants.ELDETAILS_DELETE_SUCCESSFUL)})
     @PostMapping(ApiConstants.API_DELETE)
-    public ResponseEntity<RunnerResponse> delete(@RequestParam @Valid Long id) {
-        CommonGetRequest request = CommonGetRequest.builder().id(id).build();
+    public ResponseEntity<RunnerResponse> delete(@RequestParam Optional<Long> id, @RequestParam Optional<String> guid) {
+        CommonGetRequest request = CommonGetRequest.builder().build();
+        id.ifPresent(request::setId);
+        guid.ifPresent(request::setGuid);
         return (ResponseEntity<RunnerResponse>) elDetailsService.delete(CommonRequestModel.buildRequest(request));
 
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = ELDetailsConstants.ELDETAILS_RETRIEVE_BY_ID_SUCCESSFUL)})
     @GetMapping(ApiConstants.API_RETRIEVE_BY_ID)
-    public ResponseEntity retrieve(@RequestParam @NonNull Long id) {
-        CommonGetRequest request = CommonGetRequest.builder().id(id).build();
+    public ResponseEntity retrieve(@RequestParam Optional<Long> id, @RequestParam Optional<String> guid) {
+        CommonGetRequest request = CommonGetRequest.builder().build();
+        id.ifPresent(request::setId);
+        guid.ifPresent(request::setGuid);
         return (ResponseEntity<RunnerResponse<ELDetailsResponse>>) elDetailsService.retrieveById(CommonRequestModel.buildRequest(request));
     }
 

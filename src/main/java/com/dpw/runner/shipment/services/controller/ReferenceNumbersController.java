@@ -22,6 +22,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
+import java.util.Optional;
 
 @SuppressWarnings("ALL")
 @RestController
@@ -50,8 +51,10 @@ public class ReferenceNumbersController {
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = ReferenceNumbersConstants.REFERENCE_NUMBERS_DELETE_SUCCESSFUL)})
     @DeleteMapping(ApiConstants.API_DELETE)
-    public ResponseEntity<RunnerResponse> delete(@RequestParam @Valid Long id) {
-        CommonGetRequest request = CommonGetRequest.builder().id(id).build();
+    public ResponseEntity<RunnerResponse> delete(@RequestParam Optional<Long> id, @RequestParam Optional<String> guid) {
+        CommonGetRequest request = CommonGetRequest.builder().build();
+        id.ifPresent(request::setId);
+        guid.ifPresent(request::setGuid);
         return (ResponseEntity<RunnerResponse>) referenceNumbersService.delete(CommonRequestModel.buildRequest(request));
     }
 
@@ -63,8 +66,10 @@ public class ReferenceNumbersController {
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = ReferenceNumbersConstants.REFERENCE_NUMBERS_RETRIEVE_BY_ID_SUCCESSFUL)})
     @GetMapping(ApiConstants.API_RETRIEVE_BY_ID)
-    public ResponseEntity<RunnerResponse<ReferenceNumbersResponse>> retrieveById(@ApiParam(value = ReferenceNumbersConstants.REFERENCE_NUMBERS_ID, required = true) @RequestParam Long id) {
-        CommonGetRequest request = CommonGetRequest.builder().id(id).build();
+    public ResponseEntity<RunnerResponse<ReferenceNumbersResponse>> retrieveById(@ApiParam(value = ReferenceNumbersConstants.REFERENCE_NUMBERS_ID, required = true) @RequestParam Optional<Long> id, @RequestParam Optional<String> guid) {
+        CommonGetRequest request = CommonGetRequest.builder().build();
+        id.ifPresent(request::setId);
+        guid.ifPresent(request::setGuid);
         return (ResponseEntity<RunnerResponse<ReferenceNumbersResponse>>) referenceNumbersService.retrieveById(CommonRequestModel.buildRequest(request));
     }
 

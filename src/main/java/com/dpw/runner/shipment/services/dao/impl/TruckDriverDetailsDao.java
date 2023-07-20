@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
 import com.dpw.runner.shipment.services.dao.interfaces.ITruckDriverDetailsDao;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.TruckDriverDetails;
 import com.dpw.runner.shipment.services.repository.interfaces.ITruckDriverDetailsRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,6 +11,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
+import java.util.UUID;
 
 @Repository
 public class TruckDriverDetailsDao implements ITruckDriverDetailsDao {
@@ -29,6 +31,11 @@ public class TruckDriverDetailsDao implements ITruckDriverDetailsDao {
     @Override
     public Optional<TruckDriverDetails> findById(Long id) {
         return truckDriverDetailsRepository.findById(id);
+    }
+
+    @Override
+    public Optional<TruckDriverDetails> findByGuid(UUID guid) {
+        return truckDriverDetailsRepository.findByGuid(guid);
     }
 
     @Override

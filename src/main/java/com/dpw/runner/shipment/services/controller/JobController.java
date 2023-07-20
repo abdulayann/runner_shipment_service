@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.controller;
 
 import com.dpw.runner.shipment.services.commons.constants.*;
+import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
@@ -18,6 +19,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
+import java.util.Optional;
 
 @Slf4j
 @SuppressWarnings("ALL")
@@ -66,10 +68,14 @@ public class JobController {
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = JobConstants.JOB_DELETE_SUCCESSFUL)})
     @DeleteMapping(ApiConstants.API_DELETE)
-    public ResponseEntity<RunnerResponse> delete(@RequestParam @Valid Long id) {
+    public ResponseEntity<RunnerResponse> delete(@RequestParam Optional<Long> id, @RequestParam Optional<String> guid) {
         String responseMessage;
         try {
-            return (ResponseEntity<RunnerResponse>) jobService.delete(CommonRequestModel.buildRequest(id));
+            if(id.isPresent()) {
+                return (ResponseEntity<RunnerResponse>) jobService.delete(CommonRequestModel.buildRequest(id.get()));
+            } else {
+                return (ResponseEntity<RunnerResponse>) jobService.delete(CommonRequestModel.buildRequest(guid.get()));
+            }
         } catch (Exception e) {
             responseMessage = e.getMessage();
             return (ResponseEntity<RunnerResponse>) ResponseHelper.buildFailedResponse(responseMessage);

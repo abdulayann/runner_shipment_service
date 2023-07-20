@@ -25,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
@@ -137,18 +138,33 @@ public class DefaultViewsService implements IDefaultViewsService {
             if(request == null) {
                 log.debug("Request is empty for default views delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
-            if(request.getId() == null) {
-                log.debug("Request Id is null for default views delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            if(request.getId() == null && request.getGuid() == null) {
+                log.error("Request Id and Guid is null for Default View delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
-            long id = request.getId();
-
-            Optional<DefaultViews> view = defaultViewsDao.findById(id);
-            if(!view.isPresent()) {
-                log.debug("View is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
-                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+            if(request.getId() == null) {
+                log.error("Request Id is null for Default View delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            }
+            if(request.getGuid() == null) {
+                log.error("GUID is null for Default View delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            }
+            Optional<DefaultViews> view;
+            if(request.getId() != null) {
+                long id = request.getId();
+                view = defaultViewsDao.findById(id);
+                if(!view.isPresent()) {
+                    log.debug("View is null for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
+            } else {
+                UUID guid = UUID.fromString(request.getGuid());
+                view = defaultViewsDao.findByGuid(guid);
+                if(!view.isPresent()) {
+                    log.debug("View is null for GUId {} with Request Id {}", guid, LoggerHelper.getRequestIdFromMDC());
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
             }
             defaultViewsDao.delete(view.get());
-            log.info("Deleted default view for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
+            log.info("Deleted default view for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
             return ResponseHelper.buildSuccessResponse();
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -163,19 +179,37 @@ public class DefaultViewsService implements IDefaultViewsService {
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
             if(request == null) {
-                log.error("Request is empty for default view retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+                log.error("Request is empty for Default View retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            }
+            if(request.getId() == null && request.getGuid() == null) {
+                log.error("Request Id and Guid is null for Default View retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
             if(request.getId() == null) {
-                log.error("Request Id is null for default view retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+                log.error("Request Id is null for Default View retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
-            long id = request.getId();
-            Optional<DefaultViews> view = defaultViewsDao.findById(id);
-            if(!view.isPresent()) {
-                log.debug("View is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
-                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+            if(request.getGuid() == null) {
+                log.error("GUID is null for Default View retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
-            log.info("Default view fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
-            DefaultViewsResponse response = convertEntityToDto(view.get());
+            Optional<DefaultViews> view;
+            DefaultViewsResponse response;
+            if(request.getId() != null) {
+                long id = request.getId();
+                view = defaultViewsDao.findById(id);
+                if(!view.isPresent()) {
+                    log.debug("View is null for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
+                log.info("Default view fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
+            } else {
+                UUID guid = UUID.fromString(request.getGuid());
+                view = defaultViewsDao.findByGuid(guid);
+                if(!view.isPresent()) {
+                    log.debug("View is null for GUId {} with Request Id {}", guid, LoggerHelper.getRequestIdFromMDC());
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
+                log.info("Default view fetched successfully for GUId {} with Request Id {}", guid, LoggerHelper.getRequestIdFromMDC());
+            }
+            response = convertEntityToDto(view.get());
             return ResponseHelper.buildSuccessResponse(response);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()

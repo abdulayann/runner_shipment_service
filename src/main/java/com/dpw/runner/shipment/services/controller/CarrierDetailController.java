@@ -22,6 +22,7 @@ import org.springframework.lang.NonNull;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
+import java.util.Optional;
 
 @Slf4j
 @SuppressWarnings("ALL")
@@ -67,16 +68,20 @@ public class CarrierDetailController {
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = CarrierDetailConstants.CARRIER_DETAIL_DELETE_SUCCESSFUL)})
     @DeleteMapping(ApiConstants.API_DELETE)
-    public ResponseEntity<RunnerResponse> delete(@RequestParam @Valid Long id) {
-        CommonGetRequest request = CommonGetRequest.builder().id(id).build();
+    public ResponseEntity<RunnerResponse> delete(@RequestParam @Valid Optional<Long> id, @RequestParam @Valid Optional<String> guid) {
+        CommonGetRequest request = CommonGetRequest.builder().build();
+        id.ifPresent(request::setId);
+        guid.ifPresent(request::setGuid);
         return (ResponseEntity<RunnerResponse>) carrierDetailService.delete(CommonRequestModel.buildRequest(request));
 
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = CarrierDetailConstants.CARRIER_DETAIL_RETRIEVE_BY_ID_SUCCESSFUL)})
     @GetMapping(ApiConstants.API_RETRIEVE_BY_ID)
-    public ResponseEntity retrieve(@RequestParam @NonNull Long id) {
-        CommonGetRequest request = CommonGetRequest.builder().id(id).build();
+    public ResponseEntity retrieve(@RequestParam Optional<Long> id, @RequestParam Optional<String> guid) {
+        CommonGetRequest request = CommonGetRequest.builder().build();
+        id.ifPresent(request::setId);
+        guid.ifPresent(request::setGuid);
         return (ResponseEntity<RunnerResponse<CarrierDetailResponse>>) carrierDetailService.retrieveById(CommonRequestModel.buildRequest(request));
     }
 

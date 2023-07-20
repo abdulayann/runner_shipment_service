@@ -22,6 +22,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import javax.validation.Valid;
 
+import java.util.Optional;
+
 import static com.dpw.runner.shipment.services.commons.constants.Constants.NO_DATA;
 
 @RestController
@@ -66,16 +68,20 @@ public class RoutingsController {
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = RoutingsConstants.ROUTINGS_DELETE_SUCCESSFUL)})
     @PostMapping(ApiConstants.API_DELETE)
-    public ResponseEntity<RunnerResponse> delete(@RequestParam @Valid Long id) {
-        CommonGetRequest request = CommonGetRequest.builder().id(id).build();
+    public ResponseEntity<RunnerResponse> delete(@RequestParam Optional<Long> id, @RequestParam Optional<String> guid) {
+        CommonGetRequest request = CommonGetRequest.builder().build();
+        id.ifPresent(request::setId);
+        guid.ifPresent(request::setGuid);
         return (ResponseEntity<RunnerResponse>) routingsService.delete(CommonRequestModel.buildRequest(request));
 
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = RoutingsConstants.ROUTINGS_RETRIEVE_BY_ID_SUCCESSFUL)})
     @GetMapping(ApiConstants.API_RETRIEVE_BY_ID)
-    public ResponseEntity retrieve(@RequestParam @NonNull Long id) {
-        CommonGetRequest request = CommonGetRequest.builder().id(id).build();
+    public ResponseEntity retrieve(@RequestParam Optional<Long> id, @RequestParam Optional<String> guid) {
+        CommonGetRequest request = CommonGetRequest.builder().build();
+        id.ifPresent(request::setId);
+        guid.ifPresent(request::setGuid);
         return (ResponseEntity<RunnerResponse<RoutingsResponse>>) routingsService.retrieveById(CommonRequestModel.buildRequest(request));
     }
 

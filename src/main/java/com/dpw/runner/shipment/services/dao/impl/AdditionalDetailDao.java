@@ -13,6 +13,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
+import java.util.UUID;
 
 
 @Repository
@@ -34,6 +35,11 @@ public class AdditionalDetailDao implements IAdditionalDetailDao {
     @Override
     public Optional<AdditionalDetails> findById(Long id) {
         return additionalDetailRepository.findById(id);
+    }
+
+    @Override
+    public Optional<AdditionalDetails> findByGuid(UUID guid) {
+        return additionalDetailRepository.findByGuid(guid);
     }
 
     @Override

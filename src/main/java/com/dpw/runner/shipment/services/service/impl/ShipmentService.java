@@ -782,17 +782,33 @@ public class ShipmentService implements IShipmentService {
             if (request == null) {
                 log.debug("Request is empty for Shipment delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
-            if (request.getId() == null) {
-                log.debug("Request Id is null for Shipment delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            if(request.getId() == null && request.getGuid() == null) {
+                log.error("Request Id and Guid is null for Shipment delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
-            long id = request.getId();
-            Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(id);
-            if (!shipmentDetails.isPresent()) {
-                log.debug("Shipment Details is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
-                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+            if(request.getId() == null) {
+                log.error("Request Id is null for Shipment delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            }
+            if(request.getGuid() == null) {
+                log.error("GUID is null for Shipment delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            }
+            Optional<ShipmentDetails> shipmentDetails;
+            if(request.getId() != null) {
+                long id = request.getId();
+                shipmentDetails = shipmentDao.findById(id);
+                if (!shipmentDetails.isPresent()) {
+                    log.debug("Shipment Details is null for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
+            } else {
+                UUID guid = UUID.fromString(request.getGuid());
+                shipmentDetails = shipmentDao.findByGuid(guid);
+                if (!shipmentDetails.isPresent()) {
+                    log.debug("Shipment Details is null for GUId {} with Request Id {}", guid, LoggerHelper.getRequestIdFromMDC());
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
             }
             shipmentDao.delete(shipmentDetails.get());
-            log.info("Deleted Shipment details for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
+            log.info("Deleted Shipment details for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
             return ResponseHelper.buildSuccessResponse();
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -809,17 +825,35 @@ public class ShipmentService implements IShipmentService {
             if (request == null) {
                 log.error("Request is empty for Shipment retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
-            if (request.getId() == null) {
+            if(request.getId() == null && request.getGuid() == null) {
+                log.error("Request Id and Guid is null for Shipment retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            }
+            if(request.getId() == null) {
                 log.error("Request Id is null for Shipment retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
-            long id = request.getId();
-            Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(id);
-            if (!shipmentDetails.isPresent()) {
-                log.debug("Shipment Details is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
-                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+            if(request.getGuid() == null) {
+                log.error("GUID is null for Shipment retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
-            log.info("Shipment details fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
-            ShipmentDetailsResponse response = modelMapper.map(shipmentDetails.get(), ShipmentDetailsResponse.class);
+            Optional<ShipmentDetails> shipmentDetails;
+            ShipmentDetailsResponse response;
+            if(request.getId() != null) {
+                long id = request.getId();
+                shipmentDetails = shipmentDao.findById(id);
+                if (!shipmentDetails.isPresent()) {
+                    log.debug("Shipment Details is null for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
+                log.info("Shipment details fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
+            } else {
+                UUID guid = UUID.fromString(request.getGuid());
+                shipmentDetails = shipmentDao.findByGuid(guid);
+                if (!shipmentDetails.isPresent()) {
+                    log.debug("Shipment Details is null for GUId {} with Request Id {}", guid, LoggerHelper.getRequestIdFromMDC());
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
+                log.info("Shipment details fetched successfully for GUId {} with Request Id {}", guid, LoggerHelper.getRequestIdFromMDC());
+            }
+            response = modelMapper.map(shipmentDetails.get(), ShipmentDetailsResponse.class);
             containerCountUpdate(shipmentDetails.get(), response);
             return ResponseHelper.buildSuccessResponse(response);
         } catch (Exception e) {

@@ -6,6 +6,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.util.Optional;
+import java.util.UUID;
 
 public interface IAdditionalDetailDao {
     AdditionalDetails save(AdditionalDetails additionalDetails);
@@ -17,4 +18,6 @@ public interface IAdditionalDetailDao {
     void delete(AdditionalDetails additionalDetails);
 
     AdditionalDetails updateEntityFromShipment(AdditionalDetails additionalDetail, Long shipmentId) throws Exception;
+
+    Optional<AdditionalDetails> findByGuid(UUID guid);
 }

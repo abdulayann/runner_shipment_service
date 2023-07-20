@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
 import com.dpw.runner.shipment.services.dao.interfaces.IViewsDao;
+import com.dpw.runner.shipment.services.entity.TruckDriverDetails;
 import com.dpw.runner.shipment.services.entity.Views;
 import com.dpw.runner.shipment.services.repository.interfaces.IViewsRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,6 +12,7 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Repository
 public class ViewsDao implements IViewsDao {
@@ -30,6 +32,11 @@ public class ViewsDao implements IViewsDao {
     @Override
     public Optional<Views> findById(Long id) {
         return viewsRepository.findById(id);
+    }
+
+    @Override
+    public Optional<Views> findByGuid(UUID guid) {
+        return viewsRepository.findByGuid(guid);
     }
 
     @Override

@@ -28,6 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
@@ -150,18 +151,33 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
             if(request == null) {
                 log.debug("Request is empty for Pickup Delivery delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
-            if(request.getId() == null) {
-                log.debug("Request Id is null for Pickup Delivery delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            if(request.getId() == null && request.getGuid() == null) {
+                log.error("Request Id and Guid is null for Pickup Delivery delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
-            long id = request.getId();
-
-            Optional<PickupDeliveryDetails> pickupDeliveryDetails = pickupDeliveryDetailsDao.findById(id);
-            if(!pickupDeliveryDetails.isPresent()) {
-                log.debug("pickup Delivery Details is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
-                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+            if(request.getId() == null) {
+                log.error("Request Id is null for Pickup Delivery delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            }
+            if(request.getGuid() == null) {
+                log.error("GUID is null for Pickup Delivery delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            }
+            Optional<PickupDeliveryDetails> pickupDeliveryDetails;
+            if(request.getId() != null) {
+                long id = request.getId();
+                pickupDeliveryDetails = pickupDeliveryDetailsDao.findById(id);
+                if(!pickupDeliveryDetails.isPresent()) {
+                    log.debug("pickup Delivery Details is null for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
+            } else {
+                UUID guid = UUID.fromString(request.getGuid());
+                pickupDeliveryDetails = pickupDeliveryDetailsDao.findByGuid(guid);
+                if(!pickupDeliveryDetails.isPresent()) {
+                    log.debug("pickup Delivery Details is null for GUId {} with Request Id {}", guid, LoggerHelper.getRequestIdFromMDC());
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
             }
             pickupDeliveryDetailsDao.delete(pickupDeliveryDetails.get());
-            log.info("Deleted pickup delivery details for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
+            log.info("Deleted pickup delivery details for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
             return ResponseHelper.buildSuccessResponse();
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -178,17 +194,35 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
             if(request == null) {
                 log.error("Request is empty for Pickup Delivery retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
+            if(request.getId() == null && request.getGuid() == null) {
+                log.error("Request Id and Guid is null for Pickup Delivery retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            }
             if(request.getId() == null) {
                 log.error("Request Id is null for Pickup Delivery retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
-            long id = request.getId();
-            Optional<PickupDeliveryDetails> pickupDeliveryDetails = pickupDeliveryDetailsDao.findById(id);
-            if(!pickupDeliveryDetails.isPresent()) {
-                log.debug("Pickup Delivery Details is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
-                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+            if(request.getGuid() == null) {
+                log.error("GUID is null for Pickup Delivery retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
-            log.info("Pickup Delivery details fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
-            PickupDeliveryDetailsResponse response = convertEntityToDto(pickupDeliveryDetails.get());
+            Optional<PickupDeliveryDetails> pickupDeliveryDetails;
+            PickupDeliveryDetailsResponse response;
+            if(request.getId() != null) {
+                long id = request.getId();
+                pickupDeliveryDetails = pickupDeliveryDetailsDao.findById(id);
+                if(!pickupDeliveryDetails.isPresent()) {
+                    log.debug("Pickup Delivery Details is null for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
+                log.info("Pickup Delivery details fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
+            } else {
+                UUID guid = UUID.fromString(request.getGuid());
+                pickupDeliveryDetails = pickupDeliveryDetailsDao.findByGuid(guid);
+                if(!pickupDeliveryDetails.isPresent()) {
+                    log.debug("Pickup Delivery Details is null for GUId {} with Request Id {}", guid, LoggerHelper.getRequestIdFromMDC());
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
+                log.info("Pickup Delivery details fetched successfully for GUId {} with Request Id {}", guid, LoggerHelper.getRequestIdFromMDC());
+            }
+            response = convertEntityToDto(pickupDeliveryDetails.get());
             return ResponseHelper.buildSuccessResponse(response);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()

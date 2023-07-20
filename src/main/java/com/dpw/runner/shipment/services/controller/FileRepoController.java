@@ -28,6 +28,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
+import java.util.Optional;
 
 @RestController
 @RequestMapping(FileRepoConstants.FILE_REPO_API_HANDLE)
@@ -69,15 +70,19 @@ public class FileRepoController {
 
     @ApiResponses(value = { @ApiResponse(code = 200, message = FileRepoConstants.FILE_REPO_DELETE_SUCCESSFUL) })
     @DeleteMapping(ApiConstants.API_DELETE)
-    public ResponseEntity<RunnerResponse> delete(@RequestParam @Valid Long id) {
-        CommonGetRequest request = CommonGetRequest.builder().id(id).build();
+    public ResponseEntity<RunnerResponse> delete(@RequestParam Optional<Long> id, @RequestParam Optional<String> guid) {
+        CommonGetRequest request = CommonGetRequest.builder().build();
+        id.ifPresent(request::setId);
+        guid.ifPresent(request::setGuid);
         return (ResponseEntity<RunnerResponse>) fileRepoService.delete(CommonRequestModel.buildRequest(request));
     }
 
     @ApiResponses(value = { @ApiResponse(code = 200, message = FileRepoConstants.FILE_REPO_RETRIEVE_BY_ID_SUCCESSFUL) })
     @GetMapping(ApiConstants.API_RETRIEVE_BY_ID)
-    public ResponseEntity<RunnerResponse<FileRepoResponse>> retrieveById(@ApiParam(value = FileRepoConstants.FILE_REPO_ID, required = true) @RequestParam Long id) {
-        CommonGetRequest request = CommonGetRequest.builder().id(id).build();
+    public ResponseEntity<RunnerResponse<FileRepoResponse>> retrieveById(@ApiParam(value = FileRepoConstants.FILE_REPO_ID, required = true) @RequestParam Optional<Long> id, @RequestParam Optional<String> guid) {
+        CommonGetRequest request = CommonGetRequest.builder().build();
+        id.ifPresent(request::setId);
+        guid.ifPresent(request::setGuid);
         return (ResponseEntity<RunnerResponse<FileRepoResponse>>) fileRepoService.retrieveById(CommonRequestModel.buildRequest(request));
     }
 

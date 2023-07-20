@@ -1,11 +1,13 @@
 package com.dpw.runner.shipment.services.dao.interfaces;
 
+import com.dpw.runner.shipment.services.entity.BookingCarriage;
 import com.dpw.runner.shipment.services.entity.CarrierDetails;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.util.Optional;
+import java.util.UUID;
 
 public interface ICarrierDao {
     CarrierDetails save(CarrierDetails carrierDetails);
@@ -13,4 +15,5 @@ public interface ICarrierDao {
     Optional<CarrierDetails> findById(Long id);
     void delete(CarrierDetails carrierDetails);
     CarrierDetails updateEntityFromShipmentConsole(CarrierDetails carrierDetails) throws Exception;
+    Optional<CarrierDetails> findByGuid(UUID guid);
 }

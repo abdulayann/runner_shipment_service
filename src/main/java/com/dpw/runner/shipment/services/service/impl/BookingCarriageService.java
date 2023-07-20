@@ -28,10 +28,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.swing.text.html.Option;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
@@ -161,19 +158,36 @@ public class BookingCarriageService implements IBookingCarriageService {
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
             if(request == null) {
-                log.error("Request is empty for booking carriage delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+                log.error("Request is empty for Booking Carriage delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            }
+            if(request.getId() == null && request.getGuid() == null) {
+                log.error("Request Id and Guid is null for Booking Carriage delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
             if(request.getId() == null) {
-                log.error("Request Id is null for booking carriage delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+                log.error("Request Id is null for Booking Carriage delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
-            long id = request.getId();
-            Optional<BookingCarriage> bookingCarriage = bookingCarriageDao.findById(id);
-            if (!bookingCarriage.isPresent()) {
-                log.debug("Booking Carriage is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
-                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+            if(request.getGuid() == null) {
+                log.error("GUID is null for Booking Carriage delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
-            bookingCarriageDao.delete(bookingCarriage.get());
-            log.info("Deleted booking carriage for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
+            if(request.getId() != null) {
+                long id = request.getId();
+                Optional<BookingCarriage> bookingCarriage = bookingCarriageDao.findById(id);
+                if (!bookingCarriage.isPresent()) {
+                    log.debug("Booking Carriage is null for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
+                bookingCarriageDao.delete(bookingCarriage.get());
+                log.info("Deleted booking carriage for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
+            } else {
+                UUID guid = UUID.fromString(request.getGuid());
+                Optional<BookingCarriage> bookingCarriage = bookingCarriageDao.findByGuid(guid);
+                if (!bookingCarriage.isPresent()) {
+                    log.debug("Booking Carriage is null for GUId {} with Request Id {}", guid, LoggerHelper.getRequestIdFromMDC());
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
+                bookingCarriageDao.delete(bookingCarriage.get());
+                log.info("Deleted booking carriage for GUId {} with Request Id {}", guid, LoggerHelper.getRequestIdFromMDC());
+            }
             return ResponseHelper.buildSuccessResponse();
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -188,19 +202,37 @@ public class BookingCarriageService implements IBookingCarriageService {
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
             if(request == null) {
-                log.error("Request is empty for booking carriage retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+                log.error("Request is empty for Booking Carriage retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            }
+            if(request.getId() == null && request.getGuid() == null) {
+                log.error("Request Id and Guid is null for Booking Carriage retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
             if(request.getId() == null) {
-                log.error("Request Id is null for booking carriage retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+                log.error("Request Id is null for Booking Carriage retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
-            long id = request.getId();
-            Optional<BookingCarriage> bookingCarriage = bookingCarriageDao.findById(id);
-            if (!bookingCarriage.isPresent()) {
-                log.debug("Booking Carriage is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
-                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+            if(request.getGuid() == null) {
+                log.error("GUID is null for Booking Carriage retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
-            log.info("Booking carriage fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
-            BookingCarriageResponse response = convertEntityToDto(bookingCarriage.get());
+            Optional<BookingCarriage> bookingCarriage;
+            BookingCarriageResponse response;
+            if(request.getId() != null) {
+                long id = request.getId();
+                bookingCarriage = bookingCarriageDao.findById(id);
+                if (!bookingCarriage.isPresent()) {
+                    log.debug("Booking Carriage is null for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
+                log.info("Booking carriage fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
+            } else {
+                UUID guid = UUID.fromString(request.getGuid());
+                bookingCarriage = bookingCarriageDao.findByGuid(guid);
+                if (!bookingCarriage.isPresent()) {
+                    log.debug("Booking Carriage is null for GUId {} with Request Id {}", guid, LoggerHelper.getRequestIdFromMDC());
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
+                log.info("Booking carriage fetched successfully for GUId {} with Request Id {}", guid, LoggerHelper.getRequestIdFromMDC());
+            }
+            response = convertEntityToDto(bookingCarriage.get());
             return ResponseHelper.buildSuccessResponse(response);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()

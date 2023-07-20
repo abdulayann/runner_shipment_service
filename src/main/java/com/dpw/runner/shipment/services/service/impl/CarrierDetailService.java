@@ -148,17 +148,34 @@ public class CarrierDetailService implements ICarrierDetailService {
             if(request == null) {
                 log.error("Request is empty for Carrier Details Delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
+            if(request.getId() == null && request.getGuid() == null) {
+                log.error("Request Id and Guid is null for Carrier delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            }
             if(request.getId() == null) {
-                log.error("Request Id is null for Carrier Details Delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+                log.error("Request Id is null for Carrier delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
-            long id = request.getId();
-            Optional<CarrierDetails> carrierDetails = carrierDao.findById(id);
-            if (carrierDetails.isEmpty()) {
-                log.debug("Carrier Details is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
-                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+            if(request.getGuid() == null) {
+                log.error("GUID is null for Carrier delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
-            log.info("Deleted carrier details for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
-            carrierDao.delete(carrierDetails.get());
+            if(request.getId() != null) {
+                long id = request.getId();
+                Optional<CarrierDetails> carrierDetails = carrierDao.findById(id);
+                if (carrierDetails.isEmpty()) {
+                    log.debug("Carrier Details is null for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
+                log.info("Deleted carrier details for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
+                carrierDao.delete(carrierDetails.get());
+            } else {
+                UUID guid = UUID.fromString(request.getGuid());
+                Optional<CarrierDetails> carrierDetails = carrierDao.findByGuid(guid);
+                if (carrierDetails.isEmpty()) {
+                    log.debug("Carrier Details is null for GUId {} with Request Id {}", guid, LoggerHelper.getRequestIdFromMDC());
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
+                log.info("Deleted carrier details for GUId {} with Request Id {}", guid, LoggerHelper.getRequestIdFromMDC());
+                carrierDao.delete(carrierDetails.get());
+            }
             return ResponseHelper.buildSuccessResponse();
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -176,17 +193,35 @@ public class CarrierDetailService implements ICarrierDetailService {
             if(request == null) {
                 log.error("Request is empty for Carrier Detail retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
+            if(request.getId() == null && request.getGuid() == null) {
+                log.error("Request Id and Guid is null for Carrier Detail retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            }
             if(request.getId() == null) {
                 log.error("Request Id is null for Carrier Detail retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
-            long id = request.getId();
-            Optional<CarrierDetails> carrierDetail = carrierDao.findById(id);
-            if (carrierDetail.isEmpty()) {
-                log.debug("Carrier Detail is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
-                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+            if(request.getGuid() == null) {
+                log.error("GUID is null for Carrier Detail retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
-            log.info("Carrier Detail fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
-            CarrierDetailResponse response = convertEntityToDto(carrierDetail.get());
+            Optional<CarrierDetails> carrierDetail;
+            CarrierDetailResponse response;
+            if(request.getId() != null) {
+                long id = request.getId();
+                carrierDetail = carrierDao.findById(id);
+                if (carrierDetail.isEmpty()) {
+                    log.debug("Carrier Detail is null for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
+                log.info("Carrier Detail fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
+            } else {
+                UUID guid = UUID.fromString(request.getGuid());
+                carrierDetail = carrierDao.findByGuid(guid);
+                if (carrierDetail.isEmpty()) {
+                    log.debug("Carrier Detail is null for GUId {} with Request Id {}", guid, LoggerHelper.getRequestIdFromMDC());
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
+                log.info("Carrier Detail fetched successfully for GUId {} with Request Id {}", guid, LoggerHelper.getRequestIdFromMDC());
+            }
+            response = convertEntityToDto(carrierDetail.get());
             return ResponseHelper.buildSuccessResponse(response);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()

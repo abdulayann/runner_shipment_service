@@ -27,6 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
@@ -172,21 +173,37 @@ public class ViewsService implements IViewsService {
             if(request == null) {
                 log.debug("Request is empty for Views delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
-            if(request.getId() == null) {
-                log.debug("Request Id is null for Views delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            if(request.getId() == null && request.getGuid() == null) {
+                log.error("Request Id and Guid is null for Views delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
-            long id = request.getId();
-            Optional<Views> view = viewsDao.findById(id);
-            if(!view.isPresent()) {
-                log.debug("View is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
-                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+            if(request.getId() == null) {
+                log.error("Request Id is null for Views delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            }
+            if(request.getGuid() == null) {
+                log.error("GUID is null for Views delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            }
+            Optional<Views> view;
+            if(request.getId() != null) {
+                long id = request.getId();
+                view = viewsDao.findById(id);
+                if(!view.isPresent()) {
+                    log.debug("View is null for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
+            } else {
+                UUID guid = UUID.fromString(request.getGuid());
+                view = viewsDao.findByGuid(guid);
+                if(!view.isPresent()) {
+                    log.debug("View is null for GUId {} with Request Id {}", guid, LoggerHelper.getRequestIdFromMDC());
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
             }
             if(defaultViewsDao.findByDefaultViewId(view.get().getId()).isPresent())
             {
                 defaultViewsDao.delete(defaultViewsDao.findByDefaultViewId(view.get().getId()).get());
             }
             viewsDao.delete(view.get());
-            log.info("Deleted views for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
+            log.info("Deleted views for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
             return ResponseHelper.buildSuccessResponse();
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -203,17 +220,35 @@ public class ViewsService implements IViewsService {
             if(request == null) {
                 log.error("Request is empty for Views retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
+            if(request.getId() == null && request.getGuid() == null) {
+                log.error("Request Id and Guid is null for Views retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            }
             if(request.getId() == null) {
                 log.error("Request Id is null for Views retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
-            long id = request.getId();
-            Optional<Views> view = viewsDao.findById(id);
-            if(!view.isPresent()) {
-                log.debug("View is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
-                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+            if(request.getGuid() == null) {
+                log.error("GUID is null for Views retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
-            log.info("Views Details fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
-            ViewsResponse response = convertEntityToDto(view.get());
+            Optional<Views> view;
+            ViewsResponse response;
+            if(request.getId() != null) {
+                long id = request.getId();
+                view = viewsDao.findById(id);
+                if(!view.isPresent()) {
+                    log.debug("View is null for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
+                log.info("Views Details fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
+            } else {
+                UUID guid = UUID.fromString(request.getGuid());
+                view = viewsDao.findByGuid(guid);
+                if(!view.isPresent()) {
+                    log.debug("View is null for GUId {} with Request Id {}", guid, LoggerHelper.getRequestIdFromMDC());
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
+                log.info("Views Details fetched successfully for GUId {} with Request Id {}", guid, LoggerHelper.getRequestIdFromMDC());
+            }
+            response = convertEntityToDto(view.get());
             return ResponseHelper.buildSuccessResponse(response);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()

@@ -154,18 +154,33 @@ public class ReferenceNumbersService implements IReferenceNumbersService {
             if(request == null) {
                 log.debug("Request is empty for Reference Number delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
-            if(request.getId() == null) {
-                log.debug("Request Id is null for Reference Number delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            if(request.getId() == null && request.getGuid() == null) {
+                log.error("Request Id and Guid is null for Reference Number delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
-            long id = request.getId();
-
-            Optional<ReferenceNumbers> referenceNumbers = referenceNumbersDao.findById(id);
-            if(!referenceNumbers.isPresent()) {
-                log.debug("Reference Numbers is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
-                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+            if(request.getId() == null) {
+                log.error("Request Id is null for Reference Number delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            }
+            if(request.getGuid() == null) {
+                log.error("GUID is null for Reference Number delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            }
+            Optional<ReferenceNumbers> referenceNumbers;
+            if(request.getId() != null) {
+                long id = request.getId();
+                referenceNumbers = referenceNumbersDao.findById(id);
+                if(!referenceNumbers.isPresent()) {
+                    log.debug("Reference Numbers is null for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
+            } else {
+                UUID guid = UUID.fromString(request.getGuid());
+                referenceNumbers = referenceNumbersDao.findByGuid(guid);
+                if(!referenceNumbers.isPresent()) {
+                    log.debug("Reference Numbers is null for GUId {} with Request Id {}", guid, LoggerHelper.getRequestIdFromMDC());
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
             }
             referenceNumbersDao.delete(referenceNumbers.get());
-            log.info("Deleted reference number for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
+            log.info("Deleted reference number for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
             return ResponseHelper.buildSuccessResponse();
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -182,17 +197,35 @@ public class ReferenceNumbersService implements IReferenceNumbersService {
             if(request == null) {
                 log.error("Request is empty for Reference Number retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
+            if(request.getId() == null && request.getGuid() == null) {
+                log.error("Request Id and Guid is null for Reference Number retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            }
             if(request.getId() == null) {
                 log.error("Request Id is null for Reference Number retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
-            long id = request.getId();
-            Optional<ReferenceNumbers> referenceNumbers = referenceNumbersDao.findById(id);
-            if(!referenceNumbers.isPresent()) {
-                log.debug("Reference Numbers is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
-                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+            if(request.getGuid() == null) {
+                log.error("GUID is null for Reference Number retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
-            log.info("Reference Number details fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
-            ReferenceNumbersResponse response = convertEntityToDto(referenceNumbers.get());
+            Optional<ReferenceNumbers> referenceNumbers;
+            ReferenceNumbersResponse response;
+            if(request.getId() != null) {
+                long id = request.getId();
+                referenceNumbers = referenceNumbersDao.findById(id);
+                if(!referenceNumbers.isPresent()) {
+                    log.debug("Reference Numbers is null for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
+                log.info("Reference Number details fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
+            } else {
+                UUID guid = UUID.fromString(request.getGuid());
+                referenceNumbers = referenceNumbersDao.findByGuid(guid);
+                if(!referenceNumbers.isPresent()) {
+                    log.debug("Reference Numbers is null for GUId {} with Request Id {}", guid, LoggerHelper.getRequestIdFromMDC());
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
+                log.info("Reference Number details fetched successfully for GUId {} with Request Id {}", guid, LoggerHelper.getRequestIdFromMDC());
+            }
+            response = convertEntityToDto(referenceNumbers.get());
             return ResponseHelper.buildSuccessResponse(response);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()

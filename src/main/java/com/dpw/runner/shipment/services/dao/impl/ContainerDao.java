@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.dao.impl;
 
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
+import com.dpw.runner.shipment.services.entity.CarrierDetails;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.repository.interfaces.IContainerRepository;
 import lombok.extern.slf4j.Slf4j;
@@ -15,6 +16,7 @@ import org.springframework.stereotype.Repository;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 
 @Repository
@@ -40,6 +42,11 @@ public class ContainerDao implements IContainerDao {
     @Override
     public Optional<Containers> findById(Long id) {
         return containerRepository.findById(id);
+    }
+
+    @Override
+    public Optional<Containers> findByGuid(UUID guid) {
+        return containerRepository.findByGuid(guid);
     }
 
     @Override

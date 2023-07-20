@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.dao.impl;
 
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
+import com.dpw.runner.shipment.services.entity.ServiceDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.enums.LifecycleHooks;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
@@ -16,6 +17,7 @@ import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 
 @Repository
 public class ShipmentDao implements IShipmentDao {
@@ -44,6 +46,11 @@ public class ShipmentDao implements IShipmentDao {
     @Override
     public Optional<ShipmentDetails> findById(Long id) {
         return shipmentRepository.findById(id);
+    }
+
+    @Override
+    public Optional<ShipmentDetails> findByGuid(UUID guid) {
+        return shipmentRepository.findByGuid(guid);
     }
 
     @Override

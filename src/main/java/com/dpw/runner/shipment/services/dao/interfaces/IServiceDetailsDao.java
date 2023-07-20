@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.dao.interfaces;
 
+import com.dpw.runner.shipment.services.entity.Routings;
 import com.dpw.runner.shipment.services.entity.ServiceDetails;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -7,6 +8,7 @@ import org.springframework.data.jpa.domain.Specification;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 public interface IServiceDetailsDao {
     ServiceDetails save(ServiceDetails serviceDetails);
@@ -14,4 +16,5 @@ public interface IServiceDetailsDao {
     Optional<ServiceDetails> findById(Long id);
     void delete(ServiceDetails serviceDetails);
     List<ServiceDetails> updateEntityFromShipment(List<ServiceDetails> serviceDetailsList, Long shipmentId) throws Exception;
+    Optional<ServiceDetails> findByGuid(UUID guid);
 }

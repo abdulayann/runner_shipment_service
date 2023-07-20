@@ -27,6 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
@@ -148,18 +149,33 @@ public class PartiesService implements IPartiesDetailsService {
             if(request == null) {
                 log.debug("Request is empty for Parties delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
-            if(request.getId() == null) {
-                log.debug("Request Id is null for Parties delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            if(request.getId() == null && request.getGuid() == null) {
+                log.error("Request Id and Guid is null for Parties delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
-            long id = request.getId();
-
-            Optional<Parties> note = partiesDao.findById(id);
-            if (note.isEmpty()) {
-                log.debug("PartiesDetails is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
-                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+            if(request.getId() == null) {
+                log.error("Request Id is null for Parties delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            }
+            if(request.getGuid() == null) {
+                log.error("GUID is null for Parties delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            }
+            Optional<Parties> note;
+            if(request.getId() != null) {
+                long id = request.getId();
+                note = partiesDao.findById(id);
+                if (note.isEmpty()) {
+                    log.debug("PartiesDetails is null for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
+            } else {
+                UUID guid = UUID.fromString(request.getGuid());
+                note = partiesDao.findByGuid(guid);
+                if (note.isEmpty()) {
+                    log.debug("PartiesDetails is null for GUId {} with Request Id {}", guid, LoggerHelper.getRequestIdFromMDC());
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
             }
             partiesDao.delete(note.get());
-            log.info("Deleted party detail for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
+            log.info("Deleted party detail for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
             return ResponseHelper.buildSuccessResponse();
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -177,17 +193,35 @@ public class PartiesService implements IPartiesDetailsService {
             if(request == null) {
                 log.error("Request is empty for Parties details retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
+            if(request.getId() == null && request.getGuid() == null) {
+                log.error("Request Id and Guid is null for Parties retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            }
             if(request.getId() == null) {
-                log.error("Request Id is null for Parties details retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+                log.error("Request Id is null for Parties retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
-            long id = request.getId();
-            Optional<Parties> notes = partiesDao.findById(id);
-            if (notes.isEmpty()) {
-                log.debug("PartiesDetails is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
-                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+            if(request.getGuid() == null) {
+                log.error("GUID is null for Parties retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
-            log.info("Parties details fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
-            PartiesResponse response = convertEntityToDto(notes.get());
+            Optional<Parties> notes;
+            PartiesResponse response;
+            if(request.getId() != null) {
+                long id = request.getId();
+                notes = partiesDao.findById(id);
+                if (notes.isEmpty()) {
+                    log.debug("PartiesDetails is null for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
+                log.info("Parties details fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
+            } else {
+                UUID guid = UUID.fromString(request.getGuid());
+                notes = partiesDao.findByGuid(guid);
+                if (notes.isEmpty()) {
+                    log.debug("PartiesDetails is null for GUId {} with Request Id {}", guid, LoggerHelper.getRequestIdFromMDC());
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
+                log.info("Parties details fetched successfully for GUId {} with Request Id {}", guid, LoggerHelper.getRequestIdFromMDC());
+            }
+            response = convertEntityToDto(notes.get());
             return ResponseHelper.buildSuccessResponse(response);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()

@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
 import com.dpw.runner.shipment.services.dao.interfaces.IDefaultViewsDao;
+import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.DefaultViews;
 import com.dpw.runner.shipment.services.repository.interfaces.IDefaultViewsRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -8,6 +9,7 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Repository
 public class DefaultViewsDao implements IDefaultViewsDao {
@@ -27,6 +29,11 @@ public class DefaultViewsDao implements IDefaultViewsDao {
     @Override
     public Optional<DefaultViews> findById(Long id) {
         return defaultViewsRepository.findById(id);
+    }
+
+    @Override
+    public Optional<DefaultViews> findByGuid(UUID guid) {
+        return defaultViewsRepository.findByGuid(guid);
     }
 
     @Override

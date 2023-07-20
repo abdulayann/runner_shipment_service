@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IFileRepoDao;
+import com.dpw.runner.shipment.services.entity.Events;
 import com.dpw.runner.shipment.services.entity.FileRepo;
 import com.dpw.runner.shipment.services.repository.interfaces.IFileRepoRepository;
 import com.nimbusds.jose.util.Pair;
@@ -15,10 +16,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -44,6 +42,11 @@ public class FileRepoDao implements IFileRepoDao {
     @Override
     public Optional<FileRepo> findById(Long id) {
         return fileRepoRepository.findById(id);
+    }
+
+    @Override
+    public Optional<FileRepo> findByGuid(UUID guid) {
+        return fileRepoRepository.findByGuid(guid);
     }
 
     @Override

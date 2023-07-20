@@ -27,6 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
@@ -148,17 +149,33 @@ public class TruckDriverDetailsService implements ITruckDriverDetailsService {
             if(request == null) {
                 log.debug("Request is empty for Truck Driver Details delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
-            if(request.getId() == null) {
-                log.debug("Request Id is null for Truck Driver Details delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            if(request.getId() == null && request.getGuid() == null) {
+                log.error("Request Id and Guid is null for Truck Driver delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
-            long id = request.getId();
-            Optional<TruckDriverDetails> note = truckDriverDetailsDao.findById(id);
-            if (note.isEmpty()) {
-                log.debug("TruckDriverDetails is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
-                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+            if(request.getId() == null) {
+                log.error("Request Id is null for Truck Driver delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            }
+            if(request.getGuid() == null) {
+                log.error("GUID is null for Truck Driver delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            }
+            Optional<TruckDriverDetails> note;
+            if(request.getId() != null) {
+                long id = request.getId();
+                note = truckDriverDetailsDao.findById(id);
+                if (note.isEmpty()) {
+                    log.debug("TruckDriverDetails is null for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
+            } else {
+                UUID guid = UUID.fromString(request.getGuid());
+                note = truckDriverDetailsDao.findByGuid(guid);
+                if (note.isEmpty()) {
+                    log.debug("TruckDriverDetails is null for GUId {} with Request Id {}", guid, LoggerHelper.getRequestIdFromMDC());
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
             }
             truckDriverDetailsDao.delete(note.get());
-            log.info("Deleted Truck Driver Details for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
+            log.info("Deleted Truck Driver Details for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
             return ResponseHelper.buildSuccessResponse();
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -176,17 +193,35 @@ public class TruckDriverDetailsService implements ITruckDriverDetailsService {
             if(request == null) {
                 log.error("Request is empty for Truck Driver Details retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
+            if(request.getId() == null && request.getGuid() == null) {
+                log.error("Request Id and Guid is null for Truck Driver retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            }
             if(request.getId() == null) {
-                log.error("Request Id is null for Truck Driver Details retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+                log.error("Request Id is null for Truck Driver retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
-            long id = request.getId();
-            Optional<TruckDriverDetails> notes = truckDriverDetailsDao.findById(id);
-            if (notes.isEmpty()) {
-                log.debug("Truck Driver Details is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
-                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+            if(request.getGuid() == null) {
+                log.error("GUID is null for Truck Driver retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
-            log.info("Truck Driver Details fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
-            TruckDriverDetailsResponse response = convertEntityToDto(notes.get());
+            Optional<TruckDriverDetails> notes;
+            TruckDriverDetailsResponse response;
+            if(request.getId() != null) {
+                long id = request.getId();
+                notes = truckDriverDetailsDao.findById(id);
+                if (notes.isEmpty()) {
+                    log.debug("Truck Driver Details is null for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
+                log.info("Truck Driver Details fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
+            } else {
+                UUID guid = UUID.fromString(request.getGuid());
+                notes = truckDriverDetailsDao.findByGuid(guid);
+                if (notes.isEmpty()) {
+                    log.debug("Truck Driver Details is null for GUId {} with Request Id {}", guid, LoggerHelper.getRequestIdFromMDC());
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
+                log.info("Truck Driver Details fetched successfully for GUId {} with Request Id {}", guid, LoggerHelper.getRequestIdFromMDC());
+            }
+            response = convertEntityToDto(notes.get());
             return ResponseHelper.buildSuccessResponse(response);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()

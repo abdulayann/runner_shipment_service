@@ -27,10 +27,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
@@ -155,19 +152,34 @@ public class PackingService implements IPackingService {
         if(commonRequestModel == null) {
             log.debug("Request is empty for Packing delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
         }
-        if(commonRequestModel.getId() == null) {
-            log.debug("Request Id is null for Packing delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+        if(commonRequestModel.getId() == null && commonRequestModel.getGuid() == null) {
+            log.error("Request Id and Guid is null for Packing delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
         }
-        Long id = commonRequestModel.getId();
-
-        Optional<Packing> targetPacking = packingDao.findById(id);
-        if (targetPacking.isEmpty()) {
-            log.debug("No entity present for id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
-            return ResponseHelper.buildFailedResponse(PackingConstants.NO_DATA);
+        if(commonRequestModel.getId() == null) {
+            log.error("Request Id is null for Packing delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+        }
+        if(commonRequestModel.getGuid() == null) {
+            log.error("GUID is null for Packing delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+        }
+        Optional<Packing> targetPacking;
+        if(commonRequestModel.getId() != null) {
+            Long id = commonRequestModel.getId();
+            targetPacking = packingDao.findById(id);
+            if (targetPacking.isEmpty()) {
+                log.debug("No entity present for id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
+                return ResponseHelper.buildFailedResponse(PackingConstants.NO_DATA);
+            }
+        } else {
+            UUID guid = UUID.fromString(commonRequestModel.getGuid());
+            targetPacking = packingDao.findByGuid(guid);
+            if (targetPacking.isEmpty()) {
+                log.debug("No entity present for GUId {} with Request Id {}", guid, LoggerHelper.getRequestIdFromMDC());
+                return ResponseHelper.buildFailedResponse(PackingConstants.NO_DATA);
+            }
         }
         try {
             packingDao.delete(targetPacking.get());
-            log.info("Deleted packing for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
+            log.info("Deleted packing for Id {} with Request Id {}", commonRequestModel.getId(), LoggerHelper.getRequestIdFromMDC());
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_DELETE_EXCEPTION_MSG;
@@ -185,17 +197,35 @@ public class PackingService implements IPackingService {
             if(request == null) {
                 log.error("Request is empty for Packing retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
+            if(request.getId() == null && request.getGuid() == null) {
+                log.error("Request Id and Guid is null for Packing retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            }
             if(request.getId() == null) {
                 log.error("Request Id is null for Packing retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
-            long id = request.getId();
-            Optional<Packing> packing = packingDao.findById(id);
-            if (packing.isEmpty()) {
-                log.debug("Packing is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
-                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+            if(request.getGuid() == null) {
+                log.error("GUID is null for Packing retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
-            log.info("Packing details fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
-            PackingResponse response = (PackingResponse) convertEntityToDto(packing.get());
+            Optional<Packing> packing;
+            PackingResponse response;
+            if(request.getId() != null) {
+                long id = request.getId();
+                packing = packingDao.findById(id);
+                if (packing.isEmpty()) {
+                    log.debug("Packing is null for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
+                log.info("Packing details fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
+            } else {
+                UUID guid = UUID.fromString(request.getGuid());
+                packing = packingDao.findByGuid(guid);
+                if (packing.isEmpty()) {
+                    log.debug("Packing is null for GUId {} with Request Id {}", guid, LoggerHelper.getRequestIdFromMDC());
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
+                log.info("Packing details fetched successfully for GUId {} with Request Id {}", guid, LoggerHelper.getRequestIdFromMDC());
+            }
+            response = (PackingResponse) convertEntityToDto(packing.get());
             return ResponseHelper.buildSuccessResponse(response);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()

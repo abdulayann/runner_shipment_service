@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.dao.impl;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IJobDao;
+import com.dpw.runner.shipment.services.entity.FileRepo;
 import com.dpw.runner.shipment.services.entity.Jobs;
 import com.dpw.runner.shipment.services.repository.interfaces.IJobRepository;
 import com.nimbusds.jose.util.Pair;
@@ -14,10 +15,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -44,6 +42,11 @@ public class JobDao implements IJobDao {
     @Override
     public Optional<Jobs> findById(Long id) {
         return jobRepository.findById(id);
+    }
+
+    @Override
+    public Optional<Jobs> findByGuid(UUID guid) {
+        return jobRepository.findByGuid(guid);
     }
 
     @Override

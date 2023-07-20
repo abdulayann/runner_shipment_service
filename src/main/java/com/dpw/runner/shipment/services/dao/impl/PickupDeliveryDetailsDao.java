@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.dao.impl;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IPickupDeliveryDetailsDao;
+import com.dpw.runner.shipment.services.entity.Parties;
 import com.dpw.runner.shipment.services.entity.PickupDeliveryDetails;
 import com.dpw.runner.shipment.services.repository.interfaces.IPickupDeliveryDetailsRepository;
 import com.nimbusds.jose.util.Pair;
@@ -14,10 +15,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -44,6 +42,11 @@ public class PickupDeliveryDetailsDao implements IPickupDeliveryDetailsDao {
     @Override
     public Optional<PickupDeliveryDetails> findById(Long id) {
         return pickupDeliveryDetailsRepository.findById(id);
+    }
+
+    @Override
+    public Optional<PickupDeliveryDetails> findByGuid(UUID guid) {
+        return pickupDeliveryDetailsRepository.findByGuid(guid);
     }
 
     @Override

@@ -18,6 +18,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
+import java.util.Optional;
 
 @Slf4j
 @SuppressWarnings(value = "ALL")
@@ -65,10 +66,14 @@ public class PackingController {
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = PackingConstants.PACKING_DELETE_SUCCESSFUL)})
     @DeleteMapping(ApiConstants.API_DELETE)
-    public ResponseEntity<RunnerResponse> delete(@RequestParam @Valid Long id) {
+    public ResponseEntity<RunnerResponse> delete(@RequestParam Optional<Long> id, @RequestParam Optional<String> guid) {
         String responseMessage;
         try {
-            return (ResponseEntity<RunnerResponse>) packingService.delete(CommonRequestModel.buildRequest(id));
+            if(id.isPresent()) {
+                return (ResponseEntity<RunnerResponse>) packingService.delete(CommonRequestModel.buildRequest(id.get()));
+            } else {
+                return (ResponseEntity<RunnerResponse>) packingService.delete(CommonRequestModel.buildRequest(guid.get()));
+            }
         } catch (Exception e) {
             responseMessage = e.getMessage();
             return (ResponseEntity<RunnerResponse>) ResponseHelper.buildFailedResponse(responseMessage);

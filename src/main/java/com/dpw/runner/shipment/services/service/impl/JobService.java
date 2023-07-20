@@ -28,10 +28,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
@@ -156,19 +153,34 @@ public class JobService implements IJobService {
         if(commonRequestModel == null) {
             log.debug("Request is empty for Job delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
         }
-        if(commonRequestModel.getId() == null) {
-            log.debug("Request Id is null for Job delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+        if(commonRequestModel.getId() == null && commonRequestModel.getGuid() == null) {
+            log.error("Request Id and Guid is null for Job delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
         }
-        Long id = commonRequestModel.getId();
-
-        Optional<Jobs> targetJob = jobDao.findById(id);
-        if (targetJob.isEmpty()) {
-            log.debug("No entity present for id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
-            return ResponseHelper.buildFailedResponse(Constants.NO_DATA);
+        if(commonRequestModel.getId() == null) {
+            log.error("Request Id is null for Job delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+        }
+        if(commonRequestModel.getGuid() == null) {
+            log.error("GUID is null for Job delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+        }
+        Optional<Jobs> targetJob;
+        if(commonRequestModel.getId() != null) {
+            Long id = commonRequestModel.getId();
+            targetJob = jobDao.findById(id);
+            if (targetJob.isEmpty()) {
+                log.debug("No entity present for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
+                return ResponseHelper.buildFailedResponse(Constants.NO_DATA);
+            }
+        } else {
+            UUID guid = UUID.fromString(commonRequestModel.getGuid());
+            targetJob = jobDao.findByGuid(guid);
+            if (targetJob.isEmpty()) {
+                log.debug("No entity present for GUId {} with Request Id {}", guid, LoggerHelper.getRequestIdFromMDC());
+                return ResponseHelper.buildFailedResponse(Constants.NO_DATA);
+            }
         }
         try {
             jobDao.delete(targetJob.get());
-            log.info("Deleted job for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
+            log.info("Deleted job for Id {} with Request Id {}", commonRequestModel.getId(), LoggerHelper.getRequestIdFromMDC());
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_DELETE_EXCEPTION_MSG;
@@ -186,17 +198,35 @@ public class JobService implements IJobService {
             if(request == null) {
                 log.error("Request is empty for Job retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
+            if(request.getId() == null && request.getGuid() == null) {
+                log.error("Request Id and Guid is null for Job retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            }
             if(request.getId() == null) {
                 log.error("Request Id is null for Job retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
-            long id = request.getId();
-            Optional<Jobs> job = jobDao.findById(id);
-            if (job.isEmpty()) {
-                log.debug("Job is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
-                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+            if(request.getGuid() == null) {
+                log.error("GUID is null for Job retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
-            log.info("Job details fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
-            JobResponse response = (JobResponse) convertEntityToDto(job.get());
+            Optional<Jobs> job;
+            JobResponse response;
+            if(request.getId() != null) {
+                long id = request.getId();
+                job = jobDao.findById(id);
+                if (job.isEmpty()) {
+                    log.debug("Job is null for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
+                log.info("Job details fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
+            } else {
+                UUID guid = UUID.fromString(request.getGuid());
+                job = jobDao.findByGuid(guid);
+                if (job.isEmpty()) {
+                    log.debug("Job is null for GUId {} with Request Id {}", guid, LoggerHelper.getRequestIdFromMDC());
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
+                log.info("Job details fetched successfully for GUId {} with Request Id {}", guid, LoggerHelper.getRequestIdFromMDC());
+            }
+            response = (JobResponse) convertEntityToDto(job.get());
             return ResponseHelper.buildSuccessResponse(response);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()

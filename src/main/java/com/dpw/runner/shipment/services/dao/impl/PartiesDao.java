@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.dao.impl;
 
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.dao.interfaces.IPartiesDao;
+import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.entity.Parties;
 import com.dpw.runner.shipment.services.repository.interfaces.IPartiesRepository;
 import lombok.extern.slf4j.Slf4j;
@@ -14,6 +15,7 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Repository
 @Slf4j
@@ -39,6 +41,11 @@ public class PartiesDao implements IPartiesDao {
     @Override
     public Optional<Parties> findById(Long id) {
         return partiesRepository.findById(id);
+    }
+
+    @Override
+    public Optional<Parties> findByGuid(UUID guid) {
+        return partiesRepository.findByGuid(guid);
     }
 
     @Override

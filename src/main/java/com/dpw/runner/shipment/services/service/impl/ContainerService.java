@@ -27,10 +27,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
@@ -153,18 +150,34 @@ public class ContainerService implements IContainerService {
         if(commonRequestModel == null) {
             log.debug("Request is empty for Containers delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
         }
+        if(commonRequestModel.getId() == null && commonRequestModel.getGuid() == null) {
+            log.debug("Request Id and GUID is null for Containers delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+        }
         if(commonRequestModel.getId() == null) {
             log.debug("Request Id is null for Containers delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
         }
-        Long id = commonRequestModel.getId();
-        Optional<Containers> container = containerDao.findById(id);
-        if (container.isEmpty()) {
-            log.debug("Container details are null for id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
-            return ResponseHelper.buildFailedResponse(Constants.NO_DATA);
+        if(commonRequestModel.getGuid() == null) {
+            log.debug("GUID is null for Containers delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+        }
+        Optional<Containers> container;
+        if(commonRequestModel.getId() != null) {
+            Long id = commonRequestModel.getId();
+            container = containerDao.findById(id);
+            if (container.isEmpty()) {
+                log.debug("Container details are null for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
+                return ResponseHelper.buildFailedResponse(Constants.NO_DATA);
+            }
+        } else {
+            UUID guid = UUID.fromString(commonRequestModel.getGuid());
+            container = containerDao.findByGuid(guid);
+            if (container.isEmpty()) {
+                log.debug("Container details are null for GUId {} with Request Id {}", guid, LoggerHelper.getRequestIdFromMDC());
+                return ResponseHelper.buildFailedResponse(Constants.NO_DATA);
+            }
         }
         try {
             containerDao.delete(container.get());
-            log.info("Deleted container for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
+            log.info("Deleted container for Id {} with Request Id {}", commonRequestModel.getId(), LoggerHelper.getRequestIdFromMDC());
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_DELETE_EXCEPTION_MSG;
@@ -182,17 +195,35 @@ public class ContainerService implements IContainerService {
             if(request == null) {
                 log.error("Request is empty for Container retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
+            if(request.getId() == null && request.getGuid() == null) {
+                log.error("Request Id and Guid is null for Container retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            }
             if(request.getId() == null) {
                 log.error("Request Id is null for Container retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
-            long id = request.getId();
-            Optional<Containers> container = containerDao.findById(id);
-            if (container.isEmpty()) {
-                log.debug("Container is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
-                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+            if(request.getGuid() == null) {
+                log.error("GUID is null for Container retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
-            log.info("Container detail fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
-            JobResponse response = (JobResponse) convertEntityToDto(container.get());
+            Optional<Containers> container;
+            JobResponse response;
+            if(request.getId() != null) {
+                long id = request.getId();
+                container = containerDao.findById(id);
+                if (container.isEmpty()) {
+                    log.debug("Container is null for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
+                log.info("Container detail fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
+            } else {
+                UUID guid = UUID.fromString(request.getGuid());
+                container = containerDao.findByGuid(guid);
+                if (container.isEmpty()) {
+                    log.debug("Container is null for GUId {} with Request Id {}", guid, LoggerHelper.getRequestIdFromMDC());
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
+                log.info("Container detail fetched successfully for GUId {} with Request Id {}", guid, LoggerHelper.getRequestIdFromMDC());
+            }
+            response = (JobResponse) convertEntityToDto(container.get());
             return ResponseHelper.buildSuccessResponse(response);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()

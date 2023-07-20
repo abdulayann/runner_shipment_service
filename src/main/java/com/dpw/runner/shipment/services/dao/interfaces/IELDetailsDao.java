@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.dao.interfaces;
 
+import com.dpw.runner.shipment.services.entity.DefaultViews;
 import com.dpw.runner.shipment.services.entity.ELDetails;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -7,6 +8,7 @@ import org.springframework.data.jpa.domain.Specification;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 public interface IELDetailsDao {
     ELDetails save(ELDetails elDetails);
@@ -15,4 +17,5 @@ public interface IELDetailsDao {
     void delete(ELDetails elDetails);
     Optional<ELDetails> findByElNumber(String elNumber);
     List<ELDetails> updateEntityFromShipment(List<ELDetails> elDetailsList, Long shipmentId) throws Exception;
+    Optional<ELDetails> findByGuid(UUID guid);
 }
