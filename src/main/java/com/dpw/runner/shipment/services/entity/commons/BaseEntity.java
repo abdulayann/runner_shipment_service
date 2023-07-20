@@ -31,6 +31,7 @@ public class BaseEntity implements Serializable {
     @GenericGenerator(name = "UUID", strategy = "org.hibernate.id.UUIDGenerator")
     @Column(name = "guid", columnDefinition = "uuid")
     @ColumnDefault("random_uuid()")
+    @Type(type = "uuid-char")
     private UUID guid;
 
     @Id
