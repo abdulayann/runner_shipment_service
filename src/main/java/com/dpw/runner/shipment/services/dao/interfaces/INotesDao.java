@@ -15,5 +15,5 @@ public interface INotesDao {
     void delete(Notes notes);
     List<Notes> findByEntityIdAndEntityType(Long entityId, String entityType);
     List<Notes> updateEntityFromShipment(List<Notes> notesList, Long shipmentId) throws Exception;
-    List<Notes> saveNotes(List<Notes> notesRequests, Long entityId, String entityType);
+    List<Notes> saveEntityFromShipment(List<Notes> notesRequests, Long entityId, String entityType);
 }

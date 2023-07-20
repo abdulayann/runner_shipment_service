@@ -75,7 +75,7 @@ public class NotesDao implements INotesDao {
                     }
                     notesRequestList.add(request);
                 }
-                responseNotes = saveNotes(notesRequestList, shipmentId, Constants.SHIPMENT_TYPE);
+                responseNotes = saveEntityFromShipment(notesRequestList, shipmentId, Constants.SHIPMENT_TYPE);
             }
             deleteNotes(hashMap);
             return responseNotes;
@@ -87,7 +87,7 @@ public class NotesDao implements INotesDao {
         }
     }
 
-    public List<Notes> saveNotes(List<Notes> notesRequests, Long entityId, String entityType) {
+    public List<Notes> saveEntityFromShipment(List<Notes> notesRequests, Long entityId, String entityType) {
         List<Notes> res = new ArrayList<>();
         for(Notes req : notesRequests){
             if(req.getId() != null){

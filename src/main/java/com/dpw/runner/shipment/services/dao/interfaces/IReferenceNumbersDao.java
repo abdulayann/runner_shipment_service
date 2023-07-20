@@ -14,5 +14,5 @@ public interface IReferenceNumbersDao {
     Optional<ReferenceNumbers> findById(Long id);
     void delete(ReferenceNumbers referenceNumbers);
     List<ReferenceNumbers> updateEntityFromShipment(List<ReferenceNumbers> referenceNumbersList, Long shipmentId) throws Exception;
-    List<ReferenceNumbers> saveReferenceNumbers(List<ReferenceNumbers> referenceNumbersRequests, Long shipmentId);
+    List<ReferenceNumbers> saveEntityFromShipment(List<ReferenceNumbers> referenceNumbersRequests, Long shipmentId);
 }

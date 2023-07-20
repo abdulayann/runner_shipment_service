@@ -23,7 +23,6 @@ import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.convertToClass;
 
 @Repository
 @Slf4j
@@ -70,7 +69,7 @@ public class BookingCarriageDao implements IBookingCarriageDao {
                     }
                     bookingCarriagesRequestList.add(request);
                 }
-                responseBookingCarriage = saveBookingCarriages(bookingCarriagesRequestList, shipmentId);
+                responseBookingCarriage = saveEntityFromShipment(bookingCarriagesRequestList, shipmentId);
             }
             deleteBookingCarriage(hashMap);
             return responseBookingCarriage;
@@ -82,7 +81,7 @@ public class BookingCarriageDao implements IBookingCarriageDao {
         }
     }
 
-    public List<BookingCarriage> saveBookingCarriages(List<BookingCarriage> bookingCarriages, Long shipmentId) {
+    public List<BookingCarriage> saveEntityFromShipment(List<BookingCarriage> bookingCarriages, Long shipmentId) {
         List<BookingCarriage> res = new ArrayList<>();
         for(BookingCarriage req : bookingCarriages){
             if(req.getId() != null){

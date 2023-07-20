@@ -75,7 +75,7 @@ public class FileRepoDao implements IFileRepoDao {
                     }
                     fileReposRequestList.add(request);
                 }
-                responseFileRepo = saveFileRepos(fileReposRequestList, shipmentId, Constants.SHIPMENT_TYPE);
+                responseFileRepo = saveEntityFromShipment(fileReposRequestList, shipmentId, Constants.SHIPMENT_TYPE);
             }
             deleteFileRepo(hashMap);
             return responseFileRepo;
@@ -87,7 +87,7 @@ public class FileRepoDao implements IFileRepoDao {
         }
     }
 
-    public List<FileRepo> saveFileRepos(List<FileRepo> fileRepos, Long entityId, String entityType) {
+    public List<FileRepo> saveEntityFromShipment(List<FileRepo> fileRepos, Long entityId, String entityType) {
         List<FileRepo> res = new ArrayList<>();
         for(FileRepo req : fileRepos){
             if(req.getId() != null){

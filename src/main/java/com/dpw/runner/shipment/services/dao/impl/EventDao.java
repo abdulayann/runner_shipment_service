@@ -23,7 +23,6 @@ import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.convertToClass;
 
 @Repository
 @Slf4j
@@ -70,7 +69,7 @@ public class EventDao implements IEventDao {
                     }
                     eventsRequestList.add(request);
                 }
-                responseEvents = saveEvents(eventsRequestList, shipmentId);
+                responseEvents = saveEntityFromShipment(eventsRequestList, shipmentId);
             }
             deleteEvents(hashMap);
             return responseEvents;
@@ -82,7 +81,7 @@ public class EventDao implements IEventDao {
         }
     }
 
-    public List<Events> saveEvents(List<Events> events, Long shipmentId) {
+    public List<Events> saveEntityFromShipment(List<Events> events, Long shipmentId) {
         List<Events> res = new ArrayList<>();
         for(Events req : events){
             if(req.getId() != null){

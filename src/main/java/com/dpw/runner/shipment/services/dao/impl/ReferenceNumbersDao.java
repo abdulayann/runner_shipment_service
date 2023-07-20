@@ -23,7 +23,6 @@ import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.convertToClass;
 
 @Repository
 @Slf4j
@@ -70,7 +69,7 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
                     }
                     referenceNumbersRequests.add(request);
                 }
-                responseReferenceNumbers = saveReferenceNumbers(referenceNumbersRequests, shipmentId);
+                responseReferenceNumbers = saveEntityFromShipment(referenceNumbersRequests, shipmentId);
             }
             deleteReferenceNumbers(hashMap);
             return responseReferenceNumbers;
@@ -82,7 +81,7 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
         }
     }
 
-    public List<ReferenceNumbers> saveReferenceNumbers(List<ReferenceNumbers> referenceNumbersRequests, Long shipmentId) {
+    public List<ReferenceNumbers> saveEntityFromShipment(List<ReferenceNumbers> referenceNumbersRequests, Long shipmentId) {
         List<ReferenceNumbers> res = new ArrayList<>();
         for(ReferenceNumbers req : referenceNumbersRequests){
             if(req.getId() != null){

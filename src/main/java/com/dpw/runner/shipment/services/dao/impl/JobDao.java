@@ -23,7 +23,6 @@ import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.convertToClass;
 
 @Repository
 @Slf4j
@@ -70,7 +69,7 @@ public class JobDao implements IJobDao {
                     }
                     jobRequestList.add(request);
                 }
-                responseJobs = saveJobs(jobRequestList, shipmentId);
+                responseJobs = saveEntityFromShipment(jobRequestList, shipmentId);
             }
             deleteJobs(hashMap);
             return responseJobs;
@@ -82,7 +81,7 @@ public class JobDao implements IJobDao {
         }
     }
 
-    public List<Jobs> saveJobs(List<Jobs> jobRequests, Long shipmentId) {
+    public List<Jobs> saveEntityFromShipment(List<Jobs> jobRequests, Long shipmentId) {
         List<Jobs> res = new ArrayList<>();
         for(Jobs req : jobRequests){
             if(req.getId() != null){

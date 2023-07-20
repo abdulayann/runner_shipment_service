@@ -23,7 +23,6 @@ import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.convertToClass;
 
 @Repository
 @Slf4j
@@ -70,7 +69,7 @@ public class PickupDeliveryDetailsDao implements IPickupDeliveryDetailsDao {
                     }
                     pickupDeliveryDetails.add(request);
                 }
-                responsePickupDeliveryDetails = savePickupDeliveryDetails(pickupDeliveryDetails, shipmentId);
+                responsePickupDeliveryDetails = saveEntityFromShipment(pickupDeliveryDetails, shipmentId);
             }
             deletePickupDeliveryDetails(hashMap);
             return responsePickupDeliveryDetails;
@@ -82,7 +81,7 @@ public class PickupDeliveryDetailsDao implements IPickupDeliveryDetailsDao {
         }
     }
 
-    public List<PickupDeliveryDetails> savePickupDeliveryDetails(List<PickupDeliveryDetails> pickupDeliveryDetailsRequests, Long shipmentId) {
+    public List<PickupDeliveryDetails> saveEntityFromShipment(List<PickupDeliveryDetails> pickupDeliveryDetailsRequests, Long shipmentId) {
         List<PickupDeliveryDetails> res = new ArrayList<>();
         for(PickupDeliveryDetails req : pickupDeliveryDetailsRequests){
             if(req.getId() != null){

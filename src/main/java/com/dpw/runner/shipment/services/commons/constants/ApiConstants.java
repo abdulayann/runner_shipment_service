@@ -13,6 +13,8 @@ public class ApiConstants {
 
     public static final String API_UPDATE_SHIPMENT = "/update/shipment";
 
+    public static final String API_UPDATE_CONSOLIDATION = "/update/consolidation";
+
     public static final String API_LIST = "/list";
 
     public static final String API_DELETE = "/delete";

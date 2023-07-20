@@ -14,5 +14,5 @@ public interface IPickupDeliveryDetailsDao {
     Optional<PickupDeliveryDetails> findById(Long id);
     void delete(PickupDeliveryDetails pickupDeliveryDetails);
     List<PickupDeliveryDetails> updateEntityFromShipment(List<PickupDeliveryDetails> pickupDeliveryDetailsList, Long shipmentId) throws Exception;
-    List<PickupDeliveryDetails> savePickupDeliveryDetails(List<PickupDeliveryDetails> pickupDeliveryDetailsRequests, Long shipmentId);
+    List<PickupDeliveryDetails> saveEntityFromShipment(List<PickupDeliveryDetails> pickupDeliveryDetailsRequests, Long shipmentId);
 }

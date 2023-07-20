@@ -23,7 +23,6 @@ import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.convertToClass;
 
 @Repository
 @Slf4j
@@ -70,7 +69,7 @@ public class PackingDao implements IPackingDao {
                     }
                     packingRequestList.add(request);
                 }
-                responsePackings = savePackings(packingRequestList, shipmentId);
+                responsePackings = saveEntityFromShipment(packingRequestList, shipmentId);
             }
             deletePackings(hashMap);
             return responsePackings;
@@ -82,7 +81,7 @@ public class PackingDao implements IPackingDao {
         }
     }
 
-    public List<Packing> savePackings(List<Packing> packings, Long shipmentId) {
+    public List<Packing> saveEntityFromShipment(List<Packing> packings, Long shipmentId) {
         List<Packing> res = new ArrayList<>();
         for(Packing req : packings){
             if(req.getId() != null){
