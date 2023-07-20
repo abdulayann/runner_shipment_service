@@ -974,9 +974,9 @@ public class ShipmentService implements IShipmentService {
             if (containerRequestList != null) {
                 updatedContainers = containerDao.updateEntityFromShipmentConsole(convertToEntityList(containerRequestList, Containers.class));
             } else {
-                updatedContainers = oldEntity.get().getContainers();
+                updatedContainers = oldEntity.get().getContainersList();
             }
-            entity.setContainers(updatedContainers);
+            entity.setContainersList(updatedContainers);
             AdditionalDetails updatedAdditionalDetails = null;
             if (additionalDetailRequest != null) {
                 updatedAdditionalDetails = additionalDetailDao.updateEntityFromShipment(convertToClass(additionalDetailRequest, AdditionalDetails.class), id);
@@ -992,7 +992,7 @@ public class ShipmentService implements IShipmentService {
             ShipmentDetailsResponse response = shipmentDetailsMapper.map(entity);
             response.setContainersList(updatedContainers.stream().map(e -> objectMapper.convertValue(e, ContainerResponse.class)).collect(Collectors.toList()));
             if (additionalDetailRequest != null) {
-                response.setAdditionalDetail(convertToClass(updatedAdditionalDetails, AdditionalDetailResponse.class));
+                response.setAdditionalDetails(convertToClass(updatedAdditionalDetails, AdditionalDetailResponse.class));
             }
             if (carrierDetailRequest != null) {
                 response.setCarrierDetails(convertToClass(updatedCarrierDetails, CarrierDetailResponse.class));
