@@ -98,7 +98,4 @@ public class ShipmentSettingsDetails extends MultiTenancy {
 
     @Column(name = "shipment_id_generation_counter")
     private Integer shipmentIdGenerationCounter;
-
-    @Column(name = "is_deleted")
-    private Boolean isDeleted = Boolean.FALSE;
 }

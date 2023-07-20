@@ -278,7 +278,4 @@ public class ShipmentDetails extends MultiTenancy {
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "shipmentId")
     private List<Jobs> jobsList;
-
-    @Column(name = "is_deleted")
-    private Boolean isDeleted = Boolean.FALSE;
 }

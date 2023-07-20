@@ -15,7 +15,8 @@ CREATE TABLE achieved_quantities (
     consolidation_charge_quantity numeric(19,2),
     consolidation_charge_quantity_unit varchar,
     weight_volume numeric(19,2),
-    weight_volume_unit varchar
+    weight_volume_unit varchar,
+    is_deleted BOOLEAN DEFAULT FALSE
 );
 
 CREATE TABLE allocations (
@@ -39,7 +40,8 @@ CREATE TABLE allocations (
     volume numeric(19,2),
     volume_unit varchar,
     weight numeric(19,2),
-    weight_unit varchar
+    weight_unit varchar,
+    is_deleted BOOLEAN DEFAULT FALSE
 );
 
 CREATE TABLE arrival_departure_details (
@@ -61,7 +63,8 @@ CREATE TABLE arrival_departure_details (
     departure_container_yard_id bigint,
     departure_first_foreign_port_id bigint,
     departure_last_foreign_port_id bigint,
-    departure_transport_port_id bigint
+    departure_transport_port_id bigint,
+    is_deleted BOOLEAN DEFAULT FALSE
 );
 
 CREATE TABLE booking_carriage (
@@ -82,7 +85,8 @@ CREATE TABLE booking_carriage (
     shipment_id bigint,
     vessel varchar,
     vessel_id bigint,
-    voyage varchar
+    voyage varchar,
+    is_deleted BOOLEAN DEFAULT FALSE
 );
 
 CREATE TABLE carrier_details (
@@ -107,7 +111,8 @@ CREATE TABLE carrier_details (
     shipping_line varchar,
     truck_ref_number varchar,
     vessel varchar,
-    voyage varchar
+    voyage varchar,
+    is_deleted BOOLEAN DEFAULT FALSE
 );
 
 CREATE TABLE consolidation_details (
@@ -192,7 +197,8 @@ CREATE TABLE consolidation_details (
     achieved_quantities_id bigint,
     allocations_id bigint,
     arrival_departure_details_id bigint,
-    carrier_detail_id bigint
+    carrier_detail_id bigint,
+    is_deleted BOOLEAN DEFAULT FALSE
 );
 
 CREATE TABLE containers (
@@ -273,7 +279,8 @@ CREATE TABLE containers (
     volume_utilization varchar,
     weight_utilization varchar,
     delivery_address_id bigint,
-    pickup_address_id bigint
+    pickup_address_id bigint,
+    is_deleted BOOLEAN DEFAULT FALSE
 );
 
 CREATE TABLE default_views (
@@ -281,7 +288,8 @@ CREATE TABLE default_views (
     default_view_id bigint,
     entity varchar,
     guid uuid,
-    username varchar
+    username varchar,
+    is_deleted BOOLEAN DEFAULT FALSE
 );
 
 CREATE TABLE dg_mapping (
@@ -296,7 +304,8 @@ CREATE TABLE dg_mapping (
     consolidation_id bigint,
     dg_class varchar,
     dg_substance_id bigint,
-    packing_id bigint
+    packing_id bigint,
+    is_deleted BOOLEAN DEFAULT FALSE
 );
 
 CREATE TABLE el_details (
@@ -317,7 +326,8 @@ CREATE TABLE el_details (
     shipment_id bigint,
     unit varchar,
     weight numeric(19,2),
-    weight_unit varchar
+    weight_unit varchar,
+    is_deleted BOOLEAN DEFAULT FALSE
 );
 
 CREATE TABLE events (
@@ -340,7 +350,8 @@ CREATE TABLE events (
     place_description varchar,
     place_name varchar,
     shipment_id bigint,
-    source varchar
+    source varchar,
+    is_deleted BOOLEAN DEFAULT FALSE
 );
 
 CREATE TABLE file_repo (
@@ -358,7 +369,8 @@ CREATE TABLE file_repo (
     event_code varchar,
     file_name varchar,
     is_posted boolean,
-    path varchar
+    path varchar,
+    is_deleted BOOLEAN DEFAULT FALSE
 );
 
 CREATE TABLE jobs (
@@ -388,7 +400,8 @@ CREATE TABLE jobs (
     shipment_id bigint,
     transport_mode varchar,
     buyer_detail_id bigint,
-    supplier_detail_id bigint
+    supplier_detail_id bigint,
+    is_deleted BOOLEAN DEFAULT FALSE
 );
 
 CREATE TABLE logs (
@@ -406,7 +419,8 @@ CREATE TABLE logs (
     entity_name varchar,
     parent_id varchar,
     parent_type varchar,
-    user_name varchar
+    user_name varchar,
+    is_deleted BOOLEAN DEFAULT FALSE
 );
 
 CREATE TABLE notes (
@@ -424,7 +438,8 @@ CREATE TABLE notes (
     insert_user_id varchar,
     is_active boolean,
     is_public boolean,
-    text varchar
+    text varchar,
+    is_deleted BOOLEAN DEFAULT FALSE
 );
 
 CREATE TABLE packing (
@@ -485,7 +500,8 @@ CREATE TABLE packing (
     weight numeric(19,2),
     weight_unit varchar,
     width numeric(19,2),
-    width_unit varchar
+    width_unit varchar,
+    is_deleted BOOLEAN DEFAULT FALSE
 );
 
 CREATE TABLE parties (
@@ -502,7 +518,8 @@ CREATE TABLE parties (
     entity_type varchar,
     org_code varchar,
     org_data jsonb,
-    party_type varchar
+    party_type varchar,
+    is_deleted BOOLEAN DEFAULT FALSE
 );
 
 CREATE TABLE pickup_delivery_details (
@@ -524,7 +541,8 @@ CREATE TABLE pickup_delivery_details (
     broker_id bigint,
     destination_id bigint,
     source_id bigint,
-    transporter_id bigint
+    transporter_id bigint,
+    is_deleted BOOLEAN DEFAULT FALSE
 );
 
 CREATE TABLE reference_numbers (
@@ -539,7 +557,8 @@ CREATE TABLE reference_numbers (
     country_of_issue varchar,
     reference_number varchar,
     shipment_id bigint,
-    type varchar
+    type varchar,
+    is_deleted BOOLEAN DEFAULT FALSE
 );
 
 CREATE TABLE routings (
@@ -570,7 +589,8 @@ CREATE TABLE routings (
     transit_days bigint,
     vessel_id bigint,
     vessel_name varchar,
-    voyage varchar
+    voyage varchar,
+    is_deleted BOOLEAN DEFAULT FALSE
 );
 
 CREATE TABLE services (
@@ -591,7 +611,8 @@ CREATE TABLE services (
     service_type varchar,
     shipment_id bigint,
     srv_location integer,
-    contractor_id bigint
+    contractor_id bigint,
+    is_deleted BOOLEAN DEFAULT FALSE
 );
 
 CREATE TABLE shipment_additional_details (
@@ -692,7 +713,8 @@ CREATE TABLE shipment_additional_details (
     receiving_forwarder_id bigint,
     sending_agent_id bigint,
     sending_forwarder_id bigint,
-    trader_or_supplier_id bigint
+    trader_or_supplier_id bigint,
+    is_deleted BOOLEAN DEFAULT FALSE
 );
 
 
@@ -767,7 +789,8 @@ CREATE TABLE shipment_details (
     carrier_detail_id bigint,
     client_id bigint,
     consignee_id bigint,
-    consigner_id bigint
+    consigner_id bigint,
+    is_deleted BOOLEAN DEFAULT FALSE
 );
 
 CREATE TABLE shipment_setting (
@@ -801,12 +824,14 @@ CREATE TABLE shipment_setting (
     shipment_id_generation_type integer,
     shipment_import_approver_role varchar,
     shipment_lite boolean,
-    shipment_ti_carges_linkage boolean
+    shipment_ti_carges_linkage boolean,
+    is_deleted BOOLEAN DEFAULT FALSE
 );
 
 CREATE TABLE shipment_settings_details_restricted_locations (
     shipment_settings_details_id bigint NOT NULL GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
-    restricted_locations integer
+    restricted_locations integer,
+    is_deleted BOOLEAN DEFAULT FALSE
 );
 
 CREATE TABLE truck_driver_details (
@@ -828,7 +853,8 @@ CREATE TABLE truck_driver_details (
     transporter_name varchar,
     transporter_type varchar,
     truck_number_plate varchar,
-    truck_or_trailer_type_id varchar
+    truck_or_trailer_type_id varchar,
+    is_deleted BOOLEAN DEFAULT FALSE
 );
 
 CREATE TABLE validations (
@@ -841,7 +867,8 @@ CREATE TABLE validations (
     tenant_id integer,
     entity varchar,
     schema_validator jsonb,
-    lifecycle_hook varchar
+    lifecycle_hook varchar,
+    is_deleted BOOLEAN DEFAULT FALSE
 );
 
 CREATE TABLE views (
@@ -855,7 +882,8 @@ CREATE TABLE views (
     columns jsonb,
     criteria jsonb,
     entity varchar,
-    is_public boolean
+    is_public boolean,
+    is_deleted BOOLEAN DEFAULT FALSE
 );
 
 ALTER TABLE ONLY arrival_departure_details
@@ -996,7 +1024,7 @@ ALTER TABLE ONLY jobs
 ALTER TABLE ONLY shipment_details
     ADD CONSTRAINT shipment_details_client FOREIGN KEY (client_id) REFERENCES parties(id);
 
-CREATE TABLE IF NOT EXISTS shipments_containers_mapping (
+CREATE TABLE shipments_containers_mapping (
     id BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
     guid uuid,
     container_id bigint NOT NULL,
@@ -1007,6 +1035,7 @@ CREATE TABLE IF NOT EXISTS shipments_containers_mapping (
     updated_at TIMESTAMP,
     created_by INT,
     updated_by INT,
-    CONSTRAINT Shipments_Containers UNIQUE (container_id, shipment_id)
+    CONSTRAINT Shipments_Containers UNIQUE (container_id, shipment_id),
+    is_deleted BOOLEAN DEFAULT FALSE
 )
 

@@ -59,7 +59,4 @@ public class Events extends MultiTenancy {
 
     @Column(name = "event_estimate_update_reasons")
     private String event_estimate_update_reasons;
-
-    @Column(name = "is_deleted")
-    private Boolean isDeleted = Boolean.FALSE;
 }

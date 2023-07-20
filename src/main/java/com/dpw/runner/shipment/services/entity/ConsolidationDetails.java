@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.entity;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import lombok.*;
 import lombok.experimental.Accessors;
+import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Where;
 
 import javax.persistence.*;
@@ -18,6 +19,8 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Accessors(chain = true)
+@SQLDelete(sql = "UPDATE containers SET is_deleted = true WHERE id=?")
+@Where(clause = "is_deleted = false")
 public class ConsolidationDetails extends MultiTenancy {
 
     @Column(name = "consolidation_number")

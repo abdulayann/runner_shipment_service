@@ -239,7 +239,4 @@ public class Containers extends MultiTenancy {
     @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "delivery_address_id", referencedColumnName = "id")
     private Parties deliveryAddress;
-
-    @Column(name = "is_deleted")
-    private Boolean isDeleted = Boolean.FALSE;
 }

@@ -85,8 +85,5 @@ public class Routings extends MultiTenancy {
 
     @Column(name = "transit_days")
     private Long transitDays;
-
-    @Column(name = "is_deleted")
-    private Boolean isDeleted = Boolean.FALSE;
 }
 
