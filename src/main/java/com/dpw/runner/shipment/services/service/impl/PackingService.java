@@ -13,6 +13,7 @@ import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingService;
+import com.dpw.runner.shipment.services.utils.CSVParsingUtil;
 import com.nimbusds.jose.util.Pair;
 import com.opencsv.CSVReader;
 import com.opencsv.exceptions.CsvException;
@@ -52,6 +53,8 @@ public class PackingService implements IPackingService {
     @Autowired
     ModelMapper modelMapper;
 
+    private final CSVParsingUtil<Packing> parser = new CSVParsingUtil<>(Packing.class);
+
     @Transactional
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
         String responseMsg;
@@ -75,7 +78,7 @@ public class PackingService implements IPackingService {
 
     @Override
     public void uploadPacking(MultipartFile file) throws Exception {
-        List<Packing> packingList = parseCSVFile(file);
+        List<Packing> packingList = parser.parseCSVFile(file);
         packingDao.saveAll(packingList);
     }
 
@@ -87,88 +90,11 @@ public class PackingService implements IPackingService {
         response.setHeader("Content-Disposition", "attachment; filename=\"packings.csv\"");
 
         try (PrintWriter writer = response.getWriter()) {
-            writer.println(generateCSVHeader());
+            writer.println(parser.generateCSVHeader());
             for (Packing packing : packingList) {
-                writer.println(formatContainerAsCSVLine(packing));
+                writer.println(parser.formatContainerAsCSVLine(packing));
             }
         }
-    }
-
-    private String generateCSVHeader() {
-        StringBuilder headerBuilder = new StringBuilder();
-        Field[] fields = Packing.class.getDeclaredFields();
-        for (Field field : fields) {
-            if (headerBuilder.length() > 0) {
-                headerBuilder.append(",");
-            }
-            headerBuilder.append(field.getName());
-        }
-        return headerBuilder.toString();
-    }
-
-    private String formatContainerAsCSVLine(Packing packing) {
-        StringBuilder lineBuilder = new StringBuilder();
-        Field[] fields = Packing.class.getDeclaredFields();
-        for (Field field : fields) {
-            field.setAccessible(true);
-            try {
-                Object value = field.get(packing);
-                if (lineBuilder.length() > 0) {
-                    lineBuilder.append(",");
-                }
-                lineBuilder.append(value != null ? value.toString() : "");
-            } catch (IllegalAccessException e) {
-                e.printStackTrace();
-            }
-        }
-        return lineBuilder.toString();
-    }
-
-    private List<Packing> parseCSVFile(MultipartFile file) throws IOException, CsvException {
-        List<Packing> packingList = new ArrayList<>();
-        try (CSVReader csvReader = new CSVReader(new InputStreamReader(file.getInputStream()))) {
-            String[] header = csvReader.readNext();
-            log.info("PARSED HEADER : " + Arrays.asList(header).toString());
-            List<String[]> records = csvReader.readAll();
-            for (String[] record : records) {
-                Packing packings = new Packing();
-                for (int i = 0; i < record.length; i++) {
-                    setField(packings, header[i], record[i]);
-                }
-                packingList.add(packings);
-            }
-        } catch (NoSuchFieldException | IllegalAccessException e) {
-            log.error(e.getMessage());
-            throw new RuntimeException(e);
-        }
-        return packingList;
-    }
-
-    private void setField(Packing packings, String attributeName, String attributeValue) throws NoSuchFieldException, IllegalAccessException {
-        Field field = packings.getClass().getDeclaredField(attributeName);
-        field.setAccessible(true);
-
-        Class<?> fieldType = field.getType();
-        Object parsedValue = null;
-
-        if (fieldType == int.class || fieldType == Integer.class) {
-            parsedValue = Integer.parseInt(attributeValue);
-        } else if (fieldType == String.class) {
-            parsedValue = attributeValue;
-        } else if (fieldType == Long.class || fieldType == long.class) {
-            parsedValue = Long.parseLong(attributeValue);
-        } else if (fieldType == boolean.class || fieldType == Boolean.class) {
-            parsedValue = Boolean.parseBoolean(attributeValue);
-        } else if (fieldType == BigDecimal.class) {
-            parsedValue = BigDecimal.valueOf(Double.valueOf(attributeValue));
-        } else if (fieldType == LocalDateTime.class) {
-            parsedValue = LocalDateTime.parse(attributeValue);
-        } else {
-            throw new NoSuchFieldException();
-        }
-
-        field.set(packings, parsedValue);
-        log.info("SAVING PACKING : " + packings.toString());
     }
 
     @Transactional
