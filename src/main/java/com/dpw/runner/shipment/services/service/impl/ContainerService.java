@@ -16,6 +16,7 @@ import com.dpw.runner.shipment.services.dto.request.EventsRequest;
 import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.JobResponse;
 import com.dpw.runner.shipment.services.entity.Containers;
+import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.entity.Events;
 import com.dpw.runner.shipment.services.entity.enums.ContainerStatus;
 import com.dpw.runner.shipment.services.entity.Packing;
@@ -23,6 +24,7 @@ import com.dpw.runner.shipment.services.entity.ShipmentsContainersMapping;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerService;
+import com.dpw.runner.shipment.services.utils.CSVParsingUtil;
 import com.nimbusds.jose.util.Pair;
 import com.opencsv.CSVReader;
 import com.opencsv.exceptions.CsvException;
@@ -61,6 +63,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
+import static com.dpw.runner.shipment.services.utils.CSVParsingUtil.*;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.convertToEntityList;
 import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
@@ -75,6 +78,8 @@ public class ContainerService implements IContainerService {
     ModelMapper modelMapper;
     @Autowired
     IShipmentsContainersMappingDao shipmentsContainersMappingDao;
+    private final CSVParsingUtil<Containers> parser = new CSVParsingUtil<>(Containers.class);
+
     @Autowired
     IEventDao eventDao;
 
@@ -89,7 +94,7 @@ public class ContainerService implements IContainerService {
         List<EventsRequest> eventsRequestList = request.getEventsList();
         try {
             container = containerDao.save(container);
-            if(request.getShipmentIds() != null) {
+            if (request.getShipmentIds() != null) {
                 shipmentsContainersMappingDao.updateShipmentsMappings(container.getId(), request.getShipmentIds());
             }
             if(eventsRequestList != null){
@@ -109,115 +114,25 @@ public class ContainerService implements IContainerService {
 
     @Override
     public void uploadContainers(MultipartFile file) throws Exception {
-        List<Containers> containersList = parseCSVFile(file);
+        List<Containers> containersList = parser.parseCSVFile(file);
         containerDao.saveAll(containersList);
     }
 
     @Override
     public void downloadContainers(HttpServletResponse response) throws Exception {
-        List<Containers> containersList = containerDao.getAllContainers(); // Retrieve all containers from the database
+        List<Containers> containersList = containerDao.getAllContainers();
 
         response.setContentType("text/csv");
         response.setHeader("Content-Disposition", "attachment; filename=\"containers.csv\"");
 
         try (PrintWriter writer = response.getWriter()) {
-            writer.println(generateCSVHeader());
+            writer.println(parser.generateCSVHeader());
             for (Containers container : containersList) {
-                writer.println(formatContainerAsCSVLine(container));
+                writer.println(parser.formatContainerAsCSVLine(container));
             }
         }
     }
 
-    private String generateCSVHeader() {
-        StringBuilder headerBuilder = new StringBuilder();
-        Field[] fields = Containers.class.getDeclaredFields();
-        for (Field field : fields) {
-            if (headerBuilder.length() > 0) {
-                headerBuilder.append(",");
-            }
-            headerBuilder.append(field.getName());
-        }
-        return headerBuilder.toString();
-    }
-
-    private String formatContainerAsCSVLine(Containers container) {
-        StringBuilder lineBuilder = new StringBuilder();
-        Field[] fields = Containers.class.getDeclaredFields();
-        for (Field field : fields) {
-            field.setAccessible(true);
-            try {
-                Object value = field.get(container);
-                if (lineBuilder.length() > 0) {
-                    lineBuilder.append(",");
-                }
-                lineBuilder.append(value != null ? value.toString() : "");
-            } catch (IllegalAccessException e) {
-                e.printStackTrace();
-            }
-        }
-        return lineBuilder.toString();
-    }
-
-    private String getCamelCase(String name) {
-        StringBuilder sb = new StringBuilder(name);
-        sb.setCharAt(0, Character.toLowerCase(name.charAt(0)));
-        return sb.toString();
-    }
-
-    private List<Containers> parseCSVFile(MultipartFile file) throws IOException, CsvException {
-        List<Containers> containersList = new ArrayList<>();
-        List<String> mandatoryColumns = List.of("ContainerNumber", "ContainerCount", "ContainerCode");
-        try (CSVReader csvReader = new CSVReader(new InputStreamReader(file.getInputStream()))) {
-            String[] header = csvReader.readNext();
-            for (int i = 0; i < header.length; i++) {
-                header[i] = getCamelCase(header[i]);
-            }
-
-            log.info("PARSED HEADER : " + Arrays.asList(header).toString());
-            List<String[]> records = csvReader.readAll();
-            for (String[] record : records) {
-                Containers containers = new Containers();
-                for (int i = 0; i < record.length; i++) {
-                    setField(containers, header[i], record[i]);
-                }
-                containersList.add(containers);
-            }
-        } catch (NoSuchFieldException | IllegalAccessException e) {
-            log.error(e.getMessage());
-            throw new RuntimeException(e);
-        }
-        return containersList;
-    }
-
-    private void setField(Containers containers, String attributeName, String attributeValue) throws NoSuchFieldException, IllegalAccessException {
-        log.info(List.of(containers.getClass().getDeclaredFields()).toString());
-        Field field = containers.getClass().getDeclaredField(attributeName);
-        field.setAccessible(true);
-
-        Class<?> fieldType = field.getType();
-        Object parsedValue = null;
-
-        if (fieldType == int.class || fieldType == Integer.class) {
-            parsedValue = Integer.parseInt(attributeValue);
-        } else if (fieldType == String.class) {
-            parsedValue = attributeValue;
-        } else if (fieldType == Long.class || fieldType == long.class) {
-            parsedValue = Long.parseLong(attributeValue);
-        } else if (fieldType == boolean.class || fieldType == Boolean.class) {
-            parsedValue = Boolean.parseBoolean(attributeValue);
-        } else if (fieldType == BigDecimal.class) {
-            parsedValue = BigDecimal.valueOf(Double.valueOf(attributeValue));
-        } else if (fieldType == ContainerStatus.class) {
-            parsedValue = ContainerStatus.valueOf(attributeValue);
-        } else if (fieldType == LocalDateTime.class) {
-            parsedValue = LocalDateTime.parse(attributeValue);
-        } else {
-            throw new NoSuchFieldException();
-        }
-
-        field.set(containers, parsedValue);
-        log.info("SAVING CONTAINER : " + containers.toString());
-    }
 
     @Transactional
     public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
@@ -242,7 +157,7 @@ public class ContainerService implements IContainerService {
         containers.setId(oldEntity.get().getId());
         try {
             containers = containerDao.save(containers);
-            if(request.getShipmentIds() != null) {
+            if (request.getShipmentIds() != null) {
                 shipmentsContainersMappingDao.updateShipmentsMappings(containers.getId(), request.getShipmentIds());
             }
             if(eventsRequestList != null){
