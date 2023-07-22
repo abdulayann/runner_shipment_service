@@ -270,7 +270,8 @@ public class ConsolidationDetails extends MultiTenancy {
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "consolidationId")
     private List<Jobs> jobsList;
 
-    @OneToMany(fetch = FetchType.LAZY, mappedBy = "consolidationId")
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "entityId")
+    @Where(clause = "entity_type = 'CONSOLIDATION'")
     private List<Events> eventsList;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "entityId")

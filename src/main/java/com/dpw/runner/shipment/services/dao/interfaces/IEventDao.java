@@ -14,5 +14,5 @@ public interface IEventDao {
     Optional<Events> findById(Long id);
     void delete(Events events);
     List<Events> updateEntityFromShipment(List<Events> eventsList, Long shipmentId) throws Exception;
-    List<Events> saveEntityFromShipment(List<Events> events, Long shipmentId);
+    List<Events> saveEntityFromOtherEntity(List<Events> events, Long entityId, String entityType);
 }

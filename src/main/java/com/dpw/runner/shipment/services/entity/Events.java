@@ -21,11 +21,11 @@ import java.time.LocalDateTime;
 @Where(clause = "is_deleted = false")
 public class Events extends MultiTenancy {
 
-    @Column(name = "shipment_id")
-    private Long shipmentId;
+    @Column(name = "entity_id")
+    private Long entityId;
 
-    @Column(name = "consolidation_id")
-    private Long consolidationId;
+    @Column(name = "entity_type")
+    private String entityType;
 
     @Column(name = "master_list")
     private String masterList;

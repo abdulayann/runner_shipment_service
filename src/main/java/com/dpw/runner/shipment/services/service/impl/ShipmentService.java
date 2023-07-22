@@ -370,7 +370,7 @@ public class ShipmentService implements IShipmentService {
 
             List<EventsRequest> eventsRequest = request.getEventsList();
             if (eventsRequest != null)
-                shipmentDetails.setEventsList(eventDao.saveEntityFromShipment(convertToEntityList(eventsRequest, Events.class), shipmentId));
+                shipmentDetails.setEventsList(eventDao.saveEntityFromOtherEntity(convertToEntityList(eventsRequest, Events.class), shipmentId, Constants.SHIPMENT));
 
             List<FileRepoRequest> fileRepoRequest = request.getFileRepoList();
             if (fileRepoRequest != null)
@@ -510,7 +510,8 @@ public class ShipmentService implements IShipmentService {
 
     @Transactional
     public void createEvent(ShipmentDetails shipmentDetails, EventsRequest eventsRequest) {
-        eventsRequest.setShipmentId(shipmentDetails.getId());
+        eventsRequest.setEntityId(shipmentDetails.getId());
+        eventsRequest.setEntityType(Constants.SHIPMENT);
         eventDao.save(objectMapper.convertValue(eventsRequest, Events.class));
     }
 

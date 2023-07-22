@@ -105,7 +105,8 @@ public class ShipmentDetails extends MultiTenancy {
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "shipmentId")
     private List<ELDetails> elDetailsList;
 
-    @OneToMany(fetch = FetchType.LAZY, mappedBy = "shipmentId")
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "entityId")
+    @Where(clause = "entity_type = 'SHIPMENT'")
     private List<Events> eventsList;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "entityId")
