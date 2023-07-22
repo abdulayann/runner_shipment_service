@@ -27,6 +27,10 @@ import com.nimbusds.jose.util.Pair;
 import com.opencsv.CSVReader;
 import com.opencsv.exceptions.CsvException;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVParser;
+import org.apache.commons.csv.CSVRecord;
+import org.apache.commons.text.CaseUtils;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
@@ -38,6 +42,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
@@ -153,11 +158,21 @@ public class ContainerService implements IContainerService {
         return lineBuilder.toString();
     }
 
+    private String getCamelCase(String name) {
+        StringBuilder sb = new StringBuilder(name);
+        sb.setCharAt(0, Character.toLowerCase(name.charAt(0)));
+        return sb.toString();
+    }
+
     private List<Containers> parseCSVFile(MultipartFile file) throws IOException, CsvException {
         List<Containers> containersList = new ArrayList<>();
         List<String> mandatoryColumns = List.of("ContainerNumber", "ContainerCount", "ContainerCode");
         try (CSVReader csvReader = new CSVReader(new InputStreamReader(file.getInputStream()))) {
             String[] header = csvReader.readNext();
+            for (int i = 0; i < header.length; i++) {
+                header[i] = getCamelCase(header[i]);
+            }
+
             log.info("PARSED HEADER : " + Arrays.asList(header).toString());
             List<String[]> records = csvReader.readAll();
             for (String[] record : records) {
@@ -175,6 +190,7 @@ public class ContainerService implements IContainerService {
     }
 
     private void setField(Containers containers, String attributeName, String attributeValue) throws NoSuchFieldException, IllegalAccessException {
+        log.info(List.of(containers.getClass().getDeclaredFields()).toString());
         Field field = containers.getClass().getDeclaredField(attributeName);
         field.setAccessible(true);
 

@@ -210,7 +210,7 @@ public class TestDataGenerator {
             shipmentRequest1.setConsigner(consigner);
 
             shipmentRequest1.setPackingList(createPackingRequest(new Random().nextInt(10)));
-            shipmentRequest1.setAdditionalDetails(createAdditionalData());
+            shipmentRequest1.setAdditionalDetail(createAdditionalData());
             shipmentRequest1.setBookingCarriagesList(createBookingCarriageRequest(new Random().nextInt(10)));
             shipmentRequest1.setContainersList(createContainerRequest(new Random().nextInt(10)));
             shipmentRequest1.setElDetailsList(createElDetailsRequest(new Random().nextInt(10)));

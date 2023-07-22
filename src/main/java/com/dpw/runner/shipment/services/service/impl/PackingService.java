@@ -14,6 +14,8 @@ import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingService;
 import com.nimbusds.jose.util.Pair;
+import com.opencsv.CSVReader;
+import com.opencsv.exceptions.CsvException;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,8 +27,17 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.lang.reflect.Field;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -46,7 +57,7 @@ public class PackingService implements IPackingService {
         String responseMsg;
         PackingRequest request = null;
         request = (PackingRequest) commonRequestModel.getData();
-        if(request == null) {
+        if (request == null) {
             log.debug("Request is empty for Packing create with Request Id {}", LoggerHelper.getRequestIdFromMDC());
         }
         Packing packing = convertRequestToEntity(request);
@@ -62,15 +73,113 @@ public class PackingService implements IPackingService {
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(packing));
     }
 
+    @Override
+    public void uploadPacking(MultipartFile file) throws Exception {
+        List<Packing> packingList = parseCSVFile(file);
+        packingDao.saveAll(packingList);
+    }
+
+    @Override
+    public void downloadPacking(HttpServletResponse response) throws Exception {
+        List<Packing> packingList = packingDao.getAllPackings(); // Retrieve all packings from the database
+
+        response.setContentType("text/csv");
+        response.setHeader("Content-Disposition", "attachment; filename=\"packings.csv\"");
+
+        try (PrintWriter writer = response.getWriter()) {
+            writer.println(generateCSVHeader());
+            for (Packing packing : packingList) {
+                writer.println(formatContainerAsCSVLine(packing));
+            }
+        }
+    }
+
+    private String generateCSVHeader() {
+        StringBuilder headerBuilder = new StringBuilder();
+        Field[] fields = Packing.class.getDeclaredFields();
+        for (Field field : fields) {
+            if (headerBuilder.length() > 0) {
+                headerBuilder.append(",");
+            }
+            headerBuilder.append(field.getName());
+        }
+        return headerBuilder.toString();
+    }
+
+    private String formatContainerAsCSVLine(Packing packing) {
+        StringBuilder lineBuilder = new StringBuilder();
+        Field[] fields = Packing.class.getDeclaredFields();
+        for (Field field : fields) {
+            field.setAccessible(true);
+            try {
+                Object value = field.get(packing);
+                if (lineBuilder.length() > 0) {
+                    lineBuilder.append(",");
+                }
+                lineBuilder.append(value != null ? value.toString() : "");
+            } catch (IllegalAccessException e) {
+                e.printStackTrace();
+            }
+        }
+        return lineBuilder.toString();
+    }
+
+    private List<Packing> parseCSVFile(MultipartFile file) throws IOException, CsvException {
+        List<Packing> packingList = new ArrayList<>();
+        try (CSVReader csvReader = new CSVReader(new InputStreamReader(file.getInputStream()))) {
+            String[] header = csvReader.readNext();
+            log.info("PARSED HEADER : " + Arrays.asList(header).toString());
+            List<String[]> records = csvReader.readAll();
+            for (String[] record : records) {
+                Packing packings = new Packing();
+                for (int i = 0; i < record.length; i++) {
+                    setField(packings, header[i], record[i]);
+                }
+                packingList.add(packings);
+            }
+        } catch (NoSuchFieldException | IllegalAccessException e) {
+            log.error(e.getMessage());
+            throw new RuntimeException(e);
+        }
+        return packingList;
+    }
+
+    private void setField(Packing packings, String attributeName, String attributeValue) throws NoSuchFieldException, IllegalAccessException {
+        Field field = packings.getClass().getDeclaredField(attributeName);
+        field.setAccessible(true);
+
+        Class<?> fieldType = field.getType();
+        Object parsedValue = null;
+
+        if (fieldType == int.class || fieldType == Integer.class) {
+            parsedValue = Integer.parseInt(attributeValue);
+        } else if (fieldType == String.class) {
+            parsedValue = attributeValue;
+        } else if (fieldType == Long.class || fieldType == long.class) {
+            parsedValue = Long.parseLong(attributeValue);
+        } else if (fieldType == boolean.class || fieldType == Boolean.class) {
+            parsedValue = Boolean.parseBoolean(attributeValue);
+        } else if (fieldType == BigDecimal.class) {
+            parsedValue = BigDecimal.valueOf(Double.valueOf(attributeValue));
+        } else if (fieldType == LocalDateTime.class) {
+            parsedValue = LocalDateTime.parse(attributeValue);
+        } else {
+            throw new NoSuchFieldException();
+        }
+
+        field.set(packings, parsedValue);
+        log.info("SAVING PACKING : " + packings.toString());
+    }
+
     @Transactional
     public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
         String responseMsg;
         PackingRequest request = (PackingRequest) commonRequestModel.getData();
-        if(request == null) {
+        if (request == null) {
             log.debug("Request is empty for Packing update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
         }
 
-        if(request.getId() == null) {
+        if (request.getId() == null) {
             log.debug("Request Id is null for Packing update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
         }
         long id = request.getId();
@@ -98,7 +207,7 @@ public class PackingService implements IPackingService {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
-            if(request == null) {
+            if (request == null) {
                 log.error("Request is empty for Packing list with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
             // construct specifications for filter request
@@ -124,7 +233,7 @@ public class PackingService implements IPackingService {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
-            if(request == null) {
+            if (request == null) {
                 log.error("Request is empty for Packing async list with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
             // construct specifications for filter request
@@ -148,10 +257,10 @@ public class PackingService implements IPackingService {
     @Override
     public ResponseEntity<?> delete(CommonRequestModel commonRequestModel) {
         String responseMsg;
-        if(commonRequestModel == null) {
+        if (commonRequestModel == null) {
             log.debug("Request is empty for Packing delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
         }
-        if(commonRequestModel.getId() == null) {
+        if (commonRequestModel.getId() == null) {
             log.debug("Request Id is null for Packing delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
         }
         Long id = commonRequestModel.getId();
@@ -178,10 +287,10 @@ public class PackingService implements IPackingService {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
-            if(request == null) {
+            if (request == null) {
                 log.error("Request is empty for Packing retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
-            if(request.getId() == null) {
+            if (request.getId() == null) {
                 log.error("Request Id is null for Packing retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
             long id = request.getId();

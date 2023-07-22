@@ -10,9 +10,17 @@ import java.util.Optional;
 
 public interface IPackingDao {
     Packing save(Packing packing);
+
     Page<Packing> findAll(Specification<Packing> spec, Pageable pageable);
+
     Optional<Packing> findById(Long id);
+
     void delete(Packing packing);
+
     List<Packing> updateEntityFromShipment(List<Packing> packingList, Long shipmentId) throws Exception;
     List<Packing> saveEntityFromShipment(List<Packing> packings, Long shipmentId);
+
+    List<Packing> getAllPackings();
+
+    List<Packing> saveAll(List<Packing> packingList);
 }
