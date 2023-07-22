@@ -17,16 +17,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
+import org.springframework.util.AntPathMatcher;
 
 import javax.servlet.*;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.text.ParseException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 @Component
 @Order(1)
@@ -39,12 +37,30 @@ public class AuthFilter implements Filter {
     TokenUtility tokenUtility;
     private static final String VALIDATION_ERROR = "Failed to Validate Auth Token";
 
+    private final String[] ignoredPaths = new String[]{"/actuator/**",
+            "/v2/api-docs",
+            "/swagger-resources",
+            "/swagger-resources/**",
+            "/configuration/ui",
+            "/configuration/security",
+            "/swagger-ui.html",
+            "/webjars/**"};
+
+    protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
+        return Arrays.stream(ignoredPaths)
+                .anyMatch(e -> new AntPathMatcher().match(e, request.getServletPath()));
+    }
 
     @Override
     public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain) throws IOException, ServletException {
 
-        IUserService userService = getUserServiceFactory.returnUserService();
         HttpServletRequest req = (HttpServletRequest) servletRequest;
+        if(shouldNotFilter(req))
+        {
+            filterChain.doFilter(servletRequest, servletResponse);
+            return;
+        }
+        IUserService userService = getUserServiceFactory.returnUserService();
         HttpServletResponse res = (HttpServletResponse) servletResponse;
         long time = System.currentTimeMillis();
         String authToken = req.getHeader("Authorization");
