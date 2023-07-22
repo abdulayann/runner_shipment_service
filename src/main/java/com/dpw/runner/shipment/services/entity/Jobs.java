@@ -83,7 +83,4 @@ public class Jobs extends MultiTenancy {
     @Column(name = "country_of_origin")
     private String countryOfOrigin;
 
-    @Column(name = "is_deleted")
-    private Boolean isDeleted = Boolean.FALSE;
-
 }

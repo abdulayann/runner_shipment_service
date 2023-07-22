@@ -60,7 +60,4 @@ public class ELDetails extends MultiTenancy {
 
     @Column(name = "partition_seq_number")
     private Long partitionSeqNumber;
-
-    @Column(name = "is_deleted")
-    private Boolean isDeleted = Boolean.FALSE;
 }

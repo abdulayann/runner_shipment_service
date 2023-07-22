@@ -46,7 +46,4 @@ public class Views extends MultiTenancy {
 
     @Column(name = "entity")
     private String entity;
-
-    @Column(name = "is_deleted")
-    private Boolean isDeleted = Boolean.FALSE;
 }

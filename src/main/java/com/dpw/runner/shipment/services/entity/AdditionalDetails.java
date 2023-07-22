@@ -311,7 +311,4 @@ public class AdditionalDetails extends MultiTenancy {
 
     @Column(name = "shipment_id")
     private Long shipmentId;
-
-    @Column(name = "is_deleted")
-    private Boolean isDeleted = Boolean.FALSE;
 }

@@ -60,7 +60,4 @@ public class TruckDriverDetails extends MultiTenancy {
 
     @Column(name = "self_transporter_name")
     private String selfTransporterName;
-
-    @Column(name = "is_deleted")
-    private Boolean isDeleted = Boolean.FALSE;
 }

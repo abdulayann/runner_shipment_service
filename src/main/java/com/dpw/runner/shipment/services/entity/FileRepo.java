@@ -46,7 +46,4 @@ public class FileRepo extends MultiTenancy {
 
     @Column(name = "event_code")
     private String eventCode;
-
-    @Column(name = "is_deleted")
-    private Boolean isDeleted = Boolean.FALSE;
 }

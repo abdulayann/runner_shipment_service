@@ -56,7 +56,4 @@ public class ServiceDetails extends MultiTenancy {
 
     @Column(name = "service_notes")
     private String serviceNotes;
-
-    @Column(name = "is_deleted")
-    private Boolean isDeleted = Boolean.FALSE;
 }

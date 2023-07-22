@@ -172,8 +172,5 @@ public class Packing extends MultiTenancy {
 
     @Column(name = "inner_packs_count")
     private Long innerPacksCount;
-
-    @Column(name = "is_deleted")
-    private Boolean isDeleted = Boolean.FALSE;
 }
 
