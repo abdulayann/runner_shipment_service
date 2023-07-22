@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
 import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.constants.ShipmentConstants;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.enums.LifecycleHooks;
@@ -37,6 +38,15 @@ public class ShipmentDao implements IShipmentDao {
     }
 
     @Override
+    public ShipmentDetails update(ShipmentDetails shipmentDetails) {
+        validateLockStatus(shipmentDetails.getId());
+        Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(shipmentDetails) , Constants.SHIPMENT, LifecycleHooks.ON_UPDATE, false);
+        if (! errors.isEmpty())
+            throw new ValidationException(errors.toString());
+        return shipmentRepository.save(shipmentDetails);
+    }
+
+    @Override
     public Page<ShipmentDetails> findAll(Specification<ShipmentDetails> spec, Pageable pageable) {
         return shipmentRepository.findAll(spec, pageable);
     }
@@ -48,6 +58,14 @@ public class ShipmentDao implements IShipmentDao {
 
     @Override
     public void delete(ShipmentDetails shipmentDetails) {
+        validateLockStatus(shipmentDetails.getId());
         shipmentRepository.delete(shipmentDetails);
+    }
+
+    private void validateLockStatus(Long id) throws ValidationException {
+        Optional<ShipmentDetails> existingShipment = findById(id);
+        if(existingShipment.get().getIsLocked()) {
+            throw new ValidationException(ShipmentConstants.SHIPMENT_LOCKED);
+        }
     }
 }

@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.*;
@@ -114,6 +115,9 @@ public class ShipmentService implements IShipmentService {
 
     @Autowired
     private IShipmentSettingsDao shipmentSettingsDao;
+
+    @Autowired
+    UserContext userContext;
 
     private List<String> TRANSPORT_MODES = Arrays.asList("SEA", "ROAD", "RAIL", "AIR");
     private List<String> SHIPMENT_TYPE = Arrays.asList("FCL", "LCL");
@@ -605,7 +609,7 @@ public class ShipmentService implements IShipmentService {
         entity.setId(oldEntity.get().getId());
         if (entity.getContainersList() == null)
             entity.setContainersList(oldEntity.get().getContainersList());
-        entity = shipmentDao.save(entity);
+        entity = shipmentDao.update(entity);
         return ResponseHelper.buildSuccessResponse(objectMapper.convertValue(entity, ShipmentDetailsResponse.class));
     }
 
@@ -683,7 +687,7 @@ public class ShipmentService implements IShipmentService {
             List<ServiceDetails> oldServiceDetails = oldEntity.get().getServicesList();
             List<PickupDeliveryDetails> oldPickupDeliveryDetails = oldEntity.get().getPickupDeliveryDetailsList();
 
-            entity = shipmentDao.save(entity);
+            entity = shipmentDao.update(entity);
 
             ShipmentDetailsResponse response = shipmentDetailsMapper.map(entity);
 
@@ -989,7 +993,7 @@ public class ShipmentService implements IShipmentService {
                 updatedCarrierDetails = carrierDao.updateEntityFromShipmentConsole(convertToClass(carrierDetailRequest, CarrierDetails.class));
                 entity.setCarrierDetails(updatedCarrierDetails);
             }
-            entity = shipmentDao.save(entity);
+            entity = shipmentDao.update(entity);
 
             ShipmentDetailsResponse response = shipmentDetailsMapper.map(entity);
             response.setContainersList(updatedContainers.stream().map(e -> objectMapper.convertValue(e, ContainerResponse.class)).collect(Collectors.toList()));
@@ -1051,6 +1055,25 @@ public class ShipmentService implements IShipmentService {
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(responseMsg);
         }
+    }
+
+    public ResponseEntity<?> toggleLock(CommonRequestModel commonRequestModel) {
+        CommonGetRequest commonGetRequest = (CommonGetRequest) commonRequestModel.getData();
+        Long id = commonGetRequest.getId();
+        ShipmentDetails shipmentDetails = shipmentDao.findById(id).get();
+        String lockingUser = shipmentDetails.getLockedBy();
+        String currentUser = userContext.getUser().getUserName();
+
+        if(shipmentDetails.getIsLocked()) {
+            if(lockingUser != null && lockingUser.equals(currentUser))
+                shipmentDetails.setIsLocked(false);
+        }
+        else {
+            shipmentDetails.setIsLocked(true);
+        }
+        shipmentDao.save(shipmentDetails);
+
+        return ResponseHelper.buildSuccessResponse();
     }
 
 
