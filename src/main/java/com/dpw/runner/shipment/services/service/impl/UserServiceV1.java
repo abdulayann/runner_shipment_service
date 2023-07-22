@@ -2,20 +2,35 @@ package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.service.interfaces.IUserService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.*;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
+
 import java.util.Arrays;
+import java.util.Objects;
 
 @Service
 public class UserServiceV1 implements IUserService {
 
-    private static UsersDto usersDto = new UsersDto(1,2,"userName","displayName",
-            "email@dpworld.com",1,2, Arrays.asList("airexportfclshipmentList","airexportlclshipmentList",
-            "airimportfclshipmentlist","airimportlclshipmentlist","seaexportfclshipmentList","seaexportlclshipmentList","seaimportfclshipmentlist",
-            "seaimportlclshipmentlist"));
+    @Autowired
+    private RestTemplate restTemplate;
+
+    @Value("${v1-user-retrieve.url}")
+    private String url;
 
     @Override
-    public UsersDto getUserByUserName(String userName) {
-        return usersDto;
-    } // TODO- actually fetch from v1
+    public UsersDto getUserByToken(String token) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setAccept(Arrays.asList(MediaType.APPLICATION_JSON));
+        if(token.split(" ").length <= 1 || !Objects.equals(token.split(" ")[0], "Bearer"))
+            return null;
+        token = token.split(" ")[1];
+        headers.setBearerAuth(token);
+        HttpEntity<String> entity = new HttpEntity<String>(headers);
+        ResponseEntity<UsersDto> responseEntity = restTemplate.exchange(url, HttpMethod.POST, entity, UsersDto.class);
+        return responseEntity.getBody();
+    }
 
 }
