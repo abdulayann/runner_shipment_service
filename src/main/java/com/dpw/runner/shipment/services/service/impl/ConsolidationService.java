@@ -32,7 +32,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.interceptor.TransactionAspectSupport;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -366,7 +365,8 @@ public class ConsolidationService implements IConsolidationService {
 
     @Transactional
     public void createEvent(ConsolidationDetails consolidationDetails, EventsRequest eventsRequest) {
-        eventsRequest.setConsolidationId(consolidationDetails.getId());
+        eventsRequest.setEntityId(consolidationDetails.getId());
+        eventsRequest.setEntityType(Constants.CONSOLIDATION);
         eventDao.save(modelMapper.map(eventsRequest, Events.class));
     }
 

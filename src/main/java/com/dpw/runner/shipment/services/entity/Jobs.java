@@ -83,4 +83,8 @@ public class Jobs extends MultiTenancy {
     @Column(name = "country_of_origin")
     private String countryOfOrigin;
 
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "entityId")
+    @Where(clause = "entity_type = 'JOBS'")
+    private List<Events> eventsList;
+
 }
