@@ -117,4 +117,22 @@ public class ConsolidationController {
         }
         return (ResponseEntity<RunnerResponse>) ResponseHelper.buildFailedResponse(responseMsg);
     }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ConsolidationConstants.CONSOLIDATION_CALCULATION_SUCCESSFUL)})
+    @PutMapping(ApiConstants.API_CALCULATE_UTILIZATION)
+    public ResponseEntity<RunnerResponse<ConsolidationDetailsResponse>> calculateUtilization(@RequestBody ConsolidationDetailsRequest consolidationDetailsRequest) {
+        return (ResponseEntity<RunnerResponse<ConsolidationDetailsResponse>>) consolidationService.calculateUtilization(CommonRequestModel.buildRequest(consolidationDetailsRequest));
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ConsolidationConstants.CONSOLIDATION_CALCULATION_SUCCESSFUL)})
+    @PutMapping(ApiConstants.API_CHANGE_UNIT_ALLOCATED_ACHIEVED)
+    public ResponseEntity<RunnerResponse<ConsolidationDetailsResponse>> calculateAchieved_AllocatedForSameUnit(@RequestBody ConsolidationDetailsRequest consolidationDetailsRequest) {
+        return (ResponseEntity<RunnerResponse<ConsolidationDetailsResponse>>) consolidationService.calculateAchieved_AllocatedForSameUnit(CommonRequestModel.buildRequest(consolidationDetailsRequest));
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ConsolidationConstants.CONSOLIDATION_CALCULATION_SUCCESSFUL)})
+    @PutMapping(ApiConstants.API_CALCULATE_CHARGEABLE)
+    public ResponseEntity<RunnerResponse<ConsolidationDetailsResponse>> calculateChargeable(@RequestBody ConsolidationDetailsRequest consolidationDetailsRequest) {
+        return (ResponseEntity<RunnerResponse<ConsolidationDetailsResponse>>) consolidationService.calculateChargeable(CommonRequestModel.buildRequest(consolidationDetailsRequest));
+    }
 }
