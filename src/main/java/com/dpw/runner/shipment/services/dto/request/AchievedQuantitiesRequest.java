@@ -3,10 +3,8 @@ package com.dpw.runner.shipment.services.dto.request;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import io.swagger.annotations.ApiModel;
 import lombok.*;
-import org.apache.poi.hpsf.Decimal;
 
-import javax.persistence.Column;
-import java.time.LocalDateTime;
+import java.math.BigDecimal;
 import java.util.UUID;
 
 
@@ -19,12 +17,14 @@ import java.util.UUID;
 public class AchievedQuantitiesRequest implements IRunnerRequest {
     private Long id;
     private UUID guid;
-    private Decimal weightVolume;
+    private BigDecimal weightVolume;
     private String weightVolumeUnit;
-    private Decimal consolidatedWeight;
+    private BigDecimal consolidatedWeight;
     private String consolidatedWeightUnit;
-    private Decimal consolidatedVolume;
+    private BigDecimal consolidatedVolume;
     private String consolidatedVolumeUnit;
-    private Decimal consolidationChargeQuantity;
+    private BigDecimal consolidationChargeQuantity;
     private String consolidationChargeQuantityUnit;
+    private String weightUtilization;
+    private String volumeUtilization;
 }

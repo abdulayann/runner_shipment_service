@@ -16,6 +16,8 @@ CREATE TABLE achieved_quantities (
     consolidation_charge_quantity_unit varchar,
     weight_volume numeric(19,2),
     weight_volume_unit varchar,
+    weight_utilization varchar,
+    volume_utilization varchar,
     is_deleted BOOLEAN DEFAULT FALSE
 );
 
