@@ -4,11 +4,10 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import lombok.*;
 import lombok.experimental.Accessors;
 
-import javax.persistence.*;
+import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Table;
 import java.math.BigDecimal;
-import java.util.UUID;
 
 
 @Entity
@@ -44,5 +43,11 @@ public class AchievedQuantities extends MultiTenancy {
 
     @Column(name = "consolidation_charge_quantity_unit")
     private String consolidationChargeQuantityUnit;
+
+    @Column(name = "weight_utilization")
+    private String weightUtilization;
+
+    @Column(name = "volume_utilization")
+    private String volumeUtilization;
 
 }

@@ -90,6 +90,9 @@ public class ConsolidationService implements IConsolidationService {
     @Autowired
     private IContainerDao containerDao;
 
+    @Autowired
+    UnitConversionService unitConversionService;
+
     private List<String> TRANSPORT_MODES = Arrays.asList("SEA", "ROAD", "RAIL", "AIR");
     private List<String> SHIPMENT_TYPE = Arrays.asList("FCL", "LCL");
     private List<String> WEIGHT_UNIT = Arrays.asList("KGS", "G", "DT");
@@ -567,6 +570,125 @@ public class ConsolidationService implements IConsolidationService {
         }
     }
 
+    public ResponseEntity<?> updateUtilization(CommonRequestModel commonRequestModel) {
+        String responseMsg;
+        try {
+            ConsolidationDetailsRequest consolidationDetailsRequest = (ConsolidationDetailsRequest) commonRequestModel.getData();
+            ConsolidationDetails consolidationDetails = convertToClass(consolidationDetailsRequest, ConsolidationDetails.class);
+            BigDecimal consolidatedWeight = (BigDecimal) unitConversionService.convertUnit(Constants.MASS, consolidationDetails.getAchievedQuantities().getConsolidatedWeight(), consolidationDetails.getAchievedQuantities().getConsolidatedWeightUnit(), Constants.WEIGHT_UNIT_KG);
+            BigDecimal weight = (BigDecimal) unitConversionService.convertUnit(Constants.MASS, consolidationDetails.getAllocations().getWeight(), consolidationDetails.getAllocations().getWeightUnit(), Constants.WEIGHT_UNIT_KG);
+            consolidationDetails.getAchievedQuantities().setWeightUtilization(((consolidatedWeight.divide(weight)).multiply(new BigDecimal(100))).toString());
+            BigDecimal consolidatedVolume = (BigDecimal) unitConversionService.convertUnit(Constants.VOLUME, consolidationDetails.getAchievedQuantities().getConsolidatedVolume(), consolidationDetails.getAchievedQuantities().getConsolidatedVolumeUnit(), Constants.VOLUME_UNIT_M3);
+            BigDecimal volume = (BigDecimal) unitConversionService.convertUnit(Constants.VOLUME, consolidationDetails.getAllocations().getVolume(), consolidationDetails.getAllocations().getVolumeUnit(), Constants.VOLUME_UNIT_M3);
+            consolidationDetails.getAchievedQuantities().setVolumeUtilization(((consolidatedVolume.divide(volume)).multiply(new BigDecimal(100))).toString());
+            return ResponseHelper.buildSuccessResponse(convertToClass(consolidationDetails, ConsolidationDetailsResponse.class));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_CALCULATION_ERROR;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
+    public ResponseEntity<?> calculateAchieved_AllocatedForSameUnit(CommonRequestModel commonRequestModel) {
+        String responseMsg;
+        try {
+            ConsolidationDetailsRequest consolidationDetailsRequest = (ConsolidationDetailsRequest) commonRequestModel.getData();
+            ConsolidationDetails consolidationDetails = convertToClass(consolidationDetailsRequest, ConsolidationDetails.class);
+            if(consolidationDetails.getAchievedQuantities().getConsolidatedWeightUnit() != consolidationDetails.getAllocations().getWeightUnit()) {
+                BigDecimal val = (BigDecimal) unitConversionService.convertUnit(Constants.MASS, consolidationDetails.getAchievedQuantities().getConsolidatedWeight(), consolidationDetails.getAchievedQuantities().getConsolidatedWeightUnit(), consolidationDetails.getAllocations().getWeightUnit());
+                consolidationDetails.getAchievedQuantities().setConsolidatedWeight(val);
+                consolidationDetails.getAchievedQuantities().setConsolidatedWeightUnit(consolidationDetails.getAllocations().getWeightUnit());
+            }
+            if(consolidationDetails.getAchievedQuantities().getConsolidatedVolumeUnit() != consolidationDetails.getAllocations().getVolumeUnit()) {
+                BigDecimal val = (BigDecimal) unitConversionService.convertUnit(Constants.VOLUME, consolidationDetails.getAchievedQuantities().getConsolidatedVolume(), consolidationDetails.getAchievedQuantities().getConsolidatedVolumeUnit(), consolidationDetails.getAllocations().getVolumeUnit());
+                consolidationDetails.getAchievedQuantities().setConsolidatedVolume(val);
+                consolidationDetails.getAchievedQuantities().setConsolidatedVolumeUnit(consolidationDetails.getAllocations().getVolumeUnit());
+            }
+            return ResponseHelper.buildSuccessResponse(convertToClass(consolidationDetails, ConsolidationDetailsResponse.class));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_CALCULATION_ERROR;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
+    public ResponseEntity<?> calculateChargeable(CommonRequestModel commonRequestModel) {
+        String responseMsg;
+        try {
+            ConsolidationDetailsRequest consolidationDetailsRequest = (ConsolidationDetailsRequest)commonRequestModel.getData();
+            ConsolidationDetails consolidationDetails = convertToClass(consolidationDetailsRequest, ConsolidationDetails.class);
+            String transportMode = consolidationDetails.getTransportMode();
+            BigDecimal weight = consolidationDetails.getAllocations().getWeight();
+            String weightUnit = consolidationDetails.getAllocations().getWeightUnit();
+            BigDecimal volume = consolidationDetails.getAllocations().getVolume();
+            String volumeUnit = consolidationDetails.getAllocations().getVolumeUnit();
+
+            if(!weightUnit.isEmpty() && !volumeUnit.isEmpty() && (transportMode != Constants.TRANSPORT_MODE_SEA || consolidationDetails.getShipmentType() != Constants.SHIPMENT_TYPE_LCL)) {
+                consolidationDetails = setChargeableValues(consolidationDetails, transportMode, weightUnit, volumeUnit, weight, volume);
+                if(transportMode == Constants.TRANSPORT_MODE_AIR) {
+                    BigDecimal charge = consolidationDetails.getAllocations().getChargable();
+                    BigDecimal half = new BigDecimal("0.50");
+                    BigDecimal floor = charge.setScale(0, BigDecimal.ROUND_FLOOR);
+                    if (charge.subtract(half).compareTo(floor) <= 0 && charge.compareTo(floor) != 0) {
+                        charge = floor.add(half);
+                    } else {
+                        charge = charge.setScale(0, BigDecimal.ROUND_CEILING);
+                    }
+                    consolidationDetails.getAllocations().setChargable(charge);
+                }
+            }
+            if(!weightUnit.isEmpty() && !volumeUnit.isEmpty() && transportMode == Constants.TRANSPORT_MODE_SEA && consolidationDetails.getShipmentType() == Constants.SHIPMENT_TYPE_LCL) {
+                volume = (BigDecimal) unitConversionService.convertUnit(Constants.VOLUME, volume, volumeUnit, Constants.VOLUME_UNIT_M3);
+                weight = (BigDecimal) unitConversionService.convertUnit(Constants.MASS, weight, weightUnit, Constants.WEIGHT_UNIT_KG);
+                consolidationDetails.getAllocations().setChargable(weight.divide(new BigDecimal("1000")).max(volume));
+                consolidationDetails.getAllocations().setChargeableUnit(Constants.VOLUME_UNIT_M3);
+            }
+            return ResponseHelper.buildSuccessResponse(convertToClass(consolidationDetails, ConsolidationDetailsResponse.class));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_CALCULATION_ERROR;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
+    public ConsolidationDetails setChargeableValues(ConsolidationDetails consolidationDetails, String transportMode, String weightUnit, String volumeUnit, BigDecimal weight, BigDecimal volume) throws Exception{
+        String responseMsg;
+        try {
+            if(!weightUnit.isEmpty() && !volumeUnit.isEmpty() && !transportMode.isEmpty()) {
+                switch (transportMode) {
+                    case Constants.TRANSPORT_MODE_SEA:
+                    case Constants.TRANSPORT_MODE_RAI:
+                    case Constants.TRANSPORT_MODE_FSA:
+                        BigDecimal volInM3 = (BigDecimal) unitConversionService.convertUnit(Constants.VOLUME, volume, volumeUnit, Constants.VOLUME_UNIT_M3);
+                        consolidationDetails.getAllocations().setChargable(volInM3.multiply(BigDecimal.valueOf(10)).setScale(0, BigDecimal.ROUND_CEILING).divide(BigDecimal.valueOf(10)));
+                        consolidationDetails.getAllocations().setChargeableUnit(Constants.VOLUME_UNIT_M3);
+                        break;
+                    case Constants.TRANSPORT_MODE_AIR:
+                    case Constants.TRANSPORT_MODE_FAS:
+                    case Constants.TRANSPORT_MODE_ROA:
+                        BigDecimal wtInKG = (BigDecimal) unitConversionService.convertUnit(Constants.MASS, weight, weightUnit, Constants.WEIGHT_UNIT_KG);
+                        BigDecimal vlInM3 = (BigDecimal) unitConversionService.convertUnit(Constants.VOLUME, volume, volumeUnit, Constants.VOLUME_UNIT_M3);
+                        BigDecimal factor = new BigDecimal(166.667);
+                        if(transportMode == Constants.TRANSPORT_MODE_ROA) {
+                            factor = BigDecimal.valueOf(333.0);
+                        }
+                        BigDecimal wvInKG = vlInM3.multiply(factor);
+                        if(wtInKG.compareTo(wvInKG) < 0) {
+                            wtInKG = wvInKG;
+                        }
+                        consolidationDetails.getAllocations().setChargable(wtInKG.multiply(BigDecimal.valueOf(100)).setScale(0, BigDecimal.ROUND_CEILING).divide(BigDecimal.valueOf(100)));
+                        consolidationDetails.getAllocations().setChargeableUnit(Constants.WEIGHT_UNIT_KG);
+                        break;
+                }
+            }
+            return consolidationDetails;
+        } catch (Exception e) {
+            throw new Exception(e);
+        }
+    }
     public ResponseEntity<?> completeRetrieveById(CommonRequestModel commonRequestModel) throws ExecutionException, InterruptedException {
         try {
             // create common list request for consolidation id

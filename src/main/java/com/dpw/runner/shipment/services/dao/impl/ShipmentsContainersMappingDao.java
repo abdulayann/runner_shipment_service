@@ -15,11 +15,13 @@ public class ShipmentsContainersMappingDao implements IShipmentsContainersMappin
     @Autowired
     private IShipmentsContainersMappingRepository shipmentsContainersMappingRepository;
 
-    private List<ShipmentsContainersMapping> findByContainerId(Long containerId) {
+    @Override
+    public List<ShipmentsContainersMapping> findByContainerId(Long containerId) {
         return shipmentsContainersMappingRepository.findByContainerId(containerId);
     }
 
-    private List<ShipmentsContainersMapping> findByShipmentId(Long shipmentId) {
+    @Override
+    public List<ShipmentsContainersMapping> findByShipmentId(Long shipmentId) {
         return shipmentsContainersMappingRepository.findByShipmentId(shipmentId);
     }
 

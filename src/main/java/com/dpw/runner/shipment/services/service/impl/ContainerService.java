@@ -12,6 +12,8 @@ import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
 import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.JobResponse;
 import com.dpw.runner.shipment.services.entity.Containers;
+import com.dpw.runner.shipment.services.entity.Packing;
+import com.dpw.runner.shipment.services.entity.ShipmentsContainersMapping;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerService;
@@ -21,6 +23,7 @@ import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
@@ -28,14 +31,15 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListRequestFromEntityId;
 
 @Slf4j
 @Service
@@ -47,6 +51,9 @@ public class ContainerService implements IContainerService {
     ModelMapper modelMapper;
     @Autowired
     IShipmentsContainersMappingDao shipmentsContainersMappingDao;
+
+    @Autowired
+    UnitConversionService unitConversionService;
 
     @Transactional
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
@@ -206,6 +213,109 @@ public class ContainerService implements IContainerService {
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
+    public ResponseEntity<?> calculateAchieved_AllocatedForSameUnit(CommonRequestModel commonRequestModel) {
+        String responseMsg;
+        try {
+            Containers container = (Containers) commonRequestModel.getData();
+            if(container.getAchievedVolumeUnit() != container.getAllocatedVolumeUnit()) {
+                BigDecimal val = (BigDecimal) unitConversionService.convertUnit(Constants.VOLUME, container.getAchievedVolume(), container.getAchievedVolumeUnit(), container.getAllocatedVolumeUnit());
+                container.setAchievedVolume(val);
+                container.setAchievedVolumeUnit(container.getAllocatedVolumeUnit());
+            }
+            if(container.getAchievedWeightUnit() != container.getAllocatedWeightUnit()) {
+                BigDecimal val = (BigDecimal) unitConversionService.convertUnit(Constants.MASS, container.getAchievedWeight(), container.getAchievedWeightUnit(), container.getAllocatedWeightUnit());
+                container.setAchievedWeight(val);
+                container.setAchievedWeightUnit(container.getAllocatedWeightUnit());
+            }
+            return ResponseHelper.buildSuccessResponse(convertEntityToDto(container));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_CALCULATION_ERROR;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
+    public ResponseEntity<?> calculateAchievedQuantity_onPackAssign(Containers container, List<Packing> packingList) {
+        String responseMsg;
+        try {
+            for(Packing packing: packingList) {
+                BigDecimal val = (BigDecimal) unitConversionService.convertUnit("Mass", packing.getWeight(), packing.getWeightUnit(), container.getAchievedWeightUnit());
+                container.setAchievedWeight(container.getAchievedWeight().add(val));
+                container.setWeightUtilization(((container.getAchievedWeight().divide(container.getAllocatedWeight())).multiply(new BigDecimal(100))).toString());
+                val = (BigDecimal) unitConversionService.convertUnit("Volume", packing.getVolume(), packing.getVolumeUnit(), container.getAchievedVolumeUnit());
+                container.setAchievedVolume(container.getAchievedVolume().add(val));
+                container.setVolumeUtilization(((container.getAchievedVolume().divide(container.getAllocatedVolume())).multiply(new BigDecimal(100))).toString());
+            }
+            return ResponseHelper.buildSuccessResponse(convertEntityToDto(container));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_CALCULATION_ERROR;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
+    public ResponseEntity<?> calculateAchievedQuantity_onPackDetach(Containers container, List<Packing> packingList) {
+        String responseMsg;
+        try {
+            for(Packing packing: packingList) {
+                BigDecimal val = (BigDecimal) unitConversionService.convertUnit("Mass", packing.getWeight(), packing.getWeightUnit(), container.getAchievedWeightUnit());
+                container.setAchievedWeight(container.getAchievedWeight().subtract(val));
+                container.setWeightUtilization(((container.getAchievedWeight().divide(container.getAllocatedWeight())).multiply(new BigDecimal(100))).toString());
+                val = (BigDecimal) unitConversionService.convertUnit("Volume", packing.getVolume(), packing.getVolumeUnit(), container.getAchievedVolumeUnit());
+                container.setAchievedVolume(container.getAchievedVolume().subtract(val));
+                container.setVolumeUtilization(((container.getAchievedVolume().divide(container.getAllocatedVolume())).multiply(new BigDecimal(100))).toString());
+            }
+            return ResponseHelper.buildSuccessResponse(convertEntityToDto(container));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_CALCULATION_ERROR;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
+    public ResponseEntity<?> getContainersForSelection(Long shipmentId, Long consolidationId) {
+        String responseMsg;
+        Boolean lclAndSeaOrRoadFlag = true; // TODO- Remove this and fetch from tenant Settings and Shipment Data
+        Boolean IsConsolidatorFlag = true; // TODO- Remove this and fetch from tenant Settings
+        List<Containers> containersList = new ArrayList<>();
+        try {
+            ListCommonRequest listCommonRequest = constructListRequestFromEntityId(consolidationId, Constants.CONSOLIDATION);
+            Pair<Specification<Containers>, Pageable> pair = fetchData(listCommonRequest, Containers.class);
+            Page<Containers> containers = containerDao.findAll(pair.getLeft(), pair.getRight());
+            if(lclAndSeaOrRoadFlag) {
+                for (Containers container : containers.getContent()) {
+                    List<ShipmentsContainersMapping> shipmentsContainersMappings = shipmentsContainersMappingDao.findByContainerId(container.getId());
+                    if(!shipmentsContainersMappings.stream().map(e -> e.getShipmentId()).collect(Collectors.toList()).contains(shipmentId)) {
+                        if(container.getAllocatedWeight().compareTo(container.getAchievedWeight()) > 0 && container.getAllocatedVolume().compareTo(container.getAchievedVolume()) > 0) {
+                            containersList.add(container);
+                        }
+                    }
+                }
+            }
+            else {
+                for (Containers container : containers.getContent()) {
+                    List<ShipmentsContainersMapping> shipmentsContainersMappings = shipmentsContainersMappingDao.findByContainerId(container.getId());
+                    if(!shipmentsContainersMappings.stream().map(e -> e.getShipmentId()).collect(Collectors.toList()).contains(shipmentId)) {
+                        containersList.add(container);
+                    }
+                }
+            }
+            containers = new PageImpl<>(containersList);
+            return ResponseHelper.buildListSuccessResponse(
+                    convertEntityListToDtoList(containers.getContent()),
+                    containers.getTotalPages(),
+                    containers.getTotalElements());
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(responseMsg);
         }

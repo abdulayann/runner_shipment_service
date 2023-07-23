@@ -52,6 +52,12 @@ public class ContainerController {
         return (ResponseEntity<RunnerListResponse<ContainerResponse>>) containerService.list(CommonRequestModel.buildRequest(shipmentId));
     }
 
+    @ApiResponses(value = { @ApiResponse(code = 200, message = ContainerConstants.CONTAINER_LIST_SUCCESSFUL) })
+    @PostMapping(ApiConstants.API_LIST)
+    public ResponseEntity<RunnerListResponse<ContainerResponse>> getContainersForSelection(@RequestParam Long shipmentId) {
+        return (ResponseEntity<RunnerListResponse<ContainerResponse>>) containerService.list(CommonRequestModel.buildRequest(shipmentId));
+    }
+
     @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.CONTAINER_UPDATE_SUCCESSFUL)})
     @PutMapping(value = ApiConstants.API_UPDATE)
     public ResponseEntity<RunnerResponse<ContainerResponse>> update(@RequestBody ContainerRequest request) {
