@@ -54,7 +54,4 @@ public class Parties extends MultiTenancy {
     @Type(type = "jsonb")
     @Column(name = "address_data", columnDefinition = "jsonb")
     private Map<String, Object> addressData;
-
-    @Column(name = "is_deleted")
-    private Boolean isDeleted = Boolean.FALSE;
 }

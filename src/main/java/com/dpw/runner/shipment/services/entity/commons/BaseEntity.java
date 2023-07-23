@@ -55,4 +55,7 @@ public class BaseEntity implements Serializable {
 
     @Column(name = "updated_by")
     private Integer updatedBy;
+
+    @Column(name = "is_deleted")
+    private Boolean isDeleted = Boolean.FALSE;
 }

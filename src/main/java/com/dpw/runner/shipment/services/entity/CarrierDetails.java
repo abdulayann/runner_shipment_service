@@ -70,7 +70,4 @@ public class CarrierDetails extends MultiTenancy {
 
     @Column(name = "atd")
     private LocalDateTime atd;
-
-    @Column(name = "is_deleted")
-    private Boolean isDeleted = Boolean.FALSE;
 }

@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Getter
 @Setter
@@ -34,4 +35,5 @@ public class JobRequest extends CommonRequest implements IRunnerRequest {
     private String additionalTerms;
     private String transportMode;
     private String countryOfOrigin;
+    private List<EventsRequest> eventsList;
 }

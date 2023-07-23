@@ -44,7 +44,4 @@ public class Logs extends MultiTenancy {
 
     @Column(name = "parent_id")
     private String parentId;
-
-    @Column(name = "is_deleted")
-    private Boolean isDeleted = Boolean.FALSE;
 }

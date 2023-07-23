@@ -240,6 +240,7 @@ public class Containers extends MultiTenancy {
     @JoinColumn(name = "delivery_address_id", referencedColumnName = "id")
     private Parties deliveryAddress;
 
-    @Column(name = "is_deleted")
-    private Boolean isDeleted = Boolean.FALSE;
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "entityId")
+    @Where(clause = "entity_type = 'CONTAINERS'")
+    private List<Events> eventsList;
 }

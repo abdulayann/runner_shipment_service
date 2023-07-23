@@ -15,6 +15,8 @@ public class Constants {
     public static final String NO_DATA = "Not Found!";
     public static final String SHIPMENT = "SHIPMENT";
     public static final String CONSOLIDATION = "CONSOLIDATION";
+    public static final String CONTAINER = "CONTAINER";
+    public static final String JOBS = "JOBS";
     public static final String Cont20 = "20";
     public static final String Cont40 = "40";
     public static final String Cont20GP = "20GP";

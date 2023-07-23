@@ -7,11 +7,14 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IEventDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentsContainersMappingDao;
 import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
+import com.dpw.runner.shipment.services.dto.request.EventsRequest;
 import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.JobResponse;
 import com.dpw.runner.shipment.services.entity.Containers;
+import com.dpw.runner.shipment.services.entity.Events;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerService;
@@ -29,13 +32,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.convertToEntityList;
 
 @Slf4j
 @Service
@@ -47,6 +49,8 @@ public class ContainerService implements IContainerService {
     ModelMapper modelMapper;
     @Autowired
     IShipmentsContainersMappingDao shipmentsContainersMappingDao;
+    @Autowired
+    IEventDao eventDao;
 
     @Transactional
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
@@ -56,10 +60,16 @@ public class ContainerService implements IContainerService {
             log.debug("Request is empty for Container Create with Request Id {}", LoggerHelper.getRequestIdFromMDC());
         }
         Containers container = convertRequestToEntity(request);
+        List<EventsRequest> eventsRequestList = request.getEventsList();
         try {
             container = containerDao.save(container);
             if(request.getShipmentIds() != null) {
                 shipmentsContainersMappingDao.updateShipmentsMappings(container.getId(), request.getShipmentIds());
+            }
+            if(eventsRequestList != null){
+                List<Events> events = eventDao.saveEntityFromOtherEntity(
+                        convertToEntityList(eventsRequestList, Events.class), container.getId(), Constants.CONTAINER);
+                container.setEventsList(events);
             }
             log.info("Container Details Saved Successfully for Id {} with Request Id {}", container.getId(), LoggerHelper.getRequestIdFromMDC());
         } catch (Exception e) {
@@ -90,11 +100,17 @@ public class ContainerService implements IContainerService {
         }
 
         Containers containers = convertRequestToEntity(request);
+        List<EventsRequest> eventsRequestList = request.getEventsList();
         containers.setId(oldEntity.get().getId());
         try {
             containers = containerDao.save(containers);
             if(request.getShipmentIds() != null) {
                 shipmentsContainersMappingDao.updateShipmentsMappings(containers.getId(), request.getShipmentIds());
+            }
+            if(eventsRequestList != null){
+                List<Events> events = eventDao.saveEntityFromOtherEntity(
+                        convertToEntityList(eventsRequestList, Events.class), containers.getId(), Constants.CONTAINER);
+                containers.setEventsList(events);
             }
             log.info("Updated the container details for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
         } catch (Exception e) {

@@ -62,7 +62,4 @@ public class PickupDeliveryDetails extends MultiTenancy {
     @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "agent_id", referencedColumnName = "id")
     private Parties agentDetail;
-
-    @Column(name = "is_deleted")
-    private Boolean isDeleted = Boolean.FALSE;
 }
