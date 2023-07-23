@@ -27,4 +27,10 @@ public class Constants {
 
     //MasterDataFactory
     public static final String MAPPER_MASTER_DATA = "Mapper";
+
+    public static final String INVNO = "INVNO";
+    public static final String CON = "CON";
+
+    /** Statuses */
+    public static final String PENDING = "Pending";
 }
