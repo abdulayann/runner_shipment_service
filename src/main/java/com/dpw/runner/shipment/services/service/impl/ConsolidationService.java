@@ -90,6 +90,9 @@ public class ConsolidationService implements IConsolidationService {
     @Autowired
     private IContainerDao containerDao;
 
+    @Autowired
+    private IShipmentDao shipmentDao;
+
     private List<String> TRANSPORT_MODES = Arrays.asList("SEA", "ROAD", "RAIL", "AIR");
     private List<String> SHIPMENT_TYPE = Arrays.asList("FCL", "LCL");
     private List<String> WEIGHT_UNIT = Arrays.asList("KGS", "G", "DT");
@@ -266,6 +269,12 @@ public class ConsolidationService implements IConsolidationService {
                 List<ContainerRequest> containerRequest = request.getContainersList();
                 List<Containers> containers = containerDao.updateEntityFromShipmentConsole(convertToEntityList(containerRequest, Containers.class));
                 consolidationDetails.setContainersList(containers);
+            }
+
+            if(request.getShipmentsList() != null) {
+                List<ShipmentRequest> shipmentRequest = request.getShipmentsList();
+                List<ShipmentDetails> shipmentList = shipmentDao.saveShipments(convertToEntityList(shipmentRequest, ShipmentDetails.class));
+                consolidationDetails.setShipmentsList(shipmentList);
             }
 
             getConsolidation(consolidationDetails);
@@ -458,6 +467,9 @@ public class ConsolidationService implements IConsolidationService {
         entity.setId(oldEntity.get().getId());
         if (entity.getContainersList() == null)
             entity.setContainersList(oldEntity.get().getContainersList());
+        if(entity.getShipmentsList() == null) {
+            entity.setShipmentsList(oldEntity.get().getShipmentsList());
+        }
         entity = consolidationDetailsDao.save(entity);
         return ResponseHelper.buildSuccessResponse(modelMapper.map(entity, ConsolidationDetailsResponse.class));
     }

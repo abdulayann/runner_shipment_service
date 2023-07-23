@@ -242,4 +242,13 @@ public class Containers extends MultiTenancy {
 
     @Column(name = "is_deleted")
     private Boolean isDeleted = Boolean.FALSE;
+
+//    @OneToMany(
+//            mappedBy = "container",
+//            cascade = CascadeType.ALL,
+//            orphanRemoval = true
+////    )
+//    @OneToMany(fetch = FetchType.LAZY, mappedBy = "container", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "containerId")
+    private List<Packing> packsList;
 }

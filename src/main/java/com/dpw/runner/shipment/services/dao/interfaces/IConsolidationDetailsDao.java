@@ -6,6 +6,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface IConsolidationDetailsDao {
@@ -13,4 +14,5 @@ public interface IConsolidationDetailsDao {
     Page<ConsolidationDetails> findAll(Specification<ConsolidationDetails> spec, Pageable pageable);
     Optional<ConsolidationDetails> findById(Long id);
     void delete(ConsolidationDetails consolidationDetails);
+    List<ConsolidationDetails> saveConsolidations(List<ConsolidationDetails> consolidationDetails);
 }

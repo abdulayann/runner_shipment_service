@@ -281,4 +281,10 @@ public class ShipmentDetails extends MultiTenancy {
 
     @Column(name = "is_deleted")
     private Boolean isDeleted = Boolean.FALSE;
+
+    @ManyToMany(targetEntity = ConsolShipLinkDetails.class)
+    @JoinTable(name = "console_shipment_mapping",
+            joinColumns = @JoinColumn(name = "shipment_id"),
+            inverseJoinColumns = @JoinColumn(name = "consolidation_id"))
+    private List<ConsolidationDetails> consolidationList;
 }

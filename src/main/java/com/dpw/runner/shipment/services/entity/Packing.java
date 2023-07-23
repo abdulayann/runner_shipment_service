@@ -3,10 +3,12 @@ package com.dpw.runner.shipment.services.entity;
 import javax.persistence.*;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
+import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
 import lombok.*;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Where;
 
+import java.awt.*;
 import java.math.BigDecimal;
 
 @Entity
@@ -175,5 +177,14 @@ public class Packing extends MultiTenancy {
 
     @Column(name = "is_deleted")
     private Boolean isDeleted = Boolean.FALSE;
+
+//    @ManyToOne
+//    @JoinColumn(name = "container_id", insertable = false, updatable = false)
+//    private Containers container;
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "container_id", nullable = false, insertable = false, updatable = false)
+    private Containers container;
+
 }
 

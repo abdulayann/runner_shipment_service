@@ -38,6 +38,7 @@ import org.springframework.transaction.interceptor.TransactionAspectSupport;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.StringUtils;
 
+import javax.persistence.EntityManager;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -114,6 +115,9 @@ public class ShipmentService implements IShipmentService {
 
     @Autowired
     private IShipmentSettingsDao shipmentSettingsDao;
+
+    @Autowired
+    private IConsolidationDetailsDao consolidationDetailsDao;
 
     private List<String> TRANSPORT_MODES = Arrays.asList("SEA", "ROAD", "RAIL", "AIR");
     private List<String> SHIPMENT_TYPE = Arrays.asList("FCL", "LCL");
@@ -336,6 +340,12 @@ public class ShipmentService implements IShipmentService {
         CarrierDetails carrierDetails = jsonHelper.convertValue(request.getCarrierDetails(), CarrierDetails.class);
 
         try {
+
+            if(request.getConsolidationList()!= null) {
+                List<ConsolidationDetailsRequest> consolRequest = request.getConsolidationList();
+                List<ConsolidationDetails> consolList = consolidationDetailsDao.saveConsolidations(convertToEntityList(consolRequest, ConsolidationDetails.class));
+                shipmentDetails.setConsolidationList(consolList);
+            }
 
             if (additionalDetails != null) {
                 createAdditionalDetail(shipmentDetails, additionalDetails);
@@ -604,6 +614,9 @@ public class ShipmentService implements IShipmentService {
         entity.setId(oldEntity.get().getId());
         if (entity.getContainersList() == null)
             entity.setContainersList(oldEntity.get().getContainersList());
+        if(entity.getConsolidationList() == null) {
+            entity.setConsolidationList(oldEntity.get().getConsolidationList());
+        }
         entity = shipmentDao.save(entity);
         return ResponseHelper.buildSuccessResponse(objectMapper.convertValue(entity, ShipmentDetailsResponse.class));
     }

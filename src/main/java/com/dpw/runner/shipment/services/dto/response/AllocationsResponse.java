@@ -5,6 +5,7 @@ import io.swagger.annotations.ApiModel;
 import lombok.*;
 import org.apache.poi.hpsf.Decimal;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -21,14 +22,14 @@ public class AllocationsResponse implements IRunnerResponse {
     private Boolean hazardous;
     private LocalDateTime cutoffDate;
     private Boolean isTemperatureControlled;
-    private Decimal weight;
+    private BigDecimal weight;
     private String weightUnit;
-    private Decimal volume;
+    private BigDecimal volume;
     private String volumeUnit;
-    private Decimal Chargable;
+    private BigDecimal Chargable;
     private String ChargeableUnit;
-    private Decimal minTemp;
+    private BigDecimal minTemp;
     private String minTempUnit;
-    private Decimal maxTemp;
+    private BigDecimal maxTemp;
     private String maxTempUnit;
 }

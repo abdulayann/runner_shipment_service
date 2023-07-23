@@ -109,4 +109,23 @@ public class PackingDao implements IPackingDao {
             log.error(responseMsg, e);
         }
     }
+
+    public List<Packing> savePacks(List<Packing> packs, Long contianerId)
+    {
+        List<Packing> res = new ArrayList<>();
+        for(Packing req : packs){
+            if(req.getId() != null){
+                long id = req.getId();
+                Optional<Packing> oldEntity = findById(id);
+                if (!oldEntity.isPresent()) {
+                    log.debug("Container is null for Id {}", req.getId());
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
+            }
+            req.setContainerId(contianerId);
+            req = save(req);
+            res.add(req);
+        }
+        return res;
+    }
 }

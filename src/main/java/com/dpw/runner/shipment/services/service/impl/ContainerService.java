@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
@@ -7,14 +8,18 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IPackingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentsContainersMappingDao;
 import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
+import com.dpw.runner.shipment.services.dto.request.PackingRequest;
 import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.JobResponse;
 import com.dpw.runner.shipment.services.entity.Containers;
+import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
@@ -34,6 +39,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.*;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 
@@ -48,6 +54,9 @@ public class ContainerService implements IContainerService {
     @Autowired
     IShipmentsContainersMappingDao shipmentsContainersMappingDao;
 
+    @Autowired
+    private IPackingDao packingDao;
+
     @Transactional
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
         String responseMsg;
@@ -58,6 +67,11 @@ public class ContainerService implements IContainerService {
         Containers container = convertRequestToEntity(request);
         try {
             container = containerDao.save(container);
+            if (request.getPacksList() != null) {
+                List<PackingRequest> packingRequest = request.getPacksList();
+                List<Packing> packs = packingDao.savePacks(convertToEntityList(packingRequest, Packing.class), container.getId());
+                container.setPacksList(packs);
+            }
             if(request.getShipmentIds() != null) {
                 shipmentsContainersMappingDao.updateShipmentsMappings(container.getId(), request.getShipmentIds());
             }
@@ -95,6 +109,11 @@ public class ContainerService implements IContainerService {
             containers = containerDao.save(containers);
             if(request.getShipmentIds() != null) {
                 shipmentsContainersMappingDao.updateShipmentsMappings(containers.getId(), request.getShipmentIds());
+            }
+            if (request.getPacksList() != null) {
+                List<PackingRequest> packingRequest = request.getPacksList();
+                List<Packing> packs = packingDao.savePacks(convertToEntityList(packingRequest, Packing.class), containers.getId());
+                containers.setPacksList(packs);
             }
             log.info("Updated the container details for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
         } catch (Exception e) {
@@ -226,5 +245,4 @@ public class ContainerService implements IContainerService {
         });
         return responseList;
     }
-
 }

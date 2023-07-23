@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import io.swagger.annotations.ApiModel;
 import lombok.*;
 
+import java.awt.*;
 import java.math.BigDecimal;
 
 @Getter
@@ -68,4 +69,5 @@ public class PackingRequest extends CommonRequest implements IRunnerRequest {
     private String shipmentNumber;
     private Long innerPacksId;
     private Long innerPacksCount;
+    private ContainerRequest containerRequest;
 }
