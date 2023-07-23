@@ -109,4 +109,72 @@ public class PackingDao implements IPackingDao {
             log.error(responseMsg, e);
         }
     }
+
+    public List<Packing> savePacks(List<Packing> packs, Long contianerId)
+    {
+        List<Packing> res = new ArrayList<>();
+        for(Packing req : packs){
+            if(req.getId() != null){
+                long id = req.getId();
+                Optional<Packing> oldEntity = findById(id);
+                if (!oldEntity.isPresent()) {
+                    log.debug("Container is null for Id {}", req.getId());
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
+            }
+            req.setContainerId(contianerId);
+            req = save(req);
+            res.add(req);
+        }
+        return res;
+    }
+
+    public List<Packing> updateEntityFromContainer(List<Packing> packingList, Long containerId) throws Exception {
+        String responseMsg;
+        List<Packing> responsePackings = new ArrayList<>();
+        try {
+            // TODO- Handle Transactions here
+            ListCommonRequest listCommonRequest = constructListCommonRequest("containerId", containerId, "=");
+            Pair<Specification<Packing>, Pageable> pair = fetchData(listCommonRequest, Packing.class);
+            Page<Packing> packings = findAll(pair.getLeft(), pair.getRight());
+            saveEntityFromContainer(packings.getContent(), null);
+            Map<Long, Packing> hashMap = packings.stream()
+                    .collect(Collectors.toMap(Packing::getId, Function.identity()));
+            List<Packing> packingRequestList = new ArrayList<>();
+            if (packingList != null && packingList.size() != 0) {
+                for (Packing request : packingList) {
+                    Long id = request.getId();
+                    if (id != null) {
+                        hashMap.remove(id);
+                    }
+                    packingRequestList.add(request);
+                }
+                responsePackings = saveEntityFromContainer(packingRequestList, containerId);
+            }
+            return responsePackings;
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
+            log.error(responseMsg, e);
+            throw new Exception(e);
+        }
+    }
+
+    public List<Packing> saveEntityFromContainer(List<Packing> packings, Long containerId) {
+        List<Packing> res = new ArrayList<>();
+        for(Packing req : packings){
+            if(req.getId() != null){
+                long id = req.getId();
+                Optional<Packing> oldEntity = findById(id);
+                if (!oldEntity.isPresent()) {
+                    log.debug("Packing is null for Id {}", req.getId());
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
+            }
+            req.setContainerId(containerId);
+            req = save(req);
+            res.add(req);
+        }
+        return res;
+    }
 }

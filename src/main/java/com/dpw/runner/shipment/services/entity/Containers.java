@@ -243,4 +243,7 @@ public class Containers extends MultiTenancy {
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "entityId")
     @Where(clause = "entity_type = 'CONTAINERS'")
     private List<Events> eventsList;
+
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "containerId")
+    private List<Packing> packsList;
 }
