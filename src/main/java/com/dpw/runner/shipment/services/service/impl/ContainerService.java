@@ -85,7 +85,7 @@ public class ContainerService implements IContainerService {
             if (request.getShipmentIds() != null) {
                 shipmentsContainersMappingDao.updateShipmentsMappings(container.getId(), request.getShipmentIds());
             }
-            if(eventsRequestList != null){
+            if (eventsRequestList != null) {
                 List<Events> events = eventDao.saveEntityFromOtherEntity(
                         convertToEntityList(eventsRequestList, Events.class), container.getId(), Constants.CONTAINER);
                 container.setEventsList(events);
@@ -157,7 +157,7 @@ public class ContainerService implements IContainerService {
             if (request.getShipmentIds() != null) {
                 shipmentsContainersMappingDao.updateShipmentsMappings(containers.getId(), request.getShipmentIds());
             }
-            if(eventsRequestList != null){
+            if (eventsRequestList != null) {
                 List<Events> events = eventDao.saveEntityFromOtherEntity(
                         convertToEntityList(eventsRequestList, Events.class), containers.getId(), Constants.CONTAINER);
                 containers.setEventsList(events);
