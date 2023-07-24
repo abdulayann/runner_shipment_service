@@ -84,8 +84,8 @@ public class EventDao implements IEventDao {
 
     public List<Events> saveEntityFromOtherEntity(List<Events> events, Long entityId, String entityType) {
         List<Events> res = new ArrayList<>();
-        for(Events req : events){
-            if(req.getId() != null){
+        for (Events req : events) {
+            if (req.getId() != null) {
                 long id = req.getId();
                 Optional<Events> oldEntity = findById(id);
                 if (!oldEntity.isPresent()) {

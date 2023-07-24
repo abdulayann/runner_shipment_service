@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.commons.constants.ApiConstants;
 import com.dpw.runner.shipment.services.commons.constants.ContainerConstants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.PackingConstants;
+import com.dpw.runner.shipment.services.commons.requests.BulkDownloadRequest;
 import com.dpw.runner.shipment.services.commons.requests.BulkUploadRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
@@ -55,9 +56,9 @@ public class PackingController {
     }
 
     @GetMapping(ApiConstants.API_DOWNLOAD)
-    public void downloadCSV(HttpServletResponse response) {
+    public void downloadCSV(HttpServletResponse response, @ModelAttribute BulkDownloadRequest request) {
         try {
-            packingService.downloadPacking(response);
+            packingService.downloadPacking(response, request);
         } catch (Exception ex) {
             log.error(ex.getMessage());
         }

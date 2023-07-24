@@ -36,6 +36,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.ModelAttribute;
 
 import java.math.BigDecimal;
 import javax.servlet.http.HttpServletResponse;
@@ -45,6 +46,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 import static com.dpw.runner.shipment.services.utils.CSVParsingUtil.*;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.convertToEntityList;
@@ -106,30 +108,42 @@ public class ContainerService implements IContainerService {
                 shipmentsContainersMappingDao.updateShipmentsMappings(container.getId(), List.of(request.getShipmentId()));
             });
         }
-        var p = containersList.toString();
     }
 
     @Override
-    public void downloadContainers(HttpServletResponse response, BulkDownloadRequest request) throws Exception {
-        List<Containers> containersList = containerDao.getAllContainers();
+    public void downloadContainers(HttpServletResponse response, @ModelAttribute BulkDownloadRequest request) throws Exception {
         List<ShipmentsContainersMapping> mappings;
-        Set<Long> containerId = new HashSet<>();
+        List<Containers> result = new ArrayList<>();
         if (request.getShipmentId() != null) {
+            List<Long> containerId = new ArrayList<>();
             mappings = shipmentsContainersMappingDao.findByShipmentId(Long.valueOf(request.getShipmentId()));
             containerId.addAll(mappings.stream().map(mapping -> mapping.getContainerId()).collect(Collectors.toList()));
+
+            ListCommonRequest req = constructListCommonRequest("id", containerId, "IN");
+            Pair<Specification<Containers>, Pageable> pair = fetchData(req, Containers.class);
+            Page<Containers> containers = containerDao.findAll(pair.getLeft(), pair.getRight());
+            List<Containers> containersList = containers.getContent();
+            result.addAll(containersList);
         }
-        containersList.stream().filter(containers -> {
-            if (request.getConsolidationId() != null)
-                return containers.getConsolidationId().equals(request.getConsolidationId());
-            return containerId.contains(containers.getId());
-        }).collect(Collectors.toList());
+
+        if (request.getConsolidationId() != null) {
+            ListCommonRequest req2 = constructListCommonRequest("consolidation_id", request.getConsolidationId(), "=");
+            Pair<Specification<Containers>, Pageable> pair = fetchData(req2, Containers.class);
+            Page<Containers> containers = containerDao.findAll(pair.getLeft(), pair.getRight());
+            List<Containers> containersList = containers.getContent();
+            if (result.isEmpty()) {
+                result.addAll(containersList);
+            } else {
+                result = result.stream().filter(result::contains).collect(Collectors.toList());
+            }
+        }
 
         response.setContentType("text/csv");
         response.setHeader("Content-Disposition", "attachment; filename=\"containers.csv\"");
 
         try (PrintWriter writer = response.getWriter()) {
             writer.println(parser.generateCSVHeader());
-            for (Containers container : containersList) {
+            for (Containers container : result) {
                 writer.println(parser.formatContainerAsCSVLine(container));
             }
         }

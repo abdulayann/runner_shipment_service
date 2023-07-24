@@ -2,10 +2,7 @@ package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.PackingConstants;
-import com.dpw.runner.shipment.services.commons.requests.BulkUploadRequest;
-import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
-import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
-import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IPackingDao;
 import com.dpw.runner.shipment.services.dto.request.PackingRequest;
@@ -27,7 +24,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.PrintWriter;
@@ -38,6 +34,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 
 @Slf4j
 @Service
@@ -80,15 +77,33 @@ public class PackingService implements IPackingService {
     }
 
     @Override
-    public void downloadPacking(HttpServletResponse response) throws Exception {
-        List<Packing> packingList = packingDao.getAllPackings(); // Retrieve all packings from the database
+    public void downloadPacking(HttpServletResponse response, BulkDownloadRequest request) throws Exception {
+        List<Packing> result = new ArrayList<>();
+        if (request.getShipmentId() != null) {
+            ListCommonRequest req = constructListCommonRequest("shipment_id", request.getShipmentId(), "=");
+            Pair<Specification<Packing>, Pageable> pair = fetchData(req, Packing.class);
+            Page<Packing> packings = packingDao.findAll(pair.getLeft(), pair.getRight());
+            List<Packing> packingList = packings.getContent();
+            result.addAll(packingList);
+        }
 
+        if (request.getConsolidationId() != null) {
+            ListCommonRequest req2 = constructListCommonRequest("consolidation_id", request.getConsolidationId(), "=");
+            Pair<Specification<Packing>, Pageable> pair = fetchData(req2, Packing.class);
+            Page<Packing> packings = packingDao.findAll(pair.getLeft(), pair.getRight());
+            List<Packing> packingList = packings.getContent();
+            if (result.isEmpty()) {
+                result.addAll(packingList);
+            } else {
+                result = result.stream().filter(result::contains).collect(Collectors.toList());
+            }
+        }
         response.setContentType("text/csv");
         response.setHeader("Content-Disposition", "attachment; filename=\"packings.csv\"");
 
         try (PrintWriter writer = response.getWriter()) {
             writer.println(parser.generateCSVHeader());
-            for (Packing packing : packingList) {
+            for (Packing packing : result) {
                 writer.println(parser.formatContainerAsCSVLine(packing));
             }
         }
