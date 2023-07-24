@@ -29,4 +29,9 @@ public class Constants {
 
     //MasterDataFactory
     public static final String MAPPER_MASTER_DATA = "Mapper";
+    public static final String V1_MASTER_DATA = "v1";
+
+
+    public static final String TOKEN = "Authorization";
+
 }
