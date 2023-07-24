@@ -64,7 +64,7 @@ public class ShipmentDao implements IShipmentDao {
 
     private void validateLockStatus(Long id) throws ValidationException {
         Optional<ShipmentDetails> existingShipment = findById(id);
-        if(existingShipment.get().getIsLocked()) {
+        if(existingShipment.get().getIsLocked() != null && existingShipment.get().getIsLocked()) {
             throw new ValidationException(ShipmentConstants.SHIPMENT_LOCKED);
         }
     }

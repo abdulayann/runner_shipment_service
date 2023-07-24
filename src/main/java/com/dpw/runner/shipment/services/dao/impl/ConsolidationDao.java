@@ -49,7 +49,7 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
 
     private void validateLockStatus(Long id) throws ValidationException {
         Optional<ConsolidationDetails> existingConsolidation = findById(id);
-        if(existingConsolidation.get().getIsLocked()) {
+        if(existingConsolidation.get().getIsLocked() != null && existingConsolidation.get().getIsLocked()) {
             throw new ValidationException(ConsolidationConstants.CONSOLIDATION_LOCKED);
         }
     }
