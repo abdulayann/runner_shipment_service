@@ -4,13 +4,13 @@ import com.dpw.runner.shipment.services.commons.constants.ApiConstants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.ContainerConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
+import com.dpw.runner.shipment.services.commons.requests.BulkUploadRequest;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.ContainerAPIsRequest.ContainerAssignRequest;
 import com.dpw.runner.shipment.services.dto.ContainerAPIsRequest.ContainerPackAssignDetachRequest;
 import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
 import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
-import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerService;
 import io.swagger.annotations.ApiResponse;
@@ -20,12 +20,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
 import java.io.IOException;
-import java.util.List;
 
 @Slf4j
 @SuppressWarnings("ALL")
@@ -41,13 +39,13 @@ public class ContainerController {
             @ApiResponse(code = 404, message = ContainerConstants.NO_DATA, response = RunnerResponse.class)
     })
     @PostMapping(ApiConstants.API_UPLOAD)
-    public ResponseEntity<String> uploadCSV(@RequestParam("file") MultipartFile file) throws IOException {
-        if (file.isEmpty()) {
+    public ResponseEntity<String> uploadCSV(@ModelAttribute BulkUploadRequest request) throws IOException {
+        if (request.getFile().isEmpty()) {
             return ResponseEntity.badRequest().body("No File Found !");
         }
 
         try {
-            containerService.uploadContainers(file);
+            containerService.uploadContainers(request);
             return ResponseEntity.ok("CSV file uploaded successfully!");
         } catch (Exception e) {
             String responseMessage = e.getMessage() != null ? e.getMessage()

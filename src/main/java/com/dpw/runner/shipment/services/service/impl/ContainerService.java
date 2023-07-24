@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.commons.requests.BulkUploadRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IEventDao;
@@ -26,13 +27,7 @@ import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerService;
 import com.dpw.runner.shipment.services.utils.CSVParsingUtil;
 import com.nimbusds.jose.util.Pair;
-import com.opencsv.CSVReader;
-import com.opencsv.exceptions.CsvException;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.csv.CSVFormat;
-import org.apache.commons.csv.CSVParser;
-import org.apache.commons.csv.CSVRecord;
-import org.apache.commons.text.CaseUtils;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
@@ -44,17 +39,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.StringUtils;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
 import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.io.InputStreamReader;
 import java.io.PrintWriter;
-import java.lang.reflect.Field;
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.util.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -113,9 +101,18 @@ public class ContainerService implements IContainerService {
     }
 
     @Override
-    public void uploadContainers(MultipartFile file) throws Exception {
-        List<Containers> containersList = parser.parseCSVFile(file);
-        containerDao.saveAll(containersList);
+    public void uploadContainers(BulkUploadRequest request) throws Exception {
+        List<Containers> containersList = parser.parseCSVFile(request.getFile());
+        containersList = containersList.stream().map(c ->
+                c.setConsolidationId(request.getConsolidationId())
+        ).collect(Collectors.toList());
+        containersList = containerDao.saveAll(containersList);
+        if (request.getShipmentId() != null) {
+            containersList.stream().forEach(container -> {
+                shipmentsContainersMappingDao.updateShipmentsMappings(container.getId(), List.of(request.getShipmentId()));
+            });
+        }
+        var p = containersList.toString();
     }
 
     @Override
