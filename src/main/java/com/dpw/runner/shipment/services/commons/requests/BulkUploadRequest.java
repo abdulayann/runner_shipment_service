@@ -10,7 +10,7 @@ import org.springframework.web.multipart.MultipartFile;
 @NoArgsConstructor
 @Data
 @Builder
-public class UploadContainerRequest {
+public class BulkUploadRequest {
     private MultipartFile file;
     private Long shipmentId;
     private Long consolidationId;

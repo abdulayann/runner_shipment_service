@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.commons.constants.ApiConstants;
 import com.dpw.runner.shipment.services.commons.constants.ContainerConstants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.PackingConstants;
+import com.dpw.runner.shipment.services.commons.requests.BulkUploadRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
@@ -37,13 +38,13 @@ public class PackingController {
             @ApiResponse(code = 404, message = ContainerConstants.NO_DATA, response = RunnerResponse.class)
     })
     @PostMapping(ApiConstants.API_UPLOAD)
-    public ResponseEntity<String> uploadCSV(@RequestParam("file") MultipartFile file) throws IOException {
-        if (file.isEmpty()) {
+    public ResponseEntity<String> uploadCSV(@ModelAttribute BulkUploadRequest request) throws IOException {
+        if (request.getFile().isEmpty()) {
             return ResponseEntity.badRequest().body("No File Found !");
         }
 
         try {
-            packingService.uploadPacking(file);
+            packingService.uploadPacking(request);
             return ResponseEntity.ok("CSV file uploaded successfully!");
         } catch (Exception e) {
             String responseMessage = e.getMessage() != null ? e.getMessage()
