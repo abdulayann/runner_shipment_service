@@ -17,4 +17,5 @@ public class ConsolidationConstants {
 
     public static final String RESPONSE_CONTAINER_LIST = "List";
 
+    public static final String CONSOLIDATION_CALCULATION_SUCCESSFUL = "Successful Required Calculation";
 }

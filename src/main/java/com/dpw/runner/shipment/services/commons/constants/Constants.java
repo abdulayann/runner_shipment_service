@@ -25,6 +25,20 @@ public class Constants {
     public static final String Cont40RE = "40RE";
     public static final String PageNumberError = "Page Number should be Greater than or equal to 1";
     public static final String Validation_Exception = "Validation errors occurred.";
+    public static final String MASS = "Mass";
+    public static final String VOLUME = "Volume";
+    public static final String VOLUME_UNIT_M3 = "M3";
+    public static final String VOLUME_UNIT_LITRE = "L";
+    public static final String WEIGHT_UNIT_KG = "KG";
+    public static final String WEIGHT_UNIT_GRAM = "G";
+
+    public static final String TRANSPORT_MODE_SEA = "SEA";
+    public static final String TRANSPORT_MODE_AIR = "AIR";
+    public static final String TRANSPORT_MODE_ROA = "ROA";
+    public static final String TRANSPORT_MODE_RAI = "RAI";
+    public static final String TRANSPORT_MODE_FSA = "FSA";
+    public static final String TRANSPORT_MODE_FAS = "FAS";
+    public static final String SHIPMENT_TYPE_LCL = "LCL";
 
 
     //MasterDataFactory
