@@ -1,6 +1,10 @@
 package com.dpw.runner.shipment.services.entity;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
+import com.dpw.runner.shipment.services.dto.request.hbl.HblCargoDto;
+import com.dpw.runner.shipment.services.dto.request.hbl.HblContainerDto;
+import com.dpw.runner.shipment.services.dto.request.HblPartyDto;
+import com.dpw.runner.shipment.services.dto.request.hbl.HblDataDto;
 import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
 import lombok.*;
 import lombok.experimental.Accessors;
@@ -10,6 +14,7 @@ import org.hibernate.annotations.TypeDef;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Table;
+import java.util.List;
 import java.util.Map;
 
 
@@ -29,18 +34,18 @@ public class Hbl extends MultiTenancy {
 
     @Type(type = "jsonb")
     @Column(name = "hbl_data", columnDefinition = "jsonb")
-    private Map<String, Object> hblData;
+    private HblDataDto hblData;
 
     @Type(type = "jsonb")
     @Column(name = "container_data", columnDefinition = "jsonb")
-    private Map<String, Object> hblContainer;
+    private List<HblContainerDto> hblContainer;
 
     @Type(type = "jsonb")
     @Column(name = "cargo_data", columnDefinition = "jsonb")
-    private Map<String, Object> hblCargo;
+    private List<HblCargoDto> hblCargo;
 
     @Type(type = "jsonb")
     @Column(name = "notify_party_data", columnDefinition = "jsonb")
-    private Map<String, Object> hblNotifyParty;
+    private List<HblPartyDto> hblNotifyParty;
 
 }

@@ -1,4 +1,4 @@
-package com.dpw.runner.shipment.services.dto.request;
+package com.dpw.runner.shipment.services.dto.request.hbl;
 
 import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
@@ -15,7 +15,7 @@ import java.util.UUID;
 @ToString
 @AllArgsConstructor
 @NoArgsConstructor
-public class HblDataDto extends CommonRequest implements IRunnerRequest {
+public class HblDataDto {
     private Long id;
     private UUID guid;
     private Long shipmentId;
@@ -82,5 +82,10 @@ public class HblDataDto extends CommonRequest implements IRunnerRequest {
     private String paymentTerm;
     private String incoTermPlace;
     private Integer quantity;
+
+}
+
+class ABC {
+
 
 }

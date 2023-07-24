@@ -1,9 +1,9 @@
 package com.dpw.runner.shipment.services.dto.response;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.dto.request.HblCargoDto;
-import com.dpw.runner.shipment.services.dto.request.HblContainerDto;
-import com.dpw.runner.shipment.services.dto.request.HblDataDto;
+import com.dpw.runner.shipment.services.dto.request.hbl.HblCargoDto;
+import com.dpw.runner.shipment.services.dto.request.hbl.HblContainerDto;
+import com.dpw.runner.shipment.services.dto.request.hbl.HblDataDto;
 import com.dpw.runner.shipment.services.dto.request.HblPartyDto;
 import io.swagger.annotations.ApiModel;
 import lombok.*;

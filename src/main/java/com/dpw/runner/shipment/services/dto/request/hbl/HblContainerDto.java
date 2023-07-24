@@ -1,9 +1,10 @@
-package com.dpw.runner.shipment.services.dto.request;
+package com.dpw.runner.shipment.services.dto.request.hbl;
 
 import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
 import lombok.*;
 
 import java.math.BigDecimal;
+import java.util.UUID;
 
 
 @Data
@@ -11,8 +12,9 @@ import java.math.BigDecimal;
 @ToString
 @AllArgsConstructor
 @NoArgsConstructor
-public class HblContainerDto extends CommonRequest {
+public class HblContainerDto {
     private Long id;
+    private UUID guid;
     private String containerNumber;
     private String containerType;
     private String carrierSealNumber;
@@ -34,5 +36,4 @@ public class HblContainerDto extends CommonRequest {
     private String  packageUnit;
     private Integer  quantity;
     private String  quantityCode;
-
 }

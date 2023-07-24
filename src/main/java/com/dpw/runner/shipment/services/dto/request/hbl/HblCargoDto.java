@@ -1,11 +1,11 @@
-package com.dpw.runner.shipment.services.dto.request;
+package com.dpw.runner.shipment.services.dto.request.hbl;
 
 import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import lombok.*;
 
 import java.math.BigDecimal;
-
+import java.util.UUID;
 
 
 @Data
@@ -13,9 +13,10 @@ import java.math.BigDecimal;
 @ToString
 @AllArgsConstructor
 @NoArgsConstructor
-public class HblCargoDto extends CommonRequest implements IRunnerRequest {
+public class HblCargoDto  {
 
     private Long id;
+    private UUID guid;
     private Integer packageCount;
     private String packageType;
     private String classification;

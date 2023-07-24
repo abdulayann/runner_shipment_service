@@ -7,6 +7,9 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IHblDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.request.*;
+import com.dpw.runner.shipment.services.dto.request.hbl.HblCargoDto;
+import com.dpw.runner.shipment.services.dto.request.hbl.HblContainerDto;
+import com.dpw.runner.shipment.services.dto.request.hbl.HblDataDto;
 import com.dpw.runner.shipment.services.dto.response.HblResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
@@ -128,13 +131,13 @@ public class HblService implements IHblService {
             throw new ValidationException(String.format(HblConstants.HBL_DATA_FOUND, shipmentDetails.get().getShipmentId()));
 
         HblDataDto hblData = mapShipmentToHBL(shipmentDetails.get());
-        HblCargoDataDto hblCargos = mapShipmentCargoToHBL(shipmentDetails.get().getPackingList());
-        HblContainerDataDto hblContainers = mapShipmentContainersToHBL(shipmentDetails.get().getContainersList());
-        HblPartyDataDto hblParties = mapShipmentPartiesToHBL(shipmentDetails.get().getAdditionalDetails().getNotifyParty());
+        List<HblCargoDto> hblCargos = mapShipmentCargoToHBL(shipmentDetails.get().getPackingList());
+        List<HblContainerDto> hblContainers = mapShipmentContainersToHBL(shipmentDetails.get().getContainersList());
+        List<HblPartyDto> hblParties = mapShipmentPartiesToHBL(shipmentDetails.get().getAdditionalDetails().getNotifyParty());
 
         Hbl hbl = Hbl.builder().shipmentId(request.getShipmentId())
-                .hblData(jsonHelper.convertValue(hblData, Map.class)).hblCargo(jsonHelper.convertValue(hblCargos, Map.class))
-                .hblContainer(jsonHelper.convertValue(hblContainers, Map.class)).hblNotifyParty(jsonHelper.convertValue(hblParties, Map.class))
+                .hblData(hblData).hblCargo(hblCargos)
+                .hblContainer(hblContainers).hblNotifyParty(hblParties)
                 .build();
 
         hbl = hblDao.save(hbl);
@@ -153,21 +156,18 @@ public class HblService implements IHblService {
 
     private Hbl convertRequestToEntity(HblRequest request) {
         HblDataDto hblData = modelMapper.map(request, HblDataDto.class);
-        HblContainerDataDto containerData = HblContainerDataDto.builder().containers(request.getContainers()).build();
-        HblCargoDataDto cargoData = HblCargoDataDto.builder().cargos(request.getCargoes()).build();
-        HblPartyDataDto partyData = HblPartyDataDto.builder().parties(request.getNotifyParties()).build();
-        Hbl hbl = Hbl.builder()
-                .hblData(jsonHelper.convertValue(hblData, Map.class)).hblCargo(jsonHelper.convertValue(cargoData, Map.class))
-                .hblContainer(jsonHelper.convertValue(containerData, Map.class)).hblNotifyParty(jsonHelper.convertValue(partyData, Map.class))
+        Hbl hbl = Hbl.builder().shipmentId(request.getShipmentId())
+                .hblData(hblData).hblCargo(request.getCargoes())
+                .hblContainer(request.getContainers()).hblNotifyParty(request.getNotifyParties())
                 .build();
         return hbl;
     }
 
     private IRunnerResponse convertEntityToDto(Hbl hbl) {
         HblResponse response = modelMapper.map(hbl.getHblData(), HblResponse.class);
-        response.setCargoes(modelMapper.map(hbl.getHblCargo(), HblCargoDataDto.class).getCargos());
-        response.setContainers(modelMapper.map(hbl.getHblContainer(), HblContainerDataDto.class).getContainers());
-        response.setNotifyParties(modelMapper.map(hbl.getHblNotifyParty(), HblPartyDataDto.class).getParties());
+        response.setCargoes(hbl.getHblCargo());
+        response.setContainers(hbl.getHblContainer());
+        response.setNotifyParties(hbl.getHblNotifyParty());
         response.setId(hbl.getId());
         response.setGuid(hbl.getGuid());
         return response;
@@ -249,7 +249,7 @@ public class HblService implements IHblService {
         return sb.toString();
     }
 
-    private HblContainerDataDto mapShipmentContainersToHBL(List<Containers> containers) {
+    private List<HblContainerDto> mapShipmentContainersToHBL(List<Containers> containers) {
         List<HblContainerDto> hblContainers = new ArrayList<>();
         containers.forEach(container -> {
             HblContainerDto hblContainer = HblContainerDto.builder().build();
@@ -268,11 +268,11 @@ public class HblService implements IHblService {
             hblContainers.add(hblContainer);
         });
 
-        return HblContainerDataDto.builder().containers(hblContainers).build();
+        return hblContainers;
 
     }
 
-    private HblCargoDataDto mapShipmentCargoToHBL(List<Packing> packings) {
+    private List<HblCargoDto> mapShipmentCargoToHBL(List<Packing> packings) {
         List<HblCargoDto> hblCargoes = new ArrayList<>();
         packings.forEach(pack -> {
             HblCargoDto cargo = HblCargoDto.builder().build();
@@ -290,10 +290,10 @@ public class HblService implements IHblService {
             hblCargoes.add(cargo);
         });
 
-        return HblCargoDataDto.builder().cargos(hblCargoes).build();
+        return hblCargoes;
     }
 
-    private HblPartyDataDto mapShipmentPartiesToHBL(Parties party) {
+    private List<HblPartyDto> mapShipmentPartiesToHBL(Parties party) {
         List<HblPartyDto> hblParties = new ArrayList<>();
         HblPartyDto hblParty = HblPartyDto.builder().build();
         if (party != null) {
@@ -302,7 +302,7 @@ public class HblService implements IHblService {
             hblParty.setEmail(StringUtility.convertToString(party.getOrgData().get(PartiesConstants.EMAIL)));
             hblParties.add(hblParty);
         }
-        return HblPartyDataDto.builder().parties(hblParties).build();
+        return hblParties;
     }
     
 }
