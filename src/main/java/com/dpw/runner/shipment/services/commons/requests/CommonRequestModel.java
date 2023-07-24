@@ -20,6 +20,7 @@ public class CommonRequestModel {
     private Integer count = 50;
     @Builder.Default
     private Boolean active = true;
+    private Object dependentData;
 
     public static CommonRequestModel buildRequest(IRunnerRequest data, int pageNo, int count) {
         log.debug("Received Request {}", data);
@@ -68,6 +69,11 @@ public class CommonRequestModel {
     public static CommonRequestModel buildRequest(List<? extends IRunnerRequest> dataList)
     {
         return CommonRequestModel.builder().dataList(dataList).build();
+    }
+
+    public static CommonRequestModel buildDependentDataRequest(Object data) {
+        log.debug("Received Request {}", data);
+        return CommonRequestModel.builder().dependentData(data).build();
     }
 
 }

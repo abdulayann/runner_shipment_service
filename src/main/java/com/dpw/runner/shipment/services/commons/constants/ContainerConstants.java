@@ -6,6 +6,7 @@ public class ContainerConstants {
     public static final String CONTAINER_UPDATE_SUCCESSFUL = "Successful Container Data Update";
     public static final String CONTAINER_LIST_SUCCESSFUL = "Successful Container Data List Retrieval";
     public static final String CONTAINER_DELETE_SUCCESSFUL = "Successful Container Delete";
+    public static final String CONTAINER_CALCULATION_SUCCESSFUL = "Successful Required Calculation";
     public static final String NO_DATA = "Not Found!";
     public static final String CONTAINER_ID = "Container Id";
     public static final String RESPONSE_CONTAINER_LIST = "List";
