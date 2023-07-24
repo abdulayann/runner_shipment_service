@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.entity.ShipmentsContainersMapping;
 import com.dpw.runner.shipment.services.repository.interfaces.IShipmentsContainersMappingRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
+
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -19,7 +20,7 @@ public class ShipmentsContainersMappingDao implements IShipmentsContainersMappin
         return shipmentsContainersMappingRepository.findByContainerId(containerId);
     }
 
-    private List<ShipmentsContainersMapping> findByShipmentId(Long shipmentId) {
+    public List<ShipmentsContainersMapping> findByShipmentId(Long shipmentId) {
         return shipmentsContainersMappingRepository.findByShipmentId(shipmentId);
     }
 
@@ -35,16 +36,15 @@ public class ShipmentsContainersMappingDao implements IShipmentsContainersMappin
     public void assignShipments(Long containerId, List<Long> shipIds) {
         List<ShipmentsContainersMapping> mappings = findByContainerId(containerId);
         HashSet<Long> shipmentIds = new HashSet<>(shipIds);
-        if(mappings != null && mappings.size() > 0)
-        {
-            for (ShipmentsContainersMapping shipmentsContainersMappings: mappings) {
-                if(shipmentIds.contains(shipmentsContainersMappings.getShipmentId())) {
+        if (mappings != null && mappings.size() > 0) {
+            for (ShipmentsContainersMapping shipmentsContainersMappings : mappings) {
+                if (shipmentIds.contains(shipmentsContainersMappings.getShipmentId())) {
                     shipmentIds.remove(shipmentsContainersMappings.getShipmentId());
                 }
             }
         }
-        if(!shipmentIds.isEmpty()) {
-            for (Long id: shipmentIds) {
+        if (!shipmentIds.isEmpty()) {
+            for (Long id : shipmentIds) {
                 ShipmentsContainersMapping entity = new ShipmentsContainersMapping();
                 entity.setShipmentId(id);
                 entity.setContainerId(containerId);
@@ -58,16 +58,15 @@ public class ShipmentsContainersMappingDao implements IShipmentsContainersMappin
         List<ShipmentsContainersMapping> mappings = findByContainerId(containerId);
         HashSet<Long> shipmentIds = new HashSet<>(shipIds);
         List<ShipmentsContainersMapping> deleteMappings = new ArrayList<>();
-        if(mappings != null && mappings.size() > 0)
-        {
-            for (ShipmentsContainersMapping shipmentsContainersMappings: mappings) {
-                if(shipmentIds.contains(shipmentsContainersMappings.getShipmentId())) {
+        if (mappings != null && mappings.size() > 0) {
+            for (ShipmentsContainersMapping shipmentsContainersMappings : mappings) {
+                if (shipmentIds.contains(shipmentsContainersMappings.getShipmentId())) {
                     deleteMappings.add(shipmentsContainersMappings);
                 }
             }
         }
-        if(!deleteMappings.isEmpty()) {
-            for (ShipmentsContainersMapping shipmentsContainersMapping: deleteMappings) {
+        if (!deleteMappings.isEmpty()) {
+            for (ShipmentsContainersMapping shipmentsContainersMapping : deleteMappings) {
                 delete(shipmentsContainersMapping);
             }
         }
@@ -78,24 +77,23 @@ public class ShipmentsContainersMappingDao implements IShipmentsContainersMappin
         List<ShipmentsContainersMapping> mappings = findByContainerId(containerId);
         HashSet<Long> shipmentIds = new HashSet<>(shipIds);
         List<ShipmentsContainersMapping> deleteMappings = new ArrayList<>();
-        for (ShipmentsContainersMapping shipmentsContainersMapping: mappings) {
-            if(shipmentIds.contains(shipmentsContainersMapping.getShipmentId())) {
+        for (ShipmentsContainersMapping shipmentsContainersMapping : mappings) {
+            if (shipmentIds.contains(shipmentsContainersMapping.getShipmentId())) {
                 shipmentIds.remove(shipmentsContainersMapping.getShipmentId());
-            }
-            else {
+            } else {
                 deleteMappings.add(shipmentsContainersMapping);
             }
         }
-        if(!shipmentIds.isEmpty()) {
-            for (Long shipmentId: shipmentIds) {
+        if (!shipmentIds.isEmpty()) {
+            for (Long shipmentId : shipmentIds) {
                 ShipmentsContainersMapping entity = new ShipmentsContainersMapping();
                 entity.setShipmentId(shipmentId);
                 entity.setContainerId(containerId);
                 save(entity);
             }
         }
-        if(!deleteMappings.isEmpty()) {
-            for (ShipmentsContainersMapping mapping: deleteMappings) {
+        if (!deleteMappings.isEmpty()) {
+            for (ShipmentsContainersMapping mapping : deleteMappings) {
                 delete(mapping);
             }
         }

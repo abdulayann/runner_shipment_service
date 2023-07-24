@@ -2,10 +2,7 @@ package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
-import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
-import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
-import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
-import com.dpw.runner.shipment.services.commons.requests.BulkUploadRequest;
+import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IEventDao;
@@ -15,9 +12,8 @@ import com.dpw.runner.shipment.services.dto.request.EventsRequest;
 import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.JobResponse;
 import com.dpw.runner.shipment.services.entity.Containers;
-import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.entity.Events;
-import com.dpw.runner.shipment.services.entity.enums.ContainerStatus;
+import com.dpw.runner.shipment.services.entity.ShipmentsContainersMapping;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerService;
@@ -38,14 +34,10 @@ import org.springframework.transaction.annotation.Transactional;
 import javax.servlet.http.HttpServletResponse;
 import java.io.PrintWriter;
 import java.util.*;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
-import static com.dpw.runner.shipment.services.utils.CSVParsingUtil.*;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.convertToEntityList;
 
 @Slf4j
@@ -108,8 +100,19 @@ public class ContainerService implements IContainerService {
     }
 
     @Override
-    public void downloadContainers(HttpServletResponse response) throws Exception {
+    public void downloadContainers(HttpServletResponse response, BulkDownloadRequest request) throws Exception {
         List<Containers> containersList = containerDao.getAllContainers();
+        List<ShipmentsContainersMapping> mappings;
+        Set<Long> containerId = new HashSet<>();
+        if (request.getShipmentId() != null) {
+            mappings = shipmentsContainersMappingDao.findByShipmentId(Long.valueOf(request.getShipmentId()));
+            containerId.addAll(mappings.stream().map(mapping -> mapping.getContainerId()).collect(Collectors.toList()));
+        }
+        containersList.stream().filter(containers -> {
+            if (request.getConsolidationId() != null)
+                return containers.getConsolidationId().equals(request.getConsolidationId());
+            return containerId.contains(containers.getId());
+        }).collect(Collectors.toList());
 
         response.setContentType("text/csv");
         response.setHeader("Content-Disposition", "attachment; filename=\"containers.csv\"");
