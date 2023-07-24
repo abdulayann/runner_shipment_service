@@ -868,6 +868,7 @@ public class ConsolidationService implements IConsolidationService {
         }
         else {
             consolidationDetails.setIsLocked(true);
+            consolidationDetails.setLockedBy(currentUser);
         }
         consolidationDetailsDao.save(consolidationDetails);
 

@@ -1070,6 +1070,7 @@ public class ShipmentService implements IShipmentService {
         }
         else {
             shipmentDetails.setIsLocked(true);
+            shipmentDetails.setLockedBy(currentUser);
         }
         shipmentDao.save(shipmentDetails);
 
