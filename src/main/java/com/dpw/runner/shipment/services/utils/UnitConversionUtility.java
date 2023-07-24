@@ -1,9 +1,9 @@
-package com.dpw.runner.shipment.services.service.impl;
+package com.dpw.runner.shipment.services.utils;
 
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 import tec.units.ri.unit.MetricPrefix;
 import tec.units.ri.unit.Units;
 
@@ -11,10 +11,10 @@ import javax.measure.Unit;
 import javax.measure.UnitConverter;
 import java.math.BigDecimal;
 
-@Service
 @Slf4j
-public class UnitConversionService {
-    public Number convertUnit(String type, BigDecimal value, String fromUnit, String toUnit) throws Exception {
+@Component
+public class UnitConversionUtility {
+    public static Number convertUnit(String type, BigDecimal value, String fromUnit, String toUnit) throws Exception {
         String responseMsg;
         try {
             Unit<?> sourceUnit = getUnitType(type, fromUnit);
@@ -29,7 +29,7 @@ public class UnitConversionService {
         }
     }
 
-    private Unit<?> getUnitType(String type, String unitSymbol) {
+    private static Unit<?> getUnitType(String type, String unitSymbol) {
         switch (type) {
             case Constants.MASS:
                 return getWeightUnitForSymbol(unitSymbol);
@@ -40,7 +40,7 @@ public class UnitConversionService {
         }
     }
 
-    private Unit<?> getWeightUnitForSymbol(String unitSymbol) {
+    private static Unit<?> getWeightUnitForSymbol(String unitSymbol) {
         switch (unitSymbol) {
             case Constants.WEIGHT_UNIT_KG:
                 return MetricPrefix.KILO(Units.GRAM);
@@ -51,7 +51,7 @@ public class UnitConversionService {
         }
     }
 
-    private Unit<?> getVolumeUnitForSymbol(String unitSymbol) {
+    private static Unit<?> getVolumeUnitForSymbol(String unitSymbol) {
         switch (unitSymbol) {
             case Constants.VOLUME_UNIT_M3:
                 return Units.CUBIC_METRE;

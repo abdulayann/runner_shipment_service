@@ -8,7 +8,6 @@ import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IEventDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IPackingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentsContainersMappingDao;
 import com.dpw.runner.shipment.services.dto.ContainerAPIsRequest.ContainerAssignRequest;
 import com.dpw.runner.shipment.services.dto.ContainerAPIsRequest.ContainerPackAssignDetachRequest;
@@ -45,7 +44,9 @@ import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.*;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.convertToEntityList;
+import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
 
 @Slf4j
 @Service
@@ -59,9 +60,6 @@ public class ContainerService implements IContainerService {
     IShipmentsContainersMappingDao shipmentsContainersMappingDao;
     @Autowired
     IEventDao eventDao;
-
-    @Autowired
-    UnitConversionService unitConversionService;
 
     @Transactional
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
@@ -241,12 +239,12 @@ public class ContainerService implements IContainerService {
     private Containers changeAchievedUnit(Containers container) throws Exception{
         try {
             if(container.getAchievedVolumeUnit() != container.getAllocatedVolumeUnit()) {
-                BigDecimal val = new BigDecimal(unitConversionService.convertUnit(Constants.VOLUME, container.getAchievedVolume(), container.getAchievedVolumeUnit(), container.getAllocatedVolumeUnit()).toString());
+                BigDecimal val = new BigDecimal(convertUnit(Constants.VOLUME, container.getAchievedVolume(), container.getAchievedVolumeUnit(), container.getAllocatedVolumeUnit()).toString());
                 container.setAchievedVolume(val);
                 container.setAchievedVolumeUnit(container.getAllocatedVolumeUnit());
             }
             if(container.getAchievedWeightUnit() != container.getAllocatedWeightUnit()) {
-                BigDecimal val = new BigDecimal(unitConversionService.convertUnit(Constants.MASS, container.getAchievedWeight(), container.getAchievedWeightUnit(), container.getAllocatedWeightUnit()).toString());
+                BigDecimal val = new BigDecimal(convertUnit(Constants.MASS, container.getAchievedWeight(), container.getAchievedWeightUnit(), container.getAllocatedWeightUnit()).toString());
                 container.setAchievedWeight(val);
                 container.setAchievedWeightUnit(container.getAllocatedWeightUnit());
             }
@@ -282,12 +280,12 @@ public class ContainerService implements IContainerService {
             container = changeAchievedUnit(container);
             for(Packing packing: packingList) {
                 if(packing.getWeight() != null && !packing.getWeightUnit().isEmpty()) {
-                    BigDecimal val = new BigDecimal(unitConversionService.convertUnit(Constants.MASS, packing.getWeight(), packing.getWeightUnit(), container.getAchievedWeightUnit()).toString());
+                    BigDecimal val = new BigDecimal(convertUnit(Constants.MASS, packing.getWeight(), packing.getWeightUnit(), container.getAchievedWeightUnit()).toString());
                     container.setAchievedWeight(container.getAchievedWeight().add(val));
                     container.setWeightUtilization(((container.getAchievedWeight().divide(container.getAllocatedWeight())).multiply(new BigDecimal(100))).toString());
                 }
                 if(packing.getVolume() != null && !packing.getVolumeUnit().isEmpty()) {
-                    BigDecimal val = new BigDecimal(unitConversionService.convertUnit(Constants.VOLUME, packing.getVolume(), packing.getVolumeUnit(), container.getAchievedVolumeUnit()).toString());
+                    BigDecimal val = new BigDecimal(convertUnit(Constants.VOLUME, packing.getVolume(), packing.getVolumeUnit(), container.getAchievedVolumeUnit()).toString());
                     container.setAchievedVolume(container.getAchievedVolume().add(val));
                     container.setVolumeUtilization(((container.getAchievedVolume().divide(container.getAllocatedVolume())).multiply(new BigDecimal(100))).toString());
                 }
@@ -311,12 +309,12 @@ public class ContainerService implements IContainerService {
             container = changeAchievedUnit(container);
             for(Packing packing: packingList) {
                 if(packing.getWeight() != null && !packing.getWeightUnit().isEmpty()) {
-                    BigDecimal val = new BigDecimal(unitConversionService.convertUnit(Constants.MASS, packing.getWeight(), packing.getWeightUnit(), container.getAchievedWeightUnit()).toString());
+                    BigDecimal val = new BigDecimal(convertUnit(Constants.MASS, packing.getWeight(), packing.getWeightUnit(), container.getAchievedWeightUnit()).toString());
                     container.setAchievedWeight(container.getAchievedWeight().subtract(val));
                     container.setWeightUtilization(((container.getAchievedWeight().divide(container.getAllocatedWeight())).multiply(new BigDecimal(100))).toString());
                 }
                 if(packing.getVolume() != null && !packing.getVolumeUnit().isEmpty()) {
-                    BigDecimal val = new BigDecimal(unitConversionService.convertUnit(Constants.VOLUME, packing.getVolume(), packing.getVolumeUnit(), container.getAchievedVolumeUnit()).toString());
+                    BigDecimal val = new BigDecimal(convertUnit(Constants.VOLUME, packing.getVolume(), packing.getVolumeUnit(), container.getAchievedVolumeUnit()).toString());
                     container.setAchievedVolume(container.getAchievedVolume().subtract(val));
                     container.setVolumeUtilization(((container.getAchievedVolume().divide(container.getAllocatedVolume())).multiply(new BigDecimal(100))).toString());
                 }
