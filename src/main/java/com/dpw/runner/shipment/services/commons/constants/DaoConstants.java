@@ -23,4 +23,8 @@ public class DaoConstants {
     public static final String DAO_INVALID_REQUEST_MSG = "Undefined Request. Request Processing failed.";
 
     public static final String DAO_FAILED_ENTITY_UPDATE = "Error occurred while trying to save/delete some entity. Exception raised is: ";
+
+    public static final String DAO_CALCULATION_ERROR = "Error occurred while calculation of quantities. Exception raised is: ";
+
+    public static final String DAO_UNKNOWN_UNIT = "Unknown unit : ";
 }

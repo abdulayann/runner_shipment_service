@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.*;
@@ -38,6 +39,7 @@ import org.springframework.transaction.interceptor.TransactionAspectSupport;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.StringUtils;
 
+import javax.persistence.EntityManager;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -114,6 +116,12 @@ public class ShipmentService implements IShipmentService {
 
     @Autowired
     private IShipmentSettingsDao shipmentSettingsDao;
+
+    @Autowired
+    UserContext userContext;
+
+    @Autowired
+    private IConsolidationDetailsDao consolidationDetailsDao;
 
     private List<String> TRANSPORT_MODES = Arrays.asList("SEA", "ROAD", "RAIL", "AIR");
     private List<String> SHIPMENT_TYPE = Arrays.asList("FCL", "LCL");
@@ -337,6 +345,12 @@ public class ShipmentService implements IShipmentService {
 
         try {
 
+            if(request.getConsolidationList()!= null) {
+                List<ConsolidationDetailsRequest> consolRequest = request.getConsolidationList();
+                List<ConsolidationDetails> consolList = consolidationDetailsDao.saveConsolidations(convertToEntityList(consolRequest, ConsolidationDetails.class));
+                shipmentDetails.setConsolidationList(consolList);
+            }
+
             if (additionalDetails != null) {
                 createAdditionalDetail(shipmentDetails, additionalDetails);
                 shipmentDetails.setAdditionalDetails(additionalDetails);
@@ -370,7 +384,7 @@ public class ShipmentService implements IShipmentService {
 
             List<EventsRequest> eventsRequest = request.getEventsList();
             if (eventsRequest != null)
-                shipmentDetails.setEventsList(eventDao.saveEntityFromShipment(convertToEntityList(eventsRequest, Events.class), shipmentId));
+                shipmentDetails.setEventsList(eventDao.saveEntityFromOtherEntity(convertToEntityList(eventsRequest, Events.class), shipmentId, Constants.SHIPMENT));
 
             List<FileRepoRequest> fileRepoRequest = request.getFileRepoList();
             if (fileRepoRequest != null)
@@ -510,7 +524,8 @@ public class ShipmentService implements IShipmentService {
 
     @Transactional
     public void createEvent(ShipmentDetails shipmentDetails, EventsRequest eventsRequest) {
-        eventsRequest.setShipmentId(shipmentDetails.getId());
+        eventsRequest.setEntityId(shipmentDetails.getId());
+        eventsRequest.setEntityType(Constants.SHIPMENT);
         eventDao.save(objectMapper.convertValue(eventsRequest, Events.class));
     }
 
@@ -604,8 +619,26 @@ public class ShipmentService implements IShipmentService {
         entity.setId(oldEntity.get().getId());
         if (entity.getContainersList() == null)
             entity.setContainersList(oldEntity.get().getContainersList());
-        entity = shipmentDao.save(entity);
+        entity = shipmentDao.update(entity);
         return ResponseHelper.buildSuccessResponse(objectMapper.convertValue(entity, ShipmentDetailsResponse.class));
+    }
+
+    @Transactional
+    public ResponseEntity<?> attachConsolidations(Long shipmentId, List<Long> consolIds) {
+        ShipmentDetails shipmentDetails = shipmentDao.findById(shipmentId).get();
+
+        if (shipmentDetails != null) {
+            for (Long consolId : consolIds) {
+                ConsolidationDetails consolidationDetails = consolidationDetailsDao.findById(consolId).get();
+                if (consolidationDetails != null) {
+                    shipmentDetails.getConsolidationList().add(consolidationDetails);
+                }
+            }
+            ShipmentDetails entity = shipmentDao.save(shipmentDetails);
+            return ResponseHelper.buildSuccessResponse(modelMapper.map(entity, ShipmentDetailsResponse.class));
+        }
+
+        return null;
     }
 
     @Transactional
@@ -635,6 +668,17 @@ public class ShipmentService implements IShipmentService {
             log.debug("Shipment Details is null for Id {}", shipmentRequest.getId());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
+
+        List<Long> tempConsolIds = new ArrayList<>();
+
+        List<ConsolidationDetailsRequest> updatedConsolidationRequest = new ArrayList<>();
+        List<ConsolidationDetailsRequest> consolidationDetailsRequests = shipmentRequest.getConsolidationList();
+        for(ConsolidationDetailsRequest consolidation : consolidationDetailsRequests) {
+            if(consolidation.getId() != null) {
+                tempConsolIds.add(consolidation.getId());
+            }
+        }
+        shipmentRequest.setConsolidationList(updatedConsolidationRequest);
 
         try {
            ShipmentDetails entity = objectMapper.convertValue(shipmentRequest, ShipmentDetails.class);
@@ -682,7 +726,9 @@ public class ShipmentService implements IShipmentService {
             List<ServiceDetails> oldServiceDetails = oldEntity.get().getServicesList();
             List<PickupDeliveryDetails> oldPickupDeliveryDetails = oldEntity.get().getPickupDeliveryDetailsList();
 
-            entity = shipmentDao.save(entity);
+            entity = shipmentDao.update(entity);
+
+            attachConsolidations(entity.getId(), tempConsolIds);
 
             ShipmentDetailsResponse response = shipmentDetailsMapper.map(entity);
 
@@ -969,7 +1015,7 @@ public class ShipmentService implements IShipmentService {
 
         try {
             ShipmentDetails entity = oldEntity.get();
-            shipmentDetailsMapper.update(shipmentRequest, entity);
+                shipmentDetailsMapper.update(shipmentRequest, entity);
             entity.setId(oldEntity.get().getId());
             List<Containers> updatedContainers = null;
             if (containerRequestList != null) {
@@ -988,7 +1034,7 @@ public class ShipmentService implements IShipmentService {
                 updatedCarrierDetails = carrierDao.updateEntityFromShipmentConsole(convertToClass(carrierDetailRequest, CarrierDetails.class));
                 entity.setCarrierDetails(updatedCarrierDetails);
             }
-            entity = shipmentDao.save(entity);
+            entity = shipmentDao.update(entity);
 
             ShipmentDetailsResponse response = shipmentDetailsMapper.map(entity);
             response.setContainersList(updatedContainers.stream().map(e -> objectMapper.convertValue(e, ContainerResponse.class)).collect(Collectors.toList()));
@@ -1050,6 +1096,26 @@ public class ShipmentService implements IShipmentService {
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(responseMsg);
         }
+    }
+
+    public ResponseEntity<?> toggleLock(CommonRequestModel commonRequestModel) {
+        CommonGetRequest commonGetRequest = (CommonGetRequest) commonRequestModel.getData();
+        Long id = commonGetRequest.getId();
+        ShipmentDetails shipmentDetails = shipmentDao.findById(id).get();
+        String lockingUser = shipmentDetails.getLockedBy();
+        String currentUser = userContext.getUser().getUsername();
+
+        if(shipmentDetails.getIsLocked()) {
+            if(lockingUser != null && lockingUser.equals(currentUser))
+                shipmentDetails.setIsLocked(false);
+        }
+        else {
+            shipmentDetails.setIsLocked(true);
+            shipmentDetails.setLockedBy(currentUser);
+        }
+        shipmentDao.save(shipmentDetails);
+
+        return ResponseHelper.buildSuccessResponse();
     }
 
 

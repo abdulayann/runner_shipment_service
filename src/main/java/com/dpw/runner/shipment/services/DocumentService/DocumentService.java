@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.DocumentService;
 
+import com.dpw.runner.shipment.services.dto.response.UploadDocumentResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
@@ -34,9 +35,8 @@ public class DocumentService {
     @Autowired
     private RestTemplate restTemplate;
 
-    public String PostDocument(MultipartFile file, Long tenantId, String entityType, Long entityId) throws Exception{
+    public ResponseEntity<UploadDocumentResponse> PostDocument(MultipartFile file, String path) throws Exception{
 
-        String path = tenantId.toString() + "/" + entityType + "/" + entityId.toString();
         String url = BaseUrl+UploadFileUrl;
 
         HttpHeaders headers = new HttpHeaders();
@@ -51,11 +51,11 @@ public class DocumentService {
 
         HttpEntity<Object> request = new HttpEntity<Object>(body, headers);
 
-        ResponseEntity<String> response = restTemplate.postForEntity(url, request, String.class);
-        return response.getBody();
+        ResponseEntity<UploadDocumentResponse> response = restTemplate.postForEntity(url, request, UploadDocumentResponse.class);
+        return response;
     }
 
-    public ResponseEntity<String> DownloadDocument(String path) throws Exception{
+    public ResponseEntity<?> DownloadDocument(String path) throws Exception{
 
         String url = BaseUrl+DownloadFileUrl;
 
@@ -71,7 +71,7 @@ public class DocumentService {
 
         HttpEntity<Object> request = new HttpEntity<Object>(headers);
 
-        ResponseEntity<String> response = restTemplate.exchange(urlTemplate, HttpMethod.GET, request, String.class);
+        ResponseEntity<?> response = restTemplate.exchange(urlTemplate, HttpMethod.GET, request, byte[].class);
 
         return response;
     }

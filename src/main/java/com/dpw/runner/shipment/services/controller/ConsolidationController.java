@@ -117,4 +117,40 @@ public class ConsolidationController {
         }
         return (ResponseEntity<RunnerResponse>) ResponseHelper.buildFailedResponse(responseMsg);
     }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ConsolidationConstants.LOCK_TOGGLE_SUCCESSFUL)})
+    @GetMapping(ApiConstants.TOGGLE_LOCK)
+    public ResponseEntity<RunnerResponse> toggleLock(@ApiParam(value = ShipmentConstants.SHIPMENT_ID, required = true) @RequestParam Long id) {
+        CommonGetRequest request = CommonGetRequest.builder().id(id).build();
+        return (ResponseEntity<RunnerResponse>) consolidationService.toggleLock(CommonRequestModel.buildRequest(request));
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ConsolidationConstants.CONSOLIDATION_CALCULATION_SUCCESSFUL)})
+    @PutMapping(ApiConstants.API_CALCULATE_UTILIZATION)
+    public ResponseEntity<RunnerResponse<ConsolidationDetailsResponse>> calculateUtilization(@RequestBody ConsolidationDetailsRequest consolidationDetailsRequest) {
+        return (ResponseEntity<RunnerResponse<ConsolidationDetailsResponse>>) consolidationService.calculateUtilization(CommonRequestModel.buildRequest(consolidationDetailsRequest));
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ConsolidationConstants.CONSOLIDATION_CALCULATION_SUCCESSFUL)})
+    @PutMapping(ApiConstants.API_CHANGE_UNIT_ALLOCATED_ACHIEVED)
+    public ResponseEntity<RunnerResponse<ConsolidationDetailsResponse>> calculateAchieved_AllocatedForSameUnit(@RequestBody ConsolidationDetailsRequest consolidationDetailsRequest) {
+        return (ResponseEntity<RunnerResponse<ConsolidationDetailsResponse>>) consolidationService.calculateAchieved_AllocatedForSameUnit(CommonRequestModel.buildRequest(consolidationDetailsRequest));
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ConsolidationConstants.CONSOLIDATION_CALCULATION_SUCCESSFUL)})
+    @PutMapping(ApiConstants.API_CALCULATE_CHARGEABLE)
+    public ResponseEntity<RunnerResponse<ConsolidationDetailsResponse>> calculateChargeable(@RequestBody ConsolidationDetailsRequest consolidationDetailsRequest) {
+        return (ResponseEntity<RunnerResponse<ConsolidationDetailsResponse>>) consolidationService.calculateChargeable(CommonRequestModel.buildRequest(consolidationDetailsRequest));
+    }
+
+    @PostMapping("/attach-shipments")
+    public ResponseEntity<RunnerResponse> attachShipments(@RequestBody @Valid ConsolidationDetailsRequest request) throws Exception {
+
+        return (ResponseEntity<RunnerResponse>) consolidationService.attachShipments(request.getId(), request.getShipmentIds());
+    }
+
+    @PostMapping("/detach-shipments")
+    public ResponseEntity<RunnerResponse> detachShipments(@RequestBody @Valid ConsolidationDetailsRequest request) throws Exception{
+        return (ResponseEntity<RunnerResponse>) consolidationService.detachShipments(request.getId(), request.getShipmentIds());
+    }
 }

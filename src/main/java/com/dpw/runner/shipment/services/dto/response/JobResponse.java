@@ -31,4 +31,5 @@ public class JobResponse implements IRunnerResponse {
     private String additionalTerms;
     private String transportMode;
     private String countryOfOrigin;
+    private List<EventsResponse> eventsList;
 }

@@ -2,18 +2,16 @@ package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.PackingConstants;
-import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
-import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
-import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IPackingDao;
 import com.dpw.runner.shipment.services.dto.request.PackingRequest;
 import com.dpw.runner.shipment.services.dto.response.PackingResponse;
-import com.dpw.runner.shipment.services.entity.BookingCarriage;
 import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingService;
+import com.dpw.runner.shipment.services.utils.CSVParsingUtil;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
@@ -27,8 +25,9 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.servlet.http.HttpServletResponse;
+import java.io.PrintWriter;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -45,12 +44,14 @@ public class PackingService implements IPackingService {
     @Autowired
     ModelMapper modelMapper;
 
+    private final CSVParsingUtil<Packing> parser = new CSVParsingUtil<>(Packing.class);
+
     @Transactional
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
         String responseMsg;
         PackingRequest request = null;
         request = (PackingRequest) commonRequestModel.getData();
-        if(request == null) {
+        if (request == null) {
             log.debug("Request is empty for Packing create with Request Id {}", LoggerHelper.getRequestIdFromMDC());
         }
         Packing packing = convertRequestToEntity(request);
@@ -66,15 +67,57 @@ public class PackingService implements IPackingService {
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(packing));
     }
 
+    @Override
+    public void uploadPacking(BulkUploadRequest request) throws Exception {
+        List<Packing> packingList = parser.parseCSVFile(request.getFile());
+        packingList.stream().forEach(packing -> {
+            packing.setConsolidationId(packing.getConsolidationId());
+        });
+        packingDao.saveAll(packingList);
+    }
+
+    @Override
+    public void downloadPacking(HttpServletResponse response, BulkDownloadRequest request) throws Exception {
+        List<Packing> result = new ArrayList<>();
+        if (request.getShipmentId() != null) {
+            ListCommonRequest req = constructListCommonRequest("shipment_id", request.getShipmentId(), "=");
+            Pair<Specification<Packing>, Pageable> pair = fetchData(req, Packing.class);
+            Page<Packing> packings = packingDao.findAll(pair.getLeft(), pair.getRight());
+            List<Packing> packingList = packings.getContent();
+            result.addAll(packingList);
+        }
+
+        if (request.getConsolidationId() != null) {
+            ListCommonRequest req2 = constructListCommonRequest("consolidation_id", request.getConsolidationId(), "=");
+            Pair<Specification<Packing>, Pageable> pair = fetchData(req2, Packing.class);
+            Page<Packing> packings = packingDao.findAll(pair.getLeft(), pair.getRight());
+            List<Packing> packingList = packings.getContent();
+            if (result.isEmpty()) {
+                result.addAll(packingList);
+            } else {
+                result = result.stream().filter(result::contains).collect(Collectors.toList());
+            }
+        }
+        response.setContentType("text/csv");
+        response.setHeader("Content-Disposition", "attachment; filename=\"packings.csv\"");
+
+        try (PrintWriter writer = response.getWriter()) {
+            writer.println(parser.generateCSVHeader());
+            for (Packing packing : result) {
+                writer.println(parser.formatContainerAsCSVLine(packing));
+            }
+        }
+    }
+
     @Transactional
     public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
         String responseMsg;
         PackingRequest request = (PackingRequest) commonRequestModel.getData();
-        if(request == null) {
+        if (request == null) {
             log.debug("Request is empty for Packing update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
         }
 
-        if(request.getId() == null) {
+        if (request.getId() == null) {
             log.debug("Request Id is null for Packing update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
         }
         long id = request.getId();
@@ -102,7 +145,7 @@ public class PackingService implements IPackingService {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
-            if(request == null) {
+            if (request == null) {
                 log.error("Request is empty for Packing list with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
             // construct specifications for filter request
@@ -128,7 +171,7 @@ public class PackingService implements IPackingService {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
-            if(request == null) {
+            if (request == null) {
                 log.error("Request is empty for Packing async list with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
             // construct specifications for filter request
@@ -152,10 +195,10 @@ public class PackingService implements IPackingService {
     @Override
     public ResponseEntity<?> delete(CommonRequestModel commonRequestModel) {
         String responseMsg;
-        if(commonRequestModel == null) {
+        if (commonRequestModel == null) {
             log.debug("Request is empty for Packing delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
         }
-        if(commonRequestModel.getId() == null) {
+        if (commonRequestModel.getId() == null) {
             log.debug("Request Id is null for Packing delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
         }
         Long id = commonRequestModel.getId();
@@ -182,10 +225,10 @@ public class PackingService implements IPackingService {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
-            if(request == null) {
+            if (request == null) {
                 log.error("Request is empty for Packing retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
-            if(request.getId() == null) {
+            if (request.getId() == null) {
                 log.error("Request Id is null for Packing retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
             long id = request.getId();

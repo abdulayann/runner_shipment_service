@@ -1,0 +1,87 @@
+package com.dpw.runner.shipment.services.service.v1;
+
+import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
+
+public interface IV1Service {
+    V1DataResponse fetchMasterData(Object request);
+
+    V1DataResponse createMasterData(Object request);
+
+    V1DataResponse updateMasterData(Object request);
+
+    V1DataResponse fetchCarrierMasterData(Object request);
+
+    V1DataResponse createCarrierMasterData(Object request);
+
+    V1DataResponse updateCarrierMasterData(Object request);
+
+    V1DataResponse fetchOrganization(Object request);
+
+    V1DataResponse fetchUnlocation(Object request);
+
+    V1DataResponse fetchContainerTypeData(Object request);
+
+    V1DataResponse createContainerTypeData(Object request);
+
+    V1DataResponse updateContainerTypeData(Object request);
+
+    V1DataResponse fetchVesselData(Object request);
+
+    V1DataResponse createVesselData(Object request);
+
+    V1DataResponse updateVesselData(Object request);
+
+    V1DataResponse fetchRoutingMasterData(Object request);
+
+    V1DataResponse createRoutingMasterData(Object request);
+
+    V1DataResponse updateRoutingMasterData(Object request);
+
+    V1DataResponse fetchCurrenciesData(Object request);
+
+    V1DataResponse createCurrenciesData(Object request);
+
+    V1DataResponse updateCurrenciesData(Object request);
+
+    V1DataResponse fetchDangerousGoodData(Object request);
+
+    V1DataResponse createDangerousGoodData(Object request);
+
+    V1DataResponse updateDangerousGoodData(Object request);
+
+    V1DataResponse fetchWarehouseData(Object request);
+
+    V1DataResponse createWarehouseData(Object request);
+
+    V1DataResponse updateWarehouseData(Object request);
+
+    V1DataResponse fetchPortsData(Object request);
+
+    V1DataResponse createPortsData(Object request);
+
+    V1DataResponse updatePortsData(Object request);
+
+    V1DataResponse fetchCommodityData(Object request);
+
+    V1DataResponse createCommodityData(Object request);
+
+    V1DataResponse updateCommodityData(Object request);
+
+    V1DataResponse fetchSalesAgentData(Object request);
+
+    V1DataResponse createSalesAgentData(Object request);
+
+    V1DataResponse updateSalesAgentData(Object request);
+
+    V1DataResponse createOrganizationData(Object request);
+
+    V1DataResponse updateOrganizationData(Object request);
+
+    V1DataResponse createUnlocationData(Object request);
+
+    V1DataResponse updateUnlocationData(Object request);
+
+    V1DataResponse fetchMultipleMasterData(Object request);
+
+
+}

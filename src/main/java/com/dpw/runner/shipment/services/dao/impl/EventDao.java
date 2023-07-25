@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IEventDao;
@@ -69,7 +70,7 @@ public class EventDao implements IEventDao {
                     }
                     eventsRequestList.add(request);
                 }
-                responseEvents = saveEntityFromShipment(eventsRequestList, shipmentId);
+                responseEvents = saveEntityFromOtherEntity(eventsRequestList, shipmentId, Constants.SHIPMENT);
             }
             deleteEvents(hashMap);
             return responseEvents;
@@ -81,10 +82,10 @@ public class EventDao implements IEventDao {
         }
     }
 
-    public List<Events> saveEntityFromShipment(List<Events> events, Long shipmentId) {
+    public List<Events> saveEntityFromOtherEntity(List<Events> events, Long entityId, String entityType) {
         List<Events> res = new ArrayList<>();
-        for(Events req : events){
-            if(req.getId() != null){
+        for (Events req : events) {
+            if (req.getId() != null) {
                 long id = req.getId();
                 Optional<Events> oldEntity = findById(id);
                 if (!oldEntity.isPresent()) {
@@ -92,7 +93,8 @@ public class EventDao implements IEventDao {
                     throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
                 }
             }
-            req.setShipmentId(shipmentId);
+            req.setEntityId(entityId);
+            req.setEntityType(entityType);
             req = save(req);
             res.add(req);
         }

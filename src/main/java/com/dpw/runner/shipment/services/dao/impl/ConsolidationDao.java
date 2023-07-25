@@ -1,24 +1,43 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
+import com.dpw.runner.shipment.services.commons.constants.ConsolidationConstants;
+import com.dpw.runner.shipment.services.commons.constants.ShipmentConstants;
+import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.repository.interfaces.IConsolidationRepository;
+import com.dpw.runner.shipment.services.repository.interfaces.IShipmentRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 @Repository
+@Slf4j
 public class ConsolidationDao implements IConsolidationDetailsDao {
     @Autowired
     private IConsolidationRepository consolidationRepository;
 
+    @Autowired
+    IShipmentRepository shipmentRepository;
+
     @Override
     public ConsolidationDetails save(ConsolidationDetails consolidationDetails) {
+        return consolidationRepository.save(consolidationDetails);
+    }
+
+    @Override
+    public ConsolidationDetails update(ConsolidationDetails consolidationDetails) {
+        validateLockStatus(consolidationDetails.getId());
         return consolidationRepository.save(consolidationDetails);
     }
 
@@ -34,6 +53,36 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
 
     @Override
     public void delete(ConsolidationDetails consolidationDetails) {
+        validateLockStatus(consolidationDetails.getId());
         consolidationRepository.delete(consolidationDetails);
+    }
+
+    private void validateLockStatus(Long id) throws ValidationException {
+        Optional<ConsolidationDetails> existingConsolidation = findById(id);
+        if(existingConsolidation.get().getIsLocked() != null && existingConsolidation.get().getIsLocked()) {
+            throw new ValidationException(ConsolidationConstants.CONSOLIDATION_LOCKED);
+        }
+    }
+    
+    public List<ConsolidationDetails> saveConsolidations(List<ConsolidationDetails> consolidationDetails)
+    {
+        List<ConsolidationDetails> res = new ArrayList<>();
+        for(ConsolidationDetails req : consolidationDetails){
+            if(req.getId() != null){
+                long id = req.getId();
+                Optional<ConsolidationDetails> oldEntity = findById(id);
+                if (!oldEntity.isPresent()) {
+                    log.debug("Container is null for Id {}", req.getId());
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
+            }
+            req = save(req);
+            res.add(req);
+        }
+        return res;
+    }
+
+    public Optional<ShipmentDetails> findShipmentById(Long shipmentId) {
+        return shipmentRepository.findById(shipmentId);
     }
 }

@@ -1,9 +1,6 @@
 package com.dpw.runner.shipment.services.helpers;
 
-import com.dpw.runner.shipment.services.commons.responses.ApiError;
-import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
-import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
+import com.dpw.runner.shipment.services.commons.responses.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -83,6 +80,20 @@ public class ResponseHelper {
         return RunnerResponse.builder().success(false)
                 .requestId(LoggerHelper.getRequestIdFromMDC())
                 .error(apiError).build();
+    }
+
+    public static ResponseEntity<?> buildDependentServiceResponse(Object data, int pageNo, long count) {
+        log.debug("Return Response with data {}", data);
+        DependentServiceResponse runnerResponse = DependentServiceResponse.builder().success(true)
+                .requestId(LoggerHelper.getRequestIdFromMDC())
+                .data(data).numberOfRecords(count).totalPages(pageNo).build();
+        return new ResponseEntity<>(runnerResponse, HttpStatus.OK);
+    }
+
+    public static ResponseEntity<?> buildDependentServiceResponse(DependentServiceResponse runnerResponse) {
+        log.debug("Return Response with data {}", runnerResponse);
+        runnerResponse.setRequestId(LoggerHelper.getRequestIdFromMDC());
+        return new ResponseEntity<>(runnerResponse, HttpStatus.OK);
     }
 }
 

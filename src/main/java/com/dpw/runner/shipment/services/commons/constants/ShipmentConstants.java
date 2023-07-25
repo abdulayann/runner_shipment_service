@@ -17,4 +17,8 @@ public class ShipmentConstants {
 
     public static final String RESPONSE_CONTAINER_LIST = "List";
 
+    public static final String LOCK_TOGGLE_SUCCESSFUL = "Successfully toggled lock";
+
+    public static final String SHIPMENT_LOCKED = "Current Shipment is Locked, try unlocking it first !";
+
 }

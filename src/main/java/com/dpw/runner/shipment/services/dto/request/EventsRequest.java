@@ -14,19 +14,19 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Data
 public class EventsRequest extends CommonRequest implements IRunnerRequest {
-    private Long id;
-    private String masterList;
-    private Long tenantId;
-    private Long shipmentId;
-    private Long consolidationId;
-    private String description;
-    private LocalDateTime estimated;
     private LocalDateTime actual;
+    private String description;
+    private Long entityId;
+    private String entityType;
+    private LocalDateTime estimated;
+    private String event_estimate_update_reasons;
+    private Long id;
     private Boolean isPublicTrackingEvent;
-    private String placeName;
-    private String placeDescription;
     private String latitude;
     private String longitude;
+    private String masterList;
+    private String placeDescription;
+    private String placeName;
     private String source;
-    private String event_estimate_update_reasons;
+    private Long tenantId;
 }

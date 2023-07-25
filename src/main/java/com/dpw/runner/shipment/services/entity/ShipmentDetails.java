@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.entity;
 
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
 import lombok.*;
 import lombok.experimental.Accessors;
@@ -105,7 +106,8 @@ public class ShipmentDetails extends MultiTenancy {
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "shipmentId")
     private List<ELDetails> elDetailsList;
 
-    @OneToMany(fetch = FetchType.LAZY, mappedBy = "shipmentId")
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "entityId")
+    @Where(clause = "entity_type = 'SHIPMENT'")
     private List<Events> eventsList;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "entityId")
@@ -194,13 +196,13 @@ public class ShipmentDetails extends MultiTenancy {
     private String entryDetail;
 
     @Column(name = "is_locked")
-    private boolean isLocked;
+    private Boolean isLocked;
 
     @Column(name = "locked_by")
     private String lockedBy;
 
     @Column(name = "is_notify_consignee_equal")
-    private boolean isNotifyConsigneeEqual;
+    private Boolean isNotifyConsigneeEqual;
 
     //ShipmentOrderId
 
@@ -278,4 +280,10 @@ public class ShipmentDetails extends MultiTenancy {
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "shipmentId")
     private List<Jobs> jobsList;
+
+    @ManyToMany
+    @JoinTable(name = "console_shipment_mapping",
+            joinColumns = @JoinColumn(name = "shipment_id"),
+            inverseJoinColumns = @JoinColumn(name = "consolidation_id"))
+    private List<ConsolidationDetails> consolidationList;
 }
