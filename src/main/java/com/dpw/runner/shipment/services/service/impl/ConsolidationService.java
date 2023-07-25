@@ -860,7 +860,7 @@ public class ConsolidationService implements IConsolidationService {
         Long id = commonGetRequest.getId();
         ConsolidationDetails consolidationDetails = consolidationDetailsDao.findById(id).get();
         String lockingUser = consolidationDetails.getLockedBy();
-        String currentUser = userContext.getUser().getUserName();
+        String currentUser = userContext.getUser().getUsername();
 
         if(consolidationDetails.getIsLocked()) {
             if(lockingUser != null && lockingUser.equals(currentUser))

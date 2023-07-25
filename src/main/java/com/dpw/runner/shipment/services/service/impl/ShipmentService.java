@@ -974,7 +974,7 @@ public class ShipmentService implements IShipmentService {
 
         try {
             ShipmentDetails entity = oldEntity.get();
-            shipmentDetailsMapper.update(shipmentRequest, entity);
+                shipmentDetailsMapper.update(shipmentRequest, entity);
             entity.setId(oldEntity.get().getId());
             List<Containers> updatedContainers = null;
             if (containerRequestList != null) {
@@ -1062,7 +1062,7 @@ public class ShipmentService implements IShipmentService {
         Long id = commonGetRequest.getId();
         ShipmentDetails shipmentDetails = shipmentDao.findById(id).get();
         String lockingUser = shipmentDetails.getLockedBy();
-        String currentUser = userContext.getUser().getUserName();
+        String currentUser = userContext.getUser().getUsername();
 
         if(shipmentDetails.getIsLocked()) {
             if(lockingUser != null && lockingUser.equals(currentUser))
