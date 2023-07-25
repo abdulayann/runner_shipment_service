@@ -23,4 +23,9 @@ public interface IPackingDao {
     List<Packing> getAllPackings();
 
     List<Packing> saveAll(List<Packing> packingList);
+    List<Packing> savePacks(List<Packing> packs, Long containerId);
+    List<Packing> updateEntityFromContainer(List<Packing> packingList, Long containerId, List<Long> updatedPacksId) throws Exception;
+    List<Packing> removeEntityFromContainer(List<Packing> packingList, Long containerId, List<Long> updatedPacksId) throws Exception;
+    List<Packing> saveEntityFromContainer(List<Packing> packings, Long containerId);
+    void deleteEntityFromContainer(Long id);
 }
