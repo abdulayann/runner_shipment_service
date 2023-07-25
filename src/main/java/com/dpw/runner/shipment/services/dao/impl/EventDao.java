@@ -23,7 +23,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListRequestFromEntityId;
 
 @Repository
 @Slf4j
@@ -56,7 +56,7 @@ public class EventDao implements IEventDao {
         List<Events> responseEvents = new ArrayList<>();
         try {
             // TODO- Handle Transactions here
-            ListCommonRequest listCommonRequest = constructListCommonRequest("shipmentId", shipmentId, "=");
+            ListCommonRequest listCommonRequest = constructListRequestFromEntityId(shipmentId, Constants.SHIPMENT);
             Pair<Specification<Events>, Pageable> pair = fetchData(listCommonRequest, Events.class);
             Page<Events> events = findAll(pair.getLeft(), pair.getRight());
             Map<Long, Events> hashMap = events.stream()

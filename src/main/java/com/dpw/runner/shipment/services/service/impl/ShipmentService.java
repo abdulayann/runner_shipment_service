@@ -4,23 +4,24 @@ package com.dpw.runner.shipment.services.service.impl;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
-import com.dpw.runner.shipment.services.commons.requests.*;
+import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
+import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
+import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.commons.requests.RunnerEntityMapping;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.patchRequest.ShipmentPatchRequest;
-import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
 import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.response.*;
-import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.GenerationType;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.mapper.ShipmentDetailsMapper;
-import com.dpw.runner.shipment.services.service.interfaces.*;
+import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.util.Pair;
@@ -39,7 +40,6 @@ import org.springframework.transaction.interceptor.TransactionAspectSupport;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.StringUtils;
 
-import javax.persistence.EntityManager;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -347,7 +347,7 @@ public class ShipmentService implements IShipmentService {
 
             if(request.getConsolidationList()!= null) {
                 List<ConsolidationDetailsRequest> consolRequest = request.getConsolidationList();
-                List<ConsolidationDetails> consolList = consolidationDetailsDao.saveConsolidations(convertToEntityList(consolRequest, ConsolidationDetails.class));
+                List<ConsolidationDetails> consolList = consolidationDetailsDao.saveAll(convertToEntityList(consolRequest, ConsolidationDetails.class));
                 shipmentDetails.setConsolidationList(consolList);
             }
 
@@ -363,7 +363,7 @@ public class ShipmentService implements IShipmentService {
 
             if (request.getContainersList() != null) {
                 List<ContainerRequest> containerRequest = request.getContainersList();
-                List<Containers> containers = containerDao.saveContainers(convertToEntityList(containerRequest, Containers.class));
+                List<Containers> containers = containerDao.saveAll(convertToEntityList(containerRequest, Containers.class));
                 shipmentDetails.setContainersList(containers);
             }
 
@@ -504,11 +504,6 @@ public class ShipmentService implements IShipmentService {
         });
 
     }
-
-    private List<Containers> createContainersAsync(ShipmentDetails shipmentDetails, List<ContainerRequest> containerRequest) {
-        return containerDao.saveAll(containerRequest.stream().map(e -> objectMapper.convertValue(e, Containers.class)).collect(Collectors.toList()));
-    }
-
 
     @Transactional
     public void createbookingCarriage(ShipmentDetails shipmentDetails, BookingCarriageRequest bookingCarriageRequest) {

@@ -1,7 +1,6 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
 import com.dpw.runner.shipment.services.commons.constants.ConsolidationConstants;
-import com.dpw.runner.shipment.services.commons.constants.ShipmentConstants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
@@ -32,6 +31,17 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
 
     @Override
     public ConsolidationDetails save(ConsolidationDetails consolidationDetails) {
+        if(consolidationDetails.getId() != null) {
+            long id = consolidationDetails.getId();
+            Optional<ConsolidationDetails> oldEntity = findById(id);
+            if (!oldEntity.isPresent()) {
+                log.debug("Container is null for Id {}", consolidationDetails.getId());
+                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+            }
+            if(consolidationDetails.getShipmentsList() == null) {
+                consolidationDetails.setShipmentsList(oldEntity.get().getShipmentsList());
+            }
+        }
         return consolidationRepository.save(consolidationDetails);
     }
 
@@ -64,18 +74,10 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
         }
     }
     
-    public List<ConsolidationDetails> saveConsolidations(List<ConsolidationDetails> consolidationDetails)
+    public List<ConsolidationDetails> saveAll(List<ConsolidationDetails> consolidationDetails)
     {
         List<ConsolidationDetails> res = new ArrayList<>();
         for(ConsolidationDetails req : consolidationDetails){
-            if(req.getId() != null){
-                long id = req.getId();
-                Optional<ConsolidationDetails> oldEntity = findById(id);
-                if (!oldEntity.isPresent()) {
-                    log.debug("Container is null for Id {}", req.getId());
-                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
-                }
-            }
             req = save(req);
             res.add(req);
         }

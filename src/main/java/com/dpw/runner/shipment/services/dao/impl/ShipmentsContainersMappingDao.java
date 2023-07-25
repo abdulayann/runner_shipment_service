@@ -6,9 +6,7 @@ import com.dpw.runner.shipment.services.repository.interfaces.IShipmentsContaine
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
+import java.util.*;
 
 @Repository
 public class ShipmentsContainersMappingDao implements IShipmentsContainersMappingDao {
@@ -76,7 +74,7 @@ public class ShipmentsContainersMappingDao implements IShipmentsContainersMappin
 
     @Override
     public void updateShipmentsMappings(Long containerId, List<Long> shipIds) {
-        List<ShipmentsContainersMapping> mappings = findByContainerId(containerId);
+        List<ShipmentsContainersMapping> mappings = Optional.ofNullable(findByContainerId(containerId)).orElse(Collections.emptyList());
         HashSet<Long> shipmentIds = new HashSet<>(shipIds);
         List<ShipmentsContainersMapping> deleteMappings = new ArrayList<>();
         for (ShipmentsContainersMapping shipmentsContainersMapping : mappings) {

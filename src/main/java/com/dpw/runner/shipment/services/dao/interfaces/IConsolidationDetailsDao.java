@@ -15,6 +15,6 @@ public interface IConsolidationDetailsDao {
     Page<ConsolidationDetails> findAll(Specification<ConsolidationDetails> spec, Pageable pageable);
     Optional<ConsolidationDetails> findById(Long id);
     void delete(ConsolidationDetails consolidationDetails);
-    List<ConsolidationDetails> saveConsolidations(List<ConsolidationDetails> consolidationDetails);
+    List<ConsolidationDetails> saveAll(List<ConsolidationDetails> consolidationDetails);
     Optional<ShipmentDetails> findShipmentById(Long shipmentId);
 }
