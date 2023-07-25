@@ -77,5 +77,7 @@ public class UsersDto {
     public String Erp10EmpCode;
     public String Erp10DeptCode;
     public Boolean UnicoRelated;
+    public String AgentIATACode;
+    public String AgentCASSCode;
 
 }
