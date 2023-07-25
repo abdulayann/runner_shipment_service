@@ -81,10 +81,20 @@ public class PackingDao implements IPackingDao {
         }
     }
 
+    @Override
+    public List<Packing> getAllPackings() {
+        return packingRepository.getAllPackings();
+    }
+
+    @Override
+    public List<Packing> saveAll(List<Packing> packingList) {
+        return packingRepository.saveAll(packingList);
+    }
+
     public List<Packing> saveEntityFromShipment(List<Packing> packings, Long shipmentId) {
         List<Packing> res = new ArrayList<>();
-        for(Packing req : packings){
-            if(req.getId() != null){
+        for (Packing req : packings) {
+            if (req.getId() != null) {
                 long id = req.getId();
                 Optional<Packing> oldEntity = findById(id);
                 if (!oldEntity.isPresent()) {

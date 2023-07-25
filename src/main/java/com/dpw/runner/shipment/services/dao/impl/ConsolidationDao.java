@@ -1,8 +1,11 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
+import com.dpw.runner.shipment.services.commons.constants.ConsolidationConstants;
+import com.dpw.runner.shipment.services.commons.constants.ShipmentConstants;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.repository.interfaces.IConsolidationRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -23,6 +26,12 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
     }
 
     @Override
+    public ConsolidationDetails update(ConsolidationDetails consolidationDetails) {
+        validateLockStatus(consolidationDetails.getId());
+        return consolidationRepository.save(consolidationDetails);
+    }
+
+    @Override
     public Page<ConsolidationDetails> findAll(Specification<ConsolidationDetails> spec, Pageable pageable) {
         return consolidationRepository.findAll(spec, pageable);
     }
@@ -34,6 +43,14 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
 
     @Override
     public void delete(ConsolidationDetails consolidationDetails) {
+        validateLockStatus(consolidationDetails.getId());
         consolidationRepository.delete(consolidationDetails);
+    }
+
+    private void validateLockStatus(Long id) throws ValidationException {
+        Optional<ConsolidationDetails> existingConsolidation = findById(id);
+        if(existingConsolidation.get().getIsLocked() != null && existingConsolidation.get().getIsLocked()) {
+            throw new ValidationException(ConsolidationConstants.CONSOLIDATION_LOCKED);
+        }
     }
 }

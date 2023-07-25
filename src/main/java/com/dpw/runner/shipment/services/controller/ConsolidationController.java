@@ -118,6 +118,13 @@ public class ConsolidationController {
         return (ResponseEntity<RunnerResponse>) ResponseHelper.buildFailedResponse(responseMsg);
     }
 
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ConsolidationConstants.LOCK_TOGGLE_SUCCESSFUL)})
+    @GetMapping(ApiConstants.TOGGLE_LOCK)
+    public ResponseEntity<RunnerResponse> toggleLock(@ApiParam(value = ShipmentConstants.SHIPMENT_ID, required = true) @RequestParam Long id) {
+        CommonGetRequest request = CommonGetRequest.builder().id(id).build();
+        return (ResponseEntity<RunnerResponse>) consolidationService.toggleLock(CommonRequestModel.buildRequest(request));
+    }
+
     @ApiResponses(value = {@ApiResponse(code = 200, message = ConsolidationConstants.CONSOLIDATION_CALCULATION_SUCCESSFUL)})
     @PutMapping(ApiConstants.API_CALCULATE_UTILIZATION)
     public ResponseEntity<RunnerResponse<ConsolidationDetailsResponse>> calculateUtilization(@RequestBody ConsolidationDetailsRequest consolidationDetailsRequest) {
