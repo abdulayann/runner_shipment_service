@@ -10,6 +10,7 @@ import java.util.Optional;
 
 public interface IConsolidationDetailsDao {
     ConsolidationDetails save(ConsolidationDetails consolidationDetails);
+    ConsolidationDetails update(ConsolidationDetails consolidationDetails);
     Page<ConsolidationDetails> findAll(Specification<ConsolidationDetails> spec, Pageable pageable);
     Optional<ConsolidationDetails> findById(Long id);
     void delete(ConsolidationDetails consolidationDetails);

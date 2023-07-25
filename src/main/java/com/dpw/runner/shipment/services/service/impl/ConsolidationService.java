@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
@@ -90,6 +91,9 @@ public class ConsolidationService implements IConsolidationService {
 
     @Autowired
     private IContainerDao containerDao;
+
+    @Autowired
+    private UserContext userContext;
 
     private List<String> TRANSPORT_MODES = Arrays.asList("SEA", "ROAD", "RAIL", "AIR");
     private List<String> SHIPMENT_TYPE = Arrays.asList("FCL", "LCL");
@@ -460,7 +464,7 @@ public class ConsolidationService implements IConsolidationService {
         entity.setId(oldEntity.get().getId());
         if (entity.getContainersList() == null)
             entity.setContainersList(oldEntity.get().getContainersList());
-        entity = consolidationDetailsDao.save(entity);
+        entity = consolidationDetailsDao.update(entity);
         return ResponseHelper.buildSuccessResponse(modelMapper.map(entity, ConsolidationDetailsResponse.class));
     }
 
@@ -524,7 +528,7 @@ public class ConsolidationService implements IConsolidationService {
                 updatedAchievedQuantities = achievedQuantitiesDao.updateEntityFromShipmentConsole(convertToClass(achievedQuantitiesRequest, AchievedQuantities.class));
                 entity.setAchievedQuantities(updatedAchievedQuantities);
             }
-            entity = consolidationDetailsDao.save(entity);
+            entity = consolidationDetailsDao.update(entity);
 
             ConsolidationDetailsResponse response = modelMapper.map(entity, ConsolidationDetailsResponse.class);
             response.setContainersList(updatedContainers.stream().map(e -> modelMapper.map(e, ContainerResponse.class)).collect(Collectors.toList()));
@@ -849,6 +853,26 @@ public class ConsolidationService implements IConsolidationService {
             log.error(responseMsg, e);
             return CompletableFuture.completedFuture(ResponseHelper.buildFailedResponse(responseMsg));
         }
+    }
+
+    public ResponseEntity<?> toggleLock(CommonRequestModel commonRequestModel) {
+        CommonGetRequest commonGetRequest = (CommonGetRequest) commonRequestModel.getData();
+        Long id = commonGetRequest.getId();
+        ConsolidationDetails consolidationDetails = consolidationDetailsDao.findById(id).get();
+        String lockingUser = consolidationDetails.getLockedBy();
+        String currentUser = userContext.getUser().getUserName();
+
+        if(consolidationDetails.getIsLocked()) {
+            if(lockingUser != null && lockingUser.equals(currentUser))
+                consolidationDetails.setIsLocked(false);
+        }
+        else {
+            consolidationDetails.setIsLocked(true);
+            consolidationDetails.setLockedBy(currentUser);
+        }
+        consolidationDetailsDao.save(consolidationDetails);
+
+        return ResponseHelper.buildSuccessResponse();
     }
 
     private <T extends IRunnerResponse> List<T> getResponse(CompletableFuture<ResponseEntity<?>> responseEntity) throws ExecutionException, InterruptedException {

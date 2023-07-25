@@ -9,6 +9,7 @@ import java.util.Optional;
 
 public interface IShipmentDao {
     ShipmentDetails save(ShipmentDetails shipmentDetails);
+    ShipmentDetails update(ShipmentDetails shipmentDetails);
     Page<ShipmentDetails> findAll(Specification<ShipmentDetails> spec, Pageable pageable);
     Optional<ShipmentDetails> findById(Long id);
     void delete(ShipmentDetails shipmentDetails);

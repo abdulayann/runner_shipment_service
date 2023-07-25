@@ -58,9 +58,9 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     private boolean containerAutoWeightVolumeUpdate;
     private String marksNum;
     private String entryDetail;
-    private boolean isLocked;
+    private Boolean isLocked;
     private String lockedBy;
-    private boolean isNotifyConsigneeEqual;
+    private Boolean isNotifyConsigneeEqual;
     private String bookingType;
     private boolean cargoFinanceBooking;
     private String bookingNumber;
