@@ -2,9 +2,7 @@ package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
-import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
-import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
-import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IEventDao;
@@ -17,11 +15,14 @@ import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.JobResponse;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.Events;
+import com.dpw.runner.shipment.services.entity.ShipmentsContainersMapping;
+import com.dpw.runner.shipment.services.entity.enums.ContainerStatus;
 import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.entity.ShipmentsContainersMapping;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerService;
+import com.dpw.runner.shipment.services.utils.CSVParsingUtil;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
@@ -35,15 +36,18 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.ModelAttribute;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import javax.servlet.http.HttpServletResponse;
+import java.io.PrintWriter;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
+import static com.dpw.runner.shipment.services.utils.CSVParsingUtil.*;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.convertToEntityList;
 import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
@@ -58,6 +62,8 @@ public class ContainerService implements IContainerService {
     ModelMapper modelMapper;
     @Autowired
     IShipmentsContainersMappingDao shipmentsContainersMappingDao;
+    private final CSVParsingUtil<Containers> parser = new CSVParsingUtil<>(Containers.class);
+
     @Autowired
     IEventDao eventDao;
 
@@ -65,17 +71,17 @@ public class ContainerService implements IContainerService {
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
         String responseMsg;
         ContainerRequest request = (ContainerRequest) commonRequestModel.getData();
-        if(request == null) {
+        if (request == null) {
             log.debug("Request is empty for Container Create with Request Id {}", LoggerHelper.getRequestIdFromMDC());
         }
         Containers container = convertRequestToEntity(request);
         List<EventsRequest> eventsRequestList = request.getEventsList();
         try {
             container = containerDao.save(container);
-            if(request.getShipmentIds() != null) {
+            if (request.getShipmentIds() != null) {
                 shipmentsContainersMappingDao.updateShipmentsMappings(container.getId(), request.getShipmentIds());
             }
-            if(eventsRequestList != null){
+            if (eventsRequestList != null) {
                 List<Events> events = eventDao.saveEntityFromOtherEntity(
                         convertToEntityList(eventsRequestList, Events.class), container.getId(), Constants.CONTAINER);
                 container.setEventsList(events);
@@ -90,15 +96,69 @@ public class ContainerService implements IContainerService {
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(container));
     }
 
+    @Override
+    public void uploadContainers(BulkUploadRequest request) throws Exception {
+        List<Containers> containersList = parser.parseCSVFile(request.getFile());
+        containersList = containersList.stream().map(c ->
+                c.setConsolidationId(request.getConsolidationId())
+        ).collect(Collectors.toList());
+        containersList = containerDao.saveAll(containersList);
+        if (request.getShipmentId() != null) {
+            containersList.stream().forEach(container -> {
+                shipmentsContainersMappingDao.updateShipmentsMappings(container.getId(), List.of(request.getShipmentId()));
+            });
+        }
+    }
+
+    @Override
+    public void downloadContainers(HttpServletResponse response, @ModelAttribute BulkDownloadRequest request) throws Exception {
+        List<ShipmentsContainersMapping> mappings;
+        List<Containers> result = new ArrayList<>();
+        if (request.getShipmentId() != null) {
+            List<Long> containerId = new ArrayList<>();
+            mappings = shipmentsContainersMappingDao.findByShipmentId(Long.valueOf(request.getShipmentId()));
+            containerId.addAll(mappings.stream().map(mapping -> mapping.getContainerId()).collect(Collectors.toList()));
+
+            ListCommonRequest req = constructListCommonRequest("id", containerId, "IN");
+            Pair<Specification<Containers>, Pageable> pair = fetchData(req, Containers.class);
+            Page<Containers> containers = containerDao.findAll(pair.getLeft(), pair.getRight());
+            List<Containers> containersList = containers.getContent();
+            result.addAll(containersList);
+        }
+
+        if (request.getConsolidationId() != null) {
+            ListCommonRequest req2 = constructListCommonRequest("consolidation_id", request.getConsolidationId(), "=");
+            Pair<Specification<Containers>, Pageable> pair = fetchData(req2, Containers.class);
+            Page<Containers> containers = containerDao.findAll(pair.getLeft(), pair.getRight());
+            List<Containers> containersList = containers.getContent();
+            if (result.isEmpty()) {
+                result.addAll(containersList);
+            } else {
+                result = result.stream().filter(result::contains).collect(Collectors.toList());
+            }
+        }
+
+        response.setContentType("text/csv");
+        response.setHeader("Content-Disposition", "attachment; filename=\"containers.csv\"");
+
+        try (PrintWriter writer = response.getWriter()) {
+            writer.println(parser.generateCSVHeader());
+            for (Containers container : result) {
+                writer.println(parser.formatContainerAsCSVLine(container));
+            }
+        }
+    }
+
+
     @Transactional
     public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
         String responseMsg;
         ContainerRequest request = (ContainerRequest) commonRequestModel.getData();
-        if(request == null) {
+        if (request == null) {
             log.debug("Request is empty for Container Update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
         }
 
-        if(request.getId() == null) {
+        if (request.getId() == null) {
             log.debug("Request Id is null for Container Update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
         }
         long id = request.getId();
@@ -113,10 +173,10 @@ public class ContainerService implements IContainerService {
         containers.setId(oldEntity.get().getId());
         try {
             containers = containerDao.save(containers);
-            if(request.getShipmentIds() != null) {
+            if (request.getShipmentIds() != null) {
                 shipmentsContainersMappingDao.updateShipmentsMappings(containers.getId(), request.getShipmentIds());
             }
-            if(eventsRequestList != null){
+            if (eventsRequestList != null) {
                 List<Events> events = eventDao.saveEntityFromOtherEntity(
                         convertToEntityList(eventsRequestList, Events.class), containers.getId(), Constants.CONTAINER);
                 containers.setEventsList(events);
@@ -135,7 +195,7 @@ public class ContainerService implements IContainerService {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
-            if(request == null) {
+            if (request == null) {
                 log.error("Request is empty for Containers List with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
             // construct specifications for filter request
@@ -156,16 +216,16 @@ public class ContainerService implements IContainerService {
 
     @Override
     @Async
-    public CompletableFuture<ResponseEntity<?>> listAsync(CommonRequestModel commonRequestModel){
+    public CompletableFuture<ResponseEntity<?>> listAsync(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
-            if(request == null) {
+            if (request == null) {
                 log.error("Request is empty for Containers async list with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
             // construct specifications for filter request
             Pair<Specification<Containers>, Pageable> tuple = fetchData(request, Containers.class);
-            Page<Containers> containersPage  = containerDao.findAll(tuple.getLeft(), tuple.getRight());
+            Page<Containers> containersPage = containerDao.findAll(tuple.getLeft(), tuple.getRight());
             log.info("Container detail async list retrieved successfully for Request Id {} ", LoggerHelper.getRequestIdFromMDC());
             return CompletableFuture.completedFuture(
                     ResponseHelper
@@ -184,10 +244,10 @@ public class ContainerService implements IContainerService {
     @Override
     public ResponseEntity<?> delete(CommonRequestModel commonRequestModel) {
         String responseMsg;
-        if(commonRequestModel == null) {
+        if (commonRequestModel == null) {
             log.debug("Request is empty for Containers delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
         }
-        if(commonRequestModel.getId() == null) {
+        if (commonRequestModel.getId() == null) {
             log.debug("Request Id is null for Containers delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
         }
         Long id = commonRequestModel.getId();
@@ -213,10 +273,10 @@ public class ContainerService implements IContainerService {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
-            if(request == null) {
+            if (request == null) {
                 log.error("Request is empty for Container retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
-            if(request.getId() == null) {
+            if (request.getId() == null) {
                 log.error("Request Id is null for Container retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
             long id = request.getId();

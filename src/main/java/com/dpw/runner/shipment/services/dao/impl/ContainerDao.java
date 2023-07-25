@@ -38,6 +38,11 @@ public class ContainerDao implements IContainerDao {
     }
 
     @Override
+    public List<Containers> getAllContainers() {
+        return containerRepository.getAllContainers();
+    }
+
+    @Override
     public Optional<Containers> findById(Long id) {
         return containerRepository.findById(id);
     }
@@ -47,14 +52,12 @@ public class ContainerDao implements IContainerDao {
         containerRepository.delete(containers);
     }
 
-    public List<Containers> updateEntityFromShipmentConsole(List<Containers> containersList) throws Exception
-    {
+    public List<Containers> updateEntityFromShipmentConsole(List<Containers> containersList) throws Exception {
         String responseMsg;
         List<Containers> responseContainers = new ArrayList<>();
         try {
             // TODO- Handle Transactions here
-            if(containersList != null && containersList.size() != 0)
-            {
+            if (containersList != null && containersList.size() != 0) {
                 List<Containers> containerList = new ArrayList<>(containersList);
                 responseContainers = saveContainers(containerList);
             }
@@ -67,11 +70,10 @@ public class ContainerDao implements IContainerDao {
         }
     }
 
-    public List<Containers> saveContainers(List<Containers> containers)
-    {
+    public List<Containers> saveContainers(List<Containers> containers) {
         List<Containers> res = new ArrayList<>();
-        for(Containers req : containers){
-            if(req.getId() != null){
+        for (Containers req : containers) {
+            if (req.getId() != null) {
                 long id = req.getId();
                 Optional<Containers> oldEntity = findById(id);
                 if (!oldEntity.isPresent()) {
