@@ -142,4 +142,15 @@ public class ConsolidationController {
     public ResponseEntity<RunnerResponse<ConsolidationDetailsResponse>> calculateChargeable(@RequestBody ConsolidationDetailsRequest consolidationDetailsRequest) {
         return (ResponseEntity<RunnerResponse<ConsolidationDetailsResponse>>) consolidationService.calculateChargeable(CommonRequestModel.buildRequest(consolidationDetailsRequest));
     }
+
+    @PostMapping("/attach-shipments")
+    public ResponseEntity<RunnerResponse> attachShipments(@RequestBody @Valid ConsolidationDetailsRequest request) throws Exception {
+
+        return (ResponseEntity<RunnerResponse>) consolidationService.attachShipments(request.getId(), request.getShipmentIds());
+    }
+
+    @PostMapping("/detach-shipments")
+    public ResponseEntity<RunnerResponse> detachShipments(@RequestBody @Valid ConsolidationDetailsRequest request) throws Exception{
+        return (ResponseEntity<RunnerResponse>) consolidationService.detachShipments(request.getId(), request.getShipmentIds());
+    }
 }

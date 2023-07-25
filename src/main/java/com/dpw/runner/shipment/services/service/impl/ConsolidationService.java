@@ -15,10 +15,12 @@ import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entity.enums.GenerationType;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationService;
+import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
@@ -32,6 +34,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.interceptor.TransactionAspectSupport;
+import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -94,6 +97,12 @@ public class ConsolidationService implements IConsolidationService {
 
     @Autowired
     private UserContext userContext;
+
+    @Autowired
+    private IShipmentDao shipmentDao;
+
+    @Autowired
+    private IShipmentSettingsDao shipmentSettingsDao;
 
     private List<String> TRANSPORT_MODES = Arrays.asList("SEA", "ROAD", "RAIL", "AIR");
     private List<String> SHIPMENT_TYPE = Arrays.asList("FCL", "LCL");
@@ -271,6 +280,12 @@ public class ConsolidationService implements IConsolidationService {
                 List<ContainerRequest> containerRequest = request.getContainersList();
                 List<Containers> containers = containerDao.updateEntityFromShipmentConsole(convertToEntityList(containerRequest, Containers.class));
                 consolidationDetails.setContainersList(containers);
+            }
+
+            if(request.getShipmentsList() != null) {
+                List<ShipmentRequest> shipmentRequest = request.getShipmentsList();
+                List<ShipmentDetails> shipmentList = shipmentDao.saveShipments(convertToEntityList(shipmentRequest, ShipmentDetails.class));
+                consolidationDetails.setShipmentsList(shipmentList);
             }
 
             getConsolidation(consolidationDetails);
@@ -469,6 +484,47 @@ public class ConsolidationService implements IConsolidationService {
     }
 
     @Transactional
+    public ResponseEntity<?> attachShipments(Long consolidationId, List<Long> shipmentIds) {
+        ConsolidationDetails consolidationDetails = consolidationDetailsDao.findById(consolidationId).get();
+
+        if (consolidationDetails != null) {
+            for (Long shipmentId : shipmentIds) {
+                ShipmentDetails shipmentDetails = consolidationDetailsDao.findShipmentById(shipmentId).get();
+                if (shipmentDetails != null) {
+                    consolidationDetails.getShipmentsList().add(shipmentDetails);
+                }
+            }
+            ConsolidationDetails entity = consolidationDetailsDao.save(consolidationDetails);
+            return ResponseHelper.buildSuccessResponse(modelMapper.map(entity, ConsolidationDetailsResponse.class));
+        }
+
+        return null;
+    }
+
+    @Transactional
+    public ResponseEntity<?> detachShipments(Long consolidationId, List<Long> shipmentIds) {
+        ConsolidationDetails consolidationDetails = consolidationDetailsDao.findById(consolidationId).get();
+
+        if (consolidationDetails != null) {
+            HashSet<Long> shipmentIdSet = new HashSet<Long>();
+            for (Long shipmentId : shipmentIds) {
+                shipmentIdSet.add(shipmentId);
+            }
+            List<ShipmentDetails> remainingShipment = new ArrayList<ShipmentDetails>();
+            List<ShipmentDetails> oldShipments = consolidationDetails.getShipmentsList();
+            for(ShipmentDetails shipDetails : oldShipments) {
+                if(!shipmentIdSet.contains(shipDetails.getId())) {
+                    remainingShipment.add(shipDetails);
+                }
+            }
+            consolidationDetails.setShipmentsList(remainingShipment);
+            ConsolidationDetails entity = consolidationDetailsDao.save(consolidationDetails);
+            return ResponseHelper.buildSuccessResponse(modelMapper.map(entity, ConsolidationDetailsResponse.class));
+        }
+        return null;
+    }
+
+    @Transactional
     public ResponseEntity<?> completeUpdate(CommonRequestModel commonRequestModel) throws Exception {
 
         ConsolidationDetailsRequest consolidationDetailsRequest = (ConsolidationDetailsRequest) commonRequestModel.getData();
@@ -493,6 +549,18 @@ public class ConsolidationService implements IConsolidationService {
             log.debug("Consolidation Details is null for Id {}", consolidationDetailsRequest.getId());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
+
+        List<Long> tempShipIds = new ArrayList<>();
+
+        List<ShipmentRequest> updateShipmentRequest = new ArrayList<>();
+        List<ShipmentRequest> shipmentRequestList = consolidationDetailsRequest.getShipmentsList();
+        for(ShipmentRequest shipmentRequest : shipmentRequestList) {
+            if(shipmentRequest.getId() != null) {
+                tempShipIds.add(shipmentRequest.getId());
+            }
+        }
+
+        consolidationDetailsRequest.setShipmentsList(updateShipmentRequest);
 
         try {
 
@@ -529,6 +597,7 @@ public class ConsolidationService implements IConsolidationService {
                 entity.setAchievedQuantities(updatedAchievedQuantities);
             }
             entity = consolidationDetailsDao.update(entity);
+            attachShipments(entity.getId(), tempShipIds);
 
             ConsolidationDetailsResponse response = modelMapper.map(entity, ConsolidationDetailsResponse.class);
             response.setContainersList(updatedContainers.stream().map(e -> modelMapper.map(e, ContainerResponse.class)).collect(Collectors.toList()));

@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.dao.impl;
 
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.ShipmentConstants;
+import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.enums.LifecycleHooks;
@@ -9,16 +10,21 @@ import com.dpw.runner.shipment.services.exception.exceptions.ValidationException
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.IShipmentRepository;
 import com.dpw.runner.shipment.services.validator.ValidatorUtility;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
 @Repository
+@Slf4j
 public class ShipmentDao implements IShipmentDao {
     @Autowired
     private IShipmentRepository shipmentRepository;
@@ -35,6 +41,24 @@ public class ShipmentDao implements IShipmentDao {
         if (! errors.isEmpty())
             throw new ValidationException(errors.toString());
         return shipmentRepository.save(shipmentDetails);
+    }
+
+    public List<ShipmentDetails> saveShipments(List<ShipmentDetails> shipments)
+    {
+        List<ShipmentDetails> res = new ArrayList<>();
+        for(ShipmentDetails req : shipments){
+            if(req.getId() != null){
+                long id = req.getId();
+                Optional<ShipmentDetails> oldEntity = findById(id);
+                if (!oldEntity.isPresent()) {
+                    log.debug("Container is null for Id {}", req.getId());
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
+            }
+            req = save(req);
+            res.add(req);
+        }
+        return res;
     }
 
     @Override

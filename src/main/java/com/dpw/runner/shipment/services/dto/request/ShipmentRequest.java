@@ -94,4 +94,5 @@ public class ShipmentRequest extends CommonRequest implements IRunnerRequest {
     private String volumetricWeightUnit;
     private BigDecimal weight;
     private String weightUnit;
+    private List<ConsolidationDetailsRequest> consolidationList;
 }
