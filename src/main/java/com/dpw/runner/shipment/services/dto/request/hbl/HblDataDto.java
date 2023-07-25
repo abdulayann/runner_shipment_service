@@ -84,8 +84,3 @@ public class HblDataDto {
     private Integer quantity;
 
 }
-
-class ABC {
-
-
-}

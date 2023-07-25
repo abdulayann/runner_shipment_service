@@ -11,6 +11,7 @@ public class HblConstants {
     public static final String HBL_ID = "HBLs Id";
     public static final String HBL_SHIPMENT_ID = "HBL Shipment Id";
     public static final String HBL_GENERATION_SUCCESS = "HBL generated successfully !";
+    public static final String HBL_RESET_SUCCESSFULL = "HBL reset successfully !";
     public static final String HBL_DATA_FOUND = "Existing HBL data found for given shipment id - %s.";
     public static final String HBL_NO_DATA_FOUND_SHIPMENT = "No HBL data found for given shipment id - %s.";
     public static final String HBL_NO_DATA_FOUND_ID = "No HBL data found for given shipment id - %s.";
@@ -18,6 +19,7 @@ public class HblConstants {
     /** API Constants */
     public static final String API_RETRIEVE_BY_SHIPMENT_ID = "/retrieve/shipment";
     public static final String API_GENERATE_HBL = "/generate";
+    public static final String API_RESET_HBL = "/reset";
 
 
     /** HBL Types */

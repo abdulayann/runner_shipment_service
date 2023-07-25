@@ -8,4 +8,5 @@ public interface IHblService extends ICommonService {
 
     ResponseEntity<?> generateHBL(CommonRequestModel commonRequestModel);
     ResponseEntity<?> retrieveByShipmentId(CommonRequestModel buildRequest);
+    ResponseEntity<?> resetHbl(CommonRequestModel buildRequest);
 }

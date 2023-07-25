@@ -1,7 +1,6 @@
 package com.dpw.runner.shipment.services.controller;
 
 import com.dpw.runner.shipment.services.commons.constants.ApiConstants;
-import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.HblConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
@@ -9,6 +8,7 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.HblGenerateRequest;
 import com.dpw.runner.shipment.services.dto.request.HblRequest;
+import com.dpw.runner.shipment.services.dto.request.HblResetRequest;
 import com.dpw.runner.shipment.services.dto.response.HblResponse;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IHblService;
@@ -30,21 +30,32 @@ public class HblController {
     @Autowired
     private IHblService hblService;
 
-    @ApiResponses(value = {
-            @ApiResponse(code = 200, message = HblConstants.HBL_CREATE_SUCCESS),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
-    })
-    @PostMapping(ApiConstants.API_CREATE)
-    public ResponseEntity<RunnerResponse<HblResponse>> createHBL(@RequestBody @Valid HblRequest request) {
+    @ApiResponses(value = {@ApiResponse(code = 200, message = HblConstants.HBL_GENERATION_SUCCESS, response = RunnerResponse.class)})
+    @PostMapping(HblConstants.API_GENERATE_HBL)
+    public ResponseEntity<RunnerResponse> generateHBL(@RequestBody @Valid HblGenerateRequest request) {
         String responseMsg;
         try {
-            return (ResponseEntity<RunnerResponse<HblResponse>>) hblService.create(CommonRequestModel.buildRequest(request));
+            return (ResponseEntity<RunnerResponse>) hblService.generateHBL(CommonRequestModel.buildRequest(request));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
         }
-        return (ResponseEntity<RunnerResponse<HblResponse>>) ResponseHelper.buildFailedResponse(responseMsg);
+        return (ResponseEntity<RunnerResponse>) ResponseHelper.buildFailedResponse(responseMsg);
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = HblConstants.HBL_UPDATE_SUCCESS, response = RunnerResponse.class)})
+    @PutMapping(ApiConstants.API_UPDATE)
+    public ResponseEntity<RunnerResponse> update(@RequestBody @Valid HblRequest request) {
+        String responseMsg;
+        try {
+            return (ResponseEntity<RunnerResponse>) hblService.update(CommonRequestModel.buildRequest(request));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+        }
+        return (ResponseEntity<RunnerResponse>) ResponseHelper.buildFailedResponse(responseMsg);
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = HblConstants.HBL_DELETE_SUCCESS)})
@@ -62,33 +73,6 @@ public class HblController {
         return (ResponseEntity<RunnerResponse<HblResponse>>) hblService.retrieveById(CommonRequestModel.buildRequest(request));
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = HblConstants.HBL_UPDATE_SUCCESS, response = RunnerResponse.class)})
-    @PutMapping(ApiConstants.API_UPDATE)
-    public ResponseEntity<RunnerResponse> update(@RequestBody @Valid HblRequest request) {
-        String responseMsg;
-        try {
-            return (ResponseEntity<RunnerResponse>) hblService.update(CommonRequestModel.buildRequest(request));
-        } catch (Exception e) {
-            responseMsg = e.getMessage() != null ? e.getMessage()
-                    : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
-            log.error(responseMsg, e);
-        }
-        return (ResponseEntity<RunnerResponse>) ResponseHelper.buildFailedResponse(responseMsg);
-    }
-
-    @ApiResponses(value = {@ApiResponse(code = 200, message = HblConstants.HBL_GENERATION_SUCCESS, response = RunnerResponse.class)})
-    @PostMapping(HblConstants.API_GENERATE_HBL)
-    public ResponseEntity<RunnerResponse> generateHBL(@RequestBody @Valid HblGenerateRequest request) {
-        String responseMsg;
-        try {
-            return (ResponseEntity<RunnerResponse>) hblService.generateHBL(CommonRequestModel.buildRequest(request));
-        } catch (Exception e) {
-            responseMsg = e.getMessage() != null ? e.getMessage()
-                    : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
-            log.error(responseMsg, e);
-        }
-        return (ResponseEntity<RunnerResponse>) ResponseHelper.buildFailedResponse(responseMsg);
-    }
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = HblConstants.HBLS_RETRIEVE_BY_ID_SUCCESSFUL)})
     @GetMapping(HblConstants.API_RETRIEVE_BY_SHIPMENT_ID)
@@ -97,6 +81,20 @@ public class HblController {
         try {
             CommonGetRequest request = CommonGetRequest.builder().id(shipmentId).build();
             return (ResponseEntity<RunnerResponse>) hblService.retrieveByShipmentId(CommonRequestModel.buildRequest(request));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+        }
+        return (ResponseEntity<RunnerResponse>) ResponseHelper.buildFailedResponse(responseMsg);
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = HblConstants.HBL_RESET_SUCCESSFULL, response = RunnerResponse.class)})
+    @PostMapping(HblConstants.API_RESET_HBL)
+    public ResponseEntity<RunnerResponse> resetHbl(@RequestBody @Valid HblResetRequest request) {
+        String responseMsg;
+        try {
+            return (ResponseEntity<RunnerResponse>) hblService.resetHbl(CommonRequestModel.buildRequest(request));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;

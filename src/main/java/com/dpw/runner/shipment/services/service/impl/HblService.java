@@ -130,15 +130,7 @@ public class HblService implements IHblService {
         if (! hbls.isEmpty())
             throw new ValidationException(String.format(HblConstants.HBL_DATA_FOUND, shipmentDetails.get().getShipmentId()));
 
-        HblDataDto hblData = mapShipmentToHBL(shipmentDetails.get());
-        List<HblCargoDto> hblCargos = mapShipmentCargoToHBL(shipmentDetails.get().getPackingList());
-        List<HblContainerDto> hblContainers = mapShipmentContainersToHBL(shipmentDetails.get().getContainersList());
-        List<HblPartyDto> hblParties = mapShipmentPartiesToHBL(shipmentDetails.get().getAdditionalDetails().getNotifyParty());
-
-        Hbl hbl = Hbl.builder().shipmentId(request.getShipmentId())
-                .hblData(hblData).hblCargo(hblCargos)
-                .hblContainer(hblContainers).hblNotifyParty(hblParties)
-                .build();
+        Hbl hbl = getDefaultHblFromShipment(shipmentDetails.get());
 
         hbl = hblDao.save(hbl);
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(hbl));
@@ -154,8 +146,66 @@ public class HblService implements IHblService {
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(hbls.get(0)));
     }
 
+    @Override
+    public ResponseEntity<?> resetHbl(CommonRequestModel commonRequestModel) {
+        HblResetRequest request = (HblResetRequest) commonRequestModel.getData();
+        Optional<Hbl> hblOptional = hblDao.findById(request.getId());
+        if (hblOptional.isEmpty()) {
+            throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+        }
+        Hbl hbl = hblOptional.get();
+        Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(hbl.getShipmentId());
+        if (shipmentDetails.isEmpty()) {
+            throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+        }
+
+        switch (request.getResetType()) {
+
+            case HBL_DATA:
+                hbl.setHblData(mapShipmentToHBL(shipmentDetails.get()));
+                break;
+
+            case HBL_CARGOES:
+                hbl.setHblCargo(mapShipmentCargoToHBL(shipmentDetails.get().getPackingList()));
+                break;
+
+            case HBL_CONTAINERS:
+                hbl.setHblContainer(mapShipmentContainersToHBL(shipmentDetails.get().getContainersList()));
+                break;
+
+            case HBL_PARTIES:
+                hbl.setHblNotifyParty(mapShipmentPartiesToHBL(shipmentDetails.get().getAdditionalDetails().getNotifyParty()));
+                break;
+
+            case ALL:
+                Hbl newHbl = getDefaultHblFromShipment(shipmentDetails.get());
+                hbl.setHblData(newHbl.getHblData());
+                hbl.setHblCargo(newHbl.getHblCargo());
+                hbl.setHblContainer(newHbl.getHblContainer());
+                hbl.setHblNotifyParty(newHbl.getHblNotifyParty());
+                break;
+
+        }
+        hbl = hblDao.save(hbl);
+        return ResponseHelper.buildSuccessResponse(convertEntityToDto(hbl));
+    }
+
+    private Hbl getDefaultHblFromShipment(ShipmentDetails shipmentDetails) {
+        HblDataDto hblData = mapShipmentToHBL(shipmentDetails);
+        List<HblCargoDto> hblCargos = mapShipmentCargoToHBL(shipmentDetails.getPackingList());
+        List<HblContainerDto> hblContainers = mapShipmentContainersToHBL(shipmentDetails.getContainersList());
+        List<HblPartyDto> hblParties = mapShipmentPartiesToHBL(shipmentDetails.getAdditionalDetails().getNotifyParty());
+
+        Hbl hbl = Hbl.builder().shipmentId(shipmentDetails.getId())
+                .hblData(hblData).hblCargo(hblCargos)
+                .hblContainer(hblContainers).hblNotifyParty(hblParties)
+                .build();
+
+        return hbl;
+    }
+
     private Hbl convertRequestToEntity(HblRequest request) {
-        HblDataDto hblData = modelMapper.map(request, HblDataDto.class);
+        HblDataDto hblData = jsonHelper.convertValue(request, HblDataDto.class);
         Hbl hbl = Hbl.builder().shipmentId(request.getShipmentId())
                 .hblData(hblData).hblCargo(request.getCargoes())
                 .hblContainer(request.getContainers()).hblNotifyParty(request.getNotifyParties())
