@@ -1,7 +1,6 @@
 package com.dpw.runner.shipment.services.controller;
 
 import com.dpw.runner.shipment.services.commons.constants.ApiConstants;
-import com.dpw.runner.shipment.services.commons.constants.BookingCarriageConstants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.FileRepoConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
@@ -9,25 +8,23 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
-import com.dpw.runner.shipment.services.dto.request.BookingCarriageRequest;
 import com.dpw.runner.shipment.services.dto.request.EntityIdAndTypeRequest;
 import com.dpw.runner.shipment.services.dto.request.FileRepoRequest;
-import com.dpw.runner.shipment.services.dto.response.BookingCarriageResponse;
+import com.dpw.runner.shipment.services.dto.request.UploadDocumentRequest;
 import com.dpw.runner.shipment.services.dto.response.FileRepoResponse;
-import com.dpw.runner.shipment.services.entity.FileRepo;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IFileRepoService;
 import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
-import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.validation.Valid;
+import java.util.List;
 
 @RestController
 @RequestMapping(FileRepoConstants.FILE_REPO_API_HANDLE)
@@ -41,7 +38,7 @@ public class FileRepoController {
             @ApiResponse(code = 404, message = FileRepoConstants.NO_DATA, response = RunnerResponse.class)
     })
     @PostMapping(ApiConstants.API_CREATE)
-    public ResponseEntity<RunnerResponse<FileRepoResponse>> createBookingCarriageData(@RequestBody @Valid FileRepoRequest request) {
+    public ResponseEntity<RunnerResponse<FileRepoResponse>> create(@RequestBody @Valid FileRepoRequest request) {
         String responseMsg;
         try {
             return (ResponseEntity<RunnerResponse<FileRepoResponse>>) fileRepoService.create(CommonRequestModel.buildRequest(request));
@@ -90,5 +87,19 @@ public class FileRepoController {
     @PostMapping(ApiConstants.API_LIST)
     public ResponseEntity<RunnerListResponse<FileRepoResponse>> list(@RequestBody @Valid ListCommonRequest listCommonRequest) {
         return (ResponseEntity<RunnerListResponse<FileRepoResponse>>) fileRepoService.list(CommonRequestModel.buildRequest(listCommonRequest));
+    }
+
+    @ApiResponses(value = { @ApiResponse(code = 200, message = FileRepoConstants.UPLOAD_DOCUMENT_SUCCESSFUL) })
+    @PostMapping(FileRepoConstants.UPLOAD_DOCUMENT)
+    public ResponseEntity<RunnerListResponse<FileRepoResponse>> uploadDocument(@RequestParam List<MultipartFile> files, @RequestParam Long entityId, @RequestParam String entityType, @RequestParam String docType, @RequestParam Boolean clientEnabled, @RequestParam String eventCode) {
+        UploadDocumentRequest uploadDocumentRequest = UploadDocumentRequest.builder().files(files).entityId(entityId).entityType(entityType).docType(docType).clientEnabled(clientEnabled).eventCode(eventCode).build();
+        return (ResponseEntity<RunnerListResponse<FileRepoResponse>>) fileRepoService.uploadDocument(CommonRequestModel.buildRequest(uploadDocumentRequest));
+    }
+
+    @ApiResponses(value = { @ApiResponse(code = 200, message = FileRepoConstants.DOWNLOAD_DOCUMENT_SUCCESSFUL) })
+    @GetMapping(FileRepoConstants.DOWNLOAD_DOCUMENT)
+    public ResponseEntity<?> downloadDocument(@RequestParam Long id) {
+        CommonGetRequest request = CommonGetRequest.builder().id(id).build();
+        return fileRepoService.downloadDocument(CommonRequestModel.buildRequest(request));
     }
 }
