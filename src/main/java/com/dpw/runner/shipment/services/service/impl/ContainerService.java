@@ -9,8 +9,10 @@ import com.dpw.runner.shipment.services.dao.interfaces.IEventDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentsContainersMappingDao;
 import com.dpw.runner.shipment.services.dto.ContainerAPIsRequest.ContainerAssignRequest;
 import com.dpw.runner.shipment.services.dto.ContainerAPIsRequest.ContainerPackAssignDetachRequest;
+import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
 import com.dpw.runner.shipment.services.dto.request.EventsRequest;
+import com.dpw.runner.shipment.services.dto.request.PackingRequest;
 import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.JobResponse;
 import com.dpw.runner.shipment.services.entity.Containers;
@@ -66,6 +68,8 @@ public class ContainerService implements IContainerService {
 
     @Autowired
     IEventDao eventDao;
+    @Autowired
+    private IPackingDao packingDao;
 
     @Transactional
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
@@ -78,7 +82,12 @@ public class ContainerService implements IContainerService {
         List<EventsRequest> eventsRequestList = request.getEventsList();
         try {
             container = containerDao.save(container);
-            if (request.getShipmentIds() != null) {
+            if (request.getPacksList() != null) {
+                List<PackingRequest> packingRequest = request.getPacksList();
+                List<Packing> packs = packingDao.savePacks(convertToEntityList(packingRequest, Packing.class), container.getId());
+                container.setPacksList(packs);
+            }
+            if(request.getShipmentIds() != null) {
                 shipmentsContainersMappingDao.updateShipmentsMappings(container.getId(), request.getShipmentIds());
             }
             if (eventsRequestList != null) {
@@ -151,6 +160,24 @@ public class ContainerService implements IContainerService {
 
 
     @Transactional
+    public ResponseEntity<?> attachPacks(Long containerId, List<Long> packsId) {
+        Containers containers = containerDao.findById(containerId).get();
+
+        if (containers != null) {
+            for (Long packid : packsId) {
+                Packing packing = packingDao.findById(packid).get();
+                if (packing != null) {
+                    containers.getPacksList().add(packing);
+                }
+            }
+            Containers entity = containerDao.save(containers);
+            return ResponseHelper.buildSuccessResponse(modelMapper.map(entity, ContainerResponse.class));
+        }
+
+        return null;
+    }
+
+    @Transactional
     public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
         String responseMsg;
         ContainerRequest request = (ContainerRequest) commonRequestModel.getData();
@@ -168,15 +195,30 @@ public class ContainerService implements IContainerService {
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
 
+        List<Long> updatedPackIds = new ArrayList<>();
+        List<PackingRequest> updatedPackingRequest = new ArrayList<>();
+        List<PackingRequest> packingRequestList = request.getPacksList();
+        for(PackingRequest packingRequest : packingRequestList) {
+            if(packingRequest.getId() != null) {
+                updatedPackIds.add(packingRequest.getId());
+            }
+        }
+
+        request.setPacksList(updatedPackingRequest);
+
         Containers containers = convertRequestToEntity(request);
         List<EventsRequest> eventsRequestList = request.getEventsList();
         containers.setId(oldEntity.get().getId());
         try {
+
             containers = containerDao.save(containers);
             if (request.getShipmentIds() != null) {
                 shipmentsContainersMappingDao.updateShipmentsMappings(containers.getId(), request.getShipmentIds());
             }
-            if (eventsRequestList != null) {
+            if (packingRequestList != null) {
+                packingDao.updateEntityFromContainer(convertToEntityList(packingRequestList, Packing.class), id, updatedPackIds);
+            }
+            if(eventsRequestList != null){
                 List<Events> events = eventDao.saveEntityFromOtherEntity(
                         convertToEntityList(eventsRequestList, Events.class), containers.getId(), Constants.CONTAINER);
                 containers.setEventsList(events);
@@ -257,6 +299,7 @@ public class ContainerService implements IContainerService {
             return ResponseHelper.buildFailedResponse(Constants.NO_DATA);
         }
         try {
+            packingDao.deleteEntityFromContainer(id);
             containerDao.delete(container.get());
             log.info("Deleted container for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
         } catch (Exception e) {
