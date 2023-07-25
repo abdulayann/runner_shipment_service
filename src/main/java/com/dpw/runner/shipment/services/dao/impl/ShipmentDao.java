@@ -73,6 +73,20 @@ public class ShipmentDao implements IShipmentDao {
         Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(shipmentDetails) , Constants.SHIPMENT, LifecycleHooks.ON_UPDATE, false);
         if (! errors.isEmpty())
             throw new ValidationException(errors.toString());
+        if(shipmentDetails.getId() != null){
+            long id = shipmentDetails.getId();
+            Optional<ShipmentDetails> oldEntity = findById(id);
+            if (!oldEntity.isPresent()) {
+                log.debug("Container is null for Id {}", shipmentDetails.getId());
+                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+            }
+            if(shipmentDetails.getContainersList() == null) {
+                shipmentDetails.setContainersList(oldEntity.get().getContainersList());
+            }
+            if(shipmentDetails.getConsolidationList() == null) {
+                shipmentDetails.setConsolidationList(oldEntity.get().getConsolidationList());
+            }
+        }
         return shipmentRepository.save(shipmentDetails);
     }
 
