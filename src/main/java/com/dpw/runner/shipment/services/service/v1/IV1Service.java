@@ -84,4 +84,8 @@ public interface IV1Service {
     V1DataResponse fetchMultipleMasterData(Object request);
     V1DataResponse fetchUsersData(Object request);
 
+    V1DataResponse fetchGridColorCodeData(Object request);
+    V1DataResponse createGridColorCodeData(Object request);
+    V1DataResponse updateGridColorCodeData(Object request);
+
 }

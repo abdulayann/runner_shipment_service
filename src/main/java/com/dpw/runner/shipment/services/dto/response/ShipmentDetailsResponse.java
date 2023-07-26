@@ -100,4 +100,5 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     private Long container20RECount;
     private Long container40GPCount;
     private Long container40RECount;
+    private String jobStatus;
 }
