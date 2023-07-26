@@ -187,7 +187,7 @@ public class PackingDao implements IPackingDao {
         return res;
     }
 
-    public List<Packing> updateEntityFromContainer(List<Packing> packingList, Long containerId, List<Long> updatedPacksId) throws Exception {
+    public List<Packing> removeContainerFromPacking(List<Packing> packingList, Long containerId, List<Long> updatedPacksId) throws Exception {
         String responseMsg;
         List<Packing> responsePackings = new ArrayList<>();
         try {
@@ -203,6 +203,28 @@ public class PackingDao implements IPackingDao {
             log.error(responseMsg, e);
             throw new Exception(e);
         }
+    }
+
+    public List<Packing> insertContainerInPacking(List<Packing> packings, Long containerId) throws Exception {
+        List<Packing> res = new ArrayList<>();
+        Optional<Packing> oldEntity = Optional.empty();
+        for(Packing req : packings){
+                if(req.getId() != null){
+                    long id = req.getId();
+                    oldEntity = findById(id);
+                    if (!oldEntity.isPresent()) {
+                        log.debug("Packing is null for Id {}", req.getId());
+                        throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                    }
+                }
+                if(oldEntity.isPresent() && oldEntity.get().getContainerId() != containerId) {
+                    req = oldEntity.get();
+                    req.setContainerId(containerId);
+                    req = save(req);
+                    res.add(req);
+                }
+            }
+        return res;
     }
 
     public List<Packing> saveEntityFromContainer(List<Packing> packings, Long containerId) {
@@ -239,7 +261,7 @@ public class PackingDao implements IPackingDao {
                         throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
                     }
                 }
-                req.setContainerId(containerId);
+                req.setContainerId(null);
                 req = save(req);
                 res.add(req);
             }

@@ -197,6 +197,13 @@ public class ContainerService implements IContainerService {
             }
         }
 
+        List<PackingRequest> packingRequestWithEmptyContainerId = new ArrayList<>();
+        for(PackingRequest packingRequest : packingRequestList) {
+            if(packingRequest.getContainerId() == null) {
+                packingRequestWithEmptyContainerId.add(packingRequest);
+            }
+        }
+
         request.setPacksList(updatedPackingRequest);
 
         Containers containers = convertRequestToEntity(request);
@@ -205,7 +212,9 @@ public class ContainerService implements IContainerService {
 
             containers = containerDao.save(containers);
             if (packingRequestList != null) {
-                packingDao.updateEntityFromContainer(convertToEntityList(packingRequestList, Packing.class), id, updatedPackIds);
+                packingDao.removeContainerFromPacking(convertToEntityList(packingRequestList, Packing.class), id, updatedPackIds);
+                packingDao.insertContainerInPacking(convertToEntityList(packingRequestWithEmptyContainerId, Packing.class), id);
+
             }
             if(eventsRequestList != null){
                 List<Events> events = eventDao.saveEntityFromOtherEntity(

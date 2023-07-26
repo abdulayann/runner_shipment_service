@@ -1,17 +1,23 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.PackingConstants;
 import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
+import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IPackingDao;
 import com.dpw.runner.shipment.services.dto.request.PackingRequest;
+import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.PackingResponse;
+import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingService;
 import com.dpw.runner.shipment.services.utils.CSVParsingUtil;
+import com.dpw.runner.shipment.services.utils.UnitConversionUtility;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
@@ -20,6 +26,7 @@ import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
@@ -27,6 +34,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.PrintWriter;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -35,12 +43,16 @@ import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
+import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
 
 @Slf4j
 @Service
 public class PackingService implements IPackingService {
     @Autowired
     IPackingDao packingDao;
+
+    @Autowired
+    IContainerDao containersDao;
     @Autowired
     ModelMapper modelMapper;
 
@@ -248,8 +260,65 @@ public class PackingService implements IPackingService {
         }
     }
 
+    @Override
+    public ResponseEntity<?> calculateWeightVolumne(CommonRequestModel commonRequestModel) throws Exception {
+        PackingRequest request = (PackingRequest) commonRequestModel.getData();
+        Containers newContainer = null;
+
+        List<IRunnerResponse> finalContainers = new ArrayList<>();
+
+        if(request.getContainerId() != null) {
+
+            newContainer = containersDao.findById(request.getContainerId()).get();
+
+            if(request.getId() == null) {
+                addWeightVolume(request, newContainer);
+                finalContainers.add(convertEntityToDto(newContainer));
+            } else {
+                Packing packing = packingDao.findById(request.getId()).get();
+                Containers oldContainer = containersDao.findById(packing.getContainerId()).get();
+
+                Containers container = addWeightVolume(request, newContainer);
+
+                if(oldContainer.getId() == newContainer.getId()) {
+                    subtractWeightVolume(container.getAchievedWeight(), newContainer, packing, container.getAchievedVolume(), request);
+                }
+                if(oldContainer.getId() != newContainer.getId()) {
+                    subtractWeightVolume(container.getAchievedWeight(), oldContainer, packing, container.getAchievedVolume(), request);
+                    finalContainers.add(convertEntityToDto(oldContainer));
+                }
+                finalContainers.add(convertEntityToDto(newContainer));
+            }
+        }
+        return ResponseHelper.buildListSuccessResponse(finalContainers);
+    }
+
+    private static Containers addWeightVolume(PackingRequest request, Containers newContainer) throws Exception {
+        BigDecimal finalWeight = request.getWeight().add(newContainer.getAchievedWeight());
+        BigDecimal finalVolume = request.getVolume().add(newContainer.getAchievedVolume());
+        finalWeight = new BigDecimal(convertUnit(Constants.MASS, finalWeight, newContainer.getAchievedWeightUnit(), request.getWeightUnit()).toString());
+        finalVolume = new BigDecimal(UnitConversionUtility.convertUnit(Constants.VOLUME, finalVolume, newContainer.getAchievedVolumeUnit(), request.getVolumeUnit()).toString());
+        newContainer.setAchievedWeight(finalWeight);
+        newContainer.setAchievedVolume(finalVolume);
+        return newContainer;
+    }
+
+    private static void subtractWeightVolume(BigDecimal finalWeight, Containers newContainer, Packing packing, BigDecimal finalVolume, PackingRequest request) throws Exception {
+        finalWeight = newContainer.getAchievedWeight().subtract(packing.getWeight());
+        finalVolume = newContainer.getAchievedVolume().subtract(packing.getVolume());
+        finalWeight = new BigDecimal(convertUnit(Constants.MASS, finalWeight, newContainer.getAchievedWeightUnit(), request.getWeightUnit()).toString());
+        finalVolume = new BigDecimal(UnitConversionUtility.convertUnit(Constants.VOLUME, finalVolume, newContainer.getAchievedVolumeUnit(), request.getVolumeUnit()).toString());
+
+        newContainer.setAchievedWeight(finalWeight);
+        newContainer.setAchievedVolume(finalVolume);
+    }
+
     private IRunnerResponse convertEntityToDto(Packing packing) {
         return modelMapper.map(packing, PackingResponse.class);
+    }
+
+    private IRunnerResponse convertEntityToDto(Containers packing) {
+        return modelMapper.map(packing, ContainerResponse.class);
     }
 
     private Packing convertRequestToEntity(PackingRequest request) {
