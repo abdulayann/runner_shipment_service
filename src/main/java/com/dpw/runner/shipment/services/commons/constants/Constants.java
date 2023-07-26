@@ -64,4 +64,10 @@ public class Constants {
 
     public static final String TOKEN = "Authorization";
 
+    /** Enum Constants **/
+
+    public static final String SHIPMENT_STATUS = "ShipmentStatus";
+
+    public static final String MASTER_LIST = "MasterList";
+
 }

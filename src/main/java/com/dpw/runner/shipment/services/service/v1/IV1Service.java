@@ -82,6 +82,6 @@ public interface IV1Service {
     V1DataResponse updateUnlocationData(Object request);
 
     V1DataResponse fetchMultipleMasterData(Object request);
-
+    V1DataResponse fetchUsersData(Object request);
 
 }

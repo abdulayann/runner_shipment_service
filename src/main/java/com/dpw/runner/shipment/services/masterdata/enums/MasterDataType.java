@@ -136,5 +136,7 @@ public enum MasterDataType {
         this.id = id;
     }
 
-
+    public int getId() {
+        return id;
+    }
 }
