@@ -20,6 +20,10 @@ public interface IPackingDao {
     List<Packing> updateEntityFromShipment(List<Packing> packingList, Long shipmentId) throws Exception;
     List<Packing> saveEntityFromShipment(List<Packing> packings, Long shipmentId);
 
+    List<Packing> updateEntityFromConsole(List<Packing> packingList, Long consolidationId) throws Exception;
+
+    List<Packing> saveEntityFromConsole(List<Packing> packings, Long consolidationId);
+
     List<Packing> getAllPackings();
 
     List<Packing> saveAll(List<Packing> packingList);

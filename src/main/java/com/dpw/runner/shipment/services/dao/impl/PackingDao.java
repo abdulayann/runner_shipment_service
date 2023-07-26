@@ -79,6 +79,38 @@ public class PackingDao implements IPackingDao {
     }
 
     @Override
+    public List<Packing> updateEntityFromConsole(List<Packing> packingList, Long consolidationId) throws Exception {
+        String responseMsg;
+        List<Packing> responsePackings = new ArrayList<>();
+        try {
+            // TODO- Handle Transactions here
+            ListCommonRequest listCommonRequest = constructListCommonRequest("consolidationId", consolidationId, "=");
+            Pair<Specification<Packing>, Pageable> pair = fetchData(listCommonRequest, Packing.class);
+            Page<Packing> packings = findAll(pair.getLeft(), pair.getRight());
+            Map<Long, Packing> hashMap = packings.stream()
+                    .collect(Collectors.toMap(Packing::getId, Function.identity()));
+            List<Packing> packingRequestList = new ArrayList<>();
+            if (packingList != null && packingList.size() != 0) {
+                for (Packing request : packingList) {
+                    Long id = request.getId();
+                    if (id != null) {
+                        hashMap.remove(id);
+                    }
+                    packingRequestList.add(request);
+                }
+                responsePackings = saveEntityFromConsole(packingRequestList, consolidationId);
+            }
+            deletePackings(hashMap);
+            return responsePackings;
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
+            log.error(responseMsg, e);
+            throw new Exception(e);
+        }
+    }
+
+    @Override
     public List<Packing> getAllPackings() {
         return packingRepository.getAllPackings();
     }
@@ -100,6 +132,25 @@ public class PackingDao implements IPackingDao {
                 }
             }
             req.setShipmentId(shipmentId);
+            req = save(req);
+            res.add(req);
+        }
+        return res;
+    }
+
+    @Override
+    public List<Packing> saveEntityFromConsole(List<Packing> packings, Long consolidationId) {
+        List<Packing> res = new ArrayList<>();
+        for (Packing req : packings) {
+            if (req.getId() != null) {
+                long id = req.getId();
+                Optional<Packing> oldEntity = findById(id);
+                if (!oldEntity.isPresent()) {
+                    log.debug("Packing is null for Id {}", req.getId());
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
+            }
+            req.setConsolidationId(consolidationId);
             req = save(req);
             res.add(req);
         }

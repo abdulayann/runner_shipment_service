@@ -14,5 +14,5 @@ public interface IShipmentDao {
     Page<ShipmentDetails> findAll(Specification<ShipmentDetails> spec, Pageable pageable);
     Optional<ShipmentDetails> findById(Long id);
     void delete(ShipmentDetails shipmentDetails);
-    List<ShipmentDetails> saveShipments(List<ShipmentDetails> shipments);
+    List<ShipmentDetails> saveAll(List<ShipmentDetails> shipments);
 }
