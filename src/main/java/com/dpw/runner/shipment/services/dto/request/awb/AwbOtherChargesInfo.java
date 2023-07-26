@@ -1,0 +1,30 @@
+package com.dpw.runner.shipment.services.dto.request.awb;
+
+import io.swagger.annotations.ApiModel;
+import lombok.*;
+
+import java.math.BigDecimal;
+import java.util.UUID;
+
+@Data
+@Builder
+@ApiModel("AWB Other Charges Info Model")
+@ToString
+@NoArgsConstructor
+@AllArgsConstructor
+public class AwbOtherChargesInfo {
+    private Integer id;
+    private Integer entityId;
+    private String entityType;
+    private Integer chargeTypeId;
+    private BigDecimal rate;
+    private Integer chargeBasis;
+    private BigDecimal amount;
+    private String modeOfPayment;
+    private Integer chargeDue;
+    private Integer version;
+    private String iataDescription;
+    private String chargeTypeDescription;
+    private BigDecimal awbChargeCodeDefaultVat;
+    private Long v2ChargeId;
+}

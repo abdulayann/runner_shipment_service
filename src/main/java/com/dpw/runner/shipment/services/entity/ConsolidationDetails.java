@@ -277,4 +277,8 @@ public class ConsolidationDetails extends MultiTenancy {
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "entityId")
     @Where(clause = "entity_type = 'CONSOLIDATION'")
     private List<FileRepo> fileRepoList;
+
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "entityId")
+    @Where(clause = "entity_type = 'CONSOLIDATION_ADDRESSES'")
+    private List<Parties> consolidationAddresses;
 }

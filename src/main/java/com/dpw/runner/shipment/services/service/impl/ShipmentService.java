@@ -1062,7 +1062,7 @@ public class ShipmentService implements IShipmentService {
         Long id = commonGetRequest.getId();
         ShipmentDetails shipmentDetails = shipmentDao.findById(id).get();
         String lockingUser = shipmentDetails.getLockedBy();
-        String currentUser = userContext.getUser().getUserName();
+        String currentUser = userContext.getUser().getUsername();
 
         if(shipmentDetails.getIsLocked()) {
             if(lockingUser != null && lockingUser.equals(currentUser))

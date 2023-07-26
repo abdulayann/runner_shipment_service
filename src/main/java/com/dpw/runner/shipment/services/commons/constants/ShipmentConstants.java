@@ -21,4 +21,5 @@ public class ShipmentConstants {
 
     public static final String SHIPMENT_LOCKED = "Current Shipment is Locked, try unlocking it first !";
 
+    public static final String SHIPMENT_TYPE_DRT = "DRT";
 }
