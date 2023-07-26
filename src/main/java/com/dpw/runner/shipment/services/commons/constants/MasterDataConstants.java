@@ -18,6 +18,8 @@ public class MasterDataConstants {
     public static final String SALES_AGENT = "/salesAgent";
     public static final String ORGANIZATION = "/organization";
     public static final String UNLOCATION = "/unlocation";
+    public static final String USER = "/users";
+
 
 
 

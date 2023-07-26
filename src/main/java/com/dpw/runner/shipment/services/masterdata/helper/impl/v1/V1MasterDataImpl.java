@@ -264,6 +264,12 @@ public class V1MasterDataImpl implements IMasterDataService {
     }
 
     @Override
+    public DependentServiceResponse fetchUserData(Object request) {
+        V1DataResponse v1DataResponse = v1Service.fetchUsersData(request);
+        return DependentServiceResponse.builder().success(true)
+                .data(v1DataResponse.entities).numberOfRecords(v1DataResponse.take).totalPages(v1DataResponse.totalCount).build();    }
+
+    @Override
     public List<MasterData> fetchByType(MasterDataType masterDataType) {
         return null;
     }

@@ -48,6 +48,13 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
     @Override
     public ConsolidationDetails update(ConsolidationDetails consolidationDetails) {
         validateLockStatus(consolidationDetails.getId());
+        if(consolidationDetails.getId() != null) {
+            long id = consolidationDetails.getId();
+            ConsolidationDetails oldEntity = findById(id).get();
+            if(consolidationDetails.getShipmentsList() == null) {
+                consolidationDetails.setShipmentsList(oldEntity.getShipmentsList());
+            }
+        }
         return consolidationRepository.save(consolidationDetails);
     }
 
