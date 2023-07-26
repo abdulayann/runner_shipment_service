@@ -42,8 +42,6 @@ public class RunnerShipmentServicesApplication {
         return modelMapper;
     }
 
-
-
 }
 
 
