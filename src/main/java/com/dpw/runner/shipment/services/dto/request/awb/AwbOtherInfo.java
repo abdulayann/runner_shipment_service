@@ -12,12 +12,10 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 public class AwbOtherInfo {
-    private Integer id;
     private Long entityId;
     private String entityType;
     private String shipper;
     private String carrier;
     private String executedAt;
     private LocalDateTime executedOn;
-    private Integer version;
 }

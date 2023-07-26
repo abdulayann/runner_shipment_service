@@ -12,7 +12,6 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 @AllArgsConstructor
 public class AwbGoodsDescriptionInfo {
-    private Integer id;
     private Long entityId;
     private String entityType;
     private Integer piecesNo;
@@ -25,6 +24,5 @@ public class AwbGoodsDescriptionInfo {
     private BigDecimal totalAmount;
     private Integer slaCCode;
     private String hsCode;
-    private Integer version;
 
 }

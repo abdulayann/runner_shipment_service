@@ -12,7 +12,6 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 @AllArgsConstructor
 public class AwbCargoInfo {
-    private Integer id;
     private Long entityId;
     private String entityType;
     private String accountingInfo;
@@ -29,5 +28,4 @@ public class AwbCargoInfo {
     private BigDecimal customsValue;
     private BigDecimal insuranceAmount;
     private String customOriginCode;
-    private Integer version;
 }

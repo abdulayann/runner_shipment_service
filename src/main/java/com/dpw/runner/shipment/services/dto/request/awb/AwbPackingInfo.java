@@ -12,7 +12,6 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 @AllArgsConstructor
 public class AwbPackingInfo {
-    private Integer id;
     private Integer dgGoodsId;
     private Integer dgSubstanceId;
     private String packs;

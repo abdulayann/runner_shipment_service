@@ -12,7 +12,6 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 public class AwbRoutingInfo {
-    private Integer id;
     private Long entityId;
     private String entityType;
     private Integer origin;

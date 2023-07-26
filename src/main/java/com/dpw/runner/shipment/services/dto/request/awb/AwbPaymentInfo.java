@@ -13,7 +13,6 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 public class AwbPaymentInfo {
-    private Integer id;
     private Integer entityId;
     private String entityType;
     private BigDecimal weightCharges;
@@ -23,5 +22,4 @@ public class AwbPaymentInfo {
     private BigDecimal dueCarrierCharges;
     private BigDecimal totalPrepaid;
     private BigDecimal totalCollect;
-    private Integer version;
 }

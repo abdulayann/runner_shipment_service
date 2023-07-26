@@ -23,6 +23,9 @@ import java.util.List;
 @Accessors(chain = true)
 @TypeDef(name = "jsonb", typeClass = JsonBinaryType.class )
 public class Awb extends MultiTenancy {
+    @Column(name = "shipment_id")
+    private Long shipmentId;
+
     @Type(type = "jsonb")
     @Column(name = "awb_shipment_info", columnDefinition = "jsonb")
     private AwbShipmentInfo awbShipmentInfo;

@@ -13,7 +13,6 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 public class AwbOtherChargesInfo {
-    private Integer id;
     private Integer entityId;
     private String entityType;
     private Integer chargeTypeId;
@@ -22,7 +21,6 @@ public class AwbOtherChargesInfo {
     private BigDecimal amount;
     private String modeOfPayment;
     private Integer chargeDue;
-    private Integer version;
     private String iataDescription;
     private String chargeTypeDescription;
     private BigDecimal awbChargeCodeDefaultVat;

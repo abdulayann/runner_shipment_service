@@ -10,7 +10,6 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 public class AwbShipmentInfo {
-    private Integer id;
     private Long entityId;
     private String entityType;
     private String shipperName;
@@ -23,7 +22,6 @@ public class AwbShipmentInfo {
     private String issuingAgentAddress;
     private String iataCode;
     private String noOfCopies;
-    private Integer version;
     private String status;
     private String awbNumber;
     private String originAirport;

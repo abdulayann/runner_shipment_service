@@ -7,18 +7,12 @@ import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.dao.interfaces.IAwbDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IPackingDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
+import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.request.AwbRequest;
 import com.dpw.runner.shipment.services.dto.request.CreateAwbRequest;
 import com.dpw.runner.shipment.services.dto.request.awb.*;
 import com.dpw.runner.shipment.services.dto.response.AwbResponse;
-import com.dpw.runner.shipment.services.entity.Awb;
-import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
-import com.dpw.runner.shipment.services.entity.Packing;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
@@ -61,9 +55,14 @@ public class AwbService implements IAwbService {
     IPackingDao packingDao;
 
     @Autowired
+    IMawbHawbLinkDao mawbHawbLinkDao;
+
+    @Autowired
     private ModelMapper modelMapper;
 
     private Integer totalPacks = 0;
+    private List<String> attachedShipmentDescriptions = new ArrayList<>();
+    private BigDecimal totalVolumetricWeightOfAwbPacks = new BigDecimal(0);
 
     public ResponseEntity<?> createAwb(CommonRequestModel commonRequestModel) {
         String responseMsg;
@@ -184,7 +183,14 @@ public class AwbService implements IAwbService {
 
         Awb awb = new Awb();
         try {
-            awb = awbDao.save(generateMawb(request));
+            // fetch consolidation info
+            ConsolidationDetails consolidationDetails = consolidationDetailsDao.findById(request.getConsolidationId()).get();
+
+            // save awb details
+            awb = awbDao.save(generateMawb(request, consolidationDetails));
+
+            // map mawb and hawb affter suuccessful save
+            LinkHawbMawb(consolidationDetails, awb.getId());
             log.info("MAWB created successfully for Id {} with Request Id {}", awb.getId(), LoggerHelper.getRequestIdFromMDC());
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -241,10 +247,7 @@ public class AwbService implements IAwbService {
         return modelMapper.map(request, Awb.class);
     }
 
-    private Awb generateMawb(CreateAwbRequest request) {
-        // fetch sehipment info
-        ConsolidationDetails consolidationDetails = consolidationDetailsDao.findById(request.getConsolidationId()).get();
-
+    private Awb generateMawb(CreateAwbRequest request, ConsolidationDetails consolidationDetails) {
         // validate the request
         AwbUtility.validateConsolidationInfoBeforeGeneratingAwb(consolidationDetails);
 
@@ -327,12 +330,10 @@ public class AwbService implements IAwbService {
     private AwbCargoInfo generateMawbCargoInfo(ConsolidationDetails consolidationDetails, CreateAwbRequest request, List<AwbPackingInfo> awbPackingList) {
         AwbCargoInfo awbCargoInfo = new AwbCargoInfo();
         String concatenatedGoodsDesc = ""; //TODO from consoleshipment mapping
-        BigDecimal totalVolumetricWeightOfAwbPacks = new BigDecimal(0); //TODO
-//        if (attachedShipmentDescriptions.Count > 0)
-//        {
-//            concatenatedGoodsDesc = String.Join(',', attachedShipmentDescriptions);
-//        }
-        awbCargoInfo.setNtrQtyGoods(AwbUtility.generateNatureAndQuantGoodsField(concatenatedGoodsDesc, totalVolumetricWeightOfAwbPacks, awbPackingList));
+        if (attachedShipmentDescriptions.size() > 0) {
+            concatenatedGoodsDesc = String.join(",", attachedShipmentDescriptions);
+        }
+        awbCargoInfo.setNtrQtyGoods(AwbUtility.generateNatureAndQuantFieldsForConsolMawb(concatenatedGoodsDesc, totalVolumetricWeightOfAwbPacks, awbPackingList));
         awbCargoInfo.setEntityId(consolidationDetails.getId());
         awbCargoInfo.setEntityType(request.getAwbType());
 //        awbCargoInfo.setCarriageValue(shipmentDetails.getGoodsValue() != null ? shipmentDetails.getGoodsValue() : new BigDecimal(0.0)); // field missing
@@ -365,93 +366,54 @@ public class AwbService implements IAwbService {
         return awbOtherInfo;
     }
 
-    private List<AwbPackingInfo> generateMawbPackingInfo(ConsolidationDetails consolidationDetails) {
-//        List<AwbPackingInfo> awbPackingList = new ArrayList<>();
-//        return awbPackingList;
-//        var consolShipmentRepository = new ConsolShipRepository();
-//        var consolShipmentRequest = new ListRequest()
-//        {
-//            Criteria = (new Criteria("ConsolidationId") == (long)consolidationRow.Id && new Criteria("TenantId") == consolidationRow.TenantId.Value)
-//        };
-//        var consolShipmentResponse = consolShipmentRepository.List(uow.Connection, consolShipmentRequest).Entities;
-//        List<AwbGoodsDescriptionInfoRow> awbGoodsDescList = new List<AwbGoodsDescriptionInfoRow>();
-//        List<long> attachedShipmentIds = new List<long>();
-//        List<long> attachedHawbIds = new List<long>();
-//        consolShipmentResponse.ForEach(C =>
-//                {
-//        if (C.ShipmentId != null)
-//        {
-//            var awbShipmentInfoRepo = new AwbShipmentInfoRepository();
-//            var listRequest = new ListRequest();
-//            listRequest.Criteria = new Criteria("EntityId") == C.ShipmentId.Value;
-//            attachedShipmentIds.Add(C.ShipmentId.Value);
-//            var awbShipmentInfoRow = awbShipmentInfoRepo.List(uow.Connection, listRequest).Entities.FirstOrDefault();
-//            if (awbShipmentInfoRow == null)
-//            {
-//                throw new ValidationError("To Generate Mawb, Please create Hawb for all the shipments attached");
-//            }
-//            var mawbHawbLinkRow = new MawbHawbLinkRow();
-//            var mawbHawbLinkRepo = new MawbHawbLinkRepository();
-//            mawbHawbLinkRow.MawbId = Convert.ToInt64(saveResponse.EntityId);
-//            mawbHawbLinkRow.HawbId = awbShipmentInfoRow.Id;
-//            attachedHawbIds.Add((long)mawbHawbLinkRow.HawbId);
-//            SaveResponse mawbHawbSaveResponse = mawbHawbLinkRepo.Create(uow, new SaveRequest<MawbHawbLinkRow>()
-//            {
-//                Entity = mawbHawbLinkRow
-//            });
-//        }
-//
-//            });
-//        List<AwbPackingRow> hawbPacksLinkedToMawb = new List<AwbPackingRow>();
-//        List<String> attachedShipmentDescriptions = new List<String>();
-//        Decimal? totalVolumetricWeightOfAwbPacks = 0;
-//        if (attachedShipmentIds.Count > 0)
-//        {
-//            attachedShipmentIds.ForEach(shipmentIds =>
-//                    {
-//                            var shipmentsRepo = new ShipmentsRepository();
-//            var retrieveRequest = new RetrieveRequest();
-//            retrieveRequest.EntityId = shipmentIds;
-//            var shipmentsRow = shipmentsRepo.Retrieve(uow.Connection, retrieveRequest).Entity;
-//            if (shipmentsRow != null)
-//            {
-//                if (!shipmentsRow.Description.IsEmptyOrNull())
-//                {
-//                    attachedShipmentDescriptions.Add(shipmentsRow.Description); //desc to fetch from shipments.
-//                }
-//                else
-//                {
-//                    attachedShipmentDescriptions.Add("");
-//                }
-//            }
-//
-//                });
-//
-//            attachedHawbIds.ForEach(hawbIds =>
-//                    {
-//                            var awbPacksRepo = new AwbPackingRepository();
-//            var listRequest = new ListRequest();
-//            listRequest.Criteria = new Criteria("AwbObjectId") == hawbIds;
-//            var awbPackingRows = awbPacksRepo.List(uow.Connection, listRequest).Entities;
-//            if (awbPackingRows != null && awbPackingRows.Count > 0)
-//            {
-//                awbPackingRows.ForEach(awbPacks =>
-//                        {
-//                if (!awbPacks.Volume.IsEmptyOrNull() && !awbPacks.VolumeUnit.IsEmptyOrNull() && awbPacks.VolumeUnit == CommonConstants.CUBIC_METRE)
-//                {
-//                    totalVolumetricWeightOfAwbPacks += Decimal.Parse(awbPacks.Volume);
-//                }
-//                        });
-//                hawbPacksLinkedToMawb.AddRange(awbPackingRows);
-//            }
-//                });
-//            Double factor = CommonConstants.FACTOR_VOL_WT;
-//            totalVolumetricWeightOfAwbPacks = totalVolumetricWeightOfAwbPacks * (Decimal)factor;
-//
-//
-//        }
+    private void LinkHawbMawb(ConsolidationDetails consolidationDetails, Long mawbId) {
+        for (var consoleShipment : consolidationDetails.getShipmentsList()) {
+            if (consoleShipment.getId() != null) {
+                Awb awb = awbDao.findByShipmentId(consoleShipment.getId()).stream().findFirst().get();
+                if (awb == null) {
+                    throw new ValidationException("To Generate Mawb, Please create Hawb for all the shipments attached");
+                }
 
-        return null;
+                MawbHawbLink mawbHawblink = new MawbHawbLink();
+                mawbHawblink.setHawbId(awb.getId());
+                mawbHawblink.setHawbId(mawbId);
+                mawbHawbLinkDao.save(mawbHawblink);
+            }
+        }
+    }
+
+    private List<AwbPackingInfo> generateMawbPackingInfo(ConsolidationDetails consolidationDetails) {
+        List<AwbPackingInfo> awbPackingList = new ArrayList<>();
+        List<AwbGoodsDescriptionInfo> awbGoodsDescList = new ArrayList<>();
+        List<Long> attachedHawbIds = new ArrayList<>();
+        List<AwbPackingInfo> hawbPacksLinkedToMawb = new ArrayList<>();
+
+        if (consolidationDetails.getShipmentsList().size() > 0) {
+            for (var consoleShipment : consolidationDetails.getShipmentsList()) {
+                if (!StringUtility.isEmpty(consoleShipment.getGoodsDescription())) {
+                    attachedShipmentDescriptions.add(consoleShipment.getGoodsDescription());
+                }
+
+                var awbList = awbDao.findByShipmentId(consoleShipment.getId());
+                if (awbList == null || awbList.size() == 0) {
+                    throw new ValidationException("To Generate Mawb, Please create Hawb for all the shipments attached");
+                }
+
+                var awb = awbList.stream().findFirst().get();
+                if (awb.getAwbPackingInfo() != null && awb.getAwbPackingInfo().size() > 0) {
+                    for (var awbPack : awb.getAwbPackingInfo()) {
+                        if (awbPack.getVolume() != null && !StringUtility.isEmpty(awbPack.getVolumeUnit()) &&
+                                awbPack.getVolumeUnit() == "M3") {
+                            totalVolumetricWeightOfAwbPacks.add(awbPack.getVolume());
+                        }
+                        hawbPacksLinkedToMawb.add(awbPack);
+                    }
+                }
+            }
+            Double factor = Constants.FACTOR_VOL_WT;
+            totalVolumetricWeightOfAwbPacks.multiply(new BigDecimal(factor));
+        }
+        return hawbPacksLinkedToMawb;
     }
 
     private Awb generateAwb(CreateAwbRequest request) {
@@ -480,6 +442,7 @@ public class AwbService implements IAwbService {
                 .awbOtherInfo(generateAwbOtherInfo(shipmentDetails, request))
                 .awbGoodsDescriptionInfo(generateAwbGoodsDescriptionInfo(shipmentDetails, request))
                 .awbPackingInfo(awbPackingInfo)
+                .shipmentId(shipmentDetails.getId())
                 .build();
     }
 

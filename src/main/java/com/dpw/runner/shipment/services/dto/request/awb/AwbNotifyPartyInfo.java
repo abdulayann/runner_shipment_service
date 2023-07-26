@@ -10,7 +10,6 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 public class AwbNotifyPartyInfo {
-    private Integer id;
     private Long entityId;
     private String entityType;
     private String type;

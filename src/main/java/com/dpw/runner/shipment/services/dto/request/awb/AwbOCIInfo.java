@@ -12,11 +12,9 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 public class AwbOCIInfo {
-    private Integer id;
     private Integer entityId;
     private String entityType;
     private Integer informationIdentifier;
     private Integer tradeIdentificationCode;
     private String tradeIdentificationComment;
-    private Integer version;
 }
