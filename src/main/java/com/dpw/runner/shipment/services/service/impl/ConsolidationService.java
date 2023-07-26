@@ -554,19 +554,7 @@ public class ConsolidationService implements IConsolidationService {
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
 
-        List<Long> tempShipIds = new ArrayList<>();
-
-        List<ShipmentRequest> updateShipmentRequest = new ArrayList<>();
-        List<ShipmentRequest> shipmentRequestList = consolidationDetailsRequest.getShipmentsList();
-        if(shipmentRequestList != null && !shipmentRequestList.isEmpty()) {
-            for(ShipmentRequest shipmentRequest : shipmentRequestList) {
-                if(shipmentRequest.getId() != null) {
-                    tempShipIds.add(shipmentRequest.getId());
-                }
-            }
-        }
-
-        consolidationDetailsRequest.setShipmentsList(updateShipmentRequest);
+        consolidationDetailsRequest.setShipmentsList(null);
 
         try {
 
@@ -603,7 +591,7 @@ public class ConsolidationService implements IConsolidationService {
                 entity.setAchievedQuantities(updatedAchievedQuantities);
             }
             entity = consolidationDetailsDao.update(entity);
-            attachShipments(entity.getId(), tempShipIds);
+            //attachShipments(entity.getId(), tempShipIds);
 
             ConsolidationDetailsResponse response = modelMapper.map(entity, ConsolidationDetailsResponse.class);
             response.setContainersList(updatedContainers.stream().map(e -> modelMapper.map(e, ContainerResponse.class)).collect(Collectors.toList()));
@@ -1044,5 +1032,9 @@ public class ConsolidationService implements IConsolidationService {
     private <T extends IRunnerResponse> T getResponseEntity(ResponseEntity<?> responseEntity) throws ExecutionException, InterruptedException {
         var runnerResponse = (RunnerResponse<T>) responseEntity.getBody();
         return (T) runnerResponse.getData();
+    }
+
+    private Containers convertRequestToEntity(ContainerRequest request) {
+        return modelMapper.map(request, Containers.class);
     }
 }
