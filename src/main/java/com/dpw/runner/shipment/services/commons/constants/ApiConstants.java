@@ -30,4 +30,5 @@ public class ApiConstants {
     public static final String API_CALCULATE_ACHIEVED_PACK_DETACH = "/calculate/achieved/pack/detach";
     public static final String API_CALCULATE_UTILIZATION = "/calculate/utilization";
     public static final String API_CALCULATE_CHARGEABLE = "/calculate/chargeable";
+    public static final String API_CALCULATE_ACHIEVED_VALUES = "/calculate/achieved";
 }

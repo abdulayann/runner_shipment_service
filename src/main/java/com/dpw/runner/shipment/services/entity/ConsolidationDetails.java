@@ -278,6 +278,12 @@ public class ConsolidationDetails extends MultiTenancy {
     @Where(clause = "entity_type = 'CONSOLIDATION'")
     private List<FileRepo> fileRepoList;
 
+    @ManyToMany
+    @JoinTable(name = "console_shipment_mapping",
+            joinColumns = @JoinColumn(name = "consolidation_id"),
+            inverseJoinColumns = @JoinColumn(name = "shipment_id"))
+    private List<ShipmentDetails> shipmentsList;
+
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "entityId")
     @Where(clause = "entity_type = 'CONSOLIDATION_ADDRESSES'")
     private List<Parties> consolidationAddresses;

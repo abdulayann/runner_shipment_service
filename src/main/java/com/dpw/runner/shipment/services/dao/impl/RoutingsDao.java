@@ -47,6 +47,7 @@ public class RoutingsDao implements IRoutingsDao {
         routingsRepository.delete(routings);
     }
 
+    @Override
     public List<Routings> updateEntityFromShipment(List<Routings> routingsList, Long shipmentId) throws Exception {
         String responseMsg;
         List<Routings> responseRoutings = new ArrayList<>();
@@ -78,6 +79,7 @@ public class RoutingsDao implements IRoutingsDao {
         }
     }
 
+    @Override
     public List<Routings> saveEntityFromShipment(List<Routings> routings, Long shipmentId) {
         List<Routings> res = new ArrayList<>();
         for(Routings req : routings){
@@ -90,6 +92,56 @@ public class RoutingsDao implements IRoutingsDao {
                 }
             }
             req.setShipmentId(shipmentId);
+            req = save(req);
+            res.add(req);
+        }
+        return res;
+    }
+
+    public List<Routings> updateEntityFromConsole(List<Routings> routingsList, Long consolidationId) throws Exception {
+        String responseMsg;
+        List<Routings> responseRoutings = new ArrayList<>();
+        try {
+            // TODO- Handle Transactions here
+            ListCommonRequest listCommonRequest = constructListCommonRequest("consolidationId", consolidationId, "=");
+            Pair<Specification<Routings>, Pageable> pair = fetchData(listCommonRequest, Routings.class);
+            Page<Routings> routings = findAll(pair.getLeft(), pair.getRight());
+            Map<Long, Routings> hashMap = routings.stream()
+                    .collect(Collectors.toMap(Routings::getId, Function.identity()));
+            List<Routings> routingsRequestList = new ArrayList<>();
+            if (routingsList != null && routingsList.size() != 0) {
+                for (Routings request : routingsList) {
+                    Long id = request.getId();
+                    if (id != null) {
+                        hashMap.remove(id);
+                    }
+                    routingsRequestList.add(request);
+                }
+                responseRoutings = saveEntityFromConsole(routingsRequestList, consolidationId);
+            }
+            deleteRoutings(hashMap);
+            return responseRoutings;
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
+            log.error(responseMsg, e);
+            throw new Exception(e);
+        }
+    }
+
+    @Override
+    public List<Routings> saveEntityFromConsole(List<Routings> routings, Long consolidationId) {
+        List<Routings> res = new ArrayList<>();
+        for(Routings req : routings){
+            if(req.getId() != null){
+                long id = req.getId();
+                Optional<Routings> oldEntity = findById(id);
+                if (!oldEntity.isPresent()) {
+                    log.debug("Routing is null for Id {}", req.getId());
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
+            }
+            req.setConsolidationId(consolidationId);
             req = save(req);
             res.add(req);
         }

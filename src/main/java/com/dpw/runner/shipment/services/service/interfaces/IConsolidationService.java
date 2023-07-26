@@ -17,5 +17,10 @@ public interface IConsolidationService extends ICommonService{
     ResponseEntity<?> toggleLock(CommonRequestModel commonRequestModel);
     ResponseEntity<?> calculateUtilization(CommonRequestModel commonRequestModel);
     ResponseEntity<?> calculateAchieved_AllocatedForSameUnit(CommonRequestModel commonRequestModel);
+    ResponseEntity<?> calculateAchievedValues(CommonRequestModel commonRequestModel);
     ResponseEntity<?> calculateChargeable(CommonRequestModel commonRequestModel);
+
+    ResponseEntity<?> attachShipments(Long consolidationId, List<Long> shipmentIds) throws Exception;
+
+    ResponseEntity<?> detachShipments(Long consolidationId, List<Long> shipmentIds) throws Exception;
 }

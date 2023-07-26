@@ -1,6 +1,5 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
-import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IEventDao;
@@ -23,7 +22,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListRequestFromEntityId;
 
 @Repository
 @Slf4j
@@ -51,12 +50,13 @@ public class EventDao implements IEventDao {
         eventRepository.delete(events);
     }
 
-    public List<Events> updateEntityFromShipment(List<Events> eventsList, Long shipmentId) throws Exception {
+    @Override
+    public List<Events> updateEntityFromOtherEntity(List<Events> eventsList, Long entityId, String entityType) throws Exception {
         String responseMsg;
         List<Events> responseEvents = new ArrayList<>();
         try {
             // TODO- Handle Transactions here
-            ListCommonRequest listCommonRequest = constructListCommonRequest("shipmentId", shipmentId, "=");
+            ListCommonRequest listCommonRequest = constructListRequestFromEntityId(entityId, entityType);
             Pair<Specification<Events>, Pageable> pair = fetchData(listCommonRequest, Events.class);
             Page<Events> events = findAll(pair.getLeft(), pair.getRight());
             Map<Long, Events> hashMap = events.stream()
@@ -70,7 +70,7 @@ public class EventDao implements IEventDao {
                     }
                     eventsRequestList.add(request);
                 }
-                responseEvents = saveEntityFromOtherEntity(eventsRequestList, shipmentId, Constants.SHIPMENT);
+                responseEvents = saveEntityFromOtherEntity(eventsRequestList, entityId, entityType);
             }
             deleteEvents(hashMap);
             return responseEvents;

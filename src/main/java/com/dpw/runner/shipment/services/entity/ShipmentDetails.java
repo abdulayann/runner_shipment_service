@@ -281,6 +281,12 @@ public class ShipmentDetails extends MultiTenancy {
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "shipmentId")
     private List<Jobs> jobsList;
 
+    @ManyToMany
+    @JoinTable(name = "console_shipment_mapping",
+            joinColumns = @JoinColumn(name = "shipment_id"),
+            inverseJoinColumns = @JoinColumn(name = "consolidation_id"))
+    private List<ConsolidationDetails> consolidationList;
+
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "entityId")
     @Where(clause = "entity_type = 'SHIPMENT_ADDRESSES'")
     private List<Parties> shipmentAddresses;
