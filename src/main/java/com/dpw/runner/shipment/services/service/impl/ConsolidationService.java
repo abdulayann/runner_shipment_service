@@ -591,7 +591,6 @@ public class ConsolidationService implements IConsolidationService {
                 entity.setAchievedQuantities(updatedAchievedQuantities);
             }
             entity = consolidationDetailsDao.update(entity);
-            //attachShipments(entity.getId(), tempShipIds);
 
             ConsolidationDetailsResponse response = modelMapper.map(entity, ConsolidationDetailsResponse.class);
             response.setContainersList(updatedContainers.stream().map(e -> modelMapper.map(e, ContainerResponse.class)).collect(Collectors.toList()));
