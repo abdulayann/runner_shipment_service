@@ -39,7 +39,7 @@ public class ContainerDao implements IContainerDao {
 
     @Override
     public List<Containers> getAllContainers() {
-        return containerRepository.getAllContainers();
+        return containerRepository.findAll();
     }
 
     @Override
