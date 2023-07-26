@@ -44,7 +44,8 @@ public class AuthFilter implements Filter {
             "/configuration/ui",
             "/configuration/security",
             "/swagger-ui.html",
-            "/webjars/**"};
+            "/webjars/**",
+            "/api/v2/enums/**"};
 
     protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
         return Arrays.stream(ignoredPaths)

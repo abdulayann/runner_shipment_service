@@ -75,4 +75,6 @@ public interface IMasterDataService extends ICommonService{
     ResponseEntity<?> updateUnlocation(CommonRequestModel commonRequestModel);
 
     ResponseEntity<?> listUnlocation(CommonRequestModel commonRequestModel);
+
+    ResponseEntity<?> listUsers(CommonRequestModel commonRequestModel);
 }

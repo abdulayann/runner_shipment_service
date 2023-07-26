@@ -88,4 +88,6 @@ public interface IMasterDataService {
 
     DependentServiceResponse updateUnlocationData(Object request);
 
+    DependentServiceResponse fetchUserData(Object request);
+
 }

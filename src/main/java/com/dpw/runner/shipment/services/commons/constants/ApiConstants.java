@@ -31,4 +31,6 @@ public class ApiConstants {
     public static final String API_CALCULATE_UTILIZATION = "/calculate/utilization";
     public static final String API_CALCULATE_CHARGEABLE = "/calculate/chargeable";
     public static final String API_CALCULATE_ACHIEVED_VALUES = "/calculate/achieved";
+
+    public static final String ENUM_API_HANDLE = "/api/v2/enums";
 }
