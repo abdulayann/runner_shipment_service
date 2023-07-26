@@ -17,8 +17,6 @@ import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.JobResponse;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.Events;
-import com.dpw.runner.shipment.services.entity.ShipmentsContainersMapping;
-import com.dpw.runner.shipment.services.entity.enums.ContainerStatus;
 import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.entity.ShipmentsContainersMapping;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
@@ -40,18 +38,19 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.ModelAttribute;
 
-import java.math.BigDecimal;
 import javax.servlet.http.HttpServletResponse;
 import java.io.PrintWriter;
-import java.util.*;
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
-import static com.dpw.runner.shipment.services.utils.CSVParsingUtil.*;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.convertToEntityList;
+import static com.dpw.runner.shipment.services.utils.StringUtility.isNotEmpty;
 import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
 
 @Slf4j
@@ -86,9 +85,6 @@ public class ContainerService implements IContainerService {
                 List<PackingRequest> packingRequest = request.getPacksList();
                 List<Packing> packs = packingDao.savePacks(convertToEntityList(packingRequest, Packing.class), container.getId());
                 container.setPacksList(packs);
-            }
-            if(request.getShipmentIds() != null) {
-                shipmentsContainersMappingDao.updateShipmentsMappings(container.getId(), request.getShipmentIds());
             }
             if (eventsRequestList != null) {
                 List<Events> events = eventDao.saveEntityFromOtherEntity(
@@ -189,18 +185,22 @@ public class ContainerService implements IContainerService {
             log.debug("Request Id is null for Container Update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
         }
         long id = request.getId();
-        Optional<Containers> oldEntity = containerDao.findById(id);
-        if (!oldEntity.isPresent()) {
-            log.debug("Container is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
-            throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
-        }
 
         List<Long> updatedPackIds = new ArrayList<>();
         List<PackingRequest> updatedPackingRequest = new ArrayList<>();
         List<PackingRequest> packingRequestList = request.getPacksList();
+        if(packingRequestList != null && !packingRequestList.isEmpty()) {
+            for(PackingRequest packingRequest : packingRequestList) {
+                if(packingRequest.getId() != null) {
+                    updatedPackIds.add(packingRequest.getId());
+                }
+            }
+        }
+
+        List<PackingRequest> packingRequestWithEmptyContainerId = new ArrayList<>();
         for(PackingRequest packingRequest : packingRequestList) {
-            if(packingRequest.getId() != null) {
-                updatedPackIds.add(packingRequest.getId());
+            if(packingRequest.getContainerId() == null) {
+                packingRequestWithEmptyContainerId.add(packingRequest);
             }
         }
 
@@ -208,15 +208,13 @@ public class ContainerService implements IContainerService {
 
         Containers containers = convertRequestToEntity(request);
         List<EventsRequest> eventsRequestList = request.getEventsList();
-        containers.setId(oldEntity.get().getId());
         try {
 
             containers = containerDao.save(containers);
-            if (request.getShipmentIds() != null) {
-                shipmentsContainersMappingDao.updateShipmentsMappings(containers.getId(), request.getShipmentIds());
-            }
             if (packingRequestList != null) {
-                packingDao.updateEntityFromContainer(convertToEntityList(packingRequestList, Packing.class), id, updatedPackIds);
+                packingDao.removeContainerFromPacking(convertToEntityList(packingRequestList, Packing.class), id, updatedPackIds);
+                packingDao.insertContainerInPacking(convertToEntityList(packingRequestWithEmptyContainerId, Packing.class), id);
+
             }
             if(eventsRequestList != null){
                 List<Events> events = eventDao.saveEntityFromOtherEntity(
@@ -448,9 +446,13 @@ public class ContainerService implements IContainerService {
                 for (Containers container : containers.getContent()) {
                     List<ShipmentsContainersMapping> shipmentsContainersMappings = shipmentsContainersMappingDao.findByContainerId(container.getId());
                     if(!shipmentsContainersMappings.stream().map(e -> e.getShipmentId()).collect(Collectors.toList()).contains(shipmentId)) {
-                        if(container.getAllocatedWeight() != null && container.getAchievedWeight() != null && container.getAllocatedWeight().compareTo(container.getAchievedWeight()) > 0 &&
-                                container.getAllocatedVolume() != null && container.getAchievedWeight() != null && container.getAllocatedVolume().compareTo(container.getAchievedVolume()) > 0) {
-                            containersList.add(container);
+                        if(container.getAllocatedWeight() != null && container.getAchievedWeight() != null && container.getAllocatedVolume() != null && container.getAchievedWeight() != null
+                           && isNotEmpty(container.getAllocatedWeightUnit()) && isNotEmpty(container.getAllocatedVolumeUnit()) && isNotEmpty(container.getAchievedWeightUnit()) && isNotEmpty(container.getAchievedVolumeUnit())) {
+                            BigDecimal achievedWeight = new BigDecimal(convertUnit(Constants.MASS, container.getAchievedWeight(), container.getAchievedWeightUnit(), container.getAllocatedWeightUnit()).toString());
+                            BigDecimal achievedVolume = new BigDecimal(convertUnit(Constants.VOLUME, container.getAchievedVolume(), container.getAchievedVolumeUnit(), container.getAllocatedVolumeUnit()).toString());
+                            if(achievedWeight.compareTo(container.getAllocatedWeight()) < 0 && achievedVolume.compareTo(container.getAllocatedVolume()) < 0) {
+                                containersList.add(container);
+                            }
                         }
                     }
                 }

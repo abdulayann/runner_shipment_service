@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.entity;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.entity.enums.ContainerStatus;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.*;
 import lombok.experimental.Accessors;
 import org.hibernate.annotations.SQLDelete;
@@ -247,4 +248,11 @@ public class Containers extends MultiTenancy {
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "containerId")
     private List<Packing> packsList;
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(name = "shipments_containers_mapping",
+            joinColumns = @JoinColumn(name = "container_id"),
+            inverseJoinColumns = @JoinColumn(name = "shipment_id"))
+    @JsonIgnoreProperties("containersList")
+    private List<ShipmentDetails> shipmentsList;
 }

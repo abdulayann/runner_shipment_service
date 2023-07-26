@@ -44,7 +44,8 @@ public class AuthFilter implements Filter {
             "/configuration/ui",
             "/configuration/security",
             "/swagger-ui.html",
-            "/webjars/**"};
+            "/webjars/**",
+            "/api/v2/enums/**"};
 
     protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
         return Arrays.stream(ignoredPaths)
@@ -81,6 +82,7 @@ public class AuthFilter implements Filter {
         }
         log.debug("Auth Successful, username:-{},tenantId:-{}", user.getUsername(), user.getTenantId());
         UserContext.setUser(user);
+        RequestAuthContext.setAuthToken(authToken);
         TenantContext.setCurrentTenant(user.getTenantId());
         List<String> grantedPermissions = new ArrayList<>();
         for (Map.Entry<String,Boolean> entry : user.getPermissions().entrySet())
