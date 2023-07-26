@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.utils;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.requests.Criteria;
 import com.dpw.runner.shipment.services.commons.requests.FilterCriteria;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
@@ -43,7 +44,7 @@ public class CommonUtils {
             String shipmentType = getParameterFromPermission(SHIPMENT_TYPE_INDEX, parameterList);
             criteriaMap.put(TRANSPORT_MODE, transportMode);
             criteriaMap.put(DIRECTION, direction);
-            criteriaMap.put(SHIPMENT_TYPE, shipmentType);
+            criteriaMap.put(Constants.SHIPMENT, shipmentType);
             HashMap<String, Boolean> criteriaAppenderMap = checkCriteriaAppender(criteriaMap, permissionSet);
 
             if (!transportMode.equals(ALL)) {
@@ -55,8 +56,8 @@ public class CommonUtils {
                         innerFilters.add(constructCriteria(DIRECTION, direction, "=", "and"));
 
                     if (!shipmentType.equals(ALL)) {
-                        if (criteriaAppenderMap.get(SHIPMENT_TYPE))
-                            innerFilters.add(constructCriteria(SHIPMENT_TYPE, shipmentType, "=", "and"));
+                        if (criteriaAppenderMap.get(Constants.SHIPMENT))
+                            innerFilters.add(constructCriteria(Constants.SHIPMENT, shipmentType, "=", "and"));
                     } else {
                         permissionSet.add(transportMode + direction + "*");
                     }
@@ -90,7 +91,7 @@ public class CommonUtils {
 
         String level0 = input.get(TRANSPORT_MODE);
         String level1 = level0.concat(input.get(DIRECTION));
-        String level2 = level1.concat(input.get(SHIPMENT_TYPE));
+        String level2 = level1.concat(input.get(Constants.SHIPMENT));
 
         if (!permissionSet.contains("*")) {
             if (!permissionSet.contains(level0 + "*")) {
@@ -98,7 +99,7 @@ public class CommonUtils {
                 if (!permissionSet.contains(level1 + "*")) {
                     criteriaAppenderMap.put(DIRECTION, true);
                     if (!permissionSet.contains(level2 + "*")) {
-                        criteriaAppenderMap.put(SHIPMENT_TYPE, true);
+                        criteriaAppenderMap.put(Constants.SHIPMENT, true);
                     }
                 }
             }

@@ -50,6 +50,7 @@ public class JobDao implements IJobDao {
         jobRepository.delete(jobs);
     }
 
+    @Override
     public List<Jobs> updateEntityFromShipment(List<Jobs>jobsList, Long shipmentId) throws Exception {
         String responseMsg;
         List<Jobs> responseJobs = new ArrayList<>();
@@ -81,6 +82,7 @@ public class JobDao implements IJobDao {
         }
     }
 
+    @Override
     public List<Jobs> saveEntityFromShipment(List<Jobs> jobRequests, Long shipmentId) {
         List<Jobs> res = new ArrayList<>();
         for(Jobs req : jobRequests){
@@ -93,6 +95,57 @@ public class JobDao implements IJobDao {
                 }
             }
             req.setShipmentId(shipmentId);
+            req = save(req);
+            res.add(req);
+        }
+        return res;
+    }
+
+    @Override
+    public List<Jobs> updateEntityFromConsole(List<Jobs>jobsList, Long consolidationId) throws Exception {
+        String responseMsg;
+        List<Jobs> responseJobs = new ArrayList<>();
+        try {
+            // TODO- Handle Transactions here
+            ListCommonRequest listCommonRequest = constructListCommonRequest("consolidationId", consolidationId, "=");
+            Pair<Specification<Jobs>, Pageable> pair = fetchData(listCommonRequest, Jobs.class);
+            Page<Jobs> routings = findAll(pair.getLeft(), pair.getRight());
+            Map<Long, Jobs> hashMap = routings.stream()
+                    .collect(Collectors.toMap(Jobs::getId, Function.identity()));
+            List<Jobs> jobRequestList = new ArrayList<>();
+            if (jobsList != null && jobsList.size() != 0) {
+                for (Jobs request : jobsList) {
+                    Long id = request.getId();
+                    if (id != null) {
+                        hashMap.remove(id);
+                    }
+                    jobRequestList.add(request);
+                }
+                responseJobs = saveEntityFromConsole(jobRequestList, consolidationId);
+            }
+            deleteJobs(hashMap);
+            return responseJobs;
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
+            log.error(responseMsg, e);
+            throw new Exception(e);
+        }
+    }
+
+    @Override
+    public List<Jobs> saveEntityFromConsole(List<Jobs> jobRequests, Long consolidationId) {
+        List<Jobs> res = new ArrayList<>();
+        for(Jobs req : jobRequests){
+            if(req.getId() != null){
+                long id = req.getId();
+                Optional<Jobs> oldEntity = findById(id);
+                if (!oldEntity.isPresent()) {
+                    log.debug("Job is null for Id {}", req.getId());
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
+            }
+            req.setConsolidationId(consolidationId);
             req = save(req);
             res.add(req);
         }

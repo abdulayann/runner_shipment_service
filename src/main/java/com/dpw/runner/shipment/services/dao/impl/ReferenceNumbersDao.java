@@ -50,6 +50,7 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
         referenceNumbersRepository.delete(referenceNumbers);
     }
 
+    @Override
     public List<ReferenceNumbers> updateEntityFromShipment(List<ReferenceNumbers> referenceNumbersList, Long shipmentId) throws Exception {
         String responseMsg;
         List<ReferenceNumbers> responseReferenceNumbers = new ArrayList<>();
@@ -81,6 +82,7 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
         }
     }
 
+    @Override
     public List<ReferenceNumbers> saveEntityFromShipment(List<ReferenceNumbers> referenceNumbersRequests, Long shipmentId) {
         List<ReferenceNumbers> res = new ArrayList<>();
         for(ReferenceNumbers req : referenceNumbersRequests){
@@ -93,6 +95,57 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
                 }
             }
             req.setShipmentId(shipmentId);
+            req = save(req);
+            res.add(req);
+        }
+        return res;
+    }
+
+    @Override
+    public List<ReferenceNumbers> updateEntityFromConsole(List<ReferenceNumbers> referenceNumbersList, Long consolidationId) throws Exception {
+        String responseMsg;
+        List<ReferenceNumbers> responseReferenceNumbers = new ArrayList<>();
+        try {
+            // TODO- Handle Transactions here
+            ListCommonRequest listCommonRequest = constructListCommonRequest("consolidationId", consolidationId, "=");
+            Pair<Specification<ReferenceNumbers>, Pageable> pair = fetchData(listCommonRequest, ReferenceNumbers.class);
+            Page<ReferenceNumbers> routings = findAll(pair.getLeft(), pair.getRight());
+            Map<Long, ReferenceNumbers> hashMap = routings.stream()
+                    .collect(Collectors.toMap(ReferenceNumbers::getId, Function.identity()));
+            List<ReferenceNumbers> referenceNumbersRequests = new ArrayList<>();
+            if (referenceNumbersList != null && referenceNumbersList.size() != 0) {
+                for (ReferenceNumbers request : referenceNumbersList) {
+                    Long id = request.getId();
+                    if (id != null) {
+                        hashMap.remove(id);
+                    }
+                    referenceNumbersRequests.add(request);
+                }
+                responseReferenceNumbers = saveEntityFromConsole(referenceNumbersRequests, consolidationId);
+            }
+            deleteReferenceNumbers(hashMap);
+            return responseReferenceNumbers;
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
+            log.error(responseMsg, e);
+            throw new Exception(e);
+        }
+    }
+
+    @Override
+    public List<ReferenceNumbers> saveEntityFromConsole(List<ReferenceNumbers> referenceNumbersRequests, Long consolidationId) {
+        List<ReferenceNumbers> res = new ArrayList<>();
+        for(ReferenceNumbers req : referenceNumbersRequests){
+            if(req.getId() != null){
+                long id = req.getId();
+                Optional<ReferenceNumbers> oldEntity = findById(id);
+                if (!oldEntity.isPresent()) {
+                    log.debug("Reference number is null for Id {}", req.getId());
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
+            }
+            req.setConsolidationId(consolidationId);
             req = save(req);
             res.add(req);
         }
