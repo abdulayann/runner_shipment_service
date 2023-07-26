@@ -275,12 +275,6 @@ public class ConsolidationService implements IConsolidationService {
                 consolidationDetails.setArrivalDepartureDetails(arrivalDepartureDetails);
             }
 
-            if (request.getContainersList() != null) {
-                List<ContainerRequest> containerRequest = request.getContainersList();
-                List<Containers> containers = containerDao.updateEntityFromShipmentConsole(convertToEntityList(containerRequest, Containers.class));
-                consolidationDetails.setContainersList(containers);
-            }
-
             if(request.getShipmentsList() != null) {
                 List<ShipmentRequest> shipmentRequest = request.getShipmentsList();
                 List<ShipmentDetails> shipmentList = shipmentDao.saveAll(convertToEntityList(shipmentRequest, ShipmentDetails.class));
@@ -288,6 +282,12 @@ public class ConsolidationService implements IConsolidationService {
             }
 
             getConsolidation(consolidationDetails);
+
+            if (request.getContainersList() != null) {
+                List<ContainerRequest> containerRequest = request.getContainersList();
+                List<Containers> containers = containerDao.updateEntityFromShipmentConsole(convertToEntityList(containerRequest, Containers.class), consolidationDetails.getId());
+                consolidationDetails.setContainersList(containers);
+            }
 
             List<PackingRequest> packingRequest = request.getPackingList();
             if (packingRequest != null)
@@ -549,9 +549,11 @@ public class ConsolidationService implements IConsolidationService {
 
         List<ShipmentRequest> updateShipmentRequest = new ArrayList<>();
         List<ShipmentRequest> shipmentRequestList = consolidationDetailsRequest.getShipmentsList();
-        for(ShipmentRequest shipmentRequest : shipmentRequestList) {
-            if(shipmentRequest.getId() != null) {
-                tempShipIds.add(shipmentRequest.getId());
+        if(shipmentRequestList != null && !shipmentRequestList.isEmpty()) {
+            for(ShipmentRequest shipmentRequest : shipmentRequestList) {
+                if(shipmentRequest.getId() != null) {
+                    tempShipIds.add(shipmentRequest.getId());
+                }
             }
         }
 
@@ -563,7 +565,7 @@ public class ConsolidationService implements IConsolidationService {
             entity.setId(oldEntity.get().getId());
             List<Containers> updatedContainers = null;
             if (containerRequestList != null) {
-                updatedContainers = containerDao.updateEntityFromShipmentConsole(convertToEntityList(containerRequestList, Containers.class));
+                updatedContainers = containerDao.updateEntityFromShipmentConsole(convertToEntityList(containerRequestList, Containers.class), entity.getId());
             } else {
                 updatedContainers = oldEntity.get().getContainersList();
             }
@@ -600,31 +602,31 @@ public class ConsolidationService implements IConsolidationService {
                 response.setCarrierDetails(convertToClass(updatedCarrierDetails, CarrierDetailResponse.class));
             }
             if (packingRequestList != null) {
-                List<Packing> updatedPackings = packingDao.updateEntityFromShipment(convertToEntityList(packingRequestList, Packing.class), id);
+                List<Packing> updatedPackings = packingDao.updateEntityFromConsole(convertToEntityList(packingRequestList, Packing.class), id);
                 response.setPackingList(convertToDtoList(updatedPackings, PackingResponse.class));
             }
             if (eventsRequestList != null) {
-                List<Events> updatedEvents = eventDao.updateEntityFromShipment(convertToEntityList(eventsRequestList, Events.class), id);
+                List<Events> updatedEvents = eventDao.updateEntityFromOtherEntity(convertToEntityList(eventsRequestList, Events.class), id, Constants.CONSOLIDATION);
                 response.setEventsList(convertToDtoList(updatedEvents, EventsResponse.class));
             }
             if (fileRepoRequestList != null) {
-                List<FileRepo> updatedFileRepos = fileRepoDao.updateEntityFromShipment(convertToEntityList(fileRepoRequestList, FileRepo.class), id);
+                List<FileRepo> updatedFileRepos = fileRepoDao.updateEntityFromOtherEntity(convertToEntityList(fileRepoRequestList, FileRepo.class), id, Constants.CONSOLIDATION);
                 response.setFileRepoList(convertToDtoList(updatedFileRepos, FileRepoResponse.class));
             }
             if (jobRequestList != null) {
-                List<Jobs> updatedJobs = jobDao.updateEntityFromShipment(convertToEntityList(jobRequestList, Jobs.class), id);
+                List<Jobs> updatedJobs = jobDao.updateEntityFromConsole(convertToEntityList(jobRequestList, Jobs.class), id);
                 response.setJobsList(convertToDtoList(updatedJobs, JobResponse.class));
             }
             if (notesRequestList != null) {
-                List<Notes> updatedNotes = notesDao.updateEntityFromShipment(convertToEntityList(notesRequestList, Notes.class), id);
+                List<Notes> updatedNotes = notesDao.updateEntityFromOtherEntity(convertToEntityList(notesRequestList, Notes.class), id, Constants.CONSOLIDATION);
                 response.setNotesList(convertToDtoList(updatedNotes, NotesResponse.class));
             }
             if (referenceNumbersRequestList != null) {
-                List<ReferenceNumbers> updatedReferenceNumbers = referenceNumbersDao.updateEntityFromShipment(convertToEntityList(referenceNumbersRequestList, ReferenceNumbers.class), id);
+                List<ReferenceNumbers> updatedReferenceNumbers = referenceNumbersDao.updateEntityFromConsole(convertToEntityList(referenceNumbersRequestList, ReferenceNumbers.class), id);
                 response.setReferenceNumbersList(convertToDtoList(updatedReferenceNumbers, ReferenceNumbersResponse.class));
             }
             if (routingsRequestList != null) {
-                List<Routings> updatedRoutings = routingsDao.updateEntityFromShipment(convertToEntityList(routingsRequestList, Routings.class), id);
+                List<Routings> updatedRoutings = routingsDao.updateEntityFromConsole(convertToEntityList(routingsRequestList, Routings.class), id);
                 response.setRoutingsList(convertToDtoList(updatedRoutings, RoutingsResponse.class));
             }
 

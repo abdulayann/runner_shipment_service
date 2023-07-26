@@ -19,7 +19,7 @@ public interface IContainerDao {
 
     void delete(Containers containers);
 
-    List<Containers> updateEntityFromShipmentConsole(List<Containers> containersList) throws Exception;
+    List<Containers> updateEntityFromShipmentConsole(List<Containers> containersList, Long consolidationId) throws Exception;
 
     List<Containers> saveAll(List<Containers> containers);
 }

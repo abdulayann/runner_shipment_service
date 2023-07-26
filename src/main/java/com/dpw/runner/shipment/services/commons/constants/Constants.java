@@ -5,7 +5,6 @@ public class Constants {
     public static final int TRANSPORT_MODE_INDEX = 0;
     public static final String DIRECTION = "direction";
     public static final int DIRECTION_INDEX = 1;
-    public static final String SHIPMENT_TYPE = "shipmentType";
     public static final int SHIPMENT_TYPE_INDEX = 2;
     public static final String DELIMITER = "-";
     public static final String ALL = "ALL";

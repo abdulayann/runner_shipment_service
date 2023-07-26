@@ -60,13 +60,18 @@ public class ContainerDao implements IContainerDao {
         containerRepository.delete(containers);
     }
 
-    public List<Containers> updateEntityFromShipmentConsole(List<Containers> containersList) throws Exception {
+    public List<Containers> updateEntityFromShipmentConsole(List<Containers> containersList, Long consolidationId) throws Exception {
         String responseMsg;
         List<Containers> responseContainers = new ArrayList<>();
         try {
             // TODO- Handle Transactions here
             if (containersList != null && containersList.size() != 0) {
                 List<Containers> containerList = new ArrayList<>(containersList);
+                if(consolidationId != null) {
+                    for (Containers containers: containerList) {
+                        containers.setConsolidationId(consolidationId);
+                    }
+                }
                 responseContainers = saveAll(containerList);
             }
             return responseContainers;

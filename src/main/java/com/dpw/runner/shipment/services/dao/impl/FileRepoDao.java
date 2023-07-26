@@ -1,6 +1,5 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
-import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IFileRepoDao;
@@ -23,7 +22,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.*;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListRequestFromEntityId;
 
 @Repository
 @Slf4j
@@ -56,12 +55,12 @@ public class FileRepoDao implements IFileRepoDao {
         return fileRepoRepository.findByEntityIdAndEntityType(entityId, entityType);
     }
 
-    public List<FileRepo> updateEntityFromShipment(List<FileRepo> fileRepoList, Long shipmentId) throws Exception {
+    public List<FileRepo> updateEntityFromOtherEntity(List<FileRepo> fileRepoList, Long entityId, String entityType) throws Exception {
         String responseMsg;
         List<FileRepo> responseFileRepo = new ArrayList<>();
         try {
             // TODO- Handle Transactions here
-            ListCommonRequest listCommonRequest = constructListRequestFromEntityId(shipmentId, Constants.SHIPMENT_TYPE);
+            ListCommonRequest listCommonRequest = constructListRequestFromEntityId(entityId, entityType);
             Pair<Specification<FileRepo>, Pageable> pair = fetchData(listCommonRequest, FileRepo.class);
             Page<FileRepo> fileRepos = findAll(pair.getLeft(), pair.getRight());
             Map<Long, FileRepo> hashMap = fileRepos.stream()
@@ -75,7 +74,7 @@ public class FileRepoDao implements IFileRepoDao {
                     }
                     fileReposRequestList.add(request);
                 }
-                responseFileRepo = saveEntityFromShipment(fileReposRequestList, shipmentId, Constants.SHIPMENT_TYPE);
+                responseFileRepo = saveEntityFromOtherEntity(fileReposRequestList, entityId, entityType);
             }
             deleteFileRepo(hashMap);
             return responseFileRepo;
@@ -87,7 +86,7 @@ public class FileRepoDao implements IFileRepoDao {
         }
     }
 
-    public List<FileRepo> saveEntityFromShipment(List<FileRepo> fileRepos, Long entityId, String entityType) {
+    public List<FileRepo> saveEntityFromOtherEntity(List<FileRepo> fileRepos, Long entityId, String entityType) {
         List<FileRepo> res = new ArrayList<>();
         for(FileRepo req : fileRepos){
             if(req.getId() != null){
