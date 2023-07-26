@@ -1,6 +1,5 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
-import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.INotesDao;
@@ -23,7 +22,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.*;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListRequestFromEntityId;
 
 @Repository
 @Slf4j
@@ -56,12 +55,12 @@ public class NotesDao implements INotesDao {
         return notesRepository.findByEntityIdAndEntityType(entityId, entityType);
     }
 
-    public List<Notes> updateEntityFromShipment(List<Notes> notesList, Long shipmentId) throws Exception {
+    public List<Notes> updateEntityFromOtherEntity(List<Notes> notesList, Long entityId, String entityType) throws Exception {
         String responseMsg;
         List<Notes> responseNotes = new ArrayList<>();
         try {
             // TODO- Handle Transactions here
-            ListCommonRequest listCommonRequest = constructListRequestFromEntityId(shipmentId, Constants.SHIPMENT_TYPE);
+            ListCommonRequest listCommonRequest = constructListRequestFromEntityId(entityId, entityType);
             Pair<Specification<Notes>, Pageable> pair = fetchData(listCommonRequest, Notes.class);
             Page<Notes> notes = findAll(pair.getLeft(), pair.getRight());
             Map<Long, Notes> hashMap = notes.stream()
@@ -75,7 +74,7 @@ public class NotesDao implements INotesDao {
                     }
                     notesRequestList.add(request);
                 }
-                responseNotes = saveEntityFromShipment(notesRequestList, shipmentId, Constants.SHIPMENT_TYPE);
+                responseNotes = saveEntityFromOtherEntity(notesRequestList, entityId, entityType);
             }
             deleteNotes(hashMap);
             return responseNotes;
@@ -87,7 +86,7 @@ public class NotesDao implements INotesDao {
         }
     }
 
-    public List<Notes> saveEntityFromShipment(List<Notes> notesRequests, Long entityId, String entityType) {
+    public List<Notes> saveEntityFromOtherEntity(List<Notes> notesRequests, Long entityId, String entityType) {
         List<Notes> res = new ArrayList<>();
         for(Notes req : notesRequests){
             if(req.getId() != null){

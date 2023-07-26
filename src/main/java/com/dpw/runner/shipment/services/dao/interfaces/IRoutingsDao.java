@@ -15,4 +15,6 @@ public interface IRoutingsDao {
     void delete(Routings routings);
     List<Routings> updateEntityFromShipment(List<Routings> routingsList, Long shipmentId) throws Exception;
     List<Routings> saveEntityFromShipment(List<Routings> routings, Long shipmentId);
+    List<Routings> updateEntityFromConsole(List<Routings> routingsList, Long consolidationId) throws Exception;
+    List<Routings> saveEntityFromConsole(List<Routings> routings, Long consolidationId);
 }
