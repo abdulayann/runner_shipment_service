@@ -275,12 +275,6 @@ public class ConsolidationService implements IConsolidationService {
                 consolidationDetails.setArrivalDepartureDetails(arrivalDepartureDetails);
             }
 
-            if (request.getContainersList() != null) {
-                List<ContainerRequest> containerRequest = request.getContainersList();
-                List<Containers> containers = containerDao.updateEntityFromShipmentConsole(convertToEntityList(containerRequest, Containers.class));
-                consolidationDetails.setContainersList(containers);
-            }
-
             if(request.getShipmentsList() != null) {
                 List<ShipmentRequest> shipmentRequest = request.getShipmentsList();
                 List<ShipmentDetails> shipmentList = shipmentDao.saveAll(convertToEntityList(shipmentRequest, ShipmentDetails.class));
@@ -288,6 +282,12 @@ public class ConsolidationService implements IConsolidationService {
             }
 
             getConsolidation(consolidationDetails);
+
+            if (request.getContainersList() != null) {
+                List<ContainerRequest> containerRequest = request.getContainersList();
+                List<Containers> containers = containerDao.updateEntityFromShipmentConsole(convertToEntityList(containerRequest, Containers.class), consolidationDetails.getId());
+                consolidationDetails.setContainersList(containers);
+            }
 
             List<PackingRequest> packingRequest = request.getPackingList();
             if (packingRequest != null)
@@ -563,7 +563,7 @@ public class ConsolidationService implements IConsolidationService {
             entity.setId(oldEntity.get().getId());
             List<Containers> updatedContainers = null;
             if (containerRequestList != null) {
-                updatedContainers = containerDao.updateEntityFromShipmentConsole(convertToEntityList(containerRequestList, Containers.class));
+                updatedContainers = containerDao.updateEntityFromShipmentConsole(convertToEntityList(containerRequestList, Containers.class), entity.getId());
             } else {
                 updatedContainers = oldEntity.get().getContainersList();
             }

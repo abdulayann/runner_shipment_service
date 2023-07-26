@@ -682,7 +682,7 @@ public class ShipmentService implements IShipmentService {
             entity.setId(oldEntity.get().getId());
             List<Containers> updatedContainers = null;
             if (containerRequestList != null) {
-                updatedContainers = containerDao.updateEntityFromShipmentConsole(convertToEntityList(containerRequestList, Containers.class));
+                updatedContainers = containerDao.updateEntityFromShipmentConsole(convertToEntityList(containerRequestList, Containers.class), null);
             } else {
                 updatedContainers = oldEntity.get().getContainersList();
             }
@@ -1016,7 +1016,7 @@ public class ShipmentService implements IShipmentService {
             entity.setId(oldEntity.get().getId());
             List<Containers> updatedContainers = null;
             if (containerRequestList != null) {
-                updatedContainers = containerDao.updateEntityFromShipmentConsole(convertToEntityList(containerRequestList, Containers.class));
+                updatedContainers = containerDao.updateEntityFromShipmentConsole(convertToEntityList(containerRequestList, Containers.class), null);
             } else {
                 updatedContainers = oldEntity.get().getContainersList();
             }
