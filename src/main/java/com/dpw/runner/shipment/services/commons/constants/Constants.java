@@ -6,8 +6,18 @@ public class Constants {
     public static final String DIRECTION = "direction";
     public static final int DIRECTION_INDEX = 1;
     public static final int SHIPMENT_TYPE_INDEX = 2;
+
+    public static final String IS_DOMESTIC = "isDomestic";
+    public static final String DOMESTIC = "domestic";
+    public static final String INTERNATIONAL = "international";
+    public static final int IS_DOMESTIC_INDEX = 3;
     public static final String DELIMITER = "-";
-    public static final String ALL = "ALL";
+    public static final String SHIPMENT_LIST_PERMISSION = "ShipmentList";
+    public static final String SHIPMENT_RETRIEVE_PERMISSION = "ShipmentRetrive";
+    public static final String CONSOLIDATION_LIST_PERMISSION = "ConsolidationList";
+    public static final String CONSOLIDATION_RETRIEVE_PERMISSION = "ConsolidationRetrive";
+
+    public static final String ALL = "all";
     public static final String BROWSER_TIMEZONE = "browser-timezone";
     public static final String USER_SERVICE_V1 = "v1";
     public static final String USER_SERVICE_MAVANI = "mavani";
