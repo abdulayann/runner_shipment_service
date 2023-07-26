@@ -140,9 +140,9 @@ public class ShipmentService implements IShipmentService {
             Map.entry("TenantName", "DP WORLD LOGISTICS CANADA INC")
     );
     private Map<String, RunnerEntityMapping> tableNames = Map.ofEntries(
-            Map.entry("clientOrgCode", RunnerEntityMapping.builder().tableName("client").dataType(Integer.class).fieldName("orgCode").build()),
-            Map.entry("consignerOrgCode", RunnerEntityMapping.builder().tableName("consigner").dataType(Integer.class).fieldName("orgCode").build()),
-            Map.entry("consigneeOrgCode", RunnerEntityMapping.builder().tableName("consignee").dataType(Integer.class).fieldName("orgCode").build()),
+            Map.entry("clientOrgCode", RunnerEntityMapping.builder().tableName("client").dataType(String.class).fieldName("orgCode").build()),
+            Map.entry("consignerOrgCode", RunnerEntityMapping.builder().tableName("consigner").dataType(String.class).fieldName("orgCode").build()),
+            Map.entry("consigneeOrgCode", RunnerEntityMapping.builder().tableName("consignee").dataType(String.class).fieldName("orgCode").build()),
             Map.entry("houseBill", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).fieldName("houseBill").build()),
             Map.entry("hblType", RunnerEntityMapping.builder().tableName("additionalDetails").dataType(String.class).fieldName("hblType").build()),
             Map.entry("transportMode", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).fieldName("transportMode").build()),
