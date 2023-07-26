@@ -549,9 +549,11 @@ public class ConsolidationService implements IConsolidationService {
 
         List<ShipmentRequest> updateShipmentRequest = new ArrayList<>();
         List<ShipmentRequest> shipmentRequestList = consolidationDetailsRequest.getShipmentsList();
-        for(ShipmentRequest shipmentRequest : shipmentRequestList) {
-            if(shipmentRequest.getId() != null) {
-                tempShipIds.add(shipmentRequest.getId());
+        if(shipmentRequestList != null && !shipmentRequestList.isEmpty()) {
+            for(ShipmentRequest shipmentRequest : shipmentRequestList) {
+                if(shipmentRequest.getId() != null) {
+                    tempShipIds.add(shipmentRequest.getId());
+                }
             }
         }
 
