@@ -4,5 +4,5 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import org.springframework.http.ResponseEntity;
 
 public interface IShipmentSettingsService extends ICommonService{
-
+    ResponseEntity<?> uploadTemplate(CommonRequestModel commonRequestModel);
 }

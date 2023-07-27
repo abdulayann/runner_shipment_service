@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.DocumentService.DocumentService;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.FileRepoConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
@@ -255,8 +256,7 @@ public class FileRepoService implements IFileRepoService {
         List<IRunnerResponse> responseBodyList = new ArrayList<>();
         for (var file: files) {
             String filename = file.getOriginalFilename();
-            // TODO this tenant Id will be fetched from user
-            Integer tenantId = 1;
+            Integer tenantId = UserContext.getUser().TenantId;
             String path = tenantId.toString() + "/" + entityType + "/" + entityId.toString() + "/" + UUID.randomUUID().toString();
             ResponseEntity<UploadDocumentResponse> responseBody;
             try {

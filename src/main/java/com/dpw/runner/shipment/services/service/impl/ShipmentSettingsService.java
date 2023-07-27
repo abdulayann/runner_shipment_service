@@ -1,13 +1,17 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import com.dpw.runner.shipment.services.DocumentService.DocumentService;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.commons.constants.ShipmentSettingsConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
 import com.dpw.runner.shipment.services.dto.request.ShipmentSettingRequest;
+import com.dpw.runner.shipment.services.dto.request.TemplateUploadRequest;
 import com.dpw.runner.shipment.services.dto.response.ShipmentSettingsDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.TemplateUploadResponse;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
@@ -20,6 +24,7 @@ import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
@@ -39,6 +44,8 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
 
     @Autowired
     private IShipmentSettingsDao shipmentSettingsDao;
+    @Autowired
+    private DocumentService documentService;
 
     @Autowired
     private ModelMapper modelMapper;
@@ -247,5 +254,46 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
             responseList.add(convertEntityToDto(shipmentSettingsDetail));
         });
         return responseList;
+    }
+
+    @Override
+    public ResponseEntity<?> uploadTemplate(CommonRequestModel commonRequestModel) {
+        TemplateUploadRequest templateUploadRequest = (TemplateUploadRequest) commonRequestModel.getData();
+        if(templateUploadRequest.getPreviousFileId() == null || templateUploadRequest.getPreviousFileId().length() == 0) {
+            try {
+                ResponseEntity<TemplateUploadResponse> response = documentService.CreateDocumentTemplate(templateUploadRequest);
+                if(response.getStatusCode() != HttpStatus.CREATED) {
+                    LoggerHelper.error("Error While Uploading Template To Document Service");
+                    String responseMsg = ShipmentSettingsConstants.UPLOAD_TEMPLATE_FAILED + " : " + response.getBody();
+                    return ResponseHelper.buildFailedResponse(responseMsg);
+                }
+                return ResponseHelper.buildSuccessResponse(response.getBody());
+            }
+            catch (Exception e){
+                LoggerHelper.error("Error While Uploading Template To Document Service");
+                String responseMsg = e.getMessage() != null ? e.getMessage()
+                        : ShipmentSettingsConstants.UPLOAD_TEMPLATE_FAILED;
+                return ResponseHelper.buildFailedResponse(responseMsg);
+            }
+        }
+        else{
+            try {
+                ResponseEntity<?> response = documentService.UpdateDocumentTemplate(templateUploadRequest);
+                if(response.getStatusCode() != HttpStatus.OK){
+                    LoggerHelper.error("Error While Updating Template To Document Service");
+                    String responseMsg = ShipmentSettingsConstants.UPDATE_TEMPLATE_FAILED + " : " + response.getBody();
+                    return ResponseHelper.buildFailedResponse(responseMsg);
+                }
+                TemplateUploadResponse templateUploadResponse = TemplateUploadResponse.builder()
+                        .templateId(templateUploadRequest.getPreviousFileId()).build();
+                return ResponseHelper.buildSuccessResponse(templateUploadResponse);
+            } catch (Exception e) {
+                LoggerHelper.error("Error While Uploading Template To Document Service");
+                String responseMsg = e.getMessage() != null ? e.getMessage()
+                        : ShipmentSettingsConstants.UPDATE_TEMPLATE_FAILED;
+                log.error(responseMsg, e);
+                return ResponseHelper.buildFailedResponse(responseMsg);
+            }
+        }
     }
 }
