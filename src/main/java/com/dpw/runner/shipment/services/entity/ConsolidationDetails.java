@@ -283,4 +283,8 @@ public class ConsolidationDetails extends MultiTenancy {
             joinColumns = @JoinColumn(name = "consolidation_id"),
             inverseJoinColumns = @JoinColumn(name = "shipment_id"))
     private List<ShipmentDetails> shipmentsList;
+
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "entityId")
+    @Where(clause = "entity_type = 'CONSOLIDATION_ADDRESSES'")
+    private List<Parties> consolidationAddresses;
 }
