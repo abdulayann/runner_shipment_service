@@ -90,4 +90,9 @@ public interface IMasterDataService {
 
     DependentServiceResponse fetchUserData(Object request);
 
+    DependentServiceResponse fetchGridColorCodeData(Object request);
+    DependentServiceResponse createGridColorCodeData(Object request);
+    DependentServiceResponse updateGridColorCodeData(Object request);
+
+
 }

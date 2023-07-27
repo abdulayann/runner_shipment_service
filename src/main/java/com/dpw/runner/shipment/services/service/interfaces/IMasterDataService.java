@@ -77,4 +77,10 @@ public interface IMasterDataService extends ICommonService{
     ResponseEntity<?> listUnlocation(CommonRequestModel commonRequestModel);
 
     ResponseEntity<?> listUsers(CommonRequestModel commonRequestModel);
+
+    ResponseEntity<?> createGridColorCode(CommonRequestModel commonRequestModel);
+
+    ResponseEntity<?> updateGridColorCode(CommonRequestModel commonRequestModel);
+
+    ResponseEntity<?> listGridColorCode(CommonRequestModel commonRequestModel);
 }

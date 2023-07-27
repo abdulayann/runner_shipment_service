@@ -286,4 +286,7 @@ public class ShipmentDetails extends MultiTenancy {
             joinColumns = @JoinColumn(name = "shipment_id"),
             inverseJoinColumns = @JoinColumn(name = "consolidation_id"))
     private List<ConsolidationDetails> consolidationList;
+
+    @Column(name = "job_status")
+    private String jobStatus;
 }

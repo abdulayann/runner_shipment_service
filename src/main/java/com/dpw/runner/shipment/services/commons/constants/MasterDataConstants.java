@@ -19,8 +19,5 @@ public class MasterDataConstants {
     public static final String ORGANIZATION = "/organization";
     public static final String UNLOCATION = "/unlocation";
     public static final String USER = "/users";
-
-
-
-
+    public static final String GRID_COLOR_CODE = "/grid-color";
 }
