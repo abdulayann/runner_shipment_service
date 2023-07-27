@@ -30,7 +30,7 @@ public class DbAccessHelper {
         tableNames = tableName;
         Pageable pages;
         if (request.getSortRequest() != null && request.getFilterCriteria() != null && request.getFilterCriteria().size() == 0) {
-            Sort sortRequest = Sort.by(tableNames.get(request.getSortRequest().getFieldName()) + "." + request.getSortRequest().getFieldName());
+            Sort sortRequest = Sort.by(tableNames.get(request.getSortRequest().getFieldName()).getTableName() + "." + getFieldName(request.getSortRequest().getFieldName()));
             sortRequest = sortRequest.descending();
             pages = PageRequest.of(request.getPageNo() - 1, request.getPageSize(), sortRequest);
         } else {
@@ -140,67 +140,72 @@ public class DbAccessHelper {
             if (!query.getResultType().isAssignableFrom(Long.class) && sortRequest != null && (query.getOrderList() == null || query.getOrderList().size() == 0)) {
                 if (tableNames.get(sortRequest.getFieldName()).getTableName().equalsIgnoreCase(className)) {
                     if (sortRequest.getOrder().equalsIgnoreCase("DESC")) {
-                        query.orderBy(Arrays.asList(criteriaBuilder.desc(root.get(sortRequest.getFieldName()))));
+                        query.orderBy(Arrays.asList(criteriaBuilder.desc(root.get(getFieldName(sortRequest.getFieldName())))));
                     } else {
-                        query.orderBy(Arrays.asList(criteriaBuilder.asc(root.get(sortRequest.getFieldName()))));
+                        query.orderBy(Arrays.asList(criteriaBuilder.asc(root.get(getFieldName(sortRequest.getFieldName())))));
                     }
                 } else {
                     if (sortRequest.getOrder().equalsIgnoreCase("DESC")) {
-                        query.orderBy(Arrays.asList(criteriaBuilder.desc(((Join) root.fetch(tableNames.get(sortRequest.getFieldName()).getTableName(), JoinType.LEFT)).get(sortRequest.getFieldName()))));
+                        query.orderBy(Arrays.asList(criteriaBuilder.desc(((Join) root.fetch(tableNames.get(sortRequest.getFieldName()).getTableName(), JoinType.LEFT)).get(getFieldName(sortRequest.getFieldName())))));
                     } else {
-                        query.orderBy(Arrays.asList(criteriaBuilder.asc(((Join) root.fetch(tableNames.get(sortRequest.getFieldName()).getTableName(), JoinType.LEFT)).get(sortRequest.getFieldName()))));
+                        query.orderBy(Arrays.asList(criteriaBuilder.asc(((Join) root.fetch(tableNames.get(sortRequest.getFieldName()).getTableName(), JoinType.LEFT)).get(getFieldName(sortRequest.getFieldName())))));
                     }
                 }
             }
-            return createSpecification(tableNames.get(input.getFieldName()).getDataType(), input, path, criteriaBuilder);
+            return createSpecification(tableNames.get(input.getFieldName()).getDataType(), input, path, criteriaBuilder, getFieldName(input.getFieldName()));
 
         };
     }
 
-    private static <T> Predicate createSpecification(Class dataType, Criteria input, Path path, CriteriaBuilder criteriaBuilder) {
+    private static String getFieldName(String key) {
+        return tableNames.get(key).getFieldName() == null ? key : tableNames.get(key).getFieldName();
+    }
+
+
+    private static <T> Predicate createSpecification(Class dataType, Criteria input, Path path, CriteriaBuilder criteriaBuilder, String fieldName) {
         switch (input.getOperator()) {
             case "=":
                 if (dataType.isAssignableFrom(String.class)) {
-                    return criteriaBuilder.equal(criteriaBuilder.lower(path.get(input.getFieldName())), (((String) input.getValue()).toLowerCase()));
+                    return criteriaBuilder.equal(criteriaBuilder.lower(path.get(fieldName)), (((String) input.getValue()).toLowerCase()));
                 }
-                return criteriaBuilder.equal(path.get(input.getFieldName()), input.getValue());
+                return criteriaBuilder.equal(path.get(fieldName), input.getValue());
 
             case "!=":
                 if (dataType.isAssignableFrom(String.class)) {
-                    return criteriaBuilder.notEqual(criteriaBuilder.lower(path.get(input.getFieldName())), (((String) input.getValue()).toLowerCase()));
+                    return criteriaBuilder.notEqual(criteriaBuilder.lower(path.get(fieldName)), (((String) input.getValue()).toLowerCase()));
                 }
-                return criteriaBuilder.notEqual(path.get(input.getFieldName()), input.getValue());
+                return criteriaBuilder.notEqual(path.get(fieldName), input.getValue());
 
             case ">":
                 if (dataType.isAssignableFrom(String.class)) {
-                    return criteriaBuilder.greaterThan(path.get(input.getFieldName()), (String) input.getValue());
+                    return criteriaBuilder.greaterThan(path.get(fieldName), (String) input.getValue());
                 }
                 if (dataType.isAssignableFrom(Date.class)) {
-                    return criteriaBuilder.greaterThan(path.get(input.getFieldName()), covertStringToData((String) input.getValue(), "yyyy-MM-dd"));
+                    return criteriaBuilder.greaterThan(path.get(fieldName), covertStringToData((String) input.getValue(), "yyyy-MM-dd"));
                 }
                 if (dataType.isAssignableFrom(LocalDateTime.class)) {
-                    return criteriaBuilder.greaterThan(path.get(input.getFieldName()), covertStringToLocalDate((String) input.getValue(), "yyyy-MM-dd"));
+                    return criteriaBuilder.greaterThan(path.get(fieldName), covertStringToLocalDate((String) input.getValue(), "yyyy-MM-dd"));
                 }
-                return criteriaBuilder.gt(path.get(input.getFieldName()), (Number) input.getValue());
+                return criteriaBuilder.gt(path.get(fieldName), (Number) input.getValue());
 
             case "<":
                 if (dataType.isAssignableFrom(String.class)) {
-                    return criteriaBuilder.lessThan(path.get(input.getFieldName()), (String) input.getValue());
+                    return criteriaBuilder.lessThan(path.get(fieldName), (String) input.getValue());
                 }
                 if (dataType.isAssignableFrom(Date.class)) {
-                    return criteriaBuilder.lessThan(path.get(input.getFieldName()), covertStringToData((String) input.getValue(), "yyyy-MM-dd"));
+                    return criteriaBuilder.lessThan(path.get(fieldName), covertStringToData((String) input.getValue(), "yyyy-MM-dd"));
                 }
                 if (dataType.isAssignableFrom(LocalDateTime.class)) {
-                    return criteriaBuilder.lessThan(path.get(input.getFieldName()), covertStringToLocalDate((String) input.getValue(), "yyyy-MM-dd"));
+                    return criteriaBuilder.lessThan(path.get(fieldName), covertStringToLocalDate((String) input.getValue(), "yyyy-MM-dd"));
                 }
-                return criteriaBuilder.lt(path.get(input.getFieldName()), (Number) input.getValue());
+                return criteriaBuilder.lt(path.get(fieldName), (Number) input.getValue());
 
             case "LIKE":
-                return criteriaBuilder.like(criteriaBuilder.lower(path.get(input.getFieldName())),
+                return criteriaBuilder.like(criteriaBuilder.lower(path.get(fieldName)),
                         "%" + ((String) input.getValue()).toLowerCase() + "%");
 
             case "IN":
-                return criteriaBuilder.in(path.get(input.getFieldName()))
+                return criteriaBuilder.in(path.get(fieldName))
                         .value(input.getValue());
             default:
                 throw new RuntimeException("Operation not supported yet");
@@ -253,7 +258,7 @@ public class DbAccessHelper {
                     query.orderBy(Arrays.asList(criteriaBuilder.asc(root.get(sortRequest.getFieldName()))));
                 }
             }
-            return createSpecification(dataTypeMap.get(input.getFieldName()), input, path, criteriaBuilder);
+            return createSpecification(dataTypeMap.get(input.getFieldName()), input, path, criteriaBuilder, input.getFieldName());
 
         };
     }

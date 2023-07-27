@@ -270,6 +270,27 @@ public class V1MasterDataImpl implements IMasterDataService {
                 .data(v1DataResponse.entities).numberOfRecords(v1DataResponse.take).totalPages(v1DataResponse.totalCount).build();    }
 
     @Override
+    public DependentServiceResponse fetchGridColorCodeData(Object request) {
+        V1DataResponse v1DataResponse = v1Service.fetchGridColorCodeData(request);
+        return DependentServiceResponse.builder().success(true)
+                .data(v1DataResponse.entities).numberOfRecords(v1DataResponse.take).totalPages(v1DataResponse.totalCount).build();
+    }
+
+    @Override
+    public DependentServiceResponse createGridColorCodeData(Object request) {
+        V1DataResponse v1DataResponse = v1Service.createGridColorCodeData(request);
+        return DependentServiceResponse.builder().success(true)
+                .data(v1DataResponse.entities).numberOfRecords(v1DataResponse.take).totalPages(v1DataResponse.totalCount).build();
+    }
+
+    @Override
+    public DependentServiceResponse updateGridColorCodeData(Object request) {
+        V1DataResponse v1DataResponse = v1Service.updateGridColorCodeData(request);
+        return DependentServiceResponse.builder().success(true)
+                .data(v1DataResponse.entities).numberOfRecords(v1DataResponse.take).totalPages(v1DataResponse.totalCount).build();
+    }
+
+    @Override
     public List<MasterData> fetchByType(MasterDataType masterDataType) {
         return null;
     }

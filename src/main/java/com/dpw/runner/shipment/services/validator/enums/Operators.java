@@ -5,7 +5,8 @@ public enum Operators {
     LESSER_THAN("lesser-than"),
     LESSER_THAN_EQUALS("lesser-than-equals"),
     EQUALS("equals"),
-    NOT_EQUALS("not-equals");
+    NOT_EQUALS("not-equals"),
+    IN("in");
     private final String value;
 
     Operators(String value) {

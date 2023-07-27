@@ -217,6 +217,21 @@ public class MasterDataImpl implements IMasterDataService {
     }
 
     @Override
+    public ResponseEntity<?> createGridColorCode(CommonRequestModel commonRequestModel) {
+        return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().createGridColorCodeData(commonRequestModel.getDependentData()));
+    }
+
+    @Override
+    public ResponseEntity<?> updateGridColorCode(CommonRequestModel commonRequestModel) {
+        return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().updateGridColorCodeData(commonRequestModel.getDependentData()));
+    }
+
+    @Override
+    public ResponseEntity<?> listGridColorCode(CommonRequestModel commonRequestModel) {
+        return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().fetchGridColorCodeData(commonRequestModel.getDependentData()));
+    }
+
+    @Override
     public CompletableFuture<ResponseEntity<?>> listAsync(CommonRequestModel commonRequestModel) {
         return null;
     }

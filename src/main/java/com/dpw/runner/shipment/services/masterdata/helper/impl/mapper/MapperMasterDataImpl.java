@@ -233,4 +233,19 @@ public class MapperMasterDataImpl implements IMasterDataService {
         return null;
     }
 
+    @Override
+    public DependentServiceResponse fetchGridColorCodeData(Object request) {
+        return null;
+    }
+
+    @Override
+    public DependentServiceResponse createGridColorCodeData(Object request) {
+        return null;
+    }
+
+    @Override
+    public DependentServiceResponse updateGridColorCodeData(Object request) {
+        return null;
+    }
+
 }

@@ -293,5 +293,6 @@ public class ShipmentDetails extends MultiTenancy {
     @Where(clause = "entity_type = 'SHIPMENT_ADDRESSES'")
     private List<Parties> shipmentAddresses;
 
-
+    @Column(name = "job_status")
+    private String jobStatus;
 }
