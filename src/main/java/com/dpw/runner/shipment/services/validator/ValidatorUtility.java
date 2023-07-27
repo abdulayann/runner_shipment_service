@@ -137,6 +137,14 @@ public class ValidatorUtility {
                     case ValidatorConstants.COMPARE:
                         errors.addAll(validateCompare(jsonObject, schemaObject.getJsonObject(field), field, jsonMap));
                         break;
+
+                    case ValidatorConstants.CONDITIONAL_COMPARE:
+                        errors.addAll(validateConditionalCompare(jsonObject, schemaObject.getJsonObject(field), field, jsonMap));
+                        break;
+
+                    case ValidatorConstants.ARRAY_PROPERTIES:
+                        errors.addAll(validateArrayProperties(jsonObject, fieldSchema.getJsonObject(ValidatorConstants.ARRAY_PROPERTIES), field, jsonMap));
+                        break;
                 }
 
                 /** Whenever fails-on-first will be enabled, rest of the validations will not be checked */
@@ -526,5 +534,151 @@ public class ValidatorUtility {
         return true;
     }
 
+    /**
+     * Validating conditional-comparison
+     * Supported validations:
+     *      1. Data-type supported: String, number & date
+     *      2. Operations supported: Equals, not-equals & in
+     */
+    private Set<String> validateConditionalCompare(JsonObject jsonObject, JsonObject jsonSchema, String at, Map<String, Object> jsonMap) {
+        Set<String> errors = new LinkedHashSet();
+        JsonArray conditionalArray = jsonSchema.getJsonArray(ValidatorConstants.CONDITIONAL_COMPARE);
+        JsonValue fieldValue = jsonObject.get(at);
+        Boolean isValid = false;
+        for (JsonValue _schema : conditionalArray) {
+            JsonObject schema = _schema.asJsonObject();
+            JsonArray compare = schema.getJsonArray(ValidatorConstants.COMPARE);
+            switch (fieldValue.getValueType()) {
+                case STRING:
+                    String fieldValueString = jsonObject.getString(at);
+                    if (StringUtility.isNotEmpty(fieldValueString) && fieldValueString.equals(schema.getString(ValidatorConstants.VALUE)))
+                        isValid = validateAdditionalCompare(jsonObject, compare, at, jsonMap);
+                    break;
+
+                case NUMBER:
+                    Integer fieldValueInteger = jsonObject.getInt(at);
+                    if (fieldValueInteger != null && fieldValueInteger == schema.getInt(ValidatorConstants.VALUE))
+                        isValid = validateAdditionalCompare(jsonObject, compare, at, jsonMap);
+                    break;
+
+            }
+
+            if (isValid) {
+                return errors;
+            }
+        }
+        errors.add(String.format(ErrorConstants.INVALID_CONDITIONAL_COMPARISON, at));
+        return errors;
+    }
+
+    private Boolean validateAdditionalCompare(JsonObject jsonObject, JsonArray jsonArray, String at, Map jsonMap) {
+        for (JsonValue current : jsonArray) {
+            JsonObject schemaObject = (JsonObject) current;
+            if (schemaObject.containsKey(ValidatorConstants.COMPARE_TO) && schemaObject.containsKey(ValidatorConstants.OPERATOR) && schemaObject.containsKey(ValidatorConstants.VALUE)) {
+                String compareWith = schemaObject.getString(ValidatorConstants.COMPARE_TO);
+                JsonValue value = schemaObject.get(ValidatorConstants.VALUE);
+                JsonValue compareWithValue = (JsonValue) jsonMap.get(compareWith);
+                if (compareWithValue != null) {
+                    Operators operator = Operators.fromValue(schemaObject.getString(ValidatorConstants.OPERATOR));
+
+                    switch (compareWithValue.getValueType()) {
+                        case STRING:
+                            String fieldValueString = String.valueOf(jsonMap.get(compareWith)).replaceAll("\"", "");
+                            switch (operator) {
+                                case IN:
+                                    JsonArray enumList = schemaObject.getJsonArray(ValidatorConstants.VALUE);
+                                    Set enumStringList = enumList.stream().map(c -> c.toString().replaceAll("\"", "")).collect(Collectors.toSet());
+                                    if (!enumStringList.isEmpty() && !enumStringList.contains(fieldValueString))
+                                        return false;
+                                    break;
+
+                                case EQUALS:
+                                    String compareToValue = schemaObject.getString(ValidatorConstants.VALUE);
+                                    if (!fieldValueString.equals(compareToValue))
+                                        return false;
+                                    break;
+
+                                case NOT_EQUALS:
+                                    String compareToValue1 = schemaObject.getString(ValidatorConstants.VALUE);
+                                    if (fieldValueString.equals(compareToValue1))
+                                        return false;
+                                    break;
+
+                            }
+                            break;
+
+                        case NUMBER:
+                            Integer fieldValueInteger = Integer.parseInt(String.valueOf(jsonMap.get(compareWith)));
+                            switch (operator) {
+                                case IN:
+                                    JsonArray enumList = schemaObject.getJsonArray(ValidatorConstants.VALUE);
+                                    Set enumIntegerList = enumList.stream().map(c -> Integer.parseInt(c.toString())).collect(Collectors.toSet());
+                                    if (!enumIntegerList.isEmpty() && !enumIntegerList.contains(fieldValueInteger))
+                                        return false;
+
+                                    break;
+                                case EQUALS:
+                                    Integer compareToValue = schemaObject.getInt(ValidatorConstants.VALUE);
+                                    if (compareToValue != fieldValueInteger)
+                                        return false;
+                                    break;
+
+                                case NOT_EQUALS:
+                                    Integer compareToValue1 = schemaObject.getInt(ValidatorConstants.VALUE);
+                                    if (compareToValue1 == fieldValueInteger)
+                                        return false;
+                                    break;
+
+                            }
+                            break;
+
+                    }
+                }
+
+            }
+
+        }
+
+        return true;
+    }
+
+    /**
+     * Validating array-properties
+     * Supported validations:
+     *      1. Array: Type, Min-size, Max-size, Unique (property) * *
+     *      2. Array properties: All root level field validation*
+     */
+    private Set<String> validateArrayProperties(JsonObject jsonObject, JsonObject jsonSchema, String at, Map jsonMap) {
+        Set<String> errors = new LinkedHashSet();
+        JsonArray fieldValueArray = jsonObject.getJsonArray(at);
+
+        for (String key : jsonSchema.keySet()) {
+            switch (key) {
+
+                case ValidatorConstants.PROPERTIES:
+                    for (JsonValue value : fieldValueArray)
+                        errors.addAll(validateFields(value.asJsonObject(), jsonSchema.getJsonObject(ValidatorConstants.PROPERTIES), jsonMap, false));
+                    break;
+
+                case ValidatorConstants.UNIQUE:
+                    for (JsonValue value :  jsonSchema.getJsonArray(ValidatorConstants.UNIQUE)) {
+                        String uniqueKey = value.toString().replaceAll("\"", "");
+                        Set<JsonValue> set = new HashSet<>();
+
+                        for (JsonValue currentValue : fieldValueArray) {
+                            JsonValue _value = currentValue.asJsonObject().get(uniqueKey);
+
+                            if (_value != null && set.contains(_value))
+                                errors.add(String.format(ErrorConstants.INVALID_UNIQUE_CONSTRAINT, uniqueKey, at));
+                            set.add(_value);
+
+                        }
+                    }
+                    break;
+            }
+
+        }
+        return errors;
+    }
 
 }

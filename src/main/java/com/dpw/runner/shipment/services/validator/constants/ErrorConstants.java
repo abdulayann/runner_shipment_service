@@ -11,5 +11,7 @@ public class ErrorConstants {
     public static final String INVALID_MIN_VALUE_VALIDATION = "Invalid minValue for field: %s, given value is: %s, but expected minValue was: %s.";
     public static final String INVALID_MAX_VALUE_VALIDATION = "Invalid maxValue for field: %s, given value is: %s, but expected maxValue was: %s.";
     public static final String INVALID_ENUM_VALIDATION = "Enum validation failed for field: %s with value provided: %s. Supported values are: %s.";
+    public static final String INVALID_CONDITIONAL_COMPARISON = "No Conditional comparison met for field: %s, please check dependent data.";
+    public static final String INVALID_UNIQUE_CONSTRAINT = "Unique constraint failed for property: %s in field: %s.";
 
 }

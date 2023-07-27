@@ -14,5 +14,8 @@ public class ValidatorConstants {
     public static final String ENUM = "enum";
     public static final String OPERATOR = "operator";
     public static final String COMPARE_TO = "compareTo";
-
+    public static final String CONDITIONAL_COMPARE = "conditional-compare";
+    public static final String VALUE = "value";
+    public static final String ARRAY_PROPERTIES = "array-properties";
+    public static final String UNIQUE = "unique";
 }
