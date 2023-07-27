@@ -12,4 +12,6 @@ import java.util.Optional;
 public interface IValidationsRepository extends MultiTenancyRepository<Validations> {
 
     Optional<List<Validations>> findByLifecycleHookAndEntity(LifecycleHooks lifecycleHook, String entity);
+    Optional<Validations> findById(Long id);
+    List<Validations> findAll();
 }

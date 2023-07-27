@@ -1,12 +1,16 @@
 package com.dpw.runner.shipment.services.repository.interfaces;
 
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancyRepository;
 import com.dpw.runner.shipment.services.entity.TruckDriverDetails;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface ITruckDriverDetailsRepository extends JpaRepository<TruckDriverDetails, Long> {
+import java.util.List;
+import java.util.Optional;
+
+public interface ITruckDriverDetailsRepository extends MultiTenancyRepository<TruckDriverDetails> {
     Page<TruckDriverDetails> findAll(Specification<TruckDriverDetails> spec, Pageable pageable);
-
+    Optional<TruckDriverDetails> findById(Long id);
+    List<TruckDriverDetails> findAll();
 }

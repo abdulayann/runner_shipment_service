@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.repository.interfaces;
 
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancyRepository;
 import com.dpw.runner.shipment.services.entity.ELDetails;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -12,12 +13,12 @@ import java.util.Optional;
 
 import static com.dpw.runner.shipment.services.commons.constants.DBQueryConstants.ELDETAILS_SELECT_ELNUMBERS_QUERY;
 
-public interface IELDetailsRepository extends JpaRepository<ELDetails, Long> {
+public interface IELDetailsRepository extends MultiTenancyRepository<ELDetails> {
     Page<ELDetails> findAll(Specification<ELDetails> spec, Pageable pageable);
-
-    @Query(ELDETAILS_SELECT_ELNUMBERS_QUERY)
     Optional<ELDetails> findByElNumber(String elNumber);
 
     List<ELDetails> findByShipmentId(Long shipmentId);
+    Optional<ELDetails> findById(Long id);
+    List<ELDetails> findAll();
 
 }

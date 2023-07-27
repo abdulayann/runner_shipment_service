@@ -226,6 +226,11 @@
             <artifactId>opencsv</artifactId>
             <version>5.5.2</version> <!-- Use the latest version available -->
         </dependency>
+        <dependency>
+            <groupId>com.azure</groupId>
+            <artifactId>azure-messaging-servicebus</artifactId>
+            <version>7.13.3</version>
+        </dependency>
 
     </dependencies>
 
