@@ -1,5 +1,9 @@
 package com.dpw.runner.shipment.services.service.v1;
 
+import com.dpw.runner.shipment.services.dto.v1.request.SendConsolidationRequest;
+import com.dpw.runner.shipment.services.dto.v1.request.SendShipmentRequest;
+import com.dpw.runner.shipment.services.dto.v1.response.SendEntityResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.TenantIdResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 
 public interface IV1Service {
@@ -87,5 +91,10 @@ public interface IV1Service {
     V1DataResponse fetchGridColorCodeData(Object request);
     V1DataResponse createGridColorCodeData(Object request);
     V1DataResponse updateGridColorCodeData(Object request);
+    V1DataResponse listCousinBranches(Object request);
+    V1DataResponse listCousinBranchesWithoutCurrent(Object request);
+    TenantIdResponse tenantByGuid(Object request);
+    SendEntityResponse sendConsolidationTask(SendConsolidationRequest request);
+    SendEntityResponse sendShipmentTask(SendShipmentRequest request);
 
 }

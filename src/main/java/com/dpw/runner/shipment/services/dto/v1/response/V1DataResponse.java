@@ -23,4 +23,6 @@ public class V1DataResponse {
     public int take;
     @JsonProperty("Error")
     public Object error;
+    @JsonProperty("EntityId")
+    public Long entityId;
 }

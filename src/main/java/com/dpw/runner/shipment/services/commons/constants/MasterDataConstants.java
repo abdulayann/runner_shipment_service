@@ -20,4 +20,9 @@ public class MasterDataConstants {
     public static final String UNLOCATION = "/unlocation";
     public static final String USER = "/users";
     public static final String GRID_COLOR_CODE = "/grid-color";
+    public static final String TENANT = "/tenant";
+    public static final String LIST_COUSIN_BRANCH = "/listCousinBranches";
+    public static final String LIST_COUSIN_BRANCH_WITHOUT_CURRENT = "/listCousinWithoutCurrent";
+
+
 }

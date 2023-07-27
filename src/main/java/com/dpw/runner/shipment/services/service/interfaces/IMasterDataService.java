@@ -83,4 +83,7 @@ public interface IMasterDataService extends ICommonService{
     ResponseEntity<?> updateGridColorCode(CommonRequestModel commonRequestModel);
 
     ResponseEntity<?> listGridColorCode(CommonRequestModel commonRequestModel);
+
+    ResponseEntity<?> listCousinBranches(CommonRequestModel commonRequestModel);
+    ResponseEntity<?> listCousinBranchesWithoutCurrent(CommonRequestModel commonRequestModel);
 }

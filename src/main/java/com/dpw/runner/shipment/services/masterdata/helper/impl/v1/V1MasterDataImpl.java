@@ -1,6 +1,10 @@
 package com.dpw.runner.shipment.services.masterdata.helper.impl.v1;
 
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
+import com.dpw.runner.shipment.services.dto.v1.request.SendConsolidationRequest;
+import com.dpw.runner.shipment.services.dto.v1.request.SendShipmentRequest;
+import com.dpw.runner.shipment.services.dto.v1.response.SendEntityResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.TenantIdResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.masterdata.dto.MasterData;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
@@ -288,6 +292,41 @@ public class V1MasterDataImpl implements IMasterDataService {
         V1DataResponse v1DataResponse = v1Service.updateGridColorCodeData(request);
         return DependentServiceResponse.builder().success(true)
                 .data(v1DataResponse.entities).numberOfRecords(v1DataResponse.take).totalPages(v1DataResponse.totalCount).build();
+    }
+
+    @Override
+    public DependentServiceResponse listCousinBranches(Object request) {
+        V1DataResponse v1DataResponse = v1Service.listCousinBranches(request);
+        return DependentServiceResponse.builder().success(true)
+                .data(v1DataResponse.entities).numberOfRecords(v1DataResponse.take).totalPages(v1DataResponse.totalCount).build();
+    }
+
+    @Override
+    public DependentServiceResponse listCousinBranchesWithoutCurrent(Object request) {
+        V1DataResponse v1DataResponse = v1Service.listCousinBranchesWithoutCurrent(request);
+        return DependentServiceResponse.builder().success(true)
+                .data(v1DataResponse.entities).numberOfRecords(v1DataResponse.take).totalPages(v1DataResponse.totalCount).build();
+    }
+
+    @Override
+    public DependentServiceResponse tenantByGuid(Object request) {
+        TenantIdResponse response = v1Service.tenantByGuid(request);
+        return DependentServiceResponse.builder().success(true)
+                .data(response).build();
+    }
+
+    @Override
+    public DependentServiceResponse sendConsolidationTask(SendConsolidationRequest request) {
+        SendEntityResponse response = v1Service.sendConsolidationTask(request);
+        return DependentServiceResponse.builder().success(true)
+                .data(response).build();
+    }
+
+    @Override
+    public DependentServiceResponse sendShipmentTask(SendShipmentRequest request) {
+        SendEntityResponse response = v1Service.sendShipmentTask(request);
+        return DependentServiceResponse.builder().success(true)
+                .data(response).build();
     }
 
     @Override
