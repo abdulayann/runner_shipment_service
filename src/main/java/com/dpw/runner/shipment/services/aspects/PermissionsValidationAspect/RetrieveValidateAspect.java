@@ -51,7 +51,7 @@ public class RetrieveValidateAspect {
                     validatedFields.add(direction);
                 if(validShipmentType.equals(ALL) || shipmentType.equals(validShipmentType))
                     validatedFields.add(shipmentType);
-                if(!validDomesticType.equals(ALL) && domesticType.equals(validDomesticType.equals(DOMESTIC)))
+                if(validDomesticType.equals(ALL) || domesticType.equals(validDomesticType.equals(DOMESTIC)))
                     validatedFields.add(domesticType.toString());
 
                 if(validatedFields.size() == retrieveValidationFields)
