@@ -65,9 +65,10 @@ public class ShipmentDao implements IShipmentDao {
                 shipmentDetails.setConsolidationList(oldEntity.get().getConsolidationList());
             }
         }
+        shipmentDetails = shipmentRepository.save(shipmentDetails);
         EventMessage eventMessage = EventMessage.builder().messageType(Constants.SERVICE).entity(Constants.SHIPMENT).request(shipmentDetails).build();
         sbUtils.sendMessagesToTopic(isbProperties, azureServiceBusTopic.getTopic(), Arrays.asList(new ServiceBusMessage(jsonHelper.convertToJson(eventMessage))));
-        return shipmentRepository.save(shipmentDetails);
+        return shipmentDetails;
     }
 
     public List<ShipmentDetails> saveAll(List<ShipmentDetails> shipments)
