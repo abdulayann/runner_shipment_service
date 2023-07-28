@@ -15,5 +15,8 @@ import java.util.Optional;
 public interface IArrivalDepartureDetailsRepository extends MultiTenancyRepository<ArrivalDepartureDetails> {
     List<ArrivalDepartureDetails> findAll();
     Page<ArrivalDepartureDetails> findAll(Specification<ArrivalDepartureDetails> spec, Pageable pageable);
-    Optional<ArrivalDepartureDetails> findById(Long id);
+    default Optional<ArrivalDepartureDetails> findById(Long id) {
+        Specification<ArrivalDepartureDetails> spec = (root, criteriaQuery, criteriaBuilder) -> criteriaBuilder.equal(root.get("id"), id);
+        return findOne(spec);
+    }
 }

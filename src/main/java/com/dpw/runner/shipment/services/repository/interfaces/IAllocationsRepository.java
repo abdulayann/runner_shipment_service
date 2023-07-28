@@ -15,5 +15,8 @@ import java.util.Optional;
 public interface IAllocationsRepository extends MultiTenancyRepository<Allocations> {
     List<Allocations> findAll();
     Page<Allocations> findAll(Specification<Allocations> spec, Pageable pageable);
-    Optional<Allocations> findById(Long id);
+    default Optional<Allocations> findById(Long id) {
+        Specification<Allocations> spec = (root, criteriaQuery, criteriaBuilder) -> criteriaBuilder.equal(root.get("id"), id);
+        return findOne(spec);
+    }
 }

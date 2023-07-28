@@ -15,5 +15,8 @@ import java.util.Optional;
 public interface IAchievedQuantitiesRepository extends MultiTenancyRepository<AchievedQuantities> {
     List<AchievedQuantities> findAll();
     Page<AchievedQuantities> findAll(Specification<AchievedQuantities> spec, Pageable pageable);
-    Optional<AchievedQuantities> findById(Long id);
+    default Optional<AchievedQuantities> findById(Long id) {
+        Specification<AchievedQuantities> spec = (root, criteriaQuery, criteriaBuilder) -> criteriaBuilder.equal(root.get("id"), id);
+        return findOne(spec);
+    }
 }

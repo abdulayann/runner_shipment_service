@@ -13,6 +13,9 @@ import java.util.UUID;
 public interface IShipmentSettingsRepository extends MultiTenancyRepository<ShipmentSettingsDetails> {
     Page<ShipmentSettingsDetails> findAll(Specification<ShipmentSettingsDetails> spec, Pageable pageable);
     Optional<ShipmentSettingsDetails> findByGuid(UUID guid);
-    Optional<ShipmentSettingsDetails> findById(Long id);
+    default Optional<ShipmentSettingsDetails> findById(Long id) {
+        Specification<ShipmentSettingsDetails> spec = (root, criteriaQuery, criteriaBuilder) -> criteriaBuilder.equal(root.get("id"), id);
+        return findOne(spec);
+    }
     List<ShipmentSettingsDetails> findAll();
 }

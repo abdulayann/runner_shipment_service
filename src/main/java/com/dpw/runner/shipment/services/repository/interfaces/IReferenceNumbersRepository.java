@@ -1,17 +1,20 @@
 package com.dpw.runner.shipment.services.repository.interfaces;
 
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancyRepository;
 import com.dpw.runner.shipment.services.entity.ReferenceNumbers;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
 import java.util.Optional;
 
-public interface IReferenceNumbersRepository extends JpaRepository<ReferenceNumbers, Long> {
+public interface IReferenceNumbersRepository extends MultiTenancyRepository<ReferenceNumbers> {
     Page<ReferenceNumbers> findAll(Specification<ReferenceNumbers> spec, Pageable pageable);
     List<ReferenceNumbers> findByShipmentId(Long shipmentId);
-    Optional<ReferenceNumbers> findById(Long id);
+    default Optional<ReferenceNumbers> findById(Long id) {
+        Specification<ReferenceNumbers> spec = (root, criteriaQuery, criteriaBuilder) -> criteriaBuilder.equal(root.get("id"), id);
+        return findOne(spec);
+    }
     List<ReferenceNumbers> findAll();
 }

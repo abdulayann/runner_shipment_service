@@ -11,6 +11,9 @@ import java.util.Optional;
 
 public interface ITruckDriverDetailsRepository extends MultiTenancyRepository<TruckDriverDetails> {
     Page<TruckDriverDetails> findAll(Specification<TruckDriverDetails> spec, Pageable pageable);
-    Optional<TruckDriverDetails> findById(Long id);
+    default Optional<TruckDriverDetails> findById(Long id) {
+        Specification<TruckDriverDetails> spec = (root, criteriaQuery, criteriaBuilder) -> criteriaBuilder.equal(root.get("id"), id);
+        return findOne(spec);
+    }
     List<TruckDriverDetails> findAll();
 }
