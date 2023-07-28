@@ -112,7 +112,7 @@ public class PackingDao implements IPackingDao {
 
     @Override
     public List<Packing> getAllPackings() {
-        return packingRepository.getAllPackings();
+        return packingRepository.findAll();
     }
 
     @Override

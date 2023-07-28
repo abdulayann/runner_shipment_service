@@ -59,6 +59,12 @@ public class CarrierDetails extends MultiTenancy {
     @Column(name = "destination")
     private String destination;
 
+    @Column(name = "origin_port")
+    private String originPort;
+
+    @Column(name = "destination_port")
+    private String destinationPort;
+
     @Column(name = "eta")
     private LocalDateTime eta;
 

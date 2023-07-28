@@ -8,8 +8,13 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
+import java.util.Optional;
+
 
 @Repository
-public interface IShipmentRepository extends MultiTenancyRepository<ShipmentDetails>, PermissionsRepository<ShipmentDetails> {
+public interface IShipmentRepository extends MultiTenancyRepository<ShipmentDetails> {
+    List<ShipmentDetails> findAll();
     Page<ShipmentDetails> findAll(Specification<ShipmentDetails> spec, Pageable pageable);
+    Optional<ShipmentDetails> findById(Long id);
 }

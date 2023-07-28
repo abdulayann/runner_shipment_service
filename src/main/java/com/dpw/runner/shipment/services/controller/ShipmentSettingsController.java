@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.controller;
 
+import com.dpw.runner.shipment.services.DocumentService.DocumentService;
 import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
@@ -7,7 +8,9 @@ import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.ShipmentSettingRequest;
+import com.dpw.runner.shipment.services.dto.request.TemplateUploadRequest;
 import com.dpw.runner.shipment.services.dto.response.ShipmentSettingsDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.TemplateUploadResponse;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentSettingsService;
 import io.swagger.annotations.ApiParam;
@@ -17,6 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.validation.Valid;
 import java.util.Optional;
@@ -81,5 +85,12 @@ public class ShipmentSettingsController {
         id.ifPresent(request::setId);
         guid.ifPresent(request::setGuid);
         return (ResponseEntity<RunnerResponse>) shipmentSettingsService.delete(CommonRequestModel.buildRequest(request));
+    }
+
+    @ApiResponses(value = { @ApiResponse(code = 200, message = ShipmentSettingsConstants.SHIPMENT_SETTINGS_TEMPLATE_UPLOAD_SUCCESSFUL) })
+    @PostMapping(ShipmentSettingsConstants.UPLOAD_TEMPLATE)
+    public ResponseEntity<RunnerListResponse<TemplateUploadResponse>> uploadTemplate(@RequestParam MultipartFile file, @RequestParam String previousFileId) {
+        TemplateUploadRequest templateUploadRequest = TemplateUploadRequest.builder().file(file).previousFileId(previousFileId).build();
+        return (ResponseEntity<RunnerListResponse<TemplateUploadResponse>>) shipmentSettingsService.uploadTemplate(CommonRequestModel.buildRequest(templateUploadRequest));
     }
 }
