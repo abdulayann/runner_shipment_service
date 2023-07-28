@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Set;
 import java.util.UUID;
 
 @Builder
@@ -88,4 +89,5 @@ public class ShipmentListResponse implements IRunnerResponse {
     private Long container40GPCount;
     private Long container40RECount;
     private String jobStatus;
+    private Set<String> containerNumbers;
 }

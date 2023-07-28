@@ -269,6 +269,7 @@ public class ShipmentService implements IShipmentService {
         Long container20RECount = 0L;
         Long container40GPCount = 0L;
         Long container40RECount = 0L;
+        Set<String> containerNumber = new HashSet<>();
         if(shipmentDetail.getContainersList() != null) {
             for(Containers container : shipmentDetail.getContainersList()) {
                 if(container.getContainerCode().contains(Constants.Cont20)) {
@@ -284,7 +285,9 @@ public class ShipmentService implements IShipmentService {
                 } else if (container.getContainerCode().equals(Constants.Cont40RE)) {
                     ++container40RECount;
                 }
-
+                if(StringUtility.isNotEmpty(container.getContainerNumber())) {
+                    containerNumber.add(container.getContainerNumber());
+                }
             }
 //            container20Count = shipmentDetail.getContainersList().stream().filter(container -> container.getContainerCode() != null && container.getContainerCode().contains(Constants.Cont20)).count();
 //            container40Count = shipmentDetail.getContainersList().stream().filter(container -> container.getContainerCode() != null && container.getContainerCode().contains(Constants.Cont40)).count();
@@ -299,6 +302,7 @@ public class ShipmentService implements IShipmentService {
         response.setContainer20RECount(container20RECount);
         response.setContainer40GPCount(container40GPCount);
         response.setContainer40RECount(container40RECount);
+        response.setContainerNumbers(containerNumber);
     }
 
 
