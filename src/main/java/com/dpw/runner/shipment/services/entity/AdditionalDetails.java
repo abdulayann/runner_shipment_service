@@ -269,43 +269,43 @@ public class AdditionalDetails extends MultiTenancy {
     @Column(name = "surrender_printed")
     private Boolean surrenderPrinted;
 
-    @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL)
+    @OneToOne(fetch = FetchType.LAZY, targetEntity = Parties.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "notify_party_id", referencedColumnName = "id")
     private Parties notifyParty;
 
-    @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL)
+    @OneToOne(fetch = FetchType.LAZY, targetEntity = Parties.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "import_broker_id", referencedColumnName = "id")
     private Parties importBroker;
 
-    @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL)
+    @OneToOne(fetch = FetchType.LAZY, targetEntity = Parties.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "export_broker_id", referencedColumnName = "id")
     private Parties exportBroker;
 
-    @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL)
+    @OneToOne(fetch = FetchType.LAZY, targetEntity = Parties.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "sending_forwarder_id", referencedColumnName = "id")
     private Parties sendingForwarder;
 
-    @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL)
+    @OneToOne(fetch = FetchType.LAZY, targetEntity = Parties.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "receiving_forwarder_id", referencedColumnName = "id")
     private Parties receivingForwarder;
 
-    @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL)
+    @OneToOne(fetch = FetchType.LAZY, targetEntity = Parties.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "trader_or_supplier_id", referencedColumnName = "id")
     private Parties traderOrSupplier;
 
-    @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL)
+    @OneToOne(fetch = FetchType.LAZY, targetEntity = Parties.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "etailor_id", referencedColumnName = "id")
     private Parties eTailor;
 
-    @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL)
+    @OneToOne(fetch = FetchType.LAZY, targetEntity = Parties.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "borrowed_from_id", referencedColumnName = "id")
     private Parties borrowedFrom;
 
-    @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL)
+    @OneToOne(fetch = FetchType.LAZY, targetEntity = Parties.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "sending_agent_id", referencedColumnName = "id")
     private Parties sendingAgent;
 
-    @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL)
+    @OneToOne(fetch = FetchType.LAZY, targetEntity = Parties.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "receiving_agent_id", referencedColumnName = "id")
     private Parties receivingAgent;
 

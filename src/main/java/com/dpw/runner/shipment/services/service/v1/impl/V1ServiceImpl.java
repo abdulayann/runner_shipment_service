@@ -1,5 +1,9 @@
 package com.dpw.runner.shipment.services.service.v1.impl;
 
+import com.dpw.runner.shipment.services.dto.v1.request.SendConsolidationRequest;
+import com.dpw.runner.shipment.services.dto.v1.request.SendShipmentRequest;
+import com.dpw.runner.shipment.services.dto.v1.response.SendEntityResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.TenantIdResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.UnAuthorizedException;
 import com.dpw.runner.shipment.services.exception.exceptions.V1ServiceException;
@@ -155,6 +159,21 @@ public class V1ServiceImpl implements IV1Service {
 
     @Value("${v1service.url.base}${v1service.url.gridColorCodeUpdate}")
     private String GRID_COLOR_CODE_UPDATE_URL;
+
+    @Value("${v1service.url.base}${v1service.url.listCousinBranch}")
+    private String LIST_COUSIN_BRANCH_URL;
+
+    @Value("${v1service.url.base}${v1service.url.ListCousinBranchWithoutCurrent}")
+    private String LIST_COUSIN_BRANCH_WITHOUT_CURRENT_URL;
+
+    @Value("${v1service.url.base}${v1service.url.TenantIdByGuid}")
+    private String TENANT_BY_GUID_URL;
+
+    @Value("${v1service.url.base}${v1service.url.sendConsolidationTask}")
+    private String SEND_CONSOLIDATION_TASK_URL;
+
+    @Value("${v1service.url.base}${v1service.url.sendShipmentTask}")
+    private String SEND_SHIPMENT_TASK_URL;
     
     @Override
     public V1DataResponse fetchMasterData(Object request) {
@@ -1068,6 +1087,111 @@ public class V1ServiceImpl implements IV1Service {
             masterDataResponse = this.restTemplate.postForEntity(this.GRID_COLOR_CODE_UPDATE_URL, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in updateGridColorCodeData() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) masterDataResponse.getBody();
+        } catch (HttpStatusCodeException var6) {
+            if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
+                throw new UnAuthorizedException("UnAuthorizedException");
+            } else {
+                throw new V1ServiceException(var6.getMessage());
+            }
+        } catch (Exception var7) {
+            throw new V1ServiceException(var7.getMessage());
+        }
+    }
+
+    @Override
+    public V1DataResponse listCousinBranches(Object request) {
+        ResponseEntity masterDataResponse = null;
+
+        try {
+            long time = System.currentTimeMillis();
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            masterDataResponse = this.restTemplate.postForEntity(this.LIST_COUSIN_BRANCH_URL, entity, V1DataResponse.class, new Object[0]);
+            log.info("Token time taken in listCousinBranches() function " + (System.currentTimeMillis() - time));
+            return (V1DataResponse) masterDataResponse.getBody();
+        } catch (HttpStatusCodeException var6) {
+            if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
+                throw new UnAuthorizedException("UnAuthorizedException");
+            } else {
+                throw new V1ServiceException(var6.getMessage());
+            }
+        } catch (Exception var7) {
+            throw new V1ServiceException(var7.getMessage());
+        }
+    }
+
+    @Override
+    public V1DataResponse listCousinBranchesWithoutCurrent(Object request) {
+        ResponseEntity masterDataResponse = null;
+
+        try {
+            long time = System.currentTimeMillis();
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            masterDataResponse = this.restTemplate.postForEntity(this.LIST_COUSIN_BRANCH_WITHOUT_CURRENT_URL, entity, V1DataResponse.class, new Object[0]);
+            log.info("Token time taken in listCousinBranchesWithoutCurrent() function " + (System.currentTimeMillis() - time));
+            return (V1DataResponse) masterDataResponse.getBody();
+        } catch (HttpStatusCodeException var6) {
+            if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
+                throw new UnAuthorizedException("UnAuthorizedException");
+            } else {
+                throw new V1ServiceException(var6.getMessage());
+            }
+        } catch (Exception var7) {
+            throw new V1ServiceException(var7.getMessage());
+        }
+    }
+
+    @Override
+    public TenantIdResponse tenantByGuid(Object request) {
+        ResponseEntity masterDataResponse = null;
+
+        try {
+            long time = System.currentTimeMillis();
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            masterDataResponse = this.restTemplate.postForEntity(this.TENANT_BY_GUID_URL, entity, TenantIdResponse.class, new Object[0]);
+            log.info("Token time taken in tenantByGuid() function " + (System.currentTimeMillis() - time));
+            return (TenantIdResponse) masterDataResponse.getBody();
+        } catch (HttpStatusCodeException var6) {
+            if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
+                throw new UnAuthorizedException("UnAuthorizedException");
+            } else {
+                throw new V1ServiceException(var6.getMessage());
+            }
+        } catch (Exception var7) {
+            throw new V1ServiceException(var7.getMessage());
+        }
+    }
+
+    @Override
+    public SendEntityResponse sendConsolidationTask(SendConsolidationRequest request) {
+        ResponseEntity masterDataResponse = null;
+
+        try {
+            long time = System.currentTimeMillis();
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            masterDataResponse = this.restTemplate.postForEntity(this.SEND_CONSOLIDATION_TASK_URL, entity, SendEntityResponse.class, new Object[0]);
+            log.info("Token time taken in sendConsolidationTask() function " + (System.currentTimeMillis() - time));
+            return (SendEntityResponse) masterDataResponse.getBody();
+        } catch (HttpStatusCodeException var6) {
+            if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
+                throw new UnAuthorizedException("UnAuthorizedException");
+            } else {
+                throw new V1ServiceException(var6.getMessage());
+            }
+        } catch (Exception var7) {
+            throw new V1ServiceException(var7.getMessage());
+        }
+    }
+
+    @Override
+    public SendEntityResponse sendShipmentTask(SendShipmentRequest request) {
+        ResponseEntity masterDataResponse = null;
+
+        try {
+            long time = System.currentTimeMillis();
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            masterDataResponse = this.restTemplate.postForEntity(this.SEND_SHIPMENT_TASK_URL, entity, SendEntityResponse.class, new Object[0]);
+            log.info("Token time taken in sendShipmentTask() function " + (System.currentTimeMillis() - time));
+            return (SendEntityResponse) masterDataResponse.getBody();
         } catch (HttpStatusCodeException var6) {
             if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
                 throw new UnAuthorizedException("UnAuthorizedException");

@@ -34,7 +34,7 @@ public class ShipmentDetails extends MultiTenancy {
 
     private static final long serialVersionUID = 190794279984274725L;
 
-    @OneToOne(targetEntity = CarrierDetails.class)
+    @OneToOne(fetch = FetchType.LAZY, targetEntity = CarrierDetails.class)
     @JoinColumn(name = "carrier_detail_id", referencedColumnName = "id")
     private CarrierDetails carrierDetails;
 
@@ -253,7 +253,7 @@ public class ShipmentDetails extends MultiTenancy {
     @Column(name = "finance_closed_on")
     private LocalDateTime financeClosedOn;
 
-    @OneToOne(targetEntity = AdditionalDetails.class)
+    @OneToOne(fetch = FetchType.LAZY, targetEntity = AdditionalDetails.class)
     @JoinColumn(name = "additional_details_id", referencedColumnName = "id")
     private AdditionalDetails additionalDetails;
 
@@ -268,15 +268,15 @@ public class ShipmentDetails extends MultiTenancy {
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "shipmentId")
     private List<PickupDeliveryDetails> pickupDeliveryDetailsList;
 
-    @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL)
+    @OneToOne(fetch = FetchType.LAZY, targetEntity = Parties.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "client_id", referencedColumnName = "id")
     private Parties client;
 
-    @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL)
+    @OneToOne(fetch = FetchType.LAZY, targetEntity = Parties.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "consigner_id", referencedColumnName = "id")
     private Parties consigner;
 
-    @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL)
+    @OneToOne(fetch = FetchType.LAZY, targetEntity = Parties.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "consignee_id", referencedColumnName = "id")
     private Parties consignee;
 

@@ -232,6 +232,16 @@ public class MasterDataImpl implements IMasterDataService {
     }
 
     @Override
+    public ResponseEntity<?> listCousinBranches(CommonRequestModel commonRequestModel) {
+        return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().listCousinBranches(commonRequestModel.getDependentData()));
+    }
+
+    @Override
+    public ResponseEntity<?> listCousinBranchesWithoutCurrent(CommonRequestModel commonRequestModel) {
+        return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().listCousinBranchesWithoutCurrent(commonRequestModel.getDependentData()));
+    }
+
+    @Override
     public CompletableFuture<ResponseEntity<?>> listAsync(CommonRequestModel commonRequestModel) {
         return null;
     }

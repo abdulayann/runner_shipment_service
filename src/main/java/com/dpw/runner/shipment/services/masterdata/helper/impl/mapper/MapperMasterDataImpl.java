@@ -1,6 +1,8 @@
 package com.dpw.runner.shipment.services.masterdata.helper.impl.mapper;
 
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
+import com.dpw.runner.shipment.services.dto.v1.request.SendConsolidationRequest;
+import com.dpw.runner.shipment.services.dto.v1.request.SendShipmentRequest;
 import com.dpw.runner.shipment.services.masterdata.dto.MasterData;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.masterdata.helper.IMasterDataService;
@@ -245,6 +247,31 @@ public class MapperMasterDataImpl implements IMasterDataService {
 
     @Override
     public DependentServiceResponse updateGridColorCodeData(Object request) {
+        return null;
+    }
+
+    @Override
+    public DependentServiceResponse listCousinBranches(Object request) {
+        return null;
+    }
+
+    @Override
+    public DependentServiceResponse listCousinBranchesWithoutCurrent(Object request) {
+        return null;
+    }
+
+    @Override
+    public DependentServiceResponse tenantByGuid(Object request) {
+        return null;
+    }
+
+    @Override
+    public DependentServiceResponse sendConsolidationTask(SendConsolidationRequest request) {
+        return null;
+    }
+
+    @Override
+    public DependentServiceResponse sendShipmentTask(SendShipmentRequest request) {
         return null;
     }
 

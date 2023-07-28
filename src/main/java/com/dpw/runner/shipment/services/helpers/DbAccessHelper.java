@@ -41,14 +41,17 @@ public class DbAccessHelper {
 
         Specification<T> specification = null;
         Map<String, Join<Class, T>> map = new HashMap<>();
+        if(filterCriteria.size() == 0) {
+            specification = where(createSpecificationWithoutFilter(request.getIncludeTbls()));
+        }
         for (FilterCriteria filters : filterCriteria) {
             if (filters.getLogicOperator() == null) {
                 specification =
-                        where(getSpecificationFromFilters(filters.getInnerFilter(), sortRequest, map, className.getSimpleName()));
+                        where(getSpecificationFromFilters(filters.getInnerFilter(), sortRequest, map, className.getSimpleName(), request.getIncludeTbls()));
             } else if (filters.getLogicOperator().equalsIgnoreCase("OR")) {
-                specification = specification.or(getSpecificationFromFilters(filters.getInnerFilter(), null, map, className.getSimpleName()));
+                specification = specification.or(getSpecificationFromFilters(filters.getInnerFilter(), null, map, className.getSimpleName(), null));
             } else if (filters.getLogicOperator().equalsIgnoreCase("AND")) {
-                specification = specification.and(getSpecificationFromFilters(filters.getInnerFilter(), null, map, className.getSimpleName()));
+                specification = specification.and(getSpecificationFromFilters(filters.getInnerFilter(), null, map, className.getSimpleName(), null));
             }
         }
         return Pair.of(specification, pages);
@@ -84,9 +87,9 @@ public class DbAccessHelper {
         return Pair.of(specification, pages);
     }
 
-    private static <T> Specification<T> getSpecificationFromFilters(List<FilterCriteria> filter, SortRequest sortRequest, Map<String, Join<Class, T>> map, String className) {
+    private static <T> Specification<T> getSpecificationFromFilters(List<FilterCriteria> filter, SortRequest sortRequest, Map<String, Join<Class, T>> map, String className, List<String> tableName) {
         if (filter == null || filter.size() == 0) {
-            return null;
+            return createSpecificationWithoutFilter(tableName);
         }
 
         Specification<T> specification = null;
@@ -95,39 +98,62 @@ public class DbAccessHelper {
             if (input.getInnerFilter() != null && input.getInnerFilter().size() > 0) {
                 if (input.getLogicOperator() != null) {
                     if (input.getLogicOperator().equalsIgnoreCase("OR")) {
-                        specification = specification.or(getSpecificationFromFilters(input.getInnerFilter(), null, map, className));
+                        specification = specification.or(getSpecificationFromFilters(input.getInnerFilter(), null, map, className, null));
                     } else if (input.getLogicOperator().equalsIgnoreCase("AND")) {
-                        specification = specification.and(getSpecificationFromFilters(input.getInnerFilter(), null, map, className));
+                        specification = specification.and(getSpecificationFromFilters(input.getInnerFilter(), null, map, className, null));
                     }
                 } else {
                     specification =
-                            where(getSpecificationFromFilters(input.getInnerFilter(), sortRequest, map, className));
+                            where(getSpecificationFromFilters(input.getInnerFilter(), sortRequest, map, className, tableName));
                 }
             } else {
                 if (input.getLogicOperator() != null) {
                     if (input.getLogicOperator().equalsIgnoreCase("OR")) {
-                        specification = specification.or(createSpecification(input.getCriteria(), null, map, className));
+                        specification = specification.or(createSpecification(input.getCriteria(), null, map, className, null));
                     } else if (input.getLogicOperator().equalsIgnoreCase("AND")) {
-                        specification = specification.and(createSpecification(input.getCriteria(), null, map, className));
+                        specification = specification.and(createSpecification(input.getCriteria(), null, map, className, null));
                     }
                 } else {
                     specification =
-                            where(createSpecification(input.getCriteria(), sortRequest, map, className));
+                            where(createSpecification(input.getCriteria(), sortRequest, map, className, tableName));
                 }
             }
         }
         return specification;
     }
 
-    private static <T> Specification<T> createSpecification(Criteria input, SortRequest sortRequest, Map<String, Join<Class, T>> map, String className) {
+    private static <T> Specification<T> createSpecificationWithoutFilter(List<String> tableName) {
+        if (tableName != null) {
+            return (root, query, criteriaBuilder) -> {
+                if (!query.getResultType().isAssignableFrom(Long.class)) {
+                    for (String table : tableName) {
+                        Join<Class, T> join = (Join) root.fetch(table, JoinType.LEFT);
+                        query.distinct(true);
+                    }
+                }
+                return criteriaBuilder.conjunction();
+            };
+        }
+        return null;
+    }
+
+    private static <T> Specification<T> createSpecification(Criteria input, SortRequest sortRequest, Map<String, Join<Class, T>> map, String className, List<String> tableName) {
         return (root, query, criteriaBuilder) -> {
             Path path = null;
+            if(!query.getResultType().isAssignableFrom(Long.class) && tableName != null) {
+                for (String table : tableName) {
+                    Join<Class, T> join = (Join) root.fetch(table, JoinType.LEFT);
+                    map.put(table, join);
+                    path = join;
+                    query.distinct(true);
+                }
+            }
 
             if (tableNames.get(input.getFieldName()).getTableName().equalsIgnoreCase(className)) {
                 path = root;
             } else {
                 if (root.getJoins() == null || root.getJoins().size() == 0 || map.get(tableNames.get(input.getFieldName()).getTableName()) == null ||
-                        !root.getJoins().contains(map.get(tableNames.get(input.getFieldName()).getTableName()))) {
+                        (!root.getJoins().contains(map.get(tableNames.get(input.getFieldName()).getTableName())) && !root.getFetches().contains(map.get(tableNames.get(input.getFieldName()).getTableName())))) {
                     Join<Class, T> join = root.join(tableNames.get(input.getFieldName()).getTableName(), JoinType.LEFT);
                     map.put(tableNames.get(input.getFieldName()).getTableName(), join);
                     path = join;
