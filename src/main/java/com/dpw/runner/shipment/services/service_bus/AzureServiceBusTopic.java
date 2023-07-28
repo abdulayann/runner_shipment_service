@@ -10,8 +10,7 @@ import java.util.Map;
 @Data
 @Component
 public class AzureServiceBusTopic {
-    @Value("cargoes-abbs-vessel-test-topic")
+    @Value("${data-sync-topic}")
     private String topic;
-    @Value("abbs-backend-subs")
-    private String subscription;
+
 }

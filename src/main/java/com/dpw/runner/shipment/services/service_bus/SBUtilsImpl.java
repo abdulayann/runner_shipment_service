@@ -6,6 +6,8 @@ import com.azure.messaging.servicebus.administration.models.SubscriptionRuntimeP
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.stereotype.Component;
 
 import java.util.Arrays;
@@ -19,11 +21,13 @@ import java.util.stream.Collectors;
 @Component
 @Slf4j
 @SuppressWarnings("InfiniteLoopStatement")
+@EnableAsync
 public class SBUtilsImpl implements ISBUtils {
 
     @Autowired
     SBConfiguration sbConfiguration;
 
+    @Async
     public void sendMessagesToTopic(ISBProperties sbProperties, String topicName, List<ServiceBusMessage> messages) {
         // create a Service Bus Sender client for the queue
         ServiceBusSenderClient senderClient = sbConfiguration.getSenderTopicClient(sbProperties, topicName);
