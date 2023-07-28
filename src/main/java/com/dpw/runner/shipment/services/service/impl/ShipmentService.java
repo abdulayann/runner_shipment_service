@@ -59,14 +59,6 @@ import static com.dpw.runner.shipment.services.utils.CommonUtils.*;
 @Slf4j
 public class ShipmentService implements IShipmentService {
 
-    @Autowired
-    private SBUtilsImpl sbUtils;
-
-    @Autowired
-    private ISBProperties isbProperties;
-
-    @Autowired
-    private AzureServiceBusTopic azureServiceBusTopic;
 
     @Autowired
     private ModelMapper modelMapper;
@@ -435,7 +427,6 @@ public class ShipmentService implements IShipmentService {
             throw new RuntimeException(e);
         }
 
-        //sbUtils.sendMessagesToTopic(isbProperties, azureServiceBusTopic.getTopic(), Arrays.asList(new ServiceBusMessage("ShipmentV2Service - message")));
 
 //        CompletableFuture.allOf(createCallToAdditionalDetails, createCallToContainers, createCallToPackings, createCallToBookingCarriages, createCallToElDetails, createCallToEvents, createCallToFileRepos, createCallToJobs, createCallToNotes, createCallToReferenceNumbers, createCallToRoutings, createCallToServiceDetails, createCallToPickupDelivery, createCallToParties, createCallToCarrierDetails).join();
 //        executorService.shutdownNow();
