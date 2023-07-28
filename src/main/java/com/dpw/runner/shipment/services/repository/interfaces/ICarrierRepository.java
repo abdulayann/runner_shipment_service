@@ -14,5 +14,8 @@ import java.util.Optional;
 public interface ICarrierRepository extends MultiTenancyRepository<CarrierDetails> {
     List<CarrierDetails> findAll();
     Page<CarrierDetails> findAll(Specification<CarrierDetails> spec, Pageable pageable);
-    Optional<CarrierDetails> findById(Long id);
+    default Optional<CarrierDetails> findById(Long id) {
+        Specification<CarrierDetails> spec = (root, criteriaQuery, criteriaBuilder) -> criteriaBuilder.equal(root.get("id"), id);
+        return findOne(spec);
+    }
 }

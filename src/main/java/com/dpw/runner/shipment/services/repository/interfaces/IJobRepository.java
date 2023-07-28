@@ -13,7 +13,10 @@ import java.util.Optional;
 @Repository
 public interface IJobRepository extends MultiTenancyRepository<Jobs> {
     List<Jobs> findByShipmentId(Long id);
-    Optional<Jobs> findById(Long id);
+    default Optional<Jobs> findById(Long id) {
+        Specification<Jobs> spec = (root, criteriaQuery, criteriaBuilder) -> criteriaBuilder.equal(root.get("id"), id);
+        return findOne(spec);
+    }
     List<Jobs> findAll();
     Page<Jobs> findAll(Specification<Jobs> spec, Pageable pageable);
 }

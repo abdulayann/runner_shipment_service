@@ -12,5 +12,8 @@ import java.util.Optional;
 public interface IBookingCarriageRepository extends MultiTenancyRepository<BookingCarriage> {
     List<BookingCarriage> findAll();
     Page<BookingCarriage> findAll(Specification<BookingCarriage> spec, Pageable pageable);
-    Optional<BookingCarriage> findById(Long id);
+    default Optional<BookingCarriage> findById(Long id) {
+        Specification<BookingCarriage> spec = (root, criteriaQuery, criteriaBuilder) -> criteriaBuilder.equal(root.get("id"), id);
+        return findOne(spec);
+    }
 }

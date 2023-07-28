@@ -12,6 +12,9 @@ import java.util.Optional;
 public interface IServiceDetailsRepository extends MultiTenancyRepository<ServiceDetails> {
     Page<ServiceDetails> findAll(Specification<ServiceDetails> spec, Pageable pageable);
     List<ServiceDetails> findByShipmentId(Long shipmentId);
-    Optional<ServiceDetails> findById(Long id);
+    default Optional<ServiceDetails> findById(Long id) {
+        Specification<ServiceDetails> spec = (root, criteriaQuery, criteriaBuilder) -> criteriaBuilder.equal(root.get("id"), id);
+        return findOne(spec);
+    }
     List<ServiceDetails> findAll();
 }

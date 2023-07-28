@@ -14,5 +14,8 @@ import java.util.Optional;
 public interface IEventRepository extends MultiTenancyRepository<Events> {
     Page<Events> findAll(Specification<Events> spec, Pageable pageable);
     List<Events> findAll();
-    Optional<Events> findById(Long id);
+    default Optional<Events> findById(Long id) {
+        Specification<Events> spec = (root, criteriaQuery, criteriaBuilder) -> criteriaBuilder.equal(root.get("id"), id);
+        return findOne(spec);
+    }
 }

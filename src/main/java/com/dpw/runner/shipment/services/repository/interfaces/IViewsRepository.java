@@ -12,5 +12,8 @@ import java.util.Optional;
 public interface IViewsRepository extends MultiTenancyRepository<Views> {
     List<Views> findAll();
     Page<Views> findAll(Specification<Views> spec, Pageable pageable);
-    Optional<Views> findById(Long id);
+    default Optional<Views> findById(Long id) {
+        Specification<Views> spec = (root, criteriaQuery, criteriaBuilder) -> criteriaBuilder.equal(root.get("id"), id);
+        return findOne(spec);
+    }
 }

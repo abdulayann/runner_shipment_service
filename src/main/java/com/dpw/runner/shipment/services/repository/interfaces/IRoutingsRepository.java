@@ -15,7 +15,10 @@ public interface IRoutingsRepository extends MultiTenancyRepository<Routings> {
     Page<Routings> findAll(Specification<Routings> spec, Pageable pageable);
 
     List<Routings> findByShipmentId(Long shipmentId);
-    Optional<Routings> findById(Long id);
+    default Optional<Routings> findById(Long id) {
+        Specification<Routings> spec = (root, criteriaQuery, criteriaBuilder) -> criteriaBuilder.equal(root.get("id"), id);
+        return findOne(spec);
+    }
     List<Routings> findAll();
 
 }

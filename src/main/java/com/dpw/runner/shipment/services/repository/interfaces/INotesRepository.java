@@ -12,7 +12,10 @@ import java.util.Optional;
 public interface INotesRepository extends MultiTenancyRepository<Notes> {
 
     Page<Notes> findAll(Specification<Notes> left, Pageable right);
-    Optional<Notes> findById(Long id);
+    default Optional<Notes> findById(Long id) {
+        Specification<Notes> spec = (root, criteriaQuery, criteriaBuilder) -> criteriaBuilder.equal(root.get("id"), id);
+        return findOne(spec);
+    }
     public List<Notes> findByEntityIdAndEntityType(Long entityId, String entityType);
     List<Notes> findAll();
 

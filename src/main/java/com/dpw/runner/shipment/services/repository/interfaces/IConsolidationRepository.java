@@ -15,5 +15,8 @@ import java.util.Optional;
 public interface IConsolidationRepository extends MultiTenancyRepository<ConsolidationDetails> {
     List<ConsolidationDetails> findAll();
     Page<ConsolidationDetails> findAll(Specification<ConsolidationDetails> spec, Pageable pageable);
-    Optional<ConsolidationDetails> findById(Long id);
+    default Optional<ConsolidationDetails> findById(Long id) {
+        Specification<ConsolidationDetails> spec = (root, criteriaQuery, criteriaBuilder) -> criteriaBuilder.equal(root.get("id"), id);
+        return findOne(spec);
+    }
 }
