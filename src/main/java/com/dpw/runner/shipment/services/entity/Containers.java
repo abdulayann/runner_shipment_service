@@ -234,11 +234,11 @@ public class Containers extends MultiTenancy {
     @Column(name = "volume_utilization")
     private String volumeUtilization;
 
-    @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL)
+    @OneToOne(fetch = FetchType.LAZY, targetEntity = Parties.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "pickup_address_id", referencedColumnName = "id")
     private Parties pickupAddress;
 
-    @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL)
+    @OneToOne(fetch = FetchType.LAZY, targetEntity = Parties.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "delivery_address_id", referencedColumnName = "id")
     private Parties deliveryAddress;
 

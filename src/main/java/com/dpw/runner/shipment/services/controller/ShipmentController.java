@@ -12,6 +12,7 @@ import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.patchRequest.ShipmentPatchRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
 import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.ShipmentListResponse;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
@@ -45,8 +46,8 @@ public class ShipmentController {
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = "Successful Shipment Details Data List Retrieval", responseContainer = "List")})
     @PostMapping(value = "/list-shipment")
-    public ResponseEntity<RunnerListResponse<ShipmentDetailsResponse>> fetchByQuery(@Valid @RequestBody @NonNull ListCommonRequest listCommonRequest) {
-        return (ResponseEntity<RunnerListResponse<ShipmentDetailsResponse>>) shipmentService.fetchShipments(CommonRequestModel.buildRequest(listCommonRequest));
+    public ResponseEntity<RunnerListResponse<ShipmentListResponse>> fetchByQuery(@Valid @RequestBody @NonNull ListCommonRequest listCommonRequest) {
+        return (ResponseEntity<RunnerListResponse<ShipmentListResponse>>) shipmentService.fetchShipments(CommonRequestModel.buildRequest(listCommonRequest));
     }
 
     @PostMapping(value = "/create-test-shipment/{count}")
@@ -85,8 +86,8 @@ public class ShipmentController {
     // @PreAuthorize("hasAuthority('"+ Permissions.AdministrationGeneral+"')") //TODO-Authorization
     @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.LIST_SUCCESSFUL, responseContainer = ShipmentConstants.RESPONSE_CONTAINER_LIST)})
     @PostMapping(ApiConstants.API_LIST)
-    public ResponseEntity<RunnerListResponse<ShipmentDetailsResponse>> list(@RequestBody @Valid ListCommonRequest listCommonRequest) {
-        return (ResponseEntity<RunnerListResponse<ShipmentDetailsResponse>>) shipmentService.list(CommonRequestModel.buildRequest(listCommonRequest));
+    public ResponseEntity<RunnerListResponse<ShipmentListResponse>> list(@RequestBody @Valid ListCommonRequest listCommonRequest) {
+        return (ResponseEntity<RunnerListResponse<ShipmentListResponse>>) shipmentService.list(CommonRequestModel.buildRequest(listCommonRequest));
     }
 
     // @PreAuthorize("hasAuthority('"+ Permissions.AdministrationGeneral+"')") //TODO-Authorization

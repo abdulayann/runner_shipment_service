@@ -238,7 +238,7 @@ public class ShipmentService implements IShipmentService {
     @Override
     public ResponseEntity<?> fetchShipments(CommonRequestModel commonRequestModel) {
         ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
-
+        request.setIncludeTbls(Arrays.asList("additionalDetails", "client", "consigner", "consignee", "carrierDetails"));
         Pair<Specification<ShipmentDetails>, Pageable> tuple = fetchData(request, ShipmentDetails.class, tableNames);
         Page<ShipmentDetails> shipmentDetailsPage = shipmentDao.findAll(tuple.getLeft(), tuple.getRight());
         return ResponseHelper.buildListSuccessResponse(
@@ -250,14 +250,14 @@ public class ShipmentService implements IShipmentService {
     private List<IRunnerResponse> convertEntityListToDtoList(List<ShipmentDetails> lst) {
         List<IRunnerResponse> responseList = new ArrayList<>();
         lst.forEach(shipmentDetail -> {
-            ShipmentDetailsResponse shipmentDetailsResponse = modelMapper.map(shipmentDetail, ShipmentDetailsResponse.class);
-            containerCountUpdate(shipmentDetail, shipmentDetailsResponse);
-            responseList.add(shipmentDetailsResponse);
+            ShipmentListResponse response = modelMapper.map(shipmentDetail, ShipmentListResponse.class);
+            containerCountUpdate(shipmentDetail, response);
+            responseList.add(response);
         });
         return responseList;
     }
 
-    private void containerCountUpdate(ShipmentDetails shipmentDetail, ShipmentDetailsResponse shipmentDetailsResponse) {
+    private void containerCountUpdate(ShipmentDetails shipmentDetail, ShipmentListResponse response) {
         Long container20Count = 0L;
         Long container40Count = 0L;
         Long container20GPCount = 0L;
@@ -265,19 +265,35 @@ public class ShipmentService implements IShipmentService {
         Long container40GPCount = 0L;
         Long container40RECount = 0L;
         if(shipmentDetail.getContainersList() != null) {
-            container20Count = shipmentDetail.getContainersList().stream().filter(container -> container.getContainerCode() != null && container.getContainerCode().contains(Constants.Cont20)).count();
-            container40Count = shipmentDetail.getContainersList().stream().filter(container -> container.getContainerCode() != null && container.getContainerCode().contains(Constants.Cont40)).count();
-            container20GPCount = shipmentDetail.getContainersList().stream().filter(container -> container.getContainerCode() != null && container.getContainerCode().equals(Constants.Cont20GP)).count();
-            container20RECount = shipmentDetail.getContainersList().stream().filter(container -> container.getContainerCode() != null && container.getContainerCode().equals(Constants.Cont20RE)).count();
-            container40GPCount = shipmentDetail.getContainersList().stream().filter(container -> container.getContainerCode() != null && container.getContainerCode().equals(Constants.Cont40GP)).count();
-            container40RECount = shipmentDetail.getContainersList().stream().filter(container -> container.getContainerCode() != null && container.getContainerCode().equals(Constants.Cont40RE)).count();
+            for(Containers container : shipmentDetail.getContainersList()) {
+                if(container.getContainerCode().contains(Constants.Cont20)) {
+                    ++container20Count;
+                } else if (container.getContainerCode().contains(Constants.Cont40)) {
+                    ++container40Count;
+                } else if (container.getContainerCode().equals(Constants.Cont20GP)) {
+                    ++container20GPCount;
+                } else if (container.getContainerCode().equals(Constants.Cont20RE)) {
+                    ++container20RECount;
+                } else if (container.getContainerCode().equals(Constants.Cont40GP)) {
+                    ++container40GPCount;
+                } else if (container.getContainerCode().equals(Constants.Cont40RE)) {
+                    ++container40RECount;
+                }
+
+            }
+//            container20Count = shipmentDetail.getContainersList().stream().filter(container -> container.getContainerCode() != null && container.getContainerCode().contains(Constants.Cont20)).count();
+//            container40Count = shipmentDetail.getContainersList().stream().filter(container -> container.getContainerCode() != null && container.getContainerCode().contains(Constants.Cont40)).count();
+//            container20GPCount = shipmentDetail.getContainersList().stream().filter(container -> container.getContainerCode() != null && container.getContainerCode().equals(Constants.Cont20GP)).count();
+//            container20RECount = shipmentDetail.getContainersList().stream().filter(container -> container.getContainerCode() != null && container.getContainerCode().equals(Constants.Cont20RE)).count();
+//            container40GPCount = shipmentDetail.getContainersList().stream().filter(container -> container.getContainerCode() != null && container.getContainerCode().equals(Constants.Cont40GP)).count();
+//            container40RECount = shipmentDetail.getContainersList().stream().filter(container -> container.getContainerCode() != null && container.getContainerCode().equals(Constants.Cont40RE)).count();
         }
-        shipmentDetailsResponse.setContainer20Count(container20Count);
-        shipmentDetailsResponse.setContainer40Count(container40Count);
-        shipmentDetailsResponse.setContainer20GPCount(container20GPCount);
-        shipmentDetailsResponse.setContainer20RECount(container20RECount);
-        shipmentDetailsResponse.setContainer40GPCount(container40GPCount);
-        shipmentDetailsResponse.setContainer40RECount(container40RECount);
+        response.setContainer20Count(container20Count);
+        response.setContainer40Count(container40Count);
+        response.setContainer20GPCount(container20GPCount);
+        response.setContainer20RECount(container20RECount);
+        response.setContainer40GPCount(container40GPCount);
+        response.setContainer40RECount(container40RECount);
     }
 
 
@@ -827,6 +843,7 @@ public class ShipmentService implements IShipmentService {
             if (request == null) {
                 log.error("Request is empty for Shipment list with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
+            request.setIncludeTbls(Arrays.asList("additionalDetails", "client", "consigner", "consignee", "carrierDetails"));
             Pair<Specification<ShipmentDetails>, Pageable> tuple = fetchData(request, ShipmentDetails.class, tableNames);
             Page<ShipmentDetails> shipmentDetailsPage = shipmentDao.findAll(tuple.getLeft(), tuple.getRight());
             log.info("Shipment list retrieved successfully for Request Id {} ", LoggerHelper.getRequestIdFromMDC());
@@ -852,6 +869,7 @@ public class ShipmentService implements IShipmentService {
             if (request == null) {
                 log.error("Request is empty for Shipment async list for Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
+            request.setIncludeTbls(Arrays.asList("additionalDetails", "client", "consigner", "consignee", "carrierDetails"));
             Pair<Specification<ShipmentDetails>, Pageable> tuple = fetchData(request, ShipmentDetails.class, tableNames);
             Page<ShipmentDetails> shipmentDetailsPage = shipmentDao.findAll(tuple.getLeft(), tuple.getRight());
             log.info("Shipment async list retrieved successfully for Request Id {} ", LoggerHelper.getRequestIdFromMDC());
@@ -914,7 +932,7 @@ public class ShipmentService implements IShipmentService {
             }
             log.info("Shipment details fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
             ShipmentDetailsResponse response = shipmentDetailsMapper.map(shipmentDetails.get());
-            containerCountUpdate(shipmentDetails.get(), response);
+            //containerCountUpdate(shipmentDetails.get(), response);
             return ResponseHelper.buildSuccessResponse(response);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -945,7 +963,7 @@ public class ShipmentService implements IShipmentService {
             shipmentDetails.get().setNotesList(notesDao.findByEntityIdAndEntityType(id, Constants.SHIPMENT));
             log.info("Shipment details async fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
             ShipmentDetailsResponse response = objectMapper.convertValue(shipmentDetails.get(), ShipmentDetailsResponse.class);
-            containerCountUpdate(shipmentDetails.get(), response);
+            //containerCountUpdate(shipmentDetails.get(), response);
             return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(response));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
