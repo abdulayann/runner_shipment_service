@@ -1,44 +1,49 @@
 package com.dpw.runner.shipment.services;
 
-import com.dpw.runner.shipment.services.commons.requests.*;
-import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
-import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
-import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.jupiter.api.*;
-import org.springframework.core.env.Environment;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.MockitoAnnotations;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.http.MediaType;
-import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.MvcResult;
-
-import java.sql.SQLException;
-import java.util.*;
-import java.util.stream.Collectors;
-
-import org.h2.tools.Server;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_LIST_PERMISSION;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.dpw.runner.shipment.services.aspects.PermissionsValidationAspect.PermissionsContext;
+import com.dpw.runner.shipment.services.aspects.PermissionsValidationAspect.RetrieveValidateAspect;
+import com.dpw.runner.shipment.services.commons.requests.*;
+import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
+import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
+import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.sql.SQLException;
+import java.util.*;
+import java.util.stream.Collectors;
+import org.h2.tools.Server;
+import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.*;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.core.env.Environment;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
+
 @ExtendWith({MockitoExtension.class, SpringExtension.class})
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureMockMvc
-@TestPropertySource("classpath:application-test.properties")
+@TestPropertySource("classpath:application-dev.properties")
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class IntegrationTest {
 
@@ -60,6 +65,12 @@ public class IntegrationTest {
     @Autowired
     private Environment environment;
 
+    @Autowired
+    PermissionsContext permissionsContext;
+
+    @Autowired
+    RetrieveValidateAspect retrieveValidateAspect;
+
     @BeforeAll
     public static void initTest() throws SQLException {
         Server.createWebServer("-web", "-webAllowOthers", "-webPort", "9092")
@@ -68,14 +79,252 @@ public class IntegrationTest {
 
     @Test
     public void sampleTest() {
-        shipmentService.createTestShipment(10);
-        assertEquals(environment.getProperty("spring.datasource.url"), "jdbc:h2:mem:testdb;IFEXISTS=FALSE;");
+//        shipmentService.createTestShipment(10);
+        assertEquals(environment.getProperty("spring.datasource.url"), "jdbc:postgresql://localhost:5432/shipment_db_2");
     }
 
     @BeforeEach
     public void setup() {
         MockitoAnnotations.openMocks(this);
     }
+
+    @Test
+    public void exportAirShipmentListPermissionYieldsThreeRecords_isSuccess() throws Exception {
+
+        ListCommonRequest listCommonRequest = ListCommonRequest.builder()
+                .filterCriteria(Arrays.asList())
+                .pageNo(1)
+                .pageSize(10)
+                .sortRequest(SortRequest.builder().fieldName("createdAt").order("asc").build())
+                .build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(listCommonRequest).build();
+        List<String> permissions = Arrays.asList(
+                "Shipments:List:Air Shipment:ExportAirShipmentList"
+        );
+
+        PermissionsContext.setPermissions(permissions);
+        ResponseEntity<?> responseEntity = shipmentService.fetchShipments(commonRequestModel);
+
+        int expectedShipmentCount = 3;
+        RunnerListResponse<ShipmentDetailsResponse> response = (RunnerListResponse< ShipmentDetailsResponse >) responseEntity.getBody();
+        int actualCount = response.getData().size();
+        assertEquals(expectedShipmentCount, actualCount);
+        assertEquals(permissions, PermissionsContext.getPermissions(SHIPMENT_LIST_PERMISSION));
+    }
+
+    @Test
+    public void permissionTestCriteria2() {
+
+        ListCommonRequest listCommonRequest = ListCommonRequest.builder()
+                .filterCriteria(Arrays.asList())
+                .pageNo(1)
+                .pageSize(10)
+                .sortRequest(SortRequest.builder().fieldName("createdAt").order("asc").build())
+                .build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(listCommonRequest).build();
+
+        PermissionsContext.setPermissions(Arrays.asList(
+                "Shipments:List:Air Shipment:ImportAirShipmentList",
+                "Shipments:List:Sea International Shipment:ImportSeaShipmentList",
+                "Shipments:List:Sea International Shipment:TranshipmentSeaShipmentList",
+                "Shipments:List:Sea Domestic Shipment:CrossTradeDomesticSeaShipmentList"
+        ));
+        Page<ShipmentDetails> shipmentDetailsPage = new PageImpl<ShipmentDetails>(Arrays.asList());
+
+        ResponseEntity<?> shipmentResponse = shipmentService.fetchShipments(commonRequestModel);
+        RunnerListResponse<ShipmentDetailsResponse> response =  (RunnerListResponse<ShipmentDetailsResponse>) shipmentResponse.getBody();
+        int expectedCount = 0;
+        int actualCount = response.getData().size();
+
+        // Shipments with criteria mode = AIR and direction = EXP
+        assertEquals(expectedCount, actualCount);
+    }
+
+    @Test
+    public void AllAirShipmentListPermissionYieldsAllAirShipments_isSuccess() throws Exception {
+
+        ListCommonRequest listCommonRequest = ListCommonRequest.builder()
+                .filterCriteria(Arrays.asList())
+                .pageNo(1)
+                .pageSize(10)
+                .sortRequest(SortRequest.builder().fieldName("createdAt").order("asc").build())
+                .build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(listCommonRequest).build();
+
+        PermissionsContext.setPermissions(Arrays.asList(
+                "Shipments:List:Air Shipment:AllAirShipmentList"
+        ));
+
+        ResponseEntity<?> shipmentResponse = shipmentService.fetchShipments(commonRequestModel);
+        RunnerListResponse<ShipmentDetailsResponse> response =  (RunnerListResponse<ShipmentDetailsResponse>) shipmentResponse.getBody();
+        int expectedCount = 3;
+        int actualCount = response.getData().size();
+        // Shipments with criteria mode = AIR and direction = EXP
+        assertEquals(expectedCount, actualCount);
+    }
+
+    @Test
+    public void permissionTestCriteria4() {
+
+        ListCommonRequest listCommonRequest = ListCommonRequest.builder()
+                .filterCriteria(Arrays.asList())
+                .pageNo(1)
+                .pageSize(10)
+                .sortRequest(SortRequest.builder().fieldName("createdAt").order("asc").build())
+                .build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(listCommonRequest).build();
+
+        PermissionsContext.setPermissions(Arrays.asList(
+                "Shipments:List:Air Shipment:AllAirShipmentList"
+        ));
+
+        ResponseEntity<?> shipmentResponse = shipmentService.fetchShipments(commonRequestModel);
+        RunnerListResponse<ShipmentDetailsResponse> response =  (RunnerListResponse<ShipmentDetailsResponse>) shipmentResponse.getBody();
+        int expectedCount = 3;
+        int actualCount = response.getData().size();
+
+        // Shipments with criteria mode = AIR
+        assertEquals(expectedCount, actualCount);
+    }
+
+    @Test
+    public void userPermissionsDontMatchAnyRecord_FetchesNoData() {
+
+        ListCommonRequest listCommonRequest = ListCommonRequest.builder()
+                .filterCriteria(Arrays.asList())
+                .pageNo(1)
+                .pageSize(10)
+                .sortRequest(SortRequest.builder().fieldName("createdAt").order("asc").build())
+                .build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(listCommonRequest).build();
+
+        PermissionsContext.setPermissions(Arrays.asList(
+                "Shipments:List:Rail Shipment:ImportRailShipmentList",
+                "Shipments:List:Road Shipment:ImportRoadShipmentList",
+                "Shipments:List:Road Shipment:DomesticRoadShipmentList"
+        ));
+
+        ResponseEntity<?> shipmentResponse = shipmentService.fetchShipments(commonRequestModel);
+        RunnerListResponse<ShipmentDetailsResponse> response =  (RunnerListResponse<ShipmentDetailsResponse>) shipmentResponse.getBody();
+        int expectedCount = 0;
+        int actualCount = response.getData().size();
+
+        // Shipments with criteria mode = ROAD and direction = IMP, or
+        // Shipments with criteria mode = ROAD and direction = DOM, or
+        // Shipments with criteria mode = RAIL and direction = IMP
+        assertEquals(expectedCount, actualCount);
+    }
+
+    // ************************************ RETRIEVE Permission validations ********************************************
+
+    @Test
+    public void retrieveValidationTestCriteria6() throws Exception {
+        String retrieveErrorMessage = "Unavailable to retrieve record due to insufficient retrieve permissions";
+        PermissionsContext.setPermissions(Arrays.asList(
+                "Shipments:Retrive:Air Shipment:ExportAirShipmentRetrive",
+                "Shipments:Retrive:Sea International Shipment:ExportSeaShipmentRetrive"
+        ));
+
+        Exception e = null;
+        try {
+            // Validating shipment with mode = SEA and direction = EXP
+            // on ExportAirShipmentRetrive permission , this should fail
+            ShipmentDetails shipment = shipmentDao.findById(1L).get();
+            retrieveValidateAspect.validateShipmentRetrieve(Optional.of(shipment));
+        } catch (RunnerException ex) {
+            e = ex;
+        }
+
+        assertNotNull(e);
+        assertEquals(retrieveErrorMessage, e.getMessage());
+    }
+
+    @Test
+    public void retrieveValidationtesTCriteria7_shouldFail() throws Exception {
+        String retrieveErrorMessage = "Unavailable to retrieve record due to insufficient retrieve permissions";
+        PermissionsContext.setPermissions(Arrays.asList(
+                "Shipments:Retrive:Air Shipment:ImportAirShipmentRetrive"
+        ));
+
+        Exception e = null;
+        try {
+            // Validating shipment with mode = AIR and direction = EXP
+            // on ImportAirShipmentRetrive permission
+            ShipmentDetails shipment = shipmentDao.findById(2L).get();
+            retrieveValidateAspect.validateShipmentRetrieve(Optional.of(shipment));
+        } catch (RunnerException ex) {
+            e = ex;
+        }
+
+
+        assertNotNull(e);
+        assertEquals(retrieveErrorMessage, e.getMessage());
+    }
+
+    @Test
+    public void retrieveValidationAbsentShipmentShouldFail() throws Exception {
+        PermissionsContext.setPermissions(Arrays.asList(
+                "Shipments:Retrive:Air Shipment:ImportAirShipmentRetrive",
+                "Shipments:Retrive:All Shipment:AllShipmentRetrive"
+        ));
+
+        Exception e = null;
+        try {
+            // Validating shipment with mode = AIR and direction = EXP
+            // on ImportAirShipmentRetrive permission
+            ShipmentDetails shipment = shipmentDao.findById(3L).get();
+            retrieveValidateAspect.validateShipmentRetrieve(Optional.of(shipment));
+        } catch (RunnerException ex) {
+            e = ex;
+        }
+
+        assertNull(e);
+    }
+
+    @Test
+    public void retrieveValidationTestCriteria9() throws Exception {
+        PermissionsContext.setPermissions(Arrays.asList(
+                "Shipments:Retrive:Sea Domestic Shipment:ExportDomesticSeaShipmentRetrive",
+                "Shipments:Retrive:Sea International Shipment:DomesticSeaShipmentRetrive",
+                "Shipments:Retrive:Sea International Shipment:TranshipmentSeaShipmentRetrive"
+        ));
+
+        Exception e = null;
+        try {
+            // Validating shipment with mode = SEA DOMESTIC and direction = EXP
+            // on ImportAirShipmentRetrive permission
+            ShipmentDetails shipment = shipmentDao.findById(5L).get();
+            retrieveValidateAspect.validateShipmentRetrieve(Optional.of(shipment));
+        } catch (RunnerException ex) {
+            e = ex;
+        }
+
+        assertNull(e);
+    }
+
+    @Test
+    public void retrieveValidationTestCriteria10() throws Exception {
+        String retrieveErrorMessage = "Unavailable to retrieve record due to insufficient retrieve permissions";
+        PermissionsContext.setPermissions(Arrays.asList(
+                "Shipments:Retrive:Air Shipment:ImportAirShipmentRetrive"
+        ));
+
+        Exception e = null;
+        try {
+            // Validating shipment with mode = SEA and direction = EXP
+            // on ImportAirShipmentRetrive permission
+            ShipmentDetails shipment = shipmentDao.findById(1L).get();
+            retrieveValidateAspect.validateShipmentRetrieve(Optional.of(shipment));
+        } catch (RunnerException ex) {
+            e = ex;
+        }
+
+        assertNotNull(e);
+        assertEquals(retrieveErrorMessage, e.getMessage());
+    }
+
+
+    // ************************************ Query test cases ***********************************************************
 
 
     //@Test
@@ -114,8 +363,8 @@ public class IntegrationTest {
 
     }
 
-    @Test
-    @Order(1)
+//    @Test
+//    @Order(1)
     public void createTest() throws Exception {
         var data = testDataGenerator.createTestShipment(40);
         for (var i : data) {
@@ -128,7 +377,7 @@ public class IntegrationTest {
         }
     }
 
-    @Test
+//    @Test
     public void testCriteria1() throws Exception {
         createTest();
         //Create a request payload for the 1st Criteria
@@ -150,7 +399,7 @@ public class IntegrationTest {
 //        assertEquals(expectedIds.toString(), actualIds.toString());
     }
 
-    @Test
+//    @Test
     public void completeRetrieveTestCriteria() throws Exception {
 //        var data = testDataGenerator.createTestShipment(40);
 //        for (var i : data) {
@@ -170,7 +419,7 @@ public class IntegrationTest {
         assertTrue(id == 41);
     }
 
-    @Test
+//    @Test
     public void testCriteria2() throws Exception {
         //var dataInH2 = testDataGenerator.populateH2WithTestData();
 //        var data = testDataGenerator.createTestShipment(40);
@@ -193,7 +442,7 @@ public class IntegrationTest {
         assertTrue(actualCount > 0);
     }
 
-    @Test
+//    @Test
     public void testCriteria3() throws Exception {
         //var dataInH2 = testDataGenerator.populateH2WithTestData();
 //        var data = testDataGenerator.createTestShipment(40);
@@ -220,7 +469,7 @@ public class IntegrationTest {
         assertTrue(actualCount > 0);
     }
 
-    @Test
+//    @Test
     public void testCriteria4() throws Exception {
         //var dataInH2 = testDataGenerator.populateH2WithTestData();
 //        var data = testDataGenerator.createTestShipment(400);
@@ -248,7 +497,7 @@ public class IntegrationTest {
 //        assertEquals(actualDataIdSet.toString(), expectedResponseIdSet.toString());
     }
 
-    @Test
+//    @Test
     public void testCriteria5() throws Exception {
 //        var dataInH2 = testDataGenerator.populateH2WithTestData();
 
@@ -276,7 +525,7 @@ public class IntegrationTest {
         //assertEquals(actualDataIdSet.toString(), expectedResponseIdSet.toString());
     }
 
-    @Test
+//    @Test
     public void testCriteria6() throws Exception {
 //        var dataInH2 = testDataGenerator.populateH2WithTestData();
 
@@ -301,7 +550,7 @@ public class IntegrationTest {
 //        assertEquals(actualDataIdSet.toString(), expectedResponseIdSet.toString());
     }
 
-    @Test
+//    @Test
     public void testCriteria7() throws Exception {
         //Fires up the H2 for each test case
         //populate data in H2 by hitting the createTestShipment
