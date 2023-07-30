@@ -47,8 +47,13 @@ public class PermissionsAspect {
         List<FilterCriteria> criterias = PermissionUtil.generateFilterCriteriaFromPermissions(permissionList);
 
         FilterCriteria criteria1 = FilterCriteria.builder().innerFilter(listCommonRequest.getFilterCriteria()).build();
-        FilterCriteria criteria2 = FilterCriteria.builder().innerFilter(criterias).logicOperator("AND").build();
-        listCommonRequest.setFilterCriteria(Arrays.asList(criteria1, criteria2));
+        FilterCriteria criteria2 = FilterCriteria.builder().innerFilter(criterias).build();
+        if(criteria1.getInnerFilter().size() > 0){
+            criteria2.setLogicOperator("AND");
+            listCommonRequest.setFilterCriteria(Arrays.asList(criteria1, criteria2));
+        }
+        else
+            listCommonRequest.setFilterCriteria(Arrays.asList(criteria2));
     }
 
     private FilterCriteria constructCriteria(String fieldName, Object value, String operator, String logicalOperator) {

@@ -28,10 +28,16 @@ public class RetrieveValidateAspect {
         int retrieveValidationFields = 4;
         Set<String> validatedFields = new HashSet<>();
         if(shipment.isPresent()){
-            String transportMode = shipment.get().getTransportMode().toLowerCase();
-            String direction = shipment.get().getDirection().toLowerCase();
-            String shipmentType = shipment.get().getShipmentType().toLowerCase();
-            Boolean domesticType = shipment.get().getIsDomestic();
+            String transportMode = null, direction = null, shipmentType = null;
+            Boolean domesticType = null;
+            if(shipment.get().getTransportMode() != null)
+                transportMode = shipment.get().getTransportMode().toLowerCase();
+            if(shipment.get().getDirection() != null)
+                direction = shipment.get().getDirection().toLowerCase();
+            if(shipment.get().getShipmentType() != null)
+                shipmentType = shipment.get().getShipmentType().toLowerCase();
+            if(shipment.get().getIsDomestic() != null)
+                domesticType = shipment.get().getIsDomestic();
 
             for (String permission : userPermissions){
                 String v1MappedPermission = V1PermissionMapUtil.getPermissionName(permission);
@@ -45,15 +51,18 @@ public class RetrieveValidateAspect {
                 String validShipmentType = getParameterFromPermission(SHIPMENT_TYPE_INDEX, parameterList);
                 String validDomesticType = getParameterFromPermission(IS_DOMESTIC_INDEX, parameterList);
 
-                if(validTransportMode.equals(ALL) || transportMode.equals(validTransportMode))
-                    validatedFields.add(transportMode);
-                if(validDirection.equals(ALL) || direction.equals(validDirection))
-                    validatedFields.add(direction);
-                if(validShipmentType.equals(ALL) || shipmentType.equals(validShipmentType))
-                    validatedFields.add(shipmentType);
-                if(validDomesticType.equals(ALL) || domesticType.equals(validDomesticType.equals(DOMESTIC)))
-                    validatedFields.add(domesticType.toString());
-
+                if(validTransportMode.equals(ALL) || transportMode != null && transportMode.equals(validTransportMode)){
+                    validatedFields.add("transportMode");
+                    if(validDirection.equals(ALL) || direction != null && direction.equals(validDirection)){
+                        validatedFields.add("direction");
+                        if(validShipmentType.equals(ALL) || shipmentType != null && shipmentType.equals(validShipmentType)){
+                            validatedFields.add("shipmentType");
+                            if(validDomesticType.equals(ALL) || domesticType != null && domesticType.equals(validDomesticType.equals(DOMESTIC))){
+                                validatedFields.add("domesticType");
+                            }
+                        }
+                    }
+                }
                 if(validatedFields.size() == retrieveValidationFields)
                     return;
             }
