@@ -41,6 +41,14 @@ public class ArrivalDepartureDetails extends MultiTenancy {
     @JoinColumn(name = "cfs_id", referencedColumnName = "id")
     private Parties CFSId;
 
+    @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL)
+    @JoinColumn(name = "first_foreign_port_id", referencedColumnName = "id")
+    private Parties firstForeignPortId;
+
+    @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL)
+    @JoinColumn(name = "last_foreign_port_id", referencedColumnName = "id")
+    private Parties lastForeignPortId;
+
     @Column(name = "first_foreign_port")
     private String firstForeignPort;
 

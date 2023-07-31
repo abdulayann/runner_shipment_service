@@ -25,6 +25,8 @@ ALTER TABLE IF EXISTS arrival_departure_details
     ADD COLUMN transport_port_id BIGINT,
     ADD COLUMN cto_id BIGINT,
     ADD COLUMN cfs_id BIGINT,
+    ADD COLUMN first_foreign_port_id BIGINT,
+    ADD COLUMN last_foreign_port_id BIGINT,
     ADD COLUMN first_foreign_port VARCHAR,
     ADD COLUMN last_foreign_port VARCHAR,
     ADD COLUMN type VARCHAR,

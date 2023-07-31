@@ -22,8 +22,10 @@ public class ArrivalDepartureDetailsRequest implements IRunnerRequest {
     private PartiesRequest transportPortId;
     private PartiesRequest CTOId;
     private PartiesRequest CFSId;
-    private String firstForeignPortId;
-    private String lastForeignPortId;
+    private PartiesRequest firstForeignPortId;
+    private PartiesRequest lastForeignPortId;
+    private String firstForeignPort;
+    private String lastForeignPort;
     private String type;
     private LocalDateTime firstForeignPortArrivalDate;
     private LocalDateTime lastForeignPortDepartureDate;

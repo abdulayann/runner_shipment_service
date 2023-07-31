@@ -20,8 +20,10 @@ public class ArrivalDepartureDetailsResponse implements IRunnerResponse {
     private PartiesResponse transportPortId;
     private PartiesResponse CFSId;
     private PartiesResponse CTOId;
-    private String firstForeignPortId;
-    private String lastForeignPortId;
+    private PartiesResponse firstForeignPortId;
+    private PartiesResponse lastForeignPortId;
+    private String firstForeignPort;
+    private String lastForeignPort;
     private String type;
     private LocalDateTime firstForeignPortArrivalDate;
     private LocalDateTime lastForeignPortDepartureDate;
