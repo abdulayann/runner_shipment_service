@@ -81,7 +81,8 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     private PartiesResponse consignee;
     private AdditionalDetailResponse additionalDetails;
     private CarrierDetailResponse carrierDetails;
-    private List<PickupDeliveryDetailsResponse> pickupDeliveryDetailsList;
+    private PickupDeliveryDetailsResponse pickupDetails;
+    private PickupDeliveryDetailsResponse deliveryDetails;
     private List<NotesResponse> notesList;
     private List<TruckDriverDetailsResponse> truckDriverDetails;
     private List<ServiceDetailsResponse> servicesList;

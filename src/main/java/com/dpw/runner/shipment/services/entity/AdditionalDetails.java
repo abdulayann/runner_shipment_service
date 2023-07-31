@@ -234,13 +234,13 @@ public class AdditionalDetails extends MultiTenancy {
     private String screeningStatus;
 
     @Column(name = "paid_place")
-    private Long paidPlace;
+    private String paidPlace;
 
-    @Column(name = "place_of_issue_id")
-    private Long placeOfIssue;
+    @Column(name = "place_of_issue")
+    private String placeOfIssue;
 
     @Column(name = "place_of_supply")
-    private Long placeOfSupply;
+    private String placeOfSupply;
 
     @Column(name = "date_of_issue")
     private LocalDateTime dateOfIssue;
