@@ -92,4 +92,7 @@ public class ShipmentListResponse implements IRunnerResponse {
     private Set<String> containerNumbers;
     private PickupDeliveryDetailsListResponse pickupDetails;
     private PickupDeliveryDetailsListResponse deliveryDetails;
+    private String createdBy;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 }
