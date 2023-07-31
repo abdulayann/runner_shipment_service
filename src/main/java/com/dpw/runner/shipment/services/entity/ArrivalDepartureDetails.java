@@ -26,48 +26,34 @@ import java.util.UUID;
 public class ArrivalDepartureDetails extends MultiTenancy {
 
     @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL)
-    @JoinColumn(name = "departure_container_yard_id", referencedColumnName = "id")
-    private Parties dContainerYardId;
+    @JoinColumn(name = "container_yard_id", referencedColumnName = "id")
+    private Parties containerYardId;
 
     @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL)
-    @JoinColumn(name = "departure_transport_port_id", referencedColumnName = "id")
-    private Parties dTransportPortId;
+    @JoinColumn(name = "transport_port_id", referencedColumnName = "id")
+    private Parties transportPortId;
 
     @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL)
-    @JoinColumn(name = "departure_first_foreign_port_id", referencedColumnName = "id")
-    private Parties dFirstForeignPortId;
+    @JoinColumn(name = "cto_id", referencedColumnName = "id")
+    private Parties CTOId;
 
     @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL)
-    @JoinColumn(name = "departure_last_foreign_port_id", referencedColumnName = "id")
-    private Parties dLastForeignPortId;
+    @JoinColumn(name = "cfs_id", referencedColumnName = "id")
+    private Parties CFSId;
 
-    @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL)
-    @JoinColumn(name = "arrival_container_yard_id", referencedColumnName = "id")
-    private Parties aContainerYardId;
+    @Column(name = "first_foreign_port")
+    private String firstForeignPort;
 
-    @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL)
-    @JoinColumn(name = "arrival_transport_port_id", referencedColumnName = "id")
-    private Parties aTransportPortId;
+    @Column(name = "last_foreign_port")
+    private String lastForeignPort;
 
-    @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL)
-    @JoinColumn(name = "arrival_first_arrival_port_id", referencedColumnName = "id")
-    private Parties aFirstArrivalPortId;
+    @Column(name = "type")
+    private String type;
 
-    @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL)
-    @JoinColumn(name = "arrival_last_foreign_port_id", referencedColumnName = "id")
-    private Parties aLastForeignPortId;
+    @Column(name = "first_foreign_port_arrival_date")
+    private LocalDateTime firstForeignPortArrivalDate;
 
-    @Column(name = "departure_first_foreign_port_arrival_date")
-    private LocalDateTime dFirstForeignPortArrivalDate;
-
-    @Column(name = "departure_last_foreign_port_departure_date")
-    private LocalDateTime dLastForeignPortDepartureDate;
-
-    @Column(name = "arrival_first_arrival_port_arrival_date")
-    private LocalDateTime aFirstArrivalPortArrivalDate;
-
-    @Column(name = "arrival_last_foreign_port_departure_date")
-    private LocalDateTime aLastForeignPortDepartureDate;
-
+    @Column(name = "last_foreign_port_departure_date")
+    private LocalDateTime lastForeignPortDepartureDate;
 
 }

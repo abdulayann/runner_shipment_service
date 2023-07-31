@@ -69,7 +69,8 @@ public class ShipmentRequest extends CommonRequest implements IRunnerRequest {
     private List<PackingRequest> packingList;
     private String packsUnit;
     private String paymentTerms;
-    private List<PickupDeliveryDetailsRequest> pickupDeliveryDetailsList;
+    private PickupDeliveryDetailsRequest pickupDetails;
+    private PickupDeliveryDetailsRequest deliveryDetails;
     private Integer prevShipmentStatus;
     private Long receivingBranch;
     private List<ReferenceNumbersRequest> referenceNumbersList;

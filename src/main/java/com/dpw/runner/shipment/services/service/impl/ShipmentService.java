@@ -425,10 +425,6 @@ public class ShipmentService implements IShipmentService {
             if (serviceDetailsRequest != null)
                 shipmentDetails.setServicesList(serviceDetailsDao.saveEntityFromShipment(convertToEntityList(serviceDetailsRequest, ServiceDetails.class), shipmentId));
 
-            List<PickupDeliveryDetailsRequest> pickupDeliveryDetailsRequest = request.getPickupDeliveryDetailsList();
-            if (pickupDeliveryDetailsRequest != null)
-                shipmentDetails.setPickupDeliveryDetailsList(pickupDeliveryDetailsDao.saveEntityFromShipment(convertToEntityList(pickupDeliveryDetailsRequest, PickupDeliveryDetails.class), shipmentId));
-
         } catch (Exception e) {
             log.error(e.getMessage());
             TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
@@ -452,12 +448,6 @@ public class ShipmentService implements IShipmentService {
     private void createPartiesAsync(ShipmentDetails shipmentDetails, List<PartiesRequest> partiesRequest) {
         partiesRequest.forEach(parties -> {
             createParties(shipmentDetails, parties);
-        });
-    }
-
-    private void createPickupDeliveryAsync(ShipmentDetails shipmentDetails, List<PickupDeliveryDetailsRequest> pickupDeliveryDetailsRequest) {
-        pickupDeliveryDetailsRequest.forEach(pickupDelivery -> {
-            createPickupDelivery(shipmentDetails, pickupDelivery);
         });
     }
 
@@ -569,12 +559,6 @@ public class ShipmentService implements IShipmentService {
     }
 
     @Transactional
-    public void createPickupDelivery(ShipmentDetails shipmentDetails, PickupDeliveryDetailsRequest pickupDeliveryDetailsRequest) {
-        pickupDeliveryDetailsRequest.setShipmentId(shipmentDetails.getId());
-        pickupDeliveryDetailsDao.save(objectMapper.convertValue(pickupDeliveryDetailsRequest, PickupDeliveryDetails.class));
-    }
-
-    @Transactional
     public void createReferenceNumber(ShipmentDetails shipmentDetails, ReferenceNumbersRequest referenceNumbersRequest) {
         referenceNumbersRequest.setShipmentId(shipmentDetails.getId());
         referenceNumbersDao.save(objectMapper.convertValue(referenceNumbersRequest, ReferenceNumbers.class));
@@ -671,7 +655,6 @@ public class ShipmentService implements IShipmentService {
         List<RoutingsRequest> routingsRequestList = shipmentRequest.getRoutingsList();
         List<ServiceDetailsRequest> serviceDetailsRequestList = shipmentRequest.getServicesList();
         CarrierDetailRequest carrierDetailRequest = shipmentRequest.getCarrierDetails();
-        List<PickupDeliveryDetailsRequest> pickupDeliveryDetailsRequestList = shipmentRequest.getPickupDeliveryDetailsList();
 
         // TODO- implement Validation logic
         long id = shipmentRequest.getId();
@@ -729,6 +712,10 @@ public class ShipmentService implements IShipmentService {
                 entity.setConsignee(oldEntity.get().getConsignee());
             if(entity.getConsigner() == null)
                 entity.setConsigner(oldEntity.get().getConsigner());
+            if(entity.getPickupDetails() == null)
+                entity.setPickupDetails(oldEntity.get().getPickupDetails());
+            if(entity.getDeliveryDetails() == null)
+                entity.setDeliveryDetails(oldEntity.get().getDeliveryDetails());
 
             List<BookingCarriage> oldBookingCarriages = oldEntity.get().getBookingCarriagesList();
             List<Packing> oldPackings = oldEntity.get().getPackingList();
@@ -738,7 +725,6 @@ public class ShipmentService implements IShipmentService {
             List<ReferenceNumbers> oldReferenceNumbers = oldEntity.get().getReferenceNumbersList();
             List<Routings> oldRoutings = oldEntity.get().getRoutingsList();
             List<ServiceDetails> oldServiceDetails = oldEntity.get().getServicesList();
-            List<PickupDeliveryDetails> oldPickupDeliveryDetails = oldEntity.get().getPickupDeliveryDetailsList();
 
             entity = shipmentDao.update(entity);
 
@@ -769,9 +755,6 @@ public class ShipmentService implements IShipmentService {
             }
             if (serviceDetailsRequestList == null) {
                 response.setServicesList(convertToDtoList(oldServiceDetails, ServiceDetailsResponse.class));
-            }
-            if (pickupDeliveryDetailsRequestList == null) {
-                response.setPickupDeliveryDetailsList(convertToDtoList(oldPickupDeliveryDetails, PickupDeliveryDetailsResponse.class));
             }
 
             if (bookingCarriageRequestList != null) {
@@ -805,10 +788,6 @@ public class ShipmentService implements IShipmentService {
             if (serviceDetailsRequestList != null) {
                 List<ServiceDetails> updatedServiceDetails = serviceDetailsDao.updateEntityFromShipment(convertToEntityList(serviceDetailsRequestList, ServiceDetails.class), id);
                 response.setServicesList(convertToDtoList(updatedServiceDetails, ServiceDetailsResponse.class));
-            }
-            if (pickupDeliveryDetailsRequestList != null) {
-                List<PickupDeliveryDetails> updatedPickupDeliveryDetails = pickupDeliveryDetailsDao.updateEntityFromShipment(convertToEntityList(pickupDeliveryDetailsRequestList, PickupDeliveryDetails.class), id);
-                response.setPickupDeliveryDetailsList(convertToDtoList(updatedPickupDeliveryDetails, PickupDeliveryDetailsResponse.class));
             }
             if (fileRepoRequestList != null) {
                 List<FileRepo> updatedFileRepos = fileRepoDao.updateEntityFromOtherEntity(convertToEntityList(fileRepoRequestList, FileRepo.class), id, Constants.SHIPMENT);
@@ -1017,8 +996,6 @@ public class ShipmentService implements IShipmentService {
         List<RoutingsRequest> routingsRequestList = shipmentRequest.getRoutingsList();
         List<ServiceDetailsRequest> serviceDetailsRequestList = shipmentRequest.getServicesList();
         CarrierDetailRequest carrierDetailRequest = shipmentRequest.getCarrierDetails();
-        List<PickupDeliveryDetailsRequest> pickupDeliveryDetailsRequestList = shipmentRequest.getPickupDeliveryDetailsList();
-
         // TODO- implement Validation logic
         long id = shipmentRequest.getId().get();
         Optional<ShipmentDetails> oldEntity = shipmentDao.findById(id);
@@ -1097,10 +1074,6 @@ public class ShipmentService implements IShipmentService {
             if (serviceDetailsRequestList != null) {
                 List<ServiceDetails> updatedServiceDetails = serviceDetailsDao.updateEntityFromShipment(convertToEntityList(serviceDetailsRequestList, ServiceDetails.class), id);
                 response.setServicesList(convertToDtoList(updatedServiceDetails, ServiceDetailsResponse.class));
-            }
-            if (pickupDeliveryDetailsRequestList != null) {
-                List<PickupDeliveryDetails> updatedPickupDeliveryDetails = pickupDeliveryDetailsDao.updateEntityFromShipment(convertToEntityList(pickupDeliveryDetailsRequestList, PickupDeliveryDetails.class), id);
-                response.setPickupDeliveryDetailsList(convertToDtoList(updatedPickupDeliveryDetails, PickupDeliveryDetailsResponse.class));
             }
 
             return ResponseHelper.buildSuccessResponse(response);

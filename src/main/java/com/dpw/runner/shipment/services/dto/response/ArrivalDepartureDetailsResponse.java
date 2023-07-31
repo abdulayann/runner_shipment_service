@@ -16,16 +16,13 @@ import java.util.UUID;
 public class ArrivalDepartureDetailsResponse implements IRunnerResponse {
     private Long id;
     private UUID guid;
-    private PartiesResponse dContainerYardId;
-    private PartiesResponse dTransportPortId;
-    private PartiesResponse dFirstForeignPortId;
-    private PartiesResponse dLastForeignPortId;
-    private PartiesResponse aContainerYardId;
-    private PartiesResponse aTransportPortId;
-    private PartiesResponse aFirstArrivalPortId;
-    private PartiesResponse aLastForeignPortId;
-    private LocalDateTime dFirstForeignPortArrivalDate;
-    private LocalDateTime dLastForeignPortDepartureDate;
-    private LocalDateTime aFirstArrivalPortArrivalDate;
-    private LocalDateTime aLastForeignPortDepartureDate;
+    private PartiesResponse containerYardId;
+    private PartiesResponse transportPortId;
+    private PartiesResponse CFSId;
+    private PartiesResponse CTOId;
+    private String firstForeignPortId;
+    private String lastForeignPortId;
+    private String type;
+    private LocalDateTime firstForeignPortArrivalDate;
+    private LocalDateTime lastForeignPortDepartureDate;
 }

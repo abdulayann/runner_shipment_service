@@ -265,8 +265,13 @@ public class ShipmentDetails extends MultiTenancy {
     @Where(clause = "entity_type = 'SHIPMENT'")
     private List<Notes> notesList;
 
-    @OneToMany(fetch = FetchType.LAZY, mappedBy = "shipmentId")
-    private List<PickupDeliveryDetails> pickupDeliveryDetailsList;
+    @OneToOne(targetEntity = PickupDeliveryDetails.class, cascade = CascadeType.ALL)
+    @JoinColumn(name = "delivery_details_id", referencedColumnName = "id")
+    private PickupDeliveryDetails deliveryDetails;
+
+    @OneToOne(targetEntity = PickupDeliveryDetails.class, cascade = CascadeType.ALL)
+    @JoinColumn(name = "pickup_details_id", referencedColumnName = "id")
+    private PickupDeliveryDetails pickupDetails;
 
     @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "client_id", referencedColumnName = "id")
