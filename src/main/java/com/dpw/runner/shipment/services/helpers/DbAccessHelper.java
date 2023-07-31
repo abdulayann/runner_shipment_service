@@ -140,26 +140,12 @@ public class DbAccessHelper {
     private static <T> Specification<T> createSpecification(Criteria input, SortRequest sortRequest, Map<String, Join<Class, T>> map, String className, List<String> tableName) {
         return (root, query, criteriaBuilder) -> {
             Path path = null;
+            Join<Class, T> join;
             if(!query.getResultType().isAssignableFrom(Long.class) && tableName != null) {
                 for (String table : tableName) {
-                    Join<Class, T> join = (Join) root.fetch(table, JoinType.LEFT);
+                    join = (Join) root.fetch(table, JoinType.LEFT);
                     map.put(table, join);
-                    path = join;
                     query.distinct(true);
-                }
-            }
-
-            if (tableNames.get(input.getFieldName()).getTableName().equalsIgnoreCase(className)) {
-                path = root;
-            } else {
-                if (root.getJoins() == null || root.getJoins().size() == 0 || map.get(tableNames.get(input.getFieldName()).getTableName()) == null ||
-                        (!root.getJoins().contains(map.get(tableNames.get(input.getFieldName()).getTableName())) && !root.getFetches().contains(map.get(tableNames.get(input.getFieldName()).getTableName())))) {
-                    Join<Class, T> join = root.join(tableNames.get(input.getFieldName()).getTableName(), JoinType.LEFT);
-                    map.put(tableNames.get(input.getFieldName()).getTableName(), join);
-                    path = join;
-                    query.distinct(true);
-                } else {
-                    path = map.get(tableNames.get(input.getFieldName()).getTableName());
                 }
             }
 
@@ -171,11 +157,33 @@ public class DbAccessHelper {
                         query.orderBy(Arrays.asList(criteriaBuilder.asc(root.get(getFieldName(sortRequest.getFieldName())))));
                     }
                 } else {
-                    if (sortRequest.getOrder().equalsIgnoreCase("DESC")) {
-                        query.orderBy(Arrays.asList(criteriaBuilder.desc(((Join) root.fetch(tableNames.get(sortRequest.getFieldName()).getTableName(), JoinType.LEFT)).get(getFieldName(sortRequest.getFieldName())))));
+                    if ((root.getJoins() == null && root.getFetches() == null) || (root.getJoins().size() == 0 && root.getFetches().size() == 0) || map.get(tableNames.get(sortRequest.getFieldName()).getTableName()) == null ||
+                            (!root.getJoins().contains(map.get(tableNames.get(sortRequest.getFieldName()).getTableName())) && !root.getFetches().contains(map.get(tableNames.get(sortRequest.getFieldName()).getTableName())))) {
+                        join = (Join) root.fetch(tableNames.get(sortRequest.getFieldName()).getTableName(), JoinType.LEFT);
+                        map.put(tableNames.get(sortRequest.getFieldName()).getTableName(), join);
+                        query.distinct(true);
                     } else {
-                        query.orderBy(Arrays.asList(criteriaBuilder.asc(((Join) root.fetch(tableNames.get(sortRequest.getFieldName()).getTableName(), JoinType.LEFT)).get(getFieldName(sortRequest.getFieldName())))));
+                        join = map.get(tableNames.get(sortRequest.getFieldName()).getTableName());
                     }
+                    if (sortRequest.getOrder().equalsIgnoreCase("DESC")) {
+                        query.orderBy(Arrays.asList(criteriaBuilder.desc(((Join) join).get(getFieldName(sortRequest.getFieldName())))));
+                    } else {
+                        query.orderBy(Arrays.asList(criteriaBuilder.asc(((Join) join).get(getFieldName(sortRequest.getFieldName())))));
+                    }
+                }
+            }
+
+            if (tableNames.get(input.getFieldName()).getTableName().equalsIgnoreCase(className)) {
+                path = root;
+            } else {
+                if ((root.getJoins() == null && root.getFetches() == null) || (root.getJoins().size() == 0 && root.getFetches().size() == 0) || map.get(tableNames.get(input.getFieldName()).getTableName()) == null ||
+                        (!root.getJoins().contains(map.get(tableNames.get(input.getFieldName()).getTableName())) && !root.getFetches().contains(map.get(tableNames.get(input.getFieldName()).getTableName())))) {
+                    join = root.join(tableNames.get(input.getFieldName()).getTableName(), JoinType.LEFT);
+                    map.put(tableNames.get(input.getFieldName()).getTableName(), join);
+                    path = join;
+                    query.distinct(true);
+                } else {
+                    path = map.get(tableNames.get(input.getFieldName()).getTableName());
                 }
             }
             return createSpecification(tableNames.get(input.getFieldName()).getDataType(), input, path, criteriaBuilder, getFieldName(input.getFieldName()));

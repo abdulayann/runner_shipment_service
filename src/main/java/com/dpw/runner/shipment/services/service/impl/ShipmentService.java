@@ -241,6 +241,7 @@ public class ShipmentService implements IShipmentService {
     }
 
     @Override
+    @Transactional
     public ResponseEntity<?> fetchShipments(CommonRequestModel commonRequestModel) {
         ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
         request.setIncludeTbls(Arrays.asList("additionalDetails", "client", "consigner", "consignee", "carrierDetails"));
