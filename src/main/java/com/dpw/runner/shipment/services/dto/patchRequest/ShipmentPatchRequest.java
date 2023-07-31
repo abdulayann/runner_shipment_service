@@ -20,7 +20,7 @@ import java.util.List;
 public class ShipmentPatchRequest extends CommonRequest implements IRunnerRequest {
     private AdditionalDetailRequest additionalDetail;
     private JsonNullable<String> additionalTerms;
-    private JsonNullable<Integer> assignedTo;
+    private JsonNullable<String> assignedTo;
     private JsonNullable<Boolean> autoUpdateWtVol;
     private List<BookingCarriageRequest> bookingCarriagesList;
     private JsonNullable<String> bookingNumber;

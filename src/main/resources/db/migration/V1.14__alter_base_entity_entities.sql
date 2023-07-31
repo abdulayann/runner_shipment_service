@@ -93,7 +93,8 @@ ALTER TABLE services
    ALTER COLUMN updated_by TYPE varchar (50);
 ALTER TABLE shipment_details
    ALTER COLUMN created_by TYPE varchar (50),
-   ALTER COLUMN updated_by TYPE varchar (50);
+   ALTER COLUMN updated_by TYPE varchar (50),
+   ALTER COLUMN assigned_to TYPE varchar (50);
 ALTER TABLE shipments_containers_mapping
    ALTER COLUMN created_by TYPE varchar (50),
    ALTER COLUMN updated_by TYPE varchar (50);

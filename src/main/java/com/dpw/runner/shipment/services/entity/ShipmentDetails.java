@@ -95,7 +95,7 @@ public class ShipmentDetails extends MultiTenancy {
     private Boolean isDomestic;
 
     @Column(name = "assigned_to")
-    private Integer assignedTo;
+    private String assignedTo;
 
     @Column(name = "additional_terms")
     private String additionalTerms;

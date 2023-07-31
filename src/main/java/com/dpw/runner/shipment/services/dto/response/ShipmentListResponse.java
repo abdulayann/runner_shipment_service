@@ -34,7 +34,7 @@ public class ShipmentListResponse implements IRunnerResponse {
     private String incoterms;
     private String shipmentId;
     private Boolean isDomestic;
-    private Integer assignedTo;
+    private String assignedTo;
     private String additionalTerms;
     private String goodsDescription;
     private BigDecimal weight;
