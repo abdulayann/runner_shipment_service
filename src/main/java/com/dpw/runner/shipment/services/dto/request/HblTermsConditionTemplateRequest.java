@@ -1,5 +1,7 @@
 package com.dpw.runner.shipment.services.dto.request;
 
+import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
+import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import com.dpw.runner.shipment.services.entity.enums.TypeOfHblPrint;
 import io.swagger.annotations.ApiModel;
 import lombok.*;
@@ -11,7 +13,7 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class HblTermsConditionTemplateRequest {
+public class HblTermsConditionTemplateRequest extends CommonRequest implements IRunnerRequest {
 
     private Long id;
     private String templateCode;

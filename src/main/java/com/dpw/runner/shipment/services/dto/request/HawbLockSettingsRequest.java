@@ -1,5 +1,7 @@
 package com.dpw.runner.shipment.services.dto.request;
 
+import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
+import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import io.swagger.annotations.ApiModel;
 import lombok.*;
 
@@ -10,7 +12,7 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class HawbLockSettingsRequest {
+public class HawbLockSettingsRequest extends CommonRequest implements IRunnerRequest {
 
     private Long id;
     private Boolean shipperNameLock;
