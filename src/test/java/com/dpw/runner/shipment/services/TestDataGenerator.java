@@ -220,7 +220,6 @@ public class TestDataGenerator {
             shipmentRequest1.setNotesList(createNotesRequest(new Random().nextInt(10)));
             shipmentRequest1.setReferenceNumbersList(createReferenceNumberRequest(new Random().nextInt(10)));
             shipmentRequest1.setRoutingsList(createRountingsRequest(new Random().nextInt(10)));
-            shipmentRequest1.setPickupDeliveryDetailsList(createPickupDeliverDetailsRequest(10));
             shipmentRequest1.setServicesList(createServiceDetailsRequest(10));
 
             requests.add(shipmentRequest1);
@@ -442,7 +441,7 @@ public class TestDataGenerator {
 
         return AdditionalDetailRequest.builder().releaseType(generateString(3)).houseBillType(generateString(3))
                 .deliveryMode(TRANSPORT_MODES.get(random % TRANSPORT_MODES.size())).screeningStatus(generateString(3)).original(1).printedOriginal(true)
-                .hsnNumber(Integer.toUnsignedLong(random)).paidPlace(Integer.toUnsignedLong(random)).placeOfIssue(Integer.toUnsignedLong(random))
+                .hsnNumber(Integer.toUnsignedLong(random))
                 .BOENumber(generateString(10)).build();
 
     }
