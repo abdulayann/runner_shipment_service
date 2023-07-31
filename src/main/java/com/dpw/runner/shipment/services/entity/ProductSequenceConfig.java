@@ -18,7 +18,7 @@ import java.time.LocalDateTime;
 @Table(name = "product_sequence_config")
 @NoArgsConstructor
 @AllArgsConstructor
-@SQLDelete(sql = "UPDATE email_templates SET is_deleted = true WHERE id=?")
+@SQLDelete(sql = "UPDATE product_sequence_config SET is_deleted = true WHERE id=?")
 @Where(clause = "is_deleted = false")
 public class ProductSequenceConfig extends MultiTenancy {
 

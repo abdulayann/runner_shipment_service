@@ -17,7 +17,7 @@ import javax.persistence.*;
 @Table(name = "tenant_products")
 @NoArgsConstructor
 @AllArgsConstructor
-@SQLDelete(sql = "UPDATE email_templates SET is_deleted = true WHERE id=?")
+@SQLDelete(sql = "UPDATE tenant_products SET is_deleted = true WHERE id=?")
 @Where(clause = "is_deleted = false")
 public class TenantProducts extends MultiTenancy {
 
