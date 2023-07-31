@@ -1,9 +1,10 @@
 package com.dpw.runner.shipment.services.dto.response;
 
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import lombok.Data;
 
 @Data
-public class HawbLockSettingsResponse {
+public class HawbLockSettingsResponse implements IRunnerResponse {
 
     private Long id;
     private Boolean shipperNameLock;

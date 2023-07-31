@@ -1,0 +1,17 @@
+package com.dpw.runner.shipment.services.dto.response;
+
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.entity.enums.ProductType;
+import lombok.Data;
+
+@Data
+public class TenantProductsResponse implements IRunnerResponse {
+
+    private Long id;
+    private ProductType productType;
+    private String alias;
+    private Integer priority;
+    private Boolean enabled;
+    private Boolean enableGrouping;
+    private Long shipmentSettingsId;
+}

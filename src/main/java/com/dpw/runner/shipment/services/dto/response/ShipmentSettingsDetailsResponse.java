@@ -1,7 +1,6 @@
 package com.dpw.runner.shipment.services.dto.response;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.dto.request.MawbLockSettingsResponse;
 import com.dpw.runner.shipment.services.entity.enums.GenerationType;
 import lombok.Data;
 
@@ -135,6 +134,9 @@ public class ShipmentSettingsDetailsResponse implements IRunnerResponse {
     private Boolean cargoFinanceBooking;
     private Boolean unicoBlObject;
     private HblLockSettingsResponse hblLockSettings;
+    private Boolean customisedSequence;
+    private List<TenantProductsResponse> tenantProducts;
+    private List<ProductSequenceConfigResponse> productSequenceConfig;
     private HawbLockSettingsResponse hawbLockSettingsId;
     private MawbLockSettingsResponse mawbLockSettings;
 }

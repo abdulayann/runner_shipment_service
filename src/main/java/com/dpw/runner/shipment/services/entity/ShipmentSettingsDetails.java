@@ -418,6 +418,17 @@ public class ShipmentSettingsDetails extends MultiTenancy {
     @JoinColumn(name = "hbl_lock_settings_id", referencedColumnName = "id")
     private HblLockSettings hblLockSettings;
 
+    // Sequence Configuration
+
+    @Column(name = "customised_sequence")
+    private Boolean customisedSequence;
+
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "shipmentSettingsId")
+    private List<TenantProducts> tenantProducts;
+
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "shipmentSettingsId")
+    private List<ProductSequenceConfig> productSequenceConfig;
+
     //AWB Lock Settings
 
     @OneToOne(targetEntity = HawbLockSettings.class)

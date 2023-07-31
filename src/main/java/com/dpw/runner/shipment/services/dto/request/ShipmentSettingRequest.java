@@ -142,6 +142,9 @@ public class ShipmentSettingRequest extends CommonRequest implements IRunnerRequ
     private Boolean cargoFinanceBooking;
     private Boolean unicoBlObject;
     private HblLockSettingsRequest hblLockSettings;
+    private Boolean customisedSequence;
+    private List<TenantProductsRequest> tenantProducts;
+    private List<ProductSequenceConfigRequest> productSequenceConfig;
     private HawbLockSettingsRequest hawbLockSettingsId;
     private MawbLockSettingsRequest mawbLockSettings;
 }
