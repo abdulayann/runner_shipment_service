@@ -236,7 +236,7 @@ public class AdditionalDetails extends MultiTenancy {
     @Column(name = "paid_place")
     private String paidPlace;
 
-    @Column(name = "place_of_issue_id")
+    @Column(name = "place_of_issue")
     private String placeOfIssue;
 
     @Column(name = "place_of_supply")
