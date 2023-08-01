@@ -260,6 +260,7 @@ public class ShipmentService implements IShipmentService {
         lst.forEach(shipmentDetail -> {
             ShipmentListResponse response = modelMapper.map(shipmentDetail, ShipmentListResponse.class);
             containerCountUpdate(shipmentDetail, response);
+            setEventData(shipmentDetail, response);
             responseList.add(response);
         });
         return responseList;
@@ -307,6 +308,25 @@ public class ShipmentService implements IShipmentService {
         response.setContainer40RECount(container40RECount);
         response.setContainerNumbers(containerNumber);
     }
+
+    private void setEventData(ShipmentDetails shipmentDetail, ShipmentListResponse response) {
+        if(shipmentDetail.getEventsList() != null) {
+            for(Events events : shipmentDetail.getEventsList()) {
+                if(StringUtility.isNotEmpty(events.getEventCode())) {
+                    if(events.getEventCode().equalsIgnoreCase(Constants.INVGNTD)) {
+                        response.setInvoiceDate(events.getActual());
+                    } else if (events.getEventCode().equalsIgnoreCase(Constants.TAXSG)) {
+                        response.setTaxDate(events.getActual());
+                    } else if (events.getEventCode().equalsIgnoreCase(Constants.CSEDI)) {
+                        response.setCustomsFilingDate(events.getActual());
+                    } else if(events.getEventCode().equalsIgnoreCase(Constants.AMSEDI)) {
+                        response.setAmsFilingDate(events.getActual());
+                    }
+                }
+            }
+        }
+    }
+
 
 
     private List<Parties> createParties(ShipmentDetails shipmentDetails) {

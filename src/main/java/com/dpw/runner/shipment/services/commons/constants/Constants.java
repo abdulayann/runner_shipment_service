@@ -79,5 +79,12 @@ public class Constants {
 
     public static final String SERVICE = "Service";
 
+    /** Events **/
+
+    public static final String INVGNTD = "INVGNTD";
+    public static final String TAXSG = "TAXSG";
+    public static final String CSEDI = "CSEDI";
+    public static final String AMSEDI = "AMSEDI";
+
 
 }

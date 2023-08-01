@@ -24,7 +24,7 @@ public class EventsRequest extends CommonRequest implements IRunnerRequest {
     private Boolean isPublicTrackingEvent;
     private String latitude;
     private String longitude;
-    private String masterList;
+    private String eventCode;
     private String placeDescription;
     private String placeName;
     private String source;

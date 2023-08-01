@@ -113,3 +113,5 @@ ALTER TABLE validations
 ALTER TABLE views
    ALTER COLUMN created_by TYPE varchar (50),
    ALTER COLUMN updated_by TYPE varchar (50);
+ALTER TABLE events
+  RENAME master_list TO event_code;

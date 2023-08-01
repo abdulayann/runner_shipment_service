@@ -95,4 +95,8 @@ public class ShipmentListResponse implements IRunnerResponse {
     private String createdBy;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private LocalDateTime invoiceDate;
+    private LocalDateTime taxDate;
+    private LocalDateTime customsFilingDate;
+    private LocalDateTime amsFilingDate;
 }
