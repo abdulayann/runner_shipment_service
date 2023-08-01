@@ -63,8 +63,6 @@ public class ConsolidationService implements IConsolidationService {
     @Autowired
     private IAchievedQuantitiesDao achievedQuantitiesDao;
     @Autowired
-    private IArrivalDepartureDetailsDao arrivalDepartureDetailsDao;
-    @Autowired
     private IPartiesDao partiesDao;
 
     @Autowired
@@ -257,7 +255,6 @@ public class ConsolidationService implements IConsolidationService {
         CarrierDetails carrierDetails = jsonHelper.convertValue(request.getCarrierDetails(), CarrierDetails.class);
         Allocations allocations = jsonHelper.convertValue(request.getAllocations(), Allocations.class);
         AchievedQuantities achievedQuantities = jsonHelper.convertValue(request.getAchievedQuantities(), AchievedQuantities.class);
-        ArrivalDepartureDetails arrivalDepartureDetails = jsonHelper.convertValue(request.getArrivalDepartureDetails(), ArrivalDepartureDetails.class);
 
         try {
 
@@ -276,12 +273,6 @@ public class ConsolidationService implements IConsolidationService {
             {
                 createAchievedQuantities(achievedQuantities);
                 consolidationDetails.setAchievedQuantities(achievedQuantities);
-            }
-
-            if(arrivalDepartureDetails != null)
-            {
-                createArrivalDepartureDetails(arrivalDepartureDetails);
-                consolidationDetails.setArrivalDepartureDetails(arrivalDepartureDetails);
             }
 
             if(request.getShipmentsList() != null) {
@@ -455,11 +446,6 @@ public class ConsolidationService implements IConsolidationService {
         achievedQuantitiesDao.save(achievedQuantities);
     }
 
-    @Transactional
-    public void createArrivalDepartureDetails(ArrivalDepartureDetails arrivalDepartureDetails) {
-        arrivalDepartureDetailsDao.save(arrivalDepartureDetails);
-    }
-
     @Override
     @Transactional
     public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
@@ -544,7 +530,6 @@ public class ConsolidationService implements IConsolidationService {
         CarrierDetailRequest carrierDetailRequest = consolidationDetailsRequest.getCarrierDetails();
         AllocationsRequest allocationsRequest = consolidationDetailsRequest.getAllocations();
         AchievedQuantitiesRequest achievedQuantitiesRequest = consolidationDetailsRequest.getAchievedQuantities();
-        ArrivalDepartureDetailsRequest arrivalDepartureDetailsRequest = consolidationDetailsRequest.getArrivalDepartureDetails();
 
         // TODO- implement Validation logic
         long id = consolidationDetailsRequest.getId();
@@ -572,17 +557,25 @@ public class ConsolidationService implements IConsolidationService {
                 updatedCarrierDetails = carrierDao.updateEntityFromShipmentConsole(convertToClass(carrierDetailRequest, CarrierDetails.class));
                 entity.setCarrierDetails(updatedCarrierDetails);
             }
+            if(entity.getSendingAgent() == null)
+                entity.setSendingAgent(oldEntity.get().getSendingAgent());
+            if(entity.getReceivingAgent() == null)
+                entity.setReceivingAgent(oldEntity.get().getReceivingAgent());
+            if(entity.getCreditor() == null)
+                entity.setCreditor(oldEntity.get().getCreditor());
+            if(entity.getCoLoadWith() == null)
+                entity.setCoLoadWith(oldEntity.get().getCoLoadWith());
+            if(entity.getBorrowedFrom() == null)
+                entity.setBorrowedFrom(oldEntity.get().getBorrowedFrom());
+            if(entity.getArrivalDetails() == null)
+                entity.setArrivalDetails(oldEntity.get().getArrivalDetails());
+            if(entity.getDepartureDetails() == null)
+                entity.setDepartureDetails(oldEntity.get().getDepartureDetails());
             Allocations updatedAllocations = null;
             if(allocationsRequest != null)
             {
                 updatedAllocations = allocationsDao.updateEntityFromShipmentConsole(convertToClass(allocationsRequest, Allocations.class));
                 entity.setAllocations(updatedAllocations);
-            }
-            ArrivalDepartureDetails updatedArrivalDepartureDetails = null;
-            if(arrivalDepartureDetailsRequest != null)
-            {
-                updatedArrivalDepartureDetails = arrivalDepartureDetailsDao.updateEntityFromShipmentConsole(convertToClass(arrivalDepartureDetailsRequest, ArrivalDepartureDetails.class));
-                entity.setArrivalDepartureDetails(updatedArrivalDepartureDetails);
             }
             AchievedQuantities updatedAchievedQuantities = null;
             if(achievedQuantitiesRequest != null)
