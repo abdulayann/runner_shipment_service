@@ -27,8 +27,8 @@ public class Events extends MultiTenancy {
     @Column(name = "entity_type")
     private String entityType;
 
-    @Column(name = "master_list")
-    private String masterList;
+    @Column(name = "event_code")
+    private String eventCode;
 
     @Column(name = "description")
     private String description;

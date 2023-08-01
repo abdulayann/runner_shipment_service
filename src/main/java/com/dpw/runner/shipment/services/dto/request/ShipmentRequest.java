@@ -18,7 +18,7 @@ import java.util.List;
 public class ShipmentRequest extends CommonRequest implements IRunnerRequest {
     private AdditionalDetailRequest additionalDetail;
     private String additionalTerms;
-    private Integer assignedTo;
+    private String assignedTo;
     private Boolean autoUpdateWtVol;
     private List<BookingCarriageRequest> bookingCarriagesList;
     private String bookingNumber;

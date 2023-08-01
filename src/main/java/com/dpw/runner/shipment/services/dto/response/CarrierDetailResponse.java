@@ -31,4 +31,6 @@ public class CarrierDetailResponse implements IRunnerResponse {
     private LocalDateTime etd;
     private LocalDateTime ata;
     private LocalDateTime atd;
+    private String originPort;
+    private String destinationPort;
 }

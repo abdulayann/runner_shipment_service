@@ -158,6 +158,7 @@ public class ShipmentService implements IShipmentService {
             Map.entry("status", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(Integer.class).fieldName("status").build()),
             Map.entry("source", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).fieldName("source").build()),
             Map.entry("jobType", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).fieldName("jobType").build()),
+            Map.entry("createdBy", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).fieldName("createdBy").build()),
             Map.entry("serviceType", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).fieldName("serviceType").build()),
             Map.entry("masterBill", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).fieldName("masterBill").build()),
             Map.entry("bookingReference", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).fieldName("bookingReference").build()),
@@ -170,7 +171,8 @@ public class ShipmentService implements IShipmentService {
             Map.entry("assignedTo", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(Integer.class).fieldName("assignedTo").build()),
             Map.entry("additionalTerms", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).fieldName("additionalTerms").build()),
             Map.entry("goodsDescription", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).fieldName("goodsDescription").build()),
-            Map.entry("createdAt", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(Date.class).fieldName("createdAt").build()),
+            Map.entry("createdAt", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(LocalDateTime.class).fieldName("createdAt").build()),
+            Map.entry("updatedAt", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(LocalDateTime.class).fieldName("updatedAt").build()),
             Map.entry("estimatedPickupOrDelivery", RunnerEntityMapping.builder().tableName("pickupDeliveryDetails").dataType(LocalDateTime.class).fieldName("estimatedPickupOrDelivery").build()),
             Map.entry("actualPickupOrDelivery", RunnerEntityMapping.builder().tableName("pickupDeliveryDetails").dataType(LocalDateTime.class).fieldName("actualPickupOrDelivery").build()),
             Map.entry("requiredBy", RunnerEntityMapping.builder().tableName("pickupDeliveryDetails").dataType(LocalDateTime.class).fieldName("requiredBy").build()),
@@ -244,7 +246,7 @@ public class ShipmentService implements IShipmentService {
     @Transactional
     public ResponseEntity<?> fetchShipments(CommonRequestModel commonRequestModel) {
         ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
-        request.setIncludeTbls(Arrays.asList("additionalDetails", "client", "consigner", "consignee", "carrierDetails"));
+        request.setIncludeTbls(Arrays.asList("additionalDetails", "client", "consigner", "consignee", "carrierDetails", "pickupDetails", "deliveryDetails"));
         Pair<Specification<ShipmentDetails>, Pageable> tuple = fetchData(request, ShipmentDetails.class, tableNames);
         Page<ShipmentDetails> shipmentDetailsPage = shipmentDao.findAll(tuple.getLeft(), tuple.getRight());
         return ResponseHelper.buildListSuccessResponse(
@@ -258,6 +260,7 @@ public class ShipmentService implements IShipmentService {
         lst.forEach(shipmentDetail -> {
             ShipmentListResponse response = modelMapper.map(shipmentDetail, ShipmentListResponse.class);
             containerCountUpdate(shipmentDetail, response);
+            setEventData(shipmentDetail, response);
             responseList.add(response);
         });
         return responseList;
@@ -305,6 +308,25 @@ public class ShipmentService implements IShipmentService {
         response.setContainer40RECount(container40RECount);
         response.setContainerNumbers(containerNumber);
     }
+
+    private void setEventData(ShipmentDetails shipmentDetail, ShipmentListResponse response) {
+        if(shipmentDetail.getEventsList() != null) {
+            for(Events events : shipmentDetail.getEventsList()) {
+                if(StringUtility.isNotEmpty(events.getEventCode())) {
+                    if(events.getEventCode().equalsIgnoreCase(Constants.INVGNTD)) {
+                        response.setInvoiceDate(events.getActual());
+                    } else if (events.getEventCode().equalsIgnoreCase(Constants.TAXSG)) {
+                        response.setTaxDate(events.getActual());
+                    } else if (events.getEventCode().equalsIgnoreCase(Constants.CSEDI)) {
+                        response.setCustomsFilingDate(events.getActual());
+                    } else if(events.getEventCode().equalsIgnoreCase(Constants.AMSEDI)) {
+                        response.setAmsFilingDate(events.getActual());
+                    }
+                }
+            }
+        }
+    }
+
 
 
     private List<Parties> createParties(ShipmentDetails shipmentDetails) {
