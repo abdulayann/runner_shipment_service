@@ -1,7 +1,6 @@
 package com.dpw.runner.shipment.services.dto.response;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.dto.request.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -93,7 +92,13 @@ public class ConsolidationDetailsResponse implements IRunnerResponse {
     private CarrierDetailResponse carrierDetails;
     private AchievedQuantitiesResponse achievedQuantities;
     private AllocationsResponse allocations;
-    private ArrivalDepartureDetailsResponse arrivalDepartureDetails;
+    private ArrivalDepartureDetailsResponse arrivalDetails;
+    private ArrivalDepartureDetailsResponse departureDetails;
+    private PartiesResponse sendingAgent;
+    private PartiesResponse receivingAgent;
+    private PartiesResponse borrowedFrom;
+    private PartiesResponse creditor;
+    private PartiesResponse coLoadWith;
     private List<PackingResponse> packingList;
     private List<ReferenceNumbersResponse> referenceNumbersList;
     private List<RoutingsResponse> routingsList;

@@ -248,9 +248,33 @@ public class ConsolidationDetails extends MultiTenancy {
     @JoinColumn(name = "allocations_id", referencedColumnName = "id")
     private Allocations allocations;
 
-    @OneToOne(targetEntity = ArrivalDepartureDetails.class)
-    @JoinColumn(name = "arrival_departure_details_id", referencedColumnName = "id")
-    private ArrivalDepartureDetails arrivalDepartureDetails;
+    @OneToOne(targetEntity = ArrivalDepartureDetails.class, cascade = CascadeType.ALL)
+    @JoinColumn(name = "arrival_details_id", referencedColumnName = "id")
+    private ArrivalDepartureDetails arrivalDetails;
+
+    @OneToOne(targetEntity = ArrivalDepartureDetails.class, cascade = CascadeType.ALL)
+    @JoinColumn(name = "departure_details_id", referencedColumnName = "id")
+    private ArrivalDepartureDetails departureDetails;
+
+    @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL)
+    @JoinColumn(name = "sending_agent_id", referencedColumnName = "id")
+    private Parties sendingAgent;
+
+    @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL)
+    @JoinColumn(name = "receiving_agent_id", referencedColumnName = "id")
+    private Parties receivingAgent;
+
+    @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL)
+    @JoinColumn(name = "borrowed_from_id", referencedColumnName = "id")
+    private Parties borrowedFrom;
+
+    @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL)
+    @JoinColumn(name = "creditor_id", referencedColumnName = "id")
+    private Parties creditor;
+
+    @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL)
+    @JoinColumn(name = "co_load_with_id", referencedColumnName = "id")
+    private Parties coLoadWith;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "consolidationId")
     private List<Packing> packingList;
