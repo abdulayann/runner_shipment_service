@@ -16,12 +16,16 @@ import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.patchRequest.ShipmentPatchRequest;
 import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.response.*;
+import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.GenerationType;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.mapper.ShipmentDetailsMapper;
+import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
+import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
+import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service_bus.AzureServiceBusTopic;
 import com.dpw.runner.shipment.services.service_bus.ISBProperties;
 import com.dpw.runner.shipment.services.service_bus.SBUtilsImpl;
@@ -124,6 +128,9 @@ public class ShipmentService implements IShipmentService {
 
     @Autowired
     UserContext userContext;
+
+    @Autowired
+    private IV1Service v1Service;
 
     @Autowired
     private IConsolidationDetailsDao consolidationDetailsDao;
@@ -263,6 +270,7 @@ public class ShipmentService implements IShipmentService {
             setEventData(shipmentDetail, response);
             responseList.add(response);
         });
+        setLocationData(responseList);
         return responseList;
     }
 
@@ -321,6 +329,48 @@ public class ShipmentService implements IShipmentService {
                         response.setCustomsFilingDate(events.getActual());
                     } else if(events.getEventCode().equalsIgnoreCase(Constants.AMSEDI)) {
                         response.setAmsFilingDate(events.getActual());
+                    }
+                }
+            }
+        }
+    }
+
+    private void setLocationData(List<IRunnerResponse> responseList) {
+        Set<String> locCodes = new HashSet<>();
+        for(IRunnerResponse response : responseList) {
+            if(((ShipmentListResponse)response).getCarrierDetails() != null) {
+                if (StringUtility.isNotEmpty(((ShipmentListResponse)response).getCarrierDetails().getOriginPort())) {
+                    locCodes.add(((ShipmentListResponse)response).getCarrierDetails().getOriginPort());
+                }
+                if (StringUtility.isNotEmpty(((ShipmentListResponse)response).getCarrierDetails().getDestinationPort())) {
+                    locCodes.add(((ShipmentListResponse)response).getCarrierDetails().getDestinationPort());
+                }
+            }
+        }
+
+        if(locCodes.size() > 0) {
+            List<Object> criteria = Arrays.asList(
+                    Arrays.asList("LocCode"),
+                    "In",
+                    Arrays.asList(locCodes)
+            );
+            CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(criteria).build();
+            V1DataResponse v1DataResponse = v1Service.fetchUnlocation(commonV1ListRequest);
+            List<UnlocationsResponse> unlocationsResponse = jsonHelper.convertValueToList(v1DataResponse.entities, UnlocationsResponse.class);
+            if(unlocationsResponse != null && unlocationsResponse.size() > 0) {
+                Map<String, String> locationMap = new HashMap<>();
+                for(UnlocationsResponse unlocation : unlocationsResponse) {
+                    locationMap.put(unlocation.getLocCode(), unlocation.getName());
+                }
+
+                for(IRunnerResponse response : responseList) {
+                    if(((ShipmentListResponse)response).getCarrierDetails() != null) {
+                        if (StringUtility.isNotEmpty(((ShipmentListResponse)response).getCarrierDetails().getOriginPort())) {
+                            ((ShipmentListResponse)response).getCarrierDetails().setOriginPortName(locationMap.get(((ShipmentListResponse)response).getCarrierDetails().getOriginPort()));
+                        }
+                        if (StringUtility.isNotEmpty(((ShipmentListResponse)response).getCarrierDetails().getDestinationPort())) {
+                            ((ShipmentListResponse)response).getCarrierDetails().setDestinationPortName(locationMap.get(((ShipmentListResponse)response).getCarrierDetails().getDestinationPort()));
+                        }
                     }
                 }
             }
@@ -475,7 +525,7 @@ public class ShipmentService implements IShipmentService {
     void getShipment(ShipmentDetails shipmentDetails) {
         shipmentDetails.setShipmentId(generateShipmentId());
         shipmentDetails = shipmentDao.save(shipmentDetails);
-        shipmentDetails = shipmentDao.findById(shipmentDetails.getId()).get();
+        //shipmentDetails = shipmentDao.findById(shipmentDetails.getId()).get();
     }
 
 
