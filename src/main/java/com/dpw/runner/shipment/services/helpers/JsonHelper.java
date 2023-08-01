@@ -9,6 +9,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.json.JsonParseException;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
+
 @Component
 @Slf4j
 public class JsonHelper {
@@ -38,6 +40,10 @@ public class JsonHelper {
 
     public <T,F> F convertValue(T object, Class<F> clazz) {
         return mapper.convertValue(object, clazz);
+    }
+
+    public <T,F> List<F> convertValueToList(T object, Class<F> clazz) {
+        return mapper.convertValue(object, mapper.getTypeFactory().constructCollectionType(List.class, clazz));
     }
 
 }
