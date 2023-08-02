@@ -1629,9 +1629,9 @@
   "RefNumber": "{{ service.refNumber }}",
   "ServiceCount": {{ service.serviceCount }},
   "ServiceDuration": {
-  "Nano": {{ service.serviceDuration.nano }},
-  "Negative": {{ service.serviceDuration.negative }},
-  "Seconds": {{ service.serviceDuration.seconds }},
+  "Nano": "{{ service.serviceDuration.nano }}",
+  "Negative": "{{ service.serviceDuration.negative }}",
+  "Seconds": "{{ service.serviceDuration.seconds }}",
   "Units": [
   {
   "Datebased": "{{ service.serviceDuration.units[0].dateBased }}",
