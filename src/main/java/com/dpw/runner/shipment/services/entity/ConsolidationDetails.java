@@ -194,8 +194,8 @@ public class ConsolidationDetails extends MultiTenancy {
     @Column(name = "copy")
     private Integer copy;
 
-    @Column(name = "do_place_of_issue_id")
-    private Long DOPlaceOfIssueId;
+    @Column(name = "do_place_of_issue")
+    private String DOPlaceOfIssue;
 
     @Column(name = "do_issue_date")
     private LocalDateTime DOIssueDate;
@@ -235,6 +235,9 @@ public class ConsolidationDetails extends MultiTenancy {
 
     @Column(name = "sending_agent_freetext_address")
     private String sendingAgentFreeTextAddress;
+
+    @Column(name = "place_of_issue")
+    private String placeOfIssue;
 
     @OneToOne(targetEntity = CarrierDetails.class)
     @JoinColumn(name = "carrier_detail_id", referencedColumnName = "id")

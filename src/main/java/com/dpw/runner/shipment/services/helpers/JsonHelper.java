@@ -10,6 +10,7 @@ import org.springframework.boot.json.JsonParseException;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Map;
 
 @Component
 @Slf4j
@@ -44,6 +45,16 @@ public class JsonHelper {
 
     public <T,F> List<F> convertValueToList(T object, Class<F> clazz) {
         return mapper.convertValue(object, mapper.getTypeFactory().constructCollectionType(List.class, clazz));
+    }
+
+    public Map<String, Object> convertJsonToMap(String json) {
+        Map<String, Object> map = null;
+        try {
+            map = mapper.readValue(json, Map.class);
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+        }
+        return map;
     }
 
 }

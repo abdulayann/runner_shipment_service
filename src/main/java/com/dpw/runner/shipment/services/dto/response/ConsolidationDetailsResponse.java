@@ -75,7 +75,7 @@ public class ConsolidationDetailsResponse implements IRunnerResponse {
     private Boolean isInland;
     private Integer original;
     private Integer copy;
-    private Long DOPlaceOfIssueId;
+    private String DOPlaceOfIssue;
     private LocalDateTime DOIssueDate;
     private Long bondedWarehouseId;
     private Long warehouseId;
@@ -89,6 +89,7 @@ public class ConsolidationDetailsResponse implements IRunnerResponse {
     private String receivingAgentFreeTextAddress;
     private Boolean IsSendingAgentFreeTextAddress;
     private String sendingAgentFreeTextAddress;
+    private String placeOfIssue;
     private CarrierDetailResponse carrierDetails;
     private AchievedQuantitiesResponse achievedQuantities;
     private AllocationsResponse allocations;

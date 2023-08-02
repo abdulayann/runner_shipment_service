@@ -15,4 +15,6 @@ public class UnlocationsResponse {
     private String portName;
     @JsonProperty("LocCode")
     private String locCode;
+    @JsonProperty("NameWoDiacritics")
+    private String nameWoDiacritics;
 }
