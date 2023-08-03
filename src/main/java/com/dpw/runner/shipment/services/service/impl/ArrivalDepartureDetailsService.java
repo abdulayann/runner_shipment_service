@@ -9,6 +9,7 @@ import com.dpw.runner.shipment.services.dao.interfaces.IArrivalDepartureDetailsD
 import com.dpw.runner.shipment.services.dto.request.ArrivalDepartureDetailsRequest;
 import com.dpw.runner.shipment.services.dto.response.ArrivalDepartureDetailsResponse;
 import com.dpw.runner.shipment.services.entity.ArrivalDepartureDetails;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IArrivalDepartureDetailsService;
@@ -39,7 +40,7 @@ public class ArrivalDepartureDetailsService implements IArrivalDepartureDetailsS
     @Autowired
     IArrivalDepartureDetailsDao arrivalDepartureDetailsDao;
     @Autowired
-    ModelMapper modelMapper;
+    private JsonHelper jsonHelper;
 
     @Transactional
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
@@ -198,11 +199,11 @@ public class ArrivalDepartureDetailsService implements IArrivalDepartureDetailsS
     }
 
     private ArrivalDepartureDetailsResponse convertEntityToDto(ArrivalDepartureDetails arrivalDepartureDetails) {
-        return modelMapper.map(arrivalDepartureDetails, ArrivalDepartureDetailsResponse.class);
+        return jsonHelper.convertValue(arrivalDepartureDetails, ArrivalDepartureDetailsResponse.class);
     }
 
     private ArrivalDepartureDetails convertRequestToArrivalDepartureDetails(ArrivalDepartureDetailsRequest request) {
-        return modelMapper.map(request, ArrivalDepartureDetails.class);
+        return jsonHelper.convertValue(request, ArrivalDepartureDetails.class);
     }
 
     private List<IRunnerResponse> convertEntityListToDtoList(final List<ArrivalDepartureDetails> list) {

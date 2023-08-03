@@ -1,6 +1,5 @@
 package com.dpw.runner.shipment.services.dto.request;
 
-import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
 import io.swagger.annotations.ApiModel;
 import lombok.*;
 
@@ -13,7 +12,7 @@ import java.util.UUID;
 @ToString
 @AllArgsConstructor
 @NoArgsConstructor
-public class HblPartyDto extends CommonRequest {
+public class HblPartyDto {
     private Long id;
     private UUID guid;
     private String type;

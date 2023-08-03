@@ -10,6 +10,7 @@ import com.dpw.runner.shipment.services.dto.patchRequest.BookingCarriagePatchReq
 import com.dpw.runner.shipment.services.dto.request.BookingCarriageRequest;
 import com.dpw.runner.shipment.services.dto.response.BookingCarriageResponse;
 import com.dpw.runner.shipment.services.entity.BookingCarriage;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.mapper.BookingCarriageMapper;
@@ -42,7 +43,7 @@ public class BookingCarriageService implements IBookingCarriageService {
     private IBookingCarriageDao bookingCarriageDao;
 
     @Autowired
-    private ModelMapper modelMapper;
+    private JsonHelper jsonHelper;
 
     @Autowired
     private BookingCarriageMapper bookingCarriageMapper;
@@ -239,7 +240,7 @@ public class BookingCarriageService implements IBookingCarriageService {
     }
 
     private BookingCarriageResponse convertEntityToDto(BookingCarriage bookingCarriage) {
-        return modelMapper.map(bookingCarriage, BookingCarriageResponse.class);
+        return jsonHelper.convertValue(bookingCarriage, BookingCarriageResponse.class);
     }
 
     private List<IRunnerResponse> convertEntityListToDtoList(List<BookingCarriage> lst) {
@@ -251,6 +252,6 @@ public class BookingCarriageService implements IBookingCarriageService {
     }
 
     public BookingCarriage convertRequestToEntity(BookingCarriageRequest request) {
-        return modelMapper.map(request, BookingCarriage.class);
+        return jsonHelper.convertValue(request, BookingCarriage.class);
     }
 }

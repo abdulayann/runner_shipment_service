@@ -9,6 +9,7 @@ import com.dpw.runner.shipment.services.dao.interfaces.IServiceDetailsDao;
 import com.dpw.runner.shipment.services.dto.request.ServiceDetailsRequest;
 import com.dpw.runner.shipment.services.dto.response.ServiceDetailsResponse;
 import com.dpw.runner.shipment.services.entity.ServiceDetails;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IServiceDetailsService;
@@ -44,7 +45,7 @@ public class ServiceDetailsService implements IServiceDetailsService {
     private IServiceDetailsDao serviceDetailsDao;
 
     @Autowired
-    private ModelMapper modelMapper;
+    private JsonHelper jsonHelper;
 
     @Transactional
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
@@ -202,7 +203,7 @@ public class ServiceDetailsService implements IServiceDetailsService {
     }
 
     private ServiceDetailsResponse convertEntityToDto(ServiceDetails shipmentServices) {
-        return modelMapper.map(shipmentServices, ServiceDetailsResponse.class);
+        return jsonHelper.convertValue(shipmentServices, ServiceDetailsResponse.class);
     }
 
     private List<IRunnerResponse> convertEntityListToDtoList(List<ServiceDetails> lst) {
@@ -214,6 +215,6 @@ public class ServiceDetailsService implements IServiceDetailsService {
     }
 
     public ServiceDetails convertRequestToEntity(ServiceDetailsRequest request) {
-        return modelMapper.map(request, ServiceDetails.class);
+        return jsonHelper.convertValue(request, ServiceDetails.class);
     }
 }

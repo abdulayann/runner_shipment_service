@@ -9,6 +9,7 @@ import com.dpw.runner.shipment.services.dao.interfaces.IPartiesDao;
 import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
 import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
 import com.dpw.runner.shipment.services.entity.Parties;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IPartiesDetailsService;
@@ -39,7 +40,7 @@ public class PartiesService implements IPartiesDetailsService {
     private IPartiesDao partiesDao;
 
     @Autowired
-    private ModelMapper modelMapper;
+    private JsonHelper jsonHelper;
 
     @Override
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
@@ -198,11 +199,11 @@ public class PartiesService implements IPartiesDetailsService {
     }
 
     private PartiesResponse convertEntityToDto(Parties notes) {
-        return modelMapper.map(notes, PartiesResponse.class);
+        return jsonHelper.convertValue(notes, PartiesResponse.class);
     }
 
     private Parties convertRequestToPartiesDetailsEntity(PartiesRequest request) {
-        return modelMapper.map(request, Parties.class);
+        return jsonHelper.convertValue(request, Parties.class);
     }
 
     private List<IRunnerResponse> convertEntityListToDtoList(final List<Parties> lst) {

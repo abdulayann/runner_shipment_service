@@ -46,7 +46,7 @@ public class AdditionalDetailService implements IAdditionalDetailService {
     private IAdditionalDetailDao additionalDetailDao;
 
     @Autowired
-    private ModelMapper modelMapper;
+    private JsonHelper jsonHelper;
 
     @Transactional
     @Override
@@ -211,11 +211,11 @@ public class AdditionalDetailService implements IAdditionalDetailService {
     }
 
     private AdditionalDetailResponse convertEntityToDto(AdditionalDetails additionalDetails) {
-            return modelMapper.map(additionalDetails, AdditionalDetailResponse.class);
+            return jsonHelper.convertValue(additionalDetails, AdditionalDetailResponse.class);
     }
 
     private AdditionalDetails convertRequestToEntity(AdditionalDetailRequest request) {
-        return modelMapper.map(request, AdditionalDetails.class);
+        return jsonHelper.convertValue(request, AdditionalDetails.class);
     }
 
     private List<IRunnerResponse> convertEntityListToDtoList(List<AdditionalDetails> list) {
