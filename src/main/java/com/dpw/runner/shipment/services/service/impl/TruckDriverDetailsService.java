@@ -9,6 +9,7 @@ import com.dpw.runner.shipment.services.dao.interfaces.ITruckDriverDetailsDao;
 import com.dpw.runner.shipment.services.dto.request.TruckDriverDetailsRequest;
 import com.dpw.runner.shipment.services.dto.response.TruckDriverDetailsResponse;
 import com.dpw.runner.shipment.services.entity.TruckDriverDetails;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.ITruckDriverDetailsService;
@@ -39,7 +40,7 @@ public class TruckDriverDetailsService implements ITruckDriverDetailsService {
     private ITruckDriverDetailsDao truckDriverDetailsDao;
 
     @Autowired
-    private ModelMapper modelMapper;
+    private JsonHelper jsonHelper;
 
     @Override
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
@@ -197,11 +198,11 @@ public class TruckDriverDetailsService implements ITruckDriverDetailsService {
     }
 
     private TruckDriverDetailsResponse convertEntityToDto(TruckDriverDetails notes) {
-        return modelMapper.map(notes, TruckDriverDetailsResponse.class);
+        return jsonHelper.convertValue(notes, TruckDriverDetailsResponse.class);
     }
 
     private TruckDriverDetails convertRequestToTruckDriverDetailsEntity(TruckDriverDetailsRequest request) {
-        return modelMapper.map(request, TruckDriverDetails.class);
+        return jsonHelper.convertValue(request, TruckDriverDetails.class);
     }
 
     private List<IRunnerResponse> convertEntityListToDtoList(final List<TruckDriverDetails> lst) {

@@ -14,6 +14,7 @@ import com.dpw.runner.shipment.services.dto.request.awb.*;
 import com.dpw.runner.shipment.services.dto.response.AwbResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IAwbService;
@@ -58,7 +59,7 @@ public class AwbService implements IAwbService {
     IMawbHawbLinkDao mawbHawbLinkDao;
 
     @Autowired
-    private ModelMapper modelMapper;
+    private JsonHelper jsonHelper;
 
     private Integer totalPacks = 0;
     private List<String> attachedShipmentDescriptions = new ArrayList<>();
@@ -232,7 +233,7 @@ public class AwbService implements IAwbService {
     }
 
     private AwbResponse convertEntityToDto(Awb awbShipmentInfo) {
-        return modelMapper.map(awbShipmentInfo, AwbResponse.class);
+        return jsonHelper.convertValue(awbShipmentInfo, AwbResponse.class);
     }
 
     private List<IRunnerResponse> convertEntityListToDtoList(List<Awb> lst) {
@@ -244,7 +245,7 @@ public class AwbService implements IAwbService {
     }
 
     private Awb convertRequestToEntity(AwbRequest request) {
-        return modelMapper.map(request, Awb.class);
+        return jsonHelper.convertValue(request, Awb.class);
     }
 
     private Awb generateMawb(CreateAwbRequest request, ConsolidationDetails consolidationDetails) {

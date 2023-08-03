@@ -13,6 +13,7 @@ import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.PackingResponse;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.Packing;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingService;
@@ -54,7 +55,7 @@ public class PackingService implements IPackingService {
     @Autowired
     IContainerDao containersDao;
     @Autowired
-    ModelMapper modelMapper;
+    private JsonHelper jsonHelper;
 
     private final CSVParsingUtil<Packing> parser = new CSVParsingUtil<>(Packing.class);
 
@@ -314,15 +315,15 @@ public class PackingService implements IPackingService {
     }
 
     private IRunnerResponse convertEntityToDto(Packing packing) {
-        return modelMapper.map(packing, PackingResponse.class);
+        return jsonHelper.convertValue(packing, PackingResponse.class);
     }
 
     private IRunnerResponse convertEntityToDto(Containers packing) {
-        return modelMapper.map(packing, ContainerResponse.class);
+        return jsonHelper.convertValue(packing, ContainerResponse.class);
     }
 
     private Packing convertRequestToEntity(PackingRequest request) {
-        return modelMapper.map(request, Packing.class);
+        return jsonHelper.convertValue(request, Packing.class);
     }
 
     private List<IRunnerResponse> convertEntityListToDtoList(List<Packing> lst) {

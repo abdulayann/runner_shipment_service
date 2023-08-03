@@ -9,6 +9,7 @@ import com.dpw.runner.shipment.services.dao.interfaces.IPickupDeliveryDetailsDao
 import com.dpw.runner.shipment.services.dto.request.PickupDeliveryDetailsRequest;
 import com.dpw.runner.shipment.services.dto.response.PickupDeliveryDetailsResponse;
 import com.dpw.runner.shipment.services.entity.PickupDeliveryDetails;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IPickupDeliveryDetailsService;
@@ -40,7 +41,7 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
     private IPickupDeliveryDetailsDao pickupDeliveryDetailsDao;
 
     @Autowired
-    private ModelMapper modelMapper;
+    private JsonHelper jsonHelper;
 
     @Transactional
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
@@ -200,7 +201,7 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
 
 
     private PickupDeliveryDetailsResponse convertEntityToDto(PickupDeliveryDetails pickupDeliveryDetails) {
-        return modelMapper.map(pickupDeliveryDetails, PickupDeliveryDetailsResponse.class);
+        return jsonHelper.convertValue(pickupDeliveryDetails, PickupDeliveryDetailsResponse.class);
     }
 
     private List<IRunnerResponse> convertEntityListToDtoList(List<PickupDeliveryDetails> lst) {
@@ -212,6 +213,6 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
     }
 
     public PickupDeliveryDetails convertRequestToEntity(PickupDeliveryDetailsRequest request) {
-        return modelMapper.map(request, PickupDeliveryDetails.class);
+        return jsonHelper.convertValue(request, PickupDeliveryDetails.class);
     }
 }

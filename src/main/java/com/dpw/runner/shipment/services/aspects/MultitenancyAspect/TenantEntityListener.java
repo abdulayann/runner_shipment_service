@@ -17,7 +17,6 @@ public class TenantEntityListener {
     @PrePersist
     public void prePersist(Object object) {
         if (object instanceof MultiTenancy) {
-            //needs to be the current tenantId of the user which can be fetched from the user service
             ((MultiTenancy) object).setTenantId(TenantContext.getCurrentTenant());
         }
     }
@@ -27,7 +26,11 @@ public class TenantEntityListener {
         if(object instanceof MultiTenancy)
         {
             Integer tenantId = ((MultiTenancy) object).getTenantId();
-            if(TenantContext.getCurrentTenant() != tenantId) {
+            if(tenantId == null) {
+                tenantId = TenantContext.getCurrentTenant();
+                ((MultiTenancy) object).setTenantId(tenantId);
+            }
+            if(!Objects.equals(TenantContext.getCurrentTenant(), tenantId)) {
                 throw new RuntimeException("Authorization has been denied for this request");
             }
         }

@@ -63,9 +63,6 @@ import static com.dpw.runner.shipment.services.utils.CommonUtils.*;
 @Slf4j
 public class ShipmentService implements IShipmentService {
 
-
-    @Autowired
-    private ModelMapper modelMapper;
     @Autowired
     private ObjectMapper objectMapper;
     @Autowired
@@ -265,7 +262,7 @@ public class ShipmentService implements IShipmentService {
     private List<IRunnerResponse> convertEntityListToDtoList(List<ShipmentDetails> lst) {
         List<IRunnerResponse> responseList = new ArrayList<>();
         lst.forEach(shipmentDetail -> {
-            ShipmentListResponse response = modelMapper.map(shipmentDetail, ShipmentListResponse.class);
+            ShipmentListResponse response = jsonHelper.convertValue(shipmentDetail, ShipmentListResponse.class);
             containerCountUpdate(shipmentDetail, response);
             setEventData(shipmentDetail, response);
             responseList.add(response);
@@ -715,7 +712,7 @@ public class ShipmentService implements IShipmentService {
                 }
             }
             ShipmentDetails entity = shipmentDao.save(shipmentDetails);
-            return ResponseHelper.buildSuccessResponse(modelMapper.map(entity, ShipmentDetailsResponse.class));
+            return ResponseHelper.buildSuccessResponse(jsonHelper.convertValue(entity, ShipmentDetailsResponse.class));
         }
 
         return null;

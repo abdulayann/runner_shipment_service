@@ -14,6 +14,7 @@ import com.dpw.runner.shipment.services.dto.response.JobResponse;
 import com.dpw.runner.shipment.services.entity.BookingCarriage;
 import com.dpw.runner.shipment.services.entity.Events;
 import com.dpw.runner.shipment.services.entity.Jobs;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IJobService;
@@ -47,7 +48,7 @@ public class JobService implements IJobService {
     IEventDao eventDao;
 
     @Autowired
-    ModelMapper modelMapper;
+    private JsonHelper jsonHelper;
 
     @Override
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
@@ -222,11 +223,11 @@ public class JobService implements IJobService {
     }
 
     private IRunnerResponse convertEntityToDto(Jobs job) {
-        return modelMapper.map(job, JobResponse.class);
+        return jsonHelper.convertValue(job, JobResponse.class);
     }
 
     private Jobs convertRequestToEntity(JobRequest request) {
-        return modelMapper.map(request, Jobs.class);
+        return jsonHelper.convertValue(request, Jobs.class);
     }
 
     private List<IRunnerResponse> convertEntityListToDtoList(List<Jobs> lst) {

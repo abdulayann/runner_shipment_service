@@ -10,6 +10,7 @@ import com.dpw.runner.shipment.services.dto.request.DefaultViewsRequest;
 import com.dpw.runner.shipment.services.dto.response.DefaultViewsResponse;
 import com.dpw.runner.shipment.services.entity.DefaultViews;
 import com.dpw.runner.shipment.services.entity.TruckDriverDetails;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IDefaultViewsService;
@@ -37,7 +38,7 @@ public class DefaultViewsService implements IDefaultViewsService {
     private IDefaultViewsDao defaultViewsDao;
 
     @Autowired
-    private ModelMapper modelMapper;
+    private JsonHelper jsonHelper;
 
     @Transactional
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
@@ -186,7 +187,7 @@ public class DefaultViewsService implements IDefaultViewsService {
     }
 
     private DefaultViewsResponse convertEntityToDto(DefaultViews view) {
-        return modelMapper.map(view, DefaultViewsResponse.class);
+        return jsonHelper.convertValue(view, DefaultViewsResponse.class);
     }
 
     private List<IRunnerResponse> convertEntityListToDtoList(List<DefaultViews> lst) {
@@ -198,6 +199,6 @@ public class DefaultViewsService implements IDefaultViewsService {
     }
 
     public DefaultViews convertRequestToEntity(DefaultViewsRequest request) {
-        return modelMapper.map(request, DefaultViews.class);
+        return jsonHelper.convertValue(request, DefaultViews.class);
     }
 }

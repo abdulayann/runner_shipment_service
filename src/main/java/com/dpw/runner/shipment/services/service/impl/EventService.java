@@ -9,6 +9,7 @@ import com.dpw.runner.shipment.services.dao.interfaces.IEventDao;
 import com.dpw.runner.shipment.services.dto.request.EventsRequest;
 import com.dpw.runner.shipment.services.dto.response.EventsResponse;
 import com.dpw.runner.shipment.services.entity.Events;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IEventService;
@@ -43,7 +44,7 @@ public class EventService implements IEventService {
     private IEventDao eventDao;
 
     @Autowired
-    private ModelMapper modelMapper;
+    private JsonHelper jsonHelper;
 
     @Transactional
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
@@ -206,11 +207,11 @@ public class EventService implements IEventService {
     }
 
     public Events convertRequestToEntity(EventsRequest request) {
-        return modelMapper.map(request, Events.class);
+        return jsonHelper.convertValue(request, Events.class);
     }
 
     private EventsResponse convertEntityToDto(Events event) {
-        return modelMapper.map(event, EventsResponse.class);
+        return jsonHelper.convertValue(event, EventsResponse.class);
     }
 
     private List<IRunnerResponse> convertEntityListToDtoList(List<Events> lst) {

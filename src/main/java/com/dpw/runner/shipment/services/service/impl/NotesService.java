@@ -9,6 +9,7 @@ import com.dpw.runner.shipment.services.dao.interfaces.INotesDao;
 import com.dpw.runner.shipment.services.dto.request.NotesRequest;
 import com.dpw.runner.shipment.services.dto.response.NotesResponse;
 import com.dpw.runner.shipment.services.entity.Notes;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.INotesService;
@@ -39,7 +40,7 @@ public class NotesService implements INotesService {
     private INotesDao notesDao;
 
     @Autowired
-    private ModelMapper modelMapper;
+    private JsonHelper jsonHelper;
 
     @Override
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
@@ -198,11 +199,11 @@ public class NotesService implements INotesService {
     }
 
     private NotesResponse convertEntityToDto(Notes notes) {
-        return modelMapper.map(notes, NotesResponse.class);
+        return jsonHelper.convertValue(notes, NotesResponse.class);
     }
 
     private Notes convertRequestToNotesEntity(NotesRequest request) {
-        return modelMapper.map(request, Notes.class);
+        return jsonHelper.convertValue(request, Notes.class);
     }
 
     private List<IRunnerResponse> convertEntityListToDtoList(final List<Notes> lst) {
