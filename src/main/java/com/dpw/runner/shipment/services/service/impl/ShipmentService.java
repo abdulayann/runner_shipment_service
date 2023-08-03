@@ -19,6 +19,7 @@ import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.GenerationType;
+import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
@@ -119,6 +120,12 @@ public class ShipmentService implements IShipmentService {
 
     @Autowired
     private IContainerDao containerDao;
+
+    @Autowired
+    private IMawbStocksLinkDao mawbStocksLinkDao;
+
+    @Autowired
+    private IMawbStocksDao mawbStocksDao;
 
     @Autowired
     private TransactionTemplate transactionTemplate;
@@ -282,9 +289,9 @@ public class ShipmentService implements IShipmentService {
         Long container40GPCount = 0L;
         Long container40RECount = 0L;
         Set<String> containerNumber = new HashSet<>();
-        if(shipmentDetail.getContainersList() != null) {
-            for(Containers container : shipmentDetail.getContainersList()) {
-                if(container.getContainerCode().contains(Constants.Cont20)) {
+        if (shipmentDetail.getContainersList() != null) {
+            for (Containers container : shipmentDetail.getContainersList()) {
+                if (container.getContainerCode().contains(Constants.Cont20)) {
                     ++container20Count;
                 } else if (container.getContainerCode().contains(Constants.Cont40)) {
                     ++container40Count;
@@ -297,7 +304,7 @@ public class ShipmentService implements IShipmentService {
                 } else if (container.getContainerCode().equals(Constants.Cont40RE)) {
                     ++container40RECount;
                 }
-                if(StringUtility.isNotEmpty(container.getContainerNumber())) {
+                if (StringUtility.isNotEmpty(container.getContainerNumber())) {
                     containerNumber.add(container.getContainerNumber());
                 }
             }
@@ -318,16 +325,16 @@ public class ShipmentService implements IShipmentService {
     }
 
     private void setEventData(ShipmentDetails shipmentDetail, ShipmentListResponse response) {
-        if(shipmentDetail.getEventsList() != null) {
-            for(Events events : shipmentDetail.getEventsList()) {
-                if(StringUtility.isNotEmpty(events.getEventCode())) {
-                    if(events.getEventCode().equalsIgnoreCase(Constants.INVGNTD)) {
+        if (shipmentDetail.getEventsList() != null) {
+            for (Events events : shipmentDetail.getEventsList()) {
+                if (StringUtility.isNotEmpty(events.getEventCode())) {
+                    if (events.getEventCode().equalsIgnoreCase(Constants.INVGNTD)) {
                         response.setInvoiceDate(events.getActual());
                     } else if (events.getEventCode().equalsIgnoreCase(Constants.TAXSG)) {
                         response.setTaxDate(events.getActual());
                     } else if (events.getEventCode().equalsIgnoreCase(Constants.CSEDI)) {
                         response.setCustomsFilingDate(events.getActual());
-                    } else if(events.getEventCode().equalsIgnoreCase(Constants.AMSEDI)) {
+                    } else if (events.getEventCode().equalsIgnoreCase(Constants.AMSEDI)) {
                         response.setAmsFilingDate(events.getActual());
                     }
                 }
@@ -337,18 +344,18 @@ public class ShipmentService implements IShipmentService {
 
     private void setLocationData(List<IRunnerResponse> responseList) {
         Set<String> locCodes = new HashSet<>();
-        for(IRunnerResponse response : responseList) {
-            if(((ShipmentListResponse)response).getCarrierDetails() != null) {
-                if (StringUtility.isNotEmpty(((ShipmentListResponse)response).getCarrierDetails().getOriginPort())) {
-                    locCodes.add(((ShipmentListResponse)response).getCarrierDetails().getOriginPort());
+        for (IRunnerResponse response : responseList) {
+            if (((ShipmentListResponse) response).getCarrierDetails() != null) {
+                if (StringUtility.isNotEmpty(((ShipmentListResponse) response).getCarrierDetails().getOriginPort())) {
+                    locCodes.add(((ShipmentListResponse) response).getCarrierDetails().getOriginPort());
                 }
-                if (StringUtility.isNotEmpty(((ShipmentListResponse)response).getCarrierDetails().getDestinationPort())) {
-                    locCodes.add(((ShipmentListResponse)response).getCarrierDetails().getDestinationPort());
+                if (StringUtility.isNotEmpty(((ShipmentListResponse) response).getCarrierDetails().getDestinationPort())) {
+                    locCodes.add(((ShipmentListResponse) response).getCarrierDetails().getDestinationPort());
                 }
             }
         }
 
-        if(locCodes.size() > 0) {
+        if (locCodes.size() > 0) {
             List<Object> criteria = Arrays.asList(
                     Arrays.asList("LocCode"),
                     "In",
@@ -357,26 +364,25 @@ public class ShipmentService implements IShipmentService {
             CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(criteria).build();
             V1DataResponse v1DataResponse = v1Service.fetchUnlocation(commonV1ListRequest);
             List<UnlocationsResponse> unlocationsResponse = jsonHelper.convertValueToList(v1DataResponse.entities, UnlocationsResponse.class);
-            if(unlocationsResponse != null && unlocationsResponse.size() > 0) {
+            if (unlocationsResponse != null && unlocationsResponse.size() > 0) {
                 Map<String, String> locationMap = new HashMap<>();
-                for(UnlocationsResponse unlocation : unlocationsResponse) {
+                for (UnlocationsResponse unlocation : unlocationsResponse) {
                     locationMap.put(unlocation.getLocCode(), unlocation.getName());
                 }
 
-                for(IRunnerResponse response : responseList) {
-                    if(((ShipmentListResponse)response).getCarrierDetails() != null) {
-                        if (StringUtility.isNotEmpty(((ShipmentListResponse)response).getCarrierDetails().getOriginPort())) {
-                            ((ShipmentListResponse)response).getCarrierDetails().setOriginPortName(locationMap.get(((ShipmentListResponse)response).getCarrierDetails().getOriginPort()));
+                for (IRunnerResponse response : responseList) {
+                    if (((ShipmentListResponse) response).getCarrierDetails() != null) {
+                        if (StringUtility.isNotEmpty(((ShipmentListResponse) response).getCarrierDetails().getOriginPort())) {
+                            ((ShipmentListResponse) response).getCarrierDetails().setOriginPortName(locationMap.get(((ShipmentListResponse) response).getCarrierDetails().getOriginPort()));
                         }
-                        if (StringUtility.isNotEmpty(((ShipmentListResponse)response).getCarrierDetails().getDestinationPort())) {
-                            ((ShipmentListResponse)response).getCarrierDetails().setDestinationPortName(locationMap.get(((ShipmentListResponse)response).getCarrierDetails().getDestinationPort()));
+                        if (StringUtility.isNotEmpty(((ShipmentListResponse) response).getCarrierDetails().getDestinationPort())) {
+                            ((ShipmentListResponse) response).getCarrierDetails().setDestinationPortName(locationMap.get(((ShipmentListResponse) response).getCarrierDetails().getDestinationPort()));
                         }
                     }
                 }
             }
         }
     }
-
 
 
     private List<Parties> createParties(ShipmentDetails shipmentDetails) {
@@ -445,7 +451,7 @@ public class ShipmentService implements IShipmentService {
 
         try {
 
-            if(request.getConsolidationList()!= null) {
+            if (request.getConsolidationList() != null) {
                 List<ConsolidationDetailsRequest> consolRequest = request.getConsolidationList();
                 List<ConsolidationDetails> consolList = consolidationDetailsDao.saveAll(convertToEntityList(consolRequest, ConsolidationDetails.class));
                 shipmentDetails.setConsolidationList(consolList);
@@ -752,9 +758,9 @@ public class ShipmentService implements IShipmentService {
 
         List<ConsolidationDetailsRequest> updatedConsolidationRequest = new ArrayList<>();
         List<ConsolidationDetailsRequest> consolidationDetailsRequests = shipmentRequest.getConsolidationList();
-        if(consolidationDetailsRequests != null && !consolidationDetailsRequests.isEmpty()) {
-            for(ConsolidationDetailsRequest consolidation : consolidationDetailsRequests) {
-                if(consolidation.getId() != null) {
+        if (consolidationDetailsRequests != null && !consolidationDetailsRequests.isEmpty()) {
+            for (ConsolidationDetailsRequest consolidation : consolidationDetailsRequests) {
+                if (consolidation.getId() != null) {
                     tempConsolIds.add(consolidation.getId());
                 }
             }
@@ -762,7 +768,7 @@ public class ShipmentService implements IShipmentService {
         shipmentRequest.setConsolidationList(updatedConsolidationRequest);
 
         try {
-           ShipmentDetails entity = objectMapper.convertValue(shipmentRequest, ShipmentDetails.class);
+            ShipmentDetails entity = objectMapper.convertValue(shipmentRequest, ShipmentDetails.class);
             entity.setId(oldEntity.get().getId());
             List<Containers> updatedContainers = null;
             if (containerRequestList != null) {
@@ -776,8 +782,7 @@ public class ShipmentService implements IShipmentService {
             if (additionalDetailRequest != null) {
                 updatedAdditionalDetails = additionalDetailDao.updateEntityFromShipment(convertToClass(additionalDetailRequest, AdditionalDetails.class), id);
                 entity.setAdditionalDetails(updatedAdditionalDetails);
-            }
-            else {
+            } else {
                 entity.setAdditionalDetails(oldEntity.get().getAdditionalDetails());
             }
 
@@ -785,20 +790,19 @@ public class ShipmentService implements IShipmentService {
             if (carrierDetailRequest != null) {
                 updatedCarrierDetails = carrierDao.updateEntityFromShipmentConsole(convertToClass(carrierDetailRequest, CarrierDetails.class));
                 entity.setCarrierDetails(updatedCarrierDetails);
-            }
-            else {
+            } else {
                 entity.setCarrierDetails(oldEntity.get().getCarrierDetails());
             }
 
-            if(entity.getClient() == null)
+            if (entity.getClient() == null)
                 entity.setClient(oldEntity.get().getClient());
-            if(entity.getConsignee() == null)
+            if (entity.getConsignee() == null)
                 entity.setConsignee(oldEntity.get().getConsignee());
-            if(entity.getConsigner() == null)
+            if (entity.getConsigner() == null)
                 entity.setConsigner(oldEntity.get().getConsigner());
-            if(entity.getPickupDetails() == null)
+            if (entity.getPickupDetails() == null)
                 entity.setPickupDetails(oldEntity.get().getPickupDetails());
-            if(entity.getDeliveryDetails() == null)
+            if (entity.getDeliveryDetails() == null)
                 entity.setDeliveryDetails(oldEntity.get().getDeliveryDetails());
 
             List<BookingCarriage> oldBookingCarriages = oldEntity.get().getBookingCarriagesList();
@@ -816,7 +820,7 @@ public class ShipmentService implements IShipmentService {
 
             ShipmentDetailsResponse response = shipmentDetailsMapper.map(entity);
 
-            if(bookingCarriageRequestList == null) {
+            if (bookingCarriageRequestList == null) {
                 response.setBookingCarriagesList(convertToDtoList(oldBookingCarriages, BookingCarriageResponse.class));
             }
             if (packingRequestList == null) {
@@ -876,15 +880,13 @@ public class ShipmentService implements IShipmentService {
             if (fileRepoRequestList != null) {
                 List<FileRepo> updatedFileRepos = fileRepoDao.updateEntityFromOtherEntity(convertToEntityList(fileRepoRequestList, FileRepo.class), id, Constants.SHIPMENT);
                 response.setFileRepoList(convertToDtoList(updatedFileRepos, FileRepoResponse.class));
-            }
-            else {
+            } else {
                 response.setFileRepoList(convertToDtoList(fileRepoDao.findByEntityIdAndEntityType(id, Constants.SHIPMENT), FileRepoResponse.class));
             }
             if (notesRequestList != null) {
                 List<Notes> updatedNotes = notesDao.updateEntityFromOtherEntity(convertToEntityList(notesRequestList, Notes.class), id, Constants.SHIPMENT);
                 response.setNotesList(convertToDtoList(updatedNotes, NotesResponse.class));
-            }
-            else {
+            } else {
                 response.setNotesList(convertToDtoList(notesDao.findByEntityIdAndEntityType(id, Constants.SHIPMENT), NotesResponse.class));
             }
 
@@ -1065,7 +1067,7 @@ public class ShipmentService implements IShipmentService {
     public ResponseEntity<?> partialUpdate(CommonRequestModel commonRequestModel) throws Exception {
 
         ShipmentPatchRequest shipmentRequest = (ShipmentPatchRequest) commonRequestModel.getData();
-        if(shipmentRequest.getId() == null){
+        if (shipmentRequest.getId() == null) {
             log.error("Request Id is null for update request with Id {}", LoggerHelper.getRequestIdFromMDC());
             throw new Exception("Request Id is null");
         }
@@ -1092,7 +1094,7 @@ public class ShipmentService implements IShipmentService {
 
         try {
             ShipmentDetails entity = oldEntity.get();
-                shipmentDetailsMapper.update(shipmentRequest, entity);
+            shipmentDetailsMapper.update(shipmentRequest, entity);
             entity.setId(oldEntity.get().getId());
             List<Containers> updatedContainers = null;
             if (containerRequestList != null) {
@@ -1178,11 +1180,10 @@ public class ShipmentService implements IShipmentService {
         String lockingUser = shipmentDetails.getLockedBy();
         String currentUser = userContext.getUser().getUsername();
 
-        if(shipmentDetails.getIsLocked()) {
-            if(lockingUser != null && lockingUser.equals(currentUser))
+        if (shipmentDetails.getIsLocked()) {
+            if (lockingUser != null && lockingUser.equals(currentUser))
                 shipmentDetails.setIsLocked(false);
-        }
-        else {
+        } else {
             shipmentDetails.setIsLocked(true);
             shipmentDetails.setLockedBy(currentUser);
         }
@@ -1236,5 +1237,105 @@ public class ShipmentService implements IShipmentService {
                 suffix = StringUtility.getEmptyString();
         }
         return !StringUtils.isEmpty(prefix) ? prefix + suffix : suffix;
+    }
+
+    private void directShipmentMAWBCheck(ShipmentRequest shipmentRequest) {
+        if (StringUtility.isEmpty(shipmentRequest.getMasterBill())) {
+            return;
+        }
+
+        if (!isMAWBNumberValid(shipmentRequest.getMasterBill()))
+            throw new ValidationException("Please enter a valid MAWB number.");
+
+        String mawbAirlineCode = shipmentRequest.getMasterBill().substring(0, 2);
+        ListCommonRequest listCarrierRequest = constructListCommonRequest("airlineCode", mawbAirlineCode, "="); // TODO fetch from v1
+        Pair<Specification<CarrierDetails>, Pageable> pair = fetchData(listCarrierRequest, CarrierDetails.class);
+        Page<CarrierDetails> carrierDetails = carrierDao.findAll(pair.getLeft(), pair.getRight());
+
+        if (carrierDetails.getContent() == null || carrierDetails.getTotalElements() == 0)
+            throw new ValidationException("Airline for the entered MAWB Number doesn't exist in Carrier Master");
+
+        CarrierDetails correspondingCarrier = carrierDetails.getContent().get(0);
+
+        Boolean isMAWBNumberExist = false;
+        Boolean isCarrierExist = false;
+        if (shipmentRequest.getCarrierDetails() != null)
+            isCarrierExist = true;
+
+        if (isCarrierExist)
+            throw new ValidationException("MAWB Number prefix is not matching with entered Flight Carrier");
+
+        ListCommonRequest listMawbRequest = constructListCommonRequest("MAWBNumber", shipmentRequest.getMasterBill(), "=");
+        Pair<Specification<MawbStocksLink>, Pageable> mawbStocksLinkPair = fetchData(listCarrierRequest, MawbStocksLink.class);
+        Page<MawbStocksLink> mawbStocksLinkPage = mawbStocksLinkDao.findAll(mawbStocksLinkPair.getLeft(), mawbStocksLinkPair.getRight());
+
+        MawbStocksLink mawbStocksLink = null;
+
+        if (mawbStocksLinkPage.getContent() != null && mawbStocksLinkPage.getTotalElements() > 0) {
+            isMAWBNumberExist = true;
+            mawbStocksLink = mawbStocksLinkPage.getContent().get(0);
+        }
+
+        if (!isCarrierExist)
+            shipmentRequest.setCarrierDetails(modelMapper.map(correspondingCarrier, CarrierDetailRequest.class));
+
+        if (shipmentRequest.getDirection() == "IMP") {
+            return;
+        }
+
+        if (isMAWBNumberExist) {
+            if (mawbStocksLink.getStatus() == "Consumed" && mawbStocksLink.getEntityId() != shipmentRequest.getId()) // If MasterBill number is already Consumed.
+                throw new ValidationException("The MAWB number entered is already consumed. Please enter another MAWB number.");
+        } else {
+            createNewMAWBEntry(shipmentRequest);
+        }
+    }
+
+    private void createNewMAWBEntry(ShipmentRequest shipmentRequest) {
+        MawbStocks mawbStocks = new MawbStocks();
+        // mawbStocks.setAirLinePrefix() //TODO fetch from v1
+        mawbStocks.setCount("1");
+        mawbStocks.setStartNumber(Long.valueOf(shipmentRequest.getMasterBill().substring(4, 10)));
+        mawbStocks.setFrom(shipmentRequest.getMasterBill());
+        mawbStocks.setTo(shipmentRequest.getMasterBill());
+        mawbStocks.setMawbNumber(shipmentRequest.getMasterBill());
+        mawbStocks.setStatus("Unused");
+        // if(shipmentRequest.getBorrowedFrom()!=null) mawbStocks.setBorrowedFrom(Long.valueOf(shipmentRequest.getBorrowedFrom())); TODO fetch from v1
+        mawbStocks.setHomePort(shipmentRequest.getCarrierDetails().getOriginPort());
+        mawbStocks = mawbStocksDao.save(mawbStocks);
+
+        if (mawbStocks.getId() != null) {
+            var entryForMawbStocksLinkRow = new MawbStocksLink();
+            entryForMawbStocksLinkRow.setParentId(mawbStocks.getId());
+            entryForMawbStocksLinkRow.setSeqNumber(shipmentRequest.getMasterBill().substring(4, 10));
+            entryForMawbStocksLinkRow.setMawbNumber(shipmentRequest.getMasterBill());
+            entryForMawbStocksLinkRow.setStatus("Unused");
+            entryForMawbStocksLinkRow = mawbStocksLinkDao.save(entryForMawbStocksLinkRow);
+        }
+    }
+
+    private Boolean isMAWBNumberValid(String masterBill) {
+        Boolean MAWBNumberValidity = true;
+        if (masterBill.length() == 12) {
+            String mawbSeqNum = masterBill.substring(4, 10);
+            String checkDigit = masterBill.substring(11, 11);
+            Long imawbSeqNum = 0L;
+            Long icheckDigit = 0L;
+            if (areAllCharactersDigits(masterBill, 4, 11)) {
+                if (imawbSeqNum % 7 != icheckDigit)
+                    MAWBNumberValidity = false;
+            } else MAWBNumberValidity = false;
+        } else MAWBNumberValidity = false;
+        return MAWBNumberValidity;
+    }
+
+    private boolean areAllCharactersDigits(String input, int startIndex, int endIndex) {
+        String substring = input.substring(startIndex, endIndex);
+        for (int i = 0; i < substring.length(); i++) {
+            if (!Character.isDigit(substring.charAt(i))) {
+                return false;
+            }
+        }
+        return true;
     }
 }
