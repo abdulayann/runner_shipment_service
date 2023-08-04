@@ -9,6 +9,7 @@ import com.dpw.runner.shipment.services.dao.interfaces.IAchievedQuantitiesDao;
 import com.dpw.runner.shipment.services.dto.request.AchievedQuantitiesRequest;
 import com.dpw.runner.shipment.services.dto.response.AchievedQuantitiesResponse;
 import com.dpw.runner.shipment.services.entity.AchievedQuantities;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IAchievedQuantitiesService;
@@ -38,8 +39,9 @@ public class AchievedQuantitiesService implements IAchievedQuantitiesService {
 
     @Autowired
     IAchievedQuantitiesDao achievedQuantitiesDao;
+
     @Autowired
-    ModelMapper modelMapper;
+    private JsonHelper jsonHelper;
 
     @Transactional
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
@@ -198,11 +200,11 @@ public class AchievedQuantitiesService implements IAchievedQuantitiesService {
     }
 
     private AchievedQuantitiesResponse convertEntityToDto(AchievedQuantities achievedQuantities) {
-        return modelMapper.map(achievedQuantities, AchievedQuantitiesResponse.class);
+        return jsonHelper.convertValue(achievedQuantities, AchievedQuantitiesResponse.class);
     }
 
     private AchievedQuantities convertRequestToAchievedQuantities(AchievedQuantitiesRequest request) {
-        return modelMapper.map(request, AchievedQuantities.class);
+        return jsonHelper.convertValue(request, AchievedQuantities.class);
     }
 
     private List<IRunnerResponse> convertEntityListToDtoList(final List<AchievedQuantities> list) {

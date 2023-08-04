@@ -10,6 +10,7 @@ import com.dpw.runner.shipment.services.dto.request.ELDetailsRequest;
 import com.dpw.runner.shipment.services.dto.request.ElNumbersRequest;
 import com.dpw.runner.shipment.services.dto.response.ELDetailsResponse;
 import com.dpw.runner.shipment.services.entity.ELDetails;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IELDetailsService;
@@ -43,7 +44,7 @@ public class ELDetailsService implements IELDetailsService {
     private IELDetailsDao elDetailsDao;
 
     @Autowired
-    private ModelMapper modelMapper;
+    private JsonHelper jsonHelper;
 
     @Transactional
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
@@ -231,11 +232,11 @@ public class ELDetailsService implements IELDetailsService {
     }
 
     private ELDetailsResponse convertEntityToDto(ELDetails elDetails) {
-        return modelMapper.map(elDetails, ELDetailsResponse.class);
+        return jsonHelper.convertValue(elDetails, ELDetailsResponse.class);
     }
 
     private ELDetails convertRequestToELDetails(ELDetailsRequest request) {
-        return modelMapper.map(request, ELDetails.class);
+        return jsonHelper.convertValue(request, ELDetails.class);
     }
 
     private List<IRunnerResponse> convertEntityListToDtoList(final List<ELDetails> lst) {

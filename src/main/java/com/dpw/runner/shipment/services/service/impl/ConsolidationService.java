@@ -54,9 +54,6 @@ import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.conve
 public class ConsolidationService implements IConsolidationService {
 
     @Autowired
-    private ModelMapper modelMapper;
-
-    @Autowired
     private IConsolidationDetailsDao consolidationDetailsDao;
     @Autowired
     private ICarrierDao carrierDao;
@@ -389,52 +386,52 @@ public class ConsolidationService implements IConsolidationService {
     public void createEvent(ConsolidationDetails consolidationDetails, EventsRequest eventsRequest) {
         eventsRequest.setEntityId(consolidationDetails.getId());
         eventsRequest.setEntityType(Constants.CONSOLIDATION);
-        eventDao.save(modelMapper.map(eventsRequest, Events.class));
+        eventDao.save(jsonHelper.convertValue(eventsRequest, Events.class));
     }
 
     @Transactional
     public void createFileRepo(ConsolidationDetails consolidationDetails, FileRepoRequest fileRepoRequest) {
         fileRepoRequest.setEntityId(consolidationDetails.getId());
         fileRepoRequest.setEntityType(Constants.CONSOLIDATION);
-        fileRepoDao.save(modelMapper.map(fileRepoRequest, FileRepo.class));
+        fileRepoDao.save(jsonHelper.convertValue(fileRepoRequest, FileRepo.class));
     }
 
     @Transactional
     public void createJob(ConsolidationDetails consolidationDetails, JobRequest jobRequest) {
         jobRequest.setConsolidationId(consolidationDetails.getId());
-        jobDao.save(modelMapper.map(jobRequest, Jobs.class));
+        jobDao.save(jsonHelper.convertValue(jobRequest, Jobs.class));
     }
 
     @Transactional
     public void createNote(ConsolidationDetails consolidationDetails, NotesRequest notesRequest) {
         notesRequest.setEntityId(consolidationDetails.getId());
         notesRequest.setEntityType(Constants.CONSOLIDATION);
-        notesDao.save(modelMapper.map(notesRequest, Notes.class));
+        notesDao.save(jsonHelper.convertValue(notesRequest, Notes.class));
     }
 
     @Transactional
     public void createParties(ConsolidationDetails consolidationDetails, PartiesRequest partiesRequest) {
         partiesRequest.setEntityId(consolidationDetails.getId());
         partiesRequest.setEntityType(Constants.CONSOLIDATION);
-        packingDao.save(modelMapper.map(partiesRequest, Packing.class));
+        packingDao.save(jsonHelper.convertValue(partiesRequest, Packing.class));
     }
 
     @Transactional
     public void createReferenceNumber(ConsolidationDetails consolidationDetails, ReferenceNumbersRequest referenceNumbersRequest) {
         referenceNumbersRequest.setConsolidationId(consolidationDetails.getId());
-        referenceNumbersDao.save(modelMapper.map(referenceNumbersRequest, ReferenceNumbers.class));
+        referenceNumbersDao.save(jsonHelper.convertValue(referenceNumbersRequest, ReferenceNumbers.class));
     }
 
     @Transactional
     public void createPacking(ConsolidationDetails consolidationDetails, PackingRequest packingRequest) {
         packingRequest.setConsolidationId(consolidationDetails.getId());
-        packingDao.save(modelMapper.map(packingRequest, Packing.class));
+        packingDao.save(jsonHelper.convertValue(packingRequest, Packing.class));
     }
 
     @Transactional
     public void createRouting(ConsolidationDetails consolidationDetails, RoutingsRequest routingsRequest) {
         routingsRequest.setConsolidationId(consolidationDetails.getId());
-        routingsDao.save(modelMapper.map(routingsRequest, Routings.class));
+        routingsDao.save(jsonHelper.convertValue(routingsRequest, Routings.class));
     }
 
     @Transactional
@@ -471,12 +468,12 @@ public class ConsolidationService implements IConsolidationService {
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
 
-        ConsolidationDetails entity = modelMapper.map(request, ConsolidationDetails.class);
+        ConsolidationDetails entity = jsonHelper.convertValue(request, ConsolidationDetails.class);
         entity.setId(oldEntity.get().getId());
         if (entity.getContainersList() == null)
             entity.setContainersList(oldEntity.get().getContainersList());
         entity = consolidationDetailsDao.update(entity);
-        return ResponseHelper.buildSuccessResponse(modelMapper.map(entity, ConsolidationDetailsResponse.class));
+        return ResponseHelper.buildSuccessResponse(jsonHelper.convertValue(entity, ConsolidationDetailsResponse.class));
     }
 
     @Transactional
@@ -491,7 +488,7 @@ public class ConsolidationService implements IConsolidationService {
                 }
             }
             ConsolidationDetails entity = consolidationDetailsDao.save(consolidationDetails);
-            return ResponseHelper.buildSuccessResponse(modelMapper.map(entity, ConsolidationDetailsResponse.class));
+            return ResponseHelper.buildSuccessResponse(jsonHelper.convertValue(entity, ConsolidationDetailsResponse.class));
         }
 
         return null;
@@ -515,7 +512,7 @@ public class ConsolidationService implements IConsolidationService {
             }
             consolidationDetails.setShipmentsList(remainingShipment);
             ConsolidationDetails entity = consolidationDetailsDao.save(consolidationDetails);
-            return ResponseHelper.buildSuccessResponse(modelMapper.map(entity, ConsolidationDetailsResponse.class));
+            return ResponseHelper.buildSuccessResponse(jsonHelper.convertValue(entity, ConsolidationDetailsResponse.class));
         }
         return null;
     }
@@ -549,7 +546,7 @@ public class ConsolidationService implements IConsolidationService {
 
         try {
 
-            ConsolidationDetails entity = modelMapper.map(consolidationDetailsRequest, ConsolidationDetails.class);
+            ConsolidationDetails entity = jsonHelper.convertValue(consolidationDetailsRequest, ConsolidationDetails.class);
             entity.setId(oldEntity.get().getId());
             List<Containers> updatedContainers = null;
             if (containerRequestList != null) {
@@ -589,8 +586,8 @@ public class ConsolidationService implements IConsolidationService {
             }
             entity = consolidationDetailsDao.update(entity);
 
-            ConsolidationDetailsResponse response = modelMapper.map(entity, ConsolidationDetailsResponse.class);
-            response.setContainersList(updatedContainers.stream().map(e -> modelMapper.map(e, ContainerResponse.class)).collect(Collectors.toList()));
+            ConsolidationDetailsResponse response = jsonHelper.convertValue(entity, ConsolidationDetailsResponse.class);
+            response.setContainersList(updatedContainers.stream().map(e -> jsonHelper.convertValue(e, ContainerResponse.class)).collect(Collectors.toList()));
             if (carrierDetailRequest != null) {
                 response.setCarrierDetails(convertToClass(updatedCarrierDetails, CarrierDetailResponse.class));
             }
@@ -1030,7 +1027,7 @@ public class ConsolidationService implements IConsolidationService {
     }
 
     private Containers convertRequestToEntity(ContainerRequest request) {
-        return modelMapper.map(request, Containers.class);
+        return jsonHelper.convertValue(request, Containers.class);
     }
 
     private void consolidationMAWBCheck(ConsolidationDetailsRequest consolidationRequest) {

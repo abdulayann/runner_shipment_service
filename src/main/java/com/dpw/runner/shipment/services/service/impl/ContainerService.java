@@ -19,6 +19,7 @@ import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.Events;
 import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.entity.ShipmentsContainersMapping;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerService;
@@ -60,7 +61,7 @@ public class ContainerService implements IContainerService {
     @Autowired
     IContainerDao containerDao;
     @Autowired
-    ModelMapper modelMapper;
+    private JsonHelper jsonHelper;
     @Autowired
     IShipmentsContainersMappingDao shipmentsContainersMappingDao;
     private final CSVParsingUtil<Containers> parser = new CSVParsingUtil<>(Containers.class);
@@ -167,7 +168,7 @@ public class ContainerService implements IContainerService {
                 }
             }
             Containers entity = containerDao.save(containers);
-            return ResponseHelper.buildSuccessResponse(modelMapper.map(entity, ContainerResponse.class));
+            return ResponseHelper.buildSuccessResponse(jsonHelper.convertValue(entity, ContainerResponse.class));
         }
 
         return null;
@@ -479,11 +480,11 @@ public class ContainerService implements IContainerService {
     }
 
     private IRunnerResponse convertEntityToDto(Containers container) {
-        return modelMapper.map(container, ContainerResponse.class);
+        return jsonHelper.convertValue(container, ContainerResponse.class);
     }
 
     private Containers convertRequestToEntity(ContainerRequest request) {
-        return modelMapper.map(request, Containers.class);
+        return jsonHelper.convertValue(request, Containers.class);
     }
 
     private List<IRunnerResponse> convertEntityListToDtoList(List<Containers> lst) {
