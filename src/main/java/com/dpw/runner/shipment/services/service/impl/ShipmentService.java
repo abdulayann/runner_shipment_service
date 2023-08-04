@@ -64,6 +64,8 @@ import static com.dpw.runner.shipment.services.utils.CommonUtils.*;
 @Service
 @Slf4j
 public class ShipmentService implements IShipmentService {
+    @Autowired
+    private ModelMapper modelMapper;
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -229,7 +231,8 @@ public class ShipmentService implements IShipmentService {
             Map.entry("innerPackUnit", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).fieldName("innerPackUnit").build()),
             Map.entry("jobStatus", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).fieldName("jobStatus").build()),
             Map.entry("containerNumber", RunnerEntityMapping.builder().tableName("containersList").dataType(String.class).fieldName("containerNumber").build()),
-            Map.entry("containerCode", RunnerEntityMapping.builder().tableName("containersList").dataType(String.class).fieldName("containerCode").build())
+            Map.entry("containerCode", RunnerEntityMapping.builder().tableName("containersList").dataType(String.class).fieldName("containerCode").build()),
+            Map.entry("id", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(Long.class).fieldName("id").build())
     );
 
     @Override
@@ -278,7 +281,7 @@ public class ShipmentService implements IShipmentService {
     private List<IRunnerResponse> convertEntityListToDtoList(List<ShipmentDetails> lst) {
         List<IRunnerResponse> responseList = new ArrayList<>();
         lst.forEach(shipmentDetail -> {
-            ShipmentListResponse response = jsonHelper.convertValue(shipmentDetail, ShipmentListResponse.class);
+            ShipmentListResponse response = modelMapper.map(shipmentDetail, ShipmentListResponse.class);
             containerCountUpdate(shipmentDetail, response);
             setEventData(shipmentDetail, response);
             responseList.add(response);
