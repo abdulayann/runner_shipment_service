@@ -60,7 +60,7 @@
 "NotifyConsigneeEqual":"{{ content.notifyConsigneeEqual }}",
 "ShipmentReadOnly":"{{ content.shipmentReadOnly }}",
 "SourceTenantId":{{ content.sourceTenantId }},
-"ShipmentId":{{ content.shipmentId }},
+"ShipmentId":"{{ content.shipmentId }}",
 
 "TruckDriverDetail": [
 {% for item in content.truckDriverDetails %}
@@ -712,24 +712,24 @@
 ],
 
 "CarrierDetails": {
-"AircraftRegistration": "{{ consolidation.carrierDetails.aircraftRegistration }}",
-"AircraftType": "{{ consolidation.carrierDetails.aircraftType }}",
-"ATA": "{{ consolidation.carrierDetails.ata }}",
-"ATD": "{{ consolidation.carrierDetails.atd }}",
-"Destination": "{{ consolidation.carrierDetails.destination }}",
-"DestinationPort": "{{ consolidation.carrierDetails.destinationPort }}",
-"ETA": "{{ consolidation.carrierDetails.eta }}",
-"ETD": "{{ consolidation.carrierDetails.etd }}",
-"FlightNumber": "{{ consolidation.carrierDetails.flightNumber }}",
-"JourneyNumber": "{{ consolidation.carrierDetails.journeyNumber }}",
-"JourneyRefNumber": "{{ consolidation.carrierDetails.journeyRefNumber }}",
-"Origin": "{{ consolidation.carrierDetails.origin }}",
-"OriginPort": "{{ consolidation.carrierDetails.originPort }}",
-"ShipmentId":{{ consolidation.carrierDetails.shipmentId }},
-"ShippingLine": "{{ consolidation.carrierDetails.shippingLine }}",
-"TruckRefNumber": "{{ consolidation.carrierDetails.truckRefNumber }}",
-"Vessel": "{{ consolidation.carrierDetails.vessel }}",
-"Voyage": "{{ consolidation.carrierDetails.voyage }}"
+"AircraftRegistration": "{{ content.carrierDetails.aircraftRegistration }}",
+"AircraftType": "{{ content.carrierDetails.aircraftType }}",
+"ATA": "{{ content.carrierDetails.ata }}",
+"ATD": "{{ content.carrierDetails.atd }}",
+"Destination": "{{ content.carrierDetails.destination }}",
+"DestinationPort": "{{ content.carrierDetails.destinationPort }}",
+"ETA": "{{ content.carrierDetails.eta }}",
+"ETD": "{{ content.carrierDetails.etd }}",
+"FlightNumber": "{{ content.carrierDetails.flightNumber }}",
+"JourneyNumber": "{{ content.carrierDetails.journeyNumber }}",
+"JourneyRefNumber": "{{ content.carrierDetails.journeyRefNumber }}",
+"Origin": "{{ content.carrierDetails.origin }}",
+"OriginPort": "{{ content.carrierDetails.originPort }}",
+"ShipmentId":{{ content.carrierDetails.shipmentId }},
+"ShippingLine": "{{ content.carrierDetails.shippingLine }}",
+"TruckRefNumber": "{{ content.carrierDetails.truckRefNumber }}",
+"Vessel": "{{ content.carrierDetails.vessel }}",
+"Voyage": "{{ content.carrierDetails.voyage }}"
 },
 
 "BookingCarriages": [
