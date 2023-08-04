@@ -54,6 +54,7 @@ public class JsonHelper {
     }
 
     public <T,F> F convertValue(T object, Class<F> clazz) {
+        mapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
         return mapper.convertValue(object, clazz);
     }
 

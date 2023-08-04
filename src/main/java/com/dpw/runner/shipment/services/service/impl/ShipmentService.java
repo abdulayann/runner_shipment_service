@@ -16,6 +16,7 @@ import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.patchRequest.ShipmentPatchRequest;
 import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.response.*;
+import com.dpw.runner.shipment.services.dto.v1.response.V1ContainerTypeResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.GenerationType;
@@ -63,6 +64,8 @@ import static com.dpw.runner.shipment.services.utils.CommonUtils.*;
 @Service
 @Slf4j
 public class ShipmentService implements IShipmentService {
+    @Autowired
+    private ModelMapper modelMapper;
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -162,6 +165,9 @@ public class ShipmentService implements IShipmentService {
             Map.entry("clientOrgCode", RunnerEntityMapping.builder().tableName("client").dataType(String.class).fieldName("orgCode").build()),
             Map.entry("consignerOrgCode", RunnerEntityMapping.builder().tableName("consigner").dataType(String.class).fieldName("orgCode").build()),
             Map.entry("consigneeOrgCode", RunnerEntityMapping.builder().tableName("consignee").dataType(String.class).fieldName("orgCode").build()),
+            Map.entry("clientAddressCode", RunnerEntityMapping.builder().tableName("client").dataType(Integer.class).fieldName("addressCode").build()),
+            Map.entry("consignerAddressCode", RunnerEntityMapping.builder().tableName("consigner").dataType(String.class).fieldName("addressCode").build()),
+            Map.entry("consigneeAddressCode", RunnerEntityMapping.builder().tableName("consignee").dataType(String.class).fieldName("addressCode").build()),
             Map.entry("houseBill", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).fieldName("houseBill").build()),
             Map.entry("hblType", RunnerEntityMapping.builder().tableName("additionalDetails").dataType(String.class).fieldName("hblType").build()),
             Map.entry("transportMode", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).fieldName("transportMode").build()),
@@ -187,10 +193,12 @@ public class ShipmentService implements IShipmentService {
             Map.entry("goodsDescription", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).fieldName("goodsDescription").build()),
             Map.entry("createdAt", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(LocalDateTime.class).fieldName("createdAt").build()),
             Map.entry("updatedAt", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(LocalDateTime.class).fieldName("updatedAt").build()),
-            Map.entry("estimatedPickupOrDelivery", RunnerEntityMapping.builder().tableName("pickupDeliveryDetails").dataType(LocalDateTime.class).fieldName("estimatedPickupOrDelivery").build()),
-            Map.entry("actualPickupOrDelivery", RunnerEntityMapping.builder().tableName("pickupDeliveryDetails").dataType(LocalDateTime.class).fieldName("actualPickupOrDelivery").build()),
-            Map.entry("requiredBy", RunnerEntityMapping.builder().tableName("pickupDeliveryDetails").dataType(LocalDateTime.class).fieldName("requiredBy").build()),
-            Map.entry("addressCode", RunnerEntityMapping.builder().tableName("parties").dataType(Integer.class).fieldName("addressCode").build()),
+            Map.entry("deliveryEstimated", RunnerEntityMapping.builder().tableName("deliveryDetails").dataType(LocalDateTime.class).fieldName("estimatedPickupOrDelivery").build()),
+            Map.entry("deliveryActual", RunnerEntityMapping.builder().tableName("deliveryDetails").dataType(LocalDateTime.class).fieldName("actualPickupOrDelivery").build()),
+            Map.entry("deliveryRequiredBy", RunnerEntityMapping.builder().tableName("deliveryDetails").dataType(LocalDateTime.class).fieldName("requiredBy").build()),
+            Map.entry("pickupEstimated", RunnerEntityMapping.builder().tableName("pickupDetails").dataType(LocalDateTime.class).fieldName("estimatedPickupOrDelivery").build()),
+            Map.entry("pickupActual", RunnerEntityMapping.builder().tableName("pickupDetails").dataType(LocalDateTime.class).fieldName("actualPickupOrDelivery").build()),
+            Map.entry("pickupRequiredBy", RunnerEntityMapping.builder().tableName("pickupDetails").dataType(LocalDateTime.class).fieldName("requiredBy").build()),
             Map.entry("screeningStatus", RunnerEntityMapping.builder().tableName("additionalDetails").dataType(String.class).fieldName("screeningStatus").build()),
             Map.entry("paidPlace", RunnerEntityMapping.builder().tableName("additionalDetails").dataType(Long.class).fieldName("paidPlace").build()),
             Map.entry("placeOfIssue", RunnerEntityMapping.builder().tableName("additionalDetails").dataType(Long.class).fieldName("placeOfIssue").build()),
@@ -223,7 +231,8 @@ public class ShipmentService implements IShipmentService {
             Map.entry("innerPackUnit", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).fieldName("innerPackUnit").build()),
             Map.entry("jobStatus", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).fieldName("jobStatus").build()),
             Map.entry("containerNumber", RunnerEntityMapping.builder().tableName("containersList").dataType(String.class).fieldName("containerNumber").build()),
-            Map.entry("containerCode", RunnerEntityMapping.builder().tableName("containersList").dataType(String.class).fieldName("containerCode").build())
+            Map.entry("containerCode", RunnerEntityMapping.builder().tableName("containersList").dataType(String.class).fieldName("containerCode").build()),
+            Map.entry("id", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(Long.class).fieldName("id").build())
     );
 
     @Override
@@ -272,12 +281,13 @@ public class ShipmentService implements IShipmentService {
     private List<IRunnerResponse> convertEntityListToDtoList(List<ShipmentDetails> lst) {
         List<IRunnerResponse> responseList = new ArrayList<>();
         lst.forEach(shipmentDetail -> {
-            ShipmentListResponse response = jsonHelper.convertValue(shipmentDetail, ShipmentListResponse.class);
+            ShipmentListResponse response = modelMapper.map(shipmentDetail, ShipmentListResponse.class);
             containerCountUpdate(shipmentDetail, response);
             setEventData(shipmentDetail, response);
             responseList.add(response);
         });
         setLocationData(responseList);
+        setContainerTeu(lst, responseList);
         return responseList;
     }
 
@@ -379,6 +389,60 @@ public class ShipmentService implements IShipmentService {
                             ((ShipmentListResponse)response).getCarrierDetails().setDestinationPortName(locationMap.get(((ShipmentListResponse)response).getCarrierDetails().getDestinationPort()));
                         }
                     }
+                }
+            }
+        }
+    }
+
+    private void setContainerTeu(List<ShipmentDetails> shipmentDetails, List<IRunnerResponse> responseList) {
+
+        Map<Long, ShipmentListResponse> dataMap = new HashMap<>();
+        for (IRunnerResponse response : responseList){
+            dataMap.put(((ShipmentListResponse)response).getId(), (ShipmentListResponse)response);
+        }
+
+        Set<String> containerType = new HashSet<>();
+
+        for(ShipmentDetails shipment : shipmentDetails) {
+            if(shipment.getContainersList() != null) {
+                for(Containers containers : shipment.getContainersList()) {
+                    if(StringUtility.isNotEmpty(containers.getContainerCode())) {
+                        containerType.add(containers.getContainerCode());
+                    }
+                }
+            }
+        }
+
+        if(containerType.size() > 0) {
+            List<Object> criteria = Arrays.asList(
+                    Arrays.asList("Code"),
+                    "In",
+                    Arrays.asList(containerType)
+            );
+            CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(criteria).build();
+            V1DataResponse v1DataResponse = v1Service.fetchContainerTypeData(commonV1ListRequest);
+            List<V1ContainerTypeResponse> containerTypeResponses = jsonHelper.convertValueToList(v1DataResponse.entities, V1ContainerTypeResponse.class);
+            if(containerTypeResponses != null && containerTypeResponses.size() > 0) {
+                Map<String, BigDecimal> containerTypeMap = new HashMap<>();
+                for(V1ContainerTypeResponse containerTypeResponse : containerTypeResponses) {
+                    if(containerTypeResponse.getTeu() != null) {
+                        containerTypeMap.put(containerTypeResponse.getCode(), containerTypeResponse.getTeu());
+                    }
+                }
+
+                BigDecimal teu;
+                for(ShipmentDetails shipment : shipmentDetails) {
+                    teu = BigDecimal.ZERO;
+                    if(shipment.getContainersList() != null) {
+                        for(Containers containers : shipment.getContainersList()) {
+                            if(StringUtility.isNotEmpty(containers.getContainerCode())) {
+                                if(containerTypeMap.containsKey(containers.getContainerCode()) && containers.getContainerCount() != null) {
+                                    teu = teu.add(containerTypeMap.get(containers.getContainerCode()).multiply(BigDecimal.valueOf(containers.getContainerCount())));
+                                }
+                            }
+                        }
+                    }
+                    dataMap.get(shipment.getId()).setTeuCount(teu);
                 }
             }
         }

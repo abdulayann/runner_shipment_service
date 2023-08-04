@@ -99,4 +99,5 @@ public class ShipmentListResponse implements IRunnerResponse {
     private LocalDateTime taxDate;
     private LocalDateTime customsFilingDate;
     private LocalDateTime amsFilingDate;
+    private BigDecimal teuCount;
 }
