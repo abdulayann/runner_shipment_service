@@ -79,7 +79,7 @@ public class ConsolidationDetailsRequest extends CommonRequest implements IRunne
     private Boolean isInland;
     private Integer original;
     private Integer copy;
-    private Long DOPlaceOfIssueId;
+    private String DOPlaceOfIssue;
     private LocalDateTime DOIssueDate;
     private Long bondedWarehouseId;
     private Long warehouseId;
@@ -93,10 +93,17 @@ public class ConsolidationDetailsRequest extends CommonRequest implements IRunne
     private String receivingAgentFreeTextAddress;
     private Boolean IsSendingAgentFreeTextAddress;
     private String sendingAgentFreeTextAddress;
+    private String placeOfIssue;
     private CarrierDetailRequest carrierDetails;
     private AchievedQuantitiesRequest achievedQuantities;
     private AllocationsRequest allocations;
-    private ArrivalDepartureDetailsRequest arrivalDepartureDetails;
+    private ArrivalDepartureDetailsRequest arrivalDetails;
+    private ArrivalDepartureDetailsRequest departureDetails;
+    private PartiesRequest sendingAgent;
+    private PartiesRequest receivingAgent;
+    private PartiesRequest borrowedFrom;
+    private PartiesRequest creditor;
+    private PartiesRequest coLoadWith;
     private List<PackingRequest> packingList;
     private List<ReferenceNumbersRequest> referenceNumbersList;
     private List<RoutingsRequest> routingsList;

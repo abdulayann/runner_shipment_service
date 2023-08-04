@@ -13,6 +13,7 @@ import com.dpw.runner.shipment.services.dto.request.TemplateUploadRequest;
 import com.dpw.runner.shipment.services.dto.response.ShipmentSettingsDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.TemplateUploadResponse;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentSettingsService;
@@ -48,7 +49,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
     private DocumentService documentService;
 
     @Autowired
-    private ModelMapper modelMapper;
+    private JsonHelper jsonHelper;
 
     @Transactional
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
@@ -241,11 +242,11 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
         }
     }
     public ShipmentSettingsDetails convertRequestToEntity(ShipmentSettingRequest request) {
-        return modelMapper.map(request, ShipmentSettingsDetails.class);
+        return jsonHelper.convertValue(request, ShipmentSettingsDetails.class);
     }
 
     private ShipmentSettingsDetailsResponse convertEntityToDto(ShipmentSettingsDetails shipmentSettingsDetails) {
-        return modelMapper.map(shipmentSettingsDetails, ShipmentSettingsDetailsResponse.class);
+        return jsonHelper.convertValue(shipmentSettingsDetails, ShipmentSettingsDetailsResponse.class);
     }
 
     private List<IRunnerResponse> convertEntityListToDtoList(List<ShipmentSettingsDetails> list) {

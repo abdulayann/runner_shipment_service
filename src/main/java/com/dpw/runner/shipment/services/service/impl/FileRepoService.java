@@ -17,6 +17,7 @@ import com.dpw.runner.shipment.services.dto.response.EventsResponse;
 import com.dpw.runner.shipment.services.dto.response.FileRepoResponse;
 import com.dpw.runner.shipment.services.dto.response.UploadDocumentResponse;
 import com.dpw.runner.shipment.services.entity.FileRepo;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IFileRepoService;
@@ -48,7 +49,7 @@ public class FileRepoService implements IFileRepoService {
     @Autowired
     private IFileRepoDao fileRepoDao;
     @Autowired
-    private ModelMapper modelMapper;
+    private JsonHelper jsonHelper;
     @Autowired
     private DocumentService documentService;
 
@@ -239,11 +240,11 @@ public class FileRepoService implements IFileRepoService {
     }
 
     private FileRepo mapToEntityFromRequest(FileRepoRequest request) {
-        return modelMapper.map(request, FileRepo.class);
+        return jsonHelper.convertValue(request, FileRepo.class);
     }
 
     private FileRepoResponse convertToResponse(FileRepo fileRepo) {
-        return modelMapper.map(fileRepo, FileRepoResponse.class);
+        return jsonHelper.convertValue(fileRepo, FileRepoResponse.class);
     }
 
     @Override

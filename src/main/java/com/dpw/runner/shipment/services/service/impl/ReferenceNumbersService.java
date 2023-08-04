@@ -9,6 +9,7 @@ import com.dpw.runner.shipment.services.dao.interfaces.IReferenceNumbersDao;
 import com.dpw.runner.shipment.services.dto.request.ReferenceNumbersRequest;
 import com.dpw.runner.shipment.services.dto.response.ReferenceNumbersResponse;
 import com.dpw.runner.shipment.services.entity.ReferenceNumbers;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IReferenceNumbersService;
@@ -44,7 +45,7 @@ public class ReferenceNumbersService implements IReferenceNumbersService {
     private IReferenceNumbersDao referenceNumbersDao;
 
     @Autowired
-    private ModelMapper modelMapper;
+    private JsonHelper jsonHelper;
 
     @Transactional
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
@@ -203,7 +204,7 @@ public class ReferenceNumbersService implements IReferenceNumbersService {
     }
 
     private ReferenceNumbersResponse convertEntityToDto(ReferenceNumbers referenceNumbers) {
-        return modelMapper.map(referenceNumbers, ReferenceNumbersResponse.class);
+        return jsonHelper.convertValue(referenceNumbers, ReferenceNumbersResponse.class);
     }
 
     private List<IRunnerResponse> convertEntityListToDtoList(List<ReferenceNumbers> lst) {
@@ -215,6 +216,6 @@ public class ReferenceNumbersService implements IReferenceNumbersService {
     }
 
     public ReferenceNumbers convertRequestToEntity(ReferenceNumbersRequest request) {
-        return modelMapper.map(request, ReferenceNumbers.class);
+        return jsonHelper.convertValue(request, ReferenceNumbers.class);
     }
 }

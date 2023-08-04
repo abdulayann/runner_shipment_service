@@ -51,7 +51,7 @@ public class BaseEntity implements Serializable {
     @LastModifiedDate
     private LocalDateTime updatedAt;
 
-    @Column(name = "created_by")
+    @Column(name = "created_by", nullable = false, updatable = false)
     private String createdBy;
 
     @Column(name = "updated_by")

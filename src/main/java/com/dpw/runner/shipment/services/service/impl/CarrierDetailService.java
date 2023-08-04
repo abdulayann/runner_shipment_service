@@ -9,6 +9,7 @@ import com.dpw.runner.shipment.services.dao.interfaces.ICarrierDao;
 import com.dpw.runner.shipment.services.dto.request.CarrierDetailRequest;
 import com.dpw.runner.shipment.services.dto.response.CarrierDetailResponse;
 import com.dpw.runner.shipment.services.entity.CarrierDetails;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.ICarrierDetailService;
@@ -38,7 +39,7 @@ public class CarrierDetailService implements ICarrierDetailService {
     @Autowired
     ICarrierDao carrierDao;
     @Autowired
-    ModelMapper modelMapper;
+    private JsonHelper jsonHelper;
 
     @Transactional
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
@@ -197,11 +198,11 @@ public class CarrierDetailService implements ICarrierDetailService {
     }
 
     private CarrierDetailResponse convertEntityToDto(CarrierDetails carrierDetails) {
-        return modelMapper.map(carrierDetails, CarrierDetailResponse.class);
+        return jsonHelper.convertValue(carrierDetails, CarrierDetailResponse.class);
     }
 
     private CarrierDetails convertRequestToCarrierDetail(CarrierDetailRequest request) {
-        return modelMapper.map(request, CarrierDetails.class);
+        return jsonHelper.convertValue(request, CarrierDetails.class);
     }
 
     private List<IRunnerResponse> convertEntityListToDtoList(final List<CarrierDetails> list) {

@@ -52,9 +52,6 @@ import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.conve
 public class ConsolidationService implements IConsolidationService {
 
     @Autowired
-    private ModelMapper modelMapper;
-
-    @Autowired
     private IConsolidationDetailsDao consolidationDetailsDao;
     @Autowired
     private ICarrierDao carrierDao;
@@ -62,8 +59,6 @@ public class ConsolidationService implements IConsolidationService {
     private IAllocationsDao allocationsDao;
     @Autowired
     private IAchievedQuantitiesDao achievedQuantitiesDao;
-    @Autowired
-    private IArrivalDepartureDetailsDao arrivalDepartureDetailsDao;
     @Autowired
     private IPartiesDao partiesDao;
 
@@ -257,7 +252,6 @@ public class ConsolidationService implements IConsolidationService {
         CarrierDetails carrierDetails = jsonHelper.convertValue(request.getCarrierDetails(), CarrierDetails.class);
         Allocations allocations = jsonHelper.convertValue(request.getAllocations(), Allocations.class);
         AchievedQuantities achievedQuantities = jsonHelper.convertValue(request.getAchievedQuantities(), AchievedQuantities.class);
-        ArrivalDepartureDetails arrivalDepartureDetails = jsonHelper.convertValue(request.getArrivalDepartureDetails(), ArrivalDepartureDetails.class);
 
         try {
 
@@ -276,12 +270,6 @@ public class ConsolidationService implements IConsolidationService {
             {
                 createAchievedQuantities(achievedQuantities);
                 consolidationDetails.setAchievedQuantities(achievedQuantities);
-            }
-
-            if(arrivalDepartureDetails != null)
-            {
-                createArrivalDepartureDetails(arrivalDepartureDetails);
-                consolidationDetails.setArrivalDepartureDetails(arrivalDepartureDetails);
             }
 
             if(request.getShipmentsList() != null) {
@@ -392,52 +380,52 @@ public class ConsolidationService implements IConsolidationService {
     public void createEvent(ConsolidationDetails consolidationDetails, EventsRequest eventsRequest) {
         eventsRequest.setEntityId(consolidationDetails.getId());
         eventsRequest.setEntityType(Constants.CONSOLIDATION);
-        eventDao.save(modelMapper.map(eventsRequest, Events.class));
+        eventDao.save(jsonHelper.convertValue(eventsRequest, Events.class));
     }
 
     @Transactional
     public void createFileRepo(ConsolidationDetails consolidationDetails, FileRepoRequest fileRepoRequest) {
         fileRepoRequest.setEntityId(consolidationDetails.getId());
         fileRepoRequest.setEntityType(Constants.CONSOLIDATION);
-        fileRepoDao.save(modelMapper.map(fileRepoRequest, FileRepo.class));
+        fileRepoDao.save(jsonHelper.convertValue(fileRepoRequest, FileRepo.class));
     }
 
     @Transactional
     public void createJob(ConsolidationDetails consolidationDetails, JobRequest jobRequest) {
         jobRequest.setConsolidationId(consolidationDetails.getId());
-        jobDao.save(modelMapper.map(jobRequest, Jobs.class));
+        jobDao.save(jsonHelper.convertValue(jobRequest, Jobs.class));
     }
 
     @Transactional
     public void createNote(ConsolidationDetails consolidationDetails, NotesRequest notesRequest) {
         notesRequest.setEntityId(consolidationDetails.getId());
         notesRequest.setEntityType(Constants.CONSOLIDATION);
-        notesDao.save(modelMapper.map(notesRequest, Notes.class));
+        notesDao.save(jsonHelper.convertValue(notesRequest, Notes.class));
     }
 
     @Transactional
     public void createParties(ConsolidationDetails consolidationDetails, PartiesRequest partiesRequest) {
         partiesRequest.setEntityId(consolidationDetails.getId());
         partiesRequest.setEntityType(Constants.CONSOLIDATION);
-        packingDao.save(modelMapper.map(partiesRequest, Packing.class));
+        packingDao.save(jsonHelper.convertValue(partiesRequest, Packing.class));
     }
 
     @Transactional
     public void createReferenceNumber(ConsolidationDetails consolidationDetails, ReferenceNumbersRequest referenceNumbersRequest) {
         referenceNumbersRequest.setConsolidationId(consolidationDetails.getId());
-        referenceNumbersDao.save(modelMapper.map(referenceNumbersRequest, ReferenceNumbers.class));
+        referenceNumbersDao.save(jsonHelper.convertValue(referenceNumbersRequest, ReferenceNumbers.class));
     }
 
     @Transactional
     public void createPacking(ConsolidationDetails consolidationDetails, PackingRequest packingRequest) {
         packingRequest.setConsolidationId(consolidationDetails.getId());
-        packingDao.save(modelMapper.map(packingRequest, Packing.class));
+        packingDao.save(jsonHelper.convertValue(packingRequest, Packing.class));
     }
 
     @Transactional
     public void createRouting(ConsolidationDetails consolidationDetails, RoutingsRequest routingsRequest) {
         routingsRequest.setConsolidationId(consolidationDetails.getId());
-        routingsDao.save(modelMapper.map(routingsRequest, Routings.class));
+        routingsDao.save(jsonHelper.convertValue(routingsRequest, Routings.class));
     }
 
     @Transactional
@@ -453,11 +441,6 @@ public class ConsolidationService implements IConsolidationService {
     @Transactional
     public void createAchievedQuantities(AchievedQuantities achievedQuantities) {
         achievedQuantitiesDao.save(achievedQuantities);
-    }
-
-    @Transactional
-    public void createArrivalDepartureDetails(ArrivalDepartureDetails arrivalDepartureDetails) {
-        arrivalDepartureDetailsDao.save(arrivalDepartureDetails);
     }
 
     @Override
@@ -479,12 +462,12 @@ public class ConsolidationService implements IConsolidationService {
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
 
-        ConsolidationDetails entity = modelMapper.map(request, ConsolidationDetails.class);
+        ConsolidationDetails entity = jsonHelper.convertValue(request, ConsolidationDetails.class);
         entity.setId(oldEntity.get().getId());
         if (entity.getContainersList() == null)
             entity.setContainersList(oldEntity.get().getContainersList());
         entity = consolidationDetailsDao.update(entity);
-        return ResponseHelper.buildSuccessResponse(modelMapper.map(entity, ConsolidationDetailsResponse.class));
+        return ResponseHelper.buildSuccessResponse(jsonHelper.convertValue(entity, ConsolidationDetailsResponse.class));
     }
 
     @Transactional
@@ -499,7 +482,7 @@ public class ConsolidationService implements IConsolidationService {
                 }
             }
             ConsolidationDetails entity = consolidationDetailsDao.save(consolidationDetails);
-            return ResponseHelper.buildSuccessResponse(modelMapper.map(entity, ConsolidationDetailsResponse.class));
+            return ResponseHelper.buildSuccessResponse(jsonHelper.convertValue(entity, ConsolidationDetailsResponse.class));
         }
 
         return null;
@@ -523,7 +506,7 @@ public class ConsolidationService implements IConsolidationService {
             }
             consolidationDetails.setShipmentsList(remainingShipment);
             ConsolidationDetails entity = consolidationDetailsDao.save(consolidationDetails);
-            return ResponseHelper.buildSuccessResponse(modelMapper.map(entity, ConsolidationDetailsResponse.class));
+            return ResponseHelper.buildSuccessResponse(jsonHelper.convertValue(entity, ConsolidationDetailsResponse.class));
         }
         return null;
     }
@@ -544,7 +527,6 @@ public class ConsolidationService implements IConsolidationService {
         CarrierDetailRequest carrierDetailRequest = consolidationDetailsRequest.getCarrierDetails();
         AllocationsRequest allocationsRequest = consolidationDetailsRequest.getAllocations();
         AchievedQuantitiesRequest achievedQuantitiesRequest = consolidationDetailsRequest.getAchievedQuantities();
-        ArrivalDepartureDetailsRequest arrivalDepartureDetailsRequest = consolidationDetailsRequest.getArrivalDepartureDetails();
 
         // TODO- implement Validation logic
         long id = consolidationDetailsRequest.getId();
@@ -558,7 +540,7 @@ public class ConsolidationService implements IConsolidationService {
 
         try {
 
-            ConsolidationDetails entity = modelMapper.map(consolidationDetailsRequest, ConsolidationDetails.class);
+            ConsolidationDetails entity = jsonHelper.convertValue(consolidationDetailsRequest, ConsolidationDetails.class);
             entity.setId(oldEntity.get().getId());
             List<Containers> updatedContainers = null;
             if (containerRequestList != null) {
@@ -572,17 +554,25 @@ public class ConsolidationService implements IConsolidationService {
                 updatedCarrierDetails = carrierDao.updateEntityFromShipmentConsole(convertToClass(carrierDetailRequest, CarrierDetails.class));
                 entity.setCarrierDetails(updatedCarrierDetails);
             }
+            if(entity.getSendingAgent() == null)
+                entity.setSendingAgent(oldEntity.get().getSendingAgent());
+            if(entity.getReceivingAgent() == null)
+                entity.setReceivingAgent(oldEntity.get().getReceivingAgent());
+            if(entity.getCreditor() == null)
+                entity.setCreditor(oldEntity.get().getCreditor());
+            if(entity.getCoLoadWith() == null)
+                entity.setCoLoadWith(oldEntity.get().getCoLoadWith());
+            if(entity.getBorrowedFrom() == null)
+                entity.setBorrowedFrom(oldEntity.get().getBorrowedFrom());
+            if(entity.getArrivalDetails() == null)
+                entity.setArrivalDetails(oldEntity.get().getArrivalDetails());
+            if(entity.getDepartureDetails() == null)
+                entity.setDepartureDetails(oldEntity.get().getDepartureDetails());
             Allocations updatedAllocations = null;
             if(allocationsRequest != null)
             {
                 updatedAllocations = allocationsDao.updateEntityFromShipmentConsole(convertToClass(allocationsRequest, Allocations.class));
                 entity.setAllocations(updatedAllocations);
-            }
-            ArrivalDepartureDetails updatedArrivalDepartureDetails = null;
-            if(arrivalDepartureDetailsRequest != null)
-            {
-                updatedArrivalDepartureDetails = arrivalDepartureDetailsDao.updateEntityFromShipmentConsole(convertToClass(arrivalDepartureDetailsRequest, ArrivalDepartureDetails.class));
-                entity.setArrivalDepartureDetails(updatedArrivalDepartureDetails);
             }
             AchievedQuantities updatedAchievedQuantities = null;
             if(achievedQuantitiesRequest != null)
@@ -592,8 +582,8 @@ public class ConsolidationService implements IConsolidationService {
             }
             entity = consolidationDetailsDao.update(entity);
 
-            ConsolidationDetailsResponse response = modelMapper.map(entity, ConsolidationDetailsResponse.class);
-            response.setContainersList(updatedContainers.stream().map(e -> modelMapper.map(e, ContainerResponse.class)).collect(Collectors.toList()));
+            ConsolidationDetailsResponse response = jsonHelper.convertValue(entity, ConsolidationDetailsResponse.class);
+            response.setContainersList(updatedContainers.stream().map(e -> jsonHelper.convertValue(e, ContainerResponse.class)).collect(Collectors.toList()));
             if (carrierDetailRequest != null) {
                 response.setCarrierDetails(convertToClass(updatedCarrierDetails, CarrierDetailResponse.class));
             }
@@ -1034,6 +1024,6 @@ public class ConsolidationService implements IConsolidationService {
     }
 
     private Containers convertRequestToEntity(ContainerRequest request) {
-        return modelMapper.map(request, Containers.class);
+        return jsonHelper.convertValue(request, Containers.class);
     }
 }

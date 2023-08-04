@@ -31,6 +31,7 @@ import com.dpw.runner.shipment.services.service_bus.AzureServiceBusTopic;
 import com.dpw.runner.shipment.services.service_bus.ISBProperties;
 import com.dpw.runner.shipment.services.service_bus.SBUtilsImpl;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
+import com.dpw.runner.shipment.services.service_bus.model.EventMessage;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.util.Pair;
@@ -64,9 +65,6 @@ import static com.dpw.runner.shipment.services.utils.CommonUtils.*;
 @Slf4j
 public class ShipmentService implements IShipmentService {
 
-
-    @Autowired
-    private ModelMapper modelMapper;
     @Autowired
     private ObjectMapper objectMapper;
     @Autowired
@@ -135,6 +133,15 @@ public class ShipmentService implements IShipmentService {
 
     @Autowired
     private IConsolidationDetailsDao consolidationDetailsDao;
+
+    @Autowired
+    private SBUtilsImpl sbUtils;
+
+    @Autowired
+    private ISBProperties isbProperties;
+
+    @Autowired
+    private AzureServiceBusTopic azureServiceBusTopic;
 
     private List<String> TRANSPORT_MODES = Arrays.asList("SEA", "ROAD", "RAIL", "AIR");
     private List<String> SHIPMENT_TYPE = Arrays.asList("FCL", "LCL");
@@ -271,7 +278,7 @@ public class ShipmentService implements IShipmentService {
     private List<IRunnerResponse> convertEntityListToDtoList(List<ShipmentDetails> lst) {
         List<IRunnerResponse> responseList = new ArrayList<>();
         lst.forEach(shipmentDetail -> {
-            ShipmentListResponse response = modelMapper.map(shipmentDetail, ShipmentListResponse.class);
+            ShipmentListResponse response = jsonHelper.convertValue(shipmentDetail, ShipmentListResponse.class);
             containerCountUpdate(shipmentDetail, response);
             setEventData(shipmentDetail, response);
             responseList.add(response);
@@ -571,6 +578,9 @@ public class ShipmentService implements IShipmentService {
             if (serviceDetailsRequest != null)
                 shipmentDetails.setServicesList(serviceDetailsDao.saveEntityFromShipment(convertToEntityList(serviceDetailsRequest, ServiceDetails.class), shipmentId));
 
+            EventMessage eventMessage = EventMessage.builder().messageType(Constants.SERVICE).entity(Constants.SHIPMENT).request(shipmentDetails).build();
+            sbUtils.sendMessagesToTopic(isbProperties, azureServiceBusTopic.getTopic(), Arrays.asList(new ServiceBusMessage(jsonHelper.convertToJsonIncludeNulls(eventMessage))));
+
         } catch (Exception e) {
             log.error(e.getMessage());
             TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
@@ -776,7 +786,7 @@ public class ShipmentService implements IShipmentService {
                 }
             }
             ShipmentDetails entity = shipmentDao.save(shipmentDetails);
-            return ResponseHelper.buildSuccessResponse(modelMapper.map(entity, ShipmentDetailsResponse.class));
+            return ResponseHelper.buildSuccessResponse(jsonHelper.convertValue(entity, ShipmentDetailsResponse.class));
         }
 
         return null;
