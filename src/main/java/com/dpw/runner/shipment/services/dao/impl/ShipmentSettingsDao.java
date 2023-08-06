@@ -36,6 +36,11 @@ public class ShipmentSettingsDao implements IShipmentSettingsDao {
     }
 
     @Override
+    public Integer getShipmentConsoleImportApprovarRole(int tenantId) {
+        return shipmentSettingsRepository.getShipmentConsoleImportApprovarRole(tenantId);
+    }
+
+    @Override
     public Page<ShipmentSettingsDetails> list(Specification<ShipmentSettingsDetails> spec, Pageable pageable) {
         return shipmentSettingsRepository.findAll(spec, pageable);
     }

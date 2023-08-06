@@ -1,8 +1,12 @@
 package com.dpw.runner.shipment.services.entity;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.entity.enums.ContainerStatus;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
+import com.dpw.runner.shipment.services.utils.DedicatedMasterData;
+import com.dpw.runner.shipment.services.utils.MasterData;
 import lombok.*;
 import lombok.experimental.Accessors;
 import org.hibernate.annotations.SQLDelete;
@@ -33,6 +37,7 @@ public class Containers extends MultiTenancy {
     private Long loggingId;
 
     @Column(name = "container_code")
+    @DedicatedMasterData(type = Constants.CONTAINER_TYPE_MASTER_DATA)
     private String containerCode;
 
     @Column(name = "container_number")
@@ -66,6 +71,7 @@ public class Containers extends MultiTenancy {
     private String measurementUnit;
 
     @Column(name = "commodity_code")
+    @DedicatedMasterData(type = Constants.COMMODITY_TYPE_MASTER_DATA)
     private String commodityCode;
 
     @Column(name = "hs_code")
@@ -126,12 +132,14 @@ public class Containers extends MultiTenancy {
     private String maxTempUnit;
 
     @Column(name = "hbl_delivery_mode")
+    @MasterData(type = MasterDataType.HBL_DELIVERY_MODE)
     private String hblDeliveryMode;
 
     @Column(name = "allocation_date")
     private LocalDateTime allocationDate;
 
     @Column(name = "dg_class")
+    @MasterData(type = MasterDataType.DG_CLASS)
     private String dgClass;
 
     @Column(name = "hazardous")

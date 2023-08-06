@@ -2,6 +2,8 @@ package com.dpw.runner.shipment.services.entity;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
+import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
+import com.dpw.runner.shipment.services.utils.MasterData;
 import lombok.*;
 import lombok.experimental.Accessors;
 import org.hibernate.annotations.SQLDelete;
@@ -27,9 +29,11 @@ public class ReferenceNumbers extends MultiTenancy {
     private Long consolidationId;
 
     @Column(name = "country_of_issue")
+    @MasterData(type = MasterDataType.COUNTRIES)
     private String countryOfIssue;
 
     @Column(name = "type")
+    @MasterData(type = MasterDataType.REFERENCE_NUMBER_TYPE)
     private String type;
 
     @Column(name = "reference_number")

@@ -1,7 +1,7 @@
 package com.dpw.runner.shipment.services.service.v1.impl;
 
-import com.dpw.runner.shipment.services.dto.v1.request.SendConsolidationRequest;
-import com.dpw.runner.shipment.services.dto.v1.request.SendShipmentRequest;
+import com.dpw.runner.shipment.services.dto.v1.request.CreateConsolidationTaskRequest;
+import com.dpw.runner.shipment.services.dto.v1.request.CreateShipmentTaskRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.SendEntityResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.TenantIdResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
@@ -1162,7 +1162,7 @@ public class V1ServiceImpl implements IV1Service {
     }
 
     @Override
-    public SendEntityResponse sendConsolidationTask(SendConsolidationRequest request) {
+    public SendEntityResponse sendConsolidationTask(CreateConsolidationTaskRequest request) {
         ResponseEntity masterDataResponse = null;
 
         try {
@@ -1183,7 +1183,7 @@ public class V1ServiceImpl implements IV1Service {
     }
 
     @Override
-    public SendEntityResponse sendShipmentTask(SendShipmentRequest request) {
+    public SendEntityResponse sendShipmentTask(CreateShipmentTaskRequest request) {
         ResponseEntity masterDataResponse = null;
 
         try {

@@ -1,8 +1,8 @@
 package com.dpw.runner.shipment.services.masterdata.helper.impl.v1;
 
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
-import com.dpw.runner.shipment.services.dto.v1.request.SendConsolidationRequest;
-import com.dpw.runner.shipment.services.dto.v1.request.SendShipmentRequest;
+import com.dpw.runner.shipment.services.dto.v1.request.CreateConsolidationTaskRequest;
+import com.dpw.runner.shipment.services.dto.v1.request.CreateShipmentTaskRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.SendEntityResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.TenantIdResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
@@ -316,14 +316,14 @@ public class V1MasterDataImpl implements IMasterDataService {
     }
 
     @Override
-    public DependentServiceResponse sendConsolidationTask(SendConsolidationRequest request) {
+    public DependentServiceResponse sendConsolidationTask(CreateConsolidationTaskRequest request) {
         SendEntityResponse response = v1Service.sendConsolidationTask(request);
         return DependentServiceResponse.builder().success(true)
                 .data(response).build();
     }
 
     @Override
-    public DependentServiceResponse sendShipmentTask(SendShipmentRequest request) {
+    public DependentServiceResponse sendShipmentTask(CreateShipmentTaskRequest request) {
         SendEntityResponse response = v1Service.sendShipmentTask(request);
         return DependentServiceResponse.builder().success(true)
                 .data(response).build();
