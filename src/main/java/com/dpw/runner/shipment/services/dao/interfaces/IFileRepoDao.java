@@ -16,4 +16,5 @@ public interface IFileRepoDao {
     List<FileRepo> findByEntityIdAndEntityType(Long entityId, String entityType);
     List<FileRepo> updateEntityFromOtherEntity(List<FileRepo> fileRepoList, Long entityId, String entityType) throws Exception;
     List<FileRepo> saveEntityFromOtherEntity(List<FileRepo> fileRepos, Long entityId, String entityType);
+    List<FileRepo> updateEntityFromOtherEntity(List<FileRepo> fileRepoList, Long entityId, String entityType, List<FileRepo> oldEntityList) throws Exception;
 }

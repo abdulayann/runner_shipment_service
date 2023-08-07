@@ -330,6 +330,34 @@ public class V1MasterDataImpl implements IMasterDataService {
     }
 
     @Override
+    public DependentServiceResponse importFlightSchedules(Object request) {
+        V1DataResponse v1DataResponse = v1Service.importFlightSchedules(request);
+        return DependentServiceResponse.builder().success(true)
+                .data(v1DataResponse.entities).numberOfRecords(v1DataResponse.take).totalPages(v1DataResponse.totalCount).build();
+    }
+
+    @Override
+    public DependentServiceResponse fetchFlightStatus(Object request) {
+        V1DataResponse v1DataResponse = v1Service.fetchFlightStatus(request);
+        return DependentServiceResponse.builder().success(true)
+                .data(v1DataResponse.entities).numberOfRecords(v1DataResponse.take).totalPages(v1DataResponse.totalCount).build();
+    }
+
+    @Override
+    public DependentServiceResponse importSailingSchedules(Object request) {
+        V1DataResponse v1DataResponse = v1Service.importSailingSchedules(request);
+        return DependentServiceResponse.builder().success(true)
+                .data(v1DataResponse.entities).numberOfRecords(v1DataResponse.take).totalPages(v1DataResponse.totalCount).build();
+    }
+
+    @Override
+    public DependentServiceResponse listSailingSchedule(Object request) {
+        V1DataResponse v1DataResponse = v1Service.listSailingSchedule(request);
+        return DependentServiceResponse.builder().success(true)
+                .data(v1DataResponse.entities).numberOfRecords(v1DataResponse.take).totalPages(v1DataResponse.totalCount).build();
+    }
+
+    @Override
     public List<MasterData> fetchByType(MasterDataType masterDataType) {
         return null;
     }

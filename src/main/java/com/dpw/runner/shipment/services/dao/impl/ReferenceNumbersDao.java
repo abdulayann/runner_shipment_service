@@ -14,10 +14,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -160,6 +157,44 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_DELETE_EXCEPTION_MSG;
             log.error(responseMsg, e);
+        }
+    }
+
+    @Override
+    public List<ReferenceNumbers> updateEntityFromShipment(List<ReferenceNumbers> referenceNumbersList, Long shipmentId, List<ReferenceNumbers> oldEntityList) throws Exception {
+        String responseMsg;
+        Map<UUID, ReferenceNumbers> referenceNumbersMap = new HashMap<>();
+        if(oldEntityList != null && oldEntityList.size() > 0) {
+            for (ReferenceNumbers entity:
+                    oldEntityList) {
+                referenceNumbersMap.put(entity.getGuid(), entity);
+            }
+        }
+
+        List<ReferenceNumbers> responseReferenceNumbers = new ArrayList<>();
+        try {
+            ReferenceNumbers oldEntity;
+            List<ReferenceNumbers> referenceNumbersRequests = new ArrayList<>();
+            if (referenceNumbersList != null && referenceNumbersList.size() != 0) {
+                for (ReferenceNumbers request : referenceNumbersList) {
+                    oldEntity = referenceNumbersMap.get(request.getGuid());
+                    if(oldEntity != null) {
+                        referenceNumbersMap.remove(oldEntity.getGuid());
+                        request.setId(oldEntity.getId());
+                    }
+                    referenceNumbersRequests.add(request);
+                }
+                responseReferenceNumbers = saveEntityFromShipment(referenceNumbersRequests, shipmentId);
+            }
+            Map<Long, ReferenceNumbers> hashMap = new HashMap<>();
+            referenceNumbersMap.forEach((s, referenceNumbers) ->  hashMap.put(referenceNumbers.getId(), referenceNumbers));
+            deleteReferenceNumbers(hashMap);
+            return responseReferenceNumbers;
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
+            log.error(responseMsg, e);
+            throw new Exception(e);
         }
     }
 }

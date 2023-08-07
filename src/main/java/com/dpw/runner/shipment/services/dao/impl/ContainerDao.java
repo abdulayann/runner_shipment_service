@@ -13,9 +13,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 
 @Repository
@@ -90,5 +88,44 @@ public class ContainerDao implements IContainerDao {
             res.add(req);
         }
         return res;
+    }
+
+    public List<Containers> updateEntityFromShipmentConsole(List<Containers> containersList, Long consolidationId, List<Containers> oldEntityList) throws Exception {
+        String responseMsg;
+        List<Containers> responseContainers = new ArrayList<>();
+        Map<UUID, Containers> containersMap = new HashMap<>();
+        if(oldEntityList != null && oldEntityList.size() > 0) {
+            for (Containers containers:
+                 oldEntityList) {
+                containersMap.put(containers.getGuid(), containers);
+            }
+        }
+        Containers oldContainer;
+        try {
+            // TODO- Handle Transactions here
+            if (containersList != null && containersList.size() != 0) {
+                List<Containers> containerList = new ArrayList<>(containersList);
+                for (Containers containers: containerList) {
+                    if(containersMap.containsKey(containers.getGuid())) {
+                        oldContainer = containersMap.get(containers.getGuid());
+                        containers.setId(oldContainer.getId());
+                        containers.setConsolidationId(oldContainer.getConsolidationId());
+                    } else {
+                        containers.setId(null);
+                        containers.setConsolidationId(null);
+                    }
+                    if(consolidationId != null) {
+                        containers.setConsolidationId(consolidationId);
+                    }
+                }
+                responseContainers = saveAll(containerList);
+            }
+            return responseContainers;
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
+            log.error(responseMsg, e);
+            throw new Exception(e);
+        }
     }
 }

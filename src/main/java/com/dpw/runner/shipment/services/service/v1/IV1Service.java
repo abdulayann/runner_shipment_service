@@ -94,6 +94,10 @@ public interface IV1Service {
     V1DataResponse listCousinBranches(Object request);
     V1DataResponse listCousinBranchesWithoutCurrent(Object request);
     TenantIdResponse tenantByGuid(Object request);
+    V1DataResponse importFlightSchedules(Object request);
+    V1DataResponse fetchFlightStatus(Object request);
+    V1DataResponse importSailingSchedules(Object request);
+    V1DataResponse listSailingSchedule(Object request);
     SendEntityResponse sendConsolidationTask(CreateConsolidationTaskRequest request);
     SendEntityResponse sendShipmentTask(CreateShipmentTaskRequest request);
 

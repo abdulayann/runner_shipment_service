@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IFileRepoDao;
 import com.dpw.runner.shipment.services.entity.FileRepo;
+import com.dpw.runner.shipment.services.entity.ServiceDetails;
 import com.dpw.runner.shipment.services.repository.interfaces.IFileRepoRepository;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
@@ -14,10 +15,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -113,6 +111,44 @@ public class FileRepoDao implements IFileRepoDao {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_DELETE_EXCEPTION_MSG;
             log.error(responseMsg, e);
+        }
+    }
+
+    public List<FileRepo> updateEntityFromOtherEntity(List<FileRepo> fileRepoList, Long entityId, String entityType, List<FileRepo> oldEntityList) throws Exception {
+        String responseMsg;
+        List<FileRepo> responseFileRepo = new ArrayList<>();
+        Map<UUID, FileRepo> fileRepoMap = new HashMap<>();
+        if(oldEntityList != null && oldEntityList.size() > 0) {
+            for (FileRepo entity:
+                    oldEntityList) {
+                fileRepoMap.put(entity.getGuid(), entity);
+            }
+        }
+        try {
+            FileRepo oldEntity;
+            List<FileRepo> fileReposRequestList = new ArrayList<>();
+            if (fileRepoList != null && fileRepoList.size() != 0) {
+                for (FileRepo request : fileRepoList) {
+                    oldEntity = fileRepoMap.get(request.getGuid());
+                    if(oldEntity != null) {
+                        fileRepoMap.remove(oldEntity.getGuid());
+                        request.setId(oldEntity.getId());
+                    }
+                    request.setEntityId(entityId);
+                    request.setEntityType(entityType);
+                    fileReposRequestList.add(request);
+                }
+                responseFileRepo = saveEntityFromOtherEntity(fileReposRequestList, entityId, entityType);
+            }
+            Map<Long, FileRepo> hashMap = new HashMap<>();
+            fileRepoMap.forEach((s, fileRepo) ->  hashMap.put(fileRepo.getId(), fileRepo));
+            deleteFileRepo(hashMap);
+            return responseFileRepo;
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
+            log.error(responseMsg, e);
+            throw new Exception(e);
         }
     }
 }

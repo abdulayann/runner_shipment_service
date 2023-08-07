@@ -159,4 +159,22 @@ public class ShipmentController {
         CommonGetRequest request = CommonGetRequest.builder().id(id).build();
         return (ResponseEntity<RunnerResponse>) shipmentService.toggleLock(CommonRequestModel.buildRequest(request));
     }
+
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = ShipmentConstants.CREATE_SUCCESSFUL),
+            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
+    })
+    @PostMapping(ShipmentConstants.SHIPMENT_V1_CREATE)
+    public ResponseEntity<RunnerResponse<ShipmentDetailsResponse>> createV1Shipment(@RequestBody @Valid ShipmentRequest request) {
+        String responseMsg;
+        try {
+            ShipmentRequest req = jsonHelper.convertValue(request, ShipmentRequest.class);
+            return (ResponseEntity<RunnerResponse<ShipmentDetailsResponse>>) shipmentService.completeV1ShipmentCreateAndUpdate(CommonRequestModel.buildRequest(req));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+        }
+        return (ResponseEntity<RunnerResponse<ShipmentDetailsResponse>>) ResponseHelper.buildFailedResponse(responseMsg);
+    }
 }
