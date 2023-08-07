@@ -34,7 +34,7 @@ CREATE TABLE IF NOT EXISTS mawb_stocks_link (
     seq_number varchar NULL,
     entity_type varchar NULL,
     entity_id BIGINT NULL,
-    ship_cons_number varchar NOT NULL,
+    ship_cons_number varchar NULL,
     tenant_id integer,
     created_at timestamp  NOT NULL,
     created_by  varchar (50),

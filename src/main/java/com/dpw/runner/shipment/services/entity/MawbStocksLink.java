@@ -20,7 +20,7 @@ import java.util.UUID;
 @SQLDelete(sql = "UPDATE mawb_stocks_link SET is_deleted = true WHERE id=?")
 @Where(clause = "is_deleted = false")
 public class MawbStocksLink extends MultiTenancy {
-    @Column(name = "parent_id", insertable = false, updatable = false)
+    @Column(name = "parent_id")
     private Long parentId;
 
     @Column(name = "mawb_number")
@@ -41,7 +41,7 @@ public class MawbStocksLink extends MultiTenancy {
     @Column(name = "ship_cons_number")
     private String shipConsNumber;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "parent_id", referencedColumnName = "id")
-    private MawbStocks mawbStocks;
+//    @ManyToOne(fetch = FetchType.LAZY)
+//    @JoinColumn(name = "parent_id", referencedColumnName = "id")
+//    private MawbStocks mawbStocks;
 }

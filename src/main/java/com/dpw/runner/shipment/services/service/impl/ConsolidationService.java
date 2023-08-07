@@ -255,6 +255,10 @@ public class ConsolidationService implements IConsolidationService {
         if (request == null) {
             log.error("Request is null for Consolidation Create with Request Id {}", LoggerHelper.getRequestIdFromMDC());
         }
+
+        if(request.getTransportMode() == "AIR")
+            consolidationMAWBCheck(request);
+
         System.out.println(jsonHelper.convertToJson(request));
         ConsolidationDetails consolidationDetails = jsonHelper.convertValue(request, ConsolidationDetails.class);
         CarrierDetails carrierDetails = jsonHelper.convertValue(request.getCarrierDetails(), CarrierDetails.class);
@@ -1038,7 +1042,7 @@ public class ConsolidationService implements IConsolidationService {
         if (!isMAWBNumberValid(consolidationRequest.getMAWB()))
             throw new ValidationException("Please enter a valid MAWB number.");
 
-        String mawbAirlineCode = consolidationRequest.getMAWB().substring(0, 2);
+        String mawbAirlineCode = consolidationRequest.getMAWB().substring(0, 3);
         ListCommonRequest listCarrierRequest = constructListCommonRequest("airlineCode", mawbAirlineCode, "="); // TODO fetch from v1
         Pair<Specification<CarrierDetails>, Pageable> pair = fetchData(listCarrierRequest, CarrierDetails.class);
         Page<CarrierDetails> carrierDetails = carrierDao.findAll(pair.getLeft(), pair.getRight());
@@ -1063,7 +1067,7 @@ public class ConsolidationService implements IConsolidationService {
         MawbStocksLink mawbStocksLink = null;
 
         if (!isCarrierExist)
-            consolidationRequest.setCarrierDetails(modelMapper.map(correspondingCarrier, CarrierDetailRequest.class));
+            consolidationRequest.setCarrierDetails(jsonHelper.convertValue(correspondingCarrier, CarrierDetailRequest.class));
 
         if (consolidationRequest.getShipmentType() == "IMP") {
             return;
@@ -1103,11 +1107,13 @@ public class ConsolidationService implements IConsolidationService {
     private Boolean isMAWBNumberValid(String masterBill) {
         Boolean MAWBNumberValidity = true;
         if (masterBill.length() == 12) {
-            String mawbSeqNum = masterBill.substring(4, 10);
-            String checkDigit = masterBill.substring(11, 11);
+            String mawbSeqNum = masterBill.substring(4, 11);
+            String checkDigit = masterBill.substring(11, 12);
             Long imawbSeqNum = 0L;
             Long icheckDigit = 0L;
-            if (areAllCharactersDigits(masterBill, 4, 11)) {
+            if (areAllCharactersDigits(masterBill, 4, 12)) {
+                imawbSeqNum = Long.valueOf(mawbSeqNum);
+                icheckDigit = Long.valueOf(checkDigit);
                 if (imawbSeqNum % 7 != icheckDigit)
                     MAWBNumberValidity = false;
             } else MAWBNumberValidity = false;

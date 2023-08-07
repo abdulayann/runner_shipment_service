@@ -65,6 +65,6 @@ public class MawbStocks extends MultiTenancy {
     @Column(name = "borrowed_from_full_name")
     private String borrowedFromFullName;
 
-    @OneToMany(mappedBy = "mawbStocks", orphanRemoval = true)
+    @OneToMany(mappedBy = "parentId", orphanRemoval = true)
     private List<MawbStocksLink> mawbStocksLinkRows;
 }

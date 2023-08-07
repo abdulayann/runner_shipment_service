@@ -25,6 +25,7 @@ import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.mapper.ShipmentDetailsMapper;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
+import com.dpw.runner.shipment.services.masterdata.response.CarrierResponse;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service_bus.AzureServiceBusTopic;
@@ -33,6 +34,7 @@ import com.dpw.runner.shipment.services.service_bus.SBUtilsImpl;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
 import com.dpw.runner.shipment.services.service_bus.model.EventMessage;
 import com.dpw.runner.shipment.services.utils.StringUtility;
+import com.dpw.runner.shipment.services.validator.enums.Operators;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
@@ -452,6 +454,10 @@ public class ShipmentService implements IShipmentService {
             log.error("Request is null for Shipment Create with Request Id {}", LoggerHelper.getRequestIdFromMDC());
         }
         System.out.println(jsonHelper.convertToJson(request));
+
+        if (request.getTransportMode().equals("AIR") && request.getShipmentType().equals("DRT"))
+            directShipmentMAWBCheck(request);
+
         ShipmentDetails shipmentDetails = jsonHelper.convertValue(request, ShipmentDetails.class);
         AdditionalDetails additionalDetails = jsonHelper.convertValue(request.getAdditionalDetail(), AdditionalDetails.class);
         CarrierDetails carrierDetails = jsonHelper.convertValue(request.getCarrierDetails(), CarrierDetails.class);
@@ -1249,6 +1255,15 @@ public class ShipmentService implements IShipmentService {
         return !StringUtils.isEmpty(prefix) ? prefix + suffix : suffix;
     }
 
+    private V1DataResponse fetchCarrierDetailsFromV1(String mawbAirlineCode) {
+        CommonV1ListRequest request = new CommonV1ListRequest();
+        List<Object> criteria = new ArrayList<>();
+        criteria.addAll(List.of(List.of("AirlineCode"), "=", mawbAirlineCode));
+        request.setCriteriaRequests(criteria);
+        V1DataResponse response = v1Service.fetchCarrierMasterData(request);
+        return response;
+    }
+
     private void directShipmentMAWBCheck(ShipmentRequest shipmentRequest) {
         if (StringUtility.isEmpty(shipmentRequest.getMasterBill())) {
             return;
@@ -1257,26 +1272,26 @@ public class ShipmentService implements IShipmentService {
         if (!isMAWBNumberValid(shipmentRequest.getMasterBill()))
             throw new ValidationException("Please enter a valid MAWB number.");
 
-        String mawbAirlineCode = shipmentRequest.getMasterBill().substring(0, 2);
-        ListCommonRequest listCarrierRequest = constructListCommonRequest("airlineCode", mawbAirlineCode, "="); // TODO fetch from v1
-        Pair<Specification<CarrierDetails>, Pageable> pair = fetchData(listCarrierRequest, CarrierDetails.class);
-        Page<CarrierDetails> carrierDetails = carrierDao.findAll(pair.getLeft(), pair.getRight());
+        String mawbAirlineCode = shipmentRequest.getMasterBill().substring(0, 3);
 
-        if (carrierDetails.getContent() == null || carrierDetails.getTotalElements() == 0)
-            throw new ValidationException("Airline for the entered MAWB Number doesn't exist in Carrier Master");
+        V1DataResponse v1DataResponse = fetchCarrierDetailsFromV1(mawbAirlineCode);
+        List<CarrierResponse> carrierDetails = jsonHelper.convertValueToList(v1DataResponse.entities, CarrierResponse.class);
+        if (carrierDetails == null || carrierDetails.size()==0)
+                throw new ValidationException("Airline for the entered MAWB Number doesn't exist in Carrier Master");
 
-        CarrierDetails correspondingCarrier = carrierDetails.getContent().get(0);
+
+        CarrierResponse correspondingCarrier = carrierDetails.get(0); //carrierDetails.getContent().get(0);
 
         Boolean isMAWBNumberExist = false;
         Boolean isCarrierExist = false;
         if (shipmentRequest.getCarrierDetails() != null)
             isCarrierExist = true;
 
-        if (isCarrierExist)
+        if (isCarrierExist && !shipmentRequest.getCarrierDetails().getShippingLine().equals(correspondingCarrier.getItemValue()))
             throw new ValidationException("MAWB Number prefix is not matching with entered Flight Carrier");
 
-        ListCommonRequest listMawbRequest = constructListCommonRequest("MAWBNumber", shipmentRequest.getMasterBill(), "=");
-        Pair<Specification<MawbStocksLink>, Pageable> mawbStocksLinkPair = fetchData(listCarrierRequest, MawbStocksLink.class);
+        ListCommonRequest listMawbRequest = constructListCommonRequest("mawbNumber", shipmentRequest.getMasterBill(), "=");
+        Pair<Specification<MawbStocksLink>, Pageable> mawbStocksLinkPair = fetchData(listMawbRequest, MawbStocksLink.class);
         Page<MawbStocksLink> mawbStocksLinkPage = mawbStocksLinkDao.findAll(mawbStocksLinkPair.getLeft(), mawbStocksLinkPair.getRight());
 
         MawbStocksLink mawbStocksLink = null;
@@ -1287,7 +1302,7 @@ public class ShipmentService implements IShipmentService {
         }
 
         if (!isCarrierExist)
-            shipmentRequest.setCarrierDetails(modelMapper.map(correspondingCarrier, CarrierDetailRequest.class));
+            shipmentRequest.setCarrierDetails(jsonHelper.convertValue(correspondingCarrier, CarrierDetailRequest.class));
 
         if (shipmentRequest.getDirection() == "IMP") {
             return;
@@ -1303,7 +1318,7 @@ public class ShipmentService implements IShipmentService {
 
     private void createNewMAWBEntry(ShipmentRequest shipmentRequest) {
         MawbStocks mawbStocks = new MawbStocks();
-        // mawbStocks.setAirLinePrefix() //TODO fetch from v1
+        mawbStocks.setAirLinePrefix(shipmentRequest.getCarrierDetails().getShippingLine());
         mawbStocks.setCount("1");
         mawbStocks.setStartNumber(Long.valueOf(shipmentRequest.getMasterBill().substring(4, 10)));
         mawbStocks.setFrom(shipmentRequest.getMasterBill());
@@ -1327,11 +1342,13 @@ public class ShipmentService implements IShipmentService {
     private Boolean isMAWBNumberValid(String masterBill) {
         Boolean MAWBNumberValidity = true;
         if (masterBill.length() == 12) {
-            String mawbSeqNum = masterBill.substring(4, 10);
-            String checkDigit = masterBill.substring(11, 11);
+            String mawbSeqNum = masterBill.substring(4, 11);
+            String checkDigit = masterBill.substring(11, 12);
             Long imawbSeqNum = 0L;
             Long icheckDigit = 0L;
-            if (areAllCharactersDigits(masterBill, 4, 11)) {
+            if (areAllCharactersDigits(masterBill, 4, 12)) { // masterBill.substring(4, 12).matches("\\d+")
+                imawbSeqNum = Long.valueOf(mawbSeqNum);
+                icheckDigit = Long.valueOf(checkDigit);
                 if (imawbSeqNum % 7 != icheckDigit)
                     MAWBNumberValidity = false;
             } else MAWBNumberValidity = false;

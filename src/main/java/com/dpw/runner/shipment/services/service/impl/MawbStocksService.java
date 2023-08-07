@@ -11,12 +11,12 @@ import com.dpw.runner.shipment.services.dto.request.MawbStocksRequest;
 import com.dpw.runner.shipment.services.dto.response.MawbStocksResponse;
 import com.dpw.runner.shipment.services.entity.MawbStocks;
 import com.dpw.runner.shipment.services.entity.MawbStocksLink;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IMawbStocksService;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
-import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
@@ -45,7 +45,7 @@ public class MawbStocksService implements IMawbStocksService {
     private IMawbStocksLinkDao mawbStocksLinkDao;
 
     @Autowired
-    private ModelMapper modelMapper;
+    private JsonHelper jsonHelper;
 
     @Transactional
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
@@ -204,7 +204,7 @@ public class MawbStocksService implements IMawbStocksService {
     }
 
     private MawbStocksResponse convertEntityToDto(MawbStocks mawbStocks) {
-        return modelMapper.map(mawbStocks, MawbStocksResponse.class);
+        return jsonHelper.convertValue(mawbStocks, MawbStocksResponse.class);
     }
 
     private List<IRunnerResponse> convertEntityListToDtoList(List<MawbStocks> lst) {
@@ -216,15 +216,15 @@ public class MawbStocksService implements IMawbStocksService {
     }
 
     private MawbStocks convertRequestToEntity(MawbStocksRequest request) {
-        return modelMapper.map(request, MawbStocks.class);
+        return jsonHelper.convertValue(request, MawbStocks.class);
     }
 
-    private void setManyToOneRelationships(MawbStocks mawbStocks){
-        if(mawbStocks.getMawbStocksLinkRows() !=null){
-            List<MawbStocksLink> mawbStocksLinks = mawbStocks.getMawbStocksLinkRows();
-            for (MawbStocksLink mawbStocksLink: mawbStocksLinks) {
-                mawbStocksLink.setMawbStocks(mawbStocks);
-            }
-        }
-    }
+//    private void setManyToOneRelationships(MawbStocks mawbStocks){
+//        if(mawbStocks.getMawbStocksLinkRows() !=null){
+//            List<MawbStocksLink> mawbStocksLinks = mawbStocks.getMawbStocksLinkRows();
+//            for (MawbStocksLink mawbStocksLink: mawbStocksLinks) {
+//                mawbStocksLink.setMawbStocks(mawbStocks);
+//            }
+//        }
+//    }
 }
