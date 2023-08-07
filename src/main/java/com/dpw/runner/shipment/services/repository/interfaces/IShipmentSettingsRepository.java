@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.data.jpa.repository.Query;
 
 import java.util.List;
 import java.util.Optional;
@@ -18,4 +19,6 @@ public interface IShipmentSettingsRepository extends MultiTenancyRepository<Ship
         return findOne(spec);
     }
     List<ShipmentSettingsDetails> findAll();
+    @Query("SELECT sd.shipmentConsoleImportApproverRole FROM ShipmentSettingsDetails sd WHERE sd.tenantId = ?1")
+    Integer getShipmentConsoleImportApprovarRole(int tenantId);
 }

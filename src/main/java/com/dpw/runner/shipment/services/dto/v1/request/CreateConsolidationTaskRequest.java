@@ -9,7 +9,7 @@ import java.util.List;
 @AllArgsConstructor
 @Data
 @Builder
-public class SendConsolidationRequest {
+public class CreateConsolidationTaskRequest {
     private int tenantId;
     private int approverRole;
     private Object consoleRow;

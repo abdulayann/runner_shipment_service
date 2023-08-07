@@ -1,6 +1,9 @@
 package com.dpw.runner.shipment.services.entity;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
+import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
+import com.dpw.runner.shipment.services.utils.MasterData;
+import com.dpw.runner.shipment.services.utils.OrganizationData;
 import lombok.experimental.Accessors;
 import lombok.*;
 import org.hibernate.annotations.SQLDelete;
@@ -30,10 +33,12 @@ public class ServiceDetails extends MultiTenancy {
     private Long consolidationId;
 
     @Column(name = "service_type")
+    @MasterData(type = MasterDataType.AdditionalServices)
     private String serviceType;
 
     @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "contractor_id", referencedColumnName = "id")
+    @OrganizationData
     private Parties contractor;
 
     @Column(name = "srv_location")

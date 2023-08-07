@@ -126,4 +126,8 @@ public class ShipmentDao implements IShipmentDao {
             throw new ValidationException(ShipmentConstants.SHIPMENT_LOCKED);
         }
     }
+    @Override
+    public Optional<ShipmentDetails> findByHouseBill(String Hbl){
+        return shipmentRepository.findByHouseBill(Hbl);
+    }
 }

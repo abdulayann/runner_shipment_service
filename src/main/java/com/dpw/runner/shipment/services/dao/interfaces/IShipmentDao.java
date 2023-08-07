@@ -15,4 +15,5 @@ public interface IShipmentDao {
     Optional<ShipmentDetails> findById(Long id);
     void delete(ShipmentDetails shipmentDetails);
     List<ShipmentDetails> saveAll(List<ShipmentDetails> shipments);
+    Optional<ShipmentDetails> findByHouseBill(String Hbl);
 }

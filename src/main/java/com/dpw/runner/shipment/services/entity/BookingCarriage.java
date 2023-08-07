@@ -2,6 +2,11 @@ package com.dpw.runner.shipment.services.entity;
 
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
+import com.dpw.runner.shipment.services.utils.DedicatedMasterData;
+import com.dpw.runner.shipment.services.utils.MasterData;
+import com.dpw.runner.shipment.services.utils.UnlocationData;
 import lombok.*;
 import lombok.experimental.Accessors;
 import org.hibernate.annotations.SQLDelete;
@@ -24,9 +29,11 @@ import java.time.LocalDateTime;
 public class BookingCarriage extends MultiTenancy {
 
     @Column(name = "pol_id")
+    @UnlocationData
     private Long polId;
 
     @Column(name = "pod_id")
+    @UnlocationData
     private Long podId;
 
     @Column(name = "eta")
@@ -42,15 +49,18 @@ public class BookingCarriage extends MultiTenancy {
     private String voyage;
 
     @Column(name = "carriage_type")
+    @MasterData(type = MasterDataType.CARRIAGE_TYPE)
     private String carriageType;
 
     @Column(name = "carriage_mode")
+    @MasterData(type = MasterDataType.CARRIAGE_MODE)
     private String carriageMode;
 
     @Column(name = "shipment_id")
     private Long shipmentId;
 
     @Column(name = "vessel_id")
+    @DedicatedMasterData(type = Constants.VESSEL_MASTER_DATA)
     private Long vesselId;
 
     @Column(name = "booking_id")
