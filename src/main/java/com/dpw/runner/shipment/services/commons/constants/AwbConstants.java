@@ -1,6 +1,6 @@
 package com.dpw.runner.shipment.services.commons.constants;
 
-public class AwbShipmentInfoConstants {
+public class AwbConstants {
     public static final String AWB_API_HANDLE = "/api/v2/awb";
     public static final String AWB_LIST_SUCCESSFUL = "Successful AWB Info List Retrieval";
     public static final String AWB_CREATE_SUCCESSFUL = "Successful AWB Creation";
