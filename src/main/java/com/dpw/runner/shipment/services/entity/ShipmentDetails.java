@@ -39,7 +39,7 @@ public class ShipmentDetails extends MultiTenancy {
 
     private static final long serialVersionUID = 190794279984274725L;
 
-    @OneToOne(fetch = FetchType.LAZY, targetEntity = CarrierDetails.class)
+    @OneToOne(fetch = FetchType.LAZY, targetEntity = CarrierDetails.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "carrier_detail_id", referencedColumnName = "id")
     private CarrierDetails carrierDetails;
 
@@ -273,7 +273,7 @@ public class ShipmentDetails extends MultiTenancy {
     @Column(name = "finance_closed_on")
     private LocalDateTime financeClosedOn;
 
-    @OneToOne(fetch = FetchType.LAZY, targetEntity = AdditionalDetails.class)
+    @OneToOne(fetch = FetchType.LAZY, targetEntity = AdditionalDetails.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "additional_details_id", referencedColumnName = "id")
     private AdditionalDetails additionalDetails;
 
