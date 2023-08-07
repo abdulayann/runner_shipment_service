@@ -6,10 +6,10 @@ import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IEventDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IPackingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentsContainersMappingDao;
 import com.dpw.runner.shipment.services.dto.ContainerAPIsRequest.ContainerAssignRequest;
 import com.dpw.runner.shipment.services.dto.ContainerAPIsRequest.ContainerPackAssignDetachRequest;
-import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
 import com.dpw.runner.shipment.services.dto.request.EventsRequest;
 import com.dpw.runner.shipment.services.dto.request.PackingRequest;
@@ -26,7 +26,6 @@ import com.dpw.runner.shipment.services.service.interfaces.IContainerService;
 import com.dpw.runner.shipment.services.utils.CSVParsingUtil;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
-import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
@@ -199,9 +198,11 @@ public class ContainerService implements IContainerService {
         }
 
         List<PackingRequest> packingRequestWithEmptyContainerId = new ArrayList<>();
-        for(PackingRequest packingRequest : packingRequestList) {
-            if(packingRequest.getContainerId() == null) {
-                packingRequestWithEmptyContainerId.add(packingRequest);
+        if(packingRequestList != null && !packingRequestList.isEmpty()) {
+            for(PackingRequest packingRequest : packingRequestList) {
+                if(packingRequest.getContainerId() == null) {
+                    packingRequestWithEmptyContainerId.add(packingRequest);
+                }
             }
         }
 

@@ -239,15 +239,15 @@ public class ConsolidationDetails extends MultiTenancy {
     @Column(name = "place_of_issue")
     private String placeOfIssue;
 
-    @OneToOne(targetEntity = CarrierDetails.class)
+    @OneToOne(targetEntity = CarrierDetails.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "carrier_detail_id", referencedColumnName = "id")
     private CarrierDetails carrierDetails;
 
-    @OneToOne(targetEntity = AchievedQuantities.class)
+    @OneToOne(targetEntity = AchievedQuantities.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "achieved_quantities_id", referencedColumnName = "id")
     private AchievedQuantities achievedQuantities;
 
-    @OneToOne(targetEntity = Allocations.class)
+    @OneToOne(targetEntity = Allocations.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "allocations_id", referencedColumnName = "id")
     private Allocations allocations;
 
@@ -304,6 +304,10 @@ public class ConsolidationDetails extends MultiTenancy {
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "entityId")
     @Where(clause = "entity_type = 'CONSOLIDATION'")
     private List<FileRepo> fileRepoList;
+
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "entityId")
+    @Where(clause = "entity_type = 'CONSOLIDATION'")
+    private List<Notes> notesList;
 
     @ManyToMany
     @JoinTable(name = "console_shipment_mapping",

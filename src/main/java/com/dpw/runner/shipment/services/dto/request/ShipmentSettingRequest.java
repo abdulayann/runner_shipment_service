@@ -17,6 +17,7 @@ import java.util.List;
 @Builder
 public class ShipmentSettingRequest extends CommonRequest implements IRunnerRequest {
     private Long id;
+    private Long tenantId;
     private Boolean houseBillNumberLock;
     private Boolean restrictHblGen;
     private Boolean printPhoneNumber;
@@ -145,6 +146,6 @@ public class ShipmentSettingRequest extends CommonRequest implements IRunnerRequ
     private Boolean customisedSequence;
     private List<TenantProductsRequest> tenantProducts;
     private List<ProductSequenceConfigRequest> productSequenceConfig;
-    private HawbLockSettingsRequest hawbLockSettingsId;
+    private HawbLockSettingsRequest hawbLockSettings;
     private MawbLockSettingsRequest mawbLockSettings;
 }

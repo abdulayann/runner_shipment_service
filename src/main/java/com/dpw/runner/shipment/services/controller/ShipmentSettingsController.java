@@ -1,7 +1,9 @@
 package com.dpw.runner.shipment.services.controller;
 
-import com.dpw.runner.shipment.services.DocumentService.DocumentService;
-import com.dpw.runner.shipment.services.commons.constants.*;
+import com.dpw.runner.shipment.services.commons.constants.ApiConstants;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.commons.constants.ShipmentSettingsConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
@@ -51,7 +53,7 @@ public class ShipmentSettingsController {
     }
 
     @ApiResponses(value = { @ApiResponse(code = 200, message = ShipmentSettingsConstants.SHIPMENT_SETTINGS_UPDATE_SUCCESSFUL, response = RunnerResponse.class) })
-    @PutMapping(ApiConstants.API_UPDATE)
+    @PutMapping(ApiConstants.API_UPDATE_SETTINGS)
     public ResponseEntity<RunnerResponse> update(@RequestBody @Valid ShipmentSettingRequest request) {
         String responseMsg;
         try {
@@ -63,6 +65,21 @@ public class ShipmentSettingsController {
         }
         return (ResponseEntity<RunnerResponse>) ResponseHelper.buildFailedResponse(responseMsg);
     }
+
+    @ApiResponses(value = { @ApiResponse(code = 200, message = ShipmentSettingsConstants.SHIPMENT_SETTINGS_UPDATE_SUCCESSFUL, response = RunnerResponse.class) })
+    @PutMapping(ApiConstants.API_UPDATE)
+    public ResponseEntity<RunnerResponse> completeUpdate(@RequestBody @Valid ShipmentSettingRequest request) {
+        String responseMsg;
+        try {
+            return (ResponseEntity<RunnerResponse>) shipmentSettingsService.completeUpdate(CommonRequestModel.buildRequest(request));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+        }
+        return (ResponseEntity<RunnerResponse>) ResponseHelper.buildFailedResponse(responseMsg);
+    }
+
     @ApiResponses(value = { @ApiResponse(code = 200, message = ShipmentSettingsConstants.SHIPMENT_SETTINGS_RETRIEVE_BY_ID_SUCCESSFUL) })
     @GetMapping(ApiConstants.API_RETRIEVE_BY_ID)
     public ResponseEntity<RunnerResponse<ShipmentSettingsDetailsResponse>> retrieveById(@ApiParam(value = ShipmentSettingsConstants.SHIPMENT_SETTINGS_ID, required = true) @RequestParam Optional<Long> id, @RequestParam Optional<String> guid) {
