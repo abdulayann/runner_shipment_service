@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.entity.commons;
 
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import lombok.*;
 import lombok.experimental.Accessors;
 import org.hibernate.annotations.*;
@@ -50,12 +51,29 @@ public class BaseEntity implements Serializable {
     @LastModifiedDate
     private LocalDateTime updatedAt;
 
-    @Column(name = "created_by")
-    private Integer createdBy;
+    @Column(name = "created_by", nullable = false, updatable = false)
+    private String createdBy;
 
     @Column(name = "updated_by")
-    private Integer updatedBy;
+    private String updatedBy;
 
     @Column(name = "is_deleted")
     private Boolean isDeleted = Boolean.FALSE;
+
+    @PreUpdate
+    void preUpdate() {
+        if (UserContext.getUser() != null) {
+            String username = UserContext.getUser().getUsername();
+            this.updatedBy = username;
+        }
+    }
+
+    @PrePersist
+    void prePersist() {
+        if (UserContext.getUser() != null) {
+            String username = UserContext.getUser().getUsername();
+            this.createdBy = username;
+            this.updatedBy = username;
+        }
+    }
 }

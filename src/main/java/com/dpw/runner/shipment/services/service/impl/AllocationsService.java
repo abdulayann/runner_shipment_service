@@ -9,6 +9,7 @@ import com.dpw.runner.shipment.services.dao.interfaces.IAllocationsDao;
 import com.dpw.runner.shipment.services.dto.request.AllocationsRequest;
 import com.dpw.runner.shipment.services.dto.response.AllocationsResponse;
 import com.dpw.runner.shipment.services.entity.Allocations;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IAllocationsService;
@@ -39,7 +40,7 @@ public class AllocationsService implements IAllocationsService {
     @Autowired
     IAllocationsDao allocationsDao;
     @Autowired
-    ModelMapper modelMapper;
+    private JsonHelper jsonHelper;
 
     @Transactional
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
@@ -198,11 +199,11 @@ public class AllocationsService implements IAllocationsService {
     }
 
     private AllocationsResponse convertEntityToDto(Allocations allocations) {
-        return modelMapper.map(allocations, AllocationsResponse.class);
+        return jsonHelper.convertValue(allocations, AllocationsResponse.class);
     }
 
     private Allocations convertRequestToAllocations(AllocationsRequest request) {
-        return modelMapper.map(request, Allocations.class);
+        return jsonHelper.convertValue(request, Allocations.class);
     }
 
     private List<IRunnerResponse> convertEntityListToDtoList(final List<Allocations> list) {

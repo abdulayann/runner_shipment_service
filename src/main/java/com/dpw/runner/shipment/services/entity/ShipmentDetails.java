@@ -107,7 +107,7 @@ public class ShipmentDetails extends MultiTenancy {
     private Boolean isDomestic;
 
     @Column(name = "assigned_to")
-    private Integer assignedTo;
+    private String assignedTo;
 
     @Column(name = "additional_terms")
     private String additionalTerms;
@@ -123,6 +123,7 @@ public class ShipmentDetails extends MultiTenancy {
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "entityId")
     @Where(clause = "entity_type = 'SHIPMENT'")
+    @BatchSize(size = 50)
     private List<Events> eventsList;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "entityId")
@@ -284,11 +285,11 @@ public class ShipmentDetails extends MultiTenancy {
     @Where(clause = "entity_type = 'SHIPMENT'")
     private List<Notes> notesList;
 
-    @OneToOne(targetEntity = PickupDeliveryDetails.class, cascade = CascadeType.ALL)
+    @OneToOne(fetch = FetchType.LAZY, targetEntity = PickupDeliveryDetails.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "delivery_details_id", referencedColumnName = "id")
     private PickupDeliveryDetails deliveryDetails;
 
-    @OneToOne(targetEntity = PickupDeliveryDetails.class, cascade = CascadeType.ALL)
+    @OneToOne(fetch = FetchType.LAZY, targetEntity = PickupDeliveryDetails.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "pickup_details_id", referencedColumnName = "id")
     private PickupDeliveryDetails pickupDetails;
 

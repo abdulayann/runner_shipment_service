@@ -79,6 +79,13 @@ public class Constants {
 
     public static final String SERVICE = "Service";
 
+    /** Events **/
+
+    public static final String INVGNTD = "INVGNTD";
+    public static final String TAXSG = "TAXSG";
+    public static final String CSEDI = "CSEDI";
+    public static final String AMSEDI = "AMSEDI";
+
     public static final String COMMODITY_TYPE_MASTER_DATA = "CommodityType";
     public static final String CONTAINER_TYPE_MASTER_DATA = "ContainerType";
     public static final String CURRENCY_MASTER_DATA = "Currency";

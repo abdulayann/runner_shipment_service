@@ -66,8 +66,8 @@ public class ShipmentDao implements IShipmentDao {
             }
         }
         shipmentDetails = shipmentRepository.save(shipmentDetails);
-        EventMessage eventMessage = EventMessage.builder().messageType(Constants.SERVICE).entity(Constants.SHIPMENT).request(shipmentDetails).build();
-        sbUtils.sendMessagesToTopic(isbProperties, azureServiceBusTopic.getTopic(), Arrays.asList(new ServiceBusMessage(jsonHelper.convertToJson(eventMessage))));
+//        EventMessage eventMessage = EventMessage.builder().messageType(Constants.SERVICE).entity(Constants.SHIPMENT).request(shipmentDetails).build();
+//        sbUtils.sendMessagesToTopic(isbProperties, azureServiceBusTopic.getTopic(), Arrays.asList(new ServiceBusMessage(jsonHelper.convertToJson(eventMessage))));
         return shipmentDetails;
     }
 

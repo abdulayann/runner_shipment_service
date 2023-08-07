@@ -43,8 +43,6 @@ public class HblService implements IHblService {
     private IShipmentDao shipmentDao;
     @Autowired
     private JsonHelper jsonHelper;
-    @Autowired
-    private ModelMapper modelMapper;
 
     @Override
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
@@ -214,7 +212,7 @@ public class HblService implements IHblService {
     }
 
     private IRunnerResponse convertEntityToDto(Hbl hbl) {
-        HblResponse response = modelMapper.map(hbl.getHblData(), HblResponse.class);
+        HblResponse response = jsonHelper.convertValue(hbl.getHblData(), HblResponse.class);
         response.setCargoes(hbl.getHblCargo());
         response.setContainers(hbl.getHblContainer());
         response.setNotifyParties(hbl.getHblNotifyParty());

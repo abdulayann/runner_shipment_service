@@ -9,6 +9,7 @@ import com.dpw.runner.shipment.services.dao.interfaces.IRoutingsDao;
 import com.dpw.runner.shipment.services.dto.request.RoutingsRequest;
 import com.dpw.runner.shipment.services.dto.response.RoutingsResponse;
 import com.dpw.runner.shipment.services.entity.Routings;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IRoutingsService;
@@ -39,7 +40,7 @@ public class RoutingsService implements IRoutingsService {
     private IRoutingsDao routingsDao;
 
     @Autowired
-    private ModelMapper modelMapper;
+    private JsonHelper jsonHelper;
 
     @Override
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
@@ -198,11 +199,11 @@ public class RoutingsService implements IRoutingsService {
     }
 
     private RoutingsResponse convertEntityToDto(Routings notes) {
-        return modelMapper.map(notes, RoutingsResponse.class);
+        return jsonHelper.convertValue(notes, RoutingsResponse.class);
     }
 
     private Routings convertRequestToRoutingsEntity(RoutingsRequest request) {
-        return modelMapper.map(request, Routings.class);
+        return jsonHelper.convertValue(request, Routings.class);
     }
 
     private List<IRunnerResponse> convertEntityListToDtoList(final List<Routings> lst) {

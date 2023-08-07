@@ -34,7 +34,7 @@ public class ShipmentListResponse implements IRunnerResponse {
     private String incoterms;
     private String shipmentId;
     private Boolean isDomestic;
-    private Integer assignedTo;
+    private String assignedTo;
     private String additionalTerms;
     private String goodsDescription;
     private BigDecimal weight;
@@ -90,4 +90,14 @@ public class ShipmentListResponse implements IRunnerResponse {
     private Long container40RECount;
     private String jobStatus;
     private Set<String> containerNumbers;
+    private PickupDeliveryDetailsListResponse pickupDetails;
+    private PickupDeliveryDetailsListResponse deliveryDetails;
+    private String createdBy;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
+    private LocalDateTime invoiceDate;
+    private LocalDateTime taxDate;
+    private LocalDateTime customsFilingDate;
+    private LocalDateTime amsFilingDate;
+    private BigDecimal teuCount;
 }

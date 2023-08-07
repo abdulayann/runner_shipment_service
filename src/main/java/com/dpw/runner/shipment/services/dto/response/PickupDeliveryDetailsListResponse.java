@@ -1,33 +1,23 @@
-package com.dpw.runner.shipment.services.dto.request;
+package com.dpw.runner.shipment.services.dto.response;
 
-import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
-import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
-import io.swagger.annotations.ApiModel;
-import lombok.*;
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import lombok.Data;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.UUID;
 
-@Getter
-@Setter
-@ApiModel("Pickup Delivery Details Request Model")
-@ToString
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
-public class PickupDeliveryDetailsRequest extends CommonRequest implements IRunnerRequest {
+@Data
+public class PickupDeliveryDetailsListResponse implements IRunnerResponse {
     private Long id;
+    private UUID guid;
     private LocalDateTime estimatedPickupOrDelivery;
     private LocalDateTime requiredBy;
     private LocalDateTime portTransportAdvised;
     private LocalDateTime actualPickupOrDelivery;
     private LocalDateTime pickupOrDelivery;
-    private PartiesRequest transporterDetail;
-    private PartiesRequest brokerDetail;
-    private PartiesRequest destinationDetail;
-    private PartiesRequest sourceDetail;
-    private PartiesRequest agentDetail;
+    private PartiesResponse transporterDetail;
     private String type;
     private Long shipmentId;
     private String dropMode;
