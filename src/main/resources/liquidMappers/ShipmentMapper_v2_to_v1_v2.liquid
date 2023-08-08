@@ -1,11 +1,11 @@
 {
   "Guid":"{{ content.guid }}",
-  "Id": {{ content.id }},
   "TenantCode": "HIPL",
   "HouseBill": "{{ content.houseBill }}",
   "TransportMode": "{{ content.transportMode }}",
   "Custom_ShipType": "{{ content.direction }}",
   "ContainerType": "{{ content.shipmentType }}",
+  "StatusString":"{{ content.status }}",
   "Status":"{{ content.status }}",
   "Source": "{{ content.source }}",
   "MasterBill": "{{ content.masterBill }}",
@@ -358,15 +358,12 @@
   "TruckDriverDetail": [
   {% for item in content.truckDriverDetails %}
     {
-    "ConsolidationId":{{ item.consolidationId }},
-    "ContainerId":{{ item.containerId }},
     "ContainerTypeCode": "{{ item.containerTypeCode }}",
     "DriverMobileNumber": "{{ item.driverMobileNumber }}",
     "DriverName": "{{ item.driverName }}",
     "SelfTransporterName": "{{ item.selfTransporterName }}",
-    "ShipmentId":{{ item.shipmentId }},
     "TrailerNumberPlate": "{{ item.trailerNumberPlate }}",
-    "TransporterName": "{{ item.transporterName }}",
+    "TransporterNameOrg": "{{ item.transporterName }}",
     "TransporterTypeString": "{{ item.transporterType }}",
     "TruckNumberPlate": "{{ item.truckNumberPlate }}",
     "TruckOrTrailerType": "{{ item.truckOrTrailerType }}"
@@ -392,7 +389,6 @@
     {% else %}
       "ATD": "{{ routing.atd }}",
     {% endif %}
-    "ConsolidationId":{{ routing.consolidationId }},
     "IsDomestic":"{{ routing.domestic }}",
     "EntityId":{{ routing.entityId }},
     "EntityType": "{{ routing.entityType }}",
@@ -445,9 +441,6 @@
     "Chargeable":{{ packing.chargeable }},
     "ChargeableUnit": "{{ packing.chargeableUnit }}",
     "CommodityCode": "{{ packing.commodity }}",
-    "CommodityId":{{ packing.commodityId }},
-    "ConsolidationId":{{ packing.consolidationId }},
-    "ContainerId":{{ packing.containerId }},
     "ContainerNumber": "{{ packing.containerNumber }}",
     "CountryCode": "{{ packing.countryCode }}",
     "CustomsReleaseCode": "{{ packing.customsReleaseCode }}",
@@ -475,7 +468,7 @@
     "MinTempUnit": "{{ packing.minTempUnit }}",
     "NetWeight":"{{ packing.netWeight }}",
     "NetWeightUnit": "{{ packing.netWeightUnit }}",
-    "Origin": "{{ packing.origin }}",
+    "OriginName": "{{ packing.origin }}",
     "PackingOrder": "{{ packing.packingOrder }}",
     "Packs": "{{ packing.packs }}",
     "PacksType": "{{ packing.packsType }}",
@@ -899,7 +892,6 @@
         "Packages":{{ elDetail.packages }},
         "Partition":"{{ elDetail.partition }}",
         "PartitionSeqNumber":{{ elDetail.partitionSeqNumber }},
-        "ShipmentId":{{ elDetail.shipmentId }},
         "Unit": "{{ elDetail.unit }}",
         "Weight":{{ elDetail.weight }},
         "WeightUnit": "{{ elDetail.weightUnit }}"
@@ -933,22 +925,21 @@
         "Chargeable":{{ container.chargeable }},
         "ChargeableUnit": "{{ container.chargeableUnit }}",
         "CommodityCode": "{{ container.commodityCode }}",
-        "ConsolidationId":{{ container.consolidationId }},
         "ContainerCode": "{{ container.containerCode }}",
         "ContainerComments": "{{ container.containerComments }}",
-        "ContainerCount":{{ container.containerCount }},
+        "ContainerCount":"{{ container.containerCount }}",
         "ContainerNumber": "{{ container.containerNumber }}",
-        "ContainerStuffingLocation":{{ container.containerStuffingLocation }},
+        "ContainerStuffingLocationName": "{{ container.containerStuffingLocation }}",
         "CustomsReleaseCode": "{{ container.customsReleaseCode }}",
         "CustomsSealNumber": "{{ container.customsSealNumber }}",
         "DescriptionOfGoods": "{{ container.descriptionOfGoods }}",
-        "DgClass": "{{ container.dgClass }}",
+        "DgClassString": "{{ container.dgClass }}",
         "ExtraParams": "{{ container.extraParams }}",
         "GrossVolume":{{ container.grossVolume }},
         "GrossVolumeUnit": "{{ container.grossVolumeUnit }}",
         "GrossWeight":{{ container.grossWeight }},
         "GrossWeightUnit": "{{ container.grossWeightUnit }}",
-        "Hazardous":"{{ container.hazardous }}",
+        "IsHazardous":"{{ container.hazardous }}",
         "HazardousUn": "{{ container.hazardousUn }}",
         "HblDeliveryMode": "{{ container.hblDeliveryMode }}",
         "HsCode": "{{ container.hsCode }}",
@@ -960,8 +951,7 @@
         "IsReefer":"{{ container.isReefer }}",
         "IsShipperOwned":"{{ container.isShipperOwned }}",
         "IsTemperatureMaintained":"{{ container.isTemperatureMaintained }}",
-        "LoggingId":{{ container.loggingId }},
-        "MarksNums": "{{ container.marksNums }}",
+        "MarksnNums": "{{ container.marksNums }}",
         "MaxTemp":{{ container.maxTemp }},
         "MaxTempUnit": "{{ container.maxTempUnit }}",
         "Measurement":{{ container.measurement }},
@@ -971,9 +961,9 @@
         "NetWeight":{{ container.netWeight }},
         "NetWeightUnit": "{{ container.netWeightUnit }}",
         "NoOfPackages":{{ container.noOfPackages }},
-        "PackageBreadth":{{ container.packageBreadth }},
-        "PackageHeight":{{ container.packageHeight }},
-        "PackageLength":{{ container.packageLength }},
+        "PackageBreadth":"{{ container.packageBreadth }}",
+        "PackageHeight":"{{ container.packageHeight }}",
+        "PackageLength":"{{ container.packageLength }}",
         "Packs": "{{ container.packs }}",
         "PacksType": "{{ container.packsType }}",
         "PacrNumber": "{{ container.pacrNumber }}",
@@ -981,7 +971,6 @@
         "SealNumber": "{{ container.sealNumber }}",
         "SerialNumber": "{{ container.serialNumber }}",
         "ShipperSealNumber": "{{ container.shipperSealNumber }}",
-        "Status": "{{ container.status }}",
         "TareWeight":{{ container.tareWeight }},
         "TareWeightUnit": "{{ container.tareWeightUnit }}",
         "TerminalOperatorSealNumber": "{{ container.terminalOperatorSealNumber }}",
@@ -990,7 +979,7 @@
         "VolumeUtilization": "{{ container.volumeUtilization }}",
         "WeightUtilization": "{{ container.weightUtilization }}",
 
-        "DeliveryAddress": {
+        "DeliveryAddressJson": {
           "AddressCode": "{{ container.deliveryAddress.addressCode }}",
           "AddressData": {},
           "EntityId":{{ container.deliveryAddress.entityId }},
@@ -999,7 +988,7 @@
           "OrgData": {},
           "Type": "{{ container.deliveryAddress.type }}"
         },
-        "PickupAddress": {
+        "PickupAddressJson": {
           "AddressCode": "{{ container.pickupAddress.addressCode }}",
           "AddressData": {},
           "EntityId":{{ container.pickupAddress.entityId }},
@@ -1061,9 +1050,8 @@
   ],
 
   "BookingCarriages": [
-    {% for carriage in content.bookingCarriageList %}
+    {% for carriage in content.bookingCarriagesList %}
       {
-        "BookingId":{{ carriage.bookingId }},
         "CarriageMode": "{{ carriage.carriageMode }}",
         "CarriageType": "{{ carriage.carriageType }}",
 
@@ -1080,7 +1068,6 @@
 
         "PodId":{{ carriage.podId }},
         "PolId":{{ carriage.polId }},
-        "ShipmentId":{{ carriage.shipmentId }},
         "Vessel": "{{ carriage.vessel }}",
         "VesselId":{{ carriage.vesselId }},
         "Voyage": "{{ carriage.voyage }}"
@@ -1105,7 +1092,6 @@
           "CompletionDate": "{{ service.completionDate }}",
         {% endif %}
 
-        "ConsolidationId": {{ service.consolidationId }},
         "Contractor": {
           "AddressCode": "{{ service.contractor.addressCode }}",
           "AddressData": "{{ service.contractor.addressData }}",
@@ -1117,19 +1103,7 @@
         },
         "RefNumber": "{{ service.refNumber }}",
         "ServiceCount": {{ service.serviceCount }},
-        "ServiceDuration": {
-          "Nano": "{{ service.serviceDuration.nano }}",
-          "Negative": "{{ service.serviceDuration.negative }}",
-          "Seconds": "{{ service.serviceDuration.seconds }}",
-          "Units": [
-            {
-            "Datebased": "{{ service.serviceDuration.units[0].dateBased }}",
-            "Durationestimated": "{{ service.serviceDuration.units[0].durationEstimated }}",
-            "Timebased": "{{ service.serviceDuration.units[0].timeBased }}"
-            }
-          ],
-          "Zero": "{{ service.serviceDuration.zero }}"
-        },
+        "ServiceDurationSpan": {},
         "ServiceNotes": "{{ service.serviceNotes }}",
         "ServiceType": "{{ service.serviceType }}",
         "ShipmentId": {{ service.shipmentId }},
