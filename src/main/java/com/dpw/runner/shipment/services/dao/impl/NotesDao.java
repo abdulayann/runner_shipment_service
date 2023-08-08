@@ -14,10 +14,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -113,6 +110,44 @@ public class NotesDao implements INotesDao {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_DELETE_EXCEPTION_MSG;
             log.error(responseMsg, e);
+        }
+    }
+
+    public List<Notes> updateEntityFromOtherEntity(List<Notes> notesList, Long entityId, String entityType, List<Notes> oldEntityList) throws Exception {
+        String responseMsg;
+        List<Notes> responseNotes = new ArrayList<>();
+        Map<UUID, Notes> notesMap = new HashMap<>();
+        if(oldEntityList != null && oldEntityList.size() > 0) {
+            for (Notes entity:
+                    oldEntityList) {
+                notesMap.put(entity.getGuid(), entity);
+            }
+        }
+        try {
+            Notes oldEntity;
+            List<Notes> notesRequestList = new ArrayList<>();
+            if (notesList != null && notesList.size() != 0) {
+                for (Notes request : notesList) {
+                    oldEntity = notesMap.get(request.getGuid());
+                    if(oldEntity != null) {
+                        notesMap.remove(oldEntity.getGuid());
+                        request.setId(oldEntity.getId());
+                    }
+                    request.setEntityId(entityId);
+                    request.setEntityType(entityType);
+                    notesRequestList.add(request);
+                }
+                responseNotes = saveEntityFromOtherEntity(notesRequestList, entityId, entityType);
+            }
+            Map<Long, Notes> hashMap = new HashMap<>();
+            notesMap.forEach((s, notes) ->  hashMap.put(notes.getId(), notes));
+            deleteNotes(hashMap);
+            return responseNotes;
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
+            log.error(responseMsg, e);
+            throw new Exception(e);
         }
     }
 }

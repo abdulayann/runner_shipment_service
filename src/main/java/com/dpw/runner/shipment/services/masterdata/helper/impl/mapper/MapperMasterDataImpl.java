@@ -275,4 +275,24 @@ public class MapperMasterDataImpl implements IMasterDataService {
         return null;
     }
 
+    @Override
+    public DependentServiceResponse importFlightSchedules(Object request) {
+        return null;
+    }
+
+    @Override
+    public DependentServiceResponse fetchFlightStatus(Object request) {
+        return null;
+    }
+
+    @Override
+    public DependentServiceResponse importSailingSchedules(Object request) {
+        return null;
+    }
+
+    @Override
+    public DependentServiceResponse listSailingSchedule(Object request) {
+        return null;
+    }
+
 }

@@ -86,4 +86,9 @@ public interface IMasterDataService extends ICommonService{
 
     ResponseEntity<?> listCousinBranches(CommonRequestModel commonRequestModel);
     ResponseEntity<?> listCousinBranchesWithoutCurrent(CommonRequestModel commonRequestModel);
+
+    ResponseEntity<?> importFlightSchedules(CommonRequestModel commonRequestModel);
+    ResponseEntity<?> fetchFlightStatus(CommonRequestModel commonRequestModel);
+    ResponseEntity<?> importSailingSchedules(CommonRequestModel commonRequestModel);
+    ResponseEntity<?> listSailingSchedule(CommonRequestModel commonRequestModel);
 }

@@ -14,10 +14,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -107,6 +104,44 @@ public class BookingCarriageDao implements IBookingCarriageDao {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_DELETE_EXCEPTION_MSG;
             log.error(responseMsg, e);
+        }
+    }
+
+    public List<BookingCarriage> updateEntityFromShipment(List<BookingCarriage> bookingCarriageList, Long shipmentId, List<BookingCarriage> oldEntityList) throws Exception {
+        String responseMsg;
+        List<BookingCarriage> responseBookingCarriage = new ArrayList<>();
+        Map<UUID, BookingCarriage> bookingMap = new HashMap<>();
+        if(oldEntityList != null && oldEntityList.size() > 0) {
+            for (BookingCarriage entity:
+                    oldEntityList) {
+                bookingMap.put(entity.getGuid(), entity);
+            }
+        }
+        try {
+
+            BookingCarriage oldEntity;
+            List<BookingCarriage> bookingCarriagesRequestList = new ArrayList<>();
+            if (bookingCarriageList != null && bookingCarriageList.size() != 0) {
+                for (BookingCarriage request : bookingCarriageList) {
+                    oldEntity = bookingMap.get(request.getGuid());
+                    if(oldEntity != null) {
+                        bookingMap.remove(oldEntity.getGuid());
+                        request.setId(oldEntity.getId());
+                    }
+                    bookingCarriagesRequestList.add(request);
+                }
+                responseBookingCarriage = saveEntityFromShipment(bookingCarriagesRequestList, shipmentId);
+            }
+            Map<Long, BookingCarriage> hashMap = new HashMap<>();
+            bookingMap.forEach((s, bookingCarriage) ->  hashMap.put(bookingCarriage.getId(), bookingCarriage));
+
+            deleteBookingCarriage(hashMap);
+            return responseBookingCarriage;
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
+            log.error(responseMsg, e);
+            throw new Exception(e);
         }
     }
 }

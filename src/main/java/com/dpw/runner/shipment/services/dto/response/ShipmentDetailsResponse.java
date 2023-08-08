@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 @Builder
 @NoArgsConstructor
@@ -102,4 +103,7 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     private Long container40GPCount;
     private Long container40RECount;
     private String jobStatus;
+    public Map<String, String> masterData;
+    public Map<String, String> unlocationData;
+    public Map<String, String> currenciesMasterData;
 }

@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.dao.impl;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IJobDao;
+import com.dpw.runner.shipment.services.entity.Events;
 import com.dpw.runner.shipment.services.entity.Jobs;
 import com.dpw.runner.shipment.services.repository.interfaces.IJobRepository;
 import com.nimbusds.jose.util.Pair;
@@ -14,10 +15,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -160,6 +158,44 @@ public class JobDao implements IJobDao {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_DELETE_EXCEPTION_MSG;
             log.error(responseMsg, e);
+        }
+    }
+
+    @Override
+    public List<Jobs> updateEntityFromShipment(List<Jobs>jobsList, Long shipmentId, List<Jobs> oldEntityList) throws Exception {
+        String responseMsg;
+        Map<UUID, Jobs> jobsMap = new HashMap<>();
+        if(oldEntityList != null && oldEntityList.size() > 0) {
+            for (Jobs entity:
+                    oldEntityList) {
+                jobsMap.put(entity.getGuid(), entity);
+            }
+        }
+
+        List<Jobs> responseJobs = new ArrayList<>();
+        try {
+            Jobs oldEntity;
+            List<Jobs> jobRequestList = new ArrayList<>();
+            if (jobsList != null && jobsList.size() != 0) {
+                for (Jobs request : jobsList) {
+                    oldEntity = jobsMap.get(request.getGuid());
+                    if(oldEntity != null) {
+                        jobsMap.remove(oldEntity.getGuid());
+                        request.setId(oldEntity.getId());
+                    }
+                    jobRequestList.add(request);
+                }
+                responseJobs = saveEntityFromShipment(jobRequestList, shipmentId);
+            }
+            Map<Long, Jobs> hashMap = new HashMap<>();
+            jobsMap.forEach((s, jobs) ->  hashMap.put(jobs.getId(), jobs));
+            deleteJobs(hashMap);
+            return responseJobs;
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
+            log.error(responseMsg, e);
+            throw new Exception(e);
         }
     }
 }

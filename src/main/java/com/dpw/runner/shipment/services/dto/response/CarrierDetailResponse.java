@@ -5,6 +5,7 @@ import io.swagger.annotations.ApiModel;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.Map;
 import java.util.UUID;
 
 @Data
@@ -35,4 +36,8 @@ public class CarrierDetailResponse implements IRunnerResponse {
     private String destinationPort;
     private String originPortName;
     private String destinationPortName;
+    public Map<String, String> masterData;
+    public Map<String, String> unlocationData;
+    public Map<String, String> carrierMasterData;
+    public Map<String, String> vesselsMasterData;
 }

@@ -7,6 +7,7 @@ import org.springframework.data.jpa.domain.Specification;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 public interface IShipmentDao {
     ShipmentDetails save(ShipmentDetails shipmentDetails);
@@ -15,5 +16,6 @@ public interface IShipmentDao {
     Optional<ShipmentDetails> findById(Long id);
     void delete(ShipmentDetails shipmentDetails);
     List<ShipmentDetails> saveAll(List<ShipmentDetails> shipments);
+    Optional<ShipmentDetails> findByGuid(UUID id);
     Optional<ShipmentDetails> findByHouseBill(String Hbl);
 }

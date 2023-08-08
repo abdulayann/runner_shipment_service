@@ -99,6 +99,10 @@ public interface IMasterDataService {
     DependentServiceResponse listCousinBranches(Object request);
     DependentServiceResponse listCousinBranchesWithoutCurrent(Object request);
     DependentServiceResponse tenantByGuid(Object request);
+    DependentServiceResponse importFlightSchedules(Object request);
+    DependentServiceResponse fetchFlightStatus(Object request);
+    DependentServiceResponse importSailingSchedules(Object request);
+    DependentServiceResponse listSailingSchedule(Object request);
     DependentServiceResponse sendConsolidationTask(CreateConsolidationTaskRequest request);
     DependentServiceResponse sendShipmentTask(CreateShipmentTaskRequest request);
 
