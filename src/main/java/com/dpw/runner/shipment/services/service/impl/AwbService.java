@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
@@ -60,6 +61,9 @@ public class AwbService implements IAwbService {
 
     @Autowired
     private JsonHelper jsonHelper;
+
+    @Autowired
+    private UserContext userContext;
 
     private Integer totalPacks = 0;
     private List<String> attachedShipmentDescriptions = new ArrayList<>();
@@ -340,7 +344,7 @@ public class AwbService implements IAwbService {
 //        awbCargoInfo.setCarriageValue(shipmentDetails.getGoodsValue() != null ? shipmentDetails.getGoodsValue() : new BigDecimal(0.0)); // field missing
 //        awbCargoInfo.setCarriageValue(shipmentDetails.getInsuranceValue() != null ? shipmentDetailsgetInsuranceValue() : new BigDecimal(0.0)); // field missing
         awbCargoInfo.setCustomsValue(new BigDecimal(0.0));
-        // awbCargoInfo.setCurrency(tenant.CurrencyCode); // get currency from tenant info
+        awbCargoInfo.setCurrency(userContext.getUser().getCompanyCurrency());
         // awbCargoInfo.setHandlingInfo(getHandlingInfo(MasterListTypes.MAWBGeneration)); // field missing
         awbCargoInfo.setAccountingInfo(awbCargoInfo.getAccountingInfo() == null ? null : awbCargoInfo.getAccountingInfo().toUpperCase());
         awbCargoInfo.setOtherInfo(awbCargoInfo.getOtherInfo() == null ? null : awbCargoInfo.getOtherInfo().toUpperCase());
@@ -466,8 +470,8 @@ public class AwbService implements IAwbService {
         awbShipmentInfo.setDestinationAirport(shipmentDetails.getCarrierDetails().getDestinationPort());
         awbShipmentInfo.setFirstCarrier(shipmentDetails.getCarrierDetails().getShippingLine());
 
-        // awbShipmentInfo.setIataCode(tenant.AgentIATACode); // field missing
-        // awbShipmentInfo.setAgentCASSCode(tenant.AgentCASSCode); // field missing
+        awbShipmentInfo.setIataCode(userContext.getUser().getAgentIATACode());
+        awbShipmentInfo.setAgentCASSCode(userContext.getUser().getAgentCASSCode());
         for (var orgRow : shipmentDetails.getShipmentAddresses()) {
             if (orgRow.getType() == Constants.FORWARDING_AGENT) {
                 var issuingAgentName = StringUtility.convertToString(orgRow.getOrgData().get(PartiesConstants.FULLNAME));
@@ -536,7 +540,7 @@ public class AwbService implements IAwbService {
 //        awbCargoInfo.setCarriageValue(shipmentDetails.getGoodsValue() != null ? shipmentDetails.getGoodsValue() : new BigDecimal(0.0)); // field missing
 //        awbCargoInfo.setCarriageValue(shipmentDetails.getInsuranceValue() != null ? shipmentDetailsgetInsuranceValue() : new BigDecimal(0.0)); // field missing
         awbCargoInfo.setCustomsValue(new BigDecimal(0.0));
-        // awbCargoInfo.setCurrency(tenant.CurrencyCode); // get currency from tenant info
+        awbCargoInfo.setCurrency(userContext.getUser().getCompanyCurrency());
         // awbCargoInfo.setHandlingInfo(getHandlingInfo(MasterListTypes.HAWBGeneration)); // field missing
         awbCargoInfo.setAccountingInfo(awbCargoInfo.getAccountingInfo() == null ? null : awbCargoInfo.getAccountingInfo().toUpperCase());
         awbCargoInfo.setOtherInfo(awbCargoInfo.getOtherInfo() == null ? null : awbCargoInfo.getOtherInfo().toUpperCase());

@@ -1,7 +1,7 @@
 package com.dpw.runner.shipment.services.service.v1.impl;
 
-import com.dpw.runner.shipment.services.dto.v1.request.SendConsolidationRequest;
-import com.dpw.runner.shipment.services.dto.v1.request.SendShipmentRequest;
+import com.dpw.runner.shipment.services.dto.v1.request.CreateConsolidationTaskRequest;
+import com.dpw.runner.shipment.services.dto.v1.request.CreateShipmentTaskRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.SendEntityResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.TenantIdResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
@@ -174,6 +174,18 @@ public class V1ServiceImpl implements IV1Service {
 
     @Value("${v1service.url.base}${v1service.url.sendShipmentTask}")
     private String SEND_SHIPMENT_TASK_URL;
+
+    @Value("${v1service.url.base}${v1service.url.importFlightSchedules}")
+    private String IMPORT_FLIGHT_SCHEDULE;
+
+    @Value("${v1service.url.base}${v1service.url.fetchFlightStatus}")
+    private String FETCH_FLIGHT_STATUS;
+
+    @Value("${v1service.url.base}${v1service.url.importSailingSchedules}")
+    private String IMPORT_SAILING_SCHEDULES;
+
+    @Value("${v1service.url.base}${v1service.url.listSailingSchedule}")
+    private String LIST_SAILING_SCHEDULE;
     
     @Override
     public V1DataResponse fetchMasterData(Object request) {
@@ -1162,7 +1174,7 @@ public class V1ServiceImpl implements IV1Service {
     }
 
     @Override
-    public SendEntityResponse sendConsolidationTask(SendConsolidationRequest request) {
+    public SendEntityResponse sendConsolidationTask(CreateConsolidationTaskRequest request) {
         ResponseEntity masterDataResponse = null;
 
         try {
@@ -1183,7 +1195,7 @@ public class V1ServiceImpl implements IV1Service {
     }
 
     @Override
-    public SendEntityResponse sendShipmentTask(SendShipmentRequest request) {
+    public SendEntityResponse sendShipmentTask(CreateShipmentTaskRequest request) {
         ResponseEntity masterDataResponse = null;
 
         try {
@@ -1192,6 +1204,90 @@ public class V1ServiceImpl implements IV1Service {
             masterDataResponse = this.restTemplate.postForEntity(this.SEND_SHIPMENT_TASK_URL, entity, SendEntityResponse.class, new Object[0]);
             log.info("Token time taken in sendShipmentTask() function " + (System.currentTimeMillis() - time));
             return (SendEntityResponse) masterDataResponse.getBody();
+        } catch (HttpStatusCodeException var6) {
+            if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
+                throw new UnAuthorizedException("UnAuthorizedException");
+            } else {
+                throw new V1ServiceException(var6.getMessage());
+            }
+        } catch (Exception var7) {
+            throw new V1ServiceException(var7.getMessage());
+        }
+    }
+
+    @Override
+    public V1DataResponse importFlightSchedules(Object request) {
+        ResponseEntity masterDataResponse = null;
+
+        try {
+            long time = System.currentTimeMillis();
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            masterDataResponse = this.restTemplate.postForEntity(this.IMPORT_FLIGHT_SCHEDULE, entity, V1DataResponse.class, new Object[0]);
+            log.info("Token time taken in importFlightSchedules() function " + (System.currentTimeMillis() - time));
+            return (V1DataResponse) masterDataResponse.getBody();
+        } catch (HttpStatusCodeException var6) {
+            if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
+                throw new UnAuthorizedException("UnAuthorizedException");
+            } else {
+                throw new V1ServiceException(var6.getMessage());
+            }
+        } catch (Exception var7) {
+            throw new V1ServiceException(var7.getMessage());
+        }
+    }
+
+    @Override
+    public V1DataResponse fetchFlightStatus(Object request) {
+        ResponseEntity masterDataResponse = null;
+
+        try {
+            long time = System.currentTimeMillis();
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            masterDataResponse = this.restTemplate.postForEntity(this.FETCH_FLIGHT_STATUS, entity, V1DataResponse.class, new Object[0]);
+            log.info("Token time taken in fetchFlightStatus() function " + (System.currentTimeMillis() - time));
+            return (V1DataResponse) masterDataResponse.getBody();
+        } catch (HttpStatusCodeException var6) {
+            if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
+                throw new UnAuthorizedException("UnAuthorizedException");
+            } else {
+                throw new V1ServiceException(var6.getMessage());
+            }
+        } catch (Exception var7) {
+            throw new V1ServiceException(var7.getMessage());
+        }
+    }
+
+    @Override
+    public V1DataResponse importSailingSchedules(Object request) {
+        ResponseEntity masterDataResponse = null;
+
+        try {
+            long time = System.currentTimeMillis();
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            masterDataResponse = this.restTemplate.postForEntity(this.IMPORT_SAILING_SCHEDULES, entity, V1DataResponse.class, new Object[0]);
+            log.info("Token time taken in importSailingSchedules() function " + (System.currentTimeMillis() - time));
+            return (V1DataResponse) masterDataResponse.getBody();
+        } catch (HttpStatusCodeException var6) {
+            if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
+                throw new UnAuthorizedException("UnAuthorizedException");
+            } else {
+                throw new V1ServiceException(var6.getMessage());
+            }
+        } catch (Exception var7) {
+            throw new V1ServiceException(var7.getMessage());
+        }
+    }
+
+    @Override
+    public V1DataResponse listSailingSchedule(Object request) {
+        ResponseEntity masterDataResponse = null;
+
+        try {
+            long time = System.currentTimeMillis();
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            masterDataResponse = this.restTemplate.postForEntity(this.LIST_SAILING_SCHEDULE, entity, V1DataResponse.class, new Object[0]);
+            log.info("Token time taken in listSailingSchedule() function " + (System.currentTimeMillis() - time));
+            return (V1DataResponse) masterDataResponse.getBody();
         } catch (HttpStatusCodeException var6) {
             if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
                 throw new UnAuthorizedException("UnAuthorizedException");

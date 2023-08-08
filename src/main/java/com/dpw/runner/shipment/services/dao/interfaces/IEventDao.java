@@ -15,4 +15,5 @@ public interface IEventDao {
     void delete(Events events);
     List<Events> updateEntityFromOtherEntity(List<Events> eventsList, Long entityId, String entityType) throws Exception;
     List<Events> saveEntityFromOtherEntity(List<Events> events, Long entityId, String entityType);
+    List<Events> updateEntityFromOtherEntity(List<Events> eventsList, Long entityId, String entityType, List<Events> oldEntityList) throws Exception;
 }

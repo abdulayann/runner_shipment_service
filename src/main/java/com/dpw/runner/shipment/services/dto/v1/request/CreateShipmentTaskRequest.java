@@ -11,7 +11,7 @@ import java.util.List;
 @AllArgsConstructor
 @Data
 @Builder
-public class SendShipmentRequest {
+public class CreateShipmentTaskRequest {
     private int tenantId;
     private int approverRole;
     private Object shipmentData;

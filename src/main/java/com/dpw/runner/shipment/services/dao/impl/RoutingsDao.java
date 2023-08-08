@@ -158,4 +158,42 @@ public class RoutingsDao implements IRoutingsDao {
             log.error(responseMsg, e);
         }
     }
+
+    @Override
+    public List<Routings> updateEntityFromShipment(List<Routings> routingsList, Long shipmentId, List<Routings> oldEntityList) throws Exception {
+        String responseMsg;
+        Map<UUID, Routings> routingMap = new HashMap<>();
+        if(oldEntityList != null && oldEntityList.size() > 0) {
+            for (Routings entity:
+                    oldEntityList) {
+                routingMap.put(entity.getGuid(), entity);
+            }
+        }
+
+        List<Routings> responseRoutings = new ArrayList<>();
+        try {
+            Routings oldEntity;
+            List<Routings> routingsRequestList = new ArrayList<>();
+            if (routingsList != null && routingsList.size() != 0) {
+                for (Routings request : routingsList) {
+                    oldEntity = routingMap.get(request.getGuid());
+                    if(oldEntity != null) {
+                        routingMap.remove(oldEntity.getGuid());
+                        request.setId(oldEntity.getId());
+                    }
+                    routingsRequestList.add(request);
+                }
+                responseRoutings = saveEntityFromShipment(routingsRequestList, shipmentId);
+            }
+            Map<Long, Routings> hashMap = new HashMap<>();
+            routingMap.forEach((s, routings) ->  hashMap.put(routings.getId(), routings));
+            deleteRoutings(hashMap);
+            return responseRoutings;
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
+            log.error(responseMsg, e);
+            throw new Exception(e);
+        }
+    }
 }

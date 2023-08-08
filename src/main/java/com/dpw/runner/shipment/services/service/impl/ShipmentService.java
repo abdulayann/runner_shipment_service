@@ -5,6 +5,7 @@ import com.azure.messaging.servicebus.ServiceBusMessage;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
@@ -16,21 +17,34 @@ import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.patchRequest.ShipmentPatchRequest;
 import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.response.*;
+import com.dpw.runner.shipment.services.dto.v1.response.V1ContainerTypeResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.entity.enums.GenerationType;
+import com.dpw.runner.shipment.services.entitytransfer.dto.*;
+import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.mapper.ShipmentDetailsMapper;
+import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest;
+import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
+import com.dpw.runner.shipment.services.masterdata.response.CarrierResponse;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service_bus.AzureServiceBusTopic;
 import com.dpw.runner.shipment.services.service_bus.ISBProperties;
 import com.dpw.runner.shipment.services.service_bus.SBUtilsImpl;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
+import com.dpw.runner.shipment.services.service_bus.model.EventMessage;
+import com.dpw.runner.shipment.services.utils.DedicatedMasterData;
+import com.dpw.runner.shipment.services.utils.MasterData;
 import com.dpw.runner.shipment.services.utils.StringUtility;
+import com.dpw.runner.shipment.services.utils.UnlocationData;
+import com.dpw.runner.shipment.services.validator.enums.Operators;
+import com.dpw.runner.shipment.services.validator.enums.Operators;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
@@ -48,6 +62,7 @@ import org.springframework.transaction.interceptor.TransactionAspectSupport;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.StringUtils;
 
+import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -62,6 +77,8 @@ import static com.dpw.runner.shipment.services.utils.CommonUtils.*;
 @Service
 @Slf4j
 public class ShipmentService implements IShipmentService {
+    @Autowired
+    private ModelMapper modelMapper;
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -118,6 +135,12 @@ public class ShipmentService implements IShipmentService {
     private IContainerDao containerDao;
 
     @Autowired
+    private IMawbStocksLinkDao mawbStocksLinkDao;
+
+    @Autowired
+    private IMawbStocksDao mawbStocksDao;
+
+    @Autowired
     private TransactionTemplate transactionTemplate;
 
     @Autowired
@@ -131,6 +154,15 @@ public class ShipmentService implements IShipmentService {
 
     @Autowired
     private IConsolidationDetailsDao consolidationDetailsDao;
+
+    @Autowired
+    private SBUtilsImpl sbUtils;
+
+    @Autowired
+    private ISBProperties isbProperties;
+
+    @Autowired
+    private AzureServiceBusTopic azureServiceBusTopic;
 
     private List<String> TRANSPORT_MODES = Arrays.asList("SEA", "ROAD", "RAIL", "AIR");
     private List<String> SHIPMENT_TYPE = Arrays.asList("FCL", "LCL");
@@ -152,6 +184,9 @@ public class ShipmentService implements IShipmentService {
             Map.entry("clientOrgCode", RunnerEntityMapping.builder().tableName("client").dataType(String.class).fieldName("orgCode").build()),
             Map.entry("consignerOrgCode", RunnerEntityMapping.builder().tableName("consigner").dataType(String.class).fieldName("orgCode").build()),
             Map.entry("consigneeOrgCode", RunnerEntityMapping.builder().tableName("consignee").dataType(String.class).fieldName("orgCode").build()),
+            Map.entry("clientAddressCode", RunnerEntityMapping.builder().tableName("client").dataType(Integer.class).fieldName("addressCode").build()),
+            Map.entry("consignerAddressCode", RunnerEntityMapping.builder().tableName("consigner").dataType(String.class).fieldName("addressCode").build()),
+            Map.entry("consigneeAddressCode", RunnerEntityMapping.builder().tableName("consignee").dataType(String.class).fieldName("addressCode").build()),
             Map.entry("houseBill", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).fieldName("houseBill").build()),
             Map.entry("hblType", RunnerEntityMapping.builder().tableName("additionalDetails").dataType(String.class).fieldName("hblType").build()),
             Map.entry("transportMode", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).fieldName("transportMode").build()),
@@ -177,10 +212,12 @@ public class ShipmentService implements IShipmentService {
             Map.entry("goodsDescription", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).fieldName("goodsDescription").build()),
             Map.entry("createdAt", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(LocalDateTime.class).fieldName("createdAt").build()),
             Map.entry("updatedAt", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(LocalDateTime.class).fieldName("updatedAt").build()),
-            Map.entry("estimatedPickupOrDelivery", RunnerEntityMapping.builder().tableName("pickupDeliveryDetails").dataType(LocalDateTime.class).fieldName("estimatedPickupOrDelivery").build()),
-            Map.entry("actualPickupOrDelivery", RunnerEntityMapping.builder().tableName("pickupDeliveryDetails").dataType(LocalDateTime.class).fieldName("actualPickupOrDelivery").build()),
-            Map.entry("requiredBy", RunnerEntityMapping.builder().tableName("pickupDeliveryDetails").dataType(LocalDateTime.class).fieldName("requiredBy").build()),
-            Map.entry("addressCode", RunnerEntityMapping.builder().tableName("parties").dataType(Integer.class).fieldName("addressCode").build()),
+            Map.entry("deliveryEstimated", RunnerEntityMapping.builder().tableName("deliveryDetails").dataType(LocalDateTime.class).fieldName("estimatedPickupOrDelivery").build()),
+            Map.entry("deliveryActual", RunnerEntityMapping.builder().tableName("deliveryDetails").dataType(LocalDateTime.class).fieldName("actualPickupOrDelivery").build()),
+            Map.entry("deliveryRequiredBy", RunnerEntityMapping.builder().tableName("deliveryDetails").dataType(LocalDateTime.class).fieldName("requiredBy").build()),
+            Map.entry("pickupEstimated", RunnerEntityMapping.builder().tableName("pickupDetails").dataType(LocalDateTime.class).fieldName("estimatedPickupOrDelivery").build()),
+            Map.entry("pickupActual", RunnerEntityMapping.builder().tableName("pickupDetails").dataType(LocalDateTime.class).fieldName("actualPickupOrDelivery").build()),
+            Map.entry("pickupRequiredBy", RunnerEntityMapping.builder().tableName("pickupDetails").dataType(LocalDateTime.class).fieldName("requiredBy").build()),
             Map.entry("screeningStatus", RunnerEntityMapping.builder().tableName("additionalDetails").dataType(String.class).fieldName("screeningStatus").build()),
             Map.entry("paidPlace", RunnerEntityMapping.builder().tableName("additionalDetails").dataType(Long.class).fieldName("paidPlace").build()),
             Map.entry("placeOfIssue", RunnerEntityMapping.builder().tableName("additionalDetails").dataType(Long.class).fieldName("placeOfIssue").build()),
@@ -213,7 +250,8 @@ public class ShipmentService implements IShipmentService {
             Map.entry("innerPackUnit", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).fieldName("innerPackUnit").build()),
             Map.entry("jobStatus", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).fieldName("jobStatus").build()),
             Map.entry("containerNumber", RunnerEntityMapping.builder().tableName("containersList").dataType(String.class).fieldName("containerNumber").build()),
-            Map.entry("containerCode", RunnerEntityMapping.builder().tableName("containersList").dataType(String.class).fieldName("containerCode").build())
+            Map.entry("containerCode", RunnerEntityMapping.builder().tableName("containersList").dataType(String.class).fieldName("containerCode").build()),
+            Map.entry("id", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(Long.class).fieldName("id").build())
     );
 
     @Override
@@ -262,12 +300,13 @@ public class ShipmentService implements IShipmentService {
     private List<IRunnerResponse> convertEntityListToDtoList(List<ShipmentDetails> lst) {
         List<IRunnerResponse> responseList = new ArrayList<>();
         lst.forEach(shipmentDetail -> {
-            ShipmentListResponse response = jsonHelper.convertValue(shipmentDetail, ShipmentListResponse.class);
+            ShipmentListResponse response = modelMapper.map(shipmentDetail, ShipmentListResponse.class);
             containerCountUpdate(shipmentDetail, response);
             setEventData(shipmentDetail, response);
             responseList.add(response);
         });
         setLocationData(responseList);
+        setContainerTeu(lst, responseList);
         return responseList;
     }
 
@@ -279,9 +318,9 @@ public class ShipmentService implements IShipmentService {
         Long container40GPCount = 0L;
         Long container40RECount = 0L;
         Set<String> containerNumber = new HashSet<>();
-        if(shipmentDetail.getContainersList() != null) {
-            for(Containers container : shipmentDetail.getContainersList()) {
-                if(container.getContainerCode().contains(Constants.Cont20)) {
+        if (shipmentDetail.getContainersList() != null) {
+            for (Containers container : shipmentDetail.getContainersList()) {
+                if (container.getContainerCode().contains(Constants.Cont20)) {
                     ++container20Count;
                 } else if (container.getContainerCode().contains(Constants.Cont40)) {
                     ++container40Count;
@@ -294,7 +333,7 @@ public class ShipmentService implements IShipmentService {
                 } else if (container.getContainerCode().equals(Constants.Cont40RE)) {
                     ++container40RECount;
                 }
-                if(StringUtility.isNotEmpty(container.getContainerNumber())) {
+                if (StringUtility.isNotEmpty(container.getContainerNumber())) {
                     containerNumber.add(container.getContainerNumber());
                 }
             }
@@ -315,16 +354,16 @@ public class ShipmentService implements IShipmentService {
     }
 
     private void setEventData(ShipmentDetails shipmentDetail, ShipmentListResponse response) {
-        if(shipmentDetail.getEventsList() != null) {
-            for(Events events : shipmentDetail.getEventsList()) {
-                if(StringUtility.isNotEmpty(events.getEventCode())) {
-                    if(events.getEventCode().equalsIgnoreCase(Constants.INVGNTD)) {
+        if (shipmentDetail.getEventsList() != null) {
+            for (Events events : shipmentDetail.getEventsList()) {
+                if (StringUtility.isNotEmpty(events.getEventCode())) {
+                    if (events.getEventCode().equalsIgnoreCase(Constants.INVGNTD)) {
                         response.setInvoiceDate(events.getActual());
                     } else if (events.getEventCode().equalsIgnoreCase(Constants.TAXSG)) {
                         response.setTaxDate(events.getActual());
                     } else if (events.getEventCode().equalsIgnoreCase(Constants.CSEDI)) {
                         response.setCustomsFilingDate(events.getActual());
-                    } else if(events.getEventCode().equalsIgnoreCase(Constants.AMSEDI)) {
+                    } else if (events.getEventCode().equalsIgnoreCase(Constants.AMSEDI)) {
                         response.setAmsFilingDate(events.getActual());
                     }
                 }
@@ -334,18 +373,18 @@ public class ShipmentService implements IShipmentService {
 
     private void setLocationData(List<IRunnerResponse> responseList) {
         Set<String> locCodes = new HashSet<>();
-        for(IRunnerResponse response : responseList) {
-            if(((ShipmentListResponse)response).getCarrierDetails() != null) {
-                if (StringUtility.isNotEmpty(((ShipmentListResponse)response).getCarrierDetails().getOriginPort())) {
-                    locCodes.add(((ShipmentListResponse)response).getCarrierDetails().getOriginPort());
+        for (IRunnerResponse response : responseList) {
+            if (((ShipmentListResponse) response).getCarrierDetails() != null) {
+                if (StringUtility.isNotEmpty(((ShipmentListResponse) response).getCarrierDetails().getOriginPort())) {
+                    locCodes.add(((ShipmentListResponse) response).getCarrierDetails().getOriginPort());
                 }
-                if (StringUtility.isNotEmpty(((ShipmentListResponse)response).getCarrierDetails().getDestinationPort())) {
-                    locCodes.add(((ShipmentListResponse)response).getCarrierDetails().getDestinationPort());
+                if (StringUtility.isNotEmpty(((ShipmentListResponse) response).getCarrierDetails().getDestinationPort())) {
+                    locCodes.add(((ShipmentListResponse) response).getCarrierDetails().getDestinationPort());
                 }
             }
         }
 
-        if(locCodes.size() > 0) {
+        if (locCodes.size() > 0) {
             List<Object> criteria = Arrays.asList(
                     Arrays.asList("LocCode"),
                     "In",
@@ -354,19 +393,19 @@ public class ShipmentService implements IShipmentService {
             CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(criteria).build();
             V1DataResponse v1DataResponse = v1Service.fetchUnlocation(commonV1ListRequest);
             List<UnlocationsResponse> unlocationsResponse = jsonHelper.convertValueToList(v1DataResponse.entities, UnlocationsResponse.class);
-            if(unlocationsResponse != null && unlocationsResponse.size() > 0) {
+            if (unlocationsResponse != null && unlocationsResponse.size() > 0) {
                 Map<String, String> locationMap = new HashMap<>();
-                for(UnlocationsResponse unlocation : unlocationsResponse) {
+                for (UnlocationsResponse unlocation : unlocationsResponse) {
                     locationMap.put(unlocation.getLocCode(), unlocation.getName());
                 }
 
-                for(IRunnerResponse response : responseList) {
-                    if(((ShipmentListResponse)response).getCarrierDetails() != null) {
-                        if (StringUtility.isNotEmpty(((ShipmentListResponse)response).getCarrierDetails().getOriginPort())) {
-                            ((ShipmentListResponse)response).getCarrierDetails().setOriginPortName(locationMap.get(((ShipmentListResponse)response).getCarrierDetails().getOriginPort()));
+                for (IRunnerResponse response : responseList) {
+                    if (((ShipmentListResponse) response).getCarrierDetails() != null) {
+                        if (StringUtility.isNotEmpty(((ShipmentListResponse) response).getCarrierDetails().getOriginPort())) {
+                            ((ShipmentListResponse) response).getCarrierDetails().setOriginPortName(locationMap.get(((ShipmentListResponse) response).getCarrierDetails().getOriginPort()));
                         }
-                        if (StringUtility.isNotEmpty(((ShipmentListResponse)response).getCarrierDetails().getDestinationPort())) {
-                            ((ShipmentListResponse)response).getCarrierDetails().setDestinationPortName(locationMap.get(((ShipmentListResponse)response).getCarrierDetails().getDestinationPort()));
+                        if (StringUtility.isNotEmpty(((ShipmentListResponse) response).getCarrierDetails().getDestinationPort())) {
+                            ((ShipmentListResponse) response).getCarrierDetails().setDestinationPortName(locationMap.get(((ShipmentListResponse) response).getCarrierDetails().getDestinationPort()));
                         }
                     }
                 }
@@ -374,6 +413,59 @@ public class ShipmentService implements IShipmentService {
         }
     }
 
+    private void setContainerTeu(List<ShipmentDetails> shipmentDetails, List<IRunnerResponse> responseList) {
+
+        Map<Long, ShipmentListResponse> dataMap = new HashMap<>();
+        for (IRunnerResponse response : responseList){
+            dataMap.put(((ShipmentListResponse)response).getId(), (ShipmentListResponse)response);
+        }
+
+        Set<String> containerType = new HashSet<>();
+
+        for(ShipmentDetails shipment : shipmentDetails) {
+            if(shipment.getContainersList() != null) {
+                for(Containers containers : shipment.getContainersList()) {
+                    if(StringUtility.isNotEmpty(containers.getContainerCode())) {
+                        containerType.add(containers.getContainerCode());
+                    }
+                }
+            }
+        }
+
+        if(containerType.size() > 0) {
+            List<Object> criteria = Arrays.asList(
+                    Arrays.asList("Code"),
+                    "In",
+                    Arrays.asList(containerType)
+            );
+            CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(criteria).build();
+            V1DataResponse v1DataResponse = v1Service.fetchContainerTypeData(commonV1ListRequest);
+            List<V1ContainerTypeResponse> containerTypeResponses = jsonHelper.convertValueToList(v1DataResponse.entities, V1ContainerTypeResponse.class);
+            if(containerTypeResponses != null && containerTypeResponses.size() > 0) {
+                Map<String, BigDecimal> containerTypeMap = new HashMap<>();
+                for(V1ContainerTypeResponse containerTypeResponse : containerTypeResponses) {
+                    if(containerTypeResponse.getTeu() != null) {
+                        containerTypeMap.put(containerTypeResponse.getCode(), containerTypeResponse.getTeu());
+                    }
+                }
+
+                BigDecimal teu;
+                for(ShipmentDetails shipment : shipmentDetails) {
+                    teu = BigDecimal.ZERO;
+                    if(shipment.getContainersList() != null) {
+                        for(Containers containers : shipment.getContainersList()) {
+                            if(StringUtility.isNotEmpty(containers.getContainerCode())) {
+                                if(containerTypeMap.containsKey(containers.getContainerCode()) && containers.getContainerCount() != null) {
+                                    teu = teu.add(containerTypeMap.get(containers.getContainerCode()).multiply(BigDecimal.valueOf(containers.getContainerCount())));
+                                }
+                            }
+                        }
+                    }
+                    dataMap.get(shipment.getId()).setTeuCount(teu);
+                }
+            }
+        }
+    }
 
 
     private List<Parties> createParties(ShipmentDetails shipmentDetails) {
@@ -436,13 +528,17 @@ public class ShipmentService implements IShipmentService {
             log.error("Request is null for Shipment Create with Request Id {}", LoggerHelper.getRequestIdFromMDC());
         }
         System.out.println(jsonHelper.convertToJson(request));
+
+        if (request.getTransportMode().equals("AIR") && request.getShipmentType().equals("DRT"))
+            directShipmentMAWBCheck(request);
+
         ShipmentDetails shipmentDetails = jsonHelper.convertValue(request, ShipmentDetails.class);
         AdditionalDetails additionalDetails = jsonHelper.convertValue(request.getAdditionalDetail(), AdditionalDetails.class);
         CarrierDetails carrierDetails = jsonHelper.convertValue(request.getCarrierDetails(), CarrierDetails.class);
 
         try {
 
-            if(request.getConsolidationList()!= null) {
+            if (request.getConsolidationList() != null) {
                 List<ConsolidationDetailsRequest> consolRequest = request.getConsolidationList();
                 List<ConsolidationDetails> consolList = consolidationDetailsDao.saveAll(convertToEntityList(consolRequest, ConsolidationDetails.class));
                 shipmentDetails.setConsolidationList(consolList);
@@ -506,6 +602,9 @@ public class ShipmentService implements IShipmentService {
             List<ServiceDetailsRequest> serviceDetailsRequest = request.getServicesList();
             if (serviceDetailsRequest != null)
                 shipmentDetails.setServicesList(serviceDetailsDao.saveEntityFromShipment(convertToEntityList(serviceDetailsRequest, ServiceDetails.class), shipmentId));
+
+            EventMessage eventMessage = EventMessage.builder().messageType(Constants.SERVICE).entity(Constants.SHIPMENT).request(shipmentDetails).build();
+            sbUtils.sendMessagesToTopic(isbProperties, azureServiceBusTopic.getTopic(), Arrays.asList(new ServiceBusMessage(jsonHelper.convertToJsonIncludeNulls(eventMessage))));
 
         } catch (Exception e) {
             log.error(e.getMessage());
@@ -749,9 +848,9 @@ public class ShipmentService implements IShipmentService {
 
         List<ConsolidationDetailsRequest> updatedConsolidationRequest = new ArrayList<>();
         List<ConsolidationDetailsRequest> consolidationDetailsRequests = shipmentRequest.getConsolidationList();
-        if(consolidationDetailsRequests != null && !consolidationDetailsRequests.isEmpty()) {
-            for(ConsolidationDetailsRequest consolidation : consolidationDetailsRequests) {
-                if(consolidation.getId() != null) {
+        if (consolidationDetailsRequests != null && !consolidationDetailsRequests.isEmpty()) {
+            for (ConsolidationDetailsRequest consolidation : consolidationDetailsRequests) {
+                if (consolidation.getId() != null) {
                     tempConsolIds.add(consolidation.getId());
                 }
             }
@@ -759,7 +858,7 @@ public class ShipmentService implements IShipmentService {
         shipmentRequest.setConsolidationList(updatedConsolidationRequest);
 
         try {
-           ShipmentDetails entity = objectMapper.convertValue(shipmentRequest, ShipmentDetails.class);
+            ShipmentDetails entity = objectMapper.convertValue(shipmentRequest, ShipmentDetails.class);
             entity.setId(oldEntity.get().getId());
             List<Containers> updatedContainers = null;
             if (containerRequestList != null) {
@@ -773,8 +872,7 @@ public class ShipmentService implements IShipmentService {
             if (additionalDetailRequest != null) {
                 updatedAdditionalDetails = additionalDetailDao.updateEntityFromShipment(convertToClass(additionalDetailRequest, AdditionalDetails.class), id);
                 entity.setAdditionalDetails(updatedAdditionalDetails);
-            }
-            else {
+            } else {
                 entity.setAdditionalDetails(oldEntity.get().getAdditionalDetails());
             }
 
@@ -782,20 +880,19 @@ public class ShipmentService implements IShipmentService {
             if (carrierDetailRequest != null) {
                 updatedCarrierDetails = carrierDao.updateEntityFromShipmentConsole(convertToClass(carrierDetailRequest, CarrierDetails.class));
                 entity.setCarrierDetails(updatedCarrierDetails);
-            }
-            else {
+            } else {
                 entity.setCarrierDetails(oldEntity.get().getCarrierDetails());
             }
 
-            if(entity.getClient() == null)
+            if (entity.getClient() == null)
                 entity.setClient(oldEntity.get().getClient());
-            if(entity.getConsignee() == null)
+            if (entity.getConsignee() == null)
                 entity.setConsignee(oldEntity.get().getConsignee());
-            if(entity.getConsigner() == null)
+            if (entity.getConsigner() == null)
                 entity.setConsigner(oldEntity.get().getConsigner());
-            if(entity.getPickupDetails() == null)
+            if (entity.getPickupDetails() == null)
                 entity.setPickupDetails(oldEntity.get().getPickupDetails());
-            if(entity.getDeliveryDetails() == null)
+            if (entity.getDeliveryDetails() == null)
                 entity.setDeliveryDetails(oldEntity.get().getDeliveryDetails());
 
             List<BookingCarriage> oldBookingCarriages = oldEntity.get().getBookingCarriagesList();
@@ -813,7 +910,7 @@ public class ShipmentService implements IShipmentService {
 
             ShipmentDetailsResponse response = shipmentDetailsMapper.map(entity);
 
-            if(bookingCarriageRequestList == null) {
+            if (bookingCarriageRequestList == null) {
                 response.setBookingCarriagesList(convertToDtoList(oldBookingCarriages, BookingCarriageResponse.class));
             }
             if (packingRequestList == null) {
@@ -873,15 +970,13 @@ public class ShipmentService implements IShipmentService {
             if (fileRepoRequestList != null) {
                 List<FileRepo> updatedFileRepos = fileRepoDao.updateEntityFromOtherEntity(convertToEntityList(fileRepoRequestList, FileRepo.class), id, Constants.SHIPMENT);
                 response.setFileRepoList(convertToDtoList(updatedFileRepos, FileRepoResponse.class));
-            }
-            else {
+            } else {
                 response.setFileRepoList(convertToDtoList(fileRepoDao.findByEntityIdAndEntityType(id, Constants.SHIPMENT), FileRepoResponse.class));
             }
             if (notesRequestList != null) {
                 List<Notes> updatedNotes = notesDao.updateEntityFromOtherEntity(convertToEntityList(notesRequestList, Notes.class), id, Constants.SHIPMENT);
                 response.setNotesList(convertToDtoList(updatedNotes, NotesResponse.class));
-            }
-            else {
+            } else {
                 response.setNotesList(convertToDtoList(notesDao.findByEntityIdAndEntityType(id, Constants.SHIPMENT), NotesResponse.class));
             }
 
@@ -991,6 +1086,7 @@ public class ShipmentService implements IShipmentService {
             }
             log.info("Shipment details fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
             ShipmentDetailsResponse response = shipmentDetailsMapper.map(shipmentDetails.get());
+            createShipmentPayload(shipmentDetails.get(), response);
             //containerCountUpdate(shipmentDetails.get(), response);
             return ResponseHelper.buildSuccessResponse(response);
         } catch (Exception e) {
@@ -1062,7 +1158,7 @@ public class ShipmentService implements IShipmentService {
     public ResponseEntity<?> partialUpdate(CommonRequestModel commonRequestModel) throws Exception {
 
         ShipmentPatchRequest shipmentRequest = (ShipmentPatchRequest) commonRequestModel.getData();
-        if(shipmentRequest.getId() == null){
+        if (shipmentRequest.getId() == null) {
             log.error("Request Id is null for update request with Id {}", LoggerHelper.getRequestIdFromMDC());
             throw new Exception("Request Id is null");
         }
@@ -1089,7 +1185,7 @@ public class ShipmentService implements IShipmentService {
 
         try {
             ShipmentDetails entity = oldEntity.get();
-                shipmentDetailsMapper.update(shipmentRequest, entity);
+            shipmentDetailsMapper.update(shipmentRequest, entity);
             entity.setId(oldEntity.get().getId());
             List<Containers> updatedContainers = null;
             if (containerRequestList != null) {
@@ -1175,11 +1271,10 @@ public class ShipmentService implements IShipmentService {
         String lockingUser = shipmentDetails.getLockedBy();
         String currentUser = userContext.getUser().getUsername();
 
-        if(shipmentDetails.getIsLocked()) {
-            if(lockingUser != null && lockingUser.equals(currentUser))
+        if (shipmentDetails.getIsLocked()) {
+            if (lockingUser != null && lockingUser.equals(currentUser))
                 shipmentDetails.setIsLocked(false);
-        }
-        else {
+        } else {
             shipmentDetails.setIsLocked(true);
             shipmentDetails.setLockedBy(currentUser);
         }
@@ -1233,5 +1328,535 @@ public class ShipmentService implements IShipmentService {
                 suffix = StringUtility.getEmptyString();
         }
         return !StringUtils.isEmpty(prefix) ? prefix + suffix : suffix;
+    }
+
+    private V1DataResponse fetchCarrierDetailsFromV1(String mawbAirlineCode) {
+        CommonV1ListRequest request = new CommonV1ListRequest();
+        List<Object> criteria = new ArrayList<>();
+        criteria.addAll(List.of(List.of("AirlineCode"), "=", mawbAirlineCode));
+        request.setCriteriaRequests(criteria);
+        V1DataResponse response = v1Service.fetchCarrierMasterData(request);
+        return response;
+    }
+
+    private void directShipmentMAWBCheck(ShipmentRequest shipmentRequest) {
+        if (StringUtility.isEmpty(shipmentRequest.getMasterBill())) {
+            return;
+        }
+
+        if (!isMAWBNumberValid(shipmentRequest.getMasterBill()))
+            throw new ValidationException("Please enter a valid MAWB number.");
+
+        String mawbAirlineCode = shipmentRequest.getMasterBill().substring(0, 3);
+
+        V1DataResponse v1DataResponse = fetchCarrierDetailsFromV1(mawbAirlineCode);
+        List<CarrierResponse> carrierDetails = jsonHelper.convertValueToList(v1DataResponse.entities, CarrierResponse.class);
+        if (carrierDetails == null || carrierDetails.size()==0)
+                throw new ValidationException("Airline for the entered MAWB Number doesn't exist in Carrier Master");
+
+
+        CarrierResponse correspondingCarrier = carrierDetails.get(0); //carrierDetails.getContent().get(0);
+
+        Boolean isMAWBNumberExist = false;
+        Boolean isCarrierExist = false;
+        if (shipmentRequest.getCarrierDetails() != null)
+            isCarrierExist = true;
+
+        if (isCarrierExist && !shipmentRequest.getCarrierDetails().getShippingLine().equals(correspondingCarrier.getItemValue()))
+            throw new ValidationException("MAWB Number prefix is not matching with entered Flight Carrier");
+
+        ListCommonRequest listMawbRequest = constructListCommonRequest("mawbNumber", shipmentRequest.getMasterBill(), "=");
+        Pair<Specification<MawbStocksLink>, Pageable> mawbStocksLinkPair = fetchData(listMawbRequest, MawbStocksLink.class);
+        Page<MawbStocksLink> mawbStocksLinkPage = mawbStocksLinkDao.findAll(mawbStocksLinkPair.getLeft(), mawbStocksLinkPair.getRight());
+
+        MawbStocksLink mawbStocksLink = null;
+
+        if (mawbStocksLinkPage.getContent() != null && mawbStocksLinkPage.getTotalElements() > 0) {
+            isMAWBNumberExist = true;
+            mawbStocksLink = mawbStocksLinkPage.getContent().get(0);
+        }
+
+        if (!isCarrierExist)
+            shipmentRequest.setCarrierDetails(jsonHelper.convertValue(correspondingCarrier, CarrierDetailRequest.class));
+
+        if (shipmentRequest.getDirection() == "IMP") {
+            return;
+        }
+
+        if (isMAWBNumberExist) {
+            if (mawbStocksLink.getStatus() == "Consumed" && mawbStocksLink.getEntityId() != shipmentRequest.getId()) // If MasterBill number is already Consumed.
+                throw new ValidationException("The MAWB number entered is already consumed. Please enter another MAWB number.");
+        } else {
+            createNewMAWBEntry(shipmentRequest);
+        }
+    }
+
+    private void createNewMAWBEntry(ShipmentRequest shipmentRequest) {
+        MawbStocks mawbStocks = new MawbStocks();
+        mawbStocks.setAirLinePrefix(shipmentRequest.getCarrierDetails().getShippingLine());
+        mawbStocks.setCount("1");
+        mawbStocks.setStartNumber(Long.valueOf(shipmentRequest.getMasterBill().substring(4, 10)));
+        mawbStocks.setFrom(shipmentRequest.getMasterBill());
+        mawbStocks.setTo(shipmentRequest.getMasterBill());
+        mawbStocks.setMawbNumber(shipmentRequest.getMasterBill());
+        mawbStocks.setStatus("Unused");
+        // if(shipmentRequest.getBorrowedFrom()!=null) mawbStocks.setBorrowedFrom(Long.valueOf(shipmentRequest.getBorrowedFrom())); TODO fetch from v1
+        mawbStocks.setHomePort(shipmentRequest.getCarrierDetails().getOriginPort());
+        mawbStocks = mawbStocksDao.save(mawbStocks);
+
+        if (mawbStocks.getId() != null) {
+            var entryForMawbStocksLinkRow = new MawbStocksLink();
+            entryForMawbStocksLinkRow.setParentId(mawbStocks.getId());
+            entryForMawbStocksLinkRow.setSeqNumber(shipmentRequest.getMasterBill().substring(4, 10));
+            entryForMawbStocksLinkRow.setMawbNumber(shipmentRequest.getMasterBill());
+            entryForMawbStocksLinkRow.setStatus("Unused");
+            entryForMawbStocksLinkRow = mawbStocksLinkDao.save(entryForMawbStocksLinkRow);
+        }
+    }
+
+    private Boolean isMAWBNumberValid(String masterBill) {
+        Boolean MAWBNumberValidity = true;
+        if (masterBill.length() == 12) {
+            String mawbSeqNum = masterBill.substring(4, 11);
+            String checkDigit = masterBill.substring(11, 12);
+            Long imawbSeqNum = 0L;
+            Long icheckDigit = 0L;
+            if (areAllCharactersDigits(masterBill, 4, 12)) { // masterBill.substring(4, 12).matches("\\d+")
+                imawbSeqNum = Long.valueOf(mawbSeqNum);
+                icheckDigit = Long.valueOf(checkDigit);
+                if (imawbSeqNum % 7 != icheckDigit)
+                    MAWBNumberValidity = false;
+            } else MAWBNumberValidity = false;
+        } else MAWBNumberValidity = false;
+        return MAWBNumberValidity;
+    }
+
+    private boolean areAllCharactersDigits(String input, int startIndex, int endIndex) {
+        String substring = input.substring(startIndex, endIndex);
+        for (int i = 0; i < substring.length(); i++) {
+            if (!Character.isDigit(substring.charAt(i))) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    @Transactional
+    public ResponseEntity<?> completeV1ShipmentCreateAndUpdate(CommonRequestModel commonRequestModel) throws Exception {
+
+        ShipmentRequest shipmentRequest = (ShipmentRequest) commonRequestModel.getData();
+
+        List<BookingCarriageRequest> bookingCarriageRequestList = shipmentRequest.getBookingCarriagesList();
+        List<PackingRequest> packingRequestList = shipmentRequest.getPackingList();
+        AdditionalDetailRequest additionalDetailRequest = shipmentRequest.getAdditionalDetail();
+        List<ContainerRequest> containerRequestList = shipmentRequest.getContainersList();
+        List<ELDetailsRequest> elDetailsRequestList = shipmentRequest.getElDetailsList();
+        List<EventsRequest> eventsRequestList = shipmentRequest.getEventsList();
+        List<FileRepoRequest> fileRepoRequestList = shipmentRequest.getFileRepoList();
+        List<JobRequest> jobRequestList = shipmentRequest.getJobsList();
+        List<NotesRequest> notesRequestList = shipmentRequest.getNotesList();
+        List<ReferenceNumbersRequest> referenceNumbersRequestList = shipmentRequest.getReferenceNumbersList();
+        List<RoutingsRequest> routingsRequestList = shipmentRequest.getRoutingsList();
+        List<ServiceDetailsRequest> serviceDetailsRequestList = shipmentRequest.getServicesList();
+        CarrierDetailRequest carrierDetailRequest = shipmentRequest.getCarrierDetails();
+
+        // TODO- implement Validation logic
+        UUID guid = shipmentRequest.getGuid();
+        Optional<ShipmentDetails> oldEntity = shipmentDao.findByGuid(guid);
+
+        List<Long> tempConsolIds = new ArrayList<>();
+
+        List<ConsolidationDetailsRequest> updatedConsolidationRequest = new ArrayList<>();
+        List<ConsolidationDetailsRequest> consolidationDetailsRequests = shipmentRequest.getConsolidationList();
+        if(consolidationDetailsRequests != null && !consolidationDetailsRequests.isEmpty()) {
+            for(ConsolidationDetailsRequest consolidation : consolidationDetailsRequests) {
+                if(consolidation.getId() != null) {
+                    tempConsolIds.add(consolidation.getId());
+                }
+            }
+        }
+        shipmentRequest.setConsolidationList(updatedConsolidationRequest);
+
+        try {
+            List<Containers> oldContainers = null;
+            Long id = null;
+            ShipmentDetails oldShipment = null;
+            if(oldEntity != null && oldEntity.isPresent()) {
+                oldShipment = oldEntity.get();
+                id = oldEntity.get().getId();
+                oldContainers = oldEntity.get().getContainersList();
+            }
+            ShipmentDetails entity = objectMapper.convertValue(shipmentRequest, ShipmentDetails.class);
+            entity.setId(id);
+            List<Containers> updatedContainers = null;
+            if (containerRequestList != null) {
+                updatedContainers = containerDao.updateEntityFromShipmentConsole(convertToEntityList(containerRequestList, Containers.class), null, oldContainers);
+            } else {
+                updatedContainers = oldEntity.get().getContainersList();
+            }
+            entity.setContainersList(updatedContainers);
+
+            AdditionalDetails updatedAdditionalDetails = null;
+            if (additionalDetailRequest != null) {
+                AdditionalDetails oldAdditionalDetails;
+
+                if(oldShipment != null && oldShipment.getAdditionalDetails() != null) {
+                    oldAdditionalDetails = oldEntity.get().getAdditionalDetails();
+                    additionalDetailRequest.setId(oldAdditionalDetails.getId());
+                }
+                updatedAdditionalDetails = additionalDetailDao.updateEntityFromShipment(convertToClass(additionalDetailRequest, AdditionalDetails.class), id);
+                entity.setAdditionalDetails(updatedAdditionalDetails);
+            }
+            else {
+                entity.setAdditionalDetails(oldEntity.get().getAdditionalDetails());
+            }
+
+            CarrierDetails updatedCarrierDetails = null;
+            if (carrierDetailRequest != null) {
+                CarrierDetails oldCarrierDetails;
+
+                if(oldShipment != null && oldShipment.getCarrierDetails() != null) {
+                    oldCarrierDetails = oldEntity.get().getCarrierDetails();
+                    carrierDetailRequest.setId(oldCarrierDetails.getId());
+                }
+                updatedCarrierDetails = carrierDao.updateEntityFromShipmentConsole(convertToClass(carrierDetailRequest, CarrierDetails.class));
+                entity.setCarrierDetails(updatedCarrierDetails);
+            }
+            else {
+                entity.setCarrierDetails(oldEntity.get().getCarrierDetails());
+            }
+
+            if(entity.getClient() == null)
+                entity.setClient(oldEntity.get().getClient());
+            if(entity.getConsignee() == null)
+                entity.setConsignee(oldEntity.get().getConsignee());
+            if(entity.getConsigner() == null)
+                entity.setConsigner(oldEntity.get().getConsigner());
+            if(entity.getPickupDetails() == null)
+                entity.setPickupDetails(oldEntity.get().getPickupDetails());
+            if(entity.getDeliveryDetails() == null)
+                entity.setDeliveryDetails(oldEntity.get().getDeliveryDetails());
+
+            List<BookingCarriage> oldBookingCarriages = null;
+            List<Packing> oldPackings = null;
+            List<ELDetails> oldELDetails = null;
+            List<Events> oldEvents = null;
+            List<Jobs> oldJobs = null;
+            List<ReferenceNumbers> oldReferenceNumbers= null;
+            List<Routings> oldRoutings= null;
+            List<ServiceDetails> oldServiceDetails = null;
+            List<FileRepo> oldFileRepoList = null;
+            List<Notes> oldNoteList = null;
+            if(oldShipment != null) {
+                oldBookingCarriages = oldEntity.get().getBookingCarriagesList();
+                oldPackings = oldEntity.get().getPackingList();
+                oldELDetails = oldEntity.get().getElDetailsList();
+                oldEvents = oldEntity.get().getEventsList();
+                oldJobs = oldEntity.get().getJobsList();
+                oldReferenceNumbers = oldEntity.get().getReferenceNumbersList();
+                oldRoutings = oldEntity.get().getRoutingsList();
+                oldServiceDetails = oldEntity.get().getServicesList();
+                oldFileRepoList = oldEntity.get().getFileRepoList();
+                oldNoteList = oldEntity.get().getNotesList();
+            }
+
+            if(id == null) {
+                entity = shipmentDao.save(entity);
+            } else {
+                entity = shipmentDao.update(entity);
+            }
+
+            attachConsolidations(entity.getId(), tempConsolIds);
+
+            ShipmentDetailsResponse response = shipmentDetailsMapper.map(entity);
+
+            if(bookingCarriageRequestList == null) {
+                response.setBookingCarriagesList(convertToDtoList(oldBookingCarriages, BookingCarriageResponse.class));
+            }
+            if (packingRequestList == null) {
+                response.setPackingList(convertToDtoList(oldPackings, PackingResponse.class));
+            }
+            if (elDetailsRequestList == null) {
+                response.setElDetailsList(convertToDtoList(oldELDetails, ELDetailsResponse.class));
+            }
+            if (eventsRequestList == null) {
+                response.setEventsList(convertToDtoList(oldEvents, EventsResponse.class));
+            }
+            if (jobRequestList == null) {
+                response.setJobsList(convertToDtoList(oldJobs, JobResponse.class));
+            }
+            if (referenceNumbersRequestList == null) {
+                response.setReferenceNumbersList(convertToDtoList(oldReferenceNumbers, ReferenceNumbersResponse.class));
+            }
+            if (routingsRequestList == null) {
+                response.setRoutingsList(convertToDtoList(oldRoutings, RoutingsResponse.class));
+            }
+            if (serviceDetailsRequestList == null) {
+                response.setServicesList(convertToDtoList(oldServiceDetails, ServiceDetailsResponse.class));
+            }
+
+            if (bookingCarriageRequestList != null) {
+                List<BookingCarriage> updatedBookingCarriages = bookingCarriageDao.updateEntityFromShipment(convertToEntityList(bookingCarriageRequestList, BookingCarriage.class), id, oldBookingCarriages);
+                response.setBookingCarriagesList(convertToDtoList(updatedBookingCarriages, BookingCarriageResponse.class));
+            }
+            if (packingRequestList != null) {
+                List<Packing> updatedPackings = packingDao.updateEntityFromShipment(convertToEntityList(packingRequestList, Packing.class), id, oldPackings);
+                response.setPackingList(convertToDtoList(updatedPackings, PackingResponse.class));
+            }
+            if (elDetailsRequestList != null) {
+                List<ELDetails> updatedELDetails = elDetailsDao.updateEntityFromShipment(convertToEntityList(elDetailsRequestList, ELDetails.class), id, oldELDetails);
+                response.setElDetailsList(convertToDtoList(updatedELDetails, ELDetailsResponse.class));
+            }
+            if (eventsRequestList != null) {
+                List<Events> updatedEvents = eventDao.updateEntityFromOtherEntity(convertToEntityList(eventsRequestList, Events.class), id, Constants.SHIPMENT, oldEvents);
+                response.setEventsList(convertToDtoList(updatedEvents, EventsResponse.class));
+            }
+            if (jobRequestList != null) {
+                List<Jobs> updatedJobs = jobDao.updateEntityFromShipment(convertToEntityList(jobRequestList, Jobs.class), id, oldJobs);
+                response.setJobsList(convertToDtoList(updatedJobs, JobResponse.class));
+            }
+            if (referenceNumbersRequestList != null) {
+                List<ReferenceNumbers> updatedReferenceNumbers = referenceNumbersDao.updateEntityFromShipment(convertToEntityList(referenceNumbersRequestList, ReferenceNumbers.class), id, oldReferenceNumbers);
+                response.setReferenceNumbersList(convertToDtoList(updatedReferenceNumbers, ReferenceNumbersResponse.class));
+            }
+            if (routingsRequestList != null) {
+                List<Routings> updatedRoutings = routingsDao.updateEntityFromShipment(convertToEntityList(routingsRequestList, Routings.class), id, oldRoutings);
+                response.setRoutingsList(convertToDtoList(updatedRoutings, RoutingsResponse.class));
+            }
+            if (serviceDetailsRequestList != null) {
+                List<ServiceDetails> updatedServiceDetails = serviceDetailsDao.updateEntityFromShipment(convertToEntityList(serviceDetailsRequestList, ServiceDetails.class), id, oldServiceDetails);
+                response.setServicesList(convertToDtoList(updatedServiceDetails, ServiceDetailsResponse.class));
+            }
+            if (fileRepoRequestList != null) {
+                List<FileRepo> updatedFileRepos = fileRepoDao.updateEntityFromOtherEntity(convertToEntityList(fileRepoRequestList, FileRepo.class), id, Constants.SHIPMENT, oldFileRepoList);
+                response.setFileRepoList(convertToDtoList(updatedFileRepos, FileRepoResponse.class));
+            }
+            else {
+                response.setFileRepoList(convertToDtoList(fileRepoDao.findByEntityIdAndEntityType(id, Constants.SHIPMENT), FileRepoResponse.class));
+            }
+            if (notesRequestList != null) {
+                List<Notes> updatedNotes = notesDao.updateEntityFromOtherEntity(convertToEntityList(notesRequestList, Notes.class), id, Constants.SHIPMENT, oldNoteList);
+                response.setNotesList(convertToDtoList(updatedNotes, NotesResponse.class));
+            }
+            else {
+                response.setNotesList(convertToDtoList(notesDao.findByEntityIdAndEntityType(id, Constants.SHIPMENT), NotesResponse.class));
+            }
+
+            return ResponseHelper.buildSuccessResponse(response);
+        } catch (ExecutionException e) {
+            String responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
+
+    private void createShipmentPayload (ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse) {
+        this.addAllMasterDatas(shipmentDetails, shipmentDetailsResponse);
+        this.addAllUnlocationDatas(shipmentDetails, shipmentDetailsResponse);
+        this.addDedicatedMasterData(shipmentDetails, shipmentDetailsResponse);
+    }
+    private void addAllMasterDatas (ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse) {
+        shipmentDetailsResponse.setMasterData(addMasterData(shipmentDetailsResponse, ShipmentDetails.class));
+        shipmentDetailsResponse.getAdditionalDetails().setMasterData(addMasterData(shipmentDetailsResponse.getAdditionalDetails(), AdditionalDetails.class));
+        shipmentDetailsResponse.getCarrierDetails().setMasterData(addMasterData(shipmentDetailsResponse.getCarrierDetails(), CarrierDetails.class));
+    }
+
+    private Map<String, String> addMasterData (IRunnerResponse entityPayload, Class mainClass) {
+        List<MasterListRequest> requests = new ArrayList<>();
+        Map<String, String> fieldNameKeyMap = new HashMap<>();
+        Map<String, String> keyMasterDataMap = new HashMap<>();
+        Map<String, String> fieldNameMasterDataMap = new HashMap<>();
+        for(Field field : mainClass.getDeclaredFields())
+        {
+            if (field.isAnnotationPresent(MasterData.class))
+            {
+                try {
+                    Field field1 = Class.forName(entityPayload.getClass().getName()).getDeclaredField(field.getName());
+                    field1.setAccessible(true);
+                    String itemValue = (String) field1.get(entityPayload);
+                    String itemType = field.getDeclaredAnnotation(MasterData.class).type().getDescription();
+                    String itemTypeName = field.getDeclaredAnnotation(MasterData.class).type().name();
+                    String cascadeField = field.getDeclaredAnnotation(MasterData.class).cascade();
+                    String cascade = null;
+
+                    if(!cascadeField.equals("")){
+                        Field field2 = entityPayload.getClass().getDeclaredField(cascadeField);
+                        field2.setAccessible(true);
+                        cascade = (String) field2.get(entityPayload);
+                    }
+                    if(itemValue != null) {
+                        requests.add(MasterListRequest.builder().ItemType(itemType).ItemValue(itemValue).Cascade(cascade).build());
+                        String key = itemValue + '#' + itemTypeName;
+                        fieldNameKeyMap.put(field.getName(), key);
+                    }
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }
+        if(requests.size() > 0) {
+            V1DataResponse response = v1Service.fetchMultipleMasterData(requests);
+            List<EntityTransferMasterLists> masterLists = jsonHelper.convertValueToList(response.entities, EntityTransferMasterLists.class);
+            masterLists.forEach(masterData -> {
+                String key = masterData.ItemValue + '#' + MasterDataType.masterData(masterData.ItemType).name();
+                keyMasterDataMap.put(key, masterData.getItemDescription());
+            });
+            fieldNameKeyMap.forEach((key, value) -> {
+                if(keyMasterDataMap.containsKey(value))
+                    fieldNameMasterDataMap.put(key, keyMasterDataMap.get(value));
+            });
+            return fieldNameMasterDataMap;
+        }
+        return null;
+    }
+
+    private void addAllUnlocationDatas (ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse) {
+        shipmentDetailsResponse.getAdditionalDetails().setUnlocationData(addUnlocationData(shipmentDetailsResponse.getAdditionalDetails(), AdditionalDetails.class));
+        shipmentDetailsResponse.getCarrierDetails().setUnlocationData(addUnlocationData(shipmentDetailsResponse.getCarrierDetails(), CarrierDetails.class));
+    }
+
+    private Map<String, String> addUnlocationData (IRunnerResponse entityPayload, Class baseClass) {
+        Map<String, String> fieldNameUnlocationDataMap = new HashMap<>();
+        Map<String, String> keyUnlocationDataMap = new HashMap<>();
+        Map<String, String> fieldNameKeyMap = new HashMap<>();
+        List<String> locCodesList = new ArrayList<>();
+        for(Field field  : baseClass.getDeclaredFields())
+        {
+            if (field.isAnnotationPresent(UnlocationData.class))
+            {
+                try {
+                    Field field1 = entityPayload.getClass().getDeclaredField(field.getName());
+                    field1.setAccessible(true);
+                    String locCode = (String) field1.get(entityPayload);
+                    if(locCode != null && !locCode.equals("")) {
+                        locCodesList.add(locCode);
+                        fieldNameKeyMap.put(field.getName(), locCode);
+                    }
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }
+        if(locCodesList.size() > 0){
+            CommonV1ListRequest request = new CommonV1ListRequest();
+            List<Object> criteria = new ArrayList<>();
+            List<Object> field = new ArrayList<>(List.of(EntityTransferConstants.UNLOCATION_CODE));
+            String operator = Operators.IN.getValue();
+            criteria.addAll(List.of(field, operator, List.of(locCodesList)));
+            request.setCriteriaRequests(criteria);
+            V1DataResponse response = v1Service.fetchUnlocation(request);
+
+            List<EntityTransferUnLocations> unLocationsList = jsonHelper.convertValueToList(response.entities, EntityTransferUnLocations.class);
+            unLocationsList.forEach(unloc -> {
+                keyUnlocationDataMap.put(unloc.LocCode, unloc.NameWoDiacritics);
+            });
+            fieldNameKeyMap.forEach((key, value) -> {
+                if(keyUnlocationDataMap.containsKey(value))
+                    fieldNameUnlocationDataMap.put(key, keyUnlocationDataMap.get(value));
+            });
+            return fieldNameUnlocationDataMap;
+        }
+        return null;
+    }
+
+    private void addDedicatedMasterData (ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse) {
+        shipmentDetailsResponse.getCarrierDetails().setCarrierMasterData(carrierMasterData(shipmentDetailsResponse.getCarrierDetails(), CarrierDetails.class));
+        shipmentDetailsResponse.setCurrenciesMasterData(currencyMasterData(shipmentDetails, ShipmentDetails.class));
+    }
+
+    private Map<String, String> carrierMasterData (IRunnerResponse entityPayload, Class baseClass) {
+        Map<String, String> fieldNameCarrierDataMap = new HashMap<>();
+        Map<String, String> keyCarrierDataMap = new HashMap<>();
+        Map<String, String> fieldNameKeyMap = new HashMap<>();
+        List<String> itemValueList = new ArrayList<>();
+        log.info("CarrierMasterData");
+        for(Field field  : baseClass.getDeclaredFields())
+        {
+            if (field.isAnnotationPresent(DedicatedMasterData.class) && field.getDeclaredAnnotation(DedicatedMasterData.class).type().equals(Constants.CARRIER_MASTER_DATA))
+            {
+                try {
+                    log.info("CarrierField: "+field.getName());
+                    Field field1 = entityPayload.getClass().getDeclaredField(field.getName());
+                    field1.setAccessible(true);
+                    String itemValue = (String) field1.get(entityPayload);
+                    if(itemValue != null && !itemValue.equals("")) {
+                        itemValueList.add(itemValue);
+                        fieldNameKeyMap.put(field.getName(), itemValue);
+                    }
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }
+        if(itemValueList.size() > 0){
+            log.info("CarrierList: "+itemValueList);
+            CommonV1ListRequest request = new CommonV1ListRequest();
+            List<Object> criteria = new ArrayList<>();
+            List<Object> field = new ArrayList<>(List.of(EntityTransferConstants.ITEM_VALUE));
+            String operator = Operators.IN.getValue();
+            criteria.addAll(List.of(field, operator, List.of(itemValueList)));
+            request.setCriteriaRequests(criteria);
+            V1DataResponse response = v1Service.fetchCarrierMasterData(request);
+
+            List<EntityTransferCarrier> carrierList = jsonHelper.convertValueToList(response.entities, EntityTransferCarrier.class);
+            carrierList.forEach(carrier -> {
+                keyCarrierDataMap.put(carrier.getItemValue(), carrier.ItemDescription);
+            });
+            fieldNameKeyMap.forEach((key, value) -> {
+                if(keyCarrierDataMap.containsKey(value))
+                    fieldNameCarrierDataMap.put(key, keyCarrierDataMap.get(value));
+            });
+            return fieldNameCarrierDataMap;
+        }
+        return null;
+    }
+
+    private Map<String, String> currencyMasterData (BaseEntity entityPayload, Class baseClass) {
+        Map<String, String> fieldNameCurrencyDataMap = new HashMap<>();
+        Map<String, String> keyCurrencyDataMap = new HashMap<>();
+        Map<String, String> fieldNameKeyMap = new HashMap<>();
+        List<String> currencyCodeList = new ArrayList<>();
+        log.info("CurrencyMasterData");
+        for(Field field  : baseClass.getDeclaredFields())
+        {
+            if (field.isAnnotationPresent(DedicatedMasterData.class) && field.getDeclaredAnnotation(DedicatedMasterData.class).type().equals(Constants.CURRENCY_MASTER_DATA))
+            {
+                try {
+                    log.info("CurrencyField: "+field.getName());
+                    Field field1 = entityPayload.getClass().getDeclaredField(field.getName());
+                    field1.setAccessible(true);
+                    String currencyCode = (String) field1.get(entityPayload);
+                    if(currencyCode != null && !currencyCode.equals("")) {
+                        currencyCodeList.add(currencyCode);
+                        fieldNameKeyMap.put(field.getName(), currencyCode);
+                    }
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }
+        if(currencyCodeList.size() > 0){
+            log.info("CurrencyList: "+currencyCodeList);
+            CommonV1ListRequest request = new CommonV1ListRequest();
+            List<Object> criteria = new ArrayList<>();
+            List<Object> field = new ArrayList<>(List.of(EntityTransferConstants.CURRENCY_CODE));
+            String operator = Operators.IN.getValue();
+            criteria.addAll(List.of(field, operator, List.of(currencyCodeList)));
+            request.setCriteriaRequests(criteria);
+            V1DataResponse response = v1Service.fetchCurrenciesData(request);
+
+            List<EntityTransferCurrency> currencyList = jsonHelper.convertValueToList(response.entities, EntityTransferCurrency.class);
+            currencyList.forEach(currency -> {
+                keyCurrencyDataMap.put(currency.getCurrenyCode(), currency.CurrenyDescription);
+            });
+            fieldNameKeyMap.forEach((key, value) -> {
+                if(keyCurrencyDataMap.containsKey(value))
+                    fieldNameCurrencyDataMap.put(key, keyCurrencyDataMap.get(value));
+            });
+            return fieldNameCurrencyDataMap;
+        }
+        return null;
     }
 }

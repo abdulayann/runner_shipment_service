@@ -1,7 +1,7 @@
 package com.dpw.runner.shipment.services.service.v1;
 
-import com.dpw.runner.shipment.services.dto.v1.request.SendConsolidationRequest;
-import com.dpw.runner.shipment.services.dto.v1.request.SendShipmentRequest;
+import com.dpw.runner.shipment.services.dto.v1.request.CreateConsolidationTaskRequest;
+import com.dpw.runner.shipment.services.dto.v1.request.CreateShipmentTaskRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.SendEntityResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.TenantIdResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
@@ -94,7 +94,11 @@ public interface IV1Service {
     V1DataResponse listCousinBranches(Object request);
     V1DataResponse listCousinBranchesWithoutCurrent(Object request);
     TenantIdResponse tenantByGuid(Object request);
-    SendEntityResponse sendConsolidationTask(SendConsolidationRequest request);
-    SendEntityResponse sendShipmentTask(SendShipmentRequest request);
+    V1DataResponse importFlightSchedules(Object request);
+    V1DataResponse fetchFlightStatus(Object request);
+    V1DataResponse importSailingSchedules(Object request);
+    V1DataResponse listSailingSchedule(Object request);
+    SendEntityResponse sendConsolidationTask(CreateConsolidationTaskRequest request);
+    SendEntityResponse sendShipmentTask(CreateShipmentTaskRequest request);
 
 }

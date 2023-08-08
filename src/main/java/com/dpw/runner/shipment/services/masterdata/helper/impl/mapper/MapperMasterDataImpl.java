@@ -1,8 +1,8 @@
 package com.dpw.runner.shipment.services.masterdata.helper.impl.mapper;
 
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
-import com.dpw.runner.shipment.services.dto.v1.request.SendConsolidationRequest;
-import com.dpw.runner.shipment.services.dto.v1.request.SendShipmentRequest;
+import com.dpw.runner.shipment.services.dto.v1.request.CreateConsolidationTaskRequest;
+import com.dpw.runner.shipment.services.dto.v1.request.CreateShipmentTaskRequest;
 import com.dpw.runner.shipment.services.masterdata.dto.MasterData;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.masterdata.helper.IMasterDataService;
@@ -266,12 +266,32 @@ public class MapperMasterDataImpl implements IMasterDataService {
     }
 
     @Override
-    public DependentServiceResponse sendConsolidationTask(SendConsolidationRequest request) {
+    public DependentServiceResponse sendConsolidationTask(CreateConsolidationTaskRequest request) {
         return null;
     }
 
     @Override
-    public DependentServiceResponse sendShipmentTask(SendShipmentRequest request) {
+    public DependentServiceResponse sendShipmentTask(CreateShipmentTaskRequest request) {
+        return null;
+    }
+
+    @Override
+    public DependentServiceResponse importFlightSchedules(Object request) {
+        return null;
+    }
+
+    @Override
+    public DependentServiceResponse fetchFlightStatus(Object request) {
+        return null;
+    }
+
+    @Override
+    public DependentServiceResponse importSailingSchedules(Object request) {
+        return null;
+    }
+
+    @Override
+    public DependentServiceResponse listSailingSchedule(Object request) {
         return null;
     }
 

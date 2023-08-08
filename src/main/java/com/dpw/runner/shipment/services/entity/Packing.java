@@ -3,6 +3,10 @@ package com.dpw.runner.shipment.services.entity;
 import javax.persistence.*;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
+import com.dpw.runner.shipment.services.utils.DedicatedMasterData;
+import com.dpw.runner.shipment.services.utils.MasterData;
 import lombok.*;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Where;
@@ -36,6 +40,7 @@ public class Packing extends MultiTenancy {
     private String packs;
 
     @Column(name = "packs_type")
+    @MasterData(type = MasterDataType.PACKS_UNIT)
     private String packsType;
 
     @Column(name = "container_number")
@@ -120,12 +125,14 @@ public class Packing extends MultiTenancy {
     private String referenceNumber;
 
     @Column(name = "dg_class_id")
+    @MasterData(type = MasterDataType.DG_CLASS)
     private String DGClass;
 
     @Column(name = "hazardous")
     private Boolean hazardous;
 
     @Column(name = "commodity_id")
+    @DedicatedMasterData(type = Constants.COMMODITY_TYPE_MASTER_DATA)
     private Long commodityId;
 
     @Column(name = "net_weight")

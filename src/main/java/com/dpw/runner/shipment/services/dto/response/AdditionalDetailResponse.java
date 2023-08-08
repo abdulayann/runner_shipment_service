@@ -8,7 +8,7 @@ import lombok.Data;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.Date;
+import java.util.Map;
 import java.util.UUID;
 
 @Data
@@ -106,5 +106,7 @@ public class AdditionalDetailResponse implements IRunnerResponse {
     private PartiesResponse borrowedFrom;
     private PartiesResponse sendingAgent;
     private PartiesResponse receivingAgent;
+    Map<String, String> masterData;
+    Map<String, String> unlocationData;
 
 }

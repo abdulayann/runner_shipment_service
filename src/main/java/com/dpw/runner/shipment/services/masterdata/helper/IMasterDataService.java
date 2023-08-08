@@ -1,8 +1,8 @@
 package com.dpw.runner.shipment.services.masterdata.helper;
 
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
-import com.dpw.runner.shipment.services.dto.v1.request.SendConsolidationRequest;
-import com.dpw.runner.shipment.services.dto.v1.request.SendShipmentRequest;
+import com.dpw.runner.shipment.services.dto.v1.request.CreateConsolidationTaskRequest;
+import com.dpw.runner.shipment.services.dto.v1.request.CreateShipmentTaskRequest;
 import com.dpw.runner.shipment.services.masterdata.dto.MasterData;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 
@@ -99,8 +99,12 @@ public interface IMasterDataService {
     DependentServiceResponse listCousinBranches(Object request);
     DependentServiceResponse listCousinBranchesWithoutCurrent(Object request);
     DependentServiceResponse tenantByGuid(Object request);
-    DependentServiceResponse sendConsolidationTask(SendConsolidationRequest request);
-    DependentServiceResponse sendShipmentTask(SendShipmentRequest request);
+    DependentServiceResponse importFlightSchedules(Object request);
+    DependentServiceResponse fetchFlightStatus(Object request);
+    DependentServiceResponse importSailingSchedules(Object request);
+    DependentServiceResponse listSailingSchedule(Object request);
+    DependentServiceResponse sendConsolidationTask(CreateConsolidationTaskRequest request);
+    DependentServiceResponse sendShipmentTask(CreateShipmentTaskRequest request);
 
 
 }

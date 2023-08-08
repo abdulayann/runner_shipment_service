@@ -242,6 +242,26 @@ public class MasterDataImpl implements IMasterDataService {
     }
 
     @Override
+    public ResponseEntity<?> importFlightSchedules(CommonRequestModel commonRequestModel) {
+        return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().importFlightSchedules(commonRequestModel.getDependentData()));
+    }
+
+    @Override
+    public ResponseEntity<?> fetchFlightStatus(CommonRequestModel commonRequestModel) {
+        return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().fetchFlightStatus(commonRequestModel.getDependentData()));
+    }
+
+    @Override
+    public ResponseEntity<?> importSailingSchedules(CommonRequestModel commonRequestModel) {
+        return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().importSailingSchedules(commonRequestModel.getDependentData()));
+    }
+
+    @Override
+    public ResponseEntity<?> listSailingSchedule(CommonRequestModel commonRequestModel) {
+        return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().listSailingSchedule(commonRequestModel.getDependentData()));
+    }
+
+    @Override
     public CompletableFuture<ResponseEntity<?>> listAsync(CommonRequestModel commonRequestModel) {
         return null;
     }
