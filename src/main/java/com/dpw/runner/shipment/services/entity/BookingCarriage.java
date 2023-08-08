@@ -23,11 +23,11 @@ import java.time.LocalDateTime;
 @Where(clause = "is_deleted = false")
 public class BookingCarriage extends MultiTenancy {
 
-    @Column(name = "pol_id")
-    private Long polId;
+    @Column(name = "port_of_loading")
+    private String portOfLoading;
 
-    @Column(name = "pod_id")
-    private Long podId;
+    @Column(name = "port_of_discharge")
+    private String portOfDischarge;
 
     @Column(name = "eta")
     private LocalDateTime eta;
@@ -50,12 +50,4 @@ public class BookingCarriage extends MultiTenancy {
     @Column(name = "shipment_id")
     private Long shipmentId;
 
-    @Column(name = "vessel_id")
-    private Long vesselId;
-
-    @Column(name = "booking_id")
-    private Long bookingId;
-
-    @Column(name = "is_deleted")
-    private Boolean isDeleted = Boolean.FALSE;
 }

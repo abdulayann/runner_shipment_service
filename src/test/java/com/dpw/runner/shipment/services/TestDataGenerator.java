@@ -427,8 +427,8 @@ public class TestDataGenerator {
         List<BookingCarriageRequest> bookingCarriageRequests = new ArrayList<>();
         for (int i = 0; i < count; i++) {
             int random = new Random().nextInt(10);
-            bookingCarriageRequests.add(mapper.getRequest(BookingCarriage.builder().vesselId((long) random)
-                    .podId((long) random).podId((long) random).eta(LocalDateTime.now()).etd(LocalDateTime.now())
+            bookingCarriageRequests.add(mapper.getRequest(BookingCarriage.builder()
+                    .eta(LocalDateTime.now()).etd(LocalDateTime.now())
                     .vessel(generateString(5)).voyage(generateString(5))
                     .carriageType(CARRIAGE_TYPES.get(new Random().nextInt(10) % CARRIAGE_TYPES.size()))
                     .build()));

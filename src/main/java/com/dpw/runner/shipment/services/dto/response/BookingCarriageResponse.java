@@ -10,11 +10,9 @@ import java.util.UUID;
 public class BookingCarriageResponse implements IRunnerResponse {
     private Long id;
     private UUID guid;
-    private Long bookingId;
     private Long shipmentId;
-    private Long vesselId;
-    private Long polId;
-    private Long podId;
+    private String portOfLoading;
+    private String portOfDischarge;
     private LocalDateTime eta;
     private LocalDateTime etd;
     private String vessel;
