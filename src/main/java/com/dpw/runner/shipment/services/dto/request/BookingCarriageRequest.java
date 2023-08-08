@@ -16,11 +16,9 @@ import java.time.LocalDateTime;
 @Builder
 public class BookingCarriageRequest extends CommonRequest implements IRunnerRequest {
     private Long id;
-    private Long bookingId;
     private Long shipmentId;
-    private Long vesselId;
-    private Long polId;
-    private Long podId;
+    private String portOfLoading;
+    private String portOfDischarge;
     private LocalDateTime eta;
     private LocalDateTime etd;
     private String vessel;
