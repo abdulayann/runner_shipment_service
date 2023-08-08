@@ -857,4 +857,38 @@ public class MasterDataController {
         }
         return (ResponseEntity<DependentServiceResponse>) ResponseHelper.buildFailedResponse(responseMsg);
     }
+
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = ShipmentConstants.LIST_SUCCESSFUL),
+            @ApiResponse(code = 404, message = Constants.NO_DATA, response = DependentServiceResponse.class)
+    })
+    @PostMapping(MasterDataConstants.TENANT + MasterDataConstants.TENANT_NAME_BY_ID)
+    public ResponseEntity<DependentServiceResponse> tenantNameByid(@RequestBody @Valid Object request) {
+        String responseMsg;
+        try {
+            return (ResponseEntity<DependentServiceResponse>) masterDataService.tenantNameByTenantId(CommonRequestModel.buildDependentDataRequest(request));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+        }
+        return (ResponseEntity<DependentServiceResponse>) ResponseHelper.buildFailedResponse(responseMsg);
+    }
+
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = ShipmentConstants.LIST_SUCCESSFUL),
+            @ApiResponse(code = 404, message = Constants.NO_DATA, response = DependentServiceResponse.class)
+    })
+    @PostMapping(MasterDataConstants.ORGANIZATION + MasterDataConstants.ADDRESS_LIST)
+    public ResponseEntity<DependentServiceResponse> addressList(@RequestBody @Valid Object request) {
+        String responseMsg;
+        try {
+            return (ResponseEntity<DependentServiceResponse>) masterDataService.addressList(CommonRequestModel.buildDependentDataRequest(request));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+        }
+        return (ResponseEntity<DependentServiceResponse>) ResponseHelper.buildFailedResponse(responseMsg);
+    }
 }

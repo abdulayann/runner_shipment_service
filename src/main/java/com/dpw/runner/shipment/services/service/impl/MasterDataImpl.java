@@ -262,6 +262,16 @@ public class MasterDataImpl implements IMasterDataService {
     }
 
     @Override
+    public ResponseEntity<?> addressList(CommonRequestModel commonRequestModel) {
+        return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().addressList(commonRequestModel.getDependentData()));
+    }
+
+    @Override
+    public ResponseEntity<?> tenantNameByTenantId(CommonRequestModel commonRequestModel) {
+        return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().tenantNameByTenantId(commonRequestModel.getDependentData()));
+    }
+
+    @Override
     public CompletableFuture<ResponseEntity<?>> listAsync(CommonRequestModel commonRequestModel) {
         return null;
     }

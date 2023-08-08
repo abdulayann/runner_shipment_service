@@ -105,6 +105,8 @@ public interface IMasterDataService {
     DependentServiceResponse listSailingSchedule(Object request);
     DependentServiceResponse sendConsolidationTask(CreateConsolidationTaskRequest request);
     DependentServiceResponse sendShipmentTask(CreateShipmentTaskRequest request);
+    DependentServiceResponse addressList(Object request);
+    DependentServiceResponse tenantNameByTenantId(Object request);
 
 
 }

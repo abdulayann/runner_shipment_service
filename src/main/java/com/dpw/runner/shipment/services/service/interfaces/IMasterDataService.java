@@ -91,4 +91,6 @@ public interface IMasterDataService extends ICommonService{
     ResponseEntity<?> fetchFlightStatus(CommonRequestModel commonRequestModel);
     ResponseEntity<?> importSailingSchedules(CommonRequestModel commonRequestModel);
     ResponseEntity<?> listSailingSchedule(CommonRequestModel commonRequestModel);
+    ResponseEntity<?> addressList(CommonRequestModel commonRequestModel);
+    ResponseEntity<?> tenantNameByTenantId(CommonRequestModel commonRequestModel);
 }
