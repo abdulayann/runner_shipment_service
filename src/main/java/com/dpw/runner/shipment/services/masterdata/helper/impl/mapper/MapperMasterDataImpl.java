@@ -276,6 +276,16 @@ public class MapperMasterDataImpl implements IMasterDataService {
     }
 
     @Override
+    public DependentServiceResponse addressList(Object request) {
+        return null;
+    }
+
+    @Override
+    public DependentServiceResponse tenantNameByTenantId(Object request) {
+        return null;
+    }
+
+    @Override
     public DependentServiceResponse importFlightSchedules(Object request) {
         return null;
     }

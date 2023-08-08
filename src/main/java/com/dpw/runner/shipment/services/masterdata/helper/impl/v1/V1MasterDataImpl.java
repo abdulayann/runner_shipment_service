@@ -358,6 +358,19 @@ public class V1MasterDataImpl implements IMasterDataService {
     }
 
     @Override
+    public DependentServiceResponse addressList(Object request) {
+        V1DataResponse v1DataResponse = v1Service.addressList(request);
+        return DependentServiceResponse.builder().success(true)
+                .data(v1DataResponse.entities).numberOfRecords(v1DataResponse.take).totalPages(v1DataResponse.totalCount).build();
+    }
+
+    @Override
+    public DependentServiceResponse tenantNameByTenantId(Object request) {
+        V1DataResponse v1DataResponse = v1Service.tenantNameByTenantId(request);
+        return DependentServiceResponse.builder().success(true)
+                .data(v1DataResponse.entities).numberOfRecords(v1DataResponse.take).totalPages(v1DataResponse.totalCount).build();    }
+
+    @Override
     public List<MasterData> fetchByType(MasterDataType masterDataType) {
         return null;
     }

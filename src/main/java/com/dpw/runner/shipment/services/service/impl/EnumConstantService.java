@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.service.impl;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dto.response.EnumConstantResponse;
 import com.dpw.runner.shipment.services.dto.response.EnumResponse;
+import com.dpw.runner.shipment.services.entity.enums.Ownership;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
@@ -30,6 +31,12 @@ public class EnumConstantService implements IEnumConstantService {
         enumList = new ArrayList<>();
         for (MasterDataType dataType : MasterDataType.values()) {
             enumList.add(EnumConstantResponse.builder().id(dataType.getId()).description(dataType.name()).name(dataType.name()).build());
+        }
+        response.put(Constants.MASTER_LIST, enumList);
+
+        enumList = new ArrayList<>();
+        for (Ownership dataType : Ownership.values()) {
+            enumList.add(EnumConstantResponse.builder().id(dataType.getValue()).description(dataType.getDescription()).name(dataType.name()).build());
         }
         response.put(Constants.MASTER_LIST, enumList);
 

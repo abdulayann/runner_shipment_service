@@ -100,5 +100,7 @@ public interface IV1Service {
     V1DataResponse listSailingSchedule(Object request);
     SendEntityResponse sendConsolidationTask(CreateConsolidationTaskRequest request);
     SendEntityResponse sendShipmentTask(CreateShipmentTaskRequest request);
+    V1DataResponse addressList(Object request);
+    V1DataResponse tenantNameByTenantId(Object request);
 
 }

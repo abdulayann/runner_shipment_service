@@ -27,4 +27,7 @@ public class MasterDataConstants {
     public static final String IMPORT_SCHEDULE = "/import-schedule";
     public static final String IMPORT_FLIGHT_SCHEDULE = "/import-flight-schedule";
     public static final String FETCH_FLIGHT_STATUS = "/fetch-flight-status";
+    public static final String TENANT_NAME_BY_ID = "/tenantNameById";
+    public static final String ADDRESS_LIST = "/address-list";
+
 }

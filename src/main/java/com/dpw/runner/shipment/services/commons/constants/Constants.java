@@ -76,6 +76,7 @@ public class Constants {
     public static final String SHIPMENT_STATUS = "ShipmentStatus";
 
     public static final String MASTER_LIST = "MasterList";
+    public static final String OWNERSHIP = "OwnerShip";
 
     public static final String SERVICE = "Service";
 
