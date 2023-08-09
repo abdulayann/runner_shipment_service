@@ -31,11 +31,9 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.*;
@@ -153,18 +151,43 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
             log.error("Request is empty for Shipment Settings update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
         }
 
-        if(request.getId() == null) {
-            log.error("Request Id is null for Shipment Settings update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+        if(request.getId() == null && request.getTenantId() == null) {
+            log.error("Request Id and Tenant Id is null for Shipment Settings update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
-        long id = request.getId();
-        Optional<ShipmentSettingsDetails> oldEntity = shipmentSettingsDao.findById(id);
-        if(!oldEntity.isPresent()) {
+        Optional<ShipmentSettingsDetails> oldEntity = null;
+        if(request.getTenantId() != null) {
+            ListCommonRequest newRequest = new ListCommonRequest();
+            newRequest.setPageNo(1);
+            newRequest.setPageSize(Integer.MAX_VALUE);
+            newRequest.setFilterCriteria(new ArrayList<>());
+            Pair<Specification<ShipmentSettingsDetails>, Pageable> tuple = fetchData(newRequest, ShipmentSettingsDetails.class);
+            Page<ShipmentSettingsDetails> shipmentSettingsPage = shipmentSettingsDao.list(tuple.getLeft(), tuple.getRight());
+            if(shipmentSettingsPage.get().collect(Collectors.toList()) != null && shipmentSettingsPage.get().collect(Collectors.toList()).size() > 0)
+                oldEntity = Optional.ofNullable(shipmentSettingsPage.get().collect(Collectors.toList()).get(0));
+        }
+        else {
+            long id = request.getId();
+            oldEntity = shipmentSettingsDao.findById(id);
+        }
+        if(oldEntity == null || !oldEntity.isPresent()) {
             log.debug("Shipment Setting is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
 
-        ShipmentSettingsDetails shipmentSettingsDetails = convertRequestToEntity(request);
         try {
+            request.setId(oldEntity.get().getId());
+            if(request.getHawbLockSettings() != null && oldEntity.get().getHawbLockSettings() != null) {
+                request.getHawbLockSettings().setId(oldEntity.get().getHawbLockSettings().getId());
+            }
+            if(request.getMawbLockSettings() != null && oldEntity.get().getMawbLockSettings() != null) {
+                request.getMawbLockSettings().setId(oldEntity.get().getMawbLockSettings().getId());
+            }
+            if(request.getHblLockSettings() != null && oldEntity.get().getHblLockSettings() != null) {
+                request.getHblLockSettings().setId(oldEntity.get().getHblLockSettings().getId());
+            }
+            ShipmentSettingsDetails shipmentSettingsDetails = convertRequestToEntity(request);
+
             List<HblTermsConditionTemplateRequest> hblTermsConditionTemplateList = request.getHblTermsConditionTemplate();
             List<HblTermsConditionTemplateRequest> hblHawbBackPrintTemplateList = request.getHblHawbBackPrintTemplate();
             List<TenantProductsRequest> tenantProductsList = request.getTenantProducts();
