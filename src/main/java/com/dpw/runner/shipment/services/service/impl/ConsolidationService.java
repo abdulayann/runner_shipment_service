@@ -30,6 +30,7 @@ import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
@@ -55,6 +56,8 @@ public class ConsolidationService implements IConsolidationService {
 
     @Autowired
     private IConsolidationDetailsDao consolidationDetailsDao;
+    @Autowired
+    private IConsoleShipmentMappingDao consoleShipmentMappingDao;
     @Autowired
     private ICarrierDao carrierDao;
     @Autowired
@@ -282,11 +285,7 @@ public class ConsolidationService implements IConsolidationService {
                 consolidationDetails.setAchievedQuantities(achievedQuantities);
             }
 
-            if (request.getShipmentsList() != null) {
-                List<ShipmentRequest> shipmentRequest = request.getShipmentsList();
-                List<ShipmentDetails> shipmentList = shipmentDao.saveAll(convertToEntityList(shipmentRequest, ShipmentDetails.class));
-                consolidationDetails.setShipmentsList(shipmentList);
-            }
+            consolidationDetails.setShipmentsList(null);
 
             getConsolidation(consolidationDetails);
 
@@ -482,43 +481,53 @@ public class ConsolidationService implements IConsolidationService {
 
     @Transactional
     public ResponseEntity<?> attachShipments(Long consolidationId, List<Long> shipmentIds) {
-        ConsolidationDetails consolidationDetails = consolidationDetailsDao.findById(consolidationId).get();
+//        ConsolidationDetails consolidationDetails = consolidationDetailsDao.findById(consolidationId).get();
+//
+//        if (consolidationDetails != null) {
+//            for (Long shipmentId : shipmentIds) {
+//                ShipmentDetails shipmentDetails = consolidationDetailsDao.findShipmentById(shipmentId).get();
+//                if (shipmentDetails != null) {
+//                    consolidationDetails.getShipmentsList().add(shipmentDetails);
+//                }
+//            }
+//            ConsolidationDetails entity = consolidationDetailsDao.save(consolidationDetails);
+//            return ResponseHelper.buildSuccessResponse(jsonHelper.convertValue(entity, ConsolidationDetailsResponse.class));
+//        }
 
-        if (consolidationDetails != null) {
-            for (Long shipmentId : shipmentIds) {
-                ShipmentDetails shipmentDetails = consolidationDetailsDao.findShipmentById(shipmentId).get();
-                if (shipmentDetails != null) {
-                    consolidationDetails.getShipmentsList().add(shipmentDetails);
-                }
-            }
-            ConsolidationDetails entity = consolidationDetailsDao.save(consolidationDetails);
-            return ResponseHelper.buildSuccessResponse(jsonHelper.convertValue(entity, ConsolidationDetailsResponse.class));
+        if(consolidationId != null && shipmentIds!= null && shipmentIds.size() > 0) {
+            consoleShipmentMappingDao.assignShipments(consolidationId, shipmentIds);
         }
 
-        return null;
+
+        return new ResponseEntity<>(HttpStatus.OK);
     }
 
     @Transactional
     public ResponseEntity<?> detachShipments(Long consolidationId, List<Long> shipmentIds) {
-        ConsolidationDetails consolidationDetails = consolidationDetailsDao.findById(consolidationId).get();
-
-        if (consolidationDetails != null) {
-            HashSet<Long> shipmentIdSet = new HashSet<Long>();
-            for (Long shipmentId : shipmentIds) {
-                shipmentIdSet.add(shipmentId);
-            }
-            List<ShipmentDetails> remainingShipment = new ArrayList<ShipmentDetails>();
-            List<ShipmentDetails> oldShipments = consolidationDetails.getShipmentsList();
-            for (ShipmentDetails shipDetails : oldShipments) {
-                if (!shipmentIdSet.contains(shipDetails.getId())) {
-                    remainingShipment.add(shipDetails);
-                }
-            }
-            consolidationDetails.setShipmentsList(remainingShipment);
-            ConsolidationDetails entity = consolidationDetailsDao.save(consolidationDetails);
-            return ResponseHelper.buildSuccessResponse(jsonHelper.convertValue(entity, ConsolidationDetailsResponse.class));
+//        ConsolidationDetails consolidationDetails = consolidationDetailsDao.findById(consolidationId).get();
+//
+//        if (consolidationDetails != null) {
+//            HashSet<Long> shipmentIdSet = new HashSet<Long>();
+//            for (Long shipmentId : shipmentIds) {
+//                shipmentIdSet.add(shipmentId);
+//            }
+//            List<ShipmentDetails> remainingShipment = new ArrayList<ShipmentDetails>();
+//            List<ShipmentDetails> oldShipments = consolidationDetails.getShipmentsList();
+//            for (ShipmentDetails shipDetails : oldShipments) {
+//                if (!shipmentIdSet.contains(shipDetails.getId())) {
+//                    remainingShipment.add(shipDetails);
+//                }
+//            }
+//            consolidationDetails.setShipmentsList(remainingShipment);
+//            ConsolidationDetails entity = consolidationDetailsDao.save(consolidationDetails);
+//            return ResponseHelper.buildSuccessResponse(jsonHelper.convertValue(entity, ConsolidationDetailsResponse.class));
+//        }
+//        return null;
+        if(consolidationId != null && shipmentIds!= null && shipmentIds.size() > 0) {
+            consoleShipmentMappingDao.detachShipments(consolidationId, shipmentIds);
         }
-        return null;
+
+        return new ResponseEntity<>(HttpStatus.OK);
     }
 
     @Transactional
