@@ -783,5 +783,10 @@
         {% if forloop.last == false %},
         {% endif %}
     {% endfor %}
+    ],
+    "ShipmentGuids": [
+        {% for shipment in content.shipmentsList %}
+            "{{ shipment.guid }}"{% if forloop.last %}{% else %},{% endif %}
+        {% endfor %}
     ]
 }
