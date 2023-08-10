@@ -106,4 +106,8 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     public Map<String, String> masterData;
     public Map<String, String> unlocationData;
     public Map<String, String> currenciesMasterData;
+    public BigDecimal goodsValue;
+    public String goodsValueCurrency;
+    public BigDecimal insuranceValue;
+    public String InsuranceValueCurrency;
 }

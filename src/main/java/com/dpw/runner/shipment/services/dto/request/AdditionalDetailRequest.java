@@ -62,6 +62,7 @@ public class AdditionalDetailRequest extends CommonRequest implements IRunnerReq
     private Boolean isInland;
     private Ownership ownership;
     private String ownershipName;
+    private PartiesRequest ownershipOrg;
     private Ownership passedBy;
     private String passedByPerson;
     private LGDStatus lgdStatus;

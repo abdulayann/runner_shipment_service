@@ -97,4 +97,8 @@ public class ShipmentRequest extends CommonRequest implements IRunnerRequest {
     private String weightUnit;
     private List<ConsolidationDetailsRequest> consolidationList;
     private String jobStatus;
+    public BigDecimal goodsValue;
+    public String goodsValueCurrency;
+    public BigDecimal insuranceValue;
+    public String InsuranceValueCurrency;
 }

@@ -59,6 +59,7 @@ public class AdditionalDetailResponse implements IRunnerResponse {
     private Boolean isInland;
     private Ownership ownership;
     private String ownershipName;
+    private PartiesResponse ownershipOrg;
     private Ownership passedBy;
     private String passedByPerson;
     private LGDStatus lgdStatus;
