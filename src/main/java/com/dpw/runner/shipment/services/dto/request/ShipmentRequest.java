@@ -81,6 +81,7 @@ public class ShipmentRequest extends CommonRequest implements IRunnerRequest {
     private List<ServiceDetailsRequest> servicesList;
     private String shipmentCompletedBy;
     private LocalDateTime shipmentCompletedOn;
+    private LocalDateTime shipmentCreatedOn;
     private String shipmentId;
     private String shipmentType;
     private String source;
@@ -97,4 +98,8 @@ public class ShipmentRequest extends CommonRequest implements IRunnerRequest {
     private String weightUnit;
     private List<ConsolidationDetailsRequest> consolidationList;
     private String jobStatus;
+    public BigDecimal goodsValue;
+    public String goodsValueCurrency;
+    public BigDecimal insuranceValue;
+    public String InsuranceValueCurrency;
 }

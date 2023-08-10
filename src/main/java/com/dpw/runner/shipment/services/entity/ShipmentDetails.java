@@ -261,6 +261,9 @@ public class ShipmentDetails extends MultiTenancy {
     @Column(name = "is_shipment_read_only")
     private boolean isShipmentReadOnly;
 
+    @Column(name = "shipment_created_on")
+    private LocalDateTime shipmentCreatedOn;
+
     @Column(name = "shipment_completed_by")
     private String shipmentCompletedBy;
 
@@ -272,6 +275,18 @@ public class ShipmentDetails extends MultiTenancy {
 
     @Column(name = "finance_closed_on")
     private LocalDateTime financeClosedOn;
+
+    @Column(name = "goods_value")
+    public BigDecimal goodsValue;
+
+    @Column(name = "goods_value_currency")
+    public String goodsValueCurrency;
+
+    @Column(name = "insurance_value")
+    public BigDecimal insuranceValue;
+
+    @Column(name = "insurance_value_currency")
+    public String InsuranceValueCurrency;
 
     @OneToOne(fetch = FetchType.LAZY, targetEntity = AdditionalDetails.class)
     @JoinColumn(name = "additional_details_id", referencedColumnName = "id")

@@ -163,6 +163,11 @@ public class AdditionalDetails extends MultiTenancy {
     @Column(name = "ownership_name")
     private String ownershipName;
 
+    @OneToOne(fetch = FetchType.LAZY, targetEntity = Parties.class, cascade = CascadeType.ALL)
+    @JoinColumn(name = "ownership_org", referencedColumnName = "id")
+    @OrganizationData
+    private Parties ownershipOrg;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "passed_by")
     private Ownership passedBy;
