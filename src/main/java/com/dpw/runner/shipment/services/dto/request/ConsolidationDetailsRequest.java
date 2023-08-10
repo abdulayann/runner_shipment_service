@@ -114,5 +114,4 @@ public class ConsolidationDetailsRequest extends CommonRequest implements IRunne
     private List<FileRepoRequest> fileRepoList;
     private List<NotesRequest> notesList;
     private List<ShipmentRequest> shipmentsList;
-    private List<Long> shipmentIds;
 }
