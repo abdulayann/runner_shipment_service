@@ -24,7 +24,7 @@
     "DeclarationType": "{{ content.declarationType }}",
     "DeliveryMode": "{{ content.deliveryMode }}",
     "DGClass": "{{ content.dgClass}}",
-    "DGSubstance": "{{ content.dgSubstance }}"
+    "DGSubstance": "{{ content.dgSubstance }}",
     {% if content.docsClosingTime == null or content.docsClosingTime == "" %}
         "DocsClosingTime": null,
     {% else %}
@@ -111,7 +111,6 @@
     {% else %}
         "ShipInstructionCutoff": "{{ content.shipInstructionCutoff }}",
     {% endif %}
-    "ShipmentType": "{{ content.shipmentType }}",
     {% if content.smtpigmdate == null or content.smtpigmdate == "" %}
         "SMTPIGMDate": null,
     {% else %}
@@ -134,7 +133,7 @@
     {% endif %}
     "VolumeUtilization": "{{ content.volumeUtilization }}",
     "WarehouseId": {{ content.warehouseId }},
-    "WeightUtilization": "{{ content.weightUtilization }}"
+    "WeightUtilization": "{{ content.weightUtilization }}",
 
     "AircraftRegistration": "{{ content.carrierDetails.aircraftRegistration }}",
     "AircraftType": "{{ content.carrierDetails.aircraftType }}",
@@ -180,7 +179,7 @@
     "VolumeUtilization": "{{ content.achievedQuantities.volumeUtilization }}",
     "WeightUtilization": "{{ content.achievedQuantities.weightUtilization }}",
     "WeightVolume": {{ content.achievedQuantities.weightVolume }},
-    "WeightVolumeUnit": "{{ content.achievedQuantities.weightVolumeUnit }}"
+    "WeightVolumeUnit": "{{ content.achievedQuantities.weightVolumeUnit }}",
 
 
     "Chargeable": {{ content.allocations.chargable }},
@@ -200,7 +199,7 @@
     "Volume": {{ content.allocations.volume }},
     "VolumeUnit": "{{ content.allocations.volumeUnit }}",
     "Weight": {{ content.allocations.weight }},
-    "WeightUnit": "{{ content.allocations.weightUnit }}"
+    "WeightUnit": "{{ content.allocations.weightUnit }}",
 
     "SendingAgent": {
     "AddressCode": "{{ content.sendingAgent.addressCode }}",
@@ -267,7 +266,7 @@
             "AddressCode": "{{ content.arrivalDepartureDetails.afirstArrivalPortId.addressCode }}",
             "AddressData": {},
             "EntityId":"{{ content.arrivalDepartureDetails.afirstArrivalPortId.entityId }}",
-            "EntityType": "{{ content.arrivalDepartureDetails.afirstArrivalPortId.entityType }}",,
+            "EntityType": "{{ content.arrivalDepartureDetails.afirstArrivalPortId.entityType }}",
             "OrgCode": "{{ content.arrivalDepartureDetails.afirstArrivalPortId.orgCode }}",
             "OrgData": {},
             "TenantId":"{{ content.arrivalDepartureDetails.afirstArrivalPortId.tenantId }}",
@@ -355,7 +354,7 @@
             "OrgData": {},
             "TenantId":"{{ content.arrivalDepartureDetails.dtransportPortId.tenantId }}",
             "Type": "{{ content.arrivalDepartureDetails.dtransportPortId.type }}"
-        },
+        }
     },
 
     "TruckDriverDetail": [
