@@ -33,4 +33,6 @@ public class ApiConstants {
     public static final String API_CALCULATE_ACHIEVED_VALUES = "/calculate/achieved";
 
     public static final String ENUM_API_HANDLE = "/api/v2/enums";
+    public static final String ATTACH_SHIPMENTS = "attach-shipments";
+    public static final String DETACH_SHIPMENTS = "detach-shipments";
 }
