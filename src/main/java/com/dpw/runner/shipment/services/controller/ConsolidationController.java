@@ -7,6 +7,7 @@ import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.ConsolidationDetailsRequest;
+import com.dpw.runner.shipment.services.dto.request.ShipmentAttachDetachRequest;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
@@ -149,14 +150,14 @@ public class ConsolidationController {
         return (ResponseEntity<RunnerResponse<ConsolidationDetailsResponse>>) consolidationService.calculateAchievedValues(CommonRequestModel.buildRequest(consolidationDetailsRequest));
     }
 
-    @PostMapping("/attach-shipments")
-    public ResponseEntity<RunnerResponse> attachShipments(@RequestBody @Valid ConsolidationDetailsRequest request) throws Exception {
+    @PostMapping(ApiConstants.ATTACH_SHIPMENTS)
+    public ResponseEntity<RunnerResponse> attachShipments(@RequestBody @Valid ShipmentAttachDetachRequest request) throws Exception {
 
         return (ResponseEntity<RunnerResponse>) consolidationService.attachShipments(request.getId(), request.getShipmentIds());
     }
 
-    @PostMapping("/detach-shipments")
-    public ResponseEntity<RunnerResponse> detachShipments(@RequestBody @Valid ConsolidationDetailsRequest request) throws Exception{
+    @PostMapping(ApiConstants.DETACH_SHIPMENTS)
+    public ResponseEntity<RunnerResponse> detachShipments(@RequestBody @Valid ShipmentAttachDetachRequest request) throws Exception{
         return (ResponseEntity<RunnerResponse>) consolidationService.detachShipments(request.getId(), request.getShipmentIds());
     }
 }

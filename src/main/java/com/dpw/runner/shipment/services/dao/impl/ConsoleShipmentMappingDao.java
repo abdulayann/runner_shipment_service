@@ -32,7 +32,7 @@ public class ConsoleShipmentMappingDao implements IConsoleShipmentMappingDao {
     }
 
     @Override
-    public void assignShipments(Long consolidationId, List<Long> shipIds) {
+    public List<Long> assignShipments(Long consolidationId, List<Long> shipIds) {
         List<ConsoleShipmentMapping> mappings = findByConsolidationId(consolidationId);
         HashSet<Long> shipmentIds = new HashSet<>(shipIds);
         if (mappings != null && mappings.size() > 0) {
@@ -50,16 +50,19 @@ public class ConsoleShipmentMappingDao implements IConsoleShipmentMappingDao {
                 save(entity);
             }
         }
+        return new ArrayList<>(shipmentIds);
     }
 
     @Override
-    public void detachShipments(Long consolidationId, List<Long> shipIds) {
+    public List<Long> detachShipments(Long consolidationId, List<Long> shipIds) {
         List<ConsoleShipmentMapping> mappings = findByConsolidationId(consolidationId);
         HashSet<Long> shipmentIds = new HashSet<>(shipIds);
+        List<Long> removedShipmentIds = new ArrayList<>();
         List<ConsoleShipmentMapping> deleteMappings = new ArrayList<>();
         if (mappings != null && mappings.size() > 0) {
             for (ConsoleShipmentMapping consoleShipmentMapping : mappings) {
                 if (shipmentIds.contains(consoleShipmentMapping.getShipmentId())) {
+                    removedShipmentIds.add(consoleShipmentMapping.getShipmentId());
                     deleteMappings.add(consoleShipmentMapping);
                 }
             }
@@ -69,6 +72,7 @@ public class ConsoleShipmentMappingDao implements IConsoleShipmentMappingDao {
                 delete(consoleShipmentMapping);
             }
         }
+        return removedShipmentIds;
     }
 
     @Override

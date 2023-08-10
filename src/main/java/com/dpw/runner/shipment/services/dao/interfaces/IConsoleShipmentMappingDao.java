@@ -9,9 +9,9 @@ public interface IConsoleShipmentMappingDao {
 
     List<ConsoleShipmentMapping> findByShipmentId(Long shipmentId);
 
-    void assignShipments(Long consolidationId, List<Long> shipIds);
+    List<Long> assignShipments(Long consolidationId, List<Long> shipIds);
 
-    void detachShipments(Long consolidationId, List<Long> shipIds);
+    List<Long> detachShipments(Long consolidationId, List<Long> shipIds);
 
     void updateShipmentsMappings(Long consolidationId, List<Long> shipIds);
 }

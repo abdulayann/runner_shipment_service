@@ -483,17 +483,35 @@ public class ConsolidationService implements IConsolidationService {
     public ResponseEntity<?> attachShipments(Long consolidationId, List<Long> shipmentIds) {
 
         if(consolidationId != null && shipmentIds!= null && shipmentIds.size() > 0) {
-            consoleShipmentMappingDao.assignShipments(consolidationId, shipmentIds);
+            List<Long> attachedShipmentIds = consoleShipmentMappingDao.assignShipments(consolidationId, shipmentIds);
+            for(Long shipId : attachedShipmentIds) {
+                ShipmentDetails shipmentDetails = shipmentDao.findById(shipId).get();
+                if(shipmentDetails.getContainersList() != null) {
+                    List<Containers> containersList = shipmentDetails.getContainersList();
+                    for(Containers container : containersList) {
+                        container.setConsolidationId(consolidationId);
+                    }
+                    containerDao.saveAll(containersList);
+                }
+            }
         }
-
-
         return new ResponseEntity<>(HttpStatus.OK);
     }
 
     @Transactional
     public ResponseEntity<?> detachShipments(Long consolidationId, List<Long> shipmentIds) {
         if(consolidationId != null && shipmentIds!= null && shipmentIds.size() > 0) {
-            consoleShipmentMappingDao.detachShipments(consolidationId, shipmentIds);
+            List<Long> removedShipmentIds = consoleShipmentMappingDao.detachShipments(consolidationId, shipmentIds);
+            for(Long shipId : removedShipmentIds) {
+                ShipmentDetails shipmentDetails = shipmentDao.findById(shipId).get();
+                if(shipmentDetails.getContainersList() != null) {
+                    List<Containers> containersList = shipmentDetails.getContainersList();
+                    for(Containers container : containersList) {
+                        container.setConsolidationId(null);
+                    }
+                    containerDao.saveAll(containersList);
+                }
+            }
         }
 
         return new ResponseEntity<>(HttpStatus.OK);
