@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 
+import com.azure.messaging.servicebus.ServiceBusMessage;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
@@ -21,6 +22,10 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationService;
+import com.dpw.runner.shipment.services.service_bus.AzureServiceBusTopic;
+import com.dpw.runner.shipment.services.service_bus.ISBProperties;
+import com.dpw.runner.shipment.services.service_bus.SBUtilsImpl;
+import com.dpw.runner.shipment.services.service_bus.model.EventMessage;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
@@ -105,6 +110,15 @@ public class ConsolidationService implements IConsolidationService {
 
     @Autowired
     private IMawbStocksDao mawbStocksDao;
+
+    @Autowired
+    private SBUtilsImpl sbUtils;
+
+    @Autowired
+    private ISBProperties isbProperties;
+
+    @Autowired
+    private AzureServiceBusTopic azureServiceBusTopic;
 
     private List<String> TRANSPORT_MODES = Arrays.asList("SEA", "ROAD", "RAIL", "AIR");
     private List<String> SHIPMENT_TYPE = Arrays.asList("FCL", "LCL");
@@ -323,6 +337,9 @@ public class ConsolidationService implements IConsolidationService {
             List<RoutingsRequest> routingsRequest = request.getRoutingsList();
             if (routingsRequest != null)
                 createRoutingsAsync(consolidationDetails, routingsRequest);
+
+            EventMessage eventMessage = EventMessage.builder().messageType(Constants.SERVICE).entity(Constants.CONSOLIDATION).request(consolidationDetails).build();
+            sbUtils.sendMessagesToTopic(isbProperties, azureServiceBusTopic.getTopic(), Arrays.asList(new ServiceBusMessage(jsonHelper.convertToJsonIncludeNulls(eventMessage))));
 
         } catch (Exception e) {
             log.error(e.getMessage());
