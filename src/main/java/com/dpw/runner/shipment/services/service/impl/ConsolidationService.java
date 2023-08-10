@@ -1052,14 +1052,14 @@ public class ConsolidationService implements IConsolidationService {
     }
 
     private void consolidationMAWBCheck(ConsolidationDetailsRequest consolidationRequest) {
-        if (StringUtility.isEmpty(consolidationRequest.getMAWB())) {
+        if (StringUtility.isEmpty(consolidationRequest.getMawb())) {
             return;
         }
 
-        if (!isMAWBNumberValid(consolidationRequest.getMAWB()))
+        if (!isMAWBNumberValid(consolidationRequest.getMawb()))
             throw new ValidationException("Please enter a valid MAWB number.");
 
-        String mawbAirlineCode = consolidationRequest.getMAWB().substring(0, 3);
+        String mawbAirlineCode = consolidationRequest.getMawb().substring(0, 3);
         ListCommonRequest listCarrierRequest = constructListCommonRequest("airlineCode", mawbAirlineCode, "="); // TODO fetch from v1
         Pair<Specification<CarrierDetails>, Pageable> pair = fetchData(listCarrierRequest, CarrierDetails.class);
         Page<CarrierDetails> carrierDetails = carrierDao.findAll(pair.getLeft(), pair.getRight());
@@ -1077,7 +1077,7 @@ public class ConsolidationService implements IConsolidationService {
         if (isCarrierExist)
             throw new ValidationException("MAWB Number prefix is not matching with entered Flight Carrier");
 
-        ListCommonRequest listMawbRequest = constructListCommonRequest("MAWBNumber", consolidationRequest.getMAWB(), "=");
+        ListCommonRequest listMawbRequest = constructListCommonRequest("MAWBNumber", consolidationRequest.getMawb(), "=");
         Pair<Specification<MawbStocksLink>, Pageable> mawbStocksLinkPair = fetchData(listCarrierRequest, MawbStocksLink.class);
         Page<MawbStocksLink> mawbStocksLinkPage = mawbStocksLinkDao.findAll(mawbStocksLinkPair.getLeft(), mawbStocksLinkPair.getRight());
 
@@ -1102,10 +1102,10 @@ public class ConsolidationService implements IConsolidationService {
         MawbStocks mawbStocks = new MawbStocks();
         // mawbStocks.setAirLinePrefix() //TODO fetch from v1
         mawbStocks.setCount("1");
-        mawbStocks.setStartNumber(Long.valueOf(consolidationRequest.getMAWB().substring(4, 10)));
-        mawbStocks.setFrom(consolidationRequest.getMAWB());
-        mawbStocks.setTo(consolidationRequest.getMAWB());
-        mawbStocks.setMawbNumber(consolidationRequest.getMAWB());
+        mawbStocks.setStartNumber(Long.valueOf(consolidationRequest.getMawb().substring(4, 10)));
+        mawbStocks.setFrom(consolidationRequest.getMawb());
+        mawbStocks.setTo(consolidationRequest.getMawb());
+        mawbStocks.setMawbNumber(consolidationRequest.getMawb());
         mawbStocks.setStatus("Unused");
         // if(shipmentRequest.getBorrowedFrom()!=null) mawbStocks.setBorrowedFrom(Long.valueOf(shipmentRequest.getBorrowedFrom())); TODO fetch from v1
         mawbStocks.setHomePort(consolidationRequest.getCarrierDetails().getOriginPort());
@@ -1114,8 +1114,8 @@ public class ConsolidationService implements IConsolidationService {
         if (mawbStocks.getId() != null) {
             var entryForMawbStocksLinkRow = new MawbStocksLink();
             entryForMawbStocksLinkRow.setParentId(mawbStocks.getId());
-            entryForMawbStocksLinkRow.setSeqNumber(consolidationRequest.getMAWB().substring(4, 10));
-            entryForMawbStocksLinkRow.setMawbNumber(consolidationRequest.getMAWB());
+            entryForMawbStocksLinkRow.setSeqNumber(consolidationRequest.getMawb().substring(4, 10));
+            entryForMawbStocksLinkRow.setMawbNumber(consolidationRequest.getMawb());
             entryForMawbStocksLinkRow.setStatus("Unused");
             entryForMawbStocksLinkRow = mawbStocksLinkDao.save(entryForMawbStocksLinkRow);
         }

@@ -39,7 +39,7 @@ public class ConsolidationDetails extends MultiTenancy {
     private Boolean isDomestic;
 
     @Column(name = "mawb")
-    private String MAWB;
+    private String mawb;
 
     @Column(name = "service_level")
     private String serviceLevel;
@@ -102,25 +102,25 @@ public class ConsolidationDetails extends MultiTenancy {
     private Boolean override;
 
     @Column(name = "estimated_terminal_cutoff")
-    private LocalDateTime EstimatedTerminalCutoff;
+    private LocalDateTime estimatedTerminalCutoff;
 
     @Column(name = "terminal_cutoff")
-    private LocalDateTime TerminalCutoff;
+    private LocalDateTime terminalCutoff;
 
     @Column(name = "verified_gross_mass_cutoff")
-    private LocalDateTime VerifiedGrossMassCutoff;
+    private LocalDateTime verifiedGrossMassCutoff;
 
     @Column(name = "reefer_cutoff")
-    private LocalDateTime ReeferCutoff;
+    private LocalDateTime reeferCutoff;
 
     @Column(name = "booking_cutoff")
-    private LocalDateTime BookingCutoff;
+    private LocalDateTime bookingCutoff;
 
     @Column(name = "ship_instruction_cutoff")
-    private LocalDateTime ShipInstructionCutoff;
+    private LocalDateTime shipInstructionCutoff;
 
     @Column(name = "hazardous_booking_cutoff")
-    private LocalDateTime HazardousBookingCutoff;
+    private LocalDateTime hazardousBookingCutoff;
 
     @Column(name = "volume_utilization")
     private String volumeUtilization;
@@ -150,7 +150,7 @@ public class ConsolidationDetails extends MultiTenancy {
     private String description;
 
     @Column(name = "marks_n_nums")
-    private String MarksnNums;
+    private String marksnNums;
 
     @Column(name = "additional_terms")
     private String AdditionalTerms;
@@ -168,10 +168,10 @@ public class ConsolidationDetails extends MultiTenancy {
     private String msnNumber;
 
     @Column(name = "igm_file_date")
-    private LocalDateTime IGMFileDate;
+    private LocalDateTime igmFileDate;
 
     @Column(name = "igm_inward_date")
-    private LocalDateTime IGMInwardDate;
+    private LocalDateTime igmInwardDate;
 
     @Column(name = "inward_date_and_time")
     private LocalDateTime inwardDateAndTime;
@@ -180,10 +180,10 @@ public class ConsolidationDetails extends MultiTenancy {
     private String igmFileNo;
 
     @Column(name = "smtp_igm_number")
-    private String SMTPIGMNumber;
+    private String smtpigmNumber;
 
     @Column(name = "smtp_igm_date")
-    private LocalDateTime SMTPIGMDate;
+    private LocalDateTime smtpigmDate;
 
     @Column(name = "is_inland")
     private Boolean isInland;
@@ -195,10 +195,10 @@ public class ConsolidationDetails extends MultiTenancy {
     private Integer copy;
 
     @Column(name = "do_place_of_issue")
-    private String DOPlaceOfIssue;
+    private String doPlaceOfIssue;
 
     @Column(name = "do_issue_date")
-    private LocalDateTime DOIssueDate;
+    private LocalDateTime doIssueDate;
 
     @Column(name = "bonded_warehouse_id")
     private Long bondedWarehouseId;
@@ -207,7 +207,7 @@ public class ConsolidationDetails extends MultiTenancy {
     private Long warehouseId;
 
     @Column(name = "source_tenant_id")
-    private long SourceTenantId;
+    private long sourceTenantId;
 
     @Column(name = "edi_transaction_id")
     private String ediTransactionId;
@@ -231,7 +231,7 @@ public class ConsolidationDetails extends MultiTenancy {
     private String receivingAgentFreeTextAddress;
 
     @Column(name = "is_sending_agent_freetext_address")
-    private Boolean IsSendingAgentFreeTextAddress;
+    private Boolean isSendingAgentFreeTextAddress;
 
     @Column(name = "sending_agent_freetext_address")
     private String sendingAgentFreeTextAddress;
