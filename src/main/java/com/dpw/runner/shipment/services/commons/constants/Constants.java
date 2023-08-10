@@ -94,6 +94,7 @@ public class Constants {
     public static final String CARRIER_MASTER_DATA = "Carrier";
     public static final String CUSTOM_CITY = "customCity";
 
+    public static final String DEFAULT_DATE_FORMAT = "MM/dd/yyyy";
 
 
 }
