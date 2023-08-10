@@ -110,4 +110,5 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     public String goodsValueCurrency;
     public BigDecimal insuranceValue;
     public String InsuranceValueCurrency;
+    private LocalDateTime shipmentCreatedOn;
 }

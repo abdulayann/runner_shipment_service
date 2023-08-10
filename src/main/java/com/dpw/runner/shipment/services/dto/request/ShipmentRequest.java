@@ -81,6 +81,7 @@ public class ShipmentRequest extends CommonRequest implements IRunnerRequest {
     private List<ServiceDetailsRequest> servicesList;
     private String shipmentCompletedBy;
     private LocalDateTime shipmentCompletedOn;
+    private LocalDateTime shipmentCreatedOn;
     private String shipmentId;
     private String shipmentType;
     private String source;

@@ -261,6 +261,9 @@ public class ShipmentDetails extends MultiTenancy {
     @Column(name = "is_shipment_read_only")
     private boolean isShipmentReadOnly;
 
+    @Column(name = "shipment_created_on")
+    private LocalDateTime shipmentCreatedOn;
+
     @Column(name = "shipment_completed_by")
     private String shipmentCompletedBy;
 
