@@ -39,7 +39,7 @@ public class ShipmentSettingRequest extends CommonRequest implements IRunnerRequ
     private Boolean billingLite;
     private Boolean restrictedLocationsEnabled;
     private Boolean isAtdAtaAutoPopulateEnabled;
-    private List<Integer> restrictedLocations;
+    private List<String> restrictedLocations;
     private String shipmentConsoleImportApproverRole;
     private GenerationType shipmentIdGenerationType;
     private String shipmentIdGenerationPrefix;

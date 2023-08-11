@@ -86,7 +86,7 @@ public class ShipmentSettingsDetails extends MultiTenancy {
 
     @Column(name = "restricted_locations")
     @ElementCollection
-    private List<Integer> restrictedLocations;
+    private List<String> restrictedLocations;
 
     @Column(name = "shipment_console_import_approver_role")
     private String shipmentConsoleImportApproverRole;
