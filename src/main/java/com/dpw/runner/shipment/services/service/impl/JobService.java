@@ -2,6 +2,8 @@ package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
+import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
@@ -50,6 +52,9 @@ public class JobService implements IJobService {
     @Autowired
     private JsonHelper jsonHelper;
 
+    @Autowired
+    private AuditLogService auditLogService;
+
     @Override
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
         String responseMsg;
@@ -67,6 +72,16 @@ public class JobService implements IJobService {
                       convertToEntityList(eventsRequestList, Events.class), jobId, Constants.JOBS);
               job.setEventsList(events);
             }
+
+            // audit logs
+            auditLogService.addAuditLog(
+                    AuditLogMetaData.builder()
+                            .newData(job)
+                            .prevData(null)
+                            .parent(Jobs.class.getSimpleName())
+                            .parentId(job.getId())
+                            .operation(DBOperationType.CREATE.name()).build()
+            );
 
             log.info("Job created successfully for Id {} with Request Id {}", job.getId(), LoggerHelper.getRequestIdFromMDC());
         } catch (Exception e) {
@@ -105,7 +120,18 @@ public class JobService implements IJobService {
             jobs.setEventsList(events);
         }
         try {
+            String oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
             jobs = jobDao.save(jobs);
+
+            // audit logs
+            auditLogService.addAuditLog(
+                    AuditLogMetaData.builder()
+                            .newData(jobs)
+                            .prevData(jsonHelper.readFromJson(oldEntityJsonString, Jobs.class))
+                            .parent(Jobs.class.getSimpleName())
+                            .parentId(jobs.getId())
+                            .operation(DBOperationType.UPDATE.name()).build()
+            );
             log.info("Updated the job details for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -183,7 +209,18 @@ public class JobService implements IJobService {
             return ResponseHelper.buildFailedResponse(Constants.NO_DATA);
         }
         try {
+            String oldEntityJsonString = jsonHelper.convertToJson(targetJob.get());
             jobDao.delete(targetJob.get());
+
+            // audit logs
+            auditLogService.addAuditLog(
+                    AuditLogMetaData.builder()
+                            .newData(null)
+                            .prevData(jsonHelper.readFromJson(oldEntityJsonString, Jobs.class))
+                            .parent(Jobs.class.getSimpleName())
+                            .parentId(targetJob.get().getId())
+                            .operation(DBOperationType.DELETE.name()).build()
+            );
             log.info("Deleted job for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()

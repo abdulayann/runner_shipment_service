@@ -1,6 +1,8 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
+import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
@@ -8,6 +10,7 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IArrivalDepartureDetailsDao;
 import com.dpw.runner.shipment.services.dto.request.ArrivalDepartureDetailsRequest;
 import com.dpw.runner.shipment.services.dto.response.ArrivalDepartureDetailsResponse;
+import com.dpw.runner.shipment.services.entity.Allocations;
 import com.dpw.runner.shipment.services.entity.ArrivalDepartureDetails;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
@@ -15,7 +18,6 @@ import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IArrivalDepartureDetailsService;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
-import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
@@ -42,16 +44,31 @@ public class ArrivalDepartureDetailsService implements IArrivalDepartureDetailsS
     @Autowired
     private JsonHelper jsonHelper;
 
+    @Autowired
+    private AuditLogService auditLogService;
+
     @Transactional
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
         String responseMsg;
         ArrivalDepartureDetailsRequest request = (ArrivalDepartureDetailsRequest) commonRequestModel.getData();
-        if(request == null) {
+        if (request == null) {
             log.debug("Request is empty for Arrival Departure Details Create with Request Id {}", LoggerHelper.getRequestIdFromMDC());
         }
         ArrivalDepartureDetails arrivalDepartureDetails = convertRequestToArrivalDepartureDetails(request);
+
         try {
             arrivalDepartureDetails = arrivalDepartureDetailsDao.save(arrivalDepartureDetails);
+
+            // audit logs
+            auditLogService.addAuditLog(
+                    AuditLogMetaData.builder()
+                            .newData(arrivalDepartureDetails)
+                            .prevData(null)
+                            .parent(ArrivalDepartureDetails.class.getSimpleName())
+                            .parentId(arrivalDepartureDetails.getId())
+                            .operation(DBOperationType.CREATE.name()).build()
+            );
+
             log.info("Arrival Departure Details Saved Successfully for Id {} with Request Id {}", arrivalDepartureDetails.getId(), LoggerHelper.getRequestIdFromMDC());
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -66,11 +83,11 @@ public class ArrivalDepartureDetailsService implements IArrivalDepartureDetailsS
     public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
         String responseMsg;
         ArrivalDepartureDetailsRequest request = (ArrivalDepartureDetailsRequest) commonRequestModel.getData();
-        if(request == null) {
+        if (request == null) {
             log.error("Request is empty for Arrival Departure Details Update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
         }
 
-        if(request.getId() == null) {
+        if (request.getId() == null) {
             log.error("Request Id is null for Arrival Departure Details Update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
         }
         long id = request.getId();
@@ -83,7 +100,19 @@ public class ArrivalDepartureDetailsService implements IArrivalDepartureDetailsS
         ArrivalDepartureDetails arrivalDepartureDetails = convertRequestToArrivalDepartureDetails(request);
         arrivalDepartureDetails.setId(oldEntity.get().getId());
         try {
+            String oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
             arrivalDepartureDetails = arrivalDepartureDetailsDao.save(arrivalDepartureDetails);
+
+            // audit logs
+            auditLogService.addAuditLog(
+                    AuditLogMetaData.builder()
+                            .newData(arrivalDepartureDetails)
+                            .prevData(jsonHelper.readFromJson(oldEntityJsonString, ArrivalDepartureDetails.class))
+                            .parent(ArrivalDepartureDetails.class.getSimpleName())
+                            .parentId(arrivalDepartureDetails.getId())
+                            .operation(DBOperationType.UPDATE.name()).build()
+            );
+
             log.info("Updating the Arrival Departure Details for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -99,7 +128,7 @@ public class ArrivalDepartureDetailsService implements IArrivalDepartureDetailsS
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
-            if(request == null) {
+            if (request == null) {
                 log.error("Request is empty for Arrival Departure Details list with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
             Pair<Specification<ArrivalDepartureDetails>, Pageable> tuple = fetchData(request, ArrivalDepartureDetails.class);
@@ -119,11 +148,11 @@ public class ArrivalDepartureDetailsService implements IArrivalDepartureDetailsS
 
     @Override
     @Async
-    public CompletableFuture<ResponseEntity<?>> listAsync(CommonRequestModel commonRequestModel){
+    public CompletableFuture<ResponseEntity<?>> listAsync(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
-            if(request == null) {
+            if (request == null) {
                 log.error("Request is empty for Arrival Departure Details async list with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
             Pair<Specification<ArrivalDepartureDetails>, Pageable> tuple = fetchData(request, ArrivalDepartureDetails.class);
@@ -147,10 +176,10 @@ public class ArrivalDepartureDetailsService implements IArrivalDepartureDetailsS
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
-            if(request == null) {
+            if (request == null) {
                 log.error("Request is empty for Arrival Departure Details Delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
-            if(request.getId() == null) {
+            if (request.getId() == null) {
                 log.error("Request Id is null for Arrival Departure Details Delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
             long id = request.getId();
@@ -160,7 +189,19 @@ public class ArrivalDepartureDetailsService implements IArrivalDepartureDetailsS
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
             log.info("Deleted Arrival Departure Details for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
+
+            String oldEntityJsonString = jsonHelper.convertToJson(arrivalDepartureDetails.get());
             arrivalDepartureDetailsDao.delete(arrivalDepartureDetails.get());
+
+            // audit logs
+            auditLogService.addAuditLog(
+                    AuditLogMetaData.builder()
+                            .newData(null)
+                            .prevData(jsonHelper.readFromJson(oldEntityJsonString, ArrivalDepartureDetails.class))
+                            .parent(ArrivalDepartureDetails.class.getSimpleName())
+                            .parentId(arrivalDepartureDetails.get().getId())
+                            .operation(DBOperationType.DELETE.name()).build()
+            );
             return ResponseHelper.buildSuccessResponse();
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -175,10 +216,10 @@ public class ArrivalDepartureDetailsService implements IArrivalDepartureDetailsS
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
-            if(request == null) {
+            if (request == null) {
                 log.error("Request is empty for Arrival Departure Details retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
-            if(request.getId() == null) {
+            if (request.getId() == null) {
                 log.error("Request Id is null for Arrival Departure Details retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
             long id = request.getId();

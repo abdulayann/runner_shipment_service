@@ -1,6 +1,8 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
+import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
@@ -8,6 +10,7 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.ICarrierDao;
 import com.dpw.runner.shipment.services.dto.request.CarrierDetailRequest;
 import com.dpw.runner.shipment.services.dto.response.CarrierDetailResponse;
+import com.dpw.runner.shipment.services.entity.Allocations;
 import com.dpw.runner.shipment.services.entity.CarrierDetails;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
@@ -15,7 +18,6 @@ import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.ICarrierDetailService;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
-import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
@@ -41,6 +43,9 @@ public class CarrierDetailService implements ICarrierDetailService {
     @Autowired
     private JsonHelper jsonHelper;
 
+    @Autowired
+    private AuditLogService auditLogService;
+
     @Transactional
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
         String responseMsg;
@@ -51,6 +56,17 @@ public class CarrierDetailService implements ICarrierDetailService {
         CarrierDetails carrierDetails = convertRequestToCarrierDetail(request);
         try {
             carrierDetails = carrierDao.save(carrierDetails);
+
+            // audit logs
+            auditLogService.addAuditLog(
+                    AuditLogMetaData.builder()
+                            .newData(carrierDetails)
+                            .prevData(null)
+                            .parent(CarrierDetails.class.getSimpleName())
+                            .parentId(carrierDetails.getId())
+                            .operation(DBOperationType.CREATE.name()).build()
+            );
+
             log.info("Carrier Details Saved Successfully for Id {} with Request Id {}", carrierDetails.getId(), LoggerHelper.getRequestIdFromMDC());
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -82,7 +98,19 @@ public class CarrierDetailService implements ICarrierDetailService {
         CarrierDetails carrierDetails = convertRequestToCarrierDetail(request);
         carrierDetails.setId(oldEntity.get().getId());
         try {
+            String oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
             carrierDetails = carrierDao.save(carrierDetails);
+
+            // audit logs
+            auditLogService.addAuditLog(
+                    AuditLogMetaData.builder()
+                            .newData(carrierDetails)
+                            .prevData(jsonHelper.readFromJson(oldEntityJsonString, CarrierDetails.class))
+                            .parent(CarrierDetails.class.getSimpleName())
+                            .parentId(carrierDetails.getId())
+                            .operation(DBOperationType.UPDATE.name()).build()
+            );
+
             log.info("Updating the carrier details for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -159,7 +187,19 @@ public class CarrierDetailService implements ICarrierDetailService {
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
             log.info("Deleted carrier details for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
+
+            String oldEntityJsonString = jsonHelper.convertToJson(carrierDetails.get());
             carrierDao.delete(carrierDetails.get());
+
+            // audit logs
+            auditLogService.addAuditLog(
+                    AuditLogMetaData.builder()
+                            .newData(null)
+                            .prevData(jsonHelper.readFromJson(oldEntityJsonString, CarrierDetails.class))
+                            .parent(CarrierDetails.class.getSimpleName())
+                            .parentId(carrierDetails.get().getId())
+                            .operation(DBOperationType.DELETE.name()).build()
+            );
             return ResponseHelper.buildSuccessResponse();
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
