@@ -1,6 +1,10 @@
 package com.dpw.runner.shipment.services.entity;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
+import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
+import com.dpw.runner.shipment.services.utils.MasterData;
+import com.dpw.runner.shipment.services.utils.OrganizationData;
+import com.dpw.runner.shipment.services.utils.UnlocationData;
 import lombok.*;
 import lombok.experimental.Accessors;
 import org.apache.poi.hpsf.Decimal;
@@ -27,32 +31,40 @@ public class ArrivalDepartureDetails extends MultiTenancy {
 
     @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "container_yard_id", referencedColumnName = "id")
+    @OrganizationData
     private Parties containerYardId;
 
     @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "transport_port_id", referencedColumnName = "id")
+    @OrganizationData
     private Parties transportPortId;
 
     @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "cto_id", referencedColumnName = "id")
+    @OrganizationData
     private Parties CTOId;
 
     @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "cfs_id", referencedColumnName = "id")
+    @OrganizationData
     private Parties CFSId;
 
     @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "first_foreign_port_id", referencedColumnName = "id")
+    @OrganizationData
     private Parties firstForeignPortId;
 
     @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "last_foreign_port_id", referencedColumnName = "id")
+    @OrganizationData
     private Parties lastForeignPortId;
 
     @Column(name = "first_foreign_port")
+    @UnlocationData
     private String firstForeignPort;
 
     @Column(name = "last_foreign_port")
+    @UnlocationData
     private String lastForeignPort;
 
     @Column(name = "type")

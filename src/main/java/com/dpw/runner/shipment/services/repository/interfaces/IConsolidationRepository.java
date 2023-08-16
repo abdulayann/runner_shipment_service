@@ -19,4 +19,5 @@ public interface IConsolidationRepository extends MultiTenancyRepository<Consoli
         Specification<ConsolidationDetails> spec = (root, criteriaQuery, criteriaBuilder) -> criteriaBuilder.equal(root.get("id"), id);
         return findOne(spec);
     }
+    Optional<ConsolidationDetails> findByBol (String bol);
 }

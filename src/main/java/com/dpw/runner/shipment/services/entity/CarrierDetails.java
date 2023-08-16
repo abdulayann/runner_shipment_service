@@ -35,8 +35,8 @@ public class CarrierDetails extends MultiTenancy {
     @DedicatedMasterData(type = Constants.CARRIER_MASTER_DATA)
     private String shippingLine;
 
-    @Column(name = Constants.VESSEL_MASTER_DATA)
-    @DedicatedMasterData(type = "Vessel")
+    @Column(name = "vessel")
+    @DedicatedMasterData(type = Constants.VESSEL_MASTER_DATA)
     private String vessel;
 
     @Column(name = "voyage")

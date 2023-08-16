@@ -330,6 +330,7 @@ public class ShipmentDetails extends MultiTenancy {
     @JoinTable(name = "console_shipment_mapping",
             joinColumns = @JoinColumn(name = "shipment_id"),
             inverseJoinColumns = @JoinColumn(name = "consolidation_id"))
+    @JsonIgnoreProperties("shipmentsList")
     private List<ConsolidationDetails> consolidationList;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "entityId")
