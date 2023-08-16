@@ -694,7 +694,7 @@ public class EntityTransferService implements IEntityTransferService {
                 throw new ValidationException(EntityTransferConstants.APPROVAL_ROLE_NOT_ASSIGNED+ tenantId);
             }
             else{
-                SendEntityResponse response = this.sendConsoleTaskToV1(tenantId, approverRoleId, tenantIdsList, entityTransferConsolidationDetails, sendToOrganization, entityTransferConsolidationDetails.getConsolidationNumber(), houseBill, entityTransferConsolidationDetails.getMAWB(), consolidationDetails.getId(), shipmentIds);
+                SendEntityResponse response = this.sendConsoleTaskToV1(tenantId, approverRoleId, tenantIdsList, entityTransferConsolidationDetails, sendToOrganization, entityTransferConsolidationDetails.getConsolidationNumber(), houseBill, entityTransferConsolidationDetails.getMawb(), consolidationDetails.getId(), shipmentIds);
                 if(response.getIsCreated() == true){
                     successTenantIds.add(tenantId);
                 }
