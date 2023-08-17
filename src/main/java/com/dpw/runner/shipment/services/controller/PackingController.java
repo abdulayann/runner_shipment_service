@@ -10,9 +10,11 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
+import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
 import com.dpw.runner.shipment.services.dto.request.PackingRequest;
 import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.PackingResponse;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingService;
 import io.swagger.annotations.ApiResponse;
@@ -35,6 +37,9 @@ import java.io.IOException;
 public class PackingController {
     @Autowired
     private IPackingService packingService;
+
+    @Autowired
+    JsonHelper jsonHelper;
 
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = ContainerConstants.CONTAINER_CREATE_SUCCESSFUL),
@@ -74,6 +79,7 @@ public class PackingController {
     public ResponseEntity<RunnerResponse<PackingResponse>> create(@RequestBody PackingRequest request) {
         String responseMessage;
         try {
+            PackingRequest req = jsonHelper.convertValue(request, PackingRequest.class);
             return (ResponseEntity<RunnerResponse<PackingResponse>>) packingService.create(CommonRequestModel.buildRequest(request));
         } catch (Exception e) {
             responseMessage = e.getMessage() != null ? e.getMessage()

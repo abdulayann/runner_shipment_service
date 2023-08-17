@@ -11,7 +11,9 @@ import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.ContainerAPIsRequest.ContainerAssignRequest;
 import com.dpw.runner.shipment.services.dto.ContainerAPIsRequest.ContainerPackAssignDetachRequest;
 import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
+import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
 import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerService;
 import io.swagger.annotations.ApiResponse;
@@ -34,6 +36,9 @@ public class ContainerController {
 
     @Autowired
     IContainerService containerService;
+
+    @Autowired
+    JsonHelper jsonHelper;
 
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = ContainerConstants.CONTAINER_CREATE_SUCCESSFUL),
@@ -73,6 +78,7 @@ public class ContainerController {
     public ResponseEntity<RunnerResponse<ContainerResponse>> create(@RequestBody ContainerRequest request) {
         String responseMessage;
         try {
+            ContainerRequest req = jsonHelper.convertValue(request, ContainerRequest.class);
             return (ResponseEntity<RunnerResponse<ContainerResponse>>) containerService.create(CommonRequestModel.buildRequest(request));
         } catch (Exception e) {
             responseMessage = e.getMessage() != null ? e.getMessage()
