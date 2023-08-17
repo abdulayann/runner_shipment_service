@@ -671,16 +671,16 @@ public class EntityTransferService implements IEntityTransferService {
             log.info("Consolidation Payload Created.");
 
             List<Integer> successTenantIds = new ArrayList<>();
-//            if(sendToBranch != null || sendToBranch.size() != 0) {
-//                this.createConsoleTasks(sendToBranch, successTenantIds, entityTransferConsolidationDetails, consolidationDetails.get(), false, houseBills, shipmentIds);
-//            }
+            if(sendToBranch != null || sendToBranch.size() != 0) {
+                this.createConsoleTasks(sendToBranch, successTenantIds, entityTransferConsolidationDetails, consolidationDetails.get(), false, houseBills, shipmentIds);
+            }
 
-//            if(sendToOrg != null || sendToOrg.size() != 0) {
-//                List<Integer> tenantIdsFromOrg = tenantIdFromOrganizations(sendToOrg);
-//                if(tenantIdsFromOrg != null || tenantIdsFromOrg.size() != 0) {
-//                    this.createConsoleTasks(tenantIdsFromOrg, successTenantIds, entityTransferConsolidationDetails, consolidationDetails.get(), true, houseBills, shipmentIds);
-//                }
-//            }
+            if(sendToOrg != null || sendToOrg.size() != 0) {
+                List<Integer> tenantIdsFromOrg = tenantIdFromOrganizations(sendToOrg);
+                if(tenantIdsFromOrg != null || tenantIdsFromOrg.size() != 0) {
+                    this.createConsoleTasks(tenantIdsFromOrg, successTenantIds, entityTransferConsolidationDetails, consolidationDetails.get(), true, houseBills, shipmentIds);
+                }
+            }
 
             SendConsolidationResponse sendConsolidationResponse = SendConsolidationResponse.builder().successTenantIds(successTenantIds).entityTransferConsolidationDetails(entityTransferConsolidationDetails).build();
             return ResponseHelper.buildSuccessResponse(sendConsolidationResponse);
