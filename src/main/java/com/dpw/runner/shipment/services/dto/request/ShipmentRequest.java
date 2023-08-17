@@ -16,7 +16,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ShipmentRequest extends CommonRequest implements IRunnerRequest {
-    private AdditionalDetailRequest additionalDetail; //
+    private AdditionalDetailRequest additionalDetail;
     private String additionalTerms;
     private String assignedTo;
     private Boolean autoUpdateWtVol;
@@ -25,7 +25,7 @@ public class ShipmentRequest extends CommonRequest implements IRunnerRequest {
     private String bookingReference;
     private String bookingType;
     private Boolean cargoFinanceBooking;
-    private CarrierDetailRequest carrierDetails; //
+    private CarrierDetailRequest carrierDetails;
     private BigDecimal chargable;
     private String chargeableUnit;
     private PartiesRequest client;
