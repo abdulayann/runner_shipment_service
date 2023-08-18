@@ -8,6 +8,7 @@ import org.springframework.data.jpa.domain.Specification;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 public interface IConsolidationDetailsDao {
     ConsolidationDetails save(ConsolidationDetails consolidationDetails);
@@ -17,4 +18,5 @@ public interface IConsolidationDetailsDao {
     void delete(ConsolidationDetails consolidationDetails);
     List<ConsolidationDetails> saveAll(List<ConsolidationDetails> consolidationDetails);
     Optional<ShipmentDetails> findShipmentById(Long shipmentId);
+    Optional<ConsolidationDetails> findByGuid (UUID guid);
 }
