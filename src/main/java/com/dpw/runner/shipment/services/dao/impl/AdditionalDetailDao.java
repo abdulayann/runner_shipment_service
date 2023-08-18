@@ -41,7 +41,7 @@ public class AdditionalDetailDao implements IAdditionalDetailDao {
         additionalDetailRepository.delete(additionalDetails);
     }
 
-    public AdditionalDetails updateEntityFromShipment(AdditionalDetails additionalDetail, Long shipmentId) throws Exception {
+    public AdditionalDetails updateEntityFromShipment(AdditionalDetails additionalDetail) throws Exception {
         String responseMsg;
         try {
             // TODO- Handle Transactions here

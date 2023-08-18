@@ -29,7 +29,6 @@ import com.dpw.runner.shipment.services.service_bus.model.EventMessage;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
-import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
@@ -48,7 +47,6 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
-import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.*;
@@ -283,22 +281,6 @@ public class ConsolidationService implements IConsolidationService {
         AchievedQuantities achievedQuantities = jsonHelper.convertValue(request.getAchievedQuantities(), AchievedQuantities.class);
 
         try {
-
-            if (carrierDetails != null) {
-                createCarrier(carrierDetails);
-                consolidationDetails.setCarrierDetails(carrierDetails);
-            }
-
-            if (allocations != null) {
-                createAllocations(allocations);
-                consolidationDetails.setAllocations(allocations);
-            }
-
-            if (achievedQuantities != null) {
-                createAchievedQuantities(achievedQuantities);
-                consolidationDetails.setAchievedQuantities(achievedQuantities);
-            }
-
             consolidationDetails.setShipmentsList(null);
 
             getConsolidation(consolidationDetails);
@@ -324,10 +306,6 @@ public class ConsolidationService implements IConsolidationService {
             List<JobRequest> jobRequest = request.getJobsList();
             if (jobRequest != null)
                 createJobsAsync(consolidationDetails, jobRequest);
-
-            List<NotesRequest> notesRequest = request.getNotesList();
-            if (notesRequest != null)
-                createNotesAsync(consolidationDetails, notesRequest);
 
             List<ReferenceNumbersRequest> referenceNumbersRequest = request.getReferenceNumbersList();
             if (referenceNumbersRequest != null)
@@ -544,12 +522,8 @@ public class ConsolidationService implements IConsolidationService {
         List<EventsRequest> eventsRequestList = consolidationDetailsRequest.getEventsList();
         List<FileRepoRequest> fileRepoRequestList = consolidationDetailsRequest.getFileRepoList();
         List<JobRequest> jobRequestList = consolidationDetailsRequest.getJobsList();
-        List<NotesRequest> notesRequestList = consolidationDetailsRequest.getNotesList();
         List<ReferenceNumbersRequest> referenceNumbersRequestList = consolidationDetailsRequest.getReferenceNumbersList();
         List<RoutingsRequest> routingsRequestList = consolidationDetailsRequest.getRoutingsList();
-        CarrierDetailRequest carrierDetailRequest = consolidationDetailsRequest.getCarrierDetails();
-        AllocationsRequest allocationsRequest = consolidationDetailsRequest.getAllocations();
-        AchievedQuantitiesRequest achievedQuantitiesRequest = consolidationDetailsRequest.getAchievedQuantities();
 
         // TODO- implement Validation logic
         long id = consolidationDetailsRequest.getId();
@@ -564,49 +538,42 @@ public class ConsolidationService implements IConsolidationService {
         try {
 
             ConsolidationDetails entity = jsonHelper.convertValue(consolidationDetailsRequest, ConsolidationDetails.class);
-            entity.setId(oldEntity.get().getId());
-            List<Containers> updatedContainers = null;
-            if (containerRequestList != null) {
-                updatedContainers = containerDao.updateEntityFromShipmentConsole(convertToEntityList(containerRequestList, Containers.class), entity.getId());
-            } else {
-                updatedContainers = oldEntity.get().getContainersList();
-            }
-            entity.setContainersList(updatedContainers);
-            CarrierDetails updatedCarrierDetails = null;
-            if (carrierDetailRequest != null) {
-                updatedCarrierDetails = carrierDao.updateEntityFromShipmentConsole(convertToClass(carrierDetailRequest, CarrierDetails.class));
-                entity.setCarrierDetails(updatedCarrierDetails);
-            }
-            if (entity.getSendingAgent() == null)
-                entity.setSendingAgent(oldEntity.get().getSendingAgent());
-            if (entity.getReceivingAgent() == null)
-                entity.setReceivingAgent(oldEntity.get().getReceivingAgent());
-            if (entity.getCreditor() == null)
-                entity.setCreditor(oldEntity.get().getCreditor());
-            if (entity.getCoLoadWith() == null)
-                entity.setCoLoadWith(oldEntity.get().getCoLoadWith());
-            if (entity.getBorrowedFrom() == null)
-                entity.setBorrowedFrom(oldEntity.get().getBorrowedFrom());
-            if (entity.getArrivalDetails() == null)
-                entity.setArrivalDetails(oldEntity.get().getArrivalDetails());
-            if (entity.getDepartureDetails() == null)
-                entity.setDepartureDetails(oldEntity.get().getDepartureDetails());
-            Allocations updatedAllocations = null;
-            if (allocationsRequest != null) {
-                updatedAllocations = allocationsDao.updateEntityFromShipmentConsole(convertToClass(allocationsRequest, Allocations.class));
-                entity.setAllocations(updatedAllocations);
-            }
-            AchievedQuantities updatedAchievedQuantities = null;
-            if (achievedQuantitiesRequest != null) {
-                updatedAchievedQuantities = achievedQuantitiesDao.updateEntityFromShipmentConsole(convertToClass(achievedQuantitiesRequest, AchievedQuantities.class));
-                entity.setAchievedQuantities(updatedAchievedQuantities);
-            }
+
+            List<Packing> oldPackingList = oldEntity.get().getPackingList();
+            List<Containers> oldContainerList = oldEntity.get().getContainersList();
+            List<Events> oldEventsList = oldEntity.get().getEventsList();
+            List<FileRepo> oldFileRepoList = oldEntity.get().getFileRepoList();
+            List<Jobs> oldJobList = oldEntity.get().getJobsList();
+            List<ReferenceNumbers> oldReferenceNumbersList = oldEntity.get().getReferenceNumbersList();
+            List<Routings> oldRoutingsList = oldEntity.get().getRoutingsList();
+
             entity = consolidationDetailsDao.update(entity);
 
             ConsolidationDetailsResponse response = jsonHelper.convertValue(entity, ConsolidationDetailsResponse.class);
-            response.setContainersList(updatedContainers.stream().map(e -> jsonHelper.convertValue(e, ContainerResponse.class)).collect(Collectors.toList()));
-            if (carrierDetailRequest != null) {
-                response.setCarrierDetails(convertToClass(updatedCarrierDetails, CarrierDetailResponse.class));
+            if(containerRequestList == null) {
+                response.setContainersList(convertToDtoList(oldContainerList, ContainerResponse.class));
+            }
+            if (packingRequestList == null) {
+                response.setPackingList(convertToDtoList(oldPackingList, PackingResponse.class));
+            }
+            if (eventsRequestList == null) {
+                response.setEventsList(convertToDtoList(oldEventsList, EventsResponse.class));
+            }
+            if (fileRepoRequestList == null) {
+                response.setFileRepoList(convertToDtoList(oldFileRepoList, FileRepoResponse.class));
+            }
+            if (jobRequestList == null) {
+                response.setJobsList(convertToDtoList(oldJobList, JobResponse.class));
+            }
+            if (referenceNumbersRequestList == null) {
+                response.setReferenceNumbersList(convertToDtoList(oldReferenceNumbersList, ReferenceNumbersResponse.class));
+            }
+            if (routingsRequestList == null) {
+                response.setRoutingsList(convertToDtoList(oldRoutingsList, RoutingsResponse.class));
+            }
+            if(containerRequestList != null) {
+                List<Containers> updatedContainers = containerDao.updateEntityFromShipmentConsole(convertToEntityList(containerRequestList, Containers.class), id);
+                response.setContainersList(convertToDtoList(updatedContainers, ContainerResponse.class));
             }
             if (packingRequestList != null) {
                 List<Packing> updatedPackings = packingDao.updateEntityFromConsole(convertToEntityList(packingRequestList, Packing.class), id);
@@ -623,10 +590,6 @@ public class ConsolidationService implements IConsolidationService {
             if (jobRequestList != null) {
                 List<Jobs> updatedJobs = jobDao.updateEntityFromConsole(convertToEntityList(jobRequestList, Jobs.class), id);
                 response.setJobsList(convertToDtoList(updatedJobs, JobResponse.class));
-            }
-            if (notesRequestList != null) {
-                List<Notes> updatedNotes = notesDao.updateEntityFromOtherEntity(convertToEntityList(notesRequestList, Notes.class), id, Constants.CONSOLIDATION);
-                response.setNotesList(convertToDtoList(updatedNotes, NotesResponse.class));
             }
             if (referenceNumbersRequestList != null) {
                 List<ReferenceNumbers> updatedReferenceNumbers = referenceNumbersDao.updateEntityFromConsole(convertToEntityList(referenceNumbersRequestList, ReferenceNumbers.class), id);

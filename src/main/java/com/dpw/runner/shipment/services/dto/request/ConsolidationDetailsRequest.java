@@ -2,15 +2,11 @@ package com.dpw.runner.shipment.services.dto.request;
 
 import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
-import com.dpw.runner.shipment.services.entity.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.Where;
 
-import javax.persistence.*;
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -112,7 +108,6 @@ public class ConsolidationDetailsRequest extends CommonRequest implements IRunne
     private List<JobRequest> jobsList;
     private List<EventsRequest> eventsList;
     private List<FileRepoRequest> fileRepoList;
-    private List<NotesRequest> notesList;
     private List<ShipmentRequest> shipmentsList;
     private List<Long> shipmentIds;
 }

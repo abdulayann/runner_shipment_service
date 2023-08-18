@@ -22,7 +22,10 @@ import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.entity.enums.GenerationType;
-import com.dpw.runner.shipment.services.entitytransfer.dto.*;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCarrier;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCurrency;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
@@ -33,17 +36,16 @@ import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.masterdata.response.CarrierResponse;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
+import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service_bus.AzureServiceBusTopic;
 import com.dpw.runner.shipment.services.service_bus.ISBProperties;
 import com.dpw.runner.shipment.services.service_bus.SBUtilsImpl;
-import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
 import com.dpw.runner.shipment.services.service_bus.model.EventMessage;
 import com.dpw.runner.shipment.services.utils.DedicatedMasterData;
 import com.dpw.runner.shipment.services.utils.MasterData;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.dpw.runner.shipment.services.utils.UnlocationData;
-import com.dpw.runner.shipment.services.validator.enums.Operators;
 import com.dpw.runner.shipment.services.validator.enums.Operators;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.util.Pair;
@@ -544,16 +546,6 @@ public class ShipmentService implements IShipmentService {
                 shipmentDetails.setConsolidationList(consolList);
             }
 
-            if (additionalDetails != null) {
-                createAdditionalDetail(shipmentDetails, additionalDetails);
-                shipmentDetails.setAdditionalDetails(additionalDetails);
-            }
-
-            if (carrierDetails != null) {
-                createCarrier(shipmentDetails, carrierDetails);
-                shipmentDetails.setCarrierDetails(carrierDetails);
-            }
-
             if (request.getContainersList() != null) {
                 List<ContainerRequest> containerRequest = request.getContainersList();
                 List<Containers> containers = containerDao.saveAll(convertToEntityList(containerRequest, Containers.class));
@@ -868,33 +860,6 @@ public class ShipmentService implements IShipmentService {
             }
             entity.setContainersList(updatedContainers);
 
-            AdditionalDetails updatedAdditionalDetails = null;
-            if (additionalDetailRequest != null) {
-                updatedAdditionalDetails = additionalDetailDao.updateEntityFromShipment(convertToClass(additionalDetailRequest, AdditionalDetails.class), id);
-                entity.setAdditionalDetails(updatedAdditionalDetails);
-            } else {
-                entity.setAdditionalDetails(oldEntity.get().getAdditionalDetails());
-            }
-
-            CarrierDetails updatedCarrierDetails = null;
-            if (carrierDetailRequest != null) {
-                updatedCarrierDetails = carrierDao.updateEntityFromShipmentConsole(convertToClass(carrierDetailRequest, CarrierDetails.class));
-                entity.setCarrierDetails(updatedCarrierDetails);
-            } else {
-                entity.setCarrierDetails(oldEntity.get().getCarrierDetails());
-            }
-
-            if (entity.getClient() == null)
-                entity.setClient(oldEntity.get().getClient());
-            if (entity.getConsignee() == null)
-                entity.setConsignee(oldEntity.get().getConsignee());
-            if (entity.getConsigner() == null)
-                entity.setConsigner(oldEntity.get().getConsigner());
-            if (entity.getPickupDetails() == null)
-                entity.setPickupDetails(oldEntity.get().getPickupDetails());
-            if (entity.getDeliveryDetails() == null)
-                entity.setDeliveryDetails(oldEntity.get().getDeliveryDetails());
-
             List<BookingCarriage> oldBookingCarriages = oldEntity.get().getBookingCarriagesList();
             List<Packing> oldPackings = oldEntity.get().getPackingList();
             List<ELDetails> oldELDetails = oldEntity.get().getElDetailsList();
@@ -1196,7 +1161,7 @@ public class ShipmentService implements IShipmentService {
             entity.setContainersList(updatedContainers);
             AdditionalDetails updatedAdditionalDetails = null;
             if (additionalDetailRequest != null) {
-                updatedAdditionalDetails = additionalDetailDao.updateEntityFromShipment(convertToClass(additionalDetailRequest, AdditionalDetails.class), id);
+                updatedAdditionalDetails = additionalDetailDao.updateEntityFromShipment(convertToClass(additionalDetailRequest, AdditionalDetails.class));
                 entity.setAdditionalDetails(updatedAdditionalDetails);
             }
             CarrierDetails updatedCarrierDetails = null;
@@ -1504,7 +1469,7 @@ public class ShipmentService implements IShipmentService {
                     oldAdditionalDetails = oldEntity.get().getAdditionalDetails();
                     additionalDetailRequest.setId(oldAdditionalDetails.getId());
                 }
-                updatedAdditionalDetails = additionalDetailDao.updateEntityFromShipment(convertToClass(additionalDetailRequest, AdditionalDetails.class), id);
+                updatedAdditionalDetails = additionalDetailDao.updateEntityFromShipment(convertToClass(additionalDetailRequest, AdditionalDetails.class));
                 entity.setAdditionalDetails(updatedAdditionalDetails);
             }
             else {

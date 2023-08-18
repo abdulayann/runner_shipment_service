@@ -5,4 +5,5 @@ import org.springframework.http.ResponseEntity;
 
 public interface IShipmentSettingsService extends ICommonService{
     ResponseEntity<?> uploadTemplate(CommonRequestModel commonRequestModel);
+    ResponseEntity<?> completeUpdate(CommonRequestModel commonRequestModel) throws Exception;
 }

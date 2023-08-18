@@ -9,6 +9,7 @@ import java.util.List;
 @Data
 public class ShipmentSettingsDetailsResponse implements IRunnerResponse {
     private Long id;
+    private Integer tenantId;
     private Boolean houseBillNumberLock;
     private Boolean restrictHblGen;
     private Boolean printPhoneNumber;
@@ -30,7 +31,7 @@ public class ShipmentSettingsDetailsResponse implements IRunnerResponse {
     private Boolean billingLite;
     private Boolean restrictedLocationsEnabled;
     private Boolean isAtdAtaAutoPopulateEnabled;
-    private List<Integer> restrictedLocations;
+    private List<String> restrictedLocations;
     private String shipmentConsoleImportApproverRole;
     private GenerationType shipmentIdGenerationType;
     private String shipmentIdGenerationPrefix;
@@ -137,6 +138,6 @@ public class ShipmentSettingsDetailsResponse implements IRunnerResponse {
     private Boolean customisedSequence;
     private List<TenantProductsResponse> tenantProducts;
     private List<ProductSequenceConfigResponse> productSequenceConfig;
-    private HawbLockSettingsResponse hawbLockSettingsId;
+    private HawbLockSettingsResponse hawbLockSettings;
     private MawbLockSettingsResponse mawbLockSettings;
 }

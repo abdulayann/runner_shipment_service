@@ -7,19 +7,19 @@ import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
-import com.dpw.runner.shipment.services.dto.request.ShipmentSettingRequest;
-import com.dpw.runner.shipment.services.dto.request.TemplateUploadRequest;
-import com.dpw.runner.shipment.services.dto.response.ShipmentSettingsDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.TemplateUploadResponse;
+import com.dpw.runner.shipment.services.dao.interfaces.*;
+import com.dpw.runner.shipment.services.dto.request.*;
+import com.dpw.runner.shipment.services.dto.response.*;
+import com.dpw.runner.shipment.services.entity.HblTermsConditionTemplate;
+import com.dpw.runner.shipment.services.entity.ProductSequenceConfig;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.entity.TenantProducts;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentSettingsService;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
-import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
@@ -31,13 +31,12 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.*;
 
 @Service
 @Slf4j
@@ -47,6 +46,24 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
     private IShipmentSettingsDao shipmentSettingsDao;
     @Autowired
     private DocumentService documentService;
+
+    @Autowired
+    private IHawbLockSettingsDao hawbLockSettingsDao;
+
+    @Autowired
+    private IMawbLockSettingsDao mawbLockSettingsDao;
+
+    @Autowired
+    private IHblLockSettingsDao hblLockSettingsDao;
+
+    @Autowired
+    private IHblTermsConditionTemplateDao hblTermsConditionTemplateDao;
+
+    @Autowired
+    private ITenantProductsDao tenantProductsDao;
+
+    @Autowired
+    private IProductSequenceConfigDao productSequenceConfigDao;
 
     @Autowired
     private JsonHelper jsonHelper;
@@ -62,6 +79,27 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
         ShipmentSettingsDetails shipmentSettingsDetails = convertRequestToEntity(request);
         try {
             shipmentSettingsDetails = shipmentSettingsDao.save(shipmentSettingsDetails);
+
+            if(shipmentSettingsDetails.getHblTermsConditionTemplate() != null) {
+                shipmentSettingsDetails.setHblTermsConditionTemplate(hblTermsConditionTemplateDao.saveEntityFromSettings(shipmentSettingsDetails.getHblTermsConditionTemplate(), shipmentSettingsDetails.getId(), true));
+            }
+            if(shipmentSettingsDetails.getHblHawbBackPrintTemplate() != null) {
+                shipmentSettingsDetails.setHblHawbBackPrintTemplate(hblTermsConditionTemplateDao.saveEntityFromSettings(shipmentSettingsDetails.getHblHawbBackPrintTemplate(), shipmentSettingsDetails.getId(), false));
+            }
+            if(shipmentSettingsDetails.getTenantProducts() != null) {
+                shipmentSettingsDetails.setTenantProducts(tenantProductsDao.saveEntityFromSettings(shipmentSettingsDetails.getTenantProducts(), shipmentSettingsDetails.getId()));
+            }
+            if(shipmentSettingsDetails.getProductSequenceConfig() != null) {
+                if(shipmentSettingsDetails.getProductSequenceConfig().size() > 0) {
+                    for (ProductSequenceConfig productSequenceConfig: shipmentSettingsDetails.getProductSequenceConfig()) {
+                        ListCommonRequest listCommonRequest = constructListCommonRequest("productType", productSequenceConfig.getTenantProducts().getProductType(), "=");
+                        Pair<Specification<TenantProducts>, Pageable> pair = fetchData(listCommonRequest, TenantProducts.class);
+                        Page<TenantProducts> tenantProducts = tenantProductsDao.findAll(pair.getLeft(), pair.getRight());
+                        productSequenceConfig.setTenantProducts(tenantProducts.getContent().get(0));
+                    }
+                }
+                shipmentSettingsDetails.setProductSequenceConfig(productSequenceConfigDao.saveEntityFromSettings(shipmentSettingsDetails.getProductSequenceConfig(), shipmentSettingsDetails.getId()));
+            }
             log.info("Shipment Setting Details created successfully for Id {} with Request Id {}", shipmentSettingsDetails.getId(), LoggerHelper.getRequestIdFromMDC());
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -102,6 +140,113 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
             return ResponseHelper.buildFailedResponse(responseMsg);
         }
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(shipmentSettingsDetails));
+    }
+
+    @Transactional
+    @Override
+    public ResponseEntity<?> completeUpdate(CommonRequestModel commonRequestModel) throws Exception {
+        String responseMsg;
+        ShipmentSettingRequest request = (ShipmentSettingRequest) commonRequestModel.getData();
+        if(request == null) {
+            log.error("Request is empty for Shipment Settings update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+        }
+
+        if(request.getId() == null && request.getTenantId() == null) {
+            log.error("Request Id and Tenant Id is null for Shipment Settings update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+        }
+        Optional<ShipmentSettingsDetails> oldEntity = null;
+        if(request.getTenantId() != null) {
+            ListCommonRequest newRequest = new ListCommonRequest();
+            newRequest.setPageNo(1);
+            newRequest.setPageSize(Integer.MAX_VALUE);
+            newRequest.setFilterCriteria(new ArrayList<>());
+            Pair<Specification<ShipmentSettingsDetails>, Pageable> tuple = fetchData(newRequest, ShipmentSettingsDetails.class);
+            Page<ShipmentSettingsDetails> shipmentSettingsPage = shipmentSettingsDao.list(tuple.getLeft(), tuple.getRight());
+            if(shipmentSettingsPage.get().collect(Collectors.toList()) != null && shipmentSettingsPage.get().collect(Collectors.toList()).size() > 0)
+                oldEntity = Optional.ofNullable(shipmentSettingsPage.get().collect(Collectors.toList()).get(0));
+        }
+        else {
+            long id = request.getId();
+            oldEntity = shipmentSettingsDao.findById(id);
+        }
+        if(oldEntity == null || !oldEntity.isPresent()) {
+            log.debug("Shipment Setting is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
+            throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+        }
+
+        try {
+            request.setId(oldEntity.get().getId());
+            if(request.getHawbLockSettings() != null && oldEntity.get().getHawbLockSettings() != null) {
+                request.getHawbLockSettings().setId(oldEntity.get().getHawbLockSettings().getId());
+            }
+            if(request.getMawbLockSettings() != null && oldEntity.get().getMawbLockSettings() != null) {
+                request.getMawbLockSettings().setId(oldEntity.get().getMawbLockSettings().getId());
+            }
+            if(request.getHblLockSettings() != null && oldEntity.get().getHblLockSettings() != null) {
+                request.getHblLockSettings().setId(oldEntity.get().getHblLockSettings().getId());
+            }
+            ShipmentSettingsDetails shipmentSettingsDetails = convertRequestToEntity(request);
+
+            List<HblTermsConditionTemplateRequest> hblTermsConditionTemplateList = request.getHblTermsConditionTemplate();
+            List<HblTermsConditionTemplateRequest> hblHawbBackPrintTemplateList = request.getHblHawbBackPrintTemplate();
+            List<TenantProductsRequest> tenantProductsList = request.getTenantProducts();
+            List<ProductSequenceConfigRequest> productSequenceConfigList = request.getProductSequenceConfig();
+
+            List<HblTermsConditionTemplate> oldHblTermsConditionTemplateList = oldEntity.get().getHblTermsConditionTemplate();
+            List<HblTermsConditionTemplate> oldHblHawbBackPrintTemplateList = oldEntity.get().getHblHawbBackPrintTemplate();
+            List<TenantProducts> oldTenantProductsList = oldEntity.get().getTenantProducts();
+            List<ProductSequenceConfig> oldProductSequenceConfigList = oldEntity.get().getProductSequenceConfig();
+
+            shipmentSettingsDetails = shipmentSettingsDao.save(shipmentSettingsDetails);
+
+            ShipmentSettingsDetailsResponse response = jsonHelper.convertValue(shipmentSettingsDetails, ShipmentSettingsDetailsResponse.class);
+            response.setTenantId(oldEntity.get().getTenantId());
+            if(hblTermsConditionTemplateList == null) {
+                response.setHblTermsConditionTemplate(convertToDtoList(oldHblTermsConditionTemplateList, HblTermsConditionTemplateResponse.class));
+            }
+            if(hblHawbBackPrintTemplateList == null) {
+                response.setHblHawbBackPrintTemplate(convertToDtoList(oldHblHawbBackPrintTemplateList, HblTermsConditionTemplateResponse.class));
+            }
+            if(tenantProductsList == null) {
+                response.setTenantProducts(convertToDtoList(oldTenantProductsList, TenantProductsResponse.class));
+            }
+            if(productSequenceConfigList == null) {
+                response.setProductSequenceConfig(convertToDtoList(oldProductSequenceConfigList, ProductSequenceConfigResponse.class));
+            }
+
+            if(hblTermsConditionTemplateList != null) {
+                List<HblTermsConditionTemplate> hblTermsConditionTemplates = hblTermsConditionTemplateDao.updateEntityFromSettings(convertToEntityList(hblTermsConditionTemplateList, HblTermsConditionTemplate.class), shipmentSettingsDetails.getId(), true);
+                response.setHblTermsConditionTemplate(convertToDtoList(hblTermsConditionTemplates, HblTermsConditionTemplateResponse.class));
+            }
+            if(hblHawbBackPrintTemplateList != null) {
+                List<HblTermsConditionTemplate> hblHawbBackPrintTemplates = hblTermsConditionTemplateDao.updateEntityFromSettings(convertToEntityList(hblHawbBackPrintTemplateList, HblTermsConditionTemplate.class), shipmentSettingsDetails.getId(), false);
+                response.setHblHawbBackPrintTemplate(convertToDtoList(hblHawbBackPrintTemplates, HblTermsConditionTemplateResponse.class));
+            }
+            if(tenantProductsList != null) {
+                List<TenantProducts> tenantProducts = tenantProductsDao.updateEntityFromSettings(convertToEntityList(tenantProductsList, TenantProducts.class), shipmentSettingsDetails.getId());
+                response.setTenantProducts(convertToDtoList(tenantProducts, TenantProductsResponse.class));
+            }
+            if(productSequenceConfigList != null) {
+                if(productSequenceConfigList.size() > 0) {
+                    for (ProductSequenceConfigRequest productSequenceConfig: productSequenceConfigList) {
+                        ListCommonRequest listCommonRequest = constructListCommonRequest("productType", productSequenceConfig.getTenantProducts().getProductType(), "=");
+                        Pair<Specification<TenantProducts>, Pageable> pair = fetchData(listCommonRequest, TenantProducts.class);
+                        Page<TenantProducts> tenantProducts = tenantProductsDao.findAll(pair.getLeft(), pair.getRight());
+                        productSequenceConfig.setTenantProducts(convertToClass(tenantProducts.getContent().get(0), TenantProductsRequest.class));
+                    }
+                }
+                List<ProductSequenceConfig> productSequenceConfigs = productSequenceConfigDao.updateEntityFromSettings(convertToEntityList(productSequenceConfigList, ProductSequenceConfig.class), shipmentSettingsDetails.getId());
+                response.setProductSequenceConfig(convertToDtoList(productSequenceConfigs, ProductSequenceConfigResponse.class));
+            }
+
+            return ResponseHelper.buildSuccessResponse(response);
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
     }
 
     public ResponseEntity<?> retrieveById(CommonRequestModel commonRequestModel){

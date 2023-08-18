@@ -86,7 +86,7 @@ public class ShipmentSettingsDetails extends MultiTenancy {
 
     @Column(name = "restricted_locations")
     @ElementCollection
-    private List<Integer> restrictedLocations;
+    private List<String> restrictedLocations;
 
     @Column(name = "shipment_console_import_approver_role")
     private String shipmentConsoleImportApproverRole;
@@ -104,9 +104,11 @@ public class ShipmentSettingsDetails extends MultiTenancy {
     @Column(name = "low_margin_approval")
     private Boolean lowMarginApproval;
 
+    @Where(clause = "is_front_print = true")
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "shipmentSettingsId")
     private List<HblTermsConditionTemplate> hblTermsConditionTemplate;
 
+    @Where(clause = "is_front_print = false")
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "shipmentSettingsId")
     private List<HblTermsConditionTemplate> hblHawbBackPrintTemplate;
 
@@ -414,7 +416,7 @@ public class ShipmentSettingsDetails extends MultiTenancy {
     @Column(name = "unico_bl_object")
     private Boolean unicoBlObject;
 
-    @OneToOne(targetEntity = HblLockSettings.class)
+    @OneToOne(targetEntity = HblLockSettings.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "hbl_lock_settings_id", referencedColumnName = "id")
     private HblLockSettings hblLockSettings;
 
@@ -431,11 +433,11 @@ public class ShipmentSettingsDetails extends MultiTenancy {
 
     //AWB Lock Settings
 
-    @OneToOne(targetEntity = HawbLockSettings.class)
+    @OneToOne(targetEntity = HawbLockSettings.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "hawb_lock_settings_id", referencedColumnName = "id")
-    private HawbLockSettings hawbLockSettingsId;
+    private HawbLockSettings hawbLockSettings;
 
-    @OneToOne(targetEntity = MawbLockSettings.class)
+    @OneToOne(targetEntity = MawbLockSettings.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "mawb_lock_settings_id", referencedColumnName = "id")
     private MawbLockSettings mawbLockSettings;
 
