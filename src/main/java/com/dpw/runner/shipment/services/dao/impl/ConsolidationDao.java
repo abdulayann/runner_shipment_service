@@ -19,6 +19,7 @@ import org.springframework.stereotype.Repository;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Repository
 @Slf4j
@@ -93,5 +94,9 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
 
     public Optional<ShipmentDetails> findShipmentById(Long shipmentId) {
         return shipmentRepository.findById(shipmentId);
+    }
+
+    public Optional<ConsolidationDetails> findByGuid (UUID guid) {
+        return consolidationRepository.findByGuid(guid);
     }
 }

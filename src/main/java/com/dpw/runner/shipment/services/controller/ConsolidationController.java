@@ -10,6 +10,7 @@ import com.dpw.runner.shipment.services.dto.request.ConsolidationDetailsRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentAttachDetachRequest;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationService;
 import io.swagger.annotations.ApiParam;
@@ -33,6 +34,8 @@ public class ConsolidationController {
 
     @Autowired
     private IConsolidationService consolidationService;
+    @Autowired
+    private JsonHelper jsonHelper;
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = "Successful Consolidation Details Data List Retrieval", responseContainer = "List")})
     @PostMapping(value = "/list-consolidation")
@@ -159,5 +162,23 @@ public class ConsolidationController {
     @PostMapping(ApiConstants.DETACH_SHIPMENTS)
     public ResponseEntity<RunnerResponse> detachShipments(@RequestBody @Valid ShipmentAttachDetachRequest request) throws Exception{
         return (ResponseEntity<RunnerResponse>) consolidationService.detachShipments(request.getId(), request.getShipmentIds());
+    }
+
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = ConsolidationConstants.CREATE_SUCCESSFUL),
+            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
+    })
+    @PostMapping(ConsolidationConstants.CONSOLIDATION_V1_CREATE)
+    public ResponseEntity<RunnerResponse<ConsolidationDetailsResponse>> createV1Consolidation(@RequestBody @Valid ConsolidationDetailsRequest request) {
+        String responseMsg;
+        try {
+            ConsolidationDetailsRequest req = jsonHelper.convertValue(request, ConsolidationDetailsRequest.class);
+            return (ResponseEntity<RunnerResponse<ConsolidationDetailsResponse>>) consolidationService.completeV1ConsolidationCreateAndUpdate(CommonRequestModel.buildRequest(req));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+        }
+        return (ResponseEntity<RunnerResponse<ConsolidationDetailsResponse>>) ResponseHelper.buildFailedResponse(responseMsg);
     }
 }
