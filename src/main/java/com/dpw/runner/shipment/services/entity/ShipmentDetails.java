@@ -256,7 +256,7 @@ public class ShipmentDetails extends MultiTenancy {
     private Boolean intraBranch;
 
     @Column(name = "prev_shipment_status")
-    private Long prevShipmentStatus;
+    private Integer prevShipmentStatus;
 
     @Column(name = "is_shipment_read_only")
     private Boolean isShipmentReadOnly;
