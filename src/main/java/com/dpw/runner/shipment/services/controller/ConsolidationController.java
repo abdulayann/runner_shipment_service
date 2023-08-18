@@ -8,8 +8,10 @@ import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.ConsolidationDetailsRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentAttachDetachRequest;
+import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationService;
 import io.swagger.annotations.ApiParam;
@@ -34,6 +36,9 @@ public class ConsolidationController {
     @Autowired
     private IConsolidationService consolidationService;
 
+    @Autowired
+    JsonHelper jsonHelper;
+
     @ApiResponses(value = {@ApiResponse(code = 200, message = "Successful Consolidation Details Data List Retrieval", responseContainer = "List")})
     @PostMapping(value = "/list-consolidation")
     public ResponseEntity<RunnerListResponse<ConsolidationDetailsResponse>> fetchByQuery(@RequestBody @NonNull ListCommonRequest listCommonRequest) {
@@ -55,7 +60,8 @@ public class ConsolidationController {
     public ResponseEntity<RunnerResponse<ConsolidationDetailsResponse>> create(@RequestBody @Valid ConsolidationDetailsRequest request) {
         String responseMsg;
         try {
-            return (ResponseEntity<RunnerResponse<ConsolidationDetailsResponse>>) consolidationService.create(CommonRequestModel.buildRequest(request));
+            ConsolidationDetailsRequest req = jsonHelper.convertValue(request, ConsolidationDetailsRequest.class);
+            return (ResponseEntity<RunnerResponse<ConsolidationDetailsResponse>>) consolidationService.create(CommonRequestModel.buildRequest(req));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;

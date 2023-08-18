@@ -1,10 +1,15 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IRoutingsDao;
 import com.dpw.runner.shipment.services.entity.Routings;
+import com.dpw.runner.shipment.services.entity.enums.LifecycleHooks;
+import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.IRoutingsRepository;
+import com.dpw.runner.shipment.services.validator.ValidatorUtility;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,8 +32,17 @@ public class RoutingsDao implements IRoutingsDao {
     @Autowired
     private IRoutingsRepository routingsRepository;
 
+    @Autowired
+    private ValidatorUtility validatorUtility;
+
+    @Autowired
+    private JsonHelper jsonHelper;
+
     @Override
     public Routings save(Routings routings) {
+        Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(routings) , Constants.ROUTING, LifecycleHooks.ON_CREATE, false);
+        if (! errors.isEmpty())
+            throw new ValidationException(errors.toString());
         return routingsRepository.save(routings);
     }
 
