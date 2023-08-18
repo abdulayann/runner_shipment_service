@@ -18,8 +18,6 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @NoArgsConstructor
 public class BookingCharges extends MultiTenancy {
-    @Column(name = "booking_id")
-    private Long bookingId;
 
     @Column(name = "seq_no")
     private String seqNo;
@@ -159,7 +157,7 @@ public class BookingCharges extends MultiTenancy {
 
     @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "debtor_id", referencedColumnName = "id")
-    private PartiesRequest debtor;
+    private Parties debtor;
 
     @Column(name = "revenue_tax_id")
     private String revenueTaxId;
