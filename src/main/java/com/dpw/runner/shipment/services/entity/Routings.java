@@ -26,6 +26,9 @@ public class Routings extends MultiTenancy {
     @Column(name = "shipment_id")
     private Long shipmentId;
 
+    @Column(name = "booking_id")
+    private Long bookingId;
+
     @Column(name = "leg")
     private Long leg;
 
