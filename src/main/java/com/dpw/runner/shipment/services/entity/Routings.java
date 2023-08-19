@@ -41,11 +41,11 @@ public class Routings extends MultiTenancy {
     @Column(name = "vessel_name")
     private String vesselName;
 
-    @Column(name = "pol_id")
-    private Long polId;
+    @Column(name = "pol")
+    private String pol;
 
-    @Column(name = "pod_id")
-    private Long podId;
+    @Column(name = "pod")
+    private String pod;
 
     @Column(name = "is_domestic")
     private boolean isDomestic;
@@ -88,5 +88,8 @@ public class Routings extends MultiTenancy {
 
     @Column(name = "transit_days")
     private Long transitDays;
+
+    @Column(name = "carrier")
+    private String carrier;
 }
 
