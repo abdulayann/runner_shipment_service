@@ -22,8 +22,8 @@ public class RoutingsRequest extends CommonRequest implements IRunnerRequest {
     private String mode;
     private String routingStatus;
     private String vesselName;
-    private Long polId;
-    private Long podId;
+    private String pol;
+    private String pod;
     private boolean isDomestic;
     private LocalDateTime eta;
     private LocalDateTime etd;
@@ -40,4 +40,5 @@ public class RoutingsRequest extends CommonRequest implements IRunnerRequest {
     private Long routeLegId;
     private Long vesselId;
     private Long transitDays;
+    private String carrier;
 }

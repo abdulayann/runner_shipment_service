@@ -1,11 +1,13 @@
 package com.dpw.runner.shipment.services.dto.request;
 
+import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import io.swagger.annotations.ApiModel;
 import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Data
 @Builder
@@ -13,7 +15,8 @@ import java.time.LocalDateTime;
 @ToString
 @AllArgsConstructor
 @NoArgsConstructor
-public class BookingChargesRequest implements IRunnerRequest {
+public class BookingChargesRequest extends CommonRequest implements IRunnerRequest {
+    private UUID reference_id;
     private Long bookingId;
     private String seqNo;
     private String chargeType;
