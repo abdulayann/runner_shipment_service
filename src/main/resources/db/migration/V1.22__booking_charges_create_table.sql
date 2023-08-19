@@ -66,7 +66,8 @@ CREATE TABLE IF NOT EXISTS booking_charges (
     tax_type_4 DECIMAL,
     revenue_line_total DECIMAL,
     FOREIGN KEY (creditor_id) REFERENCES parties(id),
-    FOREIGN KEY (debtor_id) REFERENCES parties(id)
+    FOREIGN KEY (debtor_id) REFERENCES parties(id),
+    FOREIGN KEY (booking_id) REFERENCES customer_booking(id)
     );
 
 CREATE TABLE IF NOT EXISTS customer_booking (
