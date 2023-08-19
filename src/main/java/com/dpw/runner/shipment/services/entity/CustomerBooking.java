@@ -117,16 +117,16 @@ public class CustomerBooking extends MultiTenancy {
     @Column(name = "contract_id")
     private UUID contractId;
 
-    @OneToMany(fetch = FetchType.LAZY, mappedBy = "id")
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "booking_id")
     private List<Containers> containersList;
 
-    @OneToMany(fetch = FetchType.LAZY, mappedBy = "id")
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "booking_id")
     private List<Packing> packingList;
 
-    @OneToMany(fetch = FetchType.LAZY, mappedBy = "id")
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "booking_id")
     private List<Routings> routingList;
 
-    @OneToMany(fetch = FetchType.LAZY, mappedBy = "id")
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "booking_id")
     private List<BookingCharges> bookingCharges;
 
 }

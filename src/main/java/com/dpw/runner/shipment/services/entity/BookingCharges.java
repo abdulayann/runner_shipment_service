@@ -18,6 +18,8 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @NoArgsConstructor
 public class BookingCharges extends MultiTenancy {
+    @Column(name = "booking_id")
+    public Long bookingId;
 
     @Column(name = "seq_no")
     private String seqNo;
