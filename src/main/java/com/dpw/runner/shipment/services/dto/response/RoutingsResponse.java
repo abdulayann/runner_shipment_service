@@ -17,6 +17,7 @@ public class RoutingsResponse implements IRunnerResponse {
     private Long id;
     private UUID guid;
     private Long shipmentId;
+    private Long bookingId;
     private Long leg;
     private String mode;
     private String routingStatus;

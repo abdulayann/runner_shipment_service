@@ -19,6 +19,7 @@ public class PackingRequest extends CommonRequest implements IRunnerRequest {
     private Long id;
     private Long consolidationId;
     private Long shipmentId;
+    private Long bookingId;
     private Integer DGGoodsId;
     private Integer DGSubstanceId;
     private String packs;
