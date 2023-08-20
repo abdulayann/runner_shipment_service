@@ -1,18 +1,15 @@
 package com.dpw.runner.shipment.services.controller;
 
-import com.dpw.runner.shipment.services.commons.constants.*;
-import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
+import com.dpw.runner.shipment.services.adapters.interfaces.ICRPServiceAdapter;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.constants.CustomerBookingConstants;
+import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
-import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
-import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
-import com.dpw.runner.shipment.services.dto.request.CustomerBookingRequest;
 import com.dpw.runner.shipment.services.dto.request.PlatformToRunnerCustomerBookingRequest;
-import com.dpw.runner.shipment.services.dto.response.CustomerBookingResponse;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.ICustomerBookingService;
-import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import lombok.extern.slf4j.Slf4j;
@@ -22,16 +19,21 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
 
-
 @Slf4j
 @SuppressWarnings("ALL")
 @RestController
 @RequestMapping(value = CustomerBookingConstants.Customer_Booking_API_HANDLE)
 public class CustomerBookingController {
+
+    @Autowired
+    private ICRPServiceAdapter crpService;
+
     @Autowired
     private JsonHelper jsonHelper;
+
     @Autowired
     private ICustomerBookingService customerBookingService;
+
     @PostMapping(CustomerBookingConstants.PLATFORM_CREATE_BOOKING)
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = CustomerBookingConstants.CREATE_SUCCESSFUL),
@@ -49,6 +51,43 @@ public class CustomerBookingController {
         }
         return ResponseHelper.buildFailedResponse(responseMsg);
     }
+
+    @GetMapping(CustomerBookingConstants.CRP_LIST)
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = CustomerBookingConstants.LIST_SUCCESSFUL),
+            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
+    })
+    public ResponseEntity<?> listCRPService(@RequestBody @Valid CRPListRequest request) {
+        String responseMsg;
+        CRPListRequest listRequest = jsonHelper.convertValue(request, CRPListRequest.class);
+        try {
+            return (ResponseEntity<RunnerResponse>) crpService.listCRPService(CommonRequestModel.buildRequest(listRequest));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+        }
+        return ResponseHelper.buildFailedResponse(responseMsg);
+    }
+
+    @GetMapping(CustomerBookingConstants.CRP_RETRIEVE)
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = CustomerBookingConstants.RETRIEVE_SUCCESSFUL),
+            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
+    })
+    public ResponseEntity<?> retrieveCRPService(@RequestBody @Valid CRPRetrieveRequest request) {
+        String responseMsg;
+        CRPRetrieveRequest retrieveRequest = jsonHelper.convertValue(request, CRPRetrieveRequest.class);
+        try {
+            return (ResponseEntity<RunnerResponse>) crpService.retrieveCRPService(CommonRequestModel.buildRequest(retrieveRequest));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+        }
+        return ResponseHelper.buildFailedResponse(responseMsg);
+    }
+
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = CustomerBookingConstants.CREATE_SUCCESSFUL),
             @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
