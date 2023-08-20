@@ -5,9 +5,11 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.dto.request.PlatformToRunnerCustomerBookingRequest;
 import com.dpw.runner.shipment.services.service.interfaces.ICustomerBookingService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Service;
 
 import java.util.concurrent.CompletableFuture;
 
+@Service
 public class CustomerBookingService implements ICustomerBookingService {
 
     @Override
