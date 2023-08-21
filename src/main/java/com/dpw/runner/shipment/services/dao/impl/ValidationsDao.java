@@ -47,6 +47,6 @@ public class ValidationsDao implements IValidationsDao {
 
     @Override
     public Optional<List<Validations>> findByLifecycleHookAndEntity(LifecycleHooks lifecycleHook, String entity) {
-        return validationsRepository.findByLifecycleHookAndEntity(lifecycleHook, entity);
+        return validationsRepository.findByLifecycleHookAndEntity(lifecycleHook.name(), entity);
     }
 }
