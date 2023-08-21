@@ -1,14 +1,13 @@
 package com.dpw.runner.shipment.services.controller;
 
 import com.dpw.runner.shipment.services.commons.constants.Constants;
-import com.dpw.runner.shipment.services.commons.constants.CustomerBookingConstants;
-import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.commons.constants.NPMConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
-import com.dpw.runner.shipment.services.dto.request.PlatformToRunnerCustomerBookingRequest;
+import com.dpw.runner.shipment.services.dto.request.ListContractRequest;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
-import com.dpw.runner.shipment.services.service.interfaces.ICustomerBookingService;
+import com.dpw.runner.shipment.services.service.interfaces.INPMService;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import lombok.extern.slf4j.Slf4j;
@@ -24,28 +23,27 @@ import javax.validation.Valid;
 @Slf4j
 @SuppressWarnings("ALL")
 @RestController
-@RequestMapping(value = CustomerBookingConstants.Customer_Booking_API_HANDLE)
-public class CustomerBookingController {
+@RequestMapping(value = NPMConstants.NPM_API_HANDLE)
+public class NPMController {
     @Autowired
     private JsonHelper jsonHelper;
     @Autowired
-    private ICustomerBookingService customerBookingService;
-    @PostMapping(CustomerBookingConstants.PLATFORM_CREATE_BOOKING)
+    private INPMService npmService;
+    @PostMapping(NPMConstants.LIST_CONTRACT)
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = CustomerBookingConstants.CREATE_SUCCESSFUL),
+            @ApiResponse(code = 200, message = NPMConstants.CONTRACT_LIST_SUCCESSFUL),
             @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
     })
-    public ResponseEntity<?> platformCreateBooking(@RequestBody @Valid PlatformToRunnerCustomerBookingRequest request) {
+    public ResponseEntity<?> fetchContracts(@RequestBody @Valid ListContractRequest request) {
         String responseMsg;
-        PlatformToRunnerCustomerBookingRequest platformBookingCreateRequest = jsonHelper.convertValue(request, PlatformToRunnerCustomerBookingRequest.class);
+        ListContractRequest listContractRequest = jsonHelper.convertValue(request, ListContractRequest.class);
         try {
-            return (ResponseEntity<RunnerResponse>) customerBookingService.platformCreateBooking(CommonRequestModel.buildRequest(platformBookingCreateRequest));
+            return (ResponseEntity<RunnerResponse>) npmService.fetchContracts(CommonRequestModel.buildRequest(listContractRequest));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
-                    : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
+                    : NPMConstants.CONTRACT_LIST_FAILED;
             log.error(responseMsg, e);
         }
         return ResponseHelper.buildFailedResponse(responseMsg);
     }
-
 }

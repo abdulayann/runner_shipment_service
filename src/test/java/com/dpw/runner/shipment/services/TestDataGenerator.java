@@ -274,8 +274,8 @@ public class TestDataGenerator {
                     .etd(LocalDateTime.now())
                     .ata(LocalDateTime.now())
                     .atd(LocalDateTime.now())
-                    .polId((long) random)
-                    .podId((long) random)
+                    .pol(generateString(5))
+                    .pod(generateString(5))
                     .build());
         }
         return list;
