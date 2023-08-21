@@ -2,16 +2,12 @@ package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.dto.request.ListContractRequest;
-import com.dpw.runner.shipment.services.dto.request.TemplateUploadRequest;
-import com.dpw.runner.shipment.services.dto.response.TemplateUploadResponse;
 import com.dpw.runner.shipment.services.service.interfaces.INPMService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
 @Service
@@ -20,6 +16,8 @@ public class NPMService implements INPMService {
 
     @Value("${NPM.BaseUrl}")
     private String npmBaseUrl;
+    @Value("${NPM.Contracts}")
+    private String npmContracts;
     @Value("${NPM.xApikeyV2}")
     private String xApikeyV2;
     @Autowired
@@ -28,7 +26,7 @@ public class NPMService implements INPMService {
     @Override
     public ResponseEntity<?> fetchContracts(CommonRequestModel commonRequestModel) throws Exception {
         ListContractRequest listContractRequest = (ListContractRequest) commonRequestModel.getData();
-        String url = npmBaseUrl;
+        String url = npmBaseUrl + npmContracts;
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
