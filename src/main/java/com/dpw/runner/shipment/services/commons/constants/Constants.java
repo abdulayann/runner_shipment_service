@@ -24,6 +24,7 @@ public class Constants {
     public static final String USER_SERVICE_MAVANI = "mavani";
     public static final String NO_DATA = "Not Found!";
     public static final String SHIPMENT = "SHIPMENT";
+    public static final String BOOKING = "BOOKING";
     public static final String CONSOLIDATION = "CONSOLIDATION";
     public static final String CONTAINER = "CONTAINER";
     public static final String JOBS = "JOBS";

@@ -58,6 +58,29 @@ public class ContainerDao implements IContainerDao {
         containerRepository.delete(containers);
     }
 
+    public List<Containers> updateEntityFromBooking(List<Containers> containersList, Long bookingId) throws Exception {
+        String responseMsg;
+        List<Containers> responseContainers = new ArrayList<>();
+        try {
+            // TODO- Handle Transactions here
+            if (containersList != null && containersList.size() != 0) {
+                List<Containers> containerList = new ArrayList<>(containersList);
+                if(bookingId != null) {
+                    for (Containers containers: containerList) {
+                        containers.setBookingId(bookingId);
+                    }
+                }
+                responseContainers = saveAll(containerList);
+            }
+            return responseContainers;
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
+            log.error(responseMsg, e);
+            throw new Exception(e);
+        }
+    }
+
     public List<Containers> updateEntityFromShipmentConsole(List<Containers> containersList, Long consolidationId) throws Exception {
         String responseMsg;
         List<Containers> responseContainers = new ArrayList<>();

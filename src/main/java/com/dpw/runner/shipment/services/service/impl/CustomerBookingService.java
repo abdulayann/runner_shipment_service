@@ -1,18 +1,16 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.RunnerEntityMapping;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.dao.interfaces.IBookingChargesDao;
-import com.dpw.runner.shipment.services.dao.interfaces.ICustomerBookingDao;
+import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.response.CustomerBookingResponse;
-import com.dpw.runner.shipment.services.entity.BookingCharges;
-import com.dpw.runner.shipment.services.entity.Containers;
-import com.dpw.runner.shipment.services.entity.CustomerBooking;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
@@ -35,6 +33,7 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.convertToEntityList;
 
 @Service
 @Slf4j
@@ -51,6 +50,18 @@ public class CustomerBookingService implements ICustomerBookingService {
 
     @Autowired
     private IBookingChargesDao bookingChargesDao;
+
+    @Autowired
+    private IPackingDao packingDao;
+
+    @Autowired
+    private IRoutingsDao routingsDao;
+
+    @Autowired
+    private IContainerDao containerDao;
+
+    @Autowired
+    private IFileRepoDao fileRepoDao;
 
     private Map<String, RunnerEntityMapping> tableNames = Map.ofEntries(
             Map.entry("customerOrgCode", RunnerEntityMapping.builder().tableName("customer").dataType(String.class).fieldName("orgCode").build()),
@@ -78,11 +89,34 @@ public class CustomerBookingService implements ICustomerBookingService {
         try {
             customerBooking.setBookingNumber(generateBookingNumber());
             customerBooking = customerBookingDao.save(customerBooking);
+            Long bookingId = customerBooking.getId();
+
+            List<PackingRequest> packingRequest = request.getPackingList();
+            if (packingRequest != null)
+                customerBooking.setPackingList(packingDao.saveEntityFromBooking(convertToEntityList(packingRequest, Packing.class), bookingId));
+
+            List<FileRepoRequest> fileRepoRequest = request.getFileRepoList();
+            if (fileRepoRequest != null)
+                customerBooking.setFileRepoList(fileRepoDao.saveEntityFromOtherEntity(convertToEntityList(fileRepoRequest, FileRepo.class), bookingId, Constants.BOOKING));
+
+            List<RoutingsRequest> routingsRequest = request.getRoutingList();
+            if (routingsRequest != null)
+                customerBooking.setRoutingList(routingsDao.saveEntityFromBooking(convertToEntityList(routingsRequest, Routings.class), bookingId));
+
+            List<ContainerRequest> containerRequest = request.getContainersList();
+            if (containerRequest != null) {
+                List<Containers> containers = containerDao.updateEntityFromBooking(convertToEntityList(containerRequest, Containers.class), bookingId);
+                customerBooking.setContainersList(containers);
+            }
+
             List<Containers> containers = customerBooking.getContainersList();
             Map<UUID, Containers> containerMap = new HashMap<>();
-            for(Containers container: containers)
+            if(containers != null && !containers.isEmpty())
             {
-                containerMap.put(container.getGuid(), container);
+                for(Containers container: containers)
+                {
+                    containerMap.put(container.getGuid(), container);
+                }
             }
             List<BookingChargesRequest> bookingChargesRequest = request.getBookingCharges();
             if(bookingChargesRequest != null && !bookingChargesRequest.isEmpty())
@@ -134,11 +168,34 @@ public class CustomerBookingService implements ICustomerBookingService {
         CustomerBooking customerBooking = jsonHelper.convertValue(request, CustomerBooking.class);
         try {
             customerBooking = customerBookingDao.save(customerBooking);
+            Long bookingId = customerBooking.getId();
+
+            List<PackingRequest> packingRequest = request.getPackingList();
+            if (packingRequest != null)
+                customerBooking.setPackingList(packingDao.updateEntityFromBooking(convertToEntityList(packingRequest, Packing.class), bookingId));
+
+            List<FileRepoRequest> fileRepoRequest = request.getFileRepoList();
+            if (fileRepoRequest != null)
+                customerBooking.setFileRepoList(fileRepoDao.updateEntityFromOtherEntity(convertToEntityList(fileRepoRequest, FileRepo.class), bookingId, Constants.BOOKING));
+
+            List<RoutingsRequest> routingsRequest = request.getRoutingList();
+            if (routingsRequest != null)
+                customerBooking.setRoutingList(routingsDao.updateEntityFromBooking(convertToEntityList(routingsRequest, Routings.class), bookingId));
+
+            List<ContainerRequest> containerRequest = request.getContainersList();
+            if (containerRequest != null) {
+                List<Containers> containers = containerDao.updateEntityFromBooking(convertToEntityList(containerRequest, Containers.class), bookingId);
+                customerBooking.setContainersList(containers);
+            }
+
             List<Containers> containers = customerBooking.getContainersList();
             Map<UUID, Containers> containerMap = new HashMap<>();
-            for(Containers container: containers)
+            if(containers != null && !containers.isEmpty())
             {
-                containerMap.put(container.getGuid(), container);
+                for(Containers container: containers)
+                {
+                    containerMap.put(container.getGuid(), container);
+                }
             }
             List<BookingChargesRequest> bookingChargesRequest = request.getBookingCharges();
             if(bookingChargesRequest != null && !bookingChargesRequest.isEmpty())

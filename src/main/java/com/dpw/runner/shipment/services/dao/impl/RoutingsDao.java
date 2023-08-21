@@ -98,6 +98,56 @@ public class RoutingsDao implements IRoutingsDao {
         return res;
     }
 
+    @Override
+    public List<Routings> updateEntityFromBooking(List<Routings> routingsList, Long bookingId) throws Exception {
+        String responseMsg;
+        List<Routings> responseRoutings = new ArrayList<>();
+        try {
+            ListCommonRequest listCommonRequest = constructListCommonRequest("bookingId", bookingId, "=");
+            Pair<Specification<Routings>, Pageable> pair = fetchData(listCommonRequest, Routings.class);
+            Page<Routings> routings = findAll(pair.getLeft(), pair.getRight());
+            Map<Long, Routings> hashMap = routings.stream()
+                    .collect(Collectors.toMap(Routings::getId, Function.identity()));
+            List<Routings> routingsRequestList = new ArrayList<>();
+            if (routingsList != null && routingsList.size() != 0) {
+                for (Routings request : routingsList) {
+                    Long id = request.getId();
+                    if (id != null) {
+                        hashMap.remove(id);
+                    }
+                    routingsRequestList.add(request);
+                }
+                responseRoutings = saveEntityFromBooking(routingsRequestList, bookingId);
+            }
+            deleteRoutings(hashMap);
+            return responseRoutings;
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
+            log.error(responseMsg, e);
+            throw new Exception(e);
+        }
+    }
+
+    @Override
+    public List<Routings> saveEntityFromBooking(List<Routings> routings, Long bookingId) {
+        List<Routings> res = new ArrayList<>();
+        for(Routings req : routings){
+            if(req.getId() != null){
+                long id = req.getId();
+                Optional<Routings> oldEntity = findById(id);
+                if (!oldEntity.isPresent()) {
+                    log.debug("Routing is null for Id {}", req.getId());
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
+            }
+            req.setBookingId(bookingId);
+            req = save(req);
+            res.add(req);
+        }
+        return res;
+    }
+
     public List<Routings> updateEntityFromConsole(List<Routings> routingsList, Long consolidationId) throws Exception {
         String responseMsg;
         List<Routings> responseRoutings = new ArrayList<>();
