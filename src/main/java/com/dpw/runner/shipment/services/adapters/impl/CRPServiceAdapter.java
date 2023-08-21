@@ -16,17 +16,6 @@ import java.net.URI;
 @Service
 public class CRPServiceAdapter implements com.dpw.runner.shipment.services.adapters.interfaces.ICRPServiceAdapter {
 
-    @Value("${crp.api.key}")
-    private String apiKey;
-
-    @Value("${crp.client.type.code}")
-    private String clientTypeCode;
-
-    @Value("${crp.service.provider.code}")
-    private String serviceProviderCode;
-
-    @Value("${crp.cookie}")
-    private String cookie;
     private final RestTemplate restTemplate;
     private final String crpServiceRetrieveUrl;
     private final String crpServiceListUrl;

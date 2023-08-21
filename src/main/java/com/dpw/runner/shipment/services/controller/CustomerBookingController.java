@@ -61,6 +61,7 @@ public class CustomerBookingController {
         return ResponseHelper.buildFailedResponse(responseMsg);
     }
 
+
     @GetMapping(CustomerBookingConstants.CRP_LIST)
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = CustomerBookingConstants.LIST_SUCCESSFUL),
