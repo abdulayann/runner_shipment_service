@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS container_charges_mapping (
     updated_by INT,
     CONSTRAINT Containers_Charges UNIQUE (container_id, charge_id),
     is_deleted BOOLEAN DEFAULT FALSE
-)
+);
 
 ALTER TABLE IF EXISTS customer_booking
     ADD COLUMN is_platform_booking_created BOOLEAN DEFAULT FALSE;
