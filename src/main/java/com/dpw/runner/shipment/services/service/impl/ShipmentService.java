@@ -1273,7 +1273,7 @@ public class ShipmentService implements IShipmentService {
 
     private String createShipmentSequence(ShipmentSettingsDetails shipmentSetting) {
         String sequence = generateSequence(shipmentSetting.getShipmentIdGenerationType(), shipmentSetting.getShipmentIdGenerationPrefix(), shipmentSetting.getShipmentIdGenerationCounter());
-        if (shipmentSetting.getShipmentIdGenerationType() == GenerationType.SERIAL) {
+        if (shipmentSetting.getShipmentIdGenerationType() == GenerationType.Serial) {
             shipmentSetting.setShipmentIdGenerationCounter(shipmentSetting.getShipmentIdGenerationCounter() + 1);
             shipmentSettingsDao.save(shipmentSetting);
         }
@@ -1283,10 +1283,10 @@ public class ShipmentService implements IShipmentService {
     private String generateSequence(GenerationType generationType, String prefix, Integer counter) {
         String suffix;
         switch (generationType) {
-            case RANDOM:
+            case Random:
                 suffix = StringUtility.getRandomString(10);
                 break;
-            case SERIAL:
+            case Serial:
                 suffix = String.valueOf(counter);
                 break;
             default:

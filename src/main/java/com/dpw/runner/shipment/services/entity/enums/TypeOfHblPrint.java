@@ -2,11 +2,11 @@ package com.dpw.runner.shipment.services.entity.enums;
 
 public enum TypeOfHblPrint {
 
-    DRAFT(0, "Draft"),
+    Draft(0, "Draft"),
     eHBL(1, "eHBL"),
-    ORIGINAL(2, "Original"),
-    SURRENDER(2, "Surrender"),
-    ALL(10, "All");
+    Original(2, "Original"),
+    Surrender(2, "Surrender"),
+    All(10, "All");
 
     private final int value;
     private final String description;
