@@ -7,8 +7,8 @@ CREATE TABLE IF NOT EXISTS container_charges_mapping (
     FOREIGN KEY (charge_id) REFERENCES booking_charges(id),
     created_at TIMESTAMP,
     updated_at TIMESTAMP,
-    created_by INT,
-    updated_by INT,
+    created_by VARCHAR,
+    updated_by VARCHAR,
     CONSTRAINT Containers_Charges UNIQUE (container_id, charge_id),
     is_deleted BOOLEAN DEFAULT FALSE
 );
