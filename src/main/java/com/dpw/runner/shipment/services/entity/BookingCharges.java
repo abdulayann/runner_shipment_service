@@ -10,6 +10,7 @@ import lombok.Setter;
 import javax.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 @Getter
@@ -193,4 +194,10 @@ public class BookingCharges extends MultiTenancy {
 
     @Column(name = "revenue_line_total")
     private BigDecimal revenueLineTotal;
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(name = "container_charges_mapping",
+            joinColumns = { @JoinColumn(name = "charge_id") },
+            inverseJoinColumns = { @JoinColumn(name = "container_id") })
+    private List<Containers> containersList;
 }

@@ -9,14 +9,14 @@ import java.util.Optional;
 
 public interface ICustomerBookingDao {
 
-    CustomerBooking save(CustomerBooking CustomerBooking);
+    CustomerBooking save(CustomerBooking customerBooking);
 
     Page<CustomerBooking> findAll(Specification<CustomerBooking> spec, Pageable pageable);
 
     Optional<CustomerBooking> findById(Long id);
 
-    void delete(CustomerBooking carrierDetails);
+    void delete(CustomerBooking customerBooking);
 
-    CustomerBooking updateEntityFromShipmentConsole(CustomerBooking carrierDetails) throws Exception;
+    CustomerBooking updateEntityFromShipmentConsole(CustomerBooking customerBooking) throws Exception;
 
 }

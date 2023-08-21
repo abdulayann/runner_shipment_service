@@ -21,8 +21,8 @@ public class BookingChargesDao implements IBookingChargesDao {
     private IBookingChargesRepository bookingChargesRepository;
 
     @Override
-    public BookingCharges save(BookingCharges BookingCharges) {
-        return bookingChargesRepository.save(BookingCharges);
+    public BookingCharges save(BookingCharges bookingCharges) {
+        return bookingChargesRepository.save(bookingCharges);
     }
 
     @Override
@@ -36,23 +36,23 @@ public class BookingChargesDao implements IBookingChargesDao {
     }
 
     @Override
-    public void delete(BookingCharges BookingCharges) {
-        bookingChargesRepository.delete(BookingCharges);
+    public void delete(BookingCharges bookingCharges) {
+        bookingChargesRepository.delete(bookingCharges);
     }
 
-    public BookingCharges updateEntityFromShipmentConsole(BookingCharges BookingCharges) throws Exception {
+    public BookingCharges updateEntityFromShipmentConsole(BookingCharges bookingCharges) throws Exception {
         String responseMsg;
         try {
-            if (BookingCharges.getId() != null) {
-                long id = BookingCharges.getId();
+            if (bookingCharges.getId() != null) {
+                long id = bookingCharges.getId();
                 Optional<BookingCharges> oldEntity = findById(id);
                 if (!oldEntity.isPresent()) {
                     log.debug("Booking Charges is null for Id {}", id);
                     throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
                 }
             }
-            BookingCharges = save(BookingCharges);
-            return BookingCharges;
+            bookingCharges = save(bookingCharges);
+            return bookingCharges;
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_FAILED_ENTITY_UPDATE;

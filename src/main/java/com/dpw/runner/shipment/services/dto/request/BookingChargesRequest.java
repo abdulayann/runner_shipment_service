@@ -7,6 +7,7 @@ import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @Data
@@ -16,6 +17,7 @@ import java.util.UUID;
 @AllArgsConstructor
 @NoArgsConstructor
 public class BookingChargesRequest extends CommonRequest implements IRunnerRequest {
+    private Long id;
     private UUID reference_id;
     private Long bookingId;
     private String seqNo;
@@ -75,4 +77,5 @@ public class BookingChargesRequest extends CommonRequest implements IRunnerReque
     private BigDecimal taxType3;
     private BigDecimal taxType4;
     private BigDecimal revenueLineTotal;
+    private List<UUID> containersUUID;
 }

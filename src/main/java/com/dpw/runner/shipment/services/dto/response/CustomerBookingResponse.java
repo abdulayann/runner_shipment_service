@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.dto.response;
 
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
 import io.swagger.annotations.ApiModel;
 import lombok.*;
@@ -15,7 +16,7 @@ import java.util.UUID;
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor
-public class CustomerBookingResponse {
+public class CustomerBookingResponse implements IRunnerResponse {
     private BookingStatus bookingStatus;
     private PartiesResponse customer;
     private Boolean isCustomerFreeText;

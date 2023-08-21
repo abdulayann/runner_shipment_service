@@ -18,41 +18,41 @@ import java.util.Optional;
 @Slf4j
 public class CustomerBookingDao implements ICustomerBookingDao {
     @Autowired
-    private ICustomerBookingRepository CustomerBookingRepository;
+    private ICustomerBookingRepository customerBookingRepository;
 
     @Override
-    public CustomerBooking save(CustomerBooking CustomerBooking) {
-        return CustomerBookingRepository.save(CustomerBooking);
+    public CustomerBooking save(CustomerBooking customerBooking) {
+        return customerBookingRepository.save(customerBooking);
     }
 
     @Override
     public Page<CustomerBooking> findAll(Specification<CustomerBooking> spec, Pageable pageable) {
-        return CustomerBookingRepository.findAll(spec, pageable);
+        return customerBookingRepository.findAll(spec, pageable);
     }
 
     @Override
     public Optional<CustomerBooking> findById(Long id) {
-        return CustomerBookingRepository.findById(id);
+        return customerBookingRepository.findById(id);
     }
 
     @Override
-    public void delete(CustomerBooking CustomerBooking) {
-        CustomerBookingRepository.delete(CustomerBooking);
+    public void delete(CustomerBooking customerBooking) {
+        customerBookingRepository.delete(customerBooking);
     }
 
-    public CustomerBooking updateEntityFromShipmentConsole(CustomerBooking CustomerBooking) throws Exception {
+    public CustomerBooking updateEntityFromShipmentConsole(CustomerBooking customerBooking) throws Exception {
         String responseMsg;
         try {
-            if (CustomerBooking.getId() != null) {
-                long id = CustomerBooking.getId();
+            if (customerBooking.getId() != null) {
+                long id = customerBooking.getId();
                 Optional<CustomerBooking> oldEntity = findById(id);
                 if (!oldEntity.isPresent()) {
                     log.debug("Customer Booking is null for Id {}", id);
                     throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
                 }
             }
-            CustomerBooking = save(CustomerBooking);
-            return CustomerBooking;
+            customerBooking = save(customerBooking);
+            return customerBooking;
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_FAILED_ENTITY_UPDATE;

@@ -17,6 +17,7 @@ import java.util.UUID;
 @AllArgsConstructor
 @NoArgsConstructor
 public class CustomerBookingRequest implements IRunnerRequest {
+    private Long id;
     private BookingStatus bookingStatus;
     private PartiesRequest customer;
     private Boolean isCustomerFreeText;

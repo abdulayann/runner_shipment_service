@@ -71,7 +71,7 @@ public class CustomerBooking extends MultiTenancy {
     @Column(name = "inco_terms")
     private String incoTerms;
 
-    @OneToOne(fetch = FetchType.LAZY, targetEntity = CarrierDetails.class)
+    @OneToOne(fetch = FetchType.LAZY, targetEntity = CarrierDetails.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "carrier_detail_id", referencedColumnName = "id")
     private CarrierDetails carrierDetails;
 
@@ -117,16 +117,19 @@ public class CustomerBooking extends MultiTenancy {
     @Column(name = "contract_id")
     private UUID contractId;
 
-    @OneToMany(fetch = FetchType.LAZY, mappedBy = "bookingId")
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "bookingId", cascade = CascadeType.ALL)
     private List<Containers> containersList;
 
-    @OneToMany(fetch = FetchType.LAZY, mappedBy = "bookingId")
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "bookingId", cascade = CascadeType.ALL)
     private List<Packing> packingList;
 
-    @OneToMany(fetch = FetchType.LAZY, mappedBy = "bookingId")
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "bookingId", cascade = CascadeType.ALL)
     private List<Routings> routingList;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "bookingId")
     private List<BookingCharges> bookingCharges;
+
+    @Column(name = "is_platform_booking_created")
+    private Boolean isPlatformBookingCreated;
 
 }

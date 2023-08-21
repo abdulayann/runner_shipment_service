@@ -15,8 +15,8 @@ public interface IBookingChargesDao {
 
     Optional<BookingCharges> findById(Long id);
 
-    void delete(BookingCharges carrierDetails);
+    void delete(BookingCharges bookingCharges);
 
-    BookingCharges updateEntityFromShipmentConsole(BookingCharges carrierDetails) throws Exception;
+    BookingCharges updateEntityFromShipmentConsole(BookingCharges bookingCharges) throws Exception;
 
 }

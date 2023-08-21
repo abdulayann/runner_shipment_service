@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.dto.response;
 
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import io.swagger.annotations.ApiModel;
 import lombok.*;
 
@@ -13,7 +14,7 @@ import java.time.LocalDateTime;
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor
-public class BookingChargesResponse {
+public class BookingChargesResponse implements IRunnerResponse {
     private Long bookingId;
     private String seqNo;
     private String chargeType;
