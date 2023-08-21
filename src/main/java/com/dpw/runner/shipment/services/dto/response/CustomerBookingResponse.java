@@ -49,4 +49,5 @@ public class CustomerBookingResponse implements IRunnerResponse {
     private List<PackingResponse> packingList;
     private List<RoutingsResponse> routingList;
     private List<BookingChargesResponse> bookingCharges;
+    private List<FileRepoResponse> fileRepoList;
 }

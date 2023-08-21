@@ -50,4 +50,5 @@ public class CustomerBookingRequest implements IRunnerRequest {
     private List<PackingRequest> packingList;
     private List<RoutingsRequest> routingList;
     private List<BookingChargesRequest> bookingCharges;
+    private List<FileRepoRequest> fileRepoList;
 }

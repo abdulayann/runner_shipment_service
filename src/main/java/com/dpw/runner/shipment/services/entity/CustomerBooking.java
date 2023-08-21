@@ -126,6 +126,10 @@ public class CustomerBooking extends MultiTenancy {
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "bookingId", cascade = CascadeType.ALL)
     private List<Routings> routingList;
 
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "entityId", cascade = CascadeType.ALL)
+    @Where(clause = "entity_type = 'BOOKING'")
+    private List<FileRepo> fileRepoList;
+
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "bookingId")
     private List<BookingCharges> bookingCharges;
 
