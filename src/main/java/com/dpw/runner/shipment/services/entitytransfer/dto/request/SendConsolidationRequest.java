@@ -1,13 +1,20 @@
 package com.dpw.runner.shipment.services.entitytransfer.dto.request;
 
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
+import lombok.*;
 
 import java.util.List;
 import java.util.Map;
 
+@Data
+@Builder
+@ToString
+@NoArgsConstructor
+@AllArgsConstructor
 public class SendConsolidationRequest implements IRunnerRequest {
     private Long consolId;
-    private List<Long> sendToBranch;
+    private List<Integer> sendToBranch;
     private List<String> sendToOrg;
-    private Map<Long, List<Long>> additionalDocs;
+    private List<Long> additionalDocs;
+    private Map<Long, List<Long>> shipAdditionalDocs;
 }

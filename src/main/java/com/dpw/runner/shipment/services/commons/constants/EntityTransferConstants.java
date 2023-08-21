@@ -11,11 +11,15 @@ public class EntityTransferConstants {
     public static final String SEND_CONSOLIDATION_SUCCESSFUL = "Consolidation is sent successfully";
     public static final String IMPORT_SHIPMENT_SUCCESSFUL = "Shipment is imported successfully";
     public static final String IMPORT_CONSOLIDATION_SUCCESSFUL = "Consolidation is imported successfully";
-    public static final String SEND_SHIPMENT_NO_SHIPMENT_FOUND = "No shipment Present With Shipment Id: ";
+    public static final String SEND_SHIPMENT_NO_SHIPMENT_FOUND = "No Shipment Present With Shipment Id: ";
+    public static final String SEND_CONSOLIDATION_NO_CONSOLIDATION_FOUND = "No Consolidation Present With Consolidation Id: ";
     public static final String UNLOCATION_CODE = "LocCode";
     public static final String ITEM_VALUE = "ItemValue";
     public static final String CODE = "Code";
     public static final String CURRENCY_CODE = "CurrenyCode";
     public static final String GUID = "Guid";
+    public static final String MMSI = "Mmsi";
+    public static final String SELECT_SENDTOBRANCH_OR_SENDTOORG = "Please select atleast one send to branch or send to org option";
+    public static final String APPROVAL_ROLE_NOT_ASSIGNED = "Approval role not assigned to tenant: ";
 
 }

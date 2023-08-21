@@ -61,6 +61,6 @@ public class EntityTransferPacking implements IEntityTranferBaseEntity {
     private String shipmentNumber;
     private Long innerPacksId;
     private Long innerPacksCount;
-    Map<String, EntityTransferMasterLists> masterData;
-    Map<String, EntityTransferCommodityType> commodityTypeMasterData;
+    private Map<String, EntityTransferMasterLists> masterData;
+    private Map<String, EntityTransferCommodityType> commodityTypeMasterData;
 }

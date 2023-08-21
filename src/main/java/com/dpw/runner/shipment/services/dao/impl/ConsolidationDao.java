@@ -108,4 +108,8 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
     public Optional<ShipmentDetails> findShipmentById(Long shipmentId) {
         return shipmentRepository.findById(shipmentId);
     }
+
+    public Optional<ConsolidationDetails> findByBol (String bol) {
+        return consolidationRepository.findByBol(bol);
+    }
 }

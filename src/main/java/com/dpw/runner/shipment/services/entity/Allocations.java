@@ -1,6 +1,8 @@
 package com.dpw.runner.shipment.services.entity;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
+import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
+import com.dpw.runner.shipment.services.utils.MasterData;
 import lombok.*;
 import lombok.experimental.Accessors;
 
@@ -38,12 +40,14 @@ public class Allocations extends MultiTenancy {
     private BigDecimal weight;
 
     @Column(name = "weight_unit")
+    @MasterData(type = MasterDataType.WEIGHT_UNIT)
     private String weightUnit;
 
     @Column(name = "volume")
     private BigDecimal volume;
 
     @Column(name = "volume_unit")
+    @MasterData(type = MasterDataType.VOLUME_UNIT)
     private String volumeUnit;
 
     @Column(name = "chargeable")
@@ -56,12 +60,14 @@ public class Allocations extends MultiTenancy {
     private BigDecimal minTemp;
 
     @Column(name = "min_temp_unit")
+    @MasterData(type = MasterDataType.TEMPERATURE_UNIT)
     private String minTempUnit;
 
     @Column(name = "max_temp")
     private BigDecimal maxTemp;
 
     @Column(name = "max_temp_unit")
+    @MasterData(type = MasterDataType.TEMPERATURE_UNIT)
     private String maxTempUnit;
 
 

@@ -17,4 +17,5 @@ public interface IConsolidationDetailsDao {
     void delete(ConsolidationDetails consolidationDetails);
     List<ConsolidationDetails> saveAll(List<ConsolidationDetails> consolidationDetails);
     Optional<ShipmentDetails> findShipmentById(Long shipmentId);
+    Optional<ConsolidationDetails> findByBol (String bol);
 }
