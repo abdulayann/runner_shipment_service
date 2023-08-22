@@ -7,6 +7,8 @@ CREATE TABLE IF NOT EXISTS customer_booking (
     updated_at timestamp  NOT NULL,
     updated_by varchar,
     tenant_id INT,
+    source VARCHAR(255),
+    contract_status VARCHAR(255),
     booking_status VARCHAR(50),
     customer_id BIGINT,
     is_customer_free_text BOOLEAN DEFAULT FALSE,

@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.entity;
 
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
+import com.dpw.runner.shipment.services.entity.enums.BookingSource;
 import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
 import lombok.*;
 import lombok.experimental.Accessors;
@@ -135,5 +136,12 @@ public class CustomerBooking extends MultiTenancy {
 
     @Column(name = "is_platform_booking_created")
     private Boolean isPlatformBookingCreated;
+
+    @Column(name = "contract_status")
+    private String contractStatus;
+
+    @Column(name = "source")
+    @Enumerated(EnumType.STRING)
+    private BookingSource source;
 
 }
