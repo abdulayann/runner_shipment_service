@@ -358,6 +358,15 @@ public class CustomerBookingService implements ICustomerBookingService {
             throw new RuntimeException(e);
         }
 
+        if (customerBooking.getIsPlatformBookingCreated()) {
+            try {
+                platformServiceAdapter.updateAtPlaform(createPlatformUpdateRequest(customerBooking));
+            } catch (Exception e) {
+                log.error("ERROR updating in Platform in Update Booking API, ERROR : " + e.getMessage());
+                throw new RuntimeException(e);
+            }
+        }
+
         return ResponseHelper.buildSuccessResponse(jsonHelper.convertValue(customerBooking, CustomerBookingResponse.class));
     }
 
