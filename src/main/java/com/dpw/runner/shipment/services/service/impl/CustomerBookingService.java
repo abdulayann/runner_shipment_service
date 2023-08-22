@@ -35,6 +35,7 @@ import org.springframework.transaction.interceptor.TransactionAspectSupport;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.convertToEntityList;
@@ -175,23 +176,13 @@ public class CustomerBookingService implements ICustomerBookingService {
                 .route(createRoute(customerBooking))
                 .charges(createCharges(customerBooking))
                 .carrier_code(carrierDetails.map(c -> c.getJourneyNumber()).orElse(null))
-                .air_carrier_details(getAirCarrierDetails(customerBooking))
+                .air_carrier_details(null)
                 .status(customerBooking.getBookingStatus().getDescription())
-                .pickup_date(null) // ??
+                .pickup_date(null)
                 .eta(carrierDetails.map(c -> c.getEta()).orElse(null))
                 .ets(carrierDetails.map(c -> c.getEtd()).orElse(null))
                 .build();
         return CommonRequestModel.builder().data(platformUpdateRequest).build();
-    }
-
-    private AirCarrierDetailsRequest getAirCarrierDetails(CustomerBooking customerBooking) {
-        if (!customerBooking.getTransportType().equals("AIR"))
-            return null;
-        return AirCarrierDetailsRequest.builder()
-                .carrier_name(null) // ??
-                .airline_number(null)
-                .build();
-        //remove it
     }
 
     private List<ChargesRequest> createCharges(CustomerBooking customerBooking) {
@@ -201,18 +192,18 @@ public class CustomerBookingService implements ICustomerBookingService {
                 bookingCharge -> {
                     charges.add(
                             ChargesRequest.builder()
-                                    .load_uuid(null) // ?? : resolved, send uuid of containers
+                                    .load_uuid(bookingCharge.getContainersList().stream().map(c -> c.getGuid()).collect(Collectors.toList()))
                                     .charge_id(customerBooking.getGuid())
                                     .charge_group("ORIGIN_CHARGES")
                                     .charge_code("OTHC")
-                                    .charge_code_desc("Terminal Charges") // ??
+                                    .charge_code_desc(bookingCharge.getChargeType())
                                     .base_charge_value(bookingCharge.getLocalSellAmount())
                                     .charge_value(bookingCharge.getOverseasSellAmount())
                                     .base_currency(bookingCharge.getLocalSellCurrency())
                                     .charge_currency(bookingCharge.getOverseasSellCurrency())
-                                    .exchange_rate(bookingCharge.getSellExchange()) // either cost_exchange or sell_exchange
+                                    .exchange_rate(bookingCharge.getSellExchange())
                                     .charge_id(bookingCharge.getGuid())
-                                    .taxes(null) // ??
+                                    .taxes(null) // optional
                                     .build()
                     );
                 }
@@ -240,35 +231,59 @@ public class CustomerBookingService implements ICustomerBookingService {
     }
 
     private List<LoadRequest> createLoad(final CustomerBooking customerBooking) {
-        List<Containers> containers = customerBooking.getContainersList();
         List<LoadRequest> loadRequests = new ArrayList<>();
         //Container -> FCL
-        containers.forEach(container -> {
-            loadRequests.add(LoadRequest.builder()
-                    .load_uuid(container.getGuid())
-                    .load_type(customerBooking.getCargoType()) // ?? : Resolved
-                    .container_type_code(container.getContainerCode())
-                    .pkg_type(null) // ??
-                    .is_package(false)
-                    .weight(container.getGrossWeight())
-                    .quantity(container.getContainerCount())
-                    .weight_uom(container.getGrossWeightUnit())
-                    .quantity_uom("unit")
-                    .volume(container.getGrossVolume())
-                    .volume_uom(container.getGrossVolumeUnit())
-                    .dimensions(null) // Resolved
-                    .build());
-        });
+        if (customerBooking.getCargoType().equals("FCL")) {
+            List<Containers> containers = customerBooking.getContainersList();
+            containers.forEach(container -> {
+                loadRequests.add(LoadRequest.builder()
+                        .load_uuid(container.getGuid())
+                        .load_type(customerBooking.getCargoType())
+                        .container_type_code(container.getContainerCode())
+                        .pkg_type(null)
+                        .is_package(false)
+                        .weight(container.getGrossWeight())
+                        .quantity(container.getContainerCount())
+                        .weight_uom(container.getGrossWeightUnit())
+                        .quantity_uom("unit")
+                        .volume(container.getGrossVolume())
+                        .volume_uom(container.getGrossVolumeUnit())
+                        .dimensions(null) // Resolved
+                        .build());
+            });
+        }
 
-        //PACKS -> LCL, LSE
-        // packs.packs_unit
+        if (customerBooking.getCargoType().equals("LCL") || customerBooking.getCargoType().equals("LSE")) {
+            List<Packing> packings = customerBooking.getPackingList();
+            packings.forEach(packing -> {
+                loadRequests.add(LoadRequest.builder()
+                        .load_uuid(packing.getGuid())
+                        .load_type(customerBooking.getCargoType())
+                        .container_type_code(null)
+                        .pkg_type(packing.getPacksType())
+                        .is_package(true)
+                        .weight(packing.getWeight())
+                        .quantity(packing.getInnerPacksCount())
+                        .weight_uom(packing.getWeightUnit())
+                        .quantity_uom("unit")
+                        .volume(packing.getVolume())
+                        .volume_uom(packing.getVolumeUnit())
+                        .dimensions(getDimension(customerBooking, packing))
+                        .build());
+            });
+        }
 
         return loadRequests;
     }
 
-    private DimensionDTO getDimension(CustomerBooking customerBooking) {
-        if (customerBooking.getCargoType().equals("LCL") || customerBooking.getCargoType().equals("LSE"))
-            return DimensionDTO.builder().build(); // ??
+    private DimensionDTO getDimension(CustomerBooking booking, Packing packing) {
+        if (booking.getCargoType().equals("LCL") || booking.getCargoType().equals("LSE"))
+            return DimensionDTO.builder()
+                    .length(packing.getLength())
+                    .width(packing.getWidth())
+                    .height(packing.getHeight())
+                    .uom(packing.getLengthUnit())
+                    .build();
         return null;
     }
 
