@@ -1,11 +1,9 @@
 package com.dpw.runner.shipment.services.entity.enums;
 
-import org.springframework.util.StringUtils;
-
 public enum GenerationType {
 
-    RANDOM(0, "Generation Type Random"),
-    SERIAL(1, "Generation Type Serial");
+    Random(0, "Generation Type Random"),
+    Serial(1, "Generation Type Serial");
 
 
     private final int value;
