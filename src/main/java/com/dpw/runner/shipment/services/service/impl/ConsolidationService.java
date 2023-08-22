@@ -1129,7 +1129,12 @@ public class ConsolidationService implements IConsolidationService {
 
 
         UUID guid = consolidationDetailsRequest.getGuid();
-        Optional<ConsolidationDetails> oldEntity = consolidationDetailsDao.findByGuid(guid);
+        Optional<ConsolidationDetails> oldEntity = null;
+        try {
+            oldEntity = consolidationDetailsDao.findByGuid(guid);
+        }
+        catch (Exception e){
+        }
 
         consolidationDetailsRequest.setShipmentsList(null);
 
@@ -1161,7 +1166,8 @@ public class ConsolidationService implements IConsolidationService {
                     oldCarrierDetails = oldEntity.get().getCarrierDetails();
                     carrierDetailRequest.setId(oldCarrierDetails.getId());
                 }
-                updatedCarrierDetails = carrierDao.updateEntityFromShipmentConsole(convertToClass(carrierDetailRequest, CarrierDetails.class));
+                CarrierDetails cd = convertToClass(carrierDetailRequest, CarrierDetails.class);
+                updatedCarrierDetails = carrierDao.updateEntityFromShipmentConsole(cd);
                 entity.setCarrierDetails(updatedCarrierDetails);
             }
             else {
@@ -1187,21 +1193,19 @@ public class ConsolidationService implements IConsolidationService {
                 entity.setAchievedQuantities(updatedAchievedQuantities);
             }
 
-            if(entity.getSendingAgent() == null)
+            if(entity.getSendingAgent() == null && oldEntity.isPresent())
                 entity.setSendingAgent(oldEntity.get().getSendingAgent());
-            if(entity.getReceivingAgent() == null)
+            if(entity.getReceivingAgent() == null && oldEntity.isPresent())
                 entity.setReceivingAgent(oldEntity.get().getReceivingAgent());
-            if(entity.getReceivingAgent() == null)
-                entity.setReceivingAgent(oldEntity.get().getReceivingAgent());
-            if(entity.getBorrowedFrom() == null)
+            if(entity.getBorrowedFrom() == null && oldEntity.isPresent())
                 entity.setBorrowedFrom(oldEntity.get().getBorrowedFrom());
-            if(entity.getCreditor() == null)
+            if(entity.getCreditor() == null && oldEntity.isPresent())
                 entity.setCreditor(oldEntity.get().getCreditor());
-            if(entity.getCoLoadWith() == null)
+            if(entity.getCoLoadWith() == null && oldEntity.isPresent())
                 entity.setCoLoadWith(oldEntity.get().getCoLoadWith());
-            if(entity.getDepartureDetails() == null)
+            if(entity.getDepartureDetails() == null && oldEntity.isPresent())
                 entity.setDepartureDetails(oldEntity.get().getDepartureDetails());
-            if(entity.getArrivalDetails() == null)
+            if(entity.getArrivalDetails() == null && oldEntity.isPresent())
                 entity.setArrivalDetails(oldEntity.get().getArrivalDetails());
 
             List<Packing> oldPackings = null;
