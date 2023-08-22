@@ -12,6 +12,7 @@ public class PackingResponse implements IRunnerResponse {
     private Long id;
     private Long consolidationId;
     private Long shipmentId;
+    private Long bookingId;
     private Integer DGGoodsId;
     private Integer DGSubstanceId;
     private String packs;
