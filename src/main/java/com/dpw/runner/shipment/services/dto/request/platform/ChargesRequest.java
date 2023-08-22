@@ -1,20 +1,28 @@
 package com.dpw.runner.shipment.services.dto.request.platform;
 
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.util.List;
+import java.util.UUID;
 
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
+@Builder
 public class ChargesRequest {
-    private String description;
+    private List<UUID> load_uuid;
     private String charge_code;
-    private String charge_value;
+    private String charge_group;
+    private String charge_code_desc;
+    private BigDecimal base_charge_value;
+    private BigDecimal charge_value;
+    private String base_currency;
     private String charge_currency;
-    private TaxDTO tax;
-    private String bill_charge_id;
-    private List<String> container_details;
+    private BigDecimal exchange_rate;
+    private UUID charge_id;
+    private List<TaxDTO> taxes;
 }

@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import com.dpw.runner.shipment.services.adapters.interfaces.IPlatformServiceAdapter;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
@@ -9,6 +10,8 @@ import com.dpw.runner.shipment.services.commons.requests.RunnerEntityMapping;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.request.*;
+import com.dpw.runner.shipment.services.dto.request.platform.*;
+import com.dpw.runner.shipment.services.dto.request.platform.AirCarrierDetailsRequest;
 import com.dpw.runner.shipment.services.dto.response.CustomerBookingResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -16,6 +19,7 @@ import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.ICustomerBookingService;
 import com.nimbusds.jose.util.Pair;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -62,6 +66,11 @@ public class CustomerBookingService implements ICustomerBookingService {
 
     @Autowired
     private IFileRepoDao fileRepoDao;
+
+    @Autowired
+    private IPlatformServiceAdapter platformServiceAdapter;
+
+    private static final Map<String, String> loadTypeMap = Map.of("SEA", "LCL", "AIR", "LSE");
 
     private Map<String, RunnerEntityMapping> tableNames = Map.ofEntries(
             Map.entry("customerOrgCode", RunnerEntityMapping.builder().tableName("customer").dataType(String.class).fieldName("orgCode").build()),
@@ -113,25 +122,20 @@ public class CustomerBookingService implements ICustomerBookingService {
 
             List<Containers> containers = customerBooking.getContainersList();
             Map<UUID, Containers> containerMap = new HashMap<>();
-            if(containers != null && !containers.isEmpty())
-            {
-                for(Containers container: containers)
-                {
+            if (containers != null && !containers.isEmpty()) {
+                for (Containers container : containers) {
                     containerMap.put(container.getGuid(), container);
                 }
             }
             List<BookingChargesRequest> bookingChargesRequest = request.getBookingCharges();
-            if(bookingChargesRequest != null && !bookingChargesRequest.isEmpty())
-            {
+            if (bookingChargesRequest != null && !bookingChargesRequest.isEmpty()) {
                 List<BookingCharges> bookingCharges = new ArrayList<>();
                 for (BookingChargesRequest bookingChargeRequest : bookingChargesRequest) {
                     List<UUID> containerUUIDs = bookingChargeRequest.getContainersUUID();
                     BookingCharges bookingCharge = jsonHelper.convertValue(bookingChargeRequest, BookingCharges.class);
                     List<Containers> containerList = new ArrayList<>();
-                    if(containerUUIDs != null && !containerUUIDs.isEmpty())
-                    {
-                        for(UUID uuid: containerUUIDs)
-                        {
+                    if (containerUUIDs != null && !containerUUIDs.isEmpty()) {
+                        for (UUID uuid : containerUUIDs) {
                             Containers container = containerMap.get(uuid);
                             containerList.add(container);
                         }
@@ -143,6 +147,15 @@ public class CustomerBookingService implements ICustomerBookingService {
                 }
                 customerBooking.setBookingCharges(bookingCharges);
             }
+
+            /**
+             * Platform service integration
+             * Criteria for update call to platform service : check flag IsPlatformBookingCreated, if true then update otherwise dont update
+             */
+
+            if (customerBooking.getIsPlatformBookingCreated()) {
+                platformServiceAdapter.updateAtPlaform(createPlatformUpdateRequest(customerBooking));
+            }
         } catch (Exception e) {
             log.error(e.getMessage());
             TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
@@ -150,6 +163,113 @@ public class CustomerBookingService implements ICustomerBookingService {
         }
 
         return ResponseHelper.buildSuccessResponse(jsonHelper.convertValue(customerBooking, CustomerBookingResponse.class));
+    }
+
+    private CommonRequestModel createPlatformUpdateRequest(@NonNull final CustomerBooking customerBooking) {
+        var carrierDetails = Optional.ofNullable(customerBooking.getCarrierDetails());
+        PlatformUpdateRequest platformUpdateRequest = PlatformUpdateRequest.builder()
+                .booking_reference_code(customerBooking.getBookingNumber())
+                .origin_code(carrierDetails.map(c -> c.getOrigin()).orElse(null))
+                .destination_code(carrierDetails.map(c -> c.getDestination()).orElse(null))
+                .load(createLoad(customerBooking))
+                .route(createRoute(customerBooking))
+                .charges(createCharges(customerBooking))
+                .carrier_code(carrierDetails.map(c -> c.getJourneyNumber()).orElse(null))
+                .air_carrier_details(getAirCarrierDetails(customerBooking))
+                .status(customerBooking.getBookingStatus().getDescription())
+                .pickup_date(null) // ??
+                .eta(carrierDetails.map(c -> c.getEta()).orElse(null))
+                .ets(carrierDetails.map(c -> c.getEtd()).orElse(null))
+                .build();
+        return CommonRequestModel.builder().data(platformUpdateRequest).build();
+    }
+
+    private AirCarrierDetailsRequest getAirCarrierDetails(CustomerBooking customerBooking) {
+        if (!customerBooking.getTransportType().equals("AIR"))
+            return null;
+        return AirCarrierDetailsRequest.builder()
+                .carrier_name(null) // ??
+                .airline_number(null)
+                .build();
+        //remove it
+    }
+
+    private List<ChargesRequest> createCharges(CustomerBooking customerBooking) {
+        var bookingCharges = customerBooking.getBookingCharges();
+        List<ChargesRequest> charges = new ArrayList<>();
+        bookingCharges.forEach(
+                bookingCharge -> {
+                    charges.add(
+                            ChargesRequest.builder()
+                                    .load_uuid(null) // ?? : resolved, send uuid of containers
+                                    .charge_id(customerBooking.getGuid())
+                                    .charge_group("ORIGIN_CHARGES")
+                                    .charge_code("OTHC")
+                                    .charge_code_desc("Terminal Charges") // ??
+                                    .base_charge_value(bookingCharge.getLocalSellAmount())
+                                    .charge_value(bookingCharge.getOverseasSellAmount())
+                                    .base_currency(bookingCharge.getLocalSellCurrency())
+                                    .charge_currency(bookingCharge.getOverseasSellCurrency())
+                                    .exchange_rate(bookingCharge.getSellExchange()) // either cost_exchange or sell_exchange
+                                    .charge_id(bookingCharge.getGuid())
+                                    .taxes(null) // ??
+                                    .build()
+                    );
+                }
+        );
+
+        return charges;
+    }
+
+    private RouteRequest createRoute(CustomerBooking customerBooking) {
+        CarrierDetails carrierDetails = customerBooking.getCarrierDetails();
+        List<RouteLegRequest> legRequestList = new ArrayList<>();
+        List<Routings> routingsList = customerBooking.getRoutingList();
+
+        for (int counter = 1; counter <= routingsList.size(); counter++) {
+            legRequestList.add(RouteLegRequest.builder()
+                    .destination_code(carrierDetails.getDestination())
+                    .origin_code(carrierDetails.getOrigin())
+                    .order(String.valueOf(counter))
+                    .build());
+        }
+
+        return RouteRequest.builder()
+                .legs(legRequestList)
+                .build();
+    }
+
+    private List<LoadRequest> createLoad(final CustomerBooking customerBooking) {
+        List<Containers> containers = customerBooking.getContainersList();
+        List<LoadRequest> loadRequests = new ArrayList<>();
+        //Container -> FCL
+        containers.forEach(container -> {
+            loadRequests.add(LoadRequest.builder()
+                    .load_uuid(container.getGuid())
+                    .load_type(customerBooking.getCargoType()) // ?? : Resolved
+                    .container_type_code(container.getContainerCode())
+                    .pkg_type(null) // ??
+                    .is_package(false)
+                    .weight(container.getGrossWeight())
+                    .quantity(container.getContainerCount())
+                    .weight_uom(container.getGrossWeightUnit())
+                    .quantity_uom("unit")
+                    .volume(container.getGrossVolume())
+                    .volume_uom(container.getGrossVolumeUnit())
+                    .dimensions(null) // Resolved
+                    .build());
+        });
+
+        //PACKS -> LCL, LSE
+        // packs.packs_unit
+
+        return loadRequests;
+    }
+
+    private DimensionDTO getDimension(CustomerBooking customerBooking) {
+        if (customerBooking.getCargoType().equals("LCL") || customerBooking.getCargoType().equals("LSE"))
+            return DimensionDTO.builder().build(); // ??
+        return null;
     }
 
     @Override
@@ -192,25 +312,20 @@ public class CustomerBookingService implements ICustomerBookingService {
 
             List<Containers> containers = customerBooking.getContainersList();
             Map<UUID, Containers> containerMap = new HashMap<>();
-            if(containers != null && !containers.isEmpty())
-            {
-                for(Containers container: containers)
-                {
+            if (containers != null && !containers.isEmpty()) {
+                for (Containers container : containers) {
                     containerMap.put(container.getGuid(), container);
                 }
             }
             List<BookingChargesRequest> bookingChargesRequest = request.getBookingCharges();
-            if(bookingChargesRequest != null && !bookingChargesRequest.isEmpty())
-            {
+            if (bookingChargesRequest != null && !bookingChargesRequest.isEmpty()) {
                 List<BookingCharges> bookingCharges = new ArrayList<>();
                 for (BookingChargesRequest bookingChargeRequest : bookingChargesRequest) {
                     List<UUID> containerUUIDs = bookingChargeRequest.getContainersUUID();
                     BookingCharges bookingCharge = jsonHelper.convertValue(bookingChargeRequest, BookingCharges.class);
                     List<Containers> containerList = new ArrayList<>();
-                    if(containerUUIDs != null && !containerUUIDs.isEmpty())
-                    {
-                        for(UUID uuid: containerUUIDs)
-                        {
+                    if (containerUUIDs != null && !containerUUIDs.isEmpty()) {
+                        for (UUID uuid : containerUUIDs) {
                             Containers container = containerMap.get(uuid);
                             containerList.add(container);
                         }
@@ -348,19 +463,18 @@ public class CustomerBookingService implements ICustomerBookingService {
         return responseList;
     }
 
-    private String generateBookingNumber()
-    {
+    private String generateBookingNumber() {
         return "SROF" + "-" + getRandomNumberString(6) + "-" + getRandomNumberString(5);
     }
 
     public static String getRandomNumberString(int digit) {
         Random rnd = new Random();
         int number = 0;
-        if(digit == 6)
+        if (digit == 6)
             number = rnd.nextInt(999999);
         else
             number = rnd.nextInt(99999);
-        if(digit == 6)
+        if (digit == 6)
             return String.format("%06d", number);
         return String.format("%05d", number);
     }

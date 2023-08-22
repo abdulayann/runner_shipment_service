@@ -24,7 +24,6 @@ public class ChargeRequest {
     private String bill_id;
     private AppliedOnRequest applied_on;
 
-    // Getters and Setters
 }
 
 

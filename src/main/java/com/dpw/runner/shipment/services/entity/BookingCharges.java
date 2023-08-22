@@ -141,7 +141,7 @@ public class BookingCharges extends MultiTenancy {
     private String overseasSellCurrency; //currencies master data
 
     @Column(name = "local_sell_currency")
-    private BigDecimal localSellCurrency; //currencies master data
+    private String localSellCurrency; //currencies master data
 
     @Column(name = "current_sell_rate")
     private BigDecimal currentSellRate;
@@ -197,7 +197,7 @@ public class BookingCharges extends MultiTenancy {
 
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(name = "container_charges_mapping",
-            joinColumns = { @JoinColumn(name = "charge_id") },
-            inverseJoinColumns = { @JoinColumn(name = "container_id") })
+            joinColumns = {@JoinColumn(name = "charge_id")},
+            inverseJoinColumns = {@JoinColumn(name = "container_id")})
     private List<Containers> containersList;
 }

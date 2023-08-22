@@ -5,14 +5,11 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.List;
-
-@Builder
 @Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class RouteRequest {
-    private List<RouteLegRequest> legs;
-    // Getters and Setters
+public class AirCarrierDetailsRequest {
+    private String carrier_name;
+    private String airline_number;
 }
-

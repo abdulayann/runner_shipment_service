@@ -1,14 +1,19 @@
 package com.dpw.runner.shipment.services.dto.request.platform;
 
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import java.math.BigDecimal;
+import java.util.UUID;
 
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
+@Builder
 public class LoadRequest {
-    private String load_uuid;
+    private UUID load_uuid;
     private String load_type;
     private String container_type_code;
     private String pkg_type;
@@ -22,12 +27,11 @@ public class LoadRequest {
     private boolean is_package;
     private boolean is_hazardous;
     private HazardousInfoRequest hazardous_info;
-    private double weight;
+    private BigDecimal weight;
     private String weight_uom;
-    private int quantity;
+    private Long quantity;
     private String quantity_uom;
-    private double volume;
+    private BigDecimal volume;
     private String volume_uom;
     private DimensionDTO dimensions;
-
 }
