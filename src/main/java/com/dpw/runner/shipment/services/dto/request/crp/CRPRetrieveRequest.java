@@ -1,4 +1,4 @@
-package com.dpw.runner.shipment.services.dto.request.booking;
+package com.dpw.runner.shipment.services.dto.request.crp;
 
 import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
@@ -9,7 +9,8 @@ import lombok.*;
 @ToString
 @Builder
 @AllArgsConstructor
+@NoArgsConstructor
 @Data
-public class PlatformUpdateRequest extends CommonRequest implements IRunnerRequest {
-
+public class CRPRetrieveRequest extends CommonRequest implements IRunnerRequest {
+    private String searchString;
 }
