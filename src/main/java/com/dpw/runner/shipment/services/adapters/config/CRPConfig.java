@@ -19,9 +19,6 @@ public class CRPConfig {
     @Value("${crp.service.provider.code}")
     private String serviceProviderCode;
 
-    @Value("${crp.cookie}")
-    private String cookie;
-
     @Bean
     public RestTemplate restTemplateForCRP() {
         RestTemplate restTemplate = new RestTemplate();
@@ -30,7 +27,6 @@ public class CRPConfig {
             headers.set("X-API-KEY", apiKey);
             headers.set("X-CLIENT-TYPE-CODE", clientTypeCode);
             headers.set("X-SERVICE-PROVIDER-CODE", serviceProviderCode);
-            headers.set("Cookie", cookie);
             headers.setContentType(MediaType.APPLICATION_JSON);
             return execution.execute(request, body);
         });
