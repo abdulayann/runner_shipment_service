@@ -5,6 +5,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface IBookingChargesDao {
@@ -18,5 +19,7 @@ public interface IBookingChargesDao {
     void delete(BookingCharges bookingCharges);
 
     BookingCharges updateEntityFromShipmentConsole(BookingCharges bookingCharges) throws Exception;
+
+    List<BookingCharges> updateEntityFromBooking(List<BookingCharges> BookingChargesList, Long bookingId) throws Exception;
 
 }

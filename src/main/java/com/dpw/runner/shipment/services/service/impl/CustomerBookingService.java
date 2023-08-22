@@ -7,9 +7,11 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.RunnerEntityMapping;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.response.CustomerBookingResponse;
+import com.dpw.runner.shipment.services.dto.response.PlatformToRunnerCustomerBookingResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
@@ -87,7 +89,9 @@ public class CustomerBookingService implements ICustomerBookingService {
 
         CustomerBooking customerBooking = jsonHelper.convertValue(request, CustomerBooking.class);
         try {
-            customerBooking.setBookingNumber(generateBookingNumber());
+            if(customerBooking.getBookingNumber() == null) {
+                customerBooking.setBookingNumber(generateBookingNumber());
+            }
             customerBooking = customerBookingDao.save(customerBooking);
             Long bookingId = customerBooking.getId();
 
@@ -215,9 +219,9 @@ public class CustomerBookingService implements ICustomerBookingService {
                     }
                     bookingCharge.setContainersList(containerList);
                     bookingCharge.setBookingId(customerBooking.getId());
-                    bookingCharge = bookingChargesDao.save(bookingCharge);
                     bookingCharges.add(bookingCharge);
                 }
+                bookingCharges = bookingChargesDao.updateEntityFromBooking(bookingCharges, bookingId);
                 customerBooking.setBookingCharges(bookingCharges);
             }
         } catch (Exception e) {
