@@ -1,9 +1,12 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IBookingChargesDao;
 import com.dpw.runner.shipment.services.entity.BookingCharges;
+import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.repository.interfaces.IBookingChargesRepository;
+import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
@@ -12,7 +15,15 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
+import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 
 @Repository
 @Slf4j
@@ -53,6 +64,66 @@ public class BookingChargesDao implements IBookingChargesDao {
             }
             bookingCharges = save(bookingCharges);
             return bookingCharges;
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
+            log.error(responseMsg, e);
+            throw new Exception(e);
+        }
+    }
+
+    private void deleteBookingCharges(Map<Long, BookingCharges> hashMap) {
+        String responseMsg;
+        try {
+            hashMap.values().forEach(this::delete);
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_DELETE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+        }
+    }
+
+    public List<BookingCharges> saveEntityFromBooking(List<BookingCharges> bookingCharges, Long bookingId) {
+        List<BookingCharges> res = new ArrayList<>();
+        for (BookingCharges req : bookingCharges) {
+            if (req.getId() != null) {
+                long id = req.getId();
+                Optional<BookingCharges> oldEntity = findById(id);
+                if (!oldEntity.isPresent()) {
+                    log.debug("Booking Charges is null for Id {}", req.getId());
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
+            }
+            req.setBookingId(bookingId);
+            req = save(req);
+            res.add(req);
+        }
+        return res;
+    }
+
+    public List<BookingCharges> updateEntityFromBooking(List<BookingCharges> BookingChargesList, Long bookingId) throws Exception {
+        String responseMsg;
+        List<BookingCharges> responseBookingCharges = new ArrayList<>();
+        try {
+            // TODO- Handle Transactions here
+            ListCommonRequest listCommonRequest = constructListCommonRequest("bookingId", bookingId, "=");
+            Pair<Specification<BookingCharges>, Pageable> pair = fetchData(listCommonRequest, BookingCharges.class);
+            Page<BookingCharges> bookingCharges = findAll(pair.getLeft(), pair.getRight());
+            Map<Long, BookingCharges> hashMap = bookingCharges.stream()
+                    .collect(Collectors.toMap(BookingCharges::getId, Function.identity()));
+            List<BookingCharges> bookingChargesRequestList = new ArrayList<>();
+            if (BookingChargesList != null && BookingChargesList.size() != 0) {
+                for (BookingCharges request : BookingChargesList) {
+                    Long id = request.getId();
+                    if (id != null) {
+                        hashMap.remove(id);
+                    }
+                    bookingChargesRequestList.add(request);
+                }
+                responseBookingCharges = saveEntityFromBooking(bookingChargesRequestList, bookingId);
+            }
+            deleteBookingCharges(hashMap);
+            return responseBookingCharges;
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
