@@ -77,10 +77,10 @@ public class CustomerBooking extends MultiTenancy {
     private CarrierDetails carrierDetails;
 
     @Column(name = "transport_type")
-    private String transportType;
+    private String transportType; //SEA, AIR
 
     @Column(name = "cargo_type")
-    private String cargoType;
+    private String cargoType; //LCL, FCL, LSE
 
     @Column(name = "direction")
     private String direction;
