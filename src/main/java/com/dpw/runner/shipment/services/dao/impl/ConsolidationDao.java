@@ -1,13 +1,17 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
 import com.dpw.runner.shipment.services.commons.constants.ConsolidationConstants;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.enums.LifecycleHooks;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.IConsolidationRepository;
 import com.dpw.runner.shipment.services.repository.interfaces.IShipmentRepository;
+import com.dpw.runner.shipment.services.validator.ValidatorUtility;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
@@ -19,6 +23,8 @@ import org.springframework.stereotype.Repository;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
+import java.util.Set;
 
 @Repository
 @Slf4j
@@ -29,8 +35,17 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
     @Autowired
     IShipmentRepository shipmentRepository;
 
+    @Autowired
+    private ValidatorUtility validatorUtility;
+
+    @Autowired
+    private JsonHelper jsonHelper;
+
     @Override
     public ConsolidationDetails save(ConsolidationDetails consolidationDetails) {
+        Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(consolidationDetails) , Constants.CONSOLIDATION, LifecycleHooks.ON_CREATE, false);
+        if (! errors.isEmpty())
+            throw new ValidationException(errors.toString());
         if(consolidationDetails.getId() != null) {
             long id = consolidationDetails.getId();
             Optional<ConsolidationDetails> oldEntity = findById(id);
@@ -93,5 +108,13 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
 
     public Optional<ShipmentDetails> findShipmentById(Long shipmentId) {
         return shipmentRepository.findById(shipmentId);
+    }
+
+    public Optional<ConsolidationDetails> findByGuid (UUID guid) {
+        return consolidationRepository.findByGuid(guid);
+    }
+
+    public Optional<ConsolidationDetails> findByBol (String bol) {
+        return consolidationRepository.findByBol(bol);
     }
 }

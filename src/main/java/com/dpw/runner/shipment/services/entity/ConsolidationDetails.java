@@ -1,6 +1,12 @@
 package com.dpw.runner.shipment.services.entity;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
+import com.dpw.runner.shipment.services.utils.MasterData;
+import com.dpw.runner.shipment.services.utils.OrganizationData;
+import com.dpw.runner.shipment.services.utils.UnlocationData;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.*;
 import lombok.experimental.Accessors;
 import org.hibernate.annotations.SQLDelete;
@@ -27,39 +33,49 @@ public class ConsolidationDetails extends MultiTenancy {
     private String consolidationNumber;
 
     @Column(name = "consolidation_type")
+    @MasterData(type = MasterDataType.CONSOlIDATION_TYPE)
     private String consolidationType;
 
     @Column(name = "transport_mode")
+    @MasterData(type = MasterDataType.MODE)
     private String transportMode;
 
     @Column(name = "container_category")
+    @MasterData(type = MasterDataType.CONTAINER_CATEGORY, cascade = Constants.TRANSPORT_MODE)
     private String containerCategory;
 
     @Column(name = "is_domestic")
     private Boolean isDomestic;
 
     @Column(name = "mawb")
-    private String MAWB;
+    private String mawb;
 
     @Column(name = "service_level")
+    @MasterData(type = MasterDataType.SERVICE_LEVEL)
     private String serviceLevel;
 
     @Column(name = "payment")
+    @MasterData(type = MasterDataType.PAYMENT)
     private String payment;
 
     @Column(name = "first_load")
+    @UnlocationData
     private String firstLoad;
 
     @Column(name = "last_discharge")
+    @UnlocationData
     private String lastDischarge;
 
     @Column(name = "booking_type")
+    @MasterData(type = MasterDataType.CUSTOM_SHIPMENT_TYPE)
     private String bookingType;
 
     @Column(name = "declaration_type")
+    @MasterData(type = MasterDataType.CUSTOM_DECL_TYPE)
     private String declarationType;
 
     @Column(name = "delivery_mode")
+    @MasterData(type = MasterDataType.HBL_DELIVERY_MODE, cascade = Constants.TRANSPORT_MODE)
     private String deliveryMode;
 
     @Column(name = "is_linked")
@@ -84,15 +100,18 @@ public class ConsolidationDetails extends MultiTenancy {
     private String coLoadBookingReference;
 
     @Column(name = "manifest_print")
+    @MasterData(type = MasterDataType.PRINT_OPTIONS)
     private String manifestPrint;
 
     @Column(name = "print_other_docs")
+    @MasterData(type = MasterDataType.PRINT_OPTIONS)
     private String printOtherDocs;
 
     @Column(name = "awb_dims")
     private String awbDims;
 
     @Column(name = "release_type")
+    @MasterData(type = MasterDataType.RELEASE_TYPE)
     private String releaseType;
 
     @Column(name = "masterbill_issue_date")
@@ -102,25 +121,25 @@ public class ConsolidationDetails extends MultiTenancy {
     private Boolean override;
 
     @Column(name = "estimated_terminal_cutoff")
-    private LocalDateTime EstimatedTerminalCutoff;
+    private LocalDateTime estimatedTerminalCutoff;
 
     @Column(name = "terminal_cutoff")
-    private LocalDateTime TerminalCutoff;
+    private LocalDateTime terminalCutoff;
 
     @Column(name = "verified_gross_mass_cutoff")
-    private LocalDateTime VerifiedGrossMassCutoff;
+    private LocalDateTime verifiedGrossMassCutoff;
 
     @Column(name = "reefer_cutoff")
-    private LocalDateTime ReeferCutoff;
+    private LocalDateTime reeferCutoff;
 
     @Column(name = "booking_cutoff")
-    private LocalDateTime BookingCutoff;
+    private LocalDateTime bookingCutoff;
 
     @Column(name = "ship_instruction_cutoff")
-    private LocalDateTime ShipInstructionCutoff;
+    private LocalDateTime shipInstructionCutoff;
 
     @Column(name = "hazardous_booking_cutoff")
-    private LocalDateTime HazardousBookingCutoff;
+    private LocalDateTime hazardousBookingCutoff;
 
     @Column(name = "volume_utilization")
     private String volumeUtilization;
@@ -129,6 +148,7 @@ public class ConsolidationDetails extends MultiTenancy {
     private String weightUtilization;
 
     @Column(name = "shipment_type")
+    @MasterData(type = MasterDataType.CUSTOM_SHIPMENT_TYPE)
     private String shipmentType;
 
     @Column(name = "bol")
@@ -150,7 +170,7 @@ public class ConsolidationDetails extends MultiTenancy {
     private String description;
 
     @Column(name = "marks_n_nums")
-    private String MarksnNums;
+    private String marksnNums;
 
     @Column(name = "additional_terms")
     private String AdditionalTerms;
@@ -168,10 +188,10 @@ public class ConsolidationDetails extends MultiTenancy {
     private String msnNumber;
 
     @Column(name = "igm_file_date")
-    private LocalDateTime IGMFileDate;
+    private LocalDateTime igmFileDate;
 
     @Column(name = "igm_inward_date")
-    private LocalDateTime IGMInwardDate;
+    private LocalDateTime igmInwardDate;
 
     @Column(name = "inward_date_and_time")
     private LocalDateTime inwardDateAndTime;
@@ -180,10 +200,10 @@ public class ConsolidationDetails extends MultiTenancy {
     private String igmFileNo;
 
     @Column(name = "smtp_igm_number")
-    private String SMTPIGMNumber;
+    private String smtpigmNumber;
 
     @Column(name = "smtp_igm_date")
-    private LocalDateTime SMTPIGMDate;
+    private LocalDateTime smtpigmDate;
 
     @Column(name = "is_inland")
     private Boolean isInland;
@@ -195,10 +215,10 @@ public class ConsolidationDetails extends MultiTenancy {
     private Integer copy;
 
     @Column(name = "do_place_of_issue")
-    private String DOPlaceOfIssue;
+    private String doPlaceOfIssue;
 
     @Column(name = "do_issue_date")
-    private LocalDateTime DOIssueDate;
+    private LocalDateTime doIssueDate;
 
     @Column(name = "bonded_warehouse_id")
     private Long bondedWarehouseId;
@@ -207,7 +227,7 @@ public class ConsolidationDetails extends MultiTenancy {
     private Long warehouseId;
 
     @Column(name = "source_tenant_id")
-    private long SourceTenantId;
+    private long sourceTenantId;
 
     @Column(name = "edi_transaction_id")
     private String ediTransactionId;
@@ -231,23 +251,24 @@ public class ConsolidationDetails extends MultiTenancy {
     private String receivingAgentFreeTextAddress;
 
     @Column(name = "is_sending_agent_freetext_address")
-    private Boolean IsSendingAgentFreeTextAddress;
+    private Boolean isSendingAgentFreeTextAddress;
 
     @Column(name = "sending_agent_freetext_address")
     private String sendingAgentFreeTextAddress;
 
     @Column(name = "place_of_issue")
+    @UnlocationData
     private String placeOfIssue;
 
-    @OneToOne(targetEntity = CarrierDetails.class)
+    @OneToOne(targetEntity = CarrierDetails.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "carrier_detail_id", referencedColumnName = "id")
     private CarrierDetails carrierDetails;
 
-    @OneToOne(targetEntity = AchievedQuantities.class)
+    @OneToOne(targetEntity = AchievedQuantities.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "achieved_quantities_id", referencedColumnName = "id")
     private AchievedQuantities achievedQuantities;
 
-    @OneToOne(targetEntity = Allocations.class)
+    @OneToOne(targetEntity = Allocations.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "allocations_id", referencedColumnName = "id")
     private Allocations allocations;
 
@@ -261,22 +282,27 @@ public class ConsolidationDetails extends MultiTenancy {
 
     @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "sending_agent_id", referencedColumnName = "id")
+    @OrganizationData
     private Parties sendingAgent;
 
     @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "receiving_agent_id", referencedColumnName = "id")
+    @OrganizationData
     private Parties receivingAgent;
 
     @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "borrowed_from_id", referencedColumnName = "id")
+    @OrganizationData
     private Parties borrowedFrom;
 
     @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "creditor_id", referencedColumnName = "id")
+    @OrganizationData
     private Parties creditor;
 
     @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "co_load_with_id", referencedColumnName = "id")
+    @OrganizationData
     private Parties coLoadWith;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "consolidationId")
@@ -289,6 +315,7 @@ public class ConsolidationDetails extends MultiTenancy {
     private List<Routings> routingsList;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy =  "consolidationId")
+    @JsonIgnoreProperties("shipmentsList")
     private List<Containers> containersList;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "consolidationId")
@@ -309,6 +336,7 @@ public class ConsolidationDetails extends MultiTenancy {
     @JoinTable(name = "console_shipment_mapping",
             joinColumns = @JoinColumn(name = "consolidation_id"),
             inverseJoinColumns = @JoinColumn(name = "shipment_id"))
+    @JsonIgnoreProperties("consolidationList")
     private List<ShipmentDetails> shipmentsList;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "entityId")

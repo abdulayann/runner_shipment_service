@@ -7,6 +7,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 @Data
 @Builder
@@ -14,6 +15,7 @@ import java.util.Map;
 @AllArgsConstructor
 @ToString
 public class EntityTransferShipmentDetails implements IEntityTranferBaseEntity {
+    private UUID guid;
     public EntityTransferCarrierDetails carrierDetails;
     public String houseBill;
     public String transportMode;

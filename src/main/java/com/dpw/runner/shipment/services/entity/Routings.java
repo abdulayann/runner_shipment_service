@@ -2,6 +2,8 @@ package com.dpw.runner.shipment.services.entity;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
+import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
+import com.dpw.runner.shipment.services.utils.MasterData;
 import lombok.*;
 import lombok.experimental.Accessors;
 import org.hibernate.annotations.SQLDelete;
@@ -33,9 +35,11 @@ public class Routings extends MultiTenancy {
     private Long leg;
 
     @Column(name = "mode")
+    @MasterData(type = MasterDataType.MODE)
     private String mode;
 
     @Column(name = "routing_status")
+    @MasterData(type = MasterDataType.ROUTING_STATUS)
     private String routingStatus;
 
     @Column(name = "vessel_name")

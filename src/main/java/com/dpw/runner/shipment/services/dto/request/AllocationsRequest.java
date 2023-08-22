@@ -26,8 +26,8 @@ public class AllocationsRequest implements IRunnerRequest {
     private String weightUnit;
     private BigDecimal volume;
     private String volumeUnit;
-    private BigDecimal Chargable;
-    private String ChargeableUnit;
+    private BigDecimal chargable;
+    private String chargeableUnit;
     private BigDecimal minTemp;
     private String minTempUnit;
     private BigDecimal maxTemp;

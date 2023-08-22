@@ -9,6 +9,7 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 
 @Repository
@@ -19,4 +20,9 @@ public interface IConsolidationRepository extends MultiTenancyRepository<Consoli
         Specification<ConsolidationDetails> spec = (root, criteriaQuery, criteriaBuilder) -> criteriaBuilder.equal(root.get("id"), id);
         return findOne(spec);
     }
+    default Optional<ConsolidationDetails> findByGuid (UUID guid) {
+        Specification<ConsolidationDetails> spec = (root, criteriaQuery, criteriaBuilder) -> criteriaBuilder.equal(root.get("guid"), guid);
+        return findOne(spec);
+    }
+    Optional<ConsolidationDetails> findByBol (String bol);
 }

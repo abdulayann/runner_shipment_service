@@ -26,7 +26,12 @@ public class Constants {
     public static final String SHIPMENT = "SHIPMENT";
     public static final String BOOKING = "BOOKING";
     public static final String CONSOLIDATION = "CONSOLIDATION";
+    public static final String TENANT_SETTINGS = "TENANT_SETTINGS";
+    public static final String ROUTING = "ROUTING";
+    public static final String PACKING = "PACKING";
     public static final String CONTAINER = "CONTAINER";
+    public static final String CARRIAGE = "CARRIAGE";
+    public static final String EVENTS = "EVENTS";
     public static final String JOBS = "JOBS";
     public static final String Cont20 = "20";
     public static final String Cont40 = "40";

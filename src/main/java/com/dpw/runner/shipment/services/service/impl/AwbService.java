@@ -274,7 +274,7 @@ public class AwbService implements IAwbService {
         awbShipmentInfo.setEntityId(consolidationDetails.getId());
         awbShipmentInfo.setEntityType(request.getAwbType());
         // awbShipmentInfo.setShipperName(consolidationDetails.getSendingAgentName()); // missing
-        awbShipmentInfo.setAwbNumber(consolidationDetails.getMAWB());
+        awbShipmentInfo.setAwbNumber(consolidationDetails.getMawb());
         awbShipmentInfo.setFirstCarrier(consolidationDetails.getCarrierDetails().getShippingLine());
         awbShipmentInfo.setShipperAddress(consolidationDetails.getSendingAgentFreeTextAddress());
         awbShipmentInfo.setShipperReferenceNumber(consolidationDetails.getAgentReference());

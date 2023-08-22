@@ -39,7 +39,7 @@ public class ShipmentDetails extends MultiTenancy {
 
     private static final long serialVersionUID = 190794279984274725L;
 
-    @OneToOne(fetch = FetchType.LAZY, targetEntity = CarrierDetails.class)
+    @OneToOne(fetch = FetchType.LAZY, targetEntity = CarrierDetails.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "carrier_detail_id", referencedColumnName = "id")
     private CarrierDetails carrierDetails;
 
@@ -206,10 +206,10 @@ public class ShipmentDetails extends MultiTenancy {
     private String freightOverseasCurrency;
 
     @Column(name = "auto_update_wt_vol")
-    private boolean autoUpdateWtVol;
+    private Boolean autoUpdateWtVol;
 
     @Column(name = "container_auto_wv_update")
-    private boolean containerAutoWeightVolumeUpdate;
+    private Boolean containerAutoWeightVolumeUpdate;
 
     @Column(name = "marks_num")
     private String marksNum;
@@ -232,7 +232,7 @@ public class ShipmentDetails extends MultiTenancy {
     private String bookingType;
 
     @Column(name = "cargo_finance_booking")
-    private boolean cargoFinanceBooking;
+    private Boolean cargoFinanceBooking;
 
     @Column(name = "booking_number")
     private String bookingNumber;
@@ -241,25 +241,25 @@ public class ShipmentDetails extends MultiTenancy {
     private String route;
 
     @Column(name = "source_tenant_id")
-    private long sourceTenantId;
+    private Long sourceTenantId;
 
     @Column(name = "documentation_partner")
-    private long documentationPartner;
+    private Long documentationPartner;
 
     @Column(name = "triangulation_partner")
-    private long triangulationPartner;
+    private Long triangulationPartner;
 
     @Column(name = "receiving_branch")
-    private long receivingBranch;
+    private Long receivingBranch;
 
     @Column(name = "intra_branch")
-    private boolean intraBranch;
+    private Boolean intraBranch;
 
     @Column(name = "prev_shipment_status")
     private Integer prevShipmentStatus;
 
     @Column(name = "is_shipment_read_only")
-    private boolean isShipmentReadOnly;
+    private Boolean isShipmentReadOnly;
 
     @Column(name = "shipment_created_on")
     private LocalDateTime shipmentCreatedOn;
@@ -288,7 +288,7 @@ public class ShipmentDetails extends MultiTenancy {
     @Column(name = "insurance_value_currency")
     public String InsuranceValueCurrency;
 
-    @OneToOne(fetch = FetchType.LAZY, targetEntity = AdditionalDetails.class)
+    @OneToOne(fetch = FetchType.LAZY, targetEntity = AdditionalDetails.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "additional_details_id", referencedColumnName = "id")
     private AdditionalDetails additionalDetails;
 
@@ -330,6 +330,7 @@ public class ShipmentDetails extends MultiTenancy {
     @JoinTable(name = "console_shipment_mapping",
             joinColumns = @JoinColumn(name = "shipment_id"),
             inverseJoinColumns = @JoinColumn(name = "consolidation_id"))
+    @JsonIgnoreProperties("shipmentsList")
     private List<ConsolidationDetails> consolidationList;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "entityId")

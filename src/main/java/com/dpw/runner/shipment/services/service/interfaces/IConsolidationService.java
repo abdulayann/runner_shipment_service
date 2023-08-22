@@ -23,4 +23,5 @@ public interface IConsolidationService extends ICommonService{
     ResponseEntity<?> attachShipments(Long consolidationId, List<Long> shipmentIds) throws Exception;
 
     ResponseEntity<?> detachShipments(Long consolidationId, List<Long> shipmentIds) throws Exception;
+    ResponseEntity<?> completeV1ConsolidationCreateAndUpdate(CommonRequestModel commonRequestModel) throws Exception;
 }

@@ -7,6 +7,7 @@ import lombok.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Map;
+import java.util.UUID;
 
 @Data
 @ToString
@@ -14,6 +15,7 @@ import java.util.Map;
 @AllArgsConstructor
 @NoArgsConstructor
 public class EntityTransferContainers implements IEntityTranferBaseEntity {
+    public UUID guid;
     public String containerCode;
     public String containerNumber;
     public String sealNumber;
