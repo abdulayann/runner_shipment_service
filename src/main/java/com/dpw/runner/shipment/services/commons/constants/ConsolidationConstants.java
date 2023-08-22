@@ -22,4 +22,5 @@ public class ConsolidationConstants {
     public static final String CONSOLIDATION_LOCKED = "Current Consolidation is Locked, try unlocking it first !";
 
     public static final String CONSOLIDATION_CALCULATION_SUCCESSFUL = "Successful Required Calculation";
+    public static final String CONSOLIDATION_V1_CREATE = "/createV1Consolidation";
 }
