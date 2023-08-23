@@ -27,12 +27,8 @@ public class BaseEntity implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    @GeneratedValue(generator = "UUID")
-    @Generated(GenerationTime.ALWAYS)
-    @GenericGenerator(name = "UUID", strategy = "org.hibernate.id.UUIDGenerator")
     @Column(name = "guid", columnDefinition = "uuid")
     @ColumnDefault("random_uuid()")
-    @Type(type = "uuid-char")
     private UUID guid;
 
     @Id
@@ -74,6 +70,10 @@ public class BaseEntity implements Serializable {
             String username = UserContext.getUser().getUsername();
             this.createdBy = username;
             this.updatedBy = username;
+        }
+
+        if (this.guid == null) {
+            this.guid = UUID.randomUUID();
         }
     }
 }

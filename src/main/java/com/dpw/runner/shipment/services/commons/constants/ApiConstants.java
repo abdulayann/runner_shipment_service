@@ -21,6 +21,8 @@ public class ApiConstants {
     public static final String API_UPDATE_SETTINGS = "/update/settings";
 
 
+    public static final String API_UPDATE_BOOKING = "/update/booking";
+
     public static final String API_LIST = "/list";
 
     public static final String API_DELETE = "/delete";

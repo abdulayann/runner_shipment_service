@@ -1,11 +1,16 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IJobDao;
 import com.dpw.runner.shipment.services.entity.Events;
 import com.dpw.runner.shipment.services.entity.Jobs;
+import com.dpw.runner.shipment.services.entity.enums.LifecycleHooks;
+import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.IJobRepository;
+import com.dpw.runner.shipment.services.validator.ValidatorUtility;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,8 +33,17 @@ public class JobDao implements IJobDao {
     @Autowired
     private IJobRepository jobRepository;
 
+    @Autowired
+    private ValidatorUtility validatorUtility;
+
+    @Autowired
+    private JsonHelper jsonHelper;
+
     @Override
     public Jobs save(Jobs jobs) {
+        Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(jobs) , Constants.JOBS, LifecycleHooks.ON_CREATE, false);
+        if (! errors.isEmpty())
+            throw new ValidationException(errors.toString());
         return jobRepository.save(jobs);
     }
 

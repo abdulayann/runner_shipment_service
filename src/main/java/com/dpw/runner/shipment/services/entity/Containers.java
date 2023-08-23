@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.entity;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.entity.enums.ContainerStatus;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.utils.DedicatedMasterData;
@@ -32,6 +33,9 @@ public class Containers extends MultiTenancy {
 
     @Column(name = "consolidation_id")
     private Long consolidationId;
+
+    @Column(name = "booking_id")
+    private Long bookingId;
 
     @Column(name = "logging_id")
     private Long loggingId;
@@ -263,4 +267,9 @@ public class Containers extends MultiTenancy {
             inverseJoinColumns = @JoinColumn(name = "shipment_id"))
     @JsonIgnoreProperties("containersList")
     private List<ShipmentDetails> shipmentsList;
+
+    @ManyToMany(fetch = FetchType.LAZY,
+            mappedBy = "containersList")
+    @JsonIgnore
+    private List<BookingCharges> bookingCharges;
 }

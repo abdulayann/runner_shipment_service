@@ -1,6 +1,8 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import com.azure.messaging.servicebus.ServiceBusMessage;
 import com.dpw.runner.shipment.services.DocumentService.DocumentService;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.ShipmentSettingsConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
@@ -18,6 +20,10 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentSettingsService;
+import com.dpw.runner.shipment.services.service_bus.AzureServiceBusTopic;
+import com.dpw.runner.shipment.services.service_bus.ISBProperties;
+import com.dpw.runner.shipment.services.service_bus.SBUtilsImpl;
+import com.dpw.runner.shipment.services.service_bus.model.EventMessage;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -67,6 +73,12 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
 
     @Autowired
     private JsonHelper jsonHelper;
+    @Autowired
+    private SBUtilsImpl sbUtils;
+    @Autowired
+    private ISBProperties isbProperties;
+    @Autowired
+    private AzureServiceBusTopic azureServiceBusTopic;
 
     @Transactional
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
@@ -100,6 +112,10 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
                 }
                 shipmentSettingsDetails.setProductSequenceConfig(productSequenceConfigDao.saveEntityFromSettings(shipmentSettingsDetails.getProductSequenceConfig(), shipmentSettingsDetails.getId()));
             }
+
+            EventMessage eventMessage = EventMessage.builder().messageType(Constants.SERVICE).entity(Constants.TENANT_SETTINGS).request(shipmentSettingsDetails).build();
+            sbUtils.sendMessagesToTopic(isbProperties, azureServiceBusTopic.getTopic(), Arrays.asList(new ServiceBusMessage(jsonHelper.convertToJsonIncludeNulls(eventMessage))));
+
             log.info("Shipment Setting Details created successfully for Id {} with Request Id {}", shipmentSettingsDetails.getId(), LoggerHelper.getRequestIdFromMDC());
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -239,6 +255,9 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
                 List<ProductSequenceConfig> productSequenceConfigs = productSequenceConfigDao.updateEntityFromSettings(convertToEntityList(productSequenceConfigList, ProductSequenceConfig.class), shipmentSettingsDetails.getId());
                 response.setProductSequenceConfig(convertToDtoList(productSequenceConfigs, ProductSequenceConfigResponse.class));
             }
+
+            EventMessage eventMessage = EventMessage.builder().messageType(Constants.SERVICE).entity(Constants.TENANT_SETTINGS).request(response).build();
+            sbUtils.sendMessagesToTopic(isbProperties, azureServiceBusTopic.getTopic(), Arrays.asList(new ServiceBusMessage(jsonHelper.convertToJsonIncludeNulls(eventMessage))));
 
             return ResponseHelper.buildSuccessResponse(response);
         } catch (Exception e) {

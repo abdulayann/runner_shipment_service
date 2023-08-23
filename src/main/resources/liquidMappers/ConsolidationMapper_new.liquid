@@ -51,7 +51,6 @@
     {% else %}
         "HazardousBookingCutoff": "{{ content.hazardousBookingCutoff }}",
     {% endif %}
-    "Id": {{ content.id }},
     "IGMFileNo": "{{ content.igmFileNo }}",
     {% if content.igmFileDate == null or content.igmFileDate == "" %}
         "IGMFileDate": null,
@@ -199,75 +198,45 @@
     "Weight": {{ content.allocations.weight }},
     "WeightUnit": "{{ content.allocations.weightUnit }}",
 
-    {% if content.sendingAgent == null %}
-        "SendingAgent": null,
-    {% else %}
-        "SendingAgent": {
+    "SendingAgent": {
         "AddressCode": "{{ content.sendingAgent.addressCode }}",
         "AddressData": {},
-        "EntityId":{{ content.sendingAgent.entityId }},
-        "EntityType": "{{ content.sendingAgent.entityType }}",
         "OrgCode": "{{ content.sendingAgent.orgCode }}",
         "OrgData": {},
         "Type": "{{ content.sendingAgent.type }}"
-        },
-    {% endif %}
+    },
 
-    {% if content.receivingAgent == null %}
-        "ReceivingAgent": null,
-    {% else %}
-        "ReceivingAgent": {
+    "ReceivingAgent": {
         "AddressCode": "{{ content.receivingAgent.addressCode }}",
         "AddressData": {},
-        "EntityId":{{ content.receivingAgent.entityId }},
-        "EntityType": "{{ content.receivingAgent.entityType }}",
         "OrgCode": "{{ content.receivingAgent.orgCode }}",
         "OrgData": {},
         "Type": "{{ content.receivingAgent.type }}"
-        },
-    {% endif %}
+    },
 
-    {% if content.borrowedFrom == null %}
-        "BorrowedFrom: null,
-    {% else %}
-        "BorrowedFrom": {
+    "BorrowedFrom": {
         "AddressCode": "{{ content.borrowedFrom.addressCode }}",
         "AddressData": {},
-        "EntityId":{{ content.borrowedFrom.entityId }},
-        "EntityType": "{{ content.borrowedFrom.entityType }}",
         "OrgCode": "{{ content.borrowedFrom.orgCode }}",
         "OrgData": {},
         "Type": "{{ content.borrowedFrom.type }}"
-        },
-    {% endif %}
+    },
 
-    {% if content.creditor == null %}
-        "Creditor": null,
-    {% else %}
-        "Creditor": {
+    "Creditor": {
         "AddressCode": "{{ content.creditor.addressCode }}",
         "AddressData": {},
-        "EntityId":{{ content.creditor.entityId }},
-        "EntityType": "{{ content.creditor.entityType }}",
         "OrgCode": "{{ content.creditor.orgCode }}",
         "OrgData": {},
         "Type": "{{ content.creditor.type }}"
-        },
-    {% endif %}
+    },
 
-    {% if content.coLoadWith == null %}
-        "CoLoadWith": null,
-    {% else %}
-        "CoLoadWith": {
+    "CoLoadWith": {
         "AddressCode": "{{ content.coLoadWith.addressCode }}",
         "AddressData": {},
-        "EntityId":{{ content.coLoadWith.entityId }},
-        "EntityType": "{{ content.coLoadWith.entityType }}",
         "OrgCode": "{{ content.coLoadWith.orgCode }}",
         "OrgData": {},
         "Type": "{{ content.coLoadWith.type }}"
-        },
-    {% endif %}
+    },
 
     "Description": "{{ content.description }}",
     "PlaceOfIssueString": "{{ content.placeOfIssue }}",
@@ -276,11 +245,8 @@
         "AcontainerYardId": {
             "AddressCode": "{{ content.arrivalDetails.containerYardId.addressCode }}",
             "AddressData": {},
-            "EntityId": {{ content.arrivalDetails.containerYardId.entityId }},
-            "EntityType": "{{ content.arrivalDetails.containerYardId.entityType }}",
             "OrgCode": "{{ content.arrivalDetails.containerYardId.orgCode }}",
             "OrgData": {},
-            "TenantId": {{ content.arrivalDetails.containerYardId.tenantId }},
             "Type": "{{ content.arrivalDetails.containerYardId.type }}"
         },
         {% if content.arrivalDetails.firstForeignPortArrivalDate == null or content.arrivalDetails.firstForeignPortArrivalDate == "" %}
@@ -291,11 +257,8 @@
         "AfirstArrivalPortId": {
             "AddressCode": "{{ content.arrivalDetails.afirstArrivalPortId.addressCode }}",
             "AddressData": {},
-            "EntityId": {{ content.arrivalDetails.afirstArrivalPortId.entityId }},
-            "EntityType": "{{ content.arrivalDetails.afirstArrivalPortId.entityType }}",
             "OrgCode": "{{ content.arrivalDetails.afirstArrivalPortId.orgCode }}",
             "OrgData": {},
-            "TenantId": {{ content.arrivalDetails.afirstArrivalPortId.tenantId }},
             "Type": "{{ content.arrivalDetails.afirstArrivalPortId.type }}"
         },
         {% if content.arrivalDetails.lastForeignPortDepartureDate == null or content.arrivalDetails.lastForeignPortDepartureDate == "" %}
@@ -306,51 +269,36 @@
         "AlastForeignPortId": {
             "AddressCode": "{{ content.arrivalDetails.lastForeignPortId.addressCode }}",
             "AddressData": {},
-            "EntityId": {{ content.arrivalDetails.lastForeignPortId.entityId }},
-            "EntityType": "{{ content.arrivalDetails.lastForeignPortId.entityType }}",
             "OrgCode": "{{ content.arrivalDetails.lastForeignPortId.orgCode }}",
             "OrgData": {},
-            "TenantId": {{ content.arrivalDetails.lastForeignPortId.tenantId }},
             "Type": "{{ content.arrivalDetails.lastForeignPortId.type }}"
         },
         "AtransportPortId": {
             "AddressCode": "{{ content.arrivalDetails.transportPortId.addressCode }}",
             "AddressData": {},
-            "EntityId": {{ content.arrivalDetails.transportPortId.entityId }},
-            "EntityType": "{{ content.arrivalDetails.transportPortId.entityType }}",
             "OrgCode": "{{ content.arrivalDetails.transportPortId.orgCode }}",
             "OrgData": {},
-            "TenantId": {{ content.arrivalDetails.transportPortId.tenantId }},
             "Type": "{{ content.arrivalDetails.transportPortId.type }}"
         },
         "ACTOId": {
             "AddressCode": "{{ content.arrivalDetails.CTOId.addressCode }}",
             "AddressData": {},
-            "EntityId": {{ content.arrivalDetails.CTOId.entityId }},
-            "EntityType": "{{ content.arrivalDetails.CTOId.entityType }}",
             "OrgCode": "{{ content.arrivalDetails.CTOId.orgCode }}",
             "OrgData": {},
-            "TenantId": {{ content.arrivalDetails.CTOId.tenantId }},
             "Type": "{{ content.arrivalDetails.CTOId.type }}"
         },
         "ACFSId": {
             "AddressCode": "{{ content.arrivalDetails.CFSId.addressCode }}",
             "AddressData": {},
-            "EntityId": {{ content.arrivalDetails.CFSId.entityId }},
-            "EntityType": "{{ content.arrivalDetails.CFSId.entityType }}",
             "OrgCode": "{{ content.arrivalDetails.CFSId.orgCode }}",
             "OrgData": {},
-            "TenantId": {{ content.arrivalDetails.CFSId.tenantId }},
             "Type": "{{ content.arrivalDetails.CFSId.type }}"
         },
         "DcontainerYardId": {
             "AddressCode": "{{ content.departureDetails.containerYardId.addressCode }}",
             "AddressData": {},
-            "EntityId": {{ content.departureDetails.containerYardId.entityId }},
-            "EntityType": "{{ content.departureDetails.containerYardId.entityType }}",
             "OrgCode": "{{ content.departureDetails.containerYardId.orgCode }}",
             "OrgData": {},
-            "TenantId": {{ content.departureDetails.containerYardId.tenantId }},
             "Type": "{{ content.departureDetails.containerYardId.type }}"
         },
         {% if content.departureDetails.firstForeignPortArrivalDate == null or content.departureDetails.firstForeignPortArrivalDate == "" %}
@@ -361,11 +309,8 @@
         "DfirstForeignPortId": {
             "AddressCode": "{{ content.departureDetails.firstForeignPortId.addressCode }}",
             "AddressData": {},
-            "EntityId": {{ content.departureDetails.firstForeignPortId.entityId }},
-            "EntityType": "{{ content.departureDetails.firstForeignPortId.entityType }}",
             "OrgCode": "{{ content.departureDetails.firstForeignPortId.orgCode }}",
             "OrgData": {},
-            "TenantId": {{ content.departureDetails.firstForeignPortId.tenantId }},
             "Type": "{{ content.departureDetails.firstForeignPortId.type }}"
         },
         {% if content.departureDetails.lastForeignPortDepartureDate == null or content.departureDetails.lastForeignPortDepartureDate == "" %}
@@ -376,41 +321,29 @@
         "DlastForeignPortId": {
             "AddressCode": "{{ content.departureDetails.lastForeignPortId.addressCode }}",
             "AddressData": {},
-            "EntityId": {{ content.departureDetails.lastForeignPortId.entityId }},
-            "EntityType": "{{ content.departureDetails.lastForeignPortId.entityType }}",
             "OrgCode": "{{ content.departureDetails.lastForeignPortId.orgCode }}",
             "OrgData": {},
-            "TenantId": {{ content.departureDetails.lastForeignPortId.tenantId }},
             "Type": "{{ content.departureDetails.lastForeignPortId.type }}"
         },
         "DtransportPortId": {
             "AddressCode": "{{ content.departureDetails.transportPortId.addressCode }}",
             "AddressData": {},
-            "EntityId": {{ content.departureDetails.transportPortId.entityId }},
-            "EntityType": "{{ content.departureDetails.transportPortId.entityType }}",
             "OrgCode": "{{ content.departureDetails.transportPortId.orgCode }}",
             "OrgData": {},
-            "TenantId": {{ content.departureDetails.transportPortId.tenantId }},
             "Type": "{{ content.departureDetails.transportPortId.type }}"
         },
         "DCTOId": {
             "AddressCode": "{{ content.departureDetails.CTOID.addressCode }}",
             "AddressData": {},
-            "EntityId": {{ content.departureDetails.CTOID.entityId }},
-            "EntityType": "{{ content.departureDetails.CTOID.entityType }}",
             "OrgCode": "{{ content.departureDetails.CTOID.orgCode }}",
             "OrgData": {},
-            "TenantId": {{ content.departureDetails.CTOID.tenantId }},
             "Type": "{{ content.departureDetails.CTOID.type }}"
         },
         "DCFSId": {
             "AddressCode": "{{ content.departureDetails.CFSId.addressCode }}",
             "AddressData": {},
-            "EntityId": {{ content.departureDetails.CFSId.entityId }},
-            "EntityType": "{{ content.departureDetails.CFSId.entityType }}",
             "OrgCode": "{{ content.departureDetails.CFSId.orgCode }}",
             "OrgData": {},
-            "TenantId": {{ content.departureDetails.CFSId.tenantId }},
             "Type": "{{ content.departureDetails.CFSId.type }}"
         }
     },
@@ -593,8 +526,6 @@
         "BuyerDetail": {
         "AddressCode": "{{ job.buyerDetail.addressCode }}",
         "AddressData": {},
-        "EntityId":{{ job.buyerDetail.entityId }},
-        "EntityType": "{{ job.buyerDetail.entityType }}",
         "OrgCode": "{{ job.buyerDetail.orgCode }}",
         "OrgData": {},
         "Type": "{{ job.buyerDetail.type }}"
@@ -602,8 +533,6 @@
         "SupplierDetail": {
         "AddressCode": "{{ job.supplierDetail.addressCode }}",
         "AddressData": {},
-        "EntityId":{{ job.supplierDetail.entityId }},
-        "EntityType": "{{ job.supplierDetail.entityType }}",
         "OrgCode": "{{ job.supplierDetail.orgCode }}",
         "OrgData": {},
         "Type": "{{ job.supplierDetail.type }}"
@@ -776,8 +705,6 @@
         "DeliveryAddressJson": {
         "AddressCode": "{{ container.deliveryAddress.addressCode }}",
         "AddressData": {},
-        "EntityId":{{ container.deliveryAddress.entityId }},
-        "EntityType": "{{ container.deliveryAddress.entityType }}",
         "OrgCode": "{{ container.deliveryAddress.orgCode }}",
         "OrgData": {},
         "Type": "{{ container.deliveryAddress.type }}"
@@ -785,8 +712,6 @@
         "PickupAddressJson": {
         "AddressCode": "{{ container.pickupAddress.addressCode }}",
         "AddressData": {},
-        "EntityId":{{ container.pickupAddress.entityId }},
-        "EntityType": "{{ container.pickupAddress.entityType }}",
         "OrgCode": "{{ container.pickupAddress.orgCode }}",
         "OrgData": {},
         "Type": "{{ container.pickupAddress.type }}"

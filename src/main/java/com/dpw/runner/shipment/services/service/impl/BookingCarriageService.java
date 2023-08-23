@@ -97,21 +97,22 @@ public class BookingCarriageService implements IBookingCarriageService {
             log.error("Request Id is null for booking carriage update for Request Id {}", LoggerHelper.getRequestIdFromMDC());
         }
         long id = request.getId();
-        BookingCarriage oldEntity = bookingCarriageDao.findById(id).get();
-        if (oldEntity == null) {
+        Optional<BookingCarriage> oldEntity = bookingCarriageDao.findById(id);
+        if (!oldEntity.isPresent()) {
             log.debug("Booking Carriage is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
 
         BookingCarriage bookingCarriage = bookingCarriageMapper.map(request);
         try {
-            String oldEntityJsonString = jsonHelper.convertToJson(oldEntity);
+            String oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
             bookingCarriage = bookingCarriageDao.save(bookingCarriage);
 
+            // audit logs
             auditLogService.addAuditLog(
                     AuditLogMetaData.builder()
                             .newData(bookingCarriage)
-                            .prevData(jsonHelper.readFromJson(oldEntityJsonString,BookingCarriage.class))
+                            .prevData(jsonHelper.readFromJson(oldEntityJsonString, BookingCarriage.class))
                             .parent(BookingCarriage.class.getSimpleName())
                             .parentId(bookingCarriage.getId())
                             .operation(DBOperationType.UPDATE.name()).build()
@@ -195,15 +196,18 @@ public class BookingCarriageService implements IBookingCarriageService {
                 log.debug("Booking Carriage is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
+
+            String oldEntityJsonString = jsonHelper.convertToJson(bookingCarriage.get());
             bookingCarriageDao.delete(bookingCarriage.get());
 
+            // audit logs
             auditLogService.addAuditLog(
                     AuditLogMetaData.builder()
                             .newData(null)
-                            .prevData(bookingCarriage.get())
+                            .prevData(jsonHelper.readFromJson(oldEntityJsonString, BookingCarriage.class))
                             .parent(BookingCarriage.class.getSimpleName())
                             .parentId(bookingCarriage.get().getId())
-                            .operation(DBOperationType.UPDATE.name()).build()
+                            .operation(DBOperationType.DELETE.name()).build()
             );
 
             log.info("Deleted booking carriage for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());

@@ -1,6 +1,8 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
+import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
@@ -15,7 +17,6 @@ import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IAchievedQuantitiesService;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
-import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
@@ -43,16 +44,30 @@ public class AchievedQuantitiesService implements IAchievedQuantitiesService {
     @Autowired
     private JsonHelper jsonHelper;
 
+    @Autowired
+    private AuditLogService auditLogService;
+
     @Transactional
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
         String responseMsg;
         AchievedQuantitiesRequest request = (AchievedQuantitiesRequest) commonRequestModel.getData();
-        if(request == null) {
+        if (request == null) {
             log.debug("Request is empty for Achieved Quantities Create with Request Id {}", LoggerHelper.getRequestIdFromMDC());
         }
         AchievedQuantities achievedQuantities = convertRequestToAchievedQuantities(request);
         try {
             achievedQuantities = achievedQuantitiesDao.save(achievedQuantities);
+
+            // audit logs
+            auditLogService.addAuditLog(
+                    AuditLogMetaData.builder()
+                            .newData(achievedQuantities)
+                            .prevData(null)
+                            .parent(AchievedQuantities.class.getSimpleName())
+                            .parentId(achievedQuantities.getId())
+                            .operation(DBOperationType.CREATE.name()).build()
+            );
+
             log.info("Achieved Quantities Saved Successfully for Id {} with Request Id {}", achievedQuantities.getId(), LoggerHelper.getRequestIdFromMDC());
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -67,11 +82,11 @@ public class AchievedQuantitiesService implements IAchievedQuantitiesService {
     public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
         String responseMsg;
         AchievedQuantitiesRequest request = (AchievedQuantitiesRequest) commonRequestModel.getData();
-        if(request == null) {
+        if (request == null) {
             log.error("Request is empty for Achieved Quantities Update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
         }
 
-        if(request.getId() == null) {
+        if (request.getId() == null) {
             log.error("Request Id is null for Achieved Quantities Update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
         }
         long id = request.getId();
@@ -84,7 +99,19 @@ public class AchievedQuantitiesService implements IAchievedQuantitiesService {
         AchievedQuantities achievedQuantities = convertRequestToAchievedQuantities(request);
         achievedQuantities.setId(oldEntity.get().getId());
         try {
+            String oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
             achievedQuantities = achievedQuantitiesDao.save(achievedQuantities);
+
+            // audit logs
+            auditLogService.addAuditLog(
+                    AuditLogMetaData.builder()
+                            .newData(achievedQuantities)
+                            .prevData(jsonHelper.readFromJson(oldEntityJsonString, AchievedQuantities.class))
+                            .parent(AchievedQuantities.class.getSimpleName())
+                            .parentId(achievedQuantities.getId())
+                            .operation(DBOperationType.UPDATE.name()).build()
+            );
+
             log.info("Updating the Achieved Quantities for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -100,7 +127,7 @@ public class AchievedQuantitiesService implements IAchievedQuantitiesService {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
-            if(request == null) {
+            if (request == null) {
                 log.error("Request is empty for Achieved Quantities list with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
             Pair<Specification<AchievedQuantities>, Pageable> tuple = fetchData(request, AchievedQuantities.class);
@@ -120,11 +147,11 @@ public class AchievedQuantitiesService implements IAchievedQuantitiesService {
 
     @Override
     @Async
-    public CompletableFuture<ResponseEntity<?>> listAsync(CommonRequestModel commonRequestModel){
+    public CompletableFuture<ResponseEntity<?>> listAsync(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
-            if(request == null) {
+            if (request == null) {
                 log.error("Request is empty for Achieved Quantities async list with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
             Pair<Specification<AchievedQuantities>, Pageable> tuple = fetchData(request, AchievedQuantities.class);
@@ -148,10 +175,10 @@ public class AchievedQuantitiesService implements IAchievedQuantitiesService {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
-            if(request == null) {
+            if (request == null) {
                 log.error("Request is empty for Achieved Quantities Delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
-            if(request.getId() == null) {
+            if (request.getId() == null) {
                 log.error("Request Id is null for Achieved Quantities Delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
             long id = request.getId();
@@ -161,7 +188,20 @@ public class AchievedQuantitiesService implements IAchievedQuantitiesService {
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
             log.info("Deleted Achieved Quantities for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
+
+            String oldEntityJsonString = jsonHelper.convertToJson(achievedQuantities.get());
             achievedQuantitiesDao.delete(achievedQuantities.get());
+
+            // audit logs
+            auditLogService.addAuditLog(
+                    AuditLogMetaData.builder()
+                            .newData(null)
+                            .prevData(jsonHelper.readFromJson(oldEntityJsonString, AchievedQuantities.class))
+                            .parent(AchievedQuantities.class.getSimpleName())
+                            .parentId(achievedQuantities.get().getId())
+                            .operation(DBOperationType.DELETE.name()).build()
+            );
+
             return ResponseHelper.buildSuccessResponse();
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -176,10 +216,10 @@ public class AchievedQuantitiesService implements IAchievedQuantitiesService {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
-            if(request == null) {
+            if (request == null) {
                 log.error("Request is empty for Achieved Quantities retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
-            if(request.getId() == null) {
+            if (request.getId() == null) {
                 log.error("Request Id is null for Achieved Quantities retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
             long id = request.getId();

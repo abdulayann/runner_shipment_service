@@ -43,6 +43,7 @@ public class BookingCarriage extends MultiTenancy {
     private LocalDateTime etd;
 
     @Column(name = "vessel")
+    @DedicatedMasterData(type = Constants.VESSEL_MASTER_DATA)
     private String vessel;
 
     @Column(name = "voyage")

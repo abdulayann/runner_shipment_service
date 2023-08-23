@@ -13,7 +13,5 @@ import java.util.List;
 @ToString
 public class SendShipmentResponse implements IRunnerResponse {
     List<Integer> successTenantIds;
-    List<Integer> failedTenantIds;
-    List<String> failedOrgName;
     EntityTransferShipmentDetails entityTransferShipmentDetails;
 }

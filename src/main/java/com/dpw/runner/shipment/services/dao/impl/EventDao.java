@@ -1,11 +1,16 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IEventDao;
 import com.dpw.runner.shipment.services.entity.ELDetails;
 import com.dpw.runner.shipment.services.entity.Events;
+import com.dpw.runner.shipment.services.entity.enums.LifecycleHooks;
+import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.IEventRepository;
+import com.dpw.runner.shipment.services.validator.ValidatorUtility;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,8 +33,17 @@ public class EventDao implements IEventDao {
     @Autowired
     private IEventRepository eventRepository;
 
+    @Autowired
+    private ValidatorUtility validatorUtility;
+
+    @Autowired
+    private JsonHelper jsonHelper;
+
     @Override
     public Events save(Events events) {
+        Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(events) , Constants.EVENTS, LifecycleHooks.ON_CREATE, false);
+        if (! errors.isEmpty())
+            throw new ValidationException(errors.toString());
         return eventRepository.save(events);
     }
 

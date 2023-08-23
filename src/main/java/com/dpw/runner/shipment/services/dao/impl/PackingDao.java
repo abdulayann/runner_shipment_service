@@ -92,6 +92,36 @@ public class PackingDao implements IPackingDao {
         }
     }
 
+    public List<Packing> updateEntityFromBooking(List<Packing> packingList, Long bookingId) throws Exception {
+        String responseMsg;
+        List<Packing> responsePackings = new ArrayList<>();
+        try {
+            ListCommonRequest listCommonRequest = constructListCommonRequest("bookingId", bookingId, "=");
+            Pair<Specification<Packing>, Pageable> pair = fetchData(listCommonRequest, Packing.class);
+            Page<Packing> packings = findAll(pair.getLeft(), pair.getRight());
+            Map<Long, Packing> hashMap = packings.stream()
+                    .collect(Collectors.toMap(Packing::getId, Function.identity()));
+            List<Packing> packingRequestList = new ArrayList<>();
+            if (packingList != null && packingList.size() != 0) {
+                for (Packing request : packingList) {
+                    Long id = request.getId();
+                    if (id != null) {
+                        hashMap.remove(id);
+                    }
+                    packingRequestList.add(request);
+                }
+                responsePackings = saveEntityFromBooking(packingRequestList, bookingId);
+            }
+            deletePackings(hashMap);
+            return responsePackings;
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
+            log.error(responseMsg, e);
+            throw new Exception(e);
+        }
+    }
+
     @Override
     public List<Packing> updateEntityFromConsole(List<Packing> packingList, Long consolidationId) throws Exception {
         String responseMsg;
@@ -146,6 +176,24 @@ public class PackingDao implements IPackingDao {
                 }
             }
             req.setShipmentId(shipmentId);
+            req = save(req);
+            res.add(req);
+        }
+        return res;
+    }
+
+    public List<Packing> saveEntityFromBooking(List<Packing> packings, Long bookingId) {
+        List<Packing> res = new ArrayList<>();
+        for (Packing req : packings) {
+            if (req.getId() != null) {
+                long id = req.getId();
+                Optional<Packing> oldEntity = findById(id);
+                if (!oldEntity.isPresent()) {
+                    log.debug("Packing is null for Id {}", req.getId());
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
+            }
+            req.setBookingId(bookingId);
             req = save(req);
             res.add(req);
         }

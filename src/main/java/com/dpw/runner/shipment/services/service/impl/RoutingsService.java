@@ -1,6 +1,8 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
+import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
@@ -8,6 +10,7 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IRoutingsDao;
 import com.dpw.runner.shipment.services.dto.request.RoutingsRequest;
 import com.dpw.runner.shipment.services.dto.response.RoutingsResponse;
+import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.entity.Routings;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
@@ -42,6 +45,9 @@ public class RoutingsService implements IRoutingsService {
     @Autowired
     private JsonHelper jsonHelper;
 
+    @Autowired
+    private AuditLogService auditLogService;
+
     @Override
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
         String responseMsg;
@@ -49,17 +55,28 @@ public class RoutingsService implements IRoutingsService {
         if(request == null) {
             log.debug("Request is empty for Routing create with Request Id {}", LoggerHelper.getRequestIdFromMDC());
         }
-        Routings notes = convertRequestToRoutingsEntity(request);
+        Routings routings = convertRequestToRoutingsEntity(request);
         try {
-            notes = routingsDao.save(notes);
-            log.info("Routing Details created successfully for Id {} with Request Id {}", notes.getId(), LoggerHelper.getRequestIdFromMDC());
+            routings = routingsDao.save(routings);
+
+            // audit logs
+            auditLogService.addAuditLog(
+                    AuditLogMetaData.builder()
+                            .newData(routings)
+                            .prevData(null)
+                            .parent(Routings.class.getSimpleName())
+                            .parentId(routings.getId())
+                            .operation(DBOperationType.CREATE.name()).build()
+            );
+
+            log.info("Routing Details created successfully for Id {} with Request Id {}", routings.getId(), LoggerHelper.getRequestIdFromMDC());
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(responseMsg);
         }
-        return ResponseHelper.buildSuccessResponse(convertEntityToDto(notes));
+        return ResponseHelper.buildSuccessResponse(convertEntityToDto(routings));
     }
 
     @Override
@@ -80,10 +97,21 @@ public class RoutingsService implements IRoutingsService {
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
 
-        Routings notes = convertRequestToRoutingsEntity(request);
-        notes.setId(oldEntity.get().getId());
+        Routings routings = convertRequestToRoutingsEntity(request);
+        routings.setId(oldEntity.get().getId());
         try {
-            notes = routingsDao.save(notes);
+            String oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
+            routings = routingsDao.save(routings);
+
+            // audit logs
+            auditLogService.addAuditLog(
+                    AuditLogMetaData.builder()
+                            .newData(routings)
+                            .prevData(jsonHelper.readFromJson(oldEntityJsonString, Routings.class))
+                            .parent(Routings.class.getSimpleName())
+                            .parentId(routings.getId())
+                            .operation(DBOperationType.UPDATE.name()).build()
+            );
             log.info("Updated the routing details for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -91,7 +119,7 @@ public class RoutingsService implements IRoutingsService {
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(responseMsg);
         }
-        return ResponseHelper.buildSuccessResponse(convertEntityToDto(notes));
+        return ResponseHelper.buildSuccessResponse(convertEntityToDto(routings));
     }
 
     @Override
@@ -154,12 +182,24 @@ public class RoutingsService implements IRoutingsService {
             }
             long id = request.getId();
 
-            Optional<Routings> note = routingsDao.findById(id);
-            if (note.isEmpty()) {
+            Optional<Routings> routings = routingsDao.findById(id);
+            if (routings.isEmpty()) {
                 log.debug("Routings is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
-            routingsDao.delete(note.get());
+
+            String oldEntityJsonString = jsonHelper.convertToJson(routings.get());
+            routingsDao.delete(routings.get());
+
+            // audit logs
+            auditLogService.addAuditLog(
+                    AuditLogMetaData.builder()
+                            .newData(null)
+                            .prevData(jsonHelper.readFromJson(oldEntityJsonString, Routings.class))
+                            .parent(Routings.class.getSimpleName())
+                            .parentId(routings.get().getId())
+                            .operation(DBOperationType.DELETE.name()).build()
+            );
             log.info("Deleted Routings details for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
             return ResponseHelper.buildSuccessResponse();
         } catch (Exception e) {
