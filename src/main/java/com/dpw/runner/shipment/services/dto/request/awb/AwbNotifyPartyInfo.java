@@ -14,6 +14,7 @@ public class AwbNotifyPartyInfo {
     private String entityType;
     private String type;
     private String orgCode;
+    //TODO - Please Move this to parties org - Tapan
     private Integer orgId;
     private Long notifyOrgId;
     private String name;

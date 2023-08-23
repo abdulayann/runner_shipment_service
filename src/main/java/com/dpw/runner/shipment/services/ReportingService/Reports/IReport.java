@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConst
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper;
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ContainerCountByCode;
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentContainers;
+import com.dpw.runner.shipment.services.ReportingService.Models.HawbModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IHblDao;
@@ -20,13 +21,17 @@ import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
+import com.dpw.runner.shipment.services.repository.interfaces.IAwbRepository;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 public abstract class IReport {
@@ -45,6 +50,9 @@ public abstract class IReport {
 
     @Autowired
     private JsonHelper jsonHelper;
+
+    @Autowired
+    private IAwbRepository awbRepository;
 
     abstract Map<String, Object> getData(Long id);
     abstract IDocumentModel getDocumentModel(Long id);
@@ -648,5 +656,99 @@ public abstract class IReport {
             containerCountByCode.add(countByCode);
         }
         return containerCountByCode;
+    }
+
+    public Awb getHawb(Long Id) {
+        List<Awb> awb = awbRepository.findByShipmentId(Id);
+        if(awb != null && !awb.isEmpty())
+            return awb.get(0);
+        return null;
+    }
+
+    public Awb getMawb(Long Id) {
+        List<Awb> awb = awbRepository.findByConsolidationId(Id);
+        if(awb != null && !awb.isEmpty())
+            return awb.get(0);
+        return null;
+    }
+
+    public static List<String> getFormattedDetails(String name, String address)
+    {
+        List<String> details = new ArrayList<>();
+        details.add(name);
+        String[] addressList = address.split("\r\n");
+        addressList = Arrays.stream(addressList)
+                .filter(Objects::nonNull)
+                .map(String::trim)
+                .filter(Predicate.isEqual("").negate())
+                .toArray(String[]::new);
+        details.addAll(Arrays.asList(addressList));
+        return details;
+    }
+
+    public static String addCommas(BigDecimal amount)
+    {
+        if (amount == null) return null;
+        return String.format("{0:n2}", amount);
+    }
+
+    public static String addCommas(String amount)
+    {
+        if (amount == null)
+        {
+            return null;
+        }
+        try{
+            return String.format("{0:n2}", new BigDecimal(amount));
+        }
+        catch (Exception ex)
+        {
+            return amount;
+        }
+    }
+
+    public static String appendZero(String value, int length){
+        int size = value.length();
+        for(int i=0; i<length-size; i++){
+            value = "0" + value;
+        }
+        return value;
+    }
+
+    public static String twoDecimalPlacesFormat(String value)
+    {
+        if(StringUtility.isEmpty(value))
+        {
+            return value;
+        }
+
+        else
+        {
+            return String.format("##.00", value);
+        }
+    }
+
+    public static String twoDecimalPlacesFormatDecimal(BigDecimal value)
+    {
+        if(value == null)
+        {
+            return "0.00";
+        }
+        return twoDecimalPlacesFormat(value.toString());
+    }
+
+    public static DateTimeFormatter GetDPWDateFormatOrDefault()
+    {
+        return DateTimeFormatter.ofPattern("MM/dd/yyyy");
+    }
+
+    public static String ConvertToDPWDateFormat(LocalDateTime date)
+    {
+        String strDate = "";
+        if (date != null)
+        {
+            strDate = date.format(GetDPWDateFormatOrDefault());
+        }
+        return strDate;
     }
 }

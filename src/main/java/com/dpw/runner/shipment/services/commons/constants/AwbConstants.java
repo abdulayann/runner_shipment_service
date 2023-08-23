@@ -11,4 +11,11 @@ public class AwbConstants {
     public static final String RESPONSE_CONTAINER_LIST = "List";
     public static final String MAWB_CREATE_SUCCESSFUL = "Successful MAWB Creation";
     public static final String MAWB_GOODS_AND_PACKS_UPDATE_SUCCESSFUL = "Successful Goods and Packs for MAWB Update";
+
+    //Entity Type
+    public static final String MAWB = "MAWB";
+    public static final String DMAWB = "DMAWB";
+
+    public static final String FREIGHT_AMOUNT = "Freight Amount";
+    public static final String OTHER_AMOUNT = "Other Amount";
 }

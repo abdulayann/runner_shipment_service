@@ -212,7 +212,7 @@ public class AuditLogService implements IAuditLogService {
             fields = getListOfAllFields(prevEntity);
         }
         Map<String, AuditLogChanges> fieldValueMap = new HashMap<>();
-        fields = fields.stream().filter(field -> !filterFieldBasedOnAnnotation(field)).toList();
+        fields = fields.stream().filter(field -> !filterFieldBasedOnAnnotation(field)).collect(Collectors.toList());
         for (Field field : fields) {
             String fieldName = field.getName();
             Annotation[] fieldAnnotations = field.getDeclaredAnnotations();

@@ -17,6 +17,8 @@ public class UnlocationsResponse {
     private String locCode;
     @JsonProperty("NameWoDiacritics")
     private String nameWoDiacritics;
+    @JsonProperty("IATACode")
+    private String iataCode;
     @JsonProperty("LocationsReferenceGUID")
     public String locationsReferenceGUID;
 }
