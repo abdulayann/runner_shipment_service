@@ -838,23 +838,23 @@
         "transportMode": "{{ container.TransportMode }}",
         "veterinarySealNumber": "{{ container.VeterinarySealNumber }}",
 
-        "deliveryAddress.DeliveryAddressJson": {
-            "AddressCode": "{{ container.deliveryAddress.addressCode }}",
+        "deliveryAddress": {
+            "AddressCode": "{{ container.DeliveryAddressJson.addressCode }}",
             "AddressData": {},
-            "EntityId":{{ container.deliveryAddress.entityId }},
-            "EntityType": "{{ container.deliveryAddress.entityType }}",
-            "OrgCode": "{{ container.deliveryAddress.orgCode }}",
+            "EntityId":{{ container.DeliveryAddressJson.entityId }},
+            "EntityType": "{{ container.DeliveryAddressJson.entityType }}",
+            "OrgCode": "{{ container.DeliveryAddressJson.orgCode }}",
             "OrgData": {},
-            "Type": "{{ container.deliveryAddress.type }}"
+            "Type": "{{ container.DeliveryAddressJson.type }}"
         },
-        "pickupAddress.PickupAddressJson": {
-            "AddressCode": "{{ container.pickupAddress.addressCode }}",
+        "pickupAddress": {
+            "AddressCode": "{{ container.PickupAddressJson.addressCode }}",
             "AddressData": {},
-            "EntityId":{{ container.pickupAddress.entityId }},
-            "EntityType": "{{ container.pickupAddress.entityType }}",
-            "OrgCode": "{{ container.pickupAddress.orgCode }}",
+            "EntityId":{{ container.PickupAddressJson.entityId }},
+            "EntityType": "{{ container.PickupAddressJson.entityType }}",
+            "OrgCode": "{{ container.PickupAddressJson.orgCode }}",
             "OrgData": {},
-            "Type": "{{ container.pickupAddress.type }}"
+            "Type": "{{ container.PickupAddressJson.type }}"
         },
 
         "ShipmentsList": [
