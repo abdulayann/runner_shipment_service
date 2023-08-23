@@ -1,7 +1,8 @@
-package com.dpw.runner.shipment.services.dto.request;
+package com.dpw.runner.shipment.services.dto.response;
 
 import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
 
@@ -13,8 +14,10 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @ToString
-public class BookingContainerRequest extends CommonRequest implements IRunnerRequest {
+public class BookingContainerResponse implements IRunnerResponse {
     private UUID reference_id;
+    private UUID guid;
+    private UUID runner_guid;
     @JsonProperty("containerType")
     private String containerCode;
     @JsonProperty("commodity")

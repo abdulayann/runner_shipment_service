@@ -1,6 +1,8 @@
-package com.dpw.runner.shipment.services.dto.request;
+package com.dpw.runner.shipment.services.dto.response;
 
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.annotations.ApiModel;
@@ -17,7 +19,7 @@ import java.util.UUID;
 @ToString
 @AllArgsConstructor
 @NoArgsConstructor
-public class PlatformToRunnerCustomerBookingRequest implements IRunnerRequest {
+public class PlatformToRunnerCustomerBookingResponse implements IRunnerResponse {
     private BookingStatus bookingStatus;
     private PartiesRequest customer;
     private Boolean isCustomerFreeText;
@@ -56,8 +58,8 @@ public class PlatformToRunnerCustomerBookingRequest implements IRunnerRequest {
     private BigDecimal chargeable;
     private String chargeableUnit;
     private UUID contractId;
-    private List<BookingContainerRequest> containersList;
-    private List<BookingPackingRequest> packingList;
-    private List<BookingRoutingsRequest> routingList;
-    private List<BookingChargesRequest> bookingCharges;
+    private List<BookingContainerResponse> containersList;
+    private List<BookingPackingResponse> packingList;
+    private List<BookingRoutingsResponse> routingList;
+    private List<BookingChargesResponse> bookingCharges;
 }

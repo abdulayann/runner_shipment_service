@@ -1,8 +1,13 @@
-package com.dpw.runner.shipment.services.dto.request;
+package com.dpw.runner.shipment.services.dto.request.platformBooking;
 
-import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
+import com.dpw.runner.shipment.services.dto.request.BookingChargesRequest;
+import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
+import com.dpw.runner.shipment.services.dto.request.platformBooking.BookingContainerRequest;
+import com.dpw.runner.shipment.services.dto.request.platformBooking.BookingPackingRequest;
+import com.dpw.runner.shipment.services.dto.request.platformBooking.BookingRoutingsRequest;
 import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.annotations.ApiModel;
 import lombok.*;
 
@@ -17,8 +22,8 @@ import java.util.UUID;
 @ToString
 @AllArgsConstructor
 @NoArgsConstructor
-public class CustomerBookingRequest  extends CommonRequest implements IRunnerRequest {
-    private Long id;
+public class PlatformToRunnerCustomerBookingRequest implements IRunnerRequest {
+    @JsonProperty("status")
     private BookingStatus bookingStatus;
     private PartiesRequest customer;
     private Boolean isCustomerFreeText;
@@ -32,10 +37,20 @@ public class CustomerBookingRequest  extends CommonRequest implements IRunnerReq
     private String bookingNumber;
     private LocalDateTime bookingDate;
     private String incoTerms;
-    private CarrierDetailRequest carrierDetails;
+    private String origin;
+    private String destination;
+    @JsonProperty("pol")
+    private String originPort;
+    @JsonProperty("pod")
+    private String destinationPort;
+//    private CarrierDetailRequest carrierDetails;
     private String transportType;
     private String cargoType;
     private String direction;
+    private String shippingLine;
+    private String vessel;
+    @JsonProperty("voyageNumber")
+    private String voyage;
     private Integer quantity;
     private String quantityUnit;
     private BigDecimal grossWeight;
@@ -47,9 +62,12 @@ public class CustomerBookingRequest  extends CommonRequest implements IRunnerReq
     private BigDecimal chargeable;
     private String chargeableUnit;
     private UUID contractId;
-    private List<ContainerRequest> containersList;
-    private List<PackingRequest> packingList;
-    private List<RoutingsRequest> routingList;
-    private List<BookingChargesRequest> bookingCharges;
-    private List<FileRepoRequest> fileRepoList;
+    @JsonProperty("containers")
+    private List<BookingContainerRequest> containersList;
+    @JsonProperty("packs")
+    private List<BookingPackingRequest> packingList;
+    @JsonProperty("routings")
+    private List<BookingRoutingsRequest> routingList;
+    @JsonProperty("charges")
+    private List<PlatformBookingChargesRequest> bookingCharges;
 }

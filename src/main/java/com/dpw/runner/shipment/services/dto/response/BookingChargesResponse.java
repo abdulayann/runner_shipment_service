@@ -6,6 +6,7 @@ import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 
 @Data
@@ -15,6 +16,8 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 public class BookingChargesResponse implements IRunnerResponse {
+    private UUID reference_id;
+    private UUID guid;
     private Long bookingId;
     private String seqNo;
     private String chargeType;

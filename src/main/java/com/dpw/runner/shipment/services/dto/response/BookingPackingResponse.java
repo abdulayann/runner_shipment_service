@@ -1,9 +1,9 @@
-package com.dpw.runner.shipment.services.dto.request;
+package com.dpw.runner.shipment.services.dto.response;
 
 import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import io.swagger.models.auth.In;
 import lombok.*;
 
 import java.math.BigDecimal;
@@ -14,8 +14,9 @@ import java.util.UUID;
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor
-public class BookingPackingRequest extends CommonRequest implements IRunnerRequest {
+public class BookingPackingResponse implements IRunnerResponse {
     private UUID reference_id;
+    private UUID guid;
     @JsonProperty("count")
     private Integer packs;
     @JsonProperty("packType")

@@ -20,4 +20,6 @@ public interface ICustomerBookingRepository extends MultiTenancyRepository<Custo
         Specification<CustomerBooking> spec = (root, criteriaQuery, criteriaBuilder) -> criteriaBuilder.equal(root.get("id"), id);
         return findOne(spec);
     }
+
+    Optional<CustomerBooking> findByBookingNumber(String bookingNumber);
 }
