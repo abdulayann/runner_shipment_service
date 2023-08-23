@@ -60,4 +60,8 @@ public class CustomerBookingDao implements ICustomerBookingDao {
             throw new Exception(e);
         }
     }
+
+    public Optional<CustomerBooking> findByBookingNumber(String bookingNumber) {
+        return customerBookingRepository.findByBookingNumber(bookingNumber);
+    }
 }

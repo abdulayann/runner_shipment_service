@@ -1,24 +1,28 @@
-package com.dpw.runner.shipment.services.dto.response;
+package com.dpw.runner.shipment.services.dto.request.platformBooking;
 
-import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
+import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
+import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.annotations.ApiModel;
 import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
-
 
 @Data
 @Builder
-@ApiModel("Booking Charges Response Model")
+@ApiModel("Booking Charges Request Model")
 @ToString
-@NoArgsConstructor
 @AllArgsConstructor
-public class BookingChargesResponse implements IRunnerResponse {
+@NoArgsConstructor
+public class PlatformBookingChargesRequest extends CommonRequest implements IRunnerRequest {
+    private Long id;
     private UUID reference_id;
-    private UUID guid;
     private Long bookingId;
+    @JsonProperty("sequenceNo")
     private String seqNo;
     private String chargeType;
     private String details;
@@ -26,7 +30,7 @@ public class BookingChargesResponse implements IRunnerResponse {
     private String hsnMaster;
     private String measurementBasis;
     private String measurementContainerType;
-    private BigDecimal totalUnitCount;
+    private Long totalUnitCount;
     private String measurementUnit;
     private String costCurrencyExchangeUpdate;
     private Boolean reciprocalCurrencyCost;
@@ -40,7 +44,7 @@ public class BookingChargesResponse implements IRunnerResponse {
     private BigDecimal costExchange;
     private String costAccount;
     private String costComments;
-    private PartiesResponse creditor;
+    private PartiesRequest creditor;
     private String costTaxId;
     private LocalDateTime costTaxDate;
     private BigDecimal costLocalTax;
@@ -58,13 +62,13 @@ public class BookingChargesResponse implements IRunnerResponse {
     private BigDecimal localSellAmount;
     private BigDecimal overseasSellAmount;
     private String overseasSellCurrency;
-    private String localSellCurrency;
+    private String  localSellCurrency;
     private BigDecimal currentSellRate;
     private String sellRateCurrency;
     private BigDecimal sellExchange;
     private String revenueAccount;
     private String revenueComments;
-    private PartiesResponse debtor;
+    private PartiesRequest debtor;
     private String revenueTaxId;
     private LocalDateTime revenueTaxDate;
     private BigDecimal localTax;
@@ -76,4 +80,6 @@ public class BookingChargesResponse implements IRunnerResponse {
     private BigDecimal taxType3;
     private BigDecimal taxType4;
     private BigDecimal revenueLineTotal;
+    private List<UUID> containersUUID;
+    private List<BookingContainerRequest> containers;
 }

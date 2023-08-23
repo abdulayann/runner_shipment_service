@@ -1,8 +1,8 @@
 package com.dpw.runner.shipment.services.adapters.impl;
 
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
-import com.dpw.runner.shipment.services.dto.request.booking.CRPListRequest;
-import com.dpw.runner.shipment.services.dto.request.booking.CRPRetrieveRequest;
+import com.dpw.runner.shipment.services.dto.request.crp.CRPListRequest;
+import com.dpw.runner.shipment.services.dto.request.crp.CRPRetrieveRequest;
 import org.springframework.beans.factory.annotation.*;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;

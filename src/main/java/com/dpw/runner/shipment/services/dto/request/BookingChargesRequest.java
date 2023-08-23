@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.dto.request;
 
 import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
+import com.dpw.runner.shipment.services.dto.request.platformBooking.BookingContainerRequest;
 import io.swagger.annotations.ApiModel;
 import lombok.*;
 
@@ -35,7 +36,7 @@ public class BookingChargesRequest extends CommonRequest implements IRunnerReque
     private BigDecimal localCostAmount;
     private BigDecimal overseasCostAmount;
     private String overseasCostCurrency;
-    private BigDecimal localCostCurrency;
+    private String localCostCurrency;
     private BigDecimal currentCostRate;
     private String costRateCurrency;
     private BigDecimal costExchange;
@@ -59,7 +60,7 @@ public class BookingChargesRequest extends CommonRequest implements IRunnerReque
     private BigDecimal localSellAmount;
     private BigDecimal overseasSellAmount;
     private String overseasSellCurrency;
-    private BigDecimal localSellCurrency;
+    private String localSellCurrency;
     private BigDecimal currentSellRate;
     private String sellRateCurrency;
     private BigDecimal sellExchange;
@@ -78,4 +79,5 @@ public class BookingChargesRequest extends CommonRequest implements IRunnerReque
     private BigDecimal taxType4;
     private BigDecimal revenueLineTotal;
     private List<UUID> containersUUID;
+    private List<BookingContainerRequest> containers;
 }

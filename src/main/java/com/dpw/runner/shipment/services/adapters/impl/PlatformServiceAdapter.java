@@ -2,8 +2,8 @@ package com.dpw.runner.shipment.services.adapters.impl;
 
 import com.dpw.runner.shipment.services.adapters.interfaces.IPlatformServiceAdapter;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
-import com.dpw.runner.shipment.services.dto.request.booking.PlatformCreateRequest;
-import com.dpw.runner.shipment.services.dto.request.booking.PlatformUpdateRequest;
+import com.dpw.runner.shipment.services.dto.request.platform.PlatformCreateRequest;
+import com.dpw.runner.shipment.services.dto.request.platform.PlatformUpdateRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -39,7 +39,7 @@ public class PlatformServiceAdapter implements IPlatformServiceAdapter {
     public ResponseEntity<?> updateAtPlaform(CommonRequestModel requestModel) throws Exception {
         PlatformUpdateRequest request = (PlatformUpdateRequest) requestModel.getData();
         String url = baseUrl + "booking/external";
-        ResponseEntity<?> responseEntity = restTemplate.exchange(RequestEntity.post(URI.create(url)).build(), Object.class);
+        ResponseEntity<?> responseEntity = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(request), Object.class);
         return responseEntity;
     }
 }

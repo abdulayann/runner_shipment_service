@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.dto.request.ListContractRequest;
+import com.dpw.runner.shipment.services.dto.request.npm.UpdateContractRequest;
 import com.dpw.runner.shipment.services.service.interfaces.INPMService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,6 +34,19 @@ public class NPMService implements INPMService {
         headers.add("x-api-key-v2", xApikeyV2);
 
         HttpEntity<Object> request = new HttpEntity<Object>(listContractRequest, headers);
+
+        ResponseEntity<?> response = restTemplate.exchange(url, HttpMethod.POST, request, Object.class);
+        return response;
+    }
+
+    public ResponseEntity<?> updateContracts(UpdateContractRequest updateContractRequest) throws Exception {
+        String url = npmBaseUrl;
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.add("x-api-key-v2", xApikeyV2);
+
+        HttpEntity<Object> request = new HttpEntity<Object>(updateContractRequest, headers);
 
         ResponseEntity<?> response = restTemplate.exchange(url, HttpMethod.POST, request, Object.class);
         return response;

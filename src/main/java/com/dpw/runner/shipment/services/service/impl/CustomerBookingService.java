@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import com.dpw.runner.shipment.services.adapters.interfaces.IPlatformServiceAdapter;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
@@ -7,15 +8,22 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.RunnerEntityMapping;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.request.*;
+import com.dpw.runner.shipment.services.dto.request.platformBooking.PlatformToRunnerCustomerBookingRequest;
+import com.dpw.runner.shipment.services.dto.request.platform.*;
+import com.dpw.runner.shipment.services.dto.request.platform.AirCarrierDetailsRequest;
 import com.dpw.runner.shipment.services.dto.response.CustomerBookingResponse;
+import com.dpw.runner.shipment.services.dto.response.PlatformToRunnerCustomerBookingResponse;
 import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entity.enums.BookingSource;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.ICustomerBookingService;
 import com.nimbusds.jose.util.Pair;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,11 +34,13 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.interceptor.TransactionAspectSupport;
 
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.convertToEntityList;
@@ -62,6 +72,11 @@ public class CustomerBookingService implements ICustomerBookingService {
 
     @Autowired
     private IFileRepoDao fileRepoDao;
+
+    @Autowired
+    private IPlatformServiceAdapter platformServiceAdapter;
+
+    private static final Map<String, String> loadTypeMap = Map.of("SEA", "LCL", "AIR", "LSE");
 
     private Map<String, RunnerEntityMapping> tableNames = Map.ofEntries(
             Map.entry("customerOrgCode", RunnerEntityMapping.builder().tableName("customer").dataType(String.class).fieldName("orgCode").build()),
@@ -113,25 +128,20 @@ public class CustomerBookingService implements ICustomerBookingService {
 
             List<Containers> containers = customerBooking.getContainersList();
             Map<UUID, Containers> containerMap = new HashMap<>();
-            if(containers != null && !containers.isEmpty())
-            {
-                for(Containers container: containers)
-                {
+            if (containers != null && !containers.isEmpty()) {
+                for (Containers container : containers) {
                     containerMap.put(container.getGuid(), container);
                 }
             }
             List<BookingChargesRequest> bookingChargesRequest = request.getBookingCharges();
-            if(bookingChargesRequest != null && !bookingChargesRequest.isEmpty())
-            {
+            if (bookingChargesRequest != null && !bookingChargesRequest.isEmpty()) {
                 List<BookingCharges> bookingCharges = new ArrayList<>();
                 for (BookingChargesRequest bookingChargeRequest : bookingChargesRequest) {
                     List<UUID> containerUUIDs = bookingChargeRequest.getContainersUUID();
                     BookingCharges bookingCharge = jsonHelper.convertValue(bookingChargeRequest, BookingCharges.class);
                     List<Containers> containerList = new ArrayList<>();
-                    if(containerUUIDs != null && !containerUUIDs.isEmpty())
-                    {
-                        for(UUID uuid: containerUUIDs)
-                        {
+                    if (containerUUIDs != null && !containerUUIDs.isEmpty()) {
+                        for (UUID uuid : containerUUIDs) {
                             Containers container = containerMap.get(uuid);
                             containerList.add(container);
                         }
@@ -143,6 +153,15 @@ public class CustomerBookingService implements ICustomerBookingService {
                 }
                 customerBooking.setBookingCharges(bookingCharges);
             }
+
+            /**
+             * Platform service integration
+             * Criteria for update call to platform service : check flag IsPlatformBookingCreated, if true then update otherwise dont update
+             */
+
+            if (customerBooking.getIsPlatformBookingCreated() != null && customerBooking.getIsPlatformBookingCreated()) {
+                platformServiceAdapter.updateAtPlaform(createPlatformUpdateRequest(customerBooking));
+            }
         } catch (Exception e) {
             log.error(e.getMessage());
             TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
@@ -150,6 +169,127 @@ public class CustomerBookingService implements ICustomerBookingService {
         }
 
         return ResponseHelper.buildSuccessResponse(jsonHelper.convertValue(customerBooking, CustomerBookingResponse.class));
+    }
+
+    private CommonRequestModel createPlatformUpdateRequest(@NonNull final CustomerBooking customerBooking) {
+        var carrierDetails = Optional.ofNullable(customerBooking.getCarrierDetails());
+        PlatformUpdateRequest platformUpdateRequest = PlatformUpdateRequest.builder()
+                .booking_reference_code(customerBooking.getBookingNumber())
+                .origin_code(carrierDetails.map(c -> c.getOrigin()).orElse(null))
+                .destination_code(carrierDetails.map(c -> c.getDestination()).orElse(null))
+                .load(createLoad(customerBooking))
+                .route(createRoute(customerBooking))
+                .charges(createCharges(customerBooking))
+                .carrier_code(carrierDetails.map(c -> c.getJourneyNumber()).orElse(null))
+                .air_carrier_details(null)
+                .status(customerBooking.getBookingStatus().getDescription())
+                .pickup_date(null)
+                .eta(carrierDetails.map(c -> c.getEta()).orElse(null))
+                .ets(carrierDetails.map(c -> c.getEtd()).orElse(null))
+                .build();
+        return CommonRequestModel.builder().data(platformUpdateRequest).build();
+    }
+
+    private List<ChargesRequest> createCharges(CustomerBooking customerBooking) {
+        var bookingCharges = customerBooking.getBookingCharges();
+        List<ChargesRequest> charges = new ArrayList<>();
+        bookingCharges.forEach(
+                bookingCharge -> {
+                    charges.add(
+                            ChargesRequest.builder()
+                                    .load_uuid(bookingCharge.getContainersList().stream().map(c -> c.getGuid()).collect(Collectors.toList()))
+                                    .charge_id(customerBooking.getGuid())
+                                    .charge_group("ORIGIN_CHARGES")
+                                    .charge_code("OTHC")
+                                    .charge_code_desc(bookingCharge.getChargeType())
+                                    .base_charge_value(bookingCharge.getLocalSellAmount())
+                                    .charge_value(bookingCharge.getOverseasSellAmount())
+                                    .base_currency(bookingCharge.getLocalSellCurrency())
+                                    .charge_currency(bookingCharge.getOverseasSellCurrency())
+                                    .exchange_rate(bookingCharge.getSellExchange())
+                                    .charge_id(bookingCharge.getGuid())
+                                    .taxes(null) // optional
+                                    .build()
+                    );
+                }
+        );
+
+        return charges;
+    }
+
+    private RouteRequest createRoute(CustomerBooking customerBooking) {
+        CarrierDetails carrierDetails = customerBooking.getCarrierDetails();
+        List<RouteLegRequest> legRequestList = new ArrayList<>();
+        List<Routings> routingsList = customerBooking.getRoutingList();
+
+        for (int counter = 1; counter <= routingsList.size(); counter++) {
+            legRequestList.add(RouteLegRequest.builder()
+                    .destination_code(carrierDetails.getDestination())
+                    .origin_code(carrierDetails.getOrigin())
+                    .order(String.valueOf(counter))
+                    .build());
+        }
+
+        return RouteRequest.builder()
+                .legs(legRequestList)
+                .build();
+    }
+
+    private List<LoadRequest> createLoad(final CustomerBooking customerBooking) {
+        List<LoadRequest> loadRequests = new ArrayList<>();
+        //Container -> FCL
+        if (customerBooking.getCargoType().equals("FCL")) {
+            List<Containers> containers = customerBooking.getContainersList();
+            containers.forEach(container -> {
+                loadRequests.add(LoadRequest.builder()
+                        .load_uuid(container.getGuid())
+                        .load_type(customerBooking.getCargoType())
+                        .container_type_code(container.getContainerCode())
+                        .pkg_type(null)
+                        .is_package(false)
+                        .weight(container.getGrossWeight())
+                        .quantity(container.getContainerCount())
+                        .weight_uom(container.getGrossWeightUnit())
+                        .quantity_uom("unit")
+                        .volume(container.getGrossVolume())
+                        .volume_uom(container.getGrossVolumeUnit())
+                        .dimensions(null) // Resolved
+                        .build());
+            });
+        }
+
+        if (customerBooking.getCargoType().equals("LCL") || customerBooking.getCargoType().equals("LSE")) {
+            List<Packing> packings = customerBooking.getPackingList();
+            packings.forEach(packing -> {
+                loadRequests.add(LoadRequest.builder()
+                        .load_uuid(packing.getGuid())
+                        .load_type(customerBooking.getCargoType())
+                        .container_type_code(null)
+                        .pkg_type(packing.getPacksType())
+                        .is_package(true)
+                        .weight(packing.getWeight())
+                        .quantity(packing.getInnerPacksCount())
+                        .weight_uom(packing.getWeightUnit())
+                        .quantity_uom("unit")
+                        .volume(packing.getVolume())
+                        .volume_uom(packing.getVolumeUnit())
+                        .dimensions(getDimension(customerBooking, packing))
+                        .build());
+            });
+        }
+
+        return loadRequests;
+    }
+
+    private DimensionDTO getDimension(CustomerBooking booking, Packing packing) {
+        if (booking.getCargoType().equals("LCL") || booking.getCargoType().equals("LSE"))
+            return DimensionDTO.builder()
+                    .length(packing.getLength())
+                    .width(packing.getWidth())
+                    .height(packing.getHeight())
+                    .uom(packing.getLengthUnit())
+                    .build();
+        return null;
     }
 
     @Override
@@ -192,25 +332,20 @@ public class CustomerBookingService implements ICustomerBookingService {
 
             List<Containers> containers = customerBooking.getContainersList();
             Map<UUID, Containers> containerMap = new HashMap<>();
-            if(containers != null && !containers.isEmpty())
-            {
-                for(Containers container: containers)
-                {
+            if (containers != null && !containers.isEmpty()) {
+                for (Containers container : containers) {
                     containerMap.put(container.getGuid(), container);
                 }
             }
             List<BookingChargesRequest> bookingChargesRequest = request.getBookingCharges();
-            if(bookingChargesRequest != null && !bookingChargesRequest.isEmpty())
-            {
+            if (bookingChargesRequest != null && !bookingChargesRequest.isEmpty()) {
                 List<BookingCharges> bookingCharges = new ArrayList<>();
                 for (BookingChargesRequest bookingChargeRequest : bookingChargesRequest) {
                     List<UUID> containerUUIDs = bookingChargeRequest.getContainersUUID();
                     BookingCharges bookingCharge = jsonHelper.convertValue(bookingChargeRequest, BookingCharges.class);
                     List<Containers> containerList = new ArrayList<>();
-                    if(containerUUIDs != null && !containerUUIDs.isEmpty())
-                    {
-                        for(UUID uuid: containerUUIDs)
-                        {
+                    if (containerUUIDs != null && !containerUUIDs.isEmpty()) {
+                        for (UUID uuid : containerUUIDs) {
                             Containers container = containerMap.get(uuid);
                             containerList.add(container);
                         }
@@ -226,6 +361,15 @@ public class CustomerBookingService implements ICustomerBookingService {
             log.error(e.getMessage());
             TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
             throw new RuntimeException(e);
+        }
+
+        if (customerBooking.getIsPlatformBookingCreated() != null && customerBooking.getIsPlatformBookingCreated()) {
+            try {
+                platformServiceAdapter.updateAtPlaform(createPlatformUpdateRequest(customerBooking));
+            } catch (Exception e) {
+                log.error("ERROR updating in Platform in Update Booking API, ERROR : " + e.getMessage());
+                throw new RuntimeException(e);
+            }
         }
 
         return ResponseHelper.buildSuccessResponse(jsonHelper.convertValue(customerBooking, CustomerBookingResponse.class));
@@ -334,9 +478,215 @@ public class CustomerBookingService implements ICustomerBookingService {
     }
 
     @Override
+    @Transactional
     public ResponseEntity<?> platformCreateBooking(CommonRequestModel commonRequestModel) {
         PlatformToRunnerCustomerBookingRequest request = (PlatformToRunnerCustomerBookingRequest) commonRequestModel.getData();
-        return null;
+        String bookingNumber = request.getBookingNumber();
+        Optional<CustomerBooking> customerBooking = customerBookingDao.findByBookingNumber(bookingNumber);
+
+        Map<UUID, UUID> referenceIdVsGuidContainerMap = new HashMap<>();
+        Map<UUID, UUID> guidVsReferenceIdContainerMap = new HashMap<>();
+        Map<UUID, UUID> guidVsReferenceIdPackingMap = new HashMap<>();
+        Map<UUID, UUID> guidVsReferenceIdRoutingMap = new HashMap<>();
+        Map<UUID, UUID> guidVsReferenceIdChargesMap = new HashMap<>();
+
+        if(request.getContainersList() != null) {
+            request.getContainersList().forEach(cont -> {
+                if(cont.getGuid() == null)
+                    cont.setGuid(UUID.randomUUID());
+                referenceIdVsGuidContainerMap.put(cont.getReference_id(), cont.getGuid());
+                guidVsReferenceIdContainerMap.put(cont.getGuid(), cont.getReference_id());
+            });
+        }
+
+        if(request.getPackingList() != null) {
+            request.getPackingList().forEach(pack -> {
+                if(pack.getGuid() == null)
+                    pack.setGuid(UUID.randomUUID());
+                guidVsReferenceIdPackingMap.put(pack.getGuid(), pack.getReference_id());
+            });
+        }
+
+        if(request.getRoutingList() != null) {
+            request.getRoutingList().forEach(route -> {
+                if(route.getGuid() == null)
+                    route.setGuid(UUID.randomUUID());
+                guidVsReferenceIdRoutingMap.put(route.getGuid(), route.getReference_id());
+            });
+        }
+
+        if(request.getBookingCharges() != null) {
+            request.getBookingCharges().forEach(charge -> {
+                if(charge.getGuid() == null)
+                    charge.setGuid(UUID.randomUUID());
+                guidVsReferenceIdChargesMap.put(charge.getGuid(), charge.getReference_id());
+
+                if (charge.getContainers() != null) {
+                    charge.getContainers().forEach(cont -> {
+                        if (cont.getRunner_guid() != null) {
+                            if (charge.getContainersUUID() != null)
+                                charge.getContainersUUID().add(cont.getRunner_guid());
+                            else
+                                charge.setContainersUUID(List.of(cont.getRunner_guid()));
+                        } else {
+                            if (charge.getContainersUUID() != null) {
+                                if (referenceIdVsGuidContainerMap.containsKey(cont.getReference_id())) {
+                                    charge.getContainersUUID().add(referenceIdVsGuidContainerMap.get(cont.getReference_id()));
+                                }
+                            } else {
+                                if (referenceIdVsGuidContainerMap.containsKey(cont.getReference_id())) {
+                                    charge.setContainersUUID(List.of(referenceIdVsGuidContainerMap.get(cont.getReference_id())));
+                                }
+                            }
+                        }
+                    });
+                }
+            });
+        }
+
+        CustomerBookingRequest customerBookingRequest = modelMapper.map(request, CustomerBookingRequest.class);
+        assignCarrierDetailsToRequest(customerBookingRequest, request);
+        ResponseEntity<RunnerResponse<CustomerBookingResponse>> response = null;
+        customerBookingRequest.setSource(BookingSource.Platform);
+        if(!customerBooking.isPresent()){
+            response = (ResponseEntity<RunnerResponse<CustomerBookingResponse>>) this.create(CommonRequestModel.buildRequest(customerBookingRequest));
+        } else {
+            if(customerBooking.get().getId() != null)
+                customerBookingRequest.setId(customerBooking.get().getId());
+            if(customerBooking.get().getGuid() != null)
+                customerBookingRequest.setGuid(customerBooking.get().getGuid());
+            if(customerBooking.get().getCarrierDetails() != null){
+                customerBookingRequest.getCarrierDetails().setId(customerBooking.get().getCarrierDetails().getId());
+                customerBookingRequest.getCarrierDetails().setGuid(customerBooking.get().getCarrierDetails().getGuid());
+            }
+
+            Map<UUID, Long> guidVsIdContainerMap = new HashMap<>();
+            Map<UUID, Long> guidVsIdPackingMap = new HashMap<>();
+            Map<UUID, Long> guidVsIdRoutingMap = new HashMap<>();
+            Map<UUID, Long> guidVsIdChargesMap = new HashMap<>();
+            if(customerBooking.get().getContainersList() != null) {
+                customerBooking.get().getContainersList().forEach(cont -> {
+                    guidVsIdContainerMap.put(cont.getGuid(), cont.getId());
+                });
+            }
+
+            if(customerBooking.get().getPackingList() != null) {
+                customerBooking.get().getPackingList().forEach(pack -> {
+                    guidVsIdPackingMap.put(pack.getGuid(), pack.getId());
+                });
+            }
+
+            if(customerBooking.get().getRoutingList() != null) {
+                customerBooking.get().getRoutingList().forEach(route -> {
+                    guidVsIdRoutingMap.put(route.getGuid(), route.getId());
+                });
+            }
+
+            if(customerBooking.get().getBookingCharges() != null) {
+                customerBooking.get().getBookingCharges().forEach(charge -> {
+                    guidVsIdChargesMap.put(charge.getGuid(), charge.getId());
+                });
+            }
+
+            if(customerBookingRequest.getContainersList() != null) {
+                customerBookingRequest.getContainersList().forEach(cont -> {
+                    if(cont.getGuid() != null){
+                        if(guidVsIdContainerMap.containsKey(cont.getGuid()))
+                            cont.setId(guidVsIdContainerMap.get(cont.getGuid()));
+                    }
+                });
+            }
+
+            if(customerBookingRequest.getPackingList() != null) {
+                customerBookingRequest.getPackingList().forEach(pack -> {
+                    if(pack.getGuid() != null){
+                        if(guidVsIdPackingMap.containsKey(pack.getGuid()))
+                            pack.setId(guidVsIdPackingMap.get(pack.getGuid()));
+                    }
+                });
+            }
+
+            if(customerBookingRequest.getRoutingList() != null) {
+                customerBookingRequest.getRoutingList().forEach(route -> {
+                    if(route.getGuid() != null){
+                        if(guidVsIdRoutingMap.containsKey(route.getGuid()))
+                            route.setId(guidVsIdRoutingMap.get(route.getGuid()));
+                    }
+                });
+            }
+
+            if(customerBookingRequest.getBookingCharges() != null) {
+                customerBookingRequest.getBookingCharges().forEach(charge -> {
+                    if(charge.getGuid() != null){
+                        if(guidVsIdChargesMap.containsKey(charge.getGuid()))
+                            charge.setId(guidVsIdChargesMap.get(charge.getGuid()));
+                    }
+                });
+            }
+
+            response = (ResponseEntity<RunnerResponse<CustomerBookingResponse>>) this.update(CommonRequestModel.buildRequest(customerBookingRequest));
+        }
+
+        PlatformToRunnerCustomerBookingResponse platformResponse = modelMapper.map(Objects.requireNonNull(response.getBody()).getData(), PlatformToRunnerCustomerBookingResponse.class);
+        assignCarrierDetailsToResponse(Objects.requireNonNull(response.getBody()).getData(), platformResponse);
+
+
+        if(platformResponse.getContainersList() != null) {
+            platformResponse.getContainersList().forEach(cont -> {
+                if(guidVsReferenceIdContainerMap.containsKey(cont.getGuid()))
+                    cont.setReference_id(guidVsReferenceIdContainerMap.get(cont.getGuid()));
+            });
+        }
+
+        if(platformResponse.getPackingList() != null) {
+            platformResponse.getPackingList().forEach(pack -> {
+                if(guidVsReferenceIdPackingMap.containsKey(pack.getGuid()))
+                    pack.setReference_id(guidVsReferenceIdPackingMap.get(pack.getGuid()));
+            });
+        }
+
+        if(platformResponse.getRoutingList() != null) {
+            platformResponse.getRoutingList().forEach(route -> {
+                if(guidVsReferenceIdRoutingMap.containsKey(route.getGuid()))
+                    route.setReference_id(guidVsReferenceIdRoutingMap.get(route.getGuid()));
+            });
+        }
+
+        if(platformResponse.getBookingCharges() != null) {
+            platformResponse.getBookingCharges().forEach(charge -> {
+                if(guidVsReferenceIdChargesMap.containsKey(charge.getGuid()))
+                    charge.setReference_id(guidVsReferenceIdChargesMap.get(charge.getGuid()));
+            });
+        }
+
+        return ResponseHelper.buildSuccessResponse(platformResponse);
+    }
+
+    private void assignCarrierDetailsToRequest(CustomerBookingRequest customerBookingRequest, PlatformToRunnerCustomerBookingRequest request) {
+
+        CarrierDetailRequest carrierDetailRequest = CarrierDetailRequest.builder()
+                .origin(request.getOrigin())
+                .destination(request.getDestination())
+                .originPort(request.getOriginPort())
+                .destinationPort(request.getDestinationPort())
+                .shippingLine(request.getShippingLine())
+                .vessel(request.getVessel())
+                .voyage(request.getVoyage())
+                .build();
+
+        customerBookingRequest.setCarrierDetails(carrierDetailRequest);
+    }
+
+    private void assignCarrierDetailsToResponse(CustomerBookingResponse customerBookingResponse, PlatformToRunnerCustomerBookingResponse response) {
+        if(customerBookingResponse.getCarrierDetails() != null) {
+            response.setOrigin(customerBookingResponse.getCarrierDetails().getOrigin());
+            response.setDestination(customerBookingResponse.getCarrierDetails().getDestination());
+            response.setOriginPort(customerBookingResponse.getCarrierDetails().getOriginPort());
+            response.setDestinationPort(customerBookingResponse.getCarrierDetails().getDestinationPort());
+            response.setShippingLine(customerBookingResponse.getCarrierDetails().getShippingLine());
+            response.setVessel(customerBookingResponse.getCarrierDetails().getVessel());
+            response.setVoyage(customerBookingResponse.getCarrierDetails().getVoyage());
+        }
     }
 
     private List<IRunnerResponse> convertEntityListToDtoList(List<CustomerBooking> lst) {
@@ -348,19 +698,18 @@ public class CustomerBookingService implements ICustomerBookingService {
         return responseList;
     }
 
-    private String generateBookingNumber()
-    {
+    private String generateBookingNumber() {
         return "SROF" + "-" + getRandomNumberString(6) + "-" + getRandomNumberString(5);
     }
 
     public static String getRandomNumberString(int digit) {
         Random rnd = new Random();
         int number = 0;
-        if(digit == 6)
+        if (digit == 6)
             number = rnd.nextInt(999999);
         else
             number = rnd.nextInt(99999);
-        if(digit == 6)
+        if (digit == 6)
             return String.format("%06d", number);
         return String.format("%05d", number);
     }
