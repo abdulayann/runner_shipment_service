@@ -282,7 +282,7 @@
     "description": "{{ content.Description }}",
     "placeOfIssue": "{{ content.PlaceOfIssueString }}",
 
-    "ArrivalDepartureDetails": {
+    "arrivalDetails": {
         {% if content.ArrivalDepartureDetails.AcontainerYardId == null %}
             "containerYardId": null,
         {% else %}
@@ -305,6 +305,7 @@
         {% if content.AfirstArrivalPortId == null %}
             "firstForeignPortId": null,
         {% else %}
+        "firstForeignPort": {{ content.ArrivalDepartureDetails.AfirstForeignPort }},
             "firstForeignPortId": {
                 "AddressCode": "{{ content.ArrivalDepartureDetails.AfirstArrivalPortId.addressCode }}",
                 "AddressData": {},
@@ -324,6 +325,7 @@
         {% if content.ArrivalDepartureDetails.AlastForeignPortId == null %}
             "lastForeignPortId": null,
         {% else %}
+        "lastForeignPort": {{ content.ArrivalDepartureDetails.AlastForeignPort }},
             "lastForeignPortId": {
                 "AddressCode": "{{ content.ArrivalDepartureDetails.AlastForeignPortId.addressCode }}",
                 "AddressData": {},
@@ -378,7 +380,7 @@
             }
         {% endif %}
     },
-    "ArrivalDepartureDetails": {
+    "departureDetails": {
         {% if content.ArrivalDepartureDetails.DcontainerYardId == null %}
             "containerYardId": null,
         {% else %}
@@ -399,8 +401,9 @@
             "firstForeignPortArrivalDate": "{{ content.ArrivalDepartureDetails.DfirstForeignPortArrivalDate }}",
         {% endif %}
         {% if content.ArrivalDepartureDetails.DfirstForeignPortId == null %}
-            "firstForeignPortId": null,
+             "firstForeignPortId": null,
         {% else %}
+        "firstForeignPort": {{ content.ArrivalDepartureDetails.DfirstForeignPort }},
         "firstForeignPortId": {
             "AddressCode": "{{ content.ArrivalDepartureDetails.DfirstForeignPortId.addressCode }}",
             "AddressData": {},
@@ -420,6 +423,7 @@
         {% if content.ArrivalDepartureDetails.DlastForeignPortId == null %}
             "lastForeignPortId": null,
         {% else %}
+        "lastForeignPort": {{ content.ArrivalDepartureDetails.DlastForeignPort }},
         "lastForeignPortId": {
             "AddressCode": "{{ content.ArrivalDepartureDetails.DlastForeignPortId.addressCode }}",
             "AddressData": {},
@@ -650,24 +654,24 @@
         "serviceMode": "{{ job.ServiceMode }}",
         "transportMode": "{{ job.TransportMode }}",
 
-        "BuyerDetail": {
-            "AddressCode": "{{ job.buyerDetail.addressCode }}",
-            "AddressData": {},
-            "EntityId":{{ job.buyerDetail.entityId }},
-            "EntityType": "{{ job.buyerDetail.entityType }}",
-            "OrgCode": "{{ job.buyerDetail.orgCode }}",
-            "OrgData": {},
-            "Type": "{{ job.buyerDetail.type }}"
+        "buyerDetail": {
+            "addressCode": "{{ job.BuyerDetail.AddressCode }}",
+            "addressData": {},
+            "entityId":{{ job.BuyerDetail.EntityId }},
+            "entityType": "{{ job.BuyerDetail.EntityType }}",
+            "orgCode": "{{ job.BuyerDetail.OrgCode }}",
+            "orgData": {},
+            "type": "{{ job.BuyerDetail.Type }}"
         },
 
-        "SupplierDetail": {
-            "AddressCode": "{{ job.supplierDetail.addressCode }}",
-            "AddressData": {},
-            "EntityId":{{ job.supplierDetail.entityId }},
-            "EntityType": "{{ job.supplierDetail.entityType }}",
-            "OrgCode": "{{ job.supplierDetail.orgCode }}",
-            "OrgData": {},
-            "Type": "{{ job.supplierDetail.type }}"
+        "supplierDetail": {
+            "addressCode": "{{ job.SupplierDetail.addressCode }}",
+            "addressData": {},
+            "entityId":{{ job.SupplierDetail.entityId }},
+            "entityType": "{{ job.SupplierDetail.entityType }}",
+            "orgCode": "{{ job.SupplierDetail.orgCode }}",
+            "orgData": {},
+            "type": "{{ job.SupplierDetail.type }}"
         },
 
         "eventsList": [
