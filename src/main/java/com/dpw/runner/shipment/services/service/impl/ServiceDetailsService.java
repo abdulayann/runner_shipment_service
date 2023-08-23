@@ -1,6 +1,8 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
+import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
@@ -8,6 +10,7 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IServiceDetailsDao;
 import com.dpw.runner.shipment.services.dto.request.ServiceDetailsRequest;
 import com.dpw.runner.shipment.services.dto.response.ServiceDetailsResponse;
+import com.dpw.runner.shipment.services.entity.Routings;
 import com.dpw.runner.shipment.services.entity.ServiceDetails;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
@@ -47,6 +50,9 @@ public class ServiceDetailsService implements IServiceDetailsService {
     @Autowired
     private JsonHelper jsonHelper;
 
+    @Autowired
+    private AuditLogService auditLogService;
+
     @Transactional
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
         String responseMsg;
@@ -58,6 +64,17 @@ public class ServiceDetailsService implements IServiceDetailsService {
         ServiceDetails shipmentServices = convertRequestToEntity(request);
         try {
             shipmentServices = serviceDetailsDao.save(shipmentServices);
+
+            // audit logs
+            auditLogService.addAuditLog(
+                    AuditLogMetaData.builder()
+                            .newData(shipmentServices)
+                            .prevData(null)
+                            .parent(ServiceDetails.class.getSimpleName())
+                            .parentId(shipmentServices.getId())
+                            .operation(DBOperationType.CREATE.name()).build()
+            );
+
             log.info("Service details created successfully for Id {} with Request Id {}", shipmentServices.getId(), LoggerHelper.getRequestIdFromMDC());
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -89,7 +106,18 @@ public class ServiceDetailsService implements IServiceDetailsService {
         ServiceDetails shipmentServices = convertRequestToEntity(request);
         shipmentServices.setId(oldEntity.get().getId());
         try {
+            String oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
             shipmentServices = serviceDetailsDao.save(shipmentServices);
+
+            // audit logs
+            auditLogService.addAuditLog(
+                    AuditLogMetaData.builder()
+                            .newData(shipmentServices)
+                            .prevData(jsonHelper.readFromJson(oldEntityJsonString, ServiceDetails.class))
+                            .parent(ServiceDetails.class.getSimpleName())
+                            .parentId(shipmentServices.getId())
+                            .operation(DBOperationType.UPDATE.name()).build()
+            );
             log.info("Updated the service details for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -164,7 +192,19 @@ public class ServiceDetailsService implements IServiceDetailsService {
                 log.debug("Service Details is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
+
+            String oldEntityJsonString = jsonHelper.convertToJson(shipmentServices.get());
             serviceDetailsDao.delete(shipmentServices.get());
+
+            // audit logs
+            auditLogService.addAuditLog(
+                    AuditLogMetaData.builder()
+                            .newData(null)
+                            .prevData(jsonHelper.readFromJson(oldEntityJsonString, ServiceDetails.class))
+                            .parent(ServiceDetails.class.getSimpleName())
+                            .parentId(shipmentServices.get().getId())
+                            .operation(DBOperationType.DELETE.name()).build()
+            );
             log.info("Deleted service details for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
             return ResponseHelper.buildSuccessResponse();
         } catch (Exception e) {

@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.service.impl;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.PackingConstants;
+import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
@@ -12,6 +13,8 @@ import com.dpw.runner.shipment.services.dto.request.PackingRequest;
 import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.PackingResponse;
 import com.dpw.runner.shipment.services.entity.Containers;
+import com.dpw.runner.shipment.services.entity.Jobs;
+import com.dpw.runner.shipment.services.entity.Notes;
 import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
@@ -57,6 +60,9 @@ public class PackingService implements IPackingService {
     @Autowired
     private JsonHelper jsonHelper;
 
+    @Autowired
+    private AuditLogService auditLogService;
+
     private final CSVParsingUtil<Packing> parser = new CSVParsingUtil<>(Packing.class);
 
     @Transactional
@@ -70,6 +76,17 @@ public class PackingService implements IPackingService {
         Packing packing = convertRequestToEntity(request);
         try {
             packing = packingDao.save(packing);
+
+            // audit logs
+            auditLogService.addAuditLog(
+                    AuditLogMetaData.builder()
+                            .newData(packing)
+                            .prevData(null)
+                            .parent(Packing.class.getSimpleName())
+                            .parentId(packing.getId())
+                            .operation(DBOperationType.CREATE.name()).build()
+            );
+
             log.info("Packing Details created successfully for Id {} with Request Id {}", packing.getId(), LoggerHelper.getRequestIdFromMDC());
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -143,7 +160,18 @@ public class PackingService implements IPackingService {
         Packing packing = convertRequestToEntity(request);
         packing.setId(oldEntity.get().getId());
         try {
+            String oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
             packing = packingDao.save(packing);
+
+            // audit logs
+            auditLogService.addAuditLog(
+                    AuditLogMetaData.builder()
+                            .newData(packing)
+                            .prevData(jsonHelper.readFromJson(oldEntityJsonString, Packing.class))
+                            .parent(Packing.class.getSimpleName())
+                            .parentId(packing.getId())
+                            .operation(DBOperationType.UPDATE.name()).build()
+            );
             log.info("Updated the packing details for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -222,7 +250,18 @@ public class PackingService implements IPackingService {
             return ResponseHelper.buildFailedResponse(PackingConstants.NO_DATA);
         }
         try {
+            String oldEntityJsonString = jsonHelper.convertToJson(targetPacking.get());
             packingDao.delete(targetPacking.get());
+
+            // audit logs
+            auditLogService.addAuditLog(
+                    AuditLogMetaData.builder()
+                            .newData(null)
+                            .prevData(jsonHelper.readFromJson(oldEntityJsonString, Packing.class))
+                            .parent(Packing.class.getSimpleName())
+                            .parentId(targetPacking.get().getId())
+                            .operation(DBOperationType.DELETE.name()).build()
+            );
             log.info("Deleted packing for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()

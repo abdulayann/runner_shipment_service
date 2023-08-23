@@ -1,6 +1,8 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
+import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
@@ -8,6 +10,7 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.ITruckDriverDetailsDao;
 import com.dpw.runner.shipment.services.dto.request.TruckDriverDetailsRequest;
 import com.dpw.runner.shipment.services.dto.response.TruckDriverDetailsResponse;
+import com.dpw.runner.shipment.services.entity.ServiceDetails;
 import com.dpw.runner.shipment.services.entity.TruckDriverDetails;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
@@ -42,6 +45,8 @@ public class TruckDriverDetailsService implements ITruckDriverDetailsService {
     @Autowired
     private JsonHelper jsonHelper;
 
+    @Autowired
+    private AuditLogService auditLogService;
     @Override
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
         String responseMsg;
@@ -52,6 +57,17 @@ public class TruckDriverDetailsService implements ITruckDriverDetailsService {
         TruckDriverDetails truckDriverDetails = convertRequestToTruckDriverDetailsEntity(request);
         try {
             truckDriverDetails = truckDriverDetailsDao.save(truckDriverDetails);
+
+            // audit logs
+            auditLogService.addAuditLog(
+                    AuditLogMetaData.builder()
+                            .newData(truckDriverDetails)
+                            .prevData(null)
+                            .parent(TruckDriverDetails.class.getSimpleName())
+                            .parentId(truckDriverDetails.getId())
+                            .operation(DBOperationType.CREATE.name()).build()
+            );
+
             log.info("Truck Driver Details created successfully for Id {} with Request Id {}", truckDriverDetails.getId(), LoggerHelper.getRequestIdFromMDC());
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -80,10 +96,21 @@ public class TruckDriverDetailsService implements ITruckDriverDetailsService {
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
 
-        TruckDriverDetails notes = convertRequestToTruckDriverDetailsEntity(request);
-        notes.setId(oldEntity.get().getId());
+        TruckDriverDetails truckDriverDetails = convertRequestToTruckDriverDetailsEntity(request);
+        truckDriverDetails.setId(oldEntity.get().getId());
         try {
-            notes = truckDriverDetailsDao.save(notes);
+            String oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
+            truckDriverDetails = truckDriverDetailsDao.save(truckDriverDetails);
+
+            // audit logs
+            auditLogService.addAuditLog(
+                    AuditLogMetaData.builder()
+                            .newData(truckDriverDetails)
+                            .prevData(jsonHelper.readFromJson(oldEntityJsonString, TruckDriverDetails.class))
+                            .parent(TruckDriverDetails.class.getSimpleName())
+                            .parentId(truckDriverDetails.getId())
+                            .operation(DBOperationType.UPDATE.name()).build()
+            );
             log.info("Updated the Truck Driver Details for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -91,7 +118,7 @@ public class TruckDriverDetailsService implements ITruckDriverDetailsService {
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(responseMsg);
         }
-        return ResponseHelper.buildSuccessResponse(convertEntityToDto(notes));
+        return ResponseHelper.buildSuccessResponse(convertEntityToDto(truckDriverDetails));
     }
 
     @Override
@@ -153,12 +180,24 @@ public class TruckDriverDetailsService implements ITruckDriverDetailsService {
                 log.debug("Request Id is null for Truck Driver Details delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
             long id = request.getId();
-            Optional<TruckDriverDetails> note = truckDriverDetailsDao.findById(id);
-            if (note.isEmpty()) {
+            Optional<TruckDriverDetails> truckDriverDetails = truckDriverDetailsDao.findById(id);
+            if (truckDriverDetails.isEmpty()) {
                 log.debug("TruckDriverDetails is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
-            truckDriverDetailsDao.delete(note.get());
+
+            String oldEntityJsonString = jsonHelper.convertToJson(truckDriverDetails.get());
+            truckDriverDetailsDao.delete(truckDriverDetails.get());
+
+            // audit logs
+            auditLogService.addAuditLog(
+                    AuditLogMetaData.builder()
+                            .newData(null)
+                            .prevData(jsonHelper.readFromJson(oldEntityJsonString, TruckDriverDetails.class))
+                            .parent(TruckDriverDetails.class.getSimpleName())
+                            .parentId(truckDriverDetails.get().getId())
+                            .operation(DBOperationType.DELETE.name()).build()
+            );
             log.info("Deleted Truck Driver Details for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
             return ResponseHelper.buildSuccessResponse();
         } catch (Exception e) {
