@@ -18,7 +18,7 @@ import java.util.UUID;
 
 @Data
 @Builder
-@ApiModel("Customer Booking Request Model")
+@ApiModel("Customer Booking Request Model for platform")
 @ToString
 @AllArgsConstructor
 @NoArgsConstructor
