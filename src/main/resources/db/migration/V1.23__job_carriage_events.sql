@@ -14,6 +14,9 @@ ON CONFLICT (entity, lifecycle_hook, tenant_id)
 DO UPDATE SET schema_validator = EXCLUDED.schema_validator;
 
 
+DELETE from validations where entity IN ('SHIPMENT', 'ROUTING', 'PACKING', 'CONSOLIDATION', 'CONTAINER');
+
+
 
 INSERT INTO validations(created_at, created_by, guid, updated_at, updated_by, tenant_id, entity, schema_validator,
                         lifecycle_hook)
