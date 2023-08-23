@@ -18,5 +18,6 @@ public interface ICustomerBookingDao {
     void delete(CustomerBooking customerBooking);
 
     CustomerBooking updateEntityFromShipmentConsole(CustomerBooking customerBooking) throws Exception;
+    Optional<CustomerBooking> findByBookingNumber(String bookingNumber);
 
 }

@@ -1,8 +1,9 @@
-package com.dpw.runner.shipment.services.dto.request;
+package com.dpw.runner.shipment.services.dto.request.platformBooking;
 
 import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
-import com.dpw.runner.shipment.services.dto.request.platformBooking.BookingContainerRequest;
+import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.annotations.ApiModel;
 import lombok.*;
 
@@ -17,10 +18,11 @@ import java.util.UUID;
 @ToString
 @AllArgsConstructor
 @NoArgsConstructor
-public class BookingChargesRequest extends CommonRequest implements IRunnerRequest {
+public class PlatformBookingChargesRequest extends CommonRequest implements IRunnerRequest {
     private Long id;
     private UUID reference_id;
     private Long bookingId;
+    @JsonProperty("sequenceNo")
     private String seqNo;
     private String chargeType;
     private String details;
@@ -28,7 +30,7 @@ public class BookingChargesRequest extends CommonRequest implements IRunnerReque
     private String hsnMaster;
     private String measurementBasis;
     private String measurementContainerType;
-    private BigDecimal totalUnitCount;
+    private Long totalUnitCount;
     private String measurementUnit;
     private String costCurrencyExchangeUpdate;
     private Boolean reciprocalCurrencyCost;

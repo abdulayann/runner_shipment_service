@@ -1,7 +1,8 @@
-package com.dpw.runner.shipment.services.dto.request;
+package com.dpw.runner.shipment.services.dto.response;
 
 import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
 
@@ -12,8 +13,9 @@ import java.util.UUID;
 @NoArgsConstructor
 @Builder
 @ToString
-public class BookingRoutingsRequest extends CommonRequest implements IRunnerRequest {
+public class BookingRoutingsResponse implements IRunnerResponse {
     private UUID reference_id;
+    private UUID guid;
     private Long leg;
     @JsonProperty("origin")
     private String pol;
