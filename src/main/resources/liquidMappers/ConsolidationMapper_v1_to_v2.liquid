@@ -213,13 +213,13 @@
         "sendingAgent": null,
     {% else %}
         "sendingAgent": {
-            "AddressCode": "{{ content.SendingAgent.addressCode }}",
-            "AddressData": {},
-            "EntityId":{{ content.SendingAgent.entityId }},
-            "EntityType": "{{ content.SendingAgent.entityType }}",
-            "OrgCode": "{{ content.SendingAgent.orgCode }}",
-            "OrgData": {},
-            "Type": "{{ content.SendingAgent.type }}"
+            "addressCode": "{{ content.SendingAgent.AddressCode }}",
+            "addressData": {},
+            "entityId": {{ content.SendingAgent.EntityID }},
+            "entityType": "{{ content.SendingAgent.EntityType }}",
+            "orgCode": "{{ content.SendingAgent.OrgCode }}",
+            "orgData": {},
+            "type": "{{ content.SendingAgent.Type }}"
         },
     {% endif %}
 
@@ -227,13 +227,13 @@
         "receivingAgent": null,
     {% else %}
         "receivingAgent": {
-            "AddressCode": "{{ content.ReceivingAgent.addressCode }}",
-            "AddressData": {},
-            "EntityId":{{ content.ReceivingAgent.entityId }},
-            "EntityType": "{{ content.ReceivingAgent.entityType }}",
-            "OrgCode": "{{ content.ReceivingAgent.orgCode }}",
-            "OrgData": {},
-            "Type": "{{ content.ReceivingAgent.type }}"
+            "addressCode": "{{ content.ReceivingAgent.AddressCode }}",
+            "type": "{{ content.ReceivingAgent.Type }}",
+            "entityId":{{ content.ReceivingAgent.EntityId }},
+            "entityType": "{{ content.ReceivingAgent.EntityType }}",
+            "orgCode": "{{ content.ReceivingAgent.OrgCode }}",
+            "orgData": {},
+            "addressData": {}
         },
     {% endif %}
 
@@ -241,13 +241,13 @@
         "borrowedFrom": null,
     {% else %}
         "borrowedFrom": {
-            "AddressCode": "{{ content.BorrowedFrom.addressCode }}",
-            "AddressData": {},
-            "EntityId":{{ content.BorrowedFrom.entityId }},
-            "EntityType": "{{ content.BorrowedFrom.entityType }}",
-            "OrgCode": "{{ content.BorrowedFrom.orgCode }}",
-            "OrgData": {},
-            "Type": "{{ content.BorrowedFrom.type }}"
+            "addressCode": "{{ content.BorrowedFrom.AddressCode }}",
+            "addressData": {},
+            "entityId":{{ content.BorrowedFrom.EntityId }},
+            "entityType": "{{ content.BorrowedFrom.EntityType }}",
+            "orgCode": "{{ content.BorrowedFrom.OrgCode }}",
+            "orgData": {},
+            "type": "{{ content.BorrowedFrom.Type }}"
         },
     {% endif %}
 
@@ -255,13 +255,13 @@
         "creditor": null,
     {% else %}
         "creditor": {
-            "AddressCode": "{{ content.Creditor.addressCode }}",
-            "AddressData": {},
-            "EntityId":{{ content.Creditor.entityId }},
-            "EntityType": "{{ content.Creditor.entityType }}",
-            "OrgCode": "{{ content.Creditor.orgCode }}",
-            "OrgData": {},
-            "Type": "{{ content.Creditor.type }}"
+            "addressCode": "{{ content.Creditor.AddressCode }}",
+            "entityId":{{ content.Creditor.EntityId }},
+            "entityType": "{{ content.Creditor.EntityType }}",
+            "orgCode": "{{ content.Creditor.OrgCode }}",
+            "type": "{{ content.Creditor.Type }}",
+            "orgData": {},
+            "addressData": {}
         },
     {% endif %}
 
@@ -269,13 +269,13 @@
         "coLoadWith": null,
     {% else %}
         "coLoadWith": {
-            "AddressCode": "{{ content.CoLoadWith.addressCode }}",
-            "AddressData": {},
-            "EntityId":{{ content.CoLoadWith.entityId }},
-            "EntityType": "{{ content.CoLoadWith.entityType }}",
-            "OrgCode": "{{ content.CoLoadWith.orgCode }}",
-            "OrgData": {},
-            "Type": "{{ content.CoLoadWith.type }}"
+            "addressCode": "{{ content.CoLoadWith.AddressCode }}",
+            "entityId":{{ content.CoLoadWith.EntityId }},
+            "entityType": "{{ content.CoLoadWith.EntityType }}",
+            "orgCode": "{{ content.CoLoadWith.OrgCode }}",
+            "type": "{{ content.CoLoadWith.Type }}",
+            "orgData": {},
+            "addressData": {}
         },
     {% endif %}
 
@@ -665,13 +665,13 @@
         },
 
         "supplierDetail": {
-            "addressCode": "{{ job.SupplierDetail.addressCode }}",
+            "addressCode": "{{ job.SupplierDetail.AddressCode }}",
             "addressData": {},
-            "entityId":{{ job.SupplierDetail.entityId }},
-            "entityType": "{{ job.SupplierDetail.entityType }}",
-            "orgCode": "{{ job.SupplierDetail.orgCode }}",
+            "entityId": {{ job.SupplierDetail.EntityID }},
+            "entityType": "{{ job.SupplierDetail.EntityType }}",
+            "orgCode": "{{ job.SupplierDetail.OrgCode }}",
             "orgData": {},
-            "type": "{{ job.SupplierDetail.type }}"
+            "type": "{{ job.SupplierDetail.Type }}"
         },
 
         "eventsList": [
@@ -839,22 +839,22 @@
         "veterinarySealNumber": "{{ container.VeterinarySealNumber }}",
 
         "deliveryAddress": {
-            "AddressCode": "{{ container.DeliveryAddressJson.addressCode }}",
-            "AddressData": {},
-            "EntityId":{{ container.DeliveryAddressJson.entityId }},
-            "EntityType": "{{ container.DeliveryAddressJson.entityType }}",
-            "OrgCode": "{{ container.DeliveryAddressJson.orgCode }}",
-            "OrgData": {},
-            "Type": "{{ container.DeliveryAddressJson.type }}"
+            "addressCode": "{{ container.DeliveryAddressJson.AddressCode }}",
+            "addressData": {},
+            "entityId": {{ container.DeliveryAddressJson.EntityID }},
+            "entityType": "{{ container.DeliveryAddressJson.EntityType }}",
+            "orgCode": "{{ container.DeliveryAddressJson.OrgCode }}",
+            "orgData": {},
+            "type": "{{ container.DeliveryAddressJson.Type }}"
         },
         "pickupAddress": {
-            "AddressCode": "{{ container.PickupAddressJson.addressCode }}",
-            "AddressData": {},
-            "EntityId":{{ container.PickupAddressJson.entityId }},
-            "EntityType": "{{ container.PickupAddressJson.entityType }}",
-            "OrgCode": "{{ container.PickupAddressJson.orgCode }}",
-            "OrgData": {},
-            "Type": "{{ container.PickupAddressJson.type }}"
+            "addressCode": "{{ container.PickupAddressJson.AddressCode }}",
+            "addressData": {},
+            "entityId": {{ container.PickupAddressJson.EntityID }},
+            "entityType": "{{ container.PickupAddressJson.EntityType }}",
+            "orgCode": "{{ container.PickupAddressJson.OrgCode }}",
+            "orgData": {},
+            "type": "{{ container.PickupAddressJson.Type }}"
         },
 
         "ShipmentsList": [
