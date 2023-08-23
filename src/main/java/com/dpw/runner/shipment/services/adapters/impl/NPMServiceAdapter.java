@@ -1,5 +1,6 @@
-package com.dpw.runner.shipment.services.service.impl;
+package com.dpw.runner.shipment.services.adapters.impl;
 
+import com.dpw.runner.shipment.services.adapters.interfaces.INPMServiceAdapter;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.dto.request.ListContractRequest;
 import com.dpw.runner.shipment.services.dto.request.npm.UpdateContractRequest;
@@ -13,7 +14,7 @@ import org.springframework.web.client.RestTemplate;
 
 @Service
 @Slf4j
-public class NPMService implements INPMService {
+public class NPMServiceAdapter implements INPMServiceAdapter {
 
     @Value("${NPM.BaseUrl}")
     private String npmBaseUrl;
@@ -51,4 +52,10 @@ public class NPMService implements INPMService {
         ResponseEntity<?> response = restTemplate.exchange(url, HttpMethod.POST, request, Object.class);
         return response;
     }
+
+    @Override
+    public ResponseEntity<?> fetchOffers(CommonRequestModel commonRequestModel) throws Exception {
+        return null;
+    }
+
 }
