@@ -60,7 +60,7 @@ public class BookingChargesRequest extends CommonRequest implements IRunnerReque
     private BigDecimal localSellAmount;
     private BigDecimal overseasSellAmount;
     private String overseasSellCurrency;
-    private String  localSellCurrency;
+    private String localSellCurrency;
     private BigDecimal currentSellRate;
     private String sellRateCurrency;
     private BigDecimal sellExchange;

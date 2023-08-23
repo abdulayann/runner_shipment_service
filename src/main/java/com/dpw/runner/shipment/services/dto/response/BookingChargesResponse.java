@@ -34,7 +34,7 @@ public class BookingChargesResponse implements IRunnerResponse {
     private BigDecimal localCostAmount;
     private BigDecimal overseasCostAmount;
     private String overseasCostCurrency;
-    private BigDecimal localCostCurrency;
+    private String localCostCurrency;
     private BigDecimal currentCostRate;
     private String costRateCurrency;
     private BigDecimal costExchange;
@@ -58,7 +58,7 @@ public class BookingChargesResponse implements IRunnerResponse {
     private BigDecimal localSellAmount;
     private BigDecimal overseasSellAmount;
     private String overseasSellCurrency;
-    private BigDecimal localSellCurrency;
+    private String localSellCurrency;
     private BigDecimal currentSellRate;
     private String sellRateCurrency;
     private BigDecimal sellExchange;

@@ -68,7 +68,7 @@ public class BookingCharges extends MultiTenancy {
     private String overseasCostCurrency; //currencies master data
 
     @Column(name = "local_cost_currency")
-    private BigDecimal localCostCurrency; //currencies master data
+    private String localCostCurrency; //currencies master data
 
     @Column(name = "current_cost_rate")
     private BigDecimal currentCostRate;
