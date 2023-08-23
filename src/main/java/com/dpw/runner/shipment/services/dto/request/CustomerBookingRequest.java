@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.dto.request;
 
 import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
+import com.dpw.runner.shipment.services.entity.enums.BookingSource;
 import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
 import io.swagger.annotations.ApiModel;
 import lombok.*;
@@ -47,6 +48,8 @@ public class CustomerBookingRequest  extends CommonRequest implements IRunnerReq
     private BigDecimal chargeable;
     private String chargeableUnit;
     private UUID contractId;
+    private String contractStatus;
+    private BookingSource source;
     private List<ContainerRequest> containersList;
     private List<PackingRequest> packingList;
     private List<RoutingsRequest> routingList;
