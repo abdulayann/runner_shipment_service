@@ -69,4 +69,7 @@ public class Awb extends MultiTenancy {
     @Type(type = "jsonb")
     @Column(name = "awb_special_handling_codes_Mappings", columnDefinition = "jsonb")
     private List<AwbSpecialHandlingCodesMappingInfo> awbSpecialHandlingCodesMappings;
+
+    @Column(name = "consolidation_id")
+    private Long consolidationId;
 }

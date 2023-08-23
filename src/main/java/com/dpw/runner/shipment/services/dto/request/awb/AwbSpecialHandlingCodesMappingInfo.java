@@ -12,5 +12,5 @@ import lombok.*;
 public class AwbSpecialHandlingCodesMappingInfo {
     private Integer entityId;
     private String entityType;
-    private Integer shcId;
+    private String shcId;
 }

@@ -266,6 +266,7 @@ public class AwbService implements IAwbService {
                 .awbOtherInfo(generateMawbOtherInfo(consolidationDetails, request))
                 .awbGoodsDescriptionInfo(generateMawbGoodsDescriptionInfo(consolidationDetails, request))
                 .awbPackingInfo(awbPackingInfo)
+                .consolidationId(consolidationDetails.getId())
                 .build();
     }
 
