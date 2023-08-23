@@ -64,7 +64,7 @@ public class CustomerBookingController {
     }
 
 
-    @GetMapping(CustomerBookingConstants.CRP_LIST)
+    @PostMapping(CustomerBookingConstants.CRP_LIST)
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = CustomerBookingConstants.LIST_SUCCESSFUL),
             @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
@@ -82,7 +82,7 @@ public class CustomerBookingController {
         return ResponseHelper.buildFailedResponse(responseMsg);
     }
 
-    @GetMapping(CustomerBookingConstants.CRP_RETRIEVE)
+    @PostMapping(CustomerBookingConstants.CRP_RETRIEVE)
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = CustomerBookingConstants.RETRIEVE_SUCCESSFUL),
             @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
