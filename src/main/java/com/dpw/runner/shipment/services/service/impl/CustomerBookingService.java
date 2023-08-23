@@ -17,6 +17,7 @@ import com.dpw.runner.shipment.services.dto.request.platform.AirCarrierDetailsRe
 import com.dpw.runner.shipment.services.dto.response.CustomerBookingResponse;
 import com.dpw.runner.shipment.services.dto.response.PlatformToRunnerCustomerBookingResponse;
 import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entity.enums.BookingSource;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
@@ -546,7 +547,7 @@ public class CustomerBookingService implements ICustomerBookingService {
         CustomerBookingRequest customerBookingRequest = modelMapper.map(request, CustomerBookingRequest.class);
         assignCarrierDetailsToRequest(customerBookingRequest, request);
         ResponseEntity<RunnerResponse<CustomerBookingResponse>> response = null;
-
+        customerBookingRequest.setSource(BookingSource.Platform);
         if(!customerBooking.isPresent()){
             response = (ResponseEntity<RunnerResponse<CustomerBookingResponse>>) this.create(CommonRequestModel.buildRequest(customerBookingRequest));
         } else {

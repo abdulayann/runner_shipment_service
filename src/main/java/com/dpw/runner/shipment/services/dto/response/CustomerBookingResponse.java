@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.dto.response;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.entity.enums.BookingSource;
 import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
 import io.swagger.annotations.ApiModel;
 import lombok.*;
@@ -45,6 +46,8 @@ public class CustomerBookingResponse implements IRunnerResponse {
     private BigDecimal chargeable;
     private String chargeableUnit;
     private UUID contractId;
+    private String contractStatus;
+    private BookingSource source;
     private List<ContainerResponse> containersList;
     private List<PackingResponse> packingList;
     private List<RoutingsResponse> routingList;
