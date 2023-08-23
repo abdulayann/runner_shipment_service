@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.dao.interfaces.IValidationsDao;
 import com.dpw.runner.shipment.services.entity.Validations;
 import com.dpw.runner.shipment.services.entity.enums.LifecycleHooks;
@@ -47,6 +48,7 @@ public class ValidationsDao implements IValidationsDao {
 
     @Override
     public Optional<List<Validations>> findByLifecycleHookAndEntity(LifecycleHooks lifecycleHook, String entity) {
-        return validationsRepository.findByLifecycleHookAndEntity(lifecycleHook.name(), entity);
+        Integer tenantId = UserContext.getUser().getTenantId();
+        return validationsRepository.findByLifecycleHookAndEntity(lifecycleHook.name(), entity, tenantId);
     }
 }
