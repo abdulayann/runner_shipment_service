@@ -46,6 +46,7 @@ public class CustomerBookingResponse implements IRunnerResponse {
     private BigDecimal chargeable;
     private String chargeableUnit;
     private String contractId;
+    private String createdBy;
     private String contractStatus;
     private BookingSource source;
     private List<ContainerResponse> containersList;
