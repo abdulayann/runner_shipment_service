@@ -482,44 +482,65 @@ public class CustomerBookingService implements ICustomerBookingService {
     public ResponseEntity<?> platformCreateBooking(CommonRequestModel commonRequestModel) {
         PlatformToRunnerCustomerBookingRequest request = (PlatformToRunnerCustomerBookingRequest) commonRequestModel.getData();
         String bookingNumber = request.getBookingNumber();
+        if(bookingNumber == null) {
+            log.error("Booking Number is empty for create Booking with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+        }
         Optional<CustomerBooking> customerBooking = customerBookingDao.findByBookingNumber(bookingNumber);
 
-        Map<UUID, UUID> referenceIdVsGuidContainerMap = new HashMap<>();
-        Map<UUID, UUID> guidVsReferenceIdContainerMap = new HashMap<>();
-        Map<UUID, UUID> guidVsReferenceIdPackingMap = new HashMap<>();
-        Map<UUID, UUID> guidVsReferenceIdRoutingMap = new HashMap<>();
-        Map<UUID, UUID> guidVsReferenceIdChargesMap = new HashMap<>();
+        PlatformToRunnerCustomerBookingResponse platformResponse = new PlatformToRunnerCustomerBookingResponse();
+        platformResponse.setBookingNumber(bookingNumber);
+
+        Map<String, UUID> referenceIdVsGuidContainerMap = new HashMap<>();
 
         if(request.getContainersList() != null) {
+            List<PlatformToRunnerCustomerBookingResponse.ReferenceNumbersGuidMapResponse> referenceNumbersGuidMapResponses = new ArrayList<>();
             request.getContainersList().forEach(cont -> {
                 if(cont.getGuid() == null)
                     cont.setGuid(UUID.randomUUID());
                 referenceIdVsGuidContainerMap.put(cont.getReference_id(), cont.getGuid());
-                guidVsReferenceIdContainerMap.put(cont.getGuid(), cont.getReference_id());
+                referenceNumbersGuidMapResponses.add(PlatformToRunnerCustomerBookingResponse.ReferenceNumbersGuidMapResponse.builder()
+                                .reference_id( cont.getReference_id())
+                                .guid(cont.getGuid())
+                                .build());
             });
+            platformResponse.setContainers(referenceNumbersGuidMapResponses);
         }
 
         if(request.getPackingList() != null) {
+            List<PlatformToRunnerCustomerBookingResponse.ReferenceNumbersGuidMapResponse> referenceNumbersGuidMapResponses = new ArrayList<>();
             request.getPackingList().forEach(pack -> {
                 if(pack.getGuid() == null)
                     pack.setGuid(UUID.randomUUID());
-                guidVsReferenceIdPackingMap.put(pack.getGuid(), pack.getReference_id());
+                referenceNumbersGuidMapResponses.add(PlatformToRunnerCustomerBookingResponse.ReferenceNumbersGuidMapResponse.builder()
+                        .reference_id( pack.getReference_id())
+                        .guid(pack.getGuid())
+                        .build());
             });
+            platformResponse.setPacks(referenceNumbersGuidMapResponses);
         }
 
         if(request.getRoutingList() != null) {
+            List<PlatformToRunnerCustomerBookingResponse.ReferenceNumbersGuidMapResponse> referenceNumbersGuidMapResponses = new ArrayList<>();
             request.getRoutingList().forEach(route -> {
                 if(route.getGuid() == null)
                     route.setGuid(UUID.randomUUID());
-                guidVsReferenceIdRoutingMap.put(route.getGuid(), route.getReference_id());
+                referenceNumbersGuidMapResponses.add(PlatformToRunnerCustomerBookingResponse.ReferenceNumbersGuidMapResponse.builder()
+                        .reference_id( route.getReference_id())
+                        .guid(route.getGuid())
+                        .build());
             });
+            platformResponse.setRoutings(referenceNumbersGuidMapResponses);
         }
 
         if(request.getBookingCharges() != null) {
+            List<PlatformToRunnerCustomerBookingResponse.ReferenceNumbersGuidMapResponse> referenceNumbersGuidMapResponses = new ArrayList<>();
             request.getBookingCharges().forEach(charge -> {
                 if(charge.getGuid() == null)
                     charge.setGuid(UUID.randomUUID());
-                guidVsReferenceIdChargesMap.put(charge.getGuid(), charge.getReference_id());
+                referenceNumbersGuidMapResponses.add(PlatformToRunnerCustomerBookingResponse.ReferenceNumbersGuidMapResponse.builder()
+                        .reference_id( charge.getReference_id())
+                        .guid(charge.getGuid())
+                        .build());
 
                 if (charge.getContainers() != null) {
                     charge.getContainers().forEach(cont -> {
@@ -542,6 +563,7 @@ public class CustomerBookingService implements ICustomerBookingService {
                     });
                 }
             });
+            platformResponse.setCharges(referenceNumbersGuidMapResponses);
         }
 
         CustomerBookingRequest customerBookingRequest = modelMapper.map(request, CustomerBookingRequest.class);
@@ -549,7 +571,7 @@ public class CustomerBookingService implements ICustomerBookingService {
         ResponseEntity<RunnerResponse<CustomerBookingResponse>> response = null;
         customerBookingRequest.setSource(BookingSource.Platform);
         if(!customerBooking.isPresent()){
-            response = (ResponseEntity<RunnerResponse<CustomerBookingResponse>>) this.create(CommonRequestModel.buildRequest(customerBookingRequest));
+            this.create(CommonRequestModel.buildRequest(customerBookingRequest));
         } else {
             if(customerBooking.get().getId() != null)
                 customerBookingRequest.setId(customerBooking.get().getId());
@@ -624,39 +646,7 @@ public class CustomerBookingService implements ICustomerBookingService {
                 });
             }
 
-            response = (ResponseEntity<RunnerResponse<CustomerBookingResponse>>) this.update(CommonRequestModel.buildRequest(customerBookingRequest));
-        }
-
-        PlatformToRunnerCustomerBookingResponse platformResponse = modelMapper.map(Objects.requireNonNull(response.getBody()).getData(), PlatformToRunnerCustomerBookingResponse.class);
-        assignCarrierDetailsToResponse(Objects.requireNonNull(response.getBody()).getData(), platformResponse);
-
-
-        if(platformResponse.getContainersList() != null) {
-            platformResponse.getContainersList().forEach(cont -> {
-                if(guidVsReferenceIdContainerMap.containsKey(cont.getGuid()))
-                    cont.setReference_id(guidVsReferenceIdContainerMap.get(cont.getGuid()));
-            });
-        }
-
-        if(platformResponse.getPackingList() != null) {
-            platformResponse.getPackingList().forEach(pack -> {
-                if(guidVsReferenceIdPackingMap.containsKey(pack.getGuid()))
-                    pack.setReference_id(guidVsReferenceIdPackingMap.get(pack.getGuid()));
-            });
-        }
-
-        if(platformResponse.getRoutingList() != null) {
-            platformResponse.getRoutingList().forEach(route -> {
-                if(guidVsReferenceIdRoutingMap.containsKey(route.getGuid()))
-                    route.setReference_id(guidVsReferenceIdRoutingMap.get(route.getGuid()));
-            });
-        }
-
-        if(platformResponse.getBookingCharges() != null) {
-            platformResponse.getBookingCharges().forEach(charge -> {
-                if(guidVsReferenceIdChargesMap.containsKey(charge.getGuid()))
-                    charge.setReference_id(guidVsReferenceIdChargesMap.get(charge.getGuid()));
-            });
+            this.update(CommonRequestModel.buildRequest(customerBookingRequest));
         }
 
         return ResponseHelper.buildSuccessResponse(platformResponse);
@@ -675,18 +665,6 @@ public class CustomerBookingService implements ICustomerBookingService {
                 .build();
 
         customerBookingRequest.setCarrierDetails(carrierDetailRequest);
-    }
-
-    private void assignCarrierDetailsToResponse(CustomerBookingResponse customerBookingResponse, PlatformToRunnerCustomerBookingResponse response) {
-        if(customerBookingResponse.getCarrierDetails() != null) {
-            response.setOrigin(customerBookingResponse.getCarrierDetails().getOrigin());
-            response.setDestination(customerBookingResponse.getCarrierDetails().getDestination());
-            response.setOriginPort(customerBookingResponse.getCarrierDetails().getOriginPort());
-            response.setDestinationPort(customerBookingResponse.getCarrierDetails().getDestinationPort());
-            response.setShippingLine(customerBookingResponse.getCarrierDetails().getShippingLine());
-            response.setVessel(customerBookingResponse.getCarrierDetails().getVessel());
-            response.setVoyage(customerBookingResponse.getCarrierDetails().getVoyage());
-        }
     }
 
     private List<IRunnerResponse> convertEntityListToDtoList(List<CustomerBooking> lst) {

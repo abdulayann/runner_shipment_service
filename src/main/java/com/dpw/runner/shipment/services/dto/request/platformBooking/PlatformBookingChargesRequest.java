@@ -14,13 +14,13 @@ import java.util.UUID;
 
 @Data
 @Builder
-@ApiModel("Booking Charges Request Model")
+@ApiModel("Booking Charges Request Model for Platform")
 @ToString
 @AllArgsConstructor
 @NoArgsConstructor
 public class PlatformBookingChargesRequest extends CommonRequest implements IRunnerRequest {
     private Long id;
-    private UUID reference_id;
+    private String reference_id;
     private Long bookingId;
     @JsonProperty("sequenceNo")
     private String seqNo;

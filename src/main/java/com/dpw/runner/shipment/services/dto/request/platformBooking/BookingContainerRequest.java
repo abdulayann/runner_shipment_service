@@ -14,7 +14,7 @@ import java.util.UUID;
 @AllArgsConstructor
 @ToString
 public class BookingContainerRequest extends CommonRequest implements IRunnerRequest {
-    private UUID reference_id;
+    private String reference_id;
     private UUID runner_guid;
     @JsonProperty("containerType")
     private String containerCode;

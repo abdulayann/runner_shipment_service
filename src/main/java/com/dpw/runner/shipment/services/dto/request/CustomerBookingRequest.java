@@ -47,7 +47,7 @@ public class CustomerBookingRequest  extends CommonRequest implements IRunnerReq
     private String weightVolumeUnit;
     private BigDecimal chargeable;
     private String chargeableUnit;
-    private UUID contractId;
+    private String contractId;
     private String contractStatus;
     private BookingSource source;
     private List<ContainerRequest> containersList;
