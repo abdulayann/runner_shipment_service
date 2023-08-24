@@ -11,6 +11,6 @@ import lombok.*;
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
-public class CRPRetrieveRequest extends CommonRequest implements IRunnerRequest {
+public class CRPRetrieveRequest implements IRunnerRequest {
     private String searchString;
 }
