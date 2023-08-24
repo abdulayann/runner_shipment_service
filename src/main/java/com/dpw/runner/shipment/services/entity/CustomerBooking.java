@@ -116,7 +116,7 @@ public class CustomerBooking extends MultiTenancy {
     private String chargeableUnit;
 
     @Column(name = "contract_id")
-    private UUID contractId;
+    private String contractId;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "bookingId")
     private List<Containers> containersList;

@@ -43,7 +43,6 @@ public class PlatformToRunnerCustomerBookingRequest implements IRunnerRequest {
     private String originPort;
     @JsonProperty("pod")
     private String destinationPort;
-//    private CarrierDetailRequest carrierDetails;
     private String transportType;
     private String cargoType;
     private String direction;
@@ -61,7 +60,7 @@ public class PlatformToRunnerCustomerBookingRequest implements IRunnerRequest {
     private String weightVolumeUnit;
     private BigDecimal chargeable;
     private String chargeableUnit;
-    private UUID contractId;
+    private String contractId;
     @JsonProperty("containers")
     private List<BookingContainerRequest> containersList;
     @JsonProperty("packs")

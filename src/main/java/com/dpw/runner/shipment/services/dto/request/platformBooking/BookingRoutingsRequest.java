@@ -13,7 +13,7 @@ import java.util.UUID;
 @Builder
 @ToString
 public class BookingRoutingsRequest extends CommonRequest implements IRunnerRequest {
-    private UUID reference_id;
+    private String reference_id;
     private Long leg;
     @JsonProperty("origin")
     private String pol;
