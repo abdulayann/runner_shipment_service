@@ -12,11 +12,13 @@ import com.dpw.runner.shipment.services.entity.CustomerBooking;
 import com.dpw.runner.shipment.services.entity.Packing;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import java.net.URI;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -26,12 +28,19 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
 
     @Value("${NPM.BaseUrl}")
     private String npmBaseUrl;
+
     @Value("${NPM.Contracts}")
     private String npmContracts;
-    @Value("${NPM.xApikeyV2}")
-    private String xApikeyV2;
+
+    @Value("${NPM.Offers}")
+    private String npmOffersUrl;
+
+    private final RestTemplate restTemplate;
+
     @Autowired
-    private RestTemplate restTemplate;
+    public NPMServiceAdapter(@Qualifier("restTemplateForNPM") RestTemplate restTemplate) {
+        this.restTemplate = restTemplate;
+    }
 
     @Autowired
     private ICustomerBookingDao customerBookingDao;
@@ -40,40 +49,21 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
     public ResponseEntity<?> fetchContracts(CommonRequestModel commonRequestModel) throws Exception {
         ListContractRequest listContractRequest = (ListContractRequest) commonRequestModel.getData();
         String url = npmBaseUrl + npmContracts;
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.add("x-api-key-v2", xApikeyV2);
-
-        HttpEntity<Object> request = new HttpEntity<Object>(listContractRequest, headers);
-
-        ResponseEntity<?> response = restTemplate.exchange(url, HttpMethod.POST, request, Object.class);
+        ResponseEntity<?> response = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(listContractRequest), Object.class);
         return response;
     }
 
     public ResponseEntity<?> updateContracts(UpdateContractRequest updateContractRequest) throws Exception {
         String url = npmBaseUrl;
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.add("x-api-key-v2", xApikeyV2);
-
-        HttpEntity<Object> request = new HttpEntity<Object>(updateContractRequest, headers);
-
-        ResponseEntity<?> response = restTemplate.exchange(url, HttpMethod.POST, request, Object.class);
+        ResponseEntity<?> response = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(updateContractRequest), Object.class);
         return response;
     }
 
     @Override
     public ResponseEntity<?> fetchOffers(CommonRequestModel req) throws Exception {
-        String url = npmBaseUrl; //TODO :: write the proper url
+        String url = npmBaseUrl + npmOffersUrl;
         NPMFetchOffersRequestFromUI fetchOffersRequest = (NPMFetchOffersRequestFromUI) req.getData();
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.add("x-api-key-v2", xApikeyV2);
-
-        HttpEntity<Object> request = new HttpEntity<>(createNPMOffersRequest(fetchOffersRequest), headers);
-        ResponseEntity<?> response = restTemplate.exchange(url, HttpMethod.GET, request, Object.class);
+        ResponseEntity<?> response = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(createNPMOffersRequest(fetchOffersRequest)), Object.class);
         return response;
     }
 
