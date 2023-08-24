@@ -15,7 +15,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 public class BookingPackingRequest extends CommonRequest implements IRunnerRequest {
-    private UUID reference_id;
+    private String reference_id;
     @JsonProperty("count")
     private Integer packs;
     @JsonProperty("packType")
