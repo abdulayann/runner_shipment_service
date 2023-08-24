@@ -13,7 +13,7 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
-public class CRPListRequest extends CommonRequest implements IRunnerRequest {
+public class CRPListRequest  implements IRunnerRequest {
     private String searchString;
     private boolean isBillable;
     private Pageable pageable;

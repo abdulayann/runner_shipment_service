@@ -1,15 +1,18 @@
 package com.dpw.runner.shipment.services.adapters.impl;
 
+import com.dpw.runner.shipment.services.commons.constants.CustomerBookingConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.dto.request.crp.CRPListRequest;
 import com.dpw.runner.shipment.services.dto.request.crp.CRPRetrieveRequest;
+import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import com.dpw.runner.shipment.services.utils.StringUtility;
 import org.springframework.beans.factory.annotation.*;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.RequestEntity;
 
 import java.net.URI;
 
@@ -32,14 +35,25 @@ public class CRPServiceAdapter implements com.dpw.runner.shipment.services.adapt
     public ResponseEntity<?> retrieveCRPService(CommonRequestModel requestModel) throws Exception {
         CRPRetrieveRequest request = (CRPRetrieveRequest) requestModel.getData();
         String url = crpServiceRetrieveUrl + request.getSearchString();
-        ResponseEntity<?> responseEntity = restTemplate.exchange(RequestEntity.get(URI.create(url)).build(), Object.class);
+        ResponseEntity<?> responseEntity;
+        try {
+            responseEntity = restTemplate.exchange(RequestEntity.get(URI.create(url)).build(), Object.class);
+        }  catch (HttpClientErrorException.NotFound ex) {
+            responseEntity = ResponseHelper.buildSuccessResponse();
+        }
         return responseEntity;
     }
 
     public ResponseEntity<?> listCRPService(CommonRequestModel requestModel) throws Exception {
         CRPListRequest request = (CRPListRequest) requestModel.getData();
-        String url = crpServiceRetrieveUrl + request.getSearchString();
-        ResponseEntity<?> responseEntity = restTemplate.exchange(RequestEntity.get(URI.create(url)).build(), Object.class);
+        String url = crpServiceListUrl + request.getSearchString() + (request.isBillable() ? CustomerBookingConstants.BILLABLE_IDENTIFIER : StringUtility.getEmptyString());
+        ResponseEntity<?> responseEntity;
+        try {
+            responseEntity = restTemplate.exchange(RequestEntity.get(URI.create(url)).build(), Object.class);
+        } catch (HttpClientErrorException.NotFound ex) {
+            responseEntity = ResponseHelper.buildSuccessResponse();
+        }
+
         return responseEntity;
     }
 }
