@@ -53,6 +53,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
         return response;
     }
 
+    @Override
     public ResponseEntity<?> updateContracts(UpdateContractRequest updateContractRequest) throws Exception {
         String url = npmBaseUrl;
         ResponseEntity<?> response = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(updateContractRequest), Object.class);
@@ -87,7 +88,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
                 .mode_of_transport(request.getModeOfTransport())
                 .product_name(request.getCargoType()) // {TODO :: have to keep a mapping which is not present}
                 .contract_details(createContractDetails(request))
-                .shipment_type(customerBooking.get().getDirection())
+                .shipment_type(customerBooking.map(cb -> cb.getDirection()).orElse(null))
                 .service_mode(request.getServiceMode())
                 .fetch_default_rates(request.isFetchDefaultRates())
                 .slab_rates(false)
@@ -121,8 +122,8 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
 
         //otherwise : its second time : isAlteration = true
 
-        Map<Long, Containers> existingContainers = customerBooking.getContainersList().stream().collect(Collectors.toMap(Containers::getId, c -> c));
-        Map<Long, Packing> existingPacks = customerBooking.getPackingList().stream().collect(Collectors.toMap(Packing::getId, c -> c));
+        Map<Long, Containers> existingContainers = customerBooking != null ? customerBooking.getContainersList().stream().collect(Collectors.toMap(Containers::getId, c -> c)) : new HashMap<>();
+        Map<Long, Packing> existingPacks = customerBooking != null ? customerBooking.getPackingList().stream().collect(Collectors.toMap(Packing::getId, c -> c)) : new HashMap<>();
 
         result.addAll(request.getContainers().stream().map(
                 c -> {
