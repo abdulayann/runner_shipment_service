@@ -80,6 +80,20 @@ public class ShipmentSettingsController {
         return (ResponseEntity<RunnerResponse>) ResponseHelper.buildFailedResponse(responseMsg);
     }
 
+    @ApiResponses(value = { @ApiResponse(code = 200, message = ShipmentSettingsConstants.SHIPMENT_SETTINGS_UPDATE_SUCCESSFUL, response = RunnerResponse.class) })
+    @PostMapping(ApiConstants.SAVE_FROM_V1)
+    public ResponseEntity<RunnerResponse> completeSettingsUpdateCreateV1(@RequestBody @Valid ShipmentSettingRequest request) {
+        String responseMsg;
+        try {
+            return (ResponseEntity<RunnerResponse>) shipmentSettingsService.completeSettingsUpdateCreateV1(CommonRequestModel.buildRequest(request));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+        }
+        return (ResponseEntity<RunnerResponse>) ResponseHelper.buildFailedResponse(responseMsg);
+    }
+
     @ApiResponses(value = { @ApiResponse(code = 200, message = ShipmentSettingsConstants.SHIPMENT_SETTINGS_RETRIEVE_BY_ID_SUCCESSFUL) })
     @GetMapping(ApiConstants.API_RETRIEVE_BY_ID)
     public ResponseEntity<RunnerResponse<ShipmentSettingsDetailsResponse>> retrieveById(@ApiParam(value = ShipmentSettingsConstants.SHIPMENT_SETTINGS_ID, required = true) @RequestParam Optional<Long> id, @RequestParam Optional<String> guid) {
