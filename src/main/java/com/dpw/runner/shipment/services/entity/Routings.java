@@ -1,9 +1,12 @@
 package com.dpw.runner.shipment.services.entity;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
+import com.dpw.runner.shipment.services.utils.DedicatedMasterData;
 import com.dpw.runner.shipment.services.utils.MasterData;
+import com.dpw.runner.shipment.services.utils.UnlocationData;
 import lombok.*;
 import lombok.experimental.Accessors;
 import org.hibernate.annotations.SQLDelete;
@@ -46,9 +49,11 @@ public class Routings extends MultiTenancy {
     private String vesselName;
 
     @Column(name = "pol")
+    @UnlocationData
     private String pol;
 
     @Column(name = "pod")
+    @UnlocationData
     private String pod;
 
     @Column(name = "is_domestic")
@@ -94,6 +99,7 @@ public class Routings extends MultiTenancy {
     private Long transitDays;
 
     @Column(name = "carrier")
+    @DedicatedMasterData(type = Constants.CARRIER_MASTER_DATA)
     private String carrier;
 }
 
