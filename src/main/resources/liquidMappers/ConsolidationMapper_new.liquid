@@ -254,6 +254,7 @@
         {% else %}
             "AfirstArrivalPortArrivalDate": "{{ content.arrivalDetails.firstForeignPortArrivalDate }}",
         {% endif %}
+        "AfirstForeignPort": {{ content.arrivalDetails.firstForeignPort }},
         "AfirstArrivalPortId": {
             "AddressCode": "{{ content.arrivalDetails.afirstArrivalPortId.addressCode }}",
             "AddressData": {},
@@ -266,6 +267,7 @@
         {% else %}
             "AlastForeignPortDepartureDate": "{{ content.arrivalDetails.lastForeignPortDepartureDate }}",
         {% endif %}
+        "AlastForeignPort": {{ content.arrivalDetails.lastForeignPort }},
         "AlastForeignPortId": {
             "AddressCode": "{{ content.arrivalDetails.lastForeignPortId.addressCode }}",
             "AddressData": {},
@@ -306,6 +308,7 @@
         {% else %}
             "DfirstForeignPortArrivalDate": "{{ content.departureDetails.firstForeignPortArrivalDate }}",
         {% endif %}
+        "DfirstForeignPort": {{ content.departureDetails.firstForeignPort }},
         "DfirstForeignPortId": {
             "AddressCode": "{{ content.departureDetails.firstForeignPortId.addressCode }}",
             "AddressData": {},
@@ -318,6 +321,7 @@
         {% else %}
             "DlastForeignPortDepartureDate": "{{ content.departureDetails.lastForeignPortDepartureDate }}",
         {% endif %}
+        "DlastForeignPort": {{ content.departureDetails.lastForeignPort }},
         "DlastForeignPortId": {
             "AddressCode": "{{ content.departureDetails.lastForeignPortId.addressCode }}",
             "AddressData": {},
