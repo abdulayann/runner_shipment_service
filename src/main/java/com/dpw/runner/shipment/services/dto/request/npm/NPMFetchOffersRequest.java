@@ -75,8 +75,6 @@ public class NPMFetchOffersRequest extends CommonRequest implements IRunnerReque
     public static class LoadAttributes {
         private BigDecimal weight;
         private String weight_uom;
-        private BigDecimal distance;
-        private String distance_uom;
         private Long quantity;
         private Long delta_quantity;
         private String quantity_uom;
@@ -84,7 +82,6 @@ public class NPMFetchOffersRequest extends CommonRequest implements IRunnerReque
         private String volume_uom;
         private BigDecimal chargeable;
         private String chargeable_uom;
-        private Map<String, BigDecimal> dimensions;
     }
 
     @Builder

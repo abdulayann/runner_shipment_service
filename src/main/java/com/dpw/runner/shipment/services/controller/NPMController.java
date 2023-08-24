@@ -7,7 +7,7 @@ import com.dpw.runner.shipment.services.commons.constants.NPMConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.ListContractRequest;
-import com.dpw.runner.shipment.services.dto.request.npm.NPMFetchOffersRequest;
+import com.dpw.runner.shipment.services.dto.request.npm.NPMFetchOffersRequestFromUI;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import io.swagger.annotations.ApiResponse;
@@ -53,7 +53,7 @@ public class NPMController {
             @ApiResponse(code = 200, message = NPMConstants.LIST_SUCCESSFUL),
             @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
     })
-    public ResponseEntity<?> getNPMOffers(@RequestBody @Valid NPMFetchOffersRequest request) {
+    public ResponseEntity<?> getNPMOffers(@RequestBody @Valid NPMFetchOffersRequestFromUI request) {
         String responseMsg;
         try {
             return (ResponseEntity<RunnerResponse>) npmService.fetchOffers(CommonRequestModel.buildRequest(request));
