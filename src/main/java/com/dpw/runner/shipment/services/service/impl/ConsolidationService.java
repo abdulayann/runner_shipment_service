@@ -1273,7 +1273,8 @@ public class ConsolidationService implements IConsolidationService {
             String responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
-            return ResponseHelper.buildFailedResponse(responseMsg);
+            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+            throw new RuntimeException(e);
         }
     }
 }
