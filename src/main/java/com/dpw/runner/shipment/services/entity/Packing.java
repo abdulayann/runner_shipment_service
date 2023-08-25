@@ -53,12 +53,14 @@ public class Packing extends MultiTenancy {
     private BigDecimal weight;
 
     @Column(name = "weight_unit")
+    @MasterData(type = MasterDataType.WEIGHT_UNIT)
     private String weightUnit;
 
     @Column(name = "volume")
     private BigDecimal volume;
 
     @Column(name = "volume_unit")
+    @MasterData(type = MasterDataType.VOLUME_UNIT)
     private String volumeUnit;
 
     @Column(name = "inspections")
@@ -68,6 +70,7 @@ public class Packing extends MultiTenancy {
     private String origin;
 
     @Column(name = "commodity")
+    @DedicatedMasterData(type = Constants.COMMODITY_TYPE_MASTER_DATA)
     private String commodity;
 
     @Column(name = "packing_order")
@@ -77,18 +80,21 @@ public class Packing extends MultiTenancy {
     private BigDecimal length;
 
     @Column(name = "length_unit")
+    @MasterData(type = MasterDataType.DIMENSION_UNIT)
     private String lengthUnit;
 
     @Column(name = "width")
     private BigDecimal width;
 
     @Column(name = "width_unit")
+    @MasterData(type = MasterDataType.DIMENSION_UNIT)
     private String widthUnit;
 
     @Column(name = "height")
     private BigDecimal height;
 
     @Column(name = "height_unit")
+    @MasterData(type = MasterDataType.DIMENSION_UNIT)
     private String heightUnit;
 
     @Column(name = "marksn_nums")
@@ -107,12 +113,14 @@ public class Packing extends MultiTenancy {
     private BigDecimal minTemp;
 
     @Column(name = "min_temp_unit_id")
+    @MasterData(type = MasterDataType.TEMPERATURE_UNIT)
     private String minTempUnit;
 
     @Column(name = "max_temp")
     private BigDecimal maxTemp;
 
     @JoinColumn(name = "max_temp_unit")
+    @MasterData(type = MasterDataType.TEMPERATURE_UNIT)
     private String maxTempUnit;
 
     @Column(name = "hs_code")
@@ -142,12 +150,14 @@ public class Packing extends MultiTenancy {
     private BigDecimal netWeight;
 
     @Column(name = "net_weight_unit")
+    @MasterData(type = MasterDataType.WEIGHT_UNIT)
     private String netWeightUnit;
 
     @Column(name = "volume_weight")
     private BigDecimal volumeWeight;
 
     @Column(name = "volume_weight_unit")
+    @MasterData(type = MasterDataType.VOLUME_UNIT)
     private String volumeWeightUnit;
 
     @Column(name = "vin_number")
@@ -157,6 +167,7 @@ public class Packing extends MultiTenancy {
     private Long containerId;
 
     @Column(name = "transport_mode")
+    @MasterData(type = MasterDataType.MODE)
     private String transportMode;
 
     @Column(name = "inner_package_number")

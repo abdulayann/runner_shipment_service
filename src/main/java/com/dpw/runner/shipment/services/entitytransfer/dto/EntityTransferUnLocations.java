@@ -36,4 +36,5 @@ public class EntityTransferUnLocations implements IEntityTranferBaseEntity {
     public Boolean HasOutPort;
     public Boolean HasAirport;
     public Boolean HasTerminal;
+    public String LocationsReferenceGUID;
 }

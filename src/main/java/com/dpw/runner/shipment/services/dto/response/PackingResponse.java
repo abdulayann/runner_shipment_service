@@ -5,6 +5,7 @@ import io.swagger.annotations.ApiModel;
 import lombok.Data;
 
 import java.math.BigDecimal;
+import java.util.Map;
 import java.util.UUID;
 
 @Data
@@ -64,5 +65,7 @@ public class PackingResponse implements IRunnerResponse {
     private String shipmentNumber;
     private Long innerPacksId;
     private Long innerPacksCount;
+    public Map<String, String> unlocationData;
+    public Map<String, String> masterData;
 }
 

@@ -9,6 +9,7 @@ import lombok.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Data
@@ -18,6 +19,8 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 public class CustomerBookingResponse implements IRunnerResponse {
+    private Long id;
+    private UUID guid;
     private BookingStatus bookingStatus;
     private PartiesResponse customer;
     private Boolean isCustomerFreeText;
@@ -54,4 +57,5 @@ public class CustomerBookingResponse implements IRunnerResponse {
     private List<RoutingsResponse> routingList;
     private List<BookingChargesResponse> bookingCharges;
     private List<FileRepoResponse> fileRepoList;
+    public Map<String, String> masterData;
 }

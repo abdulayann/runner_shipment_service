@@ -40,10 +40,7 @@ import com.dpw.runner.shipment.services.service_bus.AzureServiceBusTopic;
 import com.dpw.runner.shipment.services.service_bus.ISBProperties;
 import com.dpw.runner.shipment.services.service_bus.SBUtilsImpl;
 import com.dpw.runner.shipment.services.service_bus.model.EventMessage;
-import com.dpw.runner.shipment.services.utils.DedicatedMasterData;
-import com.dpw.runner.shipment.services.utils.MasterData;
-import com.dpw.runner.shipment.services.utils.StringUtility;
-import com.dpw.runner.shipment.services.utils.UnlocationData;
+import com.dpw.runner.shipment.services.utils.*;
 import com.dpw.runner.shipment.services.validator.enums.Operators;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.util.Pair;
@@ -163,6 +160,8 @@ public class ShipmentService implements IShipmentService {
 
     @Autowired
     private AzureServiceBusTopic azureServiceBusTopic;
+    @Autowired
+    private MasterDataUtils masterDataUtils;
 
     @Autowired
     private AuditLogService auditLogService;
@@ -1635,205 +1634,24 @@ public class ShipmentService implements IShipmentService {
         this.addDedicatedMasterData(shipmentDetails, shipmentDetailsResponse);
     }
     private void addAllMasterDatas (ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse) {
-        shipmentDetailsResponse.setMasterData(addMasterData(shipmentDetailsResponse, ShipmentDetails.class));
-        shipmentDetailsResponse.getAdditionalDetails().setMasterData(addMasterData(shipmentDetailsResponse.getAdditionalDetails(), AdditionalDetails.class));
-        shipmentDetailsResponse.getCarrierDetails().setMasterData(addMasterData(shipmentDetailsResponse.getCarrierDetails(), CarrierDetails.class));
+        shipmentDetailsResponse.setMasterData(masterDataUtils.addMasterData(shipmentDetailsResponse, ShipmentDetails.class));
+        shipmentDetailsResponse.getAdditionalDetails().setMasterData(masterDataUtils.addMasterData(shipmentDetailsResponse.getAdditionalDetails(), AdditionalDetails.class));
+        shipmentDetailsResponse.getCarrierDetails().setMasterData(masterDataUtils.addMasterData(shipmentDetailsResponse.getCarrierDetails(), CarrierDetails.class));
     }
 
-    private Map<String, String> addMasterData (IRunnerResponse entityPayload, Class mainClass) {
-        List<MasterListRequest> requests = new ArrayList<>();
-        Map<String, String> fieldNameKeyMap = new HashMap<>();
-        Map<String, String> keyMasterDataMap = new HashMap<>();
-        Map<String, String> fieldNameMasterDataMap = new HashMap<>();
-        for(Field field : mainClass.getDeclaredFields())
-        {
-            if (field.isAnnotationPresent(MasterData.class))
-            {
-                try {
-                    Field field1 = Class.forName(entityPayload.getClass().getName()).getDeclaredField(field.getName());
-                    field1.setAccessible(true);
-                    String itemValue = (String) field1.get(entityPayload);
-                    String itemType = field.getDeclaredAnnotation(MasterData.class).type().getDescription();
-                    String itemTypeName = field.getDeclaredAnnotation(MasterData.class).type().name();
-                    String cascadeField = field.getDeclaredAnnotation(MasterData.class).cascade();
-                    String cascade = null;
 
-                    if(!cascadeField.equals("")){
-                        Field field2 = entityPayload.getClass().getDeclaredField(cascadeField);
-                        field2.setAccessible(true);
-                        cascade = (String) field2.get(entityPayload);
-                    }
-                    if(itemValue != null) {
-                        requests.add(MasterListRequest.builder().ItemType(itemType).ItemValue(itemValue).Cascade(cascade).build());
-                        String key = itemValue + '#' + itemTypeName;
-                        fieldNameKeyMap.put(field.getName(), key);
-                    }
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
-                }
-            }
-        }
-        if(requests.size() > 0) {
-            V1DataResponse response = v1Service.fetchMultipleMasterData(requests);
-            List<EntityTransferMasterLists> masterLists = jsonHelper.convertValueToList(response.entities, EntityTransferMasterLists.class);
-            masterLists.forEach(masterData -> {
-                String key = masterData.ItemValue + '#' + MasterDataType.masterData(masterData.ItemType).name();
-                keyMasterDataMap.put(key, masterData.getItemDescription());
-            });
-            fieldNameKeyMap.forEach((key, value) -> {
-                if(keyMasterDataMap.containsKey(value))
-                    fieldNameMasterDataMap.put(key, keyMasterDataMap.get(value));
-            });
-            return fieldNameMasterDataMap;
-        }
-        return null;
-    }
 
     private void addAllUnlocationDatas (ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse) {
-        shipmentDetailsResponse.getAdditionalDetails().setUnlocationData(addUnlocationData(shipmentDetailsResponse.getAdditionalDetails(), AdditionalDetails.class));
-        shipmentDetailsResponse.getCarrierDetails().setUnlocationData(addUnlocationData(shipmentDetailsResponse.getCarrierDetails(), CarrierDetails.class));
+        shipmentDetailsResponse.getAdditionalDetails().setUnlocationData(masterDataUtils.addUnlocationData(shipmentDetailsResponse.getAdditionalDetails(), AdditionalDetails.class, EntityTransferConstants.UNLOCATION_CODE));
+        shipmentDetailsResponse.getCarrierDetails().setUnlocationData(masterDataUtils.addUnlocationData(shipmentDetailsResponse.getCarrierDetails(), CarrierDetails.class, EntityTransferConstants.UNLOCATION_CODE));
     }
 
-    private Map<String, String> addUnlocationData (IRunnerResponse entityPayload, Class baseClass) {
-        Map<String, String> fieldNameUnlocationDataMap = new HashMap<>();
-        Map<String, String> keyUnlocationDataMap = new HashMap<>();
-        Map<String, String> fieldNameKeyMap = new HashMap<>();
-        List<String> locCodesList = new ArrayList<>();
-        for(Field field  : baseClass.getDeclaredFields())
-        {
-            if (field.isAnnotationPresent(UnlocationData.class))
-            {
-                try {
-                    Field field1 = entityPayload.getClass().getDeclaredField(field.getName());
-                    field1.setAccessible(true);
-                    String locCode = (String) field1.get(entityPayload);
-                    if(locCode != null && !locCode.equals("")) {
-                        locCodesList.add(locCode);
-                        fieldNameKeyMap.put(field.getName(), locCode);
-                    }
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
-                }
-            }
-        }
-        if(locCodesList.size() > 0){
-            CommonV1ListRequest request = new CommonV1ListRequest();
-            List<Object> criteria = new ArrayList<>();
-            List<Object> field = new ArrayList<>(List.of(EntityTransferConstants.UNLOCATION_CODE));
-            String operator = Operators.IN.getValue();
-            criteria.addAll(List.of(field, operator, List.of(locCodesList)));
-            request.setCriteriaRequests(criteria);
-            V1DataResponse response = v1Service.fetchUnlocation(request);
 
-            List<EntityTransferUnLocations> unLocationsList = jsonHelper.convertValueToList(response.entities, EntityTransferUnLocations.class);
-            unLocationsList.forEach(unloc -> {
-                keyUnlocationDataMap.put(unloc.LocCode, unloc.NameWoDiacritics);
-            });
-            fieldNameKeyMap.forEach((key, value) -> {
-                if(keyUnlocationDataMap.containsKey(value))
-                    fieldNameUnlocationDataMap.put(key, keyUnlocationDataMap.get(value));
-            });
-            return fieldNameUnlocationDataMap;
-        }
-        return null;
-    }
 
     private void addDedicatedMasterData (ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse) {
-        shipmentDetailsResponse.getCarrierDetails().setCarrierMasterData(carrierMasterData(shipmentDetailsResponse.getCarrierDetails(), CarrierDetails.class));
-        shipmentDetailsResponse.setCurrenciesMasterData(currencyMasterData(shipmentDetails, ShipmentDetails.class));
+        shipmentDetailsResponse.getCarrierDetails().setCarrierMasterData(masterDataUtils.carrierMasterData(shipmentDetailsResponse.getCarrierDetails(), CarrierDetails.class));
+        shipmentDetailsResponse.setCurrenciesMasterData(masterDataUtils.currencyMasterData(shipmentDetails, ShipmentDetails.class));
     }
 
-    private Map<String, String> carrierMasterData (IRunnerResponse entityPayload, Class baseClass) {
-        Map<String, String> fieldNameCarrierDataMap = new HashMap<>();
-        Map<String, String> keyCarrierDataMap = new HashMap<>();
-        Map<String, String> fieldNameKeyMap = new HashMap<>();
-        List<String> itemValueList = new ArrayList<>();
-        log.info("CarrierMasterData");
-        for(Field field  : baseClass.getDeclaredFields())
-        {
-            if (field.isAnnotationPresent(DedicatedMasterData.class) && field.getDeclaredAnnotation(DedicatedMasterData.class).type().equals(Constants.CARRIER_MASTER_DATA))
-            {
-                try {
-                    log.info("CarrierField: "+field.getName());
-                    Field field1 = entityPayload.getClass().getDeclaredField(field.getName());
-                    field1.setAccessible(true);
-                    String itemValue = (String) field1.get(entityPayload);
-                    if(itemValue != null && !itemValue.equals("")) {
-                        itemValueList.add(itemValue);
-                        fieldNameKeyMap.put(field.getName(), itemValue);
-                    }
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
-                }
-            }
-        }
-        if(itemValueList.size() > 0){
-            log.info("CarrierList: "+itemValueList);
-            CommonV1ListRequest request = new CommonV1ListRequest();
-            List<Object> criteria = new ArrayList<>();
-            List<Object> field = new ArrayList<>(List.of(EntityTransferConstants.ITEM_VALUE));
-            String operator = Operators.IN.getValue();
-            criteria.addAll(List.of(field, operator, List.of(itemValueList)));
-            request.setCriteriaRequests(criteria);
-            V1DataResponse response = v1Service.fetchCarrierMasterData(request);
 
-            List<EntityTransferCarrier> carrierList = jsonHelper.convertValueToList(response.entities, EntityTransferCarrier.class);
-            carrierList.forEach(carrier -> {
-                keyCarrierDataMap.put(carrier.getItemValue(), carrier.ItemDescription);
-            });
-            fieldNameKeyMap.forEach((key, value) -> {
-                if(keyCarrierDataMap.containsKey(value))
-                    fieldNameCarrierDataMap.put(key, keyCarrierDataMap.get(value));
-            });
-            return fieldNameCarrierDataMap;
-        }
-        return null;
-    }
-
-    private Map<String, String> currencyMasterData (BaseEntity entityPayload, Class baseClass) {
-        Map<String, String> fieldNameCurrencyDataMap = new HashMap<>();
-        Map<String, String> keyCurrencyDataMap = new HashMap<>();
-        Map<String, String> fieldNameKeyMap = new HashMap<>();
-        List<String> currencyCodeList = new ArrayList<>();
-        log.info("CurrencyMasterData");
-        for(Field field  : baseClass.getDeclaredFields())
-        {
-            if (field.isAnnotationPresent(DedicatedMasterData.class) && field.getDeclaredAnnotation(DedicatedMasterData.class).type().equals(Constants.CURRENCY_MASTER_DATA))
-            {
-                try {
-                    log.info("CurrencyField: "+field.getName());
-                    Field field1 = entityPayload.getClass().getDeclaredField(field.getName());
-                    field1.setAccessible(true);
-                    String currencyCode = (String) field1.get(entityPayload);
-                    if(currencyCode != null && !currencyCode.equals("")) {
-                        currencyCodeList.add(currencyCode);
-                        fieldNameKeyMap.put(field.getName(), currencyCode);
-                    }
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
-                }
-            }
-        }
-        if(currencyCodeList.size() > 0){
-            log.info("CurrencyList: "+currencyCodeList);
-            CommonV1ListRequest request = new CommonV1ListRequest();
-            List<Object> criteria = new ArrayList<>();
-            List<Object> field = new ArrayList<>(List.of(EntityTransferConstants.CURRENCY_CODE));
-            String operator = Operators.IN.getValue();
-            criteria.addAll(List.of(field, operator, List.of(currencyCodeList)));
-            request.setCriteriaRequests(criteria);
-            V1DataResponse response = v1Service.fetchCurrenciesData(request);
-
-            List<EntityTransferCurrency> currencyList = jsonHelper.convertValueToList(response.entities, EntityTransferCurrency.class);
-            currencyList.forEach(currency -> {
-                keyCurrencyDataMap.put(currency.getCurrenyCode(), currency.CurrenyDescription);
-            });
-            fieldNameKeyMap.forEach((key, value) -> {
-                if(keyCurrencyDataMap.containsKey(value))
-                    fieldNameCurrencyDataMap.put(key, keyCurrencyDataMap.get(value));
-            });
-            return fieldNameCurrencyDataMap;
-        }
-        return null;
-    }
 }

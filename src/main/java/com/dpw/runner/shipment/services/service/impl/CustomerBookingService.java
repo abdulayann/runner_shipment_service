@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.service.impl;
 import com.dpw.runner.shipment.services.adapters.interfaces.IPlatformServiceAdapter;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
@@ -16,12 +17,14 @@ import com.dpw.runner.shipment.services.dto.request.platform.*;
 import com.dpw.runner.shipment.services.dto.request.platform.AirCarrierDetailsRequest;
 import com.dpw.runner.shipment.services.dto.response.CustomerBookingResponse;
 import com.dpw.runner.shipment.services.dto.response.PlatformToRunnerCustomerBookingResponse;
+import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.BookingSource;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.ICustomerBookingService;
+import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.nimbusds.jose.util.Pair;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -75,6 +78,8 @@ public class CustomerBookingService implements ICustomerBookingService {
 
     @Autowired
     private IPlatformServiceAdapter platformServiceAdapter;
+    @Autowired
+    private MasterDataUtils masterDataUtils;
 
     private static final Map<String, String> loadTypeMap = Map.of("SEA", "LCL", "AIR", "LSE");
 
@@ -468,7 +473,9 @@ public class CustomerBookingService implements ICustomerBookingService {
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
             log.info("Booking details fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
-            return ResponseHelper.buildSuccessResponse(jsonHelper.convertValue(customerBooking.get(), CustomerBookingResponse.class));
+            CustomerBookingResponse customerBookingResponse = jsonHelper.convertValue(customerBooking.get(), CustomerBookingResponse.class);
+            createCustomerBookingResponse(customerBooking.get(), customerBookingResponse);
+            return ResponseHelper.buildSuccessResponse(customerBookingResponse);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;
@@ -691,5 +698,36 @@ public class CustomerBookingService implements ICustomerBookingService {
             return String.format("%06d", number);
         return String.format("%05d", number);
     }
+
+    /**
+     * To be used to fetch dependent masterdata*
+     * @param customerBooking
+     * @param customerBookingResponse
+     */
+    private void createCustomerBookingResponse (CustomerBooking customerBooking, CustomerBookingResponse customerBookingResponse) {
+        this.addAllMasterDatas(customerBooking, customerBookingResponse);
+        this.addAllUnlocationDatas(customerBooking, customerBookingResponse);
+        this.addDedicatedMasterData(customerBooking, customerBookingResponse);
+    }
+
+    private void addAllMasterDatas (CustomerBooking customerBooking, CustomerBookingResponse customerBookingResponse) {
+        customerBookingResponse.setMasterData(masterDataUtils.addMasterData(customerBookingResponse, CustomerBooking.class));
+        customerBookingResponse.getCarrierDetails().setMasterData(masterDataUtils.addMasterData(customerBookingResponse.getCarrierDetails(), CarrierDetails.class));
+        customerBookingResponse.getRoutingList().forEach(r -> r.setMasterData(masterDataUtils.addMasterData(r, Routings.class)));
+        customerBookingResponse.getContainersList().forEach(c -> c.setMasterData(masterDataUtils.addMasterData(c, Containers.class)));
+        customerBookingResponse.getPackingList().forEach(c -> c.setMasterData(masterDataUtils.addMasterData(c, Packing.class)));
+    }
+
+    private void addAllUnlocationDatas (CustomerBooking customerBooking, CustomerBookingResponse customerBookingResponse) {
+        customerBookingResponse.getCarrierDetails().setUnlocationData(masterDataUtils.addUnlocationData(customerBookingResponse.getCarrierDetails(), CarrierDetails.class, EntityTransferConstants.LOCATION_SERVICE_GUID));
+        customerBookingResponse.getRoutingList().forEach(r -> r.setUnlocationData(masterDataUtils.addUnlocationData(r, Routings.class, EntityTransferConstants.LOCATION_SERVICE_GUID)));
+    }
+
+    private void addDedicatedMasterData (CustomerBooking customerBooking, CustomerBookingResponse customerBookingResponse) {
+        customerBookingResponse.getCarrierDetails().setCarrierMasterData(masterDataUtils.carrierMasterData(customerBookingResponse.getCarrierDetails(), CarrierDetails.class));
+        customerBookingResponse.getRoutingList().forEach(r -> r.setCarrierMasterData( masterDataUtils.carrierMasterData(r, Routings.class)));
+        // TODO: Commodity, ContainerCode, ChargeTypes, Vessels
+    }
+
 
 }
