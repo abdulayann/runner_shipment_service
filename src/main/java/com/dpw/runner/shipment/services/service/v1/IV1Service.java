@@ -102,5 +102,6 @@ public interface IV1Service {
     SendEntityResponse sendShipmentTask(CreateShipmentTaskRequest request);
     V1DataResponse addressList(Object request);
     V1DataResponse tenantNameByTenantId(Object request);
+    V1DataResponse fetchChargeCodeData(Object request);
 
 }
