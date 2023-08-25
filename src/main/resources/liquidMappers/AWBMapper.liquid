@@ -1,0 +1,266 @@
+{
+
+   "ShipmentId": "{{ content.shipmentId }}",
+    "awbShipmentInfoV1": {
+         "EntityId":"{{ content.awbShipmentInfo.entityId }}",
+         "EntityType":"{{ content.awbShipmentInfo.entityType }}",
+         "ShipperName":"{{ content.awbShipmentInfo.shipperName }}",
+         "ShipperAddress":"{{ content.awbShipmentInfo.shipperAddress }}",
+         "ShipperReferenceNumber":"{{ content.awbShipmentInfo.shipperReferenceNumber }}",
+         "ConsigneeName":"{{ content.awbShipmentInfo.consigneeName }}",
+         "ConsigneeAddress":"{{ content.awbShipmentInfo.consigneeAddress }}",
+         "ConsigneeReferenceNumber":"{{ content.awbShipmentInfo.consigneeReferenceNumber }}",
+         "IssuingAgentName":"{{ content.awbShipmentInfo.issuingAgentName }}",
+
+         "IssuingAgentAddress":"{{ content.awbShipmentInfo.issuingAgentAddress }}",
+
+         "IataCode":"{{ content.awbShipmentInfo.iataCode }}",
+
+         "NoOfCopies":"{{ content.awbShipmentInfo.noOfCopgries }}",
+
+         "Status":"{{ content.awbShipmentInfo.status }}",
+
+         "AwbNumber":"{{ content.awbShipmentInfo.awbNumber }}",
+
+         "OriginAirport":"{{ content.awbShipmentInfo.originAirport }}",
+
+         "DestinationAirport":"{{ content.awbShipmentInfo.destinationAirport }}",
+
+         "FirstCarrier":"{{ content.awbShipmentInfo.firstCarrier }}",
+
+         "ABRId":"{{ content.awbShipmentInfo.abrId }}",
+
+         "AgentCASSCode":"{{ content.awbShipmentInfo.agentCASSCode }}",
+     },
+
+     "AwbNotifyPartyInfoList": [
+                 {% for AwbNotifyPartyInfo in content.awbNotifyPartyInfo %}
+                 {
+                     "EntityId": "{{ AwbNotifyPartyInfo.entityId }}",
+                     "EntityType": "{{ AwbNotifyPartyInfo.entityType }}",
+                     "Type":"{{ AwbNotifyPartyInfo.type }}",
+                     "OrgCode": "{{ AwbNotifyPartyInfo.orgCode }}",
+
+                     //  orgID not found in v1
+                     "NotifyOrgId": "{{ AwbNotifyPartyInfo.notifyOrgId }}",
+                     "Name": "{{ AwbNotifyPartyInfo.name }}",
+                     "Address":"{{ AwbNotifyPartyInfo.address }}",
+                     "AddressId":"{{ AwbNotifyPartyInfo.addressId }}",
+
+
+                 }
+                 {% if forloop.last == false %}
+                 ,
+                 {% endif %}
+                 {% endfor %}
+                 ],
+      "AwbRoutingInfoList": [
+                       {% for AwbRoutingInfo in content.awbRoutingInfo %}
+                       {
+                           "EntityId": "{{ AwbRoutingInfo.entityId }}",
+                           "EntityType": "{{ AwbRoutingInfo.entityType }}",
+                           "Origin":"{{ AwbRoutingInfo.origin }}",
+                           "Destination": "{{ AwbRoutingInfo.destination }}",
+
+                           "ByCarrier": "{{ AwbRoutingInfo.byCarrier }}",
+                           "FlightNumber": "{{ AwbRoutingInfo.flightNumber }}",
+                           "FlightDate":"{{ AwbRoutingInfo.flightDate }}",
+                           "DepartureAirport":"{{ AwbRoutingInfo.departureAirport }}",
+                            "DestinationAirport":"{{ AwbRoutingInfo.destinationAirport }}",
+                             "DestinationPortName":"{{ AwbRoutingInfo.destinationPortName }}",
+                              "OriginPortName":"{{ AwbRoutingInfo.originPortName }}",
+
+
+                       }
+                       {% if forloop.last == false %}
+                       ,
+                       {% endif %}
+                       {% endfor %}
+                       ],
+
+
+                        "AwbCargoInfoV1": {
+                                "EntityId":"{{ content.awbCargoInfo.entityId }}",
+                                "EntityType":"{{ content.awbCargoInfo.entityType }}",
+                                "AccountingInfo":"{{ content.awbCargoInfo.accountingInfo }}",
+                                "HandlingInfo":"{{ content.awbCargoInfo.handlingInfo }}",
+                                "OtherInfo":"{{ content.awbCargoInfo.otherInfo }}",
+                                "NtrQtyGoods":"{{ content.awbCargoInfo.ntrQtyGoods }}",
+                                "ReferenceNumber":"{{ content.awbCargoInfo.referenceNumber }}",
+                                "ShippingInformation":"{{ content.awbCargoInfo.shippingInformation }}",
+                                "ShippingInformationOther":"{{ content.awbCargoInfo.shippingInformationOther }}",
+
+                                "Sci":"{{ content.awbCargoInfo.sci }}",
+
+                                "Currency":"{{ content.awbCargoInfo.currency }}",
+
+                                "ChargeCode":"{{ content.awbCargoInfo.chargeCode }}",
+
+                                "CarriageValue":"{{ content.awbCargoInfo.carriageValue }}",
+
+                                "CustomsValue":"{{ content.awbCargoInfo.customsValue }}",
+
+                                "InsuranceAmount":"{{ content.awbCargoInfo.insuranceAmount }}",
+
+                                "CustomOriginCode":"{{ content.awbCargoInfo.customOriginCode }}",
+
+
+                            },
+
+                            "AwbPaymentInfoV1": {
+                                "EntityId": "{{ content.awbPaymentInfo.entityId }}",
+                                "EntityType": "{{ content.awbPaymentInfo.entityType }}",
+                                "WeightCharges": "{{ content.awbPaymentInfo.weightCharges }}",
+                                "ValuationCharge": "{{ content.awbPaymentInfo.valuationCharge }}",
+                                "Tax": "{{ content.awbPaymentInfo.tax }}",
+                                "DueAgentCharges": "{{ content.awbPaymentInfo.dueAgentCharges }}",
+                                "DueCarrierCharges": "{{ content.awbPaymentInfo.dueCarrierCharges }}",
+                                "TotalPrepaid": "{{ content.awbPaymentInfo.totalPrepaid }}",
+                                "TotalCollect": "{{ content.awbPaymentInfo.totalCollect }}"
+                            },
+                            "AwbOtherChargesInfoList": [
+                                {% for AwbOtherChargesInfo in content.awbOtherChargesInfo %}
+                                {
+                                    "EntityId": "{{ AwbOtherChargesInfo.entityId }}",
+                                    "EntityType": "{{ AwbOtherChargesInfo.entityType }}",
+                                    "ChargeTypeId": "{{ AwbOtherChargesInfo.chargeTypeId }}",
+                                    "Rate": "{{ AwbOtherChargesInfo.rate }}",
+                                    "ChargeBasis": "{{ AwbOtherChargesInfo.chargeBasis }}",
+                                    "Amount": "{{ AwbOtherChargesInfo.amount }}",
+                                    "ModeOfPayment": "{{ AwbOtherChargesInfo.modeOfPayment }}",
+                                    "ChargeDue": "{{ AwbOtherChargesInfo.chargeDue }}",
+                                    "IataDescription": "{{ AwbOtherChargesInfo.iataDescription }}",
+                                    "ChargeTypeDescription": "{{ AwbOtherChargesInfo.chargeTypeDescription }}",
+                                    "AwbChargeCodeDefaultVat": "{{ AwbOtherChargesInfo.awbChargeCodeDefaultVat }}",
+                                    "V2ChargeId": "{{ AwbOtherChargesInfo.v2ChargeId }}"
+                                }
+                                {% if forloop.last == false %}
+                                ,
+                                {% endif %}
+                                {% endfor %}
+                            ],
+
+
+                            "AwbOtherInfoV1": {
+                                "EntityId": "{{ content.awbOtherInfo.entityId }}",
+                                "EntityType": "{{ content.awbOtherInfo.entityType }}",
+                                "Shipper": "{{ content.awbOtherInfo.shipper }}",
+                                "Carrier": "{{ content.awbOtherInfo.carrier }}",
+                                "ExecutedAt": "{{ content.awbOtherInfo.executedAt }}",
+                                "ExecutedOn": "{{ content.awbOtherInfo.executedOn }}"
+                            }
+
+
+                            "AwbOCIInfoList": [
+                                {% for AwbOCIInfo in content.awbOCIInfo %}
+                                {
+                                    "EntityId": "{{ AwbOCIInfo.entityId }}",
+                                    "EntityType": "{{ AwbOCIInfo.entityType }}",
+                                    "InformationIdentifier": "{{ AwbOCIInfo.informationIdentifier }}",
+                                    "TradeIdentificationCode": "{{ AwbOCIInfo.tradeIdentificationCode }}",
+                                    "TradeIdentificationComment": "{{ AwbOCIInfo.tradeIdentificationComment }}"
+                                }
+                                {% if forloop.last == false %}
+                                ,
+                                {% endif %}
+                                {% endfor %}
+                            ],
+                            "AwbGoodsDescriptionInfoList": [
+                                {% for AwbGoodsDescriptionInfo in content.awbGoodsDescriptionInfo %}
+                                {
+                                    "EntityId": "{{ AwbGoodsDescriptionInfo.entityId }}",
+                                    "EntityType": "{{ AwbGoodsDescriptionInfo.entityType }}",
+                                    "PiecesNo": "{{ AwbGoodsDescriptionInfo.piecesNo }}",
+                                    "GrossWt": "{{ AwbGoodsDescriptionInfo.grossWt }}",
+                                    "GrossWtUnit": "{{ AwbGoodsDescriptionInfo.grossWtUnit }}",
+                                    "RateClass": "{{ AwbGoodsDescriptionInfo.rateClass }}",
+                                    "CommodityItemNo": "{{ AwbGoodsDescriptionInfo.commodityItemNo }}",
+                                    "ChargeableWt": "{{ AwbGoodsDescriptionInfo.chargeableWt }}",
+                                    "RateCharge": "{{ AwbGoodsDescriptionInfo.rateCharge }}",
+                                    "TotalAmount": "{{ AwbGoodsDescriptionInfo.totalAmount }}",
+                                    "SLACCode": "{{ AwbGoodsDescriptionInfo.slaCCode }}",
+                                    "HSCode": "{{ AwbGoodsDescriptionInfo.hsCode }}"
+                                }
+                                {% if forloop.last == false %}
+                                ,
+                                {% endif %}
+                                {% endfor %}
+                            ],
+
+                            "AwbPackingInfoList": [
+                                {% for AwbPackingInfo in content.awbPackingInfo %}
+                                {
+                                    "DgGoodsId": "{{ AwbPackingInfo.dgGoodsId }}",
+                                    "DgSubstanceId": "{{ AwbPackingInfo.dgSubstanceId }}",
+                                    "Packs": "{{ AwbPackingInfo.packs }}",
+                                    "PacksType": "{{ AwbPackingInfo.packsType }}",
+                                    "ContainerNumber": "{{ AwbPackingInfo.containerNumber }}",
+                                    "Weight": "{{ AwbPackingInfo.weight }}",
+                                    "WeightUnit": "{{ AwbPackingInfo.weightUnit }}",
+                                    "Volume": "{{ AwbPackingInfo.volume }}",
+                                    "VolumeUnit": "{{ AwbPackingInfo.volumeUnit }}",
+                                    "Inspections": "{{ AwbPackingInfo.inspections }}",
+                                    "Origin": "{{ AwbPackingInfo.origin }}",
+                                    "Commodity": "{{ AwbPackingInfo.commodity }}",
+                                    "CommodityId": "{{ AwbPackingInfo.commodityId }}",
+                                    "PackingOrder": "{{ AwbPackingInfo.packingOrder }}",
+                                    "Length": "{{ AwbPackingInfo.length }}",
+                                    "LengthUnit": "{{ AwbPackingInfo.lengthUnit }}",
+                                    "Width": "{{ AwbPackingInfo.width }}",
+                                    "WidthUnit": "{{ AwbPackingInfo.widthUnit }}",
+                                    "Height": "{{ AwbPackingInfo.height }}",
+                                    "HeightUnit": "{{ AwbPackingInfo.heightUnit }}",
+                                    "MarksnNums": "{{ AwbPackingInfo.marksnNums }}",
+                                    "FlashPoint": "{{ AwbPackingInfo.flashPoint }}",
+                                    "UndgContact": "{{ AwbPackingInfo.undgContact }}",
+                                    "IsTemperatureControlled": "{{ AwbPackingInfo.isTemperatureControlled }}",
+                                    "MinTemp": "{{ AwbPackingInfo.minTemp }}",
+                                    "MinTempUnit": "{{ AwbPackingInfo.minTempUnit }}",
+                                    "MaxTemp": "{{ AwbPackingInfo.maxTemp }}",
+                                    "MaxTempUnit": "{{ AwbPackingInfo.maxTempUnit }}",
+                                    "HsCode": "{{ AwbPackingInfo.hsCode }}",
+                                    "CountryCode": "{{ AwbPackingInfo.countryCode }}",
+                                    "GoodsDescription": "{{ AwbPackingInfo.goodsDescription }}",
+                                    "ReferenceNumber": "{{ AwbPackingInfo.referenceNumber }}",
+                                    "DgClass": "{{ AwbPackingInfo.dgClass }}",
+                                    "Hazardous": "{{ AwbPackingInfo.hazardous }}",
+                                    "NommodityId": "{{ AwbPackingInfo.nommodityId }}",
+                                    "NetWeight": "{{ AwbPackingInfo.netWeight }}",
+                                    "NetWeightUnit": "{{ AwbPackingInfo.netWeightUnit }}",
+                                    "VolumeWeight": "{{ AwbPackingInfo.volumeWeight }}",
+                                    "VolumeWeightUnit": "{{ AwbPackingInfo.volumeWeightUnit }}",
+                                    "TransportId": "{{ AwbPackingInfo.transportId }}",
+                                    "AwbNumber": "{{ AwbPackingInfo.awbNumber }}",
+                                    "MawbGoodsDescId": "{{ AwbPackingInfo.mawbGoodsDescId }}"
+                                }
+                                {% if forloop.last == false %}
+                                ,
+                                {% endif %}
+                                {% endfor %}
+                            ],
+
+                            "AwbSpecialHandlingCodesMappingInfoList": [
+                                {% for AwbSpecialHandlingCodesMappingInfo in content.awbSpecialHandlingCodesMappingInfo %}
+                                {
+                                    "EntityId": "{{ AwbSpecialHandlingCodesMappingInfo.entityId }}",
+                                    "EntityType": "{{ AwbSpecialHandlingCodesMappingInfo.entityType }}",
+                                    "ShcId": "{{ AwbSpecialHandlingCodesMappingInfo.shcId }}"
+                                }
+                                {% if forloop.last == false %}
+                                ,
+                                {% endif %}
+                                {% endfor %}
+                            ]
+
+
+
+
+
+
+
+
+
+
+
+    }
+
