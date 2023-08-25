@@ -256,11 +256,11 @@
         {% endif %}
         "AfirstForeignPort": {{ content.arrivalDetails.firstForeignPort }},
         "AfirstArrivalPortId": {
-            "AddressCode": "{{ content.arrivalDetails.afirstArrivalPortId.addressCode }}",
+            "AddressCode": "{{ content.arrivalDetails.firstForeignPort.addressCode }}",
             "AddressData": {},
-            "OrgCode": "{{ content.arrivalDetails.afirstArrivalPortId.orgCode }}",
+            "OrgCode": "{{ content.arrivalDetails.firstForeignPort.orgCode }}",
             "OrgData": {},
-            "Type": "{{ content.arrivalDetails.afirstArrivalPortId.type }}"
+            "Type": "{{ content.arrivalDetails.firstForeignPort.type }}"
         },
         {% if content.arrivalDetails.lastForeignPortDepartureDate == null or content.arrivalDetails.lastForeignPortDepartureDate == "" %}
             "AlastForeignPortDepartureDate": null,

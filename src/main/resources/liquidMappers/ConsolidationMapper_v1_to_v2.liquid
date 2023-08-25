@@ -284,7 +284,7 @@
 
     "arrivalDetails": {
         {% if content.ArrivalDepartureDetails.AcontainerYardId == null %}
-            "containerYardId": null,
+        "containerYardId": null,
         {% else %}
         "containerYardId": {
             "addressCode": "{{ content.ArrivalDepartureDetails.AcontainerYardId.AddressCode }}",
@@ -305,7 +305,6 @@
         {% if content.AfirstArrivalPortId == null %}
             "firstForeignPortId": null,
         {% else %}
-        "firstForeignPort": {{ content.ArrivalDepartureDetails.AfirstForeignPort }},
             "firstForeignPortId": {
                 "addressCode": "{{ content.ArrivalDepartureDetails.AfirstArrivalPortId.AddressCode }}",
                 "addressData": {},
@@ -322,10 +321,13 @@
         {% else %}
             "lastForeignPortDepartureDate": "{{ content.ArrivalDepartureDetails.AlastForeignPortDepartureDate }}",
         {% endif %}
+
+        "firstForeignPort": "{{ content.ArrivalDepartureDetails.AfirstForeignPort }}",
+        "lastForeignPort": "{{ content.ArrivalDepartureDetails.AlastForeignPort }}",
+
         {% if content.ArrivalDepartureDetails.AlastForeignPortId == null %}
             "lastForeignPortId": null,
         {% else %}
-        "lastForeignPort": {{ content.ArrivalDepartureDetails.AlastForeignPort }},
             "lastForeignPortId": {
                 "addressCode": "{{ content.ArrivalDepartureDetails.AlastForeignPortId.AddressCode }}",
                 "addressData": {},
@@ -403,7 +405,6 @@
         {% if content.ArrivalDepartureDetails.DfirstForeignPortId == null %}
              "firstForeignPortId": null,
         {% else %}
-        "firstForeignPort": {{ content.ArrivalDepartureDetails.DfirstForeignPort }},
         "firstForeignPortId": {
             "addressCode": "{{ content.ArrivalDepartureDetails.DfirstForeignPortId.AddressCode }}",
             "addressData": {},
@@ -420,10 +421,13 @@
         {% else %}
             "lastForeignPortDepartureDate": "{{ content.ArrivalDepartureDetails.DlastForeignPortDepartureDate }}",
         {% endif %}
+
+        "firstForeignPort": "{{ content.ArrivalDepartureDetails.DfirstForeignPort }}",
+        "lastForeignPort": "{{ content.ArrivalDepartureDetails.DlastForeignPort }}",
+
         {% if content.ArrivalDepartureDetails.DlastForeignPortId == null %}
             "lastForeignPortId": null,
         {% else %}
-        "lastForeignPort": {{ content.ArrivalDepartureDetails.DlastForeignPort }},
         "lastForeignPortId": {
             "addressCode": "{{ content.ArrivalDepartureDetails.DlastForeignPortId.AddressCode }}",
             "addressData": {},
