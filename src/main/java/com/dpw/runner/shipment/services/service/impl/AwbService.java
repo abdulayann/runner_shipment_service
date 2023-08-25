@@ -4,6 +4,8 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
+import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
+import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
@@ -65,6 +67,9 @@ public class AwbService implements IAwbService {
     @Autowired
     private UserContext userContext;
 
+    @Autowired
+    private AuditLogService auditLogService;
+
     private Integer totalPacks = 0;
     private List<String> attachedShipmentDescriptions = new ArrayList<>();
     private BigDecimal totalVolumetricWeightOfAwbPacks = new BigDecimal(0);
@@ -84,6 +89,17 @@ public class AwbService implements IAwbService {
         Awb awb = new Awb();
         try {
             awb = awbDao.save(generateAwb(request));
+
+            // audit logs
+            auditLogService.addAuditLog(
+                    AuditLogMetaData.builder()
+                            .newData(awb)
+                            .prevData(null)
+                            .parent(Awb.class.getSimpleName())
+                            .parentId(awb.getId())
+                            .operation(DBOperationType.CREATE.name()).build()
+            );
+
             log.info("AWB created successfully for Id {} with Request Id {}", awb.getId(), LoggerHelper.getRequestIdFromMDC());
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -111,9 +127,22 @@ public class AwbService implements IAwbService {
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
 
+
         Awb awb = convertRequestToEntity(request);
         try {
+            String oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
             awb = awbDao.save(awb);
+
+            // audit logs
+            auditLogService.addAuditLog(
+                    AuditLogMetaData.builder()
+                            .newData(awb)
+                            .prevData(jsonHelper.readFromJson(oldEntityJsonString, Awb.class))
+                            .parent(Awb.class.getSimpleName())
+                            .parentId(awb.getId())
+                            .operation(DBOperationType.UPDATE.name()).build()
+            );
+
             log.info("Updated the AWB Shipment Info for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()

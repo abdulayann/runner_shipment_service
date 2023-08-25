@@ -100,6 +100,7 @@ public class Constants {
     public static final String CURRENCY_MASTER_DATA = "Currency";
     public static final String VESSEL_MASTER_DATA = "Vessel";
     public static final String CARRIER_MASTER_DATA = "Carrier";
+    public static final String CHARGE_TYPE_MASTER_DATA = "ChargeType";
     public static final String CUSTOM_CITY = "customCity";
 
     public static final String DEFAULT_DATE_FORMAT = "MM/dd/yyyy";

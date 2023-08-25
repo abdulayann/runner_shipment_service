@@ -5,10 +5,7 @@ import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstant
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCarrier;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCurrency;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
+import com.dpw.runner.shipment.services.entitytransfer.dto.*;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
@@ -214,6 +211,194 @@ public class MasterDataUtils{
                     fieldNameUnlocationDataMap.put(key, keyUnlocationDataMap.get(value));
             });
             return fieldNameUnlocationDataMap;
+        }
+        return null;
+    }
+
+    public Map<String, String> commodityMasterData (IRunnerResponse entityPayload, Class baseClass) {
+        Map<String, String> fieldNameCommodityDataMap = new HashMap<>();
+        Map<String, String> keyCommodityDataMap = new HashMap<>();
+        Map<String, String> fieldNameKeyMap = new HashMap<>();
+        List<String> itemValueList = new ArrayList<>();
+        log.info("commodityMasterData");
+        for(Field field  : baseClass.getDeclaredFields())
+        {
+            if (field.isAnnotationPresent(DedicatedMasterData.class) && field.getDeclaredAnnotation(DedicatedMasterData.class).type().equals(Constants.COMMODITY_TYPE_MASTER_DATA))
+            {
+                try {
+                    log.info("CommodityField: "+field.getName());
+                    Field field1 = entityPayload.getClass().getDeclaredField(field.getName());
+                    field1.setAccessible(true);
+                    String itemValue = (String) field1.get(entityPayload);
+                    if(itemValue != null && !itemValue.equals("")) {
+                        itemValueList.add(itemValue);
+                        fieldNameKeyMap.put(field.getName(), itemValue);
+                    }
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }
+        if(itemValueList.size() > 0){
+            log.info("Commodity: "+itemValueList);
+            CommonV1ListRequest request = new CommonV1ListRequest();
+            List<Object> criteria = new ArrayList<>();
+            List<Object> field = new ArrayList<>(List.of(EntityTransferConstants.CODE));
+            String operator = Operators.IN.getValue();
+            criteria.addAll(List.of(field, operator, List.of(itemValueList)));
+            request.setCriteriaRequests(criteria);
+            V1DataResponse response = v1Service.fetchCommodityData(request);
+
+            List<EntityTransferCommodityType> commodityList = jsonHelper.convertValueToList(response.entities, EntityTransferCommodityType.class);
+            commodityList.forEach(commodity -> {
+                keyCommodityDataMap.put(commodity.getCode(), commodity.getDescription());
+            });
+            fieldNameKeyMap.forEach((key, value) -> {
+                if(keyCommodityDataMap.containsKey(value))
+                    fieldNameCommodityDataMap.put(key, keyCommodityDataMap.get(value));
+            });
+            return fieldNameCommodityDataMap;
+        }
+        return null;
+    }
+
+    public Map<String, String> containerCodeMasterData (IRunnerResponse entityPayload, Class baseClass) {
+        Map<String, String> fieldNameContainerCodeDataMap = new HashMap<>();
+        Map<String, String> keyContainerCodeDataMap = new HashMap<>();
+        Map<String, String> fieldNameKeyMap = new HashMap<>();
+        List<String> itemValueList = new ArrayList<>();
+        log.info("containerCodeMasterData");
+        for(Field field  : baseClass.getDeclaredFields())
+        {
+            if (field.isAnnotationPresent(DedicatedMasterData.class) && field.getDeclaredAnnotation(DedicatedMasterData.class).type().equals(Constants.CONTAINER_TYPE_MASTER_DATA))
+            {
+                try {
+                    log.info("ContainerField: "+field.getName());
+                    Field field1 = entityPayload.getClass().getDeclaredField(field.getName());
+                    field1.setAccessible(true);
+                    String itemValue = (String) field1.get(entityPayload);
+                    if(itemValue != null && !itemValue.equals("")) {
+                        itemValueList.add(itemValue);
+                        fieldNameKeyMap.put(field.getName(), itemValue);
+                    }
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }
+        if(itemValueList.size() > 0){
+            log.info("Container: "+itemValueList);
+            CommonV1ListRequest request = new CommonV1ListRequest();
+            List<Object> criteria = new ArrayList<>();
+            List<Object> field = new ArrayList<>(List.of(EntityTransferConstants.CODE));
+            String operator = Operators.IN.getValue();
+            criteria.addAll(List.of(field, operator, List.of(itemValueList)));
+            request.setCriteriaRequests(criteria);
+            V1DataResponse response = v1Service.fetchContainerTypeData(request);
+
+            List<EntityTransferContainerType> containerTypesList = jsonHelper.convertValueToList(response.entities, EntityTransferContainerType.class);
+            containerTypesList.forEach(containerType -> {
+                keyContainerCodeDataMap.put(containerType.getCode(), containerType.getDescription());
+            });
+            fieldNameKeyMap.forEach((key, value) -> {
+                if(keyContainerCodeDataMap.containsKey(value))
+                    fieldNameContainerCodeDataMap.put(key, keyContainerCodeDataMap.get(value));
+            });
+            return fieldNameContainerCodeDataMap;
+        }
+        return null;
+    }
+
+    public Map<String, String> vesselsMasterData (IRunnerResponse entityPayload, Class baseClass) {
+        Map<String, String> fieldNameVesselDataMap = new HashMap<>();
+        Map<String, String> keyVesselDataMap = new HashMap<>();
+        Map<String, String> fieldNameKeyMap = new HashMap<>();
+        List<String> itemValueList = new ArrayList<>();
+        log.info("vesselsMasterData");
+        for(Field field  : baseClass.getDeclaredFields())
+        {
+            if (field.isAnnotationPresent(DedicatedMasterData.class) && field.getDeclaredAnnotation(DedicatedMasterData.class).type().equals(Constants.VESSEL_MASTER_DATA))
+            {
+                try {
+                    log.info("VesselField: "+field.getName());
+                    Field field1 = entityPayload.getClass().getDeclaredField(field.getName());
+                    field1.setAccessible(true);
+                    String itemValue = (String) field1.get(entityPayload);
+                    if(itemValue != null && !itemValue.equals("")) {
+                        itemValueList.add(itemValue);
+                        fieldNameKeyMap.put(field.getName(), itemValue);
+                    }
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }
+        if(itemValueList.size() > 0){
+            log.info("Vessel: "+itemValueList);
+            CommonV1ListRequest request = new CommonV1ListRequest();
+            List<Object> criteria = new ArrayList<>();
+            List<Object> field = new ArrayList<>(List.of(EntityTransferConstants.MMSI));
+            String operator = Operators.IN.getValue();
+            criteria.addAll(List.of(field, operator, List.of(itemValueList)));
+            request.setCriteriaRequests(criteria);
+            V1DataResponse response = v1Service.fetchVesselData(request);
+
+            List<EntityTransferVessels> vesselsList = jsonHelper.convertValueToList(response.entities, EntityTransferVessels.class);
+            vesselsList.forEach(vessel -> {
+                keyVesselDataMap.put(vessel.getMmsi(), vessel.getName());
+            });
+            fieldNameKeyMap.forEach((key, value) -> {
+                if(keyVesselDataMap.containsKey(value))
+                    fieldNameVesselDataMap.put(key, keyVesselDataMap.get(value));
+            });
+            return fieldNameVesselDataMap;
+        }
+        return null;
+    }
+
+    public Map<String, String> chargeTypeMasterData (IRunnerResponse entityPayload, Class baseClass) {
+        Map<String, String> fieldNameChargeTypeDataMap = new HashMap<>();
+        Map<String, String> keyChargeTypeDataMap = new HashMap<>();
+        Map<String, String> fieldNameKeyMap = new HashMap<>();
+        List<String> itemValueList = new ArrayList<>();
+        log.info("chargeTypeMasterData");
+        for(Field field  : baseClass.getDeclaredFields())
+        {
+            if (field.isAnnotationPresent(DedicatedMasterData.class) && field.getDeclaredAnnotation(DedicatedMasterData.class).type().equals(Constants.CHARGE_TYPE_MASTER_DATA))
+            {
+                try {
+                    log.info("ChargeField: "+field.getName());
+                    Field field1 = entityPayload.getClass().getDeclaredField(field.getName());
+                    field1.setAccessible(true);
+                    String itemValue = (String) field1.get(entityPayload);
+                    if(itemValue != null && !itemValue.equals("")) {
+                        itemValueList.add(itemValue);
+                        fieldNameKeyMap.put(field.getName(), itemValue);
+                    }
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }
+        if(itemValueList.size() > 0){
+            log.info("Charge: "+itemValueList);
+            CommonV1ListRequest request = new CommonV1ListRequest();
+            List<Object> criteria = new ArrayList<>();
+            List<Object> field = new ArrayList<>(List.of(EntityTransferConstants.CHARGE_CODE));
+            String operator = Operators.IN.getValue();
+            criteria.addAll(List.of(field, operator, List.of(itemValueList)));
+            request.setCriteriaRequests(criteria);
+            V1DataResponse response = v1Service.fetchChargeCodeData(request);
+
+            List<EntityTransferChargeType> chargeCodeList = jsonHelper.convertValueToList(response.entities, EntityTransferChargeType.class);
+            chargeCodeList.forEach(chargeCode -> {
+                keyChargeTypeDataMap.put(chargeCode.getChargeCode(), chargeCode.getDescription());
+            });
+            fieldNameKeyMap.forEach((key, value) -> {
+                if(keyChargeTypeDataMap.containsKey(value))
+                    fieldNameChargeTypeDataMap.put(key, keyChargeTypeDataMap.get(value));
+            });
+            return fieldNameChargeTypeDataMap;
         }
         return null;
     }

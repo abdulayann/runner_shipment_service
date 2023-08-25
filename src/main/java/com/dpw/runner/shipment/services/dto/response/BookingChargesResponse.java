@@ -6,6 +6,7 @@ import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Map;
 import java.util.UUID;
 
 
@@ -76,4 +77,5 @@ public class BookingChargesResponse implements IRunnerResponse {
     private BigDecimal taxType3;
     private BigDecimal taxType4;
     private BigDecimal revenueLineTotal;
+    private Map<String, String> chargeTypeMasterData;
 }

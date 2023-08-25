@@ -609,7 +609,8 @@ public class ConsolidationService implements IConsolidationService {
             String responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
-            return ResponseHelper.buildFailedResponse(responseMsg);
+            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+            throw new RuntimeException(e);
         }
     }
 
@@ -1163,8 +1164,9 @@ public class ConsolidationService implements IConsolidationService {
                 CarrierDetails oldCarrierDetails;
 
                 if(oldConsolidation != null && oldConsolidation.getCarrierDetails() != null) {
-                    oldCarrierDetails = oldEntity.get().getCarrierDetails();
+                    oldCarrierDetails = oldConsolidation.getCarrierDetails();
                     carrierDetailRequest.setId(oldCarrierDetails.getId());
+                    carrierDetailRequest.setGuid(oldCarrierDetails.getGuid());
                 }
                 CarrierDetails cd = convertToClass(carrierDetailRequest, CarrierDetails.class);
                 updatedCarrierDetails = carrierDao.updateEntityFromShipmentConsole(cd);
@@ -1177,8 +1179,9 @@ public class ConsolidationService implements IConsolidationService {
             Allocations updatedAllocations = null;
             if (allocationsRequest != null) {
                 if(oldConsolidation != null && oldConsolidation.getAllocations() != null) {
-                    Allocations oldAllocations = oldEntity.get().getAllocations();
+                    Allocations oldAllocations = oldConsolidation.getAllocations();
                     allocationsRequest.setId(oldAllocations.getId());
+                    allocationsRequest.setGuid(oldAllocations.getGuid());
                 }
                 updatedAllocations = allocationsDao.updateEntityFromShipmentConsole(convertToClass(allocationsRequest, Allocations.class));
                 entity.setAllocations(updatedAllocations);
@@ -1186,8 +1189,9 @@ public class ConsolidationService implements IConsolidationService {
             AchievedQuantities updatedAchievedQuantities = null;
             if (achievedQuantitiesRequest != null) {
                 if(oldConsolidation != null && oldConsolidation.getAchievedQuantities() != null) {
-                    AchievedQuantities oldAchievedQuantities = oldEntity.get().getAchievedQuantities();
+                    AchievedQuantities oldAchievedQuantities = oldConsolidation.getAchievedQuantities();
                     achievedQuantitiesRequest.setId(oldAchievedQuantities.getId());
+                    achievedQuantitiesRequest.setGuid(oldAchievedQuantities.getGuid());
                 }
                 updatedAchievedQuantities = achievedQuantitiesDao.updateEntityFromShipmentConsole(convertToClass(achievedQuantitiesRequest, AchievedQuantities.class));
                 entity.setAchievedQuantities(updatedAchievedQuantities);
@@ -1269,7 +1273,8 @@ public class ConsolidationService implements IConsolidationService {
             String responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
-            return ResponseHelper.buildFailedResponse(responseMsg);
+            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+            throw new RuntimeException(e);
         }
     }
 }

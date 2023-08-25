@@ -1,6 +1,8 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
+import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
@@ -8,6 +10,7 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IPickupDeliveryDetailsDao;
 import com.dpw.runner.shipment.services.dto.request.PickupDeliveryDetailsRequest;
 import com.dpw.runner.shipment.services.dto.response.PickupDeliveryDetailsResponse;
+import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.entity.PickupDeliveryDetails;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
@@ -43,6 +46,9 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
     @Autowired
     private JsonHelper jsonHelper;
 
+    @Autowired
+    private AuditLogService auditLogService;
+
     @Transactional
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
         String responseMsg;
@@ -54,6 +60,16 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
         PickupDeliveryDetails pickupDeliveryDetails = convertRequestToEntity(request);
         try {
             pickupDeliveryDetails = pickupDeliveryDetailsDao.save(pickupDeliveryDetails);
+
+            // audit logs
+            auditLogService.addAuditLog(
+                    AuditLogMetaData.builder()
+                            .newData(pickupDeliveryDetails)
+                            .prevData(null)
+                            .parent(PickupDeliveryDetails.class.getSimpleName())
+                            .parentId(pickupDeliveryDetails.getId())
+                            .operation(DBOperationType.CREATE.name()).build()
+            );
             log.info("Pickup Delivery Details created successfully for Id {} with Request Id {}", pickupDeliveryDetails.getId(), LoggerHelper.getRequestIdFromMDC());
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -85,7 +101,19 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
         PickupDeliveryDetails pickupDeliveryDetails = convertRequestToEntity(request);
         pickupDeliveryDetails.setId(oldEntity.get().getId());
         try {
+            String oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
             pickupDeliveryDetails = pickupDeliveryDetailsDao.save(pickupDeliveryDetails);
+
+            // audit logs
+            auditLogService.addAuditLog(
+                    AuditLogMetaData.builder()
+                            .newData(pickupDeliveryDetails)
+                            .prevData(jsonHelper.readFromJson(oldEntityJsonString, PickupDeliveryDetails.class))
+                            .parent(PickupDeliveryDetails.class.getSimpleName())
+                            .parentId(pickupDeliveryDetails.getId())
+                            .operation(DBOperationType.UPDATE.name()).build()
+            );
+
             log.info("Updated the pickup delivery details for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -161,7 +189,19 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
                 log.debug("pickup Delivery Details is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
+
+            String oldEntityJsonString = jsonHelper.convertToJson(pickupDeliveryDetails.get());
             pickupDeliveryDetailsDao.delete(pickupDeliveryDetails.get());
+
+            // audit logs
+            auditLogService.addAuditLog(
+                    AuditLogMetaData.builder()
+                            .newData(null)
+                            .prevData(jsonHelper.readFromJson(oldEntityJsonString, PickupDeliveryDetails.class))
+                            .parent(PickupDeliveryDetails.class.getSimpleName())
+                            .parentId(pickupDeliveryDetails.get().getId())
+                            .operation(DBOperationType.DELETE.name()).build()
+            );
             log.info("Deleted pickup delivery details for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
             return ResponseHelper.buildSuccessResponse();
         } catch (Exception e) {

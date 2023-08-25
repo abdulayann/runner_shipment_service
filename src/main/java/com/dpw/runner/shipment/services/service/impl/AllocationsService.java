@@ -1,6 +1,8 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
+import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
@@ -8,6 +10,7 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IAllocationsDao;
 import com.dpw.runner.shipment.services.dto.request.AllocationsRequest;
 import com.dpw.runner.shipment.services.dto.response.AllocationsResponse;
+import com.dpw.runner.shipment.services.entity.AdditionalDetails;
 import com.dpw.runner.shipment.services.entity.Allocations;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
@@ -42,16 +45,30 @@ public class AllocationsService implements IAllocationsService {
     @Autowired
     private JsonHelper jsonHelper;
 
+    @Autowired
+    private AuditLogService auditLogService;
+
     @Transactional
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
         String responseMsg;
         AllocationsRequest request = (AllocationsRequest) commonRequestModel.getData();
-        if(request == null) {
+        if (request == null) {
             log.debug("Request is empty for Allocations Create with Request Id {}", LoggerHelper.getRequestIdFromMDC());
         }
         Allocations allocations = convertRequestToAllocations(request);
         try {
             allocations = allocationsDao.save(allocations);
+
+            // audit logs
+            auditLogService.addAuditLog(
+                    AuditLogMetaData.builder()
+                            .newData(allocations)
+                            .prevData(null)
+                            .parent(Allocations.class.getSimpleName())
+                            .parentId(allocations.getId())
+                            .operation(DBOperationType.CREATE.name()).build()
+            );
+
             log.info("Allocations Saved Successfully for Id {} with Request Id {}", allocations.getId(), LoggerHelper.getRequestIdFromMDC());
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -66,11 +83,11 @@ public class AllocationsService implements IAllocationsService {
     public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
         String responseMsg;
         AllocationsRequest request = (AllocationsRequest) commonRequestModel.getData();
-        if(request == null) {
+        if (request == null) {
             log.error("Request is empty for Allocations Update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
         }
 
-        if(request.getId() == null) {
+        if (request.getId() == null) {
             log.error("Request Id is null for Allocations Update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
         }
         long id = request.getId();
@@ -83,7 +100,19 @@ public class AllocationsService implements IAllocationsService {
         Allocations allocations = convertRequestToAllocations(request);
         allocations.setId(oldEntity.get().getId());
         try {
+            String oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
             allocations = allocationsDao.save(allocations);
+
+            // audit logs
+            auditLogService.addAuditLog(
+                    AuditLogMetaData.builder()
+                            .newData(allocations)
+                            .prevData(jsonHelper.readFromJson(oldEntityJsonString, Allocations.class))
+                            .parent(Allocations.class.getSimpleName())
+                            .parentId(allocations.getId())
+                            .operation(DBOperationType.UPDATE.name()).build()
+            );
+
             log.info("Updating the Allocations for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -99,7 +128,7 @@ public class AllocationsService implements IAllocationsService {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
-            if(request == null) {
+            if (request == null) {
                 log.error("Request is empty for allocations list with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
             Pair<Specification<Allocations>, Pageable> tuple = fetchData(request, Allocations.class);
@@ -119,11 +148,11 @@ public class AllocationsService implements IAllocationsService {
 
     @Override
     @Async
-    public CompletableFuture<ResponseEntity<?>> listAsync(CommonRequestModel commonRequestModel){
+    public CompletableFuture<ResponseEntity<?>> listAsync(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
-            if(request == null) {
+            if (request == null) {
                 log.error("Request is empty for allocations async list with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
             Pair<Specification<Allocations>, Pageable> tuple = fetchData(request, Allocations.class);
@@ -147,10 +176,10 @@ public class AllocationsService implements IAllocationsService {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
-            if(request == null) {
+            if (request == null) {
                 log.error("Request is empty for Allocations Delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
-            if(request.getId() == null) {
+            if (request.getId() == null) {
                 log.error("Request Id is null for Allocations Delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
             long id = request.getId();
@@ -160,7 +189,19 @@ public class AllocationsService implements IAllocationsService {
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
             log.info("Deleted Allocations for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
+
+            String oldEntityJsonString = jsonHelper.convertToJson(allocations.get());
             allocationsDao.delete(allocations.get());
+
+            // audit logs
+            auditLogService.addAuditLog(
+                    AuditLogMetaData.builder()
+                            .newData(null)
+                            .prevData(jsonHelper.readFromJson(oldEntityJsonString, Allocations.class))
+                            .parent(Allocations.class.getSimpleName())
+                            .parentId(allocations.get().getId())
+                            .operation(DBOperationType.DELETE.name()).build()
+            );
             return ResponseHelper.buildSuccessResponse();
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -175,10 +216,10 @@ public class AllocationsService implements IAllocationsService {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
-            if(request == null) {
+            if (request == null) {
                 log.error("Request is empty for Allocations retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
-            if(request.getId() == null) {
+            if (request.getId() == null) {
                 log.error("Request Id is null for Allocations retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
             long id = request.getId();
