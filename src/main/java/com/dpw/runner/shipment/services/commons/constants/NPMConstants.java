@@ -8,6 +8,7 @@ public class NPMConstants {
     public static final String GET_OFFERS = "/runner-offers";
     public static final String LIST_SUCCESSFUL = "Successfully Fetched Offers";
     public static final String ANY = "ANY";
+    public static final String FCL = "FCL";
     public static final String UNIT = "unit";
     public static final String SELL_COST_MARGIN = "SELL_COST_MARGIN";
     public static final String CHEAPEST_OFFER_TYPE = "CHEAPEST";
