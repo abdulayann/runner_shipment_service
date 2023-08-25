@@ -43,5 +43,16 @@ public class PartiesConstants {
     public static final String AGENT_IATA_CODE = "AgentIATACode";
     public static final String AGENT_CASS_CODE = "AgentCASSCode";
 
+    //OrgData Constants
+    public static final String CITY_CODE = "CityCode";
+    public static final String STATE = "State";
+    public static final String ZIP_POST_CODE = "ZipPostCode";
 
+    public static final String UNLOCO_CODE = "UnlocoCode";
+    public static final String CURRENCY_CODE = "CurrencyCode";
+    public static final String PHONE = "Phone";
+    public static final String MOBILE = "Mobile";
+    public static final String FAX = "Fax";
+    public static final String SITE = "site";
+    public static final String API = "API";
 }

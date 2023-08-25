@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.dto.v1.request.CreateShipmentTaskRequest
 import com.dpw.runner.shipment.services.dto.v1.response.SendEntityResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.TenantIdResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
+import com.dpw.runner.shipment.services.entity.CustomerBooking;
 import com.dpw.runner.shipment.services.exception.exceptions.UnAuthorizedException;
 import com.dpw.runner.shipment.services.exception.exceptions.V1ServiceException;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
@@ -16,17 +17,23 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 
+import static com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil.createBookingRequestForV1;
+
 @Service
 public class V1ServiceImpl implements IV1Service {
-    
+
     private static final Logger log = LoggerFactory.getLogger(V1ServiceImpl.class);
 
     @Autowired
     private RestTemplate restTemplate;
+
+    @Value("${v1service.url.base}${v1service.url.customerBooking}")
+    private String CUSTOMER_BOOKING_URL;
 
     @Value("${v1service.url.base}${v1service.url.masterData}")
     private String MASTER_DATA_URL;
@@ -192,8 +199,22 @@ public class V1ServiceImpl implements IV1Service {
 
     @Value("${v1service.url.base}${v1service.url.tenantNameByTenantId}")
     private String TENANT_NAME_BY_ID;
+
     @Value("${v1service.url.base}${v1service.url.chargeType}")
     private String CHARGE_TYPE_URL;
+
+    @Override
+    public ResponseEntity<?> createBooking(CustomerBooking customerBooking) {
+        try {
+            long time = System.currentTimeMillis();
+            HttpEntity<V1DataResponse> entity = new HttpEntity(createBookingRequestForV1(customerBooking), V1AuthHelper.getHeaders());
+            var response = this.restTemplate.postForEntity(this.CUSTOMER_BOOKING_URL, entity, V1DataResponse.class, new Object[0]);
+            return response;
+        } catch (Exception exception) {
+            throw new V1ServiceException(exception.getMessage());
+        }
+    }
+
     @Override
     public V1DataResponse fetchMasterData(Object request) {
         ResponseEntity masterDataResponse = null;
@@ -968,7 +989,8 @@ public class V1ServiceImpl implements IV1Service {
             }
         } catch (Exception var7) {
             throw new V1ServiceException(var7.getMessage());
-        }    }
+        }
+    }
 
     @Override
     public V1DataResponse fetchUnlocation(Object request) {

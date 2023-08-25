@@ -5,8 +5,12 @@ import com.dpw.runner.shipment.services.dto.v1.request.CreateShipmentTaskRequest
 import com.dpw.runner.shipment.services.dto.v1.response.SendEntityResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.TenantIdResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
+import com.dpw.runner.shipment.services.entity.CustomerBooking;
+import org.springframework.http.ResponseEntity;
 
 public interface IV1Service {
+    ResponseEntity<?> createBooking(CustomerBooking customerBooking);
+
     V1DataResponse fetchMasterData(Object request);
 
     V1DataResponse createMasterData(Object request);
@@ -86,21 +90,35 @@ public interface IV1Service {
     V1DataResponse updateUnlocationData(Object request);
 
     V1DataResponse fetchMultipleMasterData(Object request);
+
     V1DataResponse fetchUsersData(Object request);
 
     V1DataResponse fetchGridColorCodeData(Object request);
+
     V1DataResponse createGridColorCodeData(Object request);
+
     V1DataResponse updateGridColorCodeData(Object request);
+
     V1DataResponse listCousinBranches(Object request);
+
     V1DataResponse listCousinBranchesWithoutCurrent(Object request);
+
     TenantIdResponse tenantByGuid(Object request);
+
     V1DataResponse importFlightSchedules(Object request);
+
     V1DataResponse fetchFlightStatus(Object request);
+
     V1DataResponse importSailingSchedules(Object request);
+
     V1DataResponse listSailingSchedule(Object request);
+
     SendEntityResponse sendConsolidationTask(CreateConsolidationTaskRequest request);
+
     SendEntityResponse sendShipmentTask(CreateShipmentTaskRequest request);
+
     V1DataResponse addressList(Object request);
+
     V1DataResponse tenantNameByTenantId(Object request);
     V1DataResponse fetchChargeCodeData(Object request);
 
