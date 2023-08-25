@@ -22,4 +22,5 @@ public class CustomerBookingConstants {
     public static final String ENABLED = "ENABLED";
     public static final String DISABLED = "DISABLED";
     public static final String UNIT = "unit";
+    public static final String YES = "YES";
 }
