@@ -317,6 +317,7 @@ public class CustomerBookingService implements ICustomerBookingService {
     }
 
     @Override
+    @Transactional
     public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
         CustomerBookingRequest request = (CustomerBookingRequest) commonRequestModel.getData();
         if (request == null) {
@@ -345,7 +346,6 @@ public class CustomerBookingService implements ICustomerBookingService {
             this.updateEntities(customerBooking, request);
         } catch (Exception e) {
             log.error(e.getMessage());
-            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
             throw new RuntimeException(e);
         }
 
