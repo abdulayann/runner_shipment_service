@@ -172,7 +172,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
                         .weight(p.getWeight())
                         .weight_uom(p.getWeightUnit())
                         .quantity(p.getQuantity())
-                        .quantity_uom(NPMConstants.UNIT)
+                        .quantity_uom(request.getCargoType().equals(NPMConstants.FCL) ? NPMConstants.UNIT : p.getPackageType())
                         .delta_quantity(p.getQuantity())
                         .build())
                 .build();
@@ -189,7 +189,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
                 .load_attributes(NPMFetchOffersRequest.LoadAttributes.builder()
                         .delta_quantity(containerFromRequest.getQuantity())
                         .quantity(containerFromRequest.getQuantity())
-                        .quantity_uom(NPMConstants.UNIT)
+                        .quantity_uom(request.getCargoType().equals(NPMConstants.FCL) ? NPMConstants.UNIT : containerFromRequest.getContainerType())
                         .weight(containerFromRequest.getGrossWeight())
                         .weight_uom(containerFromRequest.getGrossWeightUnit())
                         .build())
