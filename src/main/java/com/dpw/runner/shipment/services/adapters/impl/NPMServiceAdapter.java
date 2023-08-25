@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.adapters.impl;
 
 import com.dpw.runner.shipment.services.adapters.interfaces.INPMServiceAdapter;
+import com.dpw.runner.shipment.services.commons.constants.NPMConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.dao.interfaces.ICustomerBookingDao;
 import com.dpw.runner.shipment.services.dto.request.ListContractRequest;
@@ -78,12 +79,12 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
         return NPMFetchOffersRequest.builder()
                 .origin(request.getOrigin())
                 .destination(request.getDestination())
-                .POD(request.getPol())
-                .POL(request.getPod())
+                .POD(request.getPod())
+                .POL(request.getPol())
                 .exchange_rates(null)
                 .preferred_date(request.getPreferredDate())
                 .preferred_date_type(request.getPreferredDateType())
-                .carrier("ANY") //hardcoded
+                .carrier(NPMConstants.ANY) //hardcoded
                 .loads_information(createLoadsInfo(request, customerBooking.get(), isAlteration))
                 .mode_of_transport(request.getModeOfTransport())
                 .product_name(request.getCargoType()) // {TODO :: have to keep a mapping which is not present}
@@ -92,11 +93,11 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
                 .service_mode(request.getServiceMode())
                 .fetch_default_rates(request.isFetchDefaultRates())
                 .slab_rates(false)
-                .scope_restriction("SELL_COST_MARGIN")
+                .scope_restriction(NPMConstants.SELL_COST_MARGIN)
                 .service_category(null)
                 .customer_category(null)
                 .is_alteration(isAlteration)
-                .offer_type("CHEAPEST")
+                .offer_type(NPMConstants.CHEAPEST_OFFER_TYPE)
                 .build();
     }
 
@@ -171,7 +172,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
                         .weight(p.getWeight())
                         .weight_uom(p.getWeightUnit())
                         .quantity(p.getQuantity())
-                        .quantity_uom("unit")
+                        .quantity_uom(request.getCargoType().equals(NPMConstants.FCL) ? NPMConstants.UNIT : p.getPackageType())
                         .delta_quantity(p.getQuantity())
                         .build())
                 .build();
@@ -188,7 +189,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
                 .load_attributes(NPMFetchOffersRequest.LoadAttributes.builder()
                         .delta_quantity(containerFromRequest.getQuantity())
                         .quantity(containerFromRequest.getQuantity())
-                        .quantity_uom("unit")
+                        .quantity_uom(request.getCargoType().equals(NPMConstants.FCL) ? NPMConstants.UNIT : containerFromRequest.getContainerType())
                         .weight(containerFromRequest.getGrossWeight())
                         .weight_uom(containerFromRequest.getGrossWeightUnit())
                         .build())

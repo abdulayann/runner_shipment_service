@@ -726,7 +726,11 @@ public class CustomerBookingService implements ICustomerBookingService {
     private void addDedicatedMasterData (CustomerBooking customerBooking, CustomerBookingResponse customerBookingResponse) {
         customerBookingResponse.getCarrierDetails().setCarrierMasterData(masterDataUtils.carrierMasterData(customerBookingResponse.getCarrierDetails(), CarrierDetails.class));
         customerBookingResponse.getRoutingList().forEach(r -> r.setCarrierMasterData( masterDataUtils.carrierMasterData(r, Routings.class)));
-        // TODO: Commodity, ContainerCode, ChargeTypes, Vessels
+        customerBookingResponse.getContainersList().forEach(r -> r.setCommodityTypeData( masterDataUtils.commodityMasterData(r, Containers.class)));
+        customerBookingResponse.getPackingList().forEach(r -> r.setCommodityTypeData( masterDataUtils.commodityMasterData(r, Packing.class)));
+        customerBookingResponse.getContainersList().forEach(r -> r.setContainerCodeData( masterDataUtils.containerCodeMasterData(r, Containers.class)));
+        customerBookingResponse.getCarrierDetails().setVesselsMasterData(masterDataUtils.vesselsMasterData(customerBookingResponse.getCarrierDetails(), CarrierDetails.class));
+        customerBookingResponse.getBookingCharges().forEach(c -> c.setChargeTypeMasterData( masterDataUtils.chargeTypeMasterData(c, BookingCharges.class)));
     }
 
 

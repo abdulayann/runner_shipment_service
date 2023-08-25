@@ -91,4 +91,6 @@ public class ContainerResponse implements IRunnerResponse {
     private PartiesResponse deliveryAddress;
     public Map<String, String> unlocationData;
     public Map<String, String> masterData;
+    public Map<String, String> commodityTypeData;
+    public Map<String, String> containerCodeData;
 }
