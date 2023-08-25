@@ -14,4 +14,5 @@ public class RunnerEntityMapping {
     private String fieldName;
     private String tableName;
     private Class dataType;
+    private boolean isContainsText;
 }
