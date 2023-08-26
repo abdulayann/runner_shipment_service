@@ -19,4 +19,5 @@ public class ListCommonRequest implements IRunnerRequest{
     private int pageNo;
     private int pageSize;
     private List<String> includeTbls;
+    private String containsText;
 }
