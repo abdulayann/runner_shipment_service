@@ -55,6 +55,7 @@ public class Constants {
     public static final String TRANSPORT_MODE_FSA = "FSA";
     public static final String TRANSPORT_MODE_FAS = "FAS";
     public static final String SHIPMENT_TYPE_LCL = "LCL";
+    public static final String CARGO_TYPE_FCL = "FCL";
 
 
     //MasterDataFactory

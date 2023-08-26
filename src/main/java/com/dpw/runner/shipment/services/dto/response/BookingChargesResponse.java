@@ -17,6 +17,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 public class BookingChargesResponse implements IRunnerResponse {
+    private Long id;
     private UUID guid;
     private Long bookingId;
     private String seqNo;
