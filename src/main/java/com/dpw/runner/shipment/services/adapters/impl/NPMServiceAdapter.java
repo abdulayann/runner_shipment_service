@@ -36,6 +36,9 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
     @Value("${NPM.Offers}")
     private String npmOffersUrl;
 
+    @Value("${NPM.Update}")
+    private String npmUpdateUrl;
+
     private final RestTemplate restTemplate;
 
     @Autowired
@@ -55,8 +58,9 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
     }
 
     @Override
-    public ResponseEntity<?> updateContracts(UpdateContractRequest updateContractRequest) throws Exception {
-        String url = npmBaseUrl;
+    public ResponseEntity<?> updateContracts(CommonRequestModel commonRequestModel) throws Exception {
+        UpdateContractRequest updateContractRequest = (UpdateContractRequest) commonRequestModel.getData();
+        String url = npmBaseUrl + npmUpdateUrl;
         ResponseEntity<?> response = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(updateContractRequest), Object.class);
         return response;
     }

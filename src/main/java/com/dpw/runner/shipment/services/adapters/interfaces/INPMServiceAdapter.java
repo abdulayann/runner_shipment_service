@@ -7,7 +7,7 @@ import org.springframework.http.ResponseEntity;
 public interface INPMServiceAdapter {
     ResponseEntity<?> fetchContracts(CommonRequestModel commonRequestModel) throws Exception;
 
-    ResponseEntity<?> updateContracts(UpdateContractRequest updateContractRequest) throws Exception;
+    ResponseEntity<?> updateContracts(CommonRequestModel commonRequestModel) throws Exception;
 
     ResponseEntity<?> fetchOffers(CommonRequestModel commonRequestModel) throws Exception;
 }

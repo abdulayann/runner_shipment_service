@@ -19,6 +19,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.springframework.data.jpa.domain.Specification.where;
 
@@ -29,6 +30,7 @@ public class DbAccessHelper {
     public static <T> Pair<Specification<T>, Pageable> fetchData(ListCommonRequest request, Class className, Map<String, RunnerEntityMapping> tableName) {
         tableNames = tableName;
         Pageable pages;
+        globalSearchCriteria(request, tableName);
         if (request.getSortRequest() != null && request.getFilterCriteria() != null && request.getFilterCriteria().size() == 0) {
             Sort sortRequest = Sort.by(tableNames.get(request.getSortRequest().getFieldName()).getTableName() + "." + getFieldName(request.getSortRequest().getFieldName()));
             sortRequest = sortRequest.descending();
@@ -56,6 +58,33 @@ public class DbAccessHelper {
         }
         return Pair.of(specification, pages);
     }
+
+    private static void globalSearchCriteria(ListCommonRequest request, Map<String, RunnerEntityMapping> tableName) {
+        if (Objects.isNull(request.getContainsText()))
+            return;
+        List<FilterCriteria> criterias = createCriteriaForGlobalSearch(tableName, request.getContainsText());
+        FilterCriteria criteria1 = FilterCriteria.builder().innerFilter(request.getFilterCriteria()).build();
+        FilterCriteria criteria2 = FilterCriteria.builder().innerFilter(criterias).build();
+        if(criteria1 != null && criteria1.getInnerFilter().size() > 0){
+            criteria2.setLogicOperator("AND");
+            request.setFilterCriteria(Arrays.asList(criteria1, criteria2));
+        }
+        else
+            request.setFilterCriteria(Arrays.asList(criteria2));
+    }
+
+    private static List<FilterCriteria> createCriteriaForGlobalSearch(Map<String, RunnerEntityMapping> tableName, String containsText) {
+        List<FilterCriteria> innerFilters = new ArrayList<>();
+        List<RunnerEntityMapping> entityMappingList = tableName.entrySet().stream()
+                        .filter(x -> x.getValue().isContainsText()).map(x -> x.getValue()).collect(Collectors.toList());
+        entityMappingList.forEach(c -> {
+            innerFilters.add(FilterCriteria.builder().logicOperator(innerFilters.isEmpty() ? null : "OR")
+                            .criteria(Criteria.builder().fieldName(c.getFieldName()).value(containsText).operator("LIKE").build()).build());
+
+        });
+        return innerFilters.isEmpty() ? null : innerFilters;
+    }
+
 
     public static <T> Pair<Specification<T>, Pageable> fetchData(ListCommonRequest request, Class className) {
         Pageable pages;

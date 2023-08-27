@@ -21,10 +21,24 @@ public class PartiesConstants {
     public static final String ADDRESS2 = "Address2";
     public static final String COUNTRY = "Country";
     public static final String CITY = "City";
+    public static final String CITY_CODE = "CityCode";
+    public static final String STATE = "State";
+    public static final String ZIP_POST_CODE = "ZipPostCode";
     public static final String COMPANY_NAME = "CompanyName";
     public static final String PIN_CODE = "PinCode";
     public static final String CONTACT_NUMBER = "ContactNumber";
     public static final String EMAIL = "Email";
+    public static final String MOBILE = "Mobile";
+    public static final String PHONE = "Phone";
+    public static final String ACTIVE_CLIENT = "ActiveClient";
+    public static final String ORGANIZATION_CODE = "OrganizationCode";
+    public static final String DEFAULT_ADDRESS_SITE_IDENTIFIER = "DefaultAddressSiteIdentifier";
+    public static final String RECEIVABLES = "Receivables";
+    public static final String SITE_IDENTIFIER = "SiteIdentifier";
+    public static final String ADDRESS_SHORT_CODE = "AddressShortCode";
+    public static final String FUSION_SITE_ID = "FUSION_SITE_ID";
+    public static final String BILLABLE_FLAG = "BILLABLE_FLAG";
+    public static final String RAW_DATA = "RawData";
 
     public static final String AGENT_IATA_CODE = "AgentIATACode";
     public static final String AGENT_CASS_CODE = "AgentCASSCode";
