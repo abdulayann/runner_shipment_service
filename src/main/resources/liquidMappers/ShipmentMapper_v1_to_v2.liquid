@@ -1,297 +1,205 @@
 {
-"guid":"{{ content.Guid }}",
-"TenantCode": "{{ content.TenantCode }}",
-"houseBill": "{{ content.HouseBill }}",
-"transportMode": "{{ content.TransportMode }}",
-"direction": "{{ content.ContainerType }}",
-"shipmentType": "{{ content.ShipmentType }}",
-"status":"{{ content.Status }}",
-"source": "{{ content.Source }}",
-"masterBill": "{{ content.MasterBill }}",
-"salesAgent":"{{ content.SalesAgentId }}",
-"isDomestic":"{{ content.IsDomestic }}",
-"assignedTo":"{{ content.AssignedTo }}",
-"weight":{{ content.Weight }},
-"weightUnit": "{{ content.WeightUnit }}",
-"innerPacks":{{ content.InnerPacks }},
-"innerPackUnit": "{{ content.InnerPackUnit }}",
-"freightLocal":{{ content.FreightLocal }},
-"freightLocalCurrency": "{{ content.FreightLocalCurrency }}",
-"freightOverseas":{{ content.FreightOverseas }},
-"freightOverseasCurrency": "{{ content.FreightOverseasCurrency }}",
-"marksNum": "{{ content.MarksNum }}",
-"entryDetail": "{{ content.EntryDetail }}",
-"bookingReference": "{{ content.BookingReference }}",
-"consolRef": "{{ content.ConsolRef }}",
-"paymentTerms": "{{ content.PaymentTerms }}",
-"additionalTerms": "{{ content.AdditionalTerms }}",
-"goodsDescription": "{{ content.GoodsDescription }}",
-"volume":{{ content.Volume }},
-"volumeUnit": "{{ content.VolumeUnit }}",
-"volumetricWeight":"{{ content.VolumetricWeight }}",
-"volumetricWeightUnit": "{{ content.VolumetricWeightUnit }}",
-"chargable":{{ content.Chargable }},
-"chargeableUnit": "{{ content.ChargeableUnit }}",
-"netWeight":{{ content.NetWeight }},
-"netWeightUnit": "{{ content.NetWeightUnit }}",
-"noOfPacks":{{ content.Packs }},
-"packsUnit": "{{ content.PacksUnit }}",
-"lockedBy": "{{ content.LockedBy }}",
-"bookingType": "{{ content.BookingType }}",
-"bookingNumber": "{{ content.BookingNumber }}",
-"route": "{{ content.Route }}",
-"autoUpdateWtVol":"{{ content.AutoUpdateWtVol }}",
-"containerAutoWeightVolumeUpdate":"{{ content.ContainerAutoWeightVolumeUpdate }}",
-"cargoFinanceBooking":"{{ content.CargoFinanceBooking }}",
-"documentationPartner":{{ content.DocumentationPartner }},
-"triangulationPartner":{{ content.TriangulationPartner }},
-"receivingBranch":{{ content.ReceivingBranch }},
-"incoterms": "{{ content.Incoterms }}",
-"jobType": "{{ content.JobType }}",
-"serviceType": "{{ content.ServiceType }}",
-"prevShipmentStatus":{{ content.PrevShipmentStatus }},
-"shipmentCompletedBy": "{{ content.ShipmentCompletedBy }}",
-"shipmentCompletedOn": "{{ content.ShipmentCompletedOn }}",
-"financeClosedBy": "{{ content.FinanceClosedBy }}",
-"financeClosedOn": "{{ content.FinanceClosedOn }}",
-"intraBranch":"{{ content.IntraBranch }}",
-"locked":"{{ content.Locked }}",
-"notifyConsigneeEqual":"{{ content.NotifyConsigneeEqual }}",
-"shipmentReadOnly":"{{ content.ShipmentReadOnly }}",
-"sourceTenantId":{{ content.SourceTenantId }},
-"shipmentId":"{{ content.ShipmentId }}",
+    "guid":"{{ content.Guid }}",
+    "TenantCode": "{{ content.TenantCode }}",
+    "houseBill": "{{ content.HouseBill }}",
+    "transportMode": "{{ content.TransportMode }}",
+    "direction": "{{ content.ContainerType }}",
+    "shipmentType": "{{ content.ShipmentType }}",
+    "status":"{{ content.Status }}",
+    "source": "{{ content.Source }}",
+    "masterBill": "{{ content.MasterBill }}",
+    "salesAgent":"{{ content.SalesAgentId }}",
+    "isDomestic":"{{ content.IsDomestic }}",
+    "assignedTo":"{{ content.AssignedTo }}",
+    "weight":{{ content.Weight }},
+    "weightUnit": "{{ content.WeightUnit }}",
+    "innerPacks":{{ content.InnerPacks }},
+    "innerPackUnit": "{{ content.InnerPackUnit }}",
+    "freightLocal":{{ content.FreightLocal }},
+    "freightLocalCurrency": "{{ content.FreightLocalCurrency }}",
+    "freightOverseas":{{ content.FreightOverseas }},
+    "freightOverseasCurrency": "{{ content.FreightOverseasCurrency }}",
+    "marksNum": "{{ content.MarksNum }}",
+    "entryDetail": "{{ content.EntryDetail }}",
+    "bookingReference": "{{ content.BookingReference }}",
+    "consolRef": "{{ content.ConsolRef }}",
+    "paymentTerms": "{{ content.PaymentTerms }}",
+    "additionalTerms": "{{ content.AdditionalTerms }}",
+    "goodsDescription": "{{ content.GoodsDescription }}",
+    "volume":{{ content.Volume }},
+    "volumeUnit": "{{ content.VolumeUnit }}",
+    "volumetricWeight":"{{ content.VolumetricWeight }}",
+    "volumetricWeightUnit": "{{ content.VolumetricWeightUnit }}",
+    "chargable":{{ content.Chargable }},
+    "chargeableUnit": "{{ content.ChargeableUnit }}",
+    "netWeight":{{ content.NetWeight }},
+    "netWeightUnit": "{{ content.NetWeightUnit }}",
+    "noOfPacks":{{ content.Packs }},
+    "packsUnit": "{{ content.PacksUnit }}",
+    "lockedBy": "{{ content.LockedBy }}",
+    "bookingType": "{{ content.BookingType }}",
+    "bookingNumber": "{{ content.BookingNumber }}",
+    "route": "{{ content.Route }}",
+    "autoUpdateWtVol":"{{ content.AutoUpdateWtVol }}",
+    "containerAutoWeightVolumeUpdate":"{{ content.ContainerAutoWeightVolumeUpdate }}",
+    "cargoFinanceBooking":"{{ content.CargoFinanceBooking }}",
+    "documentationPartner":{{ content.DocumentationPartner }},
+    "triangulationPartner":{{ content.TriangulationPartner }},
+    "receivingBranch":{{ content.ReceivingBranch }},
+    "incoterms": "{{ content.Incoterms }}",
+    "jobType": "{{ content.JobType }}",
+    "serviceType": "{{ content.ServiceType }}",
+    "prevShipmentStatus":{{ content.PrevShipmentStatus }},
+    "shipmentCompletedBy": "{{ content.ShipmentCompletedBy }}",
+    "shipmentCompletedOn": "{{ content.ShipmentCompletedOn }}",
+    "financeClosedBy": "{{ content.FinanceClosedBy }}",
+    "financeClosedOn": "{{ content.FinanceClosedOn }}",
+    "intraBranch":"{{ content.IntraBranch }}",
+    "locked":"{{ content.Locked }}",
+    "notifyConsigneeEqual":"{{ content.NotifyConsigneeEqual }}",
+    "shipmentReadOnly":"{{ content.ShipmentReadOnly }}",
+    "sourceTenantId":{{ content.SourceTenantId }},
+    "shipmentId":"{{ content.ShipmentId }}",
 
-"truckDriverDetails": [
-{% for item in content.TruckDriverDetail %}
-    {
-    "consolidationId":{{ item.ConsolidationId }},
-    "containerId":{{ item.ContainerId }},
-    "containerTypeCode": "{{ item.ContainerTypeCode }}",
-    "driverMobileNumber": "{{ item.DriverMobileNumber }}",
-    "driverName": "{{ item.DriverName }}",
-    "selfTransporterName": "{{ item.SelfTransporterName }}",
-    "shipmentId":{{ item.ShipmentId }},
-    "trailerNumberPlate": "{{ item.TrailerNumberPlate }}",
-    "transporterName": "{{ item.TransporterName }}",
-    "transporterType": "{{ item.TransporterTypeString }}",
-    "truckNumberPlate": "{{ item.TruckNumberPlate }}",
-    "truckOrTrailerType": "{{ item.TruckOrTrailerType }}"
-    }
-    {% if forloop.last == false %}
-        ,
-    {% endif %}
-{% endfor %}
-],
+    "truckDriverDetails": [
+    {% for item in content.TruckDriverDetail %}
+        {
+        "consolidationId":{{ item.ConsolidationId }},
+        "containerId":{{ item.ContainerId }},
+        "containerTypeCode": "{{ item.ContainerTypeCode }}",
+        "driverMobileNumber": "{{ item.DriverMobileNumber }}",
+        "driverName": "{{ item.DriverName }}",
+        "selfTransporterName": "{{ item.SelfTransporterName }}",
+        "shipmentId":{{ item.ShipmentId }},
+        "trailerNumberPlate": "{{ item.TrailerNumberPlate }}",
+        "transporterName": "{{ item.TransporterName }}",
+        "transporterType": "{{ item.TransporterTypeString }}",
+        "truckNumberPlate": "{{ item.TruckNumberPlate }}",
+        "truckOrTrailerType": "{{ item.TruckOrTrailerType }}"
+        }
+        {% if forloop.last == false %}
+            ,
+        {% endif %}
+    {% endfor %}
+    ],
 
-"routingsList": [
-{% for routing in content.Routings %}
-    {
-    "aircraftRegistration": "{{ routing.AircraftRegistration }}",
-    "aircraftType": "{{ routing.AircraftType }}",
-    "ata": "{{ routing.ATA }}",
-    "atd": "{{ routing.ATD }}",
-    "consolidationId":{{ routing.ConsolidationId }},
-    "domestic":"{{ routing.IsDomestic }}",
-    "entityId":{{ routing.EntityId }},
-    "entityType": "{{ routing.EntityType }}",
-    "eta": "{{ routing.ETA }}",
-    "etd": "{{ routing.ETD }}",
-    "flightNumber": "{{ routing.FlightNumber }}",
-    "isLinked":"{{ routing.IsLinked }}",
-    "leg":{{ routing.Leg }},
-    "mode": "{{ routing.Mode }}",
-    "podId":{{ routing.PodId }},
-    "polId":{{ routing.PolId }},
-    "routeLegId":{{ routing.RouteLegId }},
-    "routingStatus": "{{ routing.RoutingStatus }}",
-    "shipmentId":{{ routing.ShipmentId }},
-    "transitDays":{{ routing.TransitDays }},
-    "vesselId":{{ routing.VesselId }},
-    "vesselName": "{{ routing.VesselName }}",
-    "voyage": "{{ routing.Voyage }}"
-    }
-    {% if forloop.last == false %}, {% endif %}
-{% endfor %}
-],
+    "routingsList": [
+    {% for routing in content.Routings %}
+        {
+        "aircraftRegistration": "{{ routing.AircraftRegistration }}",
+        "aircraftType": "{{ routing.AircraftType }}",
+        "ata": "{{ routing.ATA }}",
+        "atd": "{{ routing.ATD }}",
+        "consolidationId":{{ routing.ConsolidationId }},
+        "domestic":"{{ routing.IsDomestic }}",
+        "entityId":{{ routing.EntityId }},
+        "entityType": "{{ routing.EntityType }}",
+        "eta": "{{ routing.ETA }}",
+        "etd": "{{ routing.ETD }}",
+        "flightNumber": "{{ routing.FlightNumber }}",
+        "isLinked":"{{ routing.IsLinked }}",
+        "leg":{{ routing.Leg }},
+        "mode": "{{ routing.Mode }}",
+        "podId":{{ routing.PodId }},
+        "polId":{{ routing.PolId }},
+        "routeLegId":{{ routing.RouteLegId }},
+        "routingStatus": "{{ routing.RoutingStatus }}",
+        "shipmentId":{{ routing.ShipmentId }},
+        "transitDays":{{ routing.TransitDays }},
+        "vesselId":{{ routing.VesselId }},
+        "vesselName": "{{ routing.VesselName }}",
+        "voyage": "{{ routing.Voyage }}"
+        }
+        {% if forloop.last == false %}, {% endif %}
+    {% endfor %}
+    ],
+
+    "referenceNumbersList": [
+    {% for reference in content.ReferenceNumbers %}
+        {
+        "consolidationId":{{ reference.ConsolidationId }},
+        "countryOfIssue": "{{ reference.CountryOfIssue }}",
+        "referenceNumber": "{{ reference.ReferenceNumber }}",
+        "shipmentId":{{ reference.ShipmentId }},
+        "type": "{{ reference.Type }}"
+        }
+        {% if forloop.last == false %}, {% endif %}
+    {% endfor %}
+    ],
 
 
-"referenceNumbersList": [
-{% for reference in content.ReferenceNumbers %}
-    {
-    "consolidationId":{{ reference.ConsolidationId }},
-    "countryOfIssue": "{{ reference.CountryOfIssue }}",
-    "referenceNumber": "{{ reference.ReferenceNumber }}",
-    "shipmentId":{{ reference.ShipmentId }},
-    "type": "{{ reference.Type }}"
-    }
-    {% if forloop.last == false %}, {% endif %}
-{% endfor %}
-],
+    "packingList": [
+    {% for packing in content.Packings %}
+        {
+        "guid": "{{ packing.Guid }}",
+        "chargeable":{{ packing.Chargeable }},
+        "chargeableUnit": "{{ packing.ChargeableUnit }}",
+        "commodity": "{{ packing.Commodity }}",
+        "commodityId":{{ packing.CommodityId }},
+        "consolidationId":{{ packing.ConsolidationId }},
+        "containerId":{{ packing.ContainerId }},
+        "containerNumber": "{{ packing.ContainerNumber }}",
+        "countryCode": "{{ packing.CountryCode }}",
+        "customsReleaseCode": "{{ packing.CustomsReleaseCode }}",
+        "dgclass": "{{ packing.Dgclass }}",
+        "dggoodsId":{{ packing.DggoodsId }},
+        "dgsubstanceId":{{ packing.DgsubstanceId }},
+        "flashPoint": "{{ packing.FlashPoint }}",
+        "goodsDescription": "{{ packing.GoodsDescription }}",
+        "hazardous":"{{ packing.Hazardous }}",
+        "height":{{ packing.Height }},
+        "heightUnit": "{{ packing.HeightUnit }}",
+        "hscode": "{{ packing.Hscode }}",
+        "innerPackageNumber": "{{ packing.InnerPackageNumber }}",
+        "innerPackageType": "{{ packing.InnerPackageType }}",
+        "innerPacksCount":{{ packing.InnerPacksCount }},
+        "innerPacksId":{{ packing.InnerPacksId }},
+        "inspections": "{{ packing.Inspections }}",
+        "isTemperatureControlled":"{{ packing.IsTemperatureControlled }}",
+        "length":{{ packing.Length }},
+        "lengthUnit": "{{ packing.LengthUnit }}",
+        "marksnNums": "{{ packing.MarksnNums }}",
+        "maxTemp":{{ packing.MaxTemp }},
+        "maxTempUnit": "{{ packing.MaxTempUnit }}",
+        "minTemp":{{ packing.MinTemp }},
+        "minTempUnit": "{{ packing.MinTempUnit }}",
+        "netWeight":{{ packing.NetWeight }},
+        "netWeightUnit": "{{ packing.NetWeightUnit }}",
+        "origin": "{{ packing.Origin }}",
+        "packingOrder": "{{ packing.PackingOrder }}",
+        "packs": "{{ packing.Packs }}",
+        "packsType": "{{ packing.PacksType }}",
+        "referenceNumber": "{{ packing.ReferenceNumber }}",
+        "shipmentId":{{ packing.ShipmentId }},
+        "shipmentNumber": "{{ packing.ShipmentNumber }}",
+        "transportMode": "{{ packing.TransportMode }}",
+        "undgcontact": "{{ packing.Undgcontact }}",
+        "vinNumber": "{{ packing.VinNumber }}",
+        "volume":{{ packing.Volume }},
+        "volumeUnit": "{{ packing.VolumeUnit }}",
+        "volumeWeight":{{ packing.VolumeWeight }},
+        "volumeWeightUnit": "{{ packing.VolumeWeightUnit }}",
+        "weight":{{ packing.Weight }},
+        "weightUnit": "{{ packing.WeightUnit }}",
+        "width":"{{ packing.Width }}",
+        "widthUnit": "{{ packing.WidthUnit }}"
+        }
+        {% if forloop.last == false %}, {% endif %}
+    {% endfor %}
+    ],
 
+    "notesList": [
+    {% for note in content.NotesList %}
+        {
+        "insertUserDisplayName": "{{ note.InsertUserDisplayName }}",
+        "isPublic":"{{ note.IsPublic }}",
+        "text": "{{ note.Text }}"
+        }
+        {% if forloop.last == false %}, {% endif %}
+    {% endfor %}
+    ],
 
-"packingList": [
-{% for packing in content.Packings %}
-    {
-    "guid": "{{ packing.Guid }}",
-    "chargeable":{{ packing.Chargeable }},
-    "chargeableUnit": "{{ packing.ChargeableUnit }}",
-    "commodity": "{{ packing.Commodity }}",
-    "commodityId":{{ packing.CommodityId }},
-    "consolidationId":{{ packing.ConsolidationId }},
-    "containerId":{{ packing.ContainerId }},
-    "containerNumber": "{{ packing.ContainerNumber }}",
-    "countryCode": "{{ packing.CountryCode }}",
-    "customsReleaseCode": "{{ packing.CustomsReleaseCode }}",
-    "dgclass": "{{ packing.Dgclass }}",
-    "dggoodsId":{{ packing.DggoodsId }},
-    "dgsubstanceId":{{ packing.DgsubstanceId }},
-    "flashPoint": "{{ packing.FlashPoint }}",
-    "goodsDescription": "{{ packing.GoodsDescription }}",
-    "hazardous":"{{ packing.Hazardous }}",
-    "height":{{ packing.Height }},
-    "heightUnit": "{{ packing.HeightUnit }}",
-    "hscode": "{{ packing.Hscode }}",
-    "innerPackageNumber": "{{ packing.InnerPackageNumber }}",
-    "innerPackageType": "{{ packing.InnerPackageType }}",
-    "innerPacksCount":{{ packing.InnerPacksCount }},
-    "innerPacksId":{{ packing.InnerPacksId }},
-    "inspections": "{{ packing.Inspections }}",
-    "isTemperatureControlled":"{{ packing.IsTemperatureControlled }}",
-    "length":{{ packing.Length }},
-    "lengthUnit": "{{ packing.LengthUnit }}",
-    "marksnNums": "{{ packing.MarksnNums }}",
-    "maxTemp":{{ packing.MaxTemp }},
-    "maxTempUnit": "{{ packing.MaxTempUnit }}",
-    "minTemp":{{ packing.MinTemp }},
-    "minTempUnit": "{{ packing.MinTempUnit }}",
-    "netWeight":{{ packing.NetWeight }},
-    "netWeightUnit": "{{ packing.NetWeightUnit }}",
-    "origin": "{{ packing.Origin }}",
-    "packingOrder": "{{ packing.PackingOrder }}",
-    "packs": "{{ packing.Packs }}",
-    "packsType": "{{ packing.PacksType }}",
-    "referenceNumber": "{{ packing.ReferenceNumber }}",
-    "shipmentId":{{ packing.ShipmentId }},
-    "shipmentNumber": "{{ packing.ShipmentNumber }}",
-    "transportMode": "{{ packing.TransportMode }}",
-    "undgcontact": "{{ packing.Undgcontact }}",
-    "vinNumber": "{{ packing.VinNumber }}",
-    "volume":{{ packing.Volume }},
-    "volumeUnit": "{{ packing.VolumeUnit }}",
-    "volumeWeight":{{ packing.VolumeWeight }},
-    "volumeWeightUnit": "{{ packing.VolumeWeightUnit }}",
-    "weight":{{ packing.Weight }},
-    "weightUnit": "{{ packing.WeightUnit }}",
-    "width":"{{ packing.Width }}",
-    "widthUnit": "{{ packing.WidthUnit }}"
-    }
-    {% if forloop.last == false %}, {% endif %}
-{% endfor %}
-],
-
-"notesList": [
-{% for note in content.NotesList %}
-    {
-    "insertUserDisplayName": "{{ note.InsertUserDisplayName }}",
-    "isPublic":"{{ note.IsPublic }}",
-    "text": "{{ note.Text }}"
-    }
-    {% if forloop.last == false %}, {% endif %}
-{% endfor %}
-],
-
-"pickupDetails": {
-    "actualPickupOrDelivery": "{{ content.PickupDetails.ActualPickupOrDelivery }}",
-    "agentDetail": {
-        "addressCode": "{{ content.PickupDetails.AgentDetail.AddressCode }}",
-        "addressData": {},
-        "entityId":{{ content.PickupDetails.AgentDetail.EntityId }},
-        "entityType": "{{ content.PickupDetails.AgentDetail.EntityType }}",
-        "orgCode": "{{ content.PickupDetails.AgentDetail.OrgCode }}",
-        "orgData": {},
-        "tenantId":{{ content.PickupDetails.AgentDetail.TenantId }},
-        "type": "{{ content.PickupDetails.AgentDetail.Type }}"
-    },
-    "brokerDetail": {
-        "addressCode": "{{ content.PickupDetails.BrokerDetail.AddressCode }}",
-        "addressData": {},
-        "entityId":{{ content.PickupDetails.BrokerDetail.EntityId }},
-        "entityType": "{{ content.PickupDetails.BrokerDetail.EntityType }}",
-        "orgCode": "{{ content.PickupDetails.BrokerDetail.OrgCode }}",
-        "orgData": {},
-        "tenantId":{{ content.PickupDetails.BrokerDetail.TenantId }},
-        "type": "{{ content.PickupDetails.BrokerDetail.Type }}"
-    },
-    "destinationDetail": {
-        "addressCode": "{{ content.PickupDetails.DestinationDetail.AddressCode }}",
-        "addressData": {},
-        "entityId":{{ content.PickupDetails.DestinationDetail.EntityId }},
-        "entityType": "{{ content.PickupDetails.DestinationDetail.EntityType }}",
-        "orgCode": "{{ content.PickupDetails.DestinationDetail.OrgCode }}",
-        "orgData": {},
-        "tenantId":{{ content.PickupDetails.DestinationDetail.TenantId }},
-        "type": "{{ content.PickupDetails.DestinationDetail.Type }}"
-    },
-    "dropMode": "{{ content.PickupDetails.DropMode }}",
-    "emptyTruckInDate": "{{ content.PickupDetails.EmptyTruckInDate }}",
-    "estimatedPickupOrDelivery": "{{ content.PickupDetails.EstimatedPickupOrDelivery }}",
-    "fclAvailableDate": "{{ content.PickupDetails.FclAvailableDate }}",
-    "interimReceipt": "{{ content.PickupDetails.InterimReceipt }}",
-    "pickupOrDelivery": "{{ content.PickupDetails.PickupOrDelivery }}",
-    "labourCharge": {{ content.PickupDetails.LabourCharge }},
-    "labourChargeUnit": "{{ content.PickupDetails.LabourChargeUnit }}",
-    "labourDuration": {
-        "hour": {{ content.PickupDetails.LabourDuration.Hour }},
-        "minute": {{ content.PickupDetails.LabourDuration.Minute }},
-        "nano": {{ content.PickupDetails.LabourDuration.Nano }},
-        "second": {{ content.PickupDetails.LabourDuration.Second }}
-    },
-    "loadedTruckGateOutDate": "{{ content.PickupDetails.LoadedTruckGateOutDate }}",
-    "portTransportAdvised": "{{ content.PickupDetails.PortTransportAdvised }}",
-    "requiredBy": "{{ content.PickupDetails.RequiredBy }}",
-    "shipmentId":{{ content.PickupDetails.ShipmentId }},
-    "shipperRef": "{{ content.PickupDetails.ShipperRef }}",
-    "sourceDetail": {
-        "addressCode": "{{ content.PickupDetails.SourceDetail.AddressCode }}",
-        "addressData": {},
-        "entityId":{{ content.PickupDetails.SourceDetail.EntityId }},
-        "entityType": "{{ content.PickupDetails.SourceDetail.EntityType }}",
-        "orgCode": "{{ content.PickupDetails.SourceDetail.OrgCode }}",
-        "orgData": {},
-        "tenantId":{{ content.PickupDetails.SourceDetail.TenantId }},
-        "type": "{{ content.PickupDetails.SourceDetail.Type }}"
-    },
-    "storageCharge": {{ content.PickupDetails.StorageCharge }},
-    "storageChargeUnit": "{{ content.PickupDetails.StorageChargeUnit }}",
-    "storageChargeDuration": {
-        "hour": {{ content.PickupDetails.StorageChargeDuration.Hour }},
-        "minute": {{ content.PickupDetails.StorageChargeDuration.Minute }},
-        "second": {{ content.PickupDetails.StorageChargeDuration.Second }},
-        "nano": {{ content.PickupDetails.StorageChargeDuration.Nano }}
-    },
-    "transporterDetail": {
-        "addressCode": "{{ content.PickupDetails.TransporterDetail.addressCode }}",
-        "addressData": {},
-        "entityId":{{ content.PickupDetails.TransporterDetail.entityId }},
-        "entityType": "{{ content.PickupDetails.TransporterDetail.entityType }}",
-        "orgCode": "{{ content.PickupDetails.TransporterDetail.orgCode }}",
-        "orgData": {},
-        "tenantId":{{ content.PickupDetails.TransporterDetail.tenantId }},
-        "type": "{{ content.PickupDetails.TransporterDetail.type }}"
-    },
-    "truckWaitDuration": {
-        "hour": {{ content.PickupDetails.TruckWeightDuration.Hour }},
-        "minute": {{ content.PickupDetails.TruckWeightDuration.Minute }},
-        "second": {{ content.PickupDetails.TruckWeightDuration.Second }},
-        "nano": {{ content.PickupDetails.TruckWeightDuration.Nano }}
-    },
-    "truckWaitTimeCharge": {{ content.PickupDetails.TruckWaitTimeCharge }},
-    "truckWaitTimeChargeUnit": "{{ content.PickupDetails.TruckWaitTimeChargeUnit }}",
-    "type": "{{ content.PickupDetails.Type }}",
-    "ucrReference": "{{ content.PickupDetails.UcrReference }}"
-},
-
-    "DeliveryDetails": {
+    "pickupDetails": {
         "actualPickupOrDelivery": "{{ content.PickupDetails.ActualPickupOrDelivery }}",
         "agentDetail": {
             "addressCode": "{{ content.PickupDetails.AgentDetail.AddressCode }}",
@@ -380,29 +288,191 @@
         "truckWaitTimeChargeUnit": "{{ content.PickupDetails.TruckWaitTimeChargeUnit }}",
         "type": "{{ content.PickupDetails.Type }}",
         "ucrReference": "{{ content.PickupDetails.UcrReference }}"
+    },
+
+    "deliveryDetails": {
+        "actualPickupOrDelivery": "{{ content.DeliveryDetails.ActualPickupOrDelivery }}",
+        "agentDetail": {
+            "addressCode": "{{ content.DeliveryDetails.AgentDetail.AddressCode }}",
+            "addressData": {},
+            "entityId":{{ content.DeliveryDetails.AgentDetail.EntityId }},
+            "entityType": "{{ content.DeliveryDetails.AgentDetail.EntityType }}",
+            "orgCode": "{{ content.DeliveryDetails.AgentDetail.OrgCode }}",
+            "orgData": {},
+            "tenantId":{{ content.DeliveryDetails.AgentDetail.TenantId }},
+            "type": "{{ content.DeliveryDetails.AgentDetail.Type }}"
+        },
+        "brokerDetail": {
+            "addressCode": "{{ content.DeliveryDetails.BrokerDetail.AddressCode }}",
+            "addressData": {},
+            "entityId":{{ content.DeliveryDetails.BrokerDetail.EntityId }},
+            "entityType": "{{ content.DeliveryDetails.BrokerDetail.EntityType }}",
+            "orgCode": "{{ content.DeliveryDetails.BrokerDetail.OrgCode }}",
+            "orgData": {},
+            "tenantId":{{ content.DeliveryDetails.BrokerDetail.TenantId }},
+            "type": "{{ content.DeliveryDetails.BrokerDetail.Type }}"
+        },
+        "destinationDetail": {
+            "addressCode": "{{ content.DeliveryDetails.DestinationDetail.AddressCode }}",
+            "addressData": {},
+            "entityId":{{ content.DeliveryDetails.DestinationDetail.EntityId }},
+            "entityType": "{{ content.DeliveryDetails.DestinationDetail.EntityType }}",
+            "orgCode": "{{ content.DeliveryDetails.DestinationDetail.OrgCode }}",
+            "orgData": {},
+            "tenantId":{{ content.DeliveryDetails.DestinationDetail.TenantId }},
+            "type": "{{ content.DeliveryDetails.DestinationDetail.Type }}"
+        },
+        "dropMode": "{{ content.DeliveryDetails.DropMode }}",
+        "emptyTruckInDate": "{{ content.DeliveryDetails.EmptyTruckInDate }}",
+        "estimatedPickupOrDelivery": "{{ content.DeliveryDetails.EstimatedPickupOrDelivery }}",
+        "fclAvailableDate": "{{ content.DeliveryDetails.FclAvailableDate }}",
+        "interimReceipt": "{{ content.DeliveryDetails.InterimReceipt }}",
+        "pickupOrDelivery": "{{ content.DeliveryDetails.PickupOrDelivery }}",
+        "labourCharge": {{ content.DeliveryDetails.LabourCharge }},
+        "labourChargeUnit": "{{ content.DeliveryDetails.LabourChargeUnit }}",
+        "labourDuration": {
+            "hour": {{ content.DeliveryDetails.LabourDuration.Hour }},
+            "minute": {{ content.DeliveryDetails.LabourDuration.Minute }},
+            "nano": {{ content.DeliveryDetails.LabourDuration.Nano }},
+            "second": {{ content.DeliveryDetails.LabourDuration.Second }}
+        },
+        "loadedTruckGateOutDate": "{{ content.DeliveryDetails.LoadedTruckGateOutDate }}",
+        "portTransportAdvised": "{{ content.DeliveryDetails.PortTransportAdvised }}",
+        "requiredBy": "{{ content.DeliveryDetails.RequiredBy }}",
+        "shipmentId":{{ content.DeliveryDetails.ShipmentId }},
+        "shipperRef": "{{ content.DeliveryDetails.ShipperRef }}",
+        "sourceDetail": {
+            "addressCode": "{{ content.DeliveryDetails.SourceDetail.AddressCode }}",
+            "addressData": {},
+            "entityId":{{ content.DeliveryDetails.SourceDetail.EntityId }},
+            "entityType": "{{ content.DeliveryDetails.SourceDetail.EntityType }}",
+            "orgCode": "{{ content.DeliveryDetails.SourceDetail.OrgCode }}",
+            "orgData": {},
+            "tenantId":{{ content.DeliveryDetails.SourceDetail.TenantId }},
+            "type": "{{ content.DeliveryDetails.SourceDetail.Type }}"
+        },
+        "storageCharge": {{ content.DeliveryDetails.StorageCharge }},
+        "storageChargeUnit": "{{ content.DeliveryDetails.StorageChargeUnit }}",
+        "storageChargeDuration": {
+            "hour": {{ content.DeliveryDetails.StorageChargeDuration.Hour }},
+            "minute": {{ content.DeliveryDetails.StorageChargeDuration.Minute }},
+            "second": {{ content.DeliveryDetails.StorageChargeDuration.Second }},
+            "nano": {{ content.DeliveryDetails.StorageChargeDuration.Nano }}
+        },
+        "transporterDetail": {
+            "addressCode": "{{ content.DeliveryDetails.TransporterDetail.addressCode }}",
+            "addressData": {},
+            "entityId":{{ content.DeliveryDetails.TransporterDetail.entityId }},
+            "entityType": "{{ content.DeliveryDetails.TransporterDetail.entityType }}",
+            "orgCode": "{{ content.DeliveryDetails.TransporterDetail.orgCode }}",
+            "orgData": {},
+            "tenantId":{{ content.DeliveryDetails.TransporterDetail.tenantId }},
+            "type": "{{ content.DeliveryDetails.TransporterDetail.type }}"
+        },
+        "truckWaitDuration": {
+            "hour": {{ content.DeliveryDetails.TruckWeightDuration.Hour }},
+            "minute": {{ content.DeliveryDetails.TruckWeightDuration.Minute }},
+            "second": {{ content.DeliveryDetails.TruckWeightDuration.Second }},
+            "nano": {{ content.DeliveryDetails.TruckWeightDuration.Nano }}
+        },
+        "truckWaitTimeCharge": {{ content.DeliveryDetails.TruckWaitTimeCharge }},
+        "truckWaitTimeChargeUnit": "{{ content.DeliveryDetails.TruckWaitTimeChargeUnit }}",
+        "type": "{{ content.DeliveryDetails.Type }}",
+        "ucrReference": "{{ content.DeliveryDetails.UcrReference }}"
 },
 
-"jobsList": [
-{% for job in content.JobsList %}
-    {
-    "additionalTerms": "{{ job.AdditionalTerms }}",
-    "buyerDetail": {
-        "addressCode": "{{ job.BuyerDetail.AddressCode }}",
-        "AddressData": {},
-        "entityId":{{ job.BuyerDetail.EntityId }},
-        "entityType": "{{ job.BuyerDetail.EntityType }}",
-        "orgCode": "{{ job.BuyerDetail.OrgCode }}",
-        "OrgData": {},
-        "type": "{{ job.BuyerDetail.Type }}"
-    },
-    "buyerId": {{ job.BuyerId }},
-    "confirmDate": "{{ job.ConfirmDate }}",
-    "confirmNumber": "{{ job.ConfirmNumber }}",
-    "countryOfOrigin": "{{ job.CountryOfOrigin }}",
-    "currency": "{{ job.Currency }}",
-    "description": "{{ job.Description }}",
+    "jobsList": [
+    {% for job in content.JobsList %}
+        {
+        "additionalTerms": "{{ job.AdditionalTerms }}",
+        "buyerDetail": {
+            "addressCode": "{{ job.BuyerDetail.AddressCode }}",
+            "AddressData": {},
+            "entityId":{{ job.BuyerDetail.EntityId }},
+            "entityType": "{{ job.BuyerDetail.EntityType }}",
+            "orgCode": "{{ job.BuyerDetail.OrgCode }}",
+            "OrgData": {},
+            "type": "{{ job.BuyerDetail.Type }}"
+        },
+        "buyerId": {{ job.BuyerId }},
+        "confirmDate": "{{ job.ConfirmDate }}",
+        "confirmNumber": "{{ job.ConfirmNumber }}",
+        "countryOfOrigin": "{{ job.CountryOfOrigin }}",
+        "currency": "{{ job.Currency }}",
+        "description": "{{ job.Description }}",
+        "eventsList": [
+        {% for event in job.Events %}
+            {
+            "actual": "{{ event.Actual }}",
+            "description": "{{ event.Description }}",
+            "entityId":{{ event.EntityId }},
+            "entityType": "{{ event.EntityType }}",
+            "estimated": "{{ event.Estimated }}",
+            "event_estimate_update_reasons": "{{ event.Event_estimate_update_reasons }}",
+            "isPublicTrackingEvent":"{{ event.IsPublicTrackingEvent }}",
+            "latitude": "{{ event.Latitude }}",
+            "longitude": "{{ event.Longitude }}",
+            "eventCode": "{{ event.EventCode }}",
+            "placeDescription": "{{ event.PlaceDescription }}",
+            "placeName": "{{ event.PlaceName }}",
+            "source": "{{ event.Source }}",
+            "tenantId":{{ event.TenantId }}
+            }
+            {% if forloop.last == false %}
+                ,
+            {% endif %}
+        {% endfor %}
+        ],
+        "followUpDate": "{{ job.FollowUpDate }}",
+        "incoTerm": "{{ job.IncoTerm }}",
+        "invoiceDate": "{{ job.InvoiceDate }}",
+        "invoiceNumber": "{{ job.InvoiceNumber }}",
+        "orderDate": "{{ job.OrderDate }}",
+        "orderNumber": "{{ job.OrderNumber }}",
+        "orderStatus": "{{ job.OrderStatus }}",
+        "serviceMode": "{{ job.ServiceMode }}",
+        "supplierDetail": {
+            "AddressCode": "{{ job.SupplierDetail.addressCode }}",
+            "AddressData": {},
+            "EntityId":{{ job.SupplierDetail.entityId }},
+            "EntityType": "{{ job.SupplierDetail.entityType }}",
+            "OrgCode": "{{ job.SupplierDetail.orgCode }}",
+            "OrgData": {},
+            "Type": "{{ job.SupplierDetail.type }}"
+        },
+        "TransportMode": "{{ job.transportMode }}"
+        }
+        {% if forloop.last == false %}
+            ,
+        {% endif %}
+    {% endfor %}
+    ],
+
+    "isLocked":"{{ content.IsLocked }}",
+    "isNotifyConsigneeEqual":"{{ content.IsNotifyConsigneeEqual }}",
+    "isShipmentReadOnly":"{{ content.IsShipmentReadOnly }}",
+
+
+    "fileRepoList": [
+    {% for file in content.Docs %}
+        {
+        "clientEnabled":"{{ file.ClientEnabled }}",
+        "docType": "{{ file.DocType }}",
+        "entityId":{{ file.EntityId }},
+        "entityType": "{{ file.EntityType }}",
+        "eventCode": "{{ file.EventCode }}",
+        "fileName": "{{ file.FileName }}",
+        "isPosted":"{{ file.IsPosted }}",
+        "path": "{{ file.Path }}"
+        }
+        {% if forloop.last == false %}
+            ,
+        {% endif %}
+    {% endfor %}
+    ],
+
     "eventsList": [
-    {% for event in job.Events %}
+    {% for event in content.EventsList %}
         {
         "actual": "{{ event.Actual }}",
         "description": "{{ event.Description }}",
@@ -424,512 +494,447 @@
         {% endif %}
     {% endfor %}
     ],
-    "followUpDate": "{{ job.FollowUpDate }}",
-    "incoTerm": "{{ job.IncoTerm }}",
-    "invoiceDate": "{{ job.InvoiceDate }}",
-    "invoiceNumber": "{{ job.InvoiceNumber }}",
-    "orderDate": "{{ job.OrderDate }}",
-    "orderNumber": "{{ job.OrderNumber }}",
-    "orderStatus": "{{ job.OrderStatus }}",
-    "serviceMode": "{{ job.ServiceMode }}",
-    "supplierDetail": {
-        "AddressCode": "{{ job.SupplierDetail.addressCode }}",
-        "AddressData": {},
-        "EntityId":{{ job.SupplierDetail.entityId }},
-        "EntityType": "{{ job.SupplierDetail.entityType }}",
-        "OrgCode": "{{ job.SupplierDetail.orgCode }}",
-        "OrgData": {},
-        "Type": "{{ job.SupplierDetail.type }}"
-    },
-    "TransportMode": "{{ job.transportMode }}"
-    }
-    {% if forloop.last == false %}
-        ,
-    {% endif %}
-{% endfor %}
-],
 
-"isLocked":"{{ content.IsLocked }}",
-"isNotifyConsigneeEqual":"{{ content.IsNotifyConsigneeEqual }}",
-"isShipmentReadOnly":"{{ content.IsShipmentReadOnly }}",
-
-
-"fileRepoList": [
-{% for file in content.Docs %}
-    {
-    "clientEnabled":"{{ file.ClientEnabled }}",
-    "docType": "{{ file.DocType }}",
-    "entityId":{{ file.EntityId }},
-    "entityType": "{{ file.EntityType }}",
-    "eventCode": "{{ file.EventCode }}",
-    "fileName": "{{ file.FileName }}",
-    "isPosted":"{{ file.IsPosted }}",
-    "path": "{{ file.Path }}"
-    }
-    {% if forloop.last == false %}
-        ,
-    {% endif %}
-{% endfor %}
-],
-
-"eventsList": [
-{% for event in content.EventsList %}
-    {
-    "actual": "{{ event.Actual }}",
-    "description": "{{ event.Description }}",
-    "entityId":{{ event.EntityId }},
-    "entityType": "{{ event.EntityType }}",
-    "estimated": "{{ event.Estimated }}",
-    "event_estimate_update_reasons": "{{ event.Event_estimate_update_reasons }}",
-    "isPublicTrackingEvent":"{{ event.IsPublicTrackingEvent }}",
-    "latitude": "{{ event.Latitude }}",
-    "longitude": "{{ event.Longitude }}",
-    "eventCode": "{{ event.EventCode }}",
-    "placeDescription": "{{ event.PlaceDescription }}",
-    "placeName": "{{ event.PlaceName }}",
-    "source": "{{ event.Source }}",
-    "tenantId":{{ event.TenantId }}
-    }
-    {% if forloop.last == false %}
-        ,
-    {% endif %}
-{% endfor %}
-],
-
-"elDetailsList": [
-{% for elDetail in content.ELDetails %}
-    {
-    "elNumber": "{{ elDetail.ElNumber }}",
-    "mergeClass": "{{ elDetail.MergeClass }}",
-    "mergePackageUnit": "{{ elDetail.MergePackageUnit }}",
-    "mergePackages":{{ elDetail.MergePackages }},
-    "packages":{{ elDetail.Packages }},
-    "partition":"{{ elDetail.Partition }}",
-    "partitionSeqNumber":{{ elDetail.PartitionSeqNumber }},
-    "shipmentId":{{ elDetail.ShipmentId }},
-    "unit": "{{ elDetail.Unit }}",
-    "weight":{{ elDetail.Weight }},
-    "weightUnit": "{{ elDetail.WeightUnit }}"
-    }
-    {% if forloop.last == false %}
-        ,
-    {% endif %}
-{% endfor %}
-],
-
-"containersList": [
-{% for container in content.ContainersList %}
-    {
-    "guid": "{{ container.Guid }}",
-    "achievedVolume":{{ container.AchievedVolume }},
-    "achievedVolumeUnit": "{{ container.AchievedVolumeUnit }}",
-    "achievedWeight":{{ container.AchievedWeight }},
-    "achievedWeightUnit": "{{ container.AchievedWeightUnit }}",
-    "allocatedVolume":{{ container.AllocatedVolume }},
-    "allocatedVolumeUnit": "{{ container.AllocatedVolumeUnit }}",
-    "allocatedWeight":{{ container.AllocatedWeight }},
-    "allocatedWeightUnit": "{{ container.AllocatedWeightUnit }}",
-    "allocationDate": "{{ container.AllocationDate }}",
-    "carrierSealNumber": "{{ container.CarrierSealNumber }}",
-    "chargeable":{{ container.Chargeable }},
-    "chargeableUnit": "{{ container.ChargeableUnit }}",
-    "commodityCode": "{{ container.CommodityCode }}",
-    "consolidationId":{{ container.ConsolidationId }},
-    "containerCode": "{{ container.ContainerCode }}",
-    "containerComments": "{{ container.ContainerComments }}",
-    "containerCount":{{ container.ContainerCount }},
-    "containerNumber": "{{ container.ContainerNumber }}",
-    "containerStuffingLocation":{{ container.ContainerStuffingLocation }},
-    "customsReleaseCode": "{{ container.CustomsReleaseCode }}",
-    "customsSealNumber": "{{ container.CustomsSealNumber }}",
-    "descriptionOfGoods": "{{ container.DescriptionOfGoods }}",
-    "dgClass": "{{ container.DgClass }}",
-    "DeliveryAddress": {
-        "AddressCode": "{{ container.DeliveryAddress.addressCode }}",
-        "AddressData": {},
-        "EntityId":{{ container.DeliveryAddress.entityId }},
-        "EntityType": "{{ container.DeliveryAddress.entityType }}",
-        "OrgCode": "{{ container.DeliveryAddress.orgCode }}",
-        "OrgData": {},
-        "TenantId":{{ container.DeliveryAddress.tenantId }},
-        "Type": "{{ container.DeliveryAddress.type }}"
-    },
-    "eventsList": [
-    {% for event in container.EventsList %}
+    "elDetailsList": [
+    {% for elDetail in content.ELDetails %}
         {
-        "actual": "{{ event.Actual }}",
-        "description": "{{ event.Description }}",
-        "entityId":{{ event.EntityId }},
-        "entityType": "{{ event.EntityType }}",
-        "estimated": "{{ event.Estimated }}",
-        "event_estimate_update_reasons": "{{ event.Event_estimate_update_reasons }}",
-        "isPublicTrackingEvent":"{{ event.IsPublicTrackingEvent }}",
-        "latitude": "{{ event.Latitude }}",
-        "longitude": "{{ event.Longitude }}",
-        "eventCode": "{{ event.EventCode }}",
-        "placeDescription": "{{ event.PlaceDescription }}",
-        "placeName": "{{ event.PlaceName }}",
-        "source": "{{ event.Source }}",
-        "tenantId":{{ event.TenantId }}
+        "elNumber": "{{ elDetail.ElNumber }}",
+        "mergeClass": "{{ elDetail.MergeClass }}",
+        "mergePackageUnit": "{{ elDetail.MergePackageUnit }}",
+        "mergePackages":{{ elDetail.MergePackages }},
+        "packages":{{ elDetail.Packages }},
+        "partition":"{{ elDetail.Partition }}",
+        "partitionSeqNumber":{{ elDetail.PartitionSeqNumber }},
+        "shipmentId":{{ elDetail.ShipmentId }},
+        "unit": "{{ elDetail.Unit }}",
+        "weight":{{ elDetail.Weight }},
+        "weightUnit": "{{ elDetail.WeightUnit }}"
         }
         {% if forloop.last == false %}
             ,
         {% endif %}
     {% endfor %}
     ],
-    "extraParams": "{{ container.ExtraParams }}",
-    "grossVolume":{{ container.GrossVolume }},
-    "grossVolumeUnit": "{{ container.GrossVolumeUnit }}",
-    "grossWeight":{{ container.GrossWeight }},
-    "grossWeightUnit": "{{ container.GrossWeightUnit }}",
-    "hazardous":"{{ container.Hazardous }}",
-    "hazardousUn": "{{ container.HazardousUn }}",
-    "hblDeliveryMode": "{{ container.HblDeliveryMode }}",
-    "hsCode": "{{ container.HsCode }}",
-    "innerPackageMeasurementUnit": "{{ container.InnerPackageMeasurementUnit }}",
-    "innerPackageNumber": "{{ container.InnerPackageNumber }}",
-    "innerPackageType": "{{ container.InnerPackageType }}",
-    "isEmpty":"{{ container.IsEmpty }}",
-    "isOwnContainer":"{{ container.IsOwnContainer }}",
-    "isReefer":"{{ container.IsReefer }}",
-    "isShipperOwned":"{{ container.IsShipperOwned }}",
-    "isTemperatureMaintained":"{{ container.IsTemperatureMaintained }}",
-    "loggingId":{{ container.LoggingId }},
-    "marksNums": "{{ container.MarksNums }}",
-    "maxTemp":{{ container.MaxTemp }},
-    "maxTempUnit": "{{ container.MaxTempUnit }}",
-    "measurement":{{ container.Measurement }},
-    "measurementUnit": "{{ container.MeasurementUnit }}",
-    "minTemp":{{ container.MinTemp }},
-    "minTempUnit": "{{ container.MinTempUnit }}",
-    "netWeight":{{ container.NetWeight }},
-    "netWeightUnit": "{{ container.NetWeightUnit }}",
-    "noOfPackages":{{ container.NoOfPackages }},
-    "packageBreadth":{{ container.PackageBreadth }},
-    "packageHeight":{{ container.PackageHeight }},
-    "packageLength":{{ container.PackageLength }},
-    "packs": "{{ container.Packs }}",
-    "packsList": [
-    {% for packsItem in container.PacksList %}
+
+    "containersList": [
+    {% for container in content.ContainersList %}
         {
-        "chargeable":{{ packsItem.Chargeable }},
-        "chargeableUnit": "{{ packsItem.ChargeableUnit }}",
-        "commodity": "{{ packsItem.Commodity }}",
-        "commodityId":{{ packsItem.CommodityId }},
-        "consolidationId":{{ packsItem.ConsolidationId }},
-        "containerId":{{ packsItem.ContainerId }},
-        "containerNumber": "{{ packsItem.ContainerNumber }}",
-        "countryCode": "{{ packsItem.CountryCode }}",
-        "customsReleaseCode": "{{ packsItem.CustomsReleaseCode }}",
-        "dgclass": "{{ packsItem.Dgclass }}",
-        "dggoodsId":{{ packsItem.DggoodsId }},
-        "dgsubstanceId":{{ packsItem.DgsubstanceId }},
-        "flashPoint": "{{ packsItem.FlashPoint }}",
-        "goodsDescription": "{{ packsItem.GoodsDescription }}",
-        "hazardous":"{{ packsItem.Hazardous }}",
-        "height":{{ packsItem.Height }},
-        "heightUnit": "{{ packsItem.HeightUnit }}",
-        "hscode": "{{ packsItem.Hscode }}",
-        "innerPackageNumber": "{{ packsItem.InnerPackageNumber }}",
-        "innerPackageType": "{{ packsItem.InnerPackageType }}",
-        "innerPacksCount":{{ packsItem.InnerPacksCount }},
-        "innerPacksId":{{ packsItem.InnerPacksId }},
-        "inspections": "{{ packsItem.Inspections }}",
-        "isTemperatureControlled":"{{ packsItem.IsTemperatureControlled }}",
-        "length":{{ packsItem.Length }},
-        "lengthUnit": "{{ packsItem.LengthUnit }}",
-        "marksnNums": "{{ packsItem.MarksnNums }}",
-        "maxTemp":{{ packsItem.MaxTemp }},
-        "maxTempUnit": "{{ packsItem.MaxTempUnit }}",
-        "minTemp":{{ packsItem.MinTemp }},
-        "minTempUnit": "{{ packsItem.MinTempUnit }}",
-        "netWeight":{{ packsItem.NetWeight }},
-        "netWeightUnit": "{{ packsItem.NetWeightUnit }}",
-        "origin": "{{ packsItem.Origin }}",
-        "packingOrder": "{{ packsItem.PackingOrder }}",
-        "packs": "{{ packsItem.Packs }}",
-        "packsType": "{{ packsItem.PacksType }}",
-        "referenceNumber": "{{ packsItem.ReferenceNumber }}",
-        "shipmentId":{{ packsItem.ShipmentId }},
-        "shipmentNumber": "{{ packsItem.ShipmentNumber }}",
-        "transportMode": "{{ packsItem.TransportMode }}",
-        "undgcontact": "{{ packsItem.Undgcontact }}",
-        "vinNumber": "{{ packsItem.VinNumber }}",
-        "volume":{{ packsItem.Volume }},
-        "volumeUnit": "{{ packsItem.VolumeUnit }}",
-        "volumeWeight":{{ packsItem.VolumeWeight }},
-        "volumeWeightUnit": "{{ packsItem.VolumeWeightUnit }}",
-        "weight":{{ packsItem.Weight }},
-        "weightUnit": "{{ packsItem.WeightUnit }}",
-        "width":"{{ packsItem.Width }}",
-        "widthUnit": "{{ packsItem.WidthUnit }}"
+        "guid": "{{ container.Guid }}",
+        "achievedVolume":{{ container.AchievedVolume }},
+        "achievedVolumeUnit": "{{ container.AchievedVolumeUnit }}",
+        "achievedWeight":{{ container.AchievedWeight }},
+        "achievedWeightUnit": "{{ container.AchievedWeightUnit }}",
+        "allocatedVolume":{{ container.AllocatedVolume }},
+        "allocatedVolumeUnit": "{{ container.AllocatedVolumeUnit }}",
+        "allocatedWeight":{{ container.AllocatedWeight }},
+        "allocatedWeightUnit": "{{ container.AllocatedWeightUnit }}",
+        "allocationDate": "{{ container.AllocationDate }}",
+        "carrierSealNumber": "{{ container.CarrierSealNumber }}",
+        "chargeable":{{ container.Chargeable }},
+        "chargeableUnit": "{{ container.ChargeableUnit }}",
+        "commodityCode": "{{ container.CommodityCode }}",
+        "consolidationId":{{ container.ConsolidationId }},
+        "containerCode": "{{ container.ContainerCode }}",
+        "containerComments": "{{ container.ContainerComments }}",
+        "containerCount":{{ container.ContainerCount }},
+        "containerNumber": "{{ container.ContainerNumber }}",
+        "containerStuffingLocation":{{ container.ContainerStuffingLocation }},
+        "customsReleaseCode": "{{ container.CustomsReleaseCode }}",
+        "customsSealNumber": "{{ container.CustomsSealNumber }}",
+        "descriptionOfGoods": "{{ container.DescriptionOfGoods }}",
+        "dgClass": "{{ container.DgClass }}",
+        "deliveryAddress": {
+            "addressCode": "{{ container.DeliveryAddress.AddressCode }}",
+            "entityId":{{ container.DeliveryAddress.EntityId }},
+            "entityType": "{{ container.DeliveryAddress.EntityType }}",
+            "orgCode": "{{ container.DeliveryAddress.OrgCode }}",
+            "tenantId":{{ container.DeliveryAddress.TenantId }},
+            "type": "{{ container.DeliveryAddress.Type }}"
+            "addressData": {},
+            "orgData": {},
+        },
+        "eventsList": [
+        {% for event in container.EventsList %}
+            {
+            "actual": "{{ event.Actual }}",
+            "description": "{{ event.Description }}",
+            "entityId":{{ event.EntityId }},
+            "entityType": "{{ event.EntityType }}",
+            "estimated": "{{ event.Estimated }}",
+            "event_estimate_update_reasons": "{{ event.Event_estimate_update_reasons }}",
+            "isPublicTrackingEvent":"{{ event.IsPublicTrackingEvent }}",
+            "latitude": "{{ event.Latitude }}",
+            "longitude": "{{ event.Longitude }}",
+            "eventCode": "{{ event.EventCode }}",
+            "placeDescription": "{{ event.PlaceDescription }}",
+            "placeName": "{{ event.PlaceName }}",
+            "source": "{{ event.Source }}",
+            "tenantId":{{ event.TenantId }}
+            }
+            {% if forloop.last == false %}
+                ,
+            {% endif %}
+        {% endfor %}
+        ],
+        "extraParams": "{{ container.ExtraParams }}",
+        "grossVolume":{{ container.GrossVolume }},
+        "grossVolumeUnit": "{{ container.GrossVolumeUnit }}",
+        "grossWeight":{{ container.GrossWeight }},
+        "grossWeightUnit": "{{ container.GrossWeightUnit }}",
+        "hazardous":"{{ container.Hazardous }}",
+        "hazardousUn": "{{ container.HazardousUn }}",
+        "hblDeliveryMode": "{{ container.HblDeliveryMode }}",
+        "hsCode": "{{ container.HsCode }}",
+        "innerPackageMeasurementUnit": "{{ container.InnerPackageMeasurementUnit }}",
+        "innerPackageNumber": "{{ container.InnerPackageNumber }}",
+        "innerPackageType": "{{ container.InnerPackageType }}",
+        "isEmpty":"{{ container.IsEmpty }}",
+        "isOwnContainer":"{{ container.IsOwnContainer }}",
+        "isReefer":"{{ container.IsReefer }}",
+        "isShipperOwned":"{{ container.IsShipperOwned }}",
+        "isTemperatureMaintained":"{{ container.IsTemperatureMaintained }}",
+        "loggingId":{{ container.LoggingId }},
+        "marksNums": "{{ container.MarksNums }}",
+        "maxTemp":{{ container.MaxTemp }},
+        "maxTempUnit": "{{ container.MaxTempUnit }}",
+        "measurement":{{ container.Measurement }},
+        "measurementUnit": "{{ container.MeasurementUnit }}",
+        "minTemp":{{ container.MinTemp }},
+        "minTempUnit": "{{ container.MinTempUnit }}",
+        "netWeight":{{ container.NetWeight }},
+        "netWeightUnit": "{{ container.NetWeightUnit }}",
+        "noOfPackages":{{ container.NoOfPackages }},
+        "packageBreadth":{{ container.PackageBreadth }},
+        "packageHeight":{{ container.PackageHeight }},
+        "packageLength":{{ container.PackageLength }},
+        "packs": "{{ container.Packs }}",
+        "packsList": [
+        {% for packsItem in container.PacksList %}
+            {
+            "chargeable":{{ packsItem.Chargeable }},
+            "chargeableUnit": "{{ packsItem.ChargeableUnit }}",
+            "commodity": "{{ packsItem.Commodity }}",
+            "commodityId":{{ packsItem.CommodityId }},
+            "consolidationId":{{ packsItem.ConsolidationId }},
+            "containerId":{{ packsItem.ContainerId }},
+            "containerNumber": "{{ packsItem.ContainerNumber }}",
+            "countryCode": "{{ packsItem.CountryCode }}",
+            "customsReleaseCode": "{{ packsItem.CustomsReleaseCode }}",
+            "dgclass": "{{ packsItem.Dgclass }}",
+            "dggoodsId":{{ packsItem.DggoodsId }},
+            "dgsubstanceId":{{ packsItem.DgsubstanceId }},
+            "flashPoint": "{{ packsItem.FlashPoint }}",
+            "goodsDescription": "{{ packsItem.GoodsDescription }}",
+            "hazardous":"{{ packsItem.Hazardous }}",
+            "height":{{ packsItem.Height }},
+            "heightUnit": "{{ packsItem.HeightUnit }}",
+            "hscode": "{{ packsItem.Hscode }}",
+            "innerPackageNumber": "{{ packsItem.InnerPackageNumber }}",
+            "innerPackageType": "{{ packsItem.InnerPackageType }}",
+            "innerPacksCount":{{ packsItem.InnerPacksCount }},
+            "innerPacksId":{{ packsItem.InnerPacksId }},
+            "inspections": "{{ packsItem.Inspections }}",
+            "isTemperatureControlled":"{{ packsItem.IsTemperatureControlled }}",
+            "length":{{ packsItem.Length }},
+            "lengthUnit": "{{ packsItem.LengthUnit }}",
+            "marksnNums": "{{ packsItem.MarksnNums }}",
+            "maxTemp":{{ packsItem.MaxTemp }},
+            "maxTempUnit": "{{ packsItem.MaxTempUnit }}",
+            "minTemp":{{ packsItem.MinTemp }},
+            "minTempUnit": "{{ packsItem.MinTempUnit }}",
+            "netWeight":{{ packsItem.NetWeight }},
+            "netWeightUnit": "{{ packsItem.NetWeightUnit }}",
+            "origin": "{{ packsItem.Origin }}",
+            "packingOrder": "{{ packsItem.PackingOrder }}",
+            "packs": "{{ packsItem.Packs }}",
+            "packsType": "{{ packsItem.PacksType }}",
+            "referenceNumber": "{{ packsItem.ReferenceNumber }}",
+            "shipmentId":{{ packsItem.ShipmentId }},
+            "shipmentNumber": "{{ packsItem.ShipmentNumber }}",
+            "transportMode": "{{ packsItem.TransportMode }}",
+            "undgcontact": "{{ packsItem.Undgcontact }}",
+            "vinNumber": "{{ packsItem.VinNumber }}",
+            "volume":{{ packsItem.Volume }},
+            "volumeUnit": "{{ packsItem.VolumeUnit }}",
+            "volumeWeight":{{ packsItem.VolumeWeight }},
+            "volumeWeightUnit": "{{ packsItem.VolumeWeightUnit }}",
+            "weight":{{ packsItem.Weight }},
+            "weightUnit": "{{ packsItem.WeightUnit }}",
+            "width":"{{ packsItem.Width }}",
+            "widthUnit": "{{ packsItem.WidthUnit }}"
+            }
+            {% if forloop.last == false %}
+                ,
+            {% endif %}
+        {% endfor %}
+        ],
+        "packsType": "{{ container.PacksType }}",
+        "pacrNumber": "{{ container.PacrNumber }}",
+        "pickupAddress": {
+        "addressCode": "{{ container.PickupAddress.AddressCode }}",
+        "AddressData": {},
+        "entityId":{{ container.PickupAddress.EntityId }},
+        "entityType": "{{ container.PickupAddress.EntityType }}",
+        "orgCode": "{{ container.PickupAddress.OrgCode }}",
+        "OrgData": {},
+        "tenantId":{{ container.PickupAddress.TenantId }},
+        "type": "{{ container.PickupAddress.Type }}"
+        },
+        "remarks": "{{ container.Remarks }}",
+        "sealNumber": "{{ container.SealNumber }}",
+        "serialNumber": "{{ container.SerialNumber }}",
+        "ShipmentsList": [
+        {% for shipmentId in container.shipmentsList %}
+            {{ shipmentId }}
+            {% if forloop.last == false %}
+                ,
+            {% endif %}
+        {% endfor %}
+        ],
+        "shipperSealNumber": "{{ container.ShipperSealNumber }}",
+        "status": "{{ container.Status }}",
+        "tareWeight":{{ container.TareWeight }},
+        "tareWeightUnit": "{{ container.TareWeightUnit }}",
+        "terminalOperatorSealNumber": "{{ container.TerminalOperatorSealNumber }}",
+        "transportMode": "{{ container.TransportMode }}",
+        "veterinarySealNumber": "{{ container.VeterinarySealNumber }}",
+        "volumeUtilization": "{{ container.VolumeUtilization }}",
+        "weightUtilization": "{{ container.WeightUtilization }}"
         }
         {% if forloop.last == false %}
             ,
         {% endif %}
     {% endfor %}
     ],
-    "packsType": "{{ container.PacksType }}",
-    "pacrNumber": "{{ container.PacrNumber }}",
-    "pickupAddress": {
-    "addressCode": "{{ container.PickupAddress.AddressCode }}",
-    "AddressData": {},
-    "entityId":{{ container.PickupAddress.EntityId }},
-    "entityType": "{{ container.PickupAddress.EntityType }}",
-    "orgCode": "{{ container.PickupAddress.OrgCode }}",
-    "OrgData": {},
-    "tenantId":{{ container.PickupAddress.TenantId }},
-    "type": "{{ container.PickupAddress.Type }}"
+
+    "carrierDetails": {
+        "aircraftRegistration": "{{ content.CarrierDetails.AircraftRegistration }}",
+        "aircraftType": "{{ content.CarrierDetails.AircraftType }}",
+        "ata": "{{ content.CarrierDetails.ATA }}",
+        "atd": "{{ content.CarrierDetails.ATD }}",
+        "destination": "{{ content.CarrierDetails.Destination }}",
+        "destinationPort": "{{ content.CarrierDetails.DestinationPort }}",
+        "eta": "{{ content.CarrierDetails.ETA }}",
+        "etd": "{{ content.CarrierDetails.ETD }}",
+        "flightNumber": "{{ content.CarrierDetails.FlightNumber }}",
+        "journeyNumber": "{{ content.CarrierDetails.JourneyNumber }}",
+        "journeyRefNumber": "{{ content.CarrierDetails.JourneyRefNumber }}",
+        "origin": "{{ content.CarrierDetails.Origin }}",
+        "originPort": "{{ content.CarrierDetails.OriginPort }}",
+        "shipmentId":{{ content.CarrierDetails.ShipmentId }},
+        "shippingLine": "{{ content.CarrierDetails.ShippingLine }}",
+        "truckRefNumber": "{{ content.CarrierDetails.TruckRefNumber }}",
+        "vessel": "{{ content.CarrierDetails.Vessel }}",
+        "voyage": "{{ content.CarrierDetails.Voyage }}"
     },
-    "remarks": "{{ container.Remarks }}",
-    "sealNumber": "{{ container.SealNumber }}",
-    "serialNumber": "{{ container.SerialNumber }}",
-    "ShipmentsList": [
-    {% for shipmentId in container.shipmentsList %}
-        {{ shipmentId }}
-        {% if forloop.last == false %}
-            ,
-        {% endif %}
+
+    "bookingCarriageList": [
+    {% for carriage in content.BookingCarriages %}
+        {
+        "bookingId":{{ carriage.BookingId }},
+        "carriageMode": "{{ carriage.CarriageMode }}",
+        "carriageType": "{{ carriage.CarriageType }}",
+        "eta": "{{ carriage.Eta }}",
+        "etd": "{{ carriage.Etd }}",
+        "podId":{{ carriage.PodId }},
+        "polId":{{ carriage.PolId }},
+        "shipmentId":{{ carriage.ShipmentId }},
+        "vessel": "{{ carriage.Vessel }}",
+        "vesselId":{{ carriage.VesselId }},
+        "voyage": "{{ carriage.Voyage }}"
+        }
+        {% unless forloop.last %},{% endunless %}
     {% endfor %}
-    ],
-    "shipperSealNumber": "{{ container.ShipperSealNumber }}",
-    "status": "{{ container.Status }}",
-    "tareWeight":{{ container.TareWeight }},
-    "tareWeightUnit": "{{ container.TareWeightUnit }}",
-    "terminalOperatorSealNumber": "{{ container.TerminalOperatorSealNumber }}",
-    "transportMode": "{{ container.TransportMode }}",
-    "veterinarySealNumber": "{{ container.VeterinarySealNumber }}",
-    "volumeUtilization": "{{ container.VolumeUtilization }}",
-    "weightUtilization": "{{ container.WeightUtilization }}"
-    }
-    {% if forloop.last == false %}
-        ,
-    {% endif %}
-{% endfor %}
-],
+        ],
 
-"carrierDetails": {
-    "aircraftRegistration": "{{ content.CarrierDetails.AircraftRegistration }}",
-    "aircraftType": "{{ content.CarrierDetails.AircraftType }}",
-    "ata": "{{ content.CarrierDetails.ATA }}",
-    "atd": "{{ content.CarrierDetails.ATD }}",
-    "destination": "{{ content.CarrierDetails.Destination }}",
-    "destinationPort": "{{ content.CarrierDetails.DestinationPort }}",
-    "eta": "{{ content.CarrierDetails.ETA }}",
-    "etd": "{{ content.CarrierDetails.ETD }}",
-    "flightNumber": "{{ content.CarrierDetails.FlightNumber }}",
-    "journeyNumber": "{{ content.CarrierDetails.JourneyNumber }}",
-    "journeyRefNumber": "{{ content.CarrierDetails.JourneyRefNumber }}",
-    "origin": "{{ content.CarrierDetails.Origin }}",
-    "originPort": "{{ content.CarrierDetails.OriginPort }}",
-    "shipmentId":{{ content.CarrierDetails.ShipmentId }},
-    "shippingLine": "{{ content.CarrierDetails.ShippingLine }}",
-    "truckRefNumber": "{{ content.CarrierDetails.TruckRefNumber }}",
-    "vessel": "{{ content.CarrierDetails.Vessel }}",
-    "voyage": "{{ content.CarrierDetails.Voyage }}"
-},
+    "AdditionalDetail": {
+        "activityType": "{{ content.additionalDetail.ActivityType }}",
+        "adcode": "{{ content.additionalDetail.Adcode }}",
+        "airwayBillDims": "{{ content.additionalDetail.AirwayBillDims }}",
+        "andesResponseDate": "{{ content.additionalDetail.AndesResponseDate }}",
+        "andesStatus": "{{ content.additionalDetail.AndesStatus }}",
+        "andesStatusResponseText": "{{ content.additionalDetail.AndesStatusResponseText }}",
+        "andesTicket": "{{ content.additionalDetail.AndesTicket }}",
+        "assessValue":{{ content.additionalDetail.AssessValue }},
+        "betype": "{{ content.additionalDetail.Betype }}",
+        "blchargesDisplay": "{{ content.additionalDetail.BlchargesDisplay }}",
+        "blexporterShipment": "{{ content.additionalDetail.BlexporterShipment }}",
+        "boedate": "{{ content.additionalDetail.Boedate }}",
+        "boenumber": "{{ content.additionalDetail.Boenumber }}",
+        "bondedWarehouseId":{{ content.additionalDetail.BondedWarehouseId }},
+        "borrowedFrom": {
+            "addressCode": "{{ content.additionalDetail.BorrowedFrom.AddressCode }}",
+            "entityId":{{ content.additionalDetail.BorrowedFrom.EntityId }},
+            "entityType": "{{ content.additionalDetail.BorrowedFrom.EntityType }}",
+            "orgCode": "{{ content.additionalDetail.BorrowedFrom.OrgCode }}",
+            "tenantId":{{ content.additionalDetail.BorrowedFrom.TenantId }},
+            "type": "{{ content.additionalDetail.BorrowedFrom.Type }}"
+            "addressData": {},
+            "orgData": {},
+        },
+        "branchSINumber": "{{ content.additionalDetail.BranchSINumber }}",
+        "chajobNumber": "{{ content.additionalDetail.ChajobNumber }}",
+        "cifvalue":{{ content.additionalDetail.Cifvalue }},
+        "copy":{{ content.additionalDetail.Copy }},
+        "customCity": "{{ content.additionalDetail.CustomCity }}",
+        "customHouse": "{{ content.additionalDetail.CustomHouse }}",
+        "customLocation": "{{ content.additionalDetail.CustomLocation }}",
+        "customsNoIssueDate": "{{ content.additionalDetail.CustomsNoIssueDate }}",
+        "dateOfIssue": "{{ content.additionalDetail.DateOfIssue }}",
+        "dateOfReceipt": "{{ content.additionalDetail.DateOfReceipt }}",
+        "deliveryMode": "{{ content.additionalDetail.DeliveryMode }}",
+        "draftPrinted":"{{ content.additionalDetail.DraftPrinted }}",
+        "efreightStatus": "{{ content.additionalDetail.EfreightStatus }}",
+        "eTailor": {
+            "addressCode": "{{ content.additionalDetail.Etailor.AddressCode }}",
+            "entityId":{{ content.additionalDetail.Etailor.EntityId }},
+            "entityType": "{{ content.additionalDetail.Etailor.EntityType }}",
+            "orgCode": "{{ content.additionalDetail.Etailor.OrgCode }}",
+            "tenantId":{{ content.additionalDetail.Etailor.TenantId }},
+            "type": "{{ content.additionalDetail.Etailor.Type }}"
+            "addressData": {},
+            "orgData": {},
+        },
+        "expiryDate": "{{ content.additionalDetail.ExpiryDate }}",
+        "exportBroker": {
+            "addressCode": "{{ content.additionalDetail.ExportBroker.AddressCode }}",
+            "entityId":{{ content.additionalDetail.ExportBroker.EntityId }},
+            "entityType": "{{ content.additionalDetail.ExportBroker.EntityType }}",
+            "orgCode": "{{ content.additionalDetail.ExportBroker.OrgCode }}",
+            "tenantId":{{ content.additionalDetail.ExportBroker.TenantId }},
+            "type": "{{ content.additionalDetail.ExportBroker.Type }}"
+            "orgData": {},
+            "addressData": {},
+        },
+        "externalNotes": "{{ content.additionalDetail.ExternalNotes }}",
+        "freeDays":{{ content.additionalDetail.FreeDays }},
+        "goodsCO": "{{ content.additionalDetail.GoodsCO }}",
+        "houseBillType": "{{ content.additionalDetail.HouseBillType }}",
+        "hsnNumber":{{ content.additionalDetail.HsnNumber }},
+        "iecode": "{{ content.additionalDetail.Iecode }}",
+        "igmfileDate": "{{ content.additionalDetail.IgmfileDate }}",
+        "igmfileNo": "{{ content.additionalDetail.IgmfileNo }}",
+        "igminwardDate": "{{ content.additionalDetail.IgminwardDate }}",
+        "importBroker": {
+            "addressCode": "{{ content.additionalDetail.ImportBroker.AddressCode }}",
+            "entityId":{{ content.additionalDetail.ImportBroker.EntityId }},
+            "entityType": "{{ content.additionalDetail.ImportBroker.EntityType }}",
+            "orgCode": "{{ content.additionalDetail.ImportBroker.OrgCode }}",
+            "tenantId":{{ content.additionalDetail.ImportBroker.TenantId }},
+            "type": "{{ content.additionalDetail.ImportBroker.Type }}"
+            "orgData": {},
+            "addressData": {},
+        },
+        "importExportShipmentLock":"{{ content.additionalDetail.ImportExportShipmentLock }}",
+        "inspection": "{{ content.additionalDetail.Inspection }}",
+        "invoiceValue":{{ content.additionalDetail.InvoiceValue }},
+        "inwardDateAndTime": "{{ content.additionalDetail.InwardDateAndTime }}",
+        "isCmsHBLSent":"{{ content.additionalDetail.IsCmsHBLSent }}",
+        "isCreditOverrideApproved":"{{ content.additionalDetail.IsCreditOverrideApproved }}",
+        "isExportClearance":"{{ content.additionalDetail.IsExportClearance }}",
+        "isImportClearance":"{{ content.additionalDetail.IsImportClearance }}",
+        "isInland":"{{ content.additionalDetail.IsInland }}",
+        "lgdStatus": "{{ content.additionalDetail.LgdStatus }}",
+        "lineNumber":{{ content.additionalDetail.LineNumber }},
+        "localLineNumber":{{ content.additionalDetail.LocalLineNumber }},
+        "notifyParty": {
+            "addressCode": "{{ content.additionalDetail.NotifyParty.AddressCode }}",
+            "entityId":{{ content.additionalDetail.NotifyParty.EntityId }},
+            "entityType": "{{ content.additionalDetail.NotifyParty.EntityType }}",
+            "orgCode": "{{ content.additionalDetail.NotifyParty.OrgCode }}",
+            "tenantId":{{ content.additionalDetail.NotifyParty.TenantId }},
+            "type": "{{ content.additionalDetail.NotifyParty.Type }}"
+            "addressData": {},
+            "orgData": {},
+        },
+        "onBoard": "{{ content.additionalDetail.OnBoard }}",
+        "onBoardDate": "{{ content.additionalDetail.OnBoardDate }}",
+        "original":{{ content.additionalDetail.Original }},
+        "ownership": "{{ content.additionalDetail.Ownership }}",
+        "ownershipName": "{{ content.additionalDetail.OwnershipName }}",
+        "paidPlace":"{{ content.additionalDetail.PaidPlace }}",
+        "passedBy": "{{ content.additionalDetail.PassedBy }}",
+        "passedByPerson": "{{ content.additionalDetail.PassedByPerson }}",
+        "peruEntryExitPoint": "{{ content.additionalDetail.PeruEntryExitPoint }}",
+        "phase": "{{ content.additionalDetail.Phase }}",
+        "placeOfIssue":"{{ content.additionalDetail.PlaceOfIssue }}",
+        "placeOfSupply":"{{ content.additionalDetail.PlaceOfSupply }}",
+        "printedOriginal":"{{ content.additionalDetail.PrintedOriginal }}",
+        "receivingAgent": {
+            "addressCode": "{{ content.additionalDetail.ReceivingAgent.AddressCode }}",
+            "entityId":{{ content.additionalDetail.ReceivingAgent.EntityId }},
+            "entityType": "{{ content.additionalDetail.ReceivingAgent.EntityType }}",
+            "orgCode": "{{ content.additionalDetail.ReceivingAgent.OrgCode }}",
+            "tenantId":{{ content.additionalDetail.ReceivingAgent.TenantId }},
+            "type": "{{ content.additionalDetail.ReceivingAgent.Type }}"
+            "orgData": {},
+            "addressData": {},
+        },
+        "receivingForwarder": {
+            "addressCode": "{{ content.additionalDetail.ReceivingForwarder.AddressCode }}",
+            "entityId":{{ content.additionalDetail.ReceivingForwarder.EntityId }},
+            "entityType": "{{ content.additionalDetail.ReceivingForwarder.EntityType }}",
+            "orgCode": "{{ content.additionalDetail.ReceivingForwarder.OrgCode }}",
+            "tenantId":{{ content.additionalDetail.ReceivingForwarder.TenantId }},
+            "type": "{{ content.additionalDetail.ReceivingForwarder.Type }}"
+            "addressData": {},
+            "orgData": {},
+        },
+        "releaseType": "{{ content.additionalDetail.ReleaseType }}",
+        "screeningStatus": "{{ content.additionalDetail.ScreeningStatus }}",
+        "sendingAgent": {
+            "addressCode": "{{ content.additionalDetail.SendingAgent.AddressCode }}",
+            "entityId":{{ content.additionalDetail.SendingAgent.EntityId }},
+            "entityType": "{{ content.additionalDetail.SendingAgent.EntityType }}",
+            "orgCode": "{{ content.additionalDetail.SendingAgent.OrgCode }}",
+            "tenantId":{{ content.additionalDetail.SendingAgent.TenantId }},
+            "type": "{{ content.additionalDetail.SendingAgent.Type }}"
+            "addressData": {},
+            "orgData": {},
+        },
+        "sendingForwarder": {
+            "addressCode": "{{ content.additionalDetail.SendingForwarder.AddressCode }}",
+            "entityId":{{ content.additionalDetail.SendingForwarder.EntityId }},
+            "entityType": "{{ content.additionalDetail.SendingForwarder.EntityType }}",
+            "orgCode": "{{ content.additionalDetail.SendingForwarder.OrgCode }}",
+            "tenantId":{{ content.additionalDetail.SendingForwarder.TenantId }},
+            "type": "{{ content.additionalDetail.SendingForwarder.Type }}"
+            "addressData": {},
+            "orgData": {},
+        },
+        "shipperCOD":{{ content.additionalDetail.ShipperCOD }},
+        "shipperCODPM": "{{ content.additionalDetail.ShipperCODPM }}",
+        "smtpigmdate": "{{ content.additionalDetail.Smtpigmdate }}",
+        "smtpigmnumber": "{{ content.additionalDetail.Smtpigmnumber }}",
+        "spotRate":{{ content.additionalDetail.SpotRate }},
+        "spotRateType": "{{ content.additionalDetail.SpotRateType }}",
+        "subLineNumber":{{ content.additionalDetail.SubLineNumber }},
+        "supplierInvoiceDate": "{{ content.additionalDetail.SupplierInvoiceDate }}",
+        "supplierInvoiceNumber": "{{ content.additionalDetail.SupplierInvoiceNumber }}",
+        "surrenderPrinted":"{{ content.additionalDetail.SurrenderPrinted }}",
+        "tipoDocumentConsignee": "{{ content.additionalDetail.TipoDocumentConsignee }}",
+        "tipoDocumentConsignor": "{{ content.additionalDetail.TipoDocumentConsignor }}",
+        "tipoDocumentNotifyParty": "{{ content.additionalDetail.TipoDocumentNotifyParty }}",
+        "totalDuty":{{ content.additionalDetail.TotalDuty }},
+        "traderOrSupplier": {
+            "addressCode": "{{ content.additionalDetail.TraderOrSupplier.AddressCode }}",
+            "entityId":{{ content.additionalDetail.TraderOrSupplier.EntityId }},
+            "entityType": "{{ content.additionalDetail.TraderOrSupplier.EntityType }}",
+            "orgCode": "{{ content.additionalDetail.TraderOrSupplier.OrgCode }}",
+            "tenantId":{{ content.additionalDetail.TraderOrSupplier.TenantId }},
+            "type": "{{ content.additionalDetail.TraderOrSupplier.Type }}"
+            "addressData": {},
+            "orgData": {},
+        },
+        "warehouseId":{{ content.additionalDetail.WarehouseId }},
+        "wblprinted":"{{ content.additionalDetail.Wblprinted }}"
+    },
 
-"bookingCarriageList": [
-{% for carriage in content.BookingCarriages %}
-    {
-    "bookingId":{{ carriage.BookingId }},
-    "carriageMode": "{{ carriage.CarriageMode }}",
-    "carriageType": "{{ carriage.CarriageType }}",
-    "eta": "{{ carriage.Eta }}",
-    "etd": "{{ carriage.Etd }}",
-    "podId":{{ carriage.PodId }},
-    "polId":{{ carriage.PolId }},
-    "shipmentId":{{ carriage.ShipmentId }},
-    "vessel": "{{ carriage.Vessel }}",
-    "vesselId":{{ carriage.VesselId }},
-    "voyage": "{{ carriage.Voyage }}"
-    }
-    {% unless forloop.last %},{% endunless %}
-{% endfor %}
-],
-
-"AdditionalDetail": {
-    "activityType": "{{ content.additionalDetail.ActivityType }}",
-    "adcode": "{{ content.additionalDetail.Adcode }}",
-    "airwayBillDims": "{{ content.additionalDetail.AirwayBillDims }}",
-    "andesResponseDate": "{{ content.additionalDetail.AndesResponseDate }}",
-    "andesStatus": "{{ content.additionalDetail.AndesStatus }}",
-    "andesStatusResponseText": "{{ content.additionalDetail.AndesStatusResponseText }}",
-    "andesTicket": "{{ content.additionalDetail.AndesTicket }}",
-    "assessValue":{{ content.additionalDetail.AssessValue }},
-    "betype": "{{ content.additionalDetail.Betype }}",
-    "blchargesDisplay": "{{ content.additionalDetail.BlchargesDisplay }}",
-    "blexporterShipment": "{{ content.additionalDetail.BlexporterShipment }}",
-    "boedate": "{{ content.additionalDetail.Boedate }}",
-    "boenumber": "{{ content.additionalDetail.Boenumber }}",
-    "bondedWarehouseId":{{ content.additionalDetail.BondedWarehouseId }},
-    "borrowedFrom": {
-        "addressCode": "{{ content.additionalDetail.BorrowedFrom.AddressCode }}",
-        "entityId":{{ content.additionalDetail.BorrowedFrom.EntityId }},
-        "entityType": "{{ content.additionalDetail.BorrowedFrom.EntityType }}",
-        "orgCode": "{{ content.additionalDetail.BorrowedFrom.OrgCode }}",
-        "tenantId":{{ content.additionalDetail.BorrowedFrom.TenantId }},
-        "type": "{{ content.additionalDetail.BorrowedFrom.Type }}"
-        "addressData": {},
-        "orgData": {},
-    },
-    "branchSINumber": "{{ content.additionalDetail.BranchSINumber }}",
-    "chajobNumber": "{{ content.additionalDetail.ChajobNumber }}",
-    "cifvalue":{{ content.additionalDetail.Cifvalue }},
-    "copy":{{ content.additionalDetail.Copy }},
-    "customCity": "{{ content.additionalDetail.CustomCity }}",
-    "customHouse": "{{ content.additionalDetail.CustomHouse }}",
-    "customLocation": "{{ content.additionalDetail.CustomLocation }}",
-    "customsNoIssueDate": "{{ content.additionalDetail.CustomsNoIssueDate }}",
-    "dateOfIssue": "{{ content.additionalDetail.DateOfIssue }}",
-    "dateOfReceipt": "{{ content.additionalDetail.DateOfReceipt }}",
-    "deliveryMode": "{{ content.additionalDetail.DeliveryMode }}",
-    "draftPrinted":"{{ content.additionalDetail.DraftPrinted }}",
-    "efreightStatus": "{{ content.additionalDetail.EfreightStatus }}",
-    "eTailor": {
-        "addressCode": "{{ content.additionalDetail.Etailor.AddressCode }}",
-        "entityId":{{ content.additionalDetail.Etailor.EntityId }},
-        "entityType": "{{ content.additionalDetail.Etailor.EntityType }}",
-        "orgCode": "{{ content.additionalDetail.Etailor.OrgCode }}",
-        "tenantId":{{ content.additionalDetail.Etailor.TenantId }},
-        "type": "{{ content.additionalDetail.Etailor.Type }}"
-        "addressData": {},
-        "orgData": {},
-    },
-    "expiryDate": "{{ content.additionalDetail.ExpiryDate }}",
-    "exportBroker": {
-        "addressCode": "{{ content.additionalDetail.ExportBroker.AddressCode }}",
-        "entityId":{{ content.additionalDetail.ExportBroker.EntityId }},
-        "entityType": "{{ content.additionalDetail.ExportBroker.EntityType }}",
-        "orgCode": "{{ content.additionalDetail.ExportBroker.OrgCode }}",
-        "tenantId":{{ content.additionalDetail.ExportBroker.TenantId }},
-        "type": "{{ content.additionalDetail.ExportBroker.Type }}"
-        "orgData": {},
-        "addressData": {},
-    },
-    "externalNotes": "{{ content.additionalDetail.ExternalNotes }}",
-    "freeDays":{{ content.additionalDetail.FreeDays }},
-    "goodsCO": "{{ content.additionalDetail.GoodsCO }}",
-    "houseBillType": "{{ content.additionalDetail.HouseBillType }}",
-    "hsnNumber":{{ content.additionalDetail.HsnNumber }},
-    "iecode": "{{ content.additionalDetail.Iecode }}",
-    "igmfileDate": "{{ content.additionalDetail.IgmfileDate }}",
-    "igmfileNo": "{{ content.additionalDetail.IgmfileNo }}",
-    "igminwardDate": "{{ content.additionalDetail.IgminwardDate }}",
-    "importBroker": {
-        "addressCode": "{{ content.additionalDetail.ImportBroker.AddressCode }}",
-        "entityId":{{ content.additionalDetail.ImportBroker.EntityId }},
-        "entityType": "{{ content.additionalDetail.ImportBroker.EntityType }}",
-        "orgCode": "{{ content.additionalDetail.ImportBroker.OrgCode }}",
-        "tenantId":{{ content.additionalDetail.ImportBroker.TenantId }},
-        "type": "{{ content.additionalDetail.ImportBroker.Type }}"
-        "orgData": {},
-        "addressData": {},
-    },
-    "importExportShipmentLock":"{{ content.additionalDetail.ImportExportShipmentLock }}",
-    "inspection": "{{ content.additionalDetail.Inspection }}",
-    "invoiceValue":{{ content.additionalDetail.InvoiceValue }},
-    "inwardDateAndTime": "{{ content.additionalDetail.InwardDateAndTime }}",
-    "isCmsHBLSent":"{{ content.additionalDetail.IsCmsHBLSent }}",
-    "isCreditOverrideApproved":"{{ content.additionalDetail.IsCreditOverrideApproved }}",
-    "isExportClearance":"{{ content.additionalDetail.IsExportClearance }}",
-    "isImportClearance":"{{ content.additionalDetail.IsImportClearance }}",
-    "isInland":"{{ content.additionalDetail.IsInland }}",
-    "lgdStatus": "{{ content.additionalDetail.LgdStatus }}",
-    "lineNumber":{{ content.additionalDetail.LineNumber }},
-    "localLineNumber":{{ content.additionalDetail.LocalLineNumber }},
-    "notifyParty": {
-        "addressCode": "{{ content.additionalDetail.NotifyParty.AddressCode }}",
-        "entityId":{{ content.additionalDetail.NotifyParty.EntityId }},
-        "entityType": "{{ content.additionalDetail.NotifyParty.EntityType }}",
-        "orgCode": "{{ content.additionalDetail.NotifyParty.OrgCode }}",
-        "tenantId":{{ content.additionalDetail.NotifyParty.TenantId }},
-        "type": "{{ content.additionalDetail.NotifyParty.Type }}"
-        "addressData": {},
-        "orgData": {},
-    },
-    "onBoard": "{{ content.additionalDetail.OnBoard }}",
-    "onBoardDate": "{{ content.additionalDetail.OnBoardDate }}",
-    "original":{{ content.additionalDetail.Original }},
-    "ownership": "{{ content.additionalDetail.Ownership }}",
-    "ownershipName": "{{ content.additionalDetail.OwnershipName }}",
-    "paidPlace":"{{ content.additionalDetail.PaidPlace }}",
-    "passedBy": "{{ content.additionalDetail.PassedBy }}",
-    "passedByPerson": "{{ content.additionalDetail.PassedByPerson }}",
-    "peruEntryExitPoint": "{{ content.additionalDetail.PeruEntryExitPoint }}",
-    "phase": "{{ content.additionalDetail.Phase }}",
-    "placeOfIssue":"{{ content.additionalDetail.PlaceOfIssue }}",
-    "placeOfSupply":"{{ content.additionalDetail.PlaceOfSupply }}",
-    "printedOriginal":"{{ content.additionalDetail.PrintedOriginal }}",
-    "receivingAgent": {
-        "addressCode": "{{ content.additionalDetail.ReceivingAgent.AddressCode }}",
-        "entityId":{{ content.additionalDetail.ReceivingAgent.EntityId }},
-        "entityType": "{{ content.additionalDetail.ReceivingAgent.EntityType }}",
-        "orgCode": "{{ content.additionalDetail.ReceivingAgent.OrgCode }}",
-        "tenantId":{{ content.additionalDetail.ReceivingAgent.TenantId }},
-        "type": "{{ content.additionalDetail.ReceivingAgent.Type }}"
-        "orgData": {},
-        "addressData": {},
-    },
-    "receivingForwarder": {
-        "addressCode": "{{ content.additionalDetail.ReceivingForwarder.AddressCode }}",
-        "entityId":{{ content.additionalDetail.ReceivingForwarder.EntityId }},
-        "entityType": "{{ content.additionalDetail.ReceivingForwarder.EntityType }}",
-        "orgCode": "{{ content.additionalDetail.ReceivingForwarder.OrgCode }}",
-        "tenantId":{{ content.additionalDetail.ReceivingForwarder.TenantId }},
-        "type": "{{ content.additionalDetail.ReceivingForwarder.Type }}"
-        "addressData": {},
-        "orgData": {},
-    },
-    "releaseType": "{{ content.additionalDetail.ReleaseType }}",
-    "screeningStatus": "{{ content.additionalDetail.ScreeningStatus }}",
-    "sendingAgent": {
-        "addressCode": "{{ content.additionalDetail.SendingAgent.AddressCode }}",
-        "entityId":{{ content.additionalDetail.SendingAgent.EntityId }},
-        "entityType": "{{ content.additionalDetail.SendingAgent.EntityType }}",
-        "orgCode": "{{ content.additionalDetail.SendingAgent.OrgCode }}",
-        "tenantId":{{ content.additionalDetail.SendingAgent.TenantId }},
-        "type": "{{ content.additionalDetail.SendingAgent.Type }}"
-        "addressData": {},
-        "orgData": {},
-    },
-    "sendingForwarder": {
-        "addressCode": "{{ content.additionalDetail.SendingForwarder.AddressCode }}",
-        "entityId":{{ content.additionalDetail.SendingForwarder.EntityId }},
-        "entityType": "{{ content.additionalDetail.SendingForwarder.EntityType }}",
-        "orgCode": "{{ content.additionalDetail.SendingForwarder.OrgCode }}",
-        "tenantId":{{ content.additionalDetail.SendingForwarder.TenantId }},
-        "type": "{{ content.additionalDetail.SendingForwarder.Type }}"
-        "addressData": {},
-        "orgData": {},
-    },
-    "shipperCOD":{{ content.additionalDetail.ShipperCOD }},
-    "shipperCODPM": "{{ content.additionalDetail.ShipperCODPM }}",
-    "smtpigmdate": "{{ content.additionalDetail.Smtpigmdate }}",
-    "smtpigmnumber": "{{ content.additionalDetail.Smtpigmnumber }}",
-    "spotRate":{{ content.additionalDetail.SpotRate }},
-    "spotRateType": "{{ content.additionalDetail.SpotRateType }}",
-    "subLineNumber":{{ content.additionalDetail.SubLineNumber }},
-    "supplierInvoiceDate": "{{ content.additionalDetail.SupplierInvoiceDate }}",
-    "supplierInvoiceNumber": "{{ content.additionalDetail.SupplierInvoiceNumber }}",
-    "surrenderPrinted":"{{ content.additionalDetail.SurrenderPrinted }}",
-    "tipoDocumentConsignee": "{{ content.additionalDetail.TipoDocumentConsignee }}",
-    "tipoDocumentConsignor": "{{ content.additionalDetail.TipoDocumentConsignor }}",
-    "tipoDocumentNotifyParty": "{{ content.additionalDetail.TipoDocumentNotifyParty }}",
-    "totalDuty":{{ content.additionalDetail.TotalDuty }},
-    "traderOrSupplier": {
-        "addressCode": "{{ content.additionalDetail.TraderOrSupplier.AddressCode }}",
-        "entityId":{{ content.additionalDetail.TraderOrSupplier.EntityId }},
-        "entityType": "{{ content.additionalDetail.TraderOrSupplier.EntityType }}",
-        "orgCode": "{{ content.additionalDetail.TraderOrSupplier.OrgCode }}",
-        "tenantId":{{ content.additionalDetail.TraderOrSupplier.TenantId }},
-        "type": "{{ content.additionalDetail.TraderOrSupplier.Type }}"
-        "addressData": {},
-        "orgData": {},
-    },
-    "warehouseId":{{ content.additionalDetail.WarehouseId }},
-    "wblprinted":"{{ content.additionalDetail.Wblprinted }}"
-},
+    "consolidationGuids": [
+    {% for consolidation in content.ConsolidationList %}
+        "{{ consolidation.guid }}"{% if forloop.last %}{% else %},{% endif %}
+    {% endfor %}
+    ]
 
 "ConsolidationList": [
 {% for consolidation in content.consolidationList %}
@@ -1611,44 +1616,44 @@
         "type":"{{ content.Consignee.Type }}"
     },
 
-"servicesList": [
-{% for service in content.ServicesList %}
-    {
-    "bookingDate": "{{ service.BookingDate }}",
-    "completionDate": "{{ service.CompletionDate }}",
-    "consolidationId": {{ service.ConsolidationId }},
-    "contractor": {
-        "addressCode": "{{ service.Contractor.AddressCode }}",
-        "addressData": "{{ service.Contractor.AddressData }}",
-        "entityId": {{ service.Contractor.EntityId }},
-        "entityType": "{{ service.Contractor.EntityType }}",
-        "orgCode": "{{ service.Contractor.OrgCode }}",
-        "orgData": "{{ service.Contractor.OrgData }}",
-        "tenantId": {{ service.Contractor.TenantId }},
-        "type": "{{ service.Contractor.Type }}"
-    },
-    "refNumber": "{{ service.RefNumber }}",
-    "serviceCount": {{ service.ServiceCount }},
-    "serviceDuration": {
-        "nano": "{{ service.ServiceDuration.Nano }}",
-        "negative": "{{ service.ServiceDuration.Negative }}",
-        "seconds": "{{ service.ServiceDuration.Seconds }}",
-        "Units": [
-            {
-            "dateBased": "{{ service.ServiceDuration.Units[0].Datebased }}",
-            "durationEstimated": "{{ service.ServiceDuration.Units[0].Durationestimated }}",
-            "timeBased": "{{ service.ServiceDuration.Units[0].Timebased }}"
-            }
-        ],
-        "zero": "{{ service.serviceDuration.Zero }}"
-    },
-    "serviceNotes": "{{ service.ServiceNotes }}",
-    "serviceType": "{{ service.ServiceType }}",
-    "shipmentId": {{ service.ShipmentId }},
-    "srvLocation": {{ service.SrvLocation }}
-    }
-    {% if forloop.last == false %},{% endif %}
-{% endfor %}
-]
+    "servicesList": [
+    {% for service in content.ServicesList %}
+        {
+        "bookingDate": "{{ service.BookingDate }}",
+        "completionDate": "{{ service.CompletionDate }}",
+        "consolidationId": {{ service.ConsolidationId }},
+        "contractor": {
+            "addressCode": "{{ service.Contractor.AddressCode }}",
+            "addressData": "{{ service.Contractor.AddressData }}",
+            "entityId": {{ service.Contractor.EntityId }},
+            "entityType": "{{ service.Contractor.EntityType }}",
+            "orgCode": "{{ service.Contractor.OrgCode }}",
+            "orgData": "{{ service.Contractor.OrgData }}",
+            "tenantId": {{ service.Contractor.TenantId }},
+            "type": "{{ service.Contractor.Type }}"
+        },
+        "refNumber": "{{ service.RefNumber }}",
+        "serviceCount": {{ service.ServiceCount }},
+        "serviceDuration": {
+            "nano": "{{ service.ServiceDuration.Nano }}",
+            "negative": "{{ service.ServiceDuration.Negative }}",
+            "seconds": "{{ service.ServiceDuration.Seconds }}",
+            "Units": [
+                {
+                "dateBased": "{{ service.ServiceDuration.Units[0].Datebased }}",
+                "durationEstimated": "{{ service.ServiceDuration.Units[0].Durationestimated }}",
+                "timeBased": "{{ service.ServiceDuration.Units[0].Timebased }}"
+                }
+            ],
+            "zero": "{{ service.serviceDuration.Zero }}"
+        },
+        "serviceNotes": "{{ service.ServiceNotes }}",
+        "serviceType": "{{ service.ServiceType }}",
+        "shipmentId": {{ service.ShipmentId }},
+        "srvLocation": {{ service.SrvLocation }}
+        }
+        {% if forloop.last == false %},{% endif %}
+    {% endfor %}
+    ]
 
 }
