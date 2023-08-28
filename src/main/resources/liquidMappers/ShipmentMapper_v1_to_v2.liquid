@@ -212,7 +212,7 @@
         "tenantId":{{ content.PickupDetails.AgentDetail.TenantId }},
         "type": "{{ content.PickupDetails.AgentDetail.Type }}"
     },
-    "BrokerDetail": {
+    "brokerDetail": {
         "addressCode": "{{ content.PickupDetails.BrokerDetail.AddressCode }}",
         "addressData": {},
         "entityId":{{ content.PickupDetails.BrokerDetail.EntityId }},
@@ -279,107 +279,107 @@
         "tenantId":{{ content.PickupDetails.TransporterDetail.tenantId }},
         "type": "{{ content.PickupDetails.TransporterDetail.type }}"
     },
-    "TruckWeightDuration": {
-        "Hour": {{ content.PickupDetails.truckWaitDuration.hour }},
-        "Minute": {{ content.PickupDetails.truckWaitDuration.minute }},
-        "Second": {{ content.PickupDetails.truckWaitDuration.second }},
-        "Nano": {{ content.PickupDetails.truckWaitDuration.nano }}
+    "truckWaitDuration": {
+        "hour": {{ content.PickupDetails.TruckWeightDuration.Hour }},
+        "minute": {{ content.PickupDetails.TruckWeightDuration.Minute }},
+        "second": {{ content.PickupDetails.TruckWeightDuration.Second }},
+        "nano": {{ content.PickupDetails.TruckWeightDuration.Nano }}
     },
-    "TruckWaitTimeCharge": {{ content.PickupDetails.truckWaitTimeCharge }},
-    "TruckWaitTimeChargeUnit": "{{ content.PickupDetails.truckWaitTimeChargeUnit }}",
-    "Type": "{{ content.PickupDetails.type }}",
-    "UcrReference": "{{ content.PickupDetails.ucrReference }}"
+    "truckWaitTimeCharge": {{ content.PickupDetails.TruckWaitTimeCharge }},
+    "truckWaitTimeChargeUnit": "{{ content.PickupDetails.TruckWaitTimeChargeUnit }}",
+    "type": "{{ content.PickupDetails.Type }}",
+    "ucrReference": "{{ content.PickupDetails.UcrReference }}"
 },
 
     "DeliveryDetails": {
-    "ActualPickupOrDelivery": "{{ content.deliveryDetails.actualPickupOrDelivery }}",
-    "AgentDetail": {
-    "AddressCode": "{{ content.deliveryDetails.AgentDetail.addressCode }}",
-    "AddressData": {},
-    "EntityId":{{ content.deliveryDetails.AgentDetail.entityId }},
-    "EntityType": "{{ content.deliveryDetails.AgentDetail.entityType }}",
-    "OrgCode": "{{ content.deliveryDetails.AgentDetail.orgCode }}",
-    "OrgData": {},
-    "TenantId":{{ content.deliveryDetails.AgentDetail.tenantId }},
-    "Type": "{{ content.deliveryDetails.AgentDetail.type }}"
-    },
-    "BrokerDetail": {
-    "AddressCode": "{{ content.deliveryDetails.brokerDetail.addressCode }}",
-    "AddressData": {},
-    "EntityId":{{ content.deliveryDetails.brokerDetail.entityId }},
-    "EntityType": "{{ content.deliveryDetails.brokerDetail.entityType }}",
-    "OrgCode": "{{ content.deliveryDetails.brokerDetail.orgCode }}",
-    "OrgData": {},
-    "TenantId":{{ content.deliveryDetails.brokerDetail.tenantId }},
-    "Type": "{{ content.deliveryDetails.brokerDetail.type }}"
-    },
-    "DestinationDetail": {
-    "AddressCode": "{{ content.deliveryDetails.destinationDetail.addressCode }}",
-    "AddressData": {},
-    "EntityId":{{ content.deliveryDetails.destinationDetail.entityId }},
-    "EntityType": "{{ content.deliveryDetails.destinationDetail.entityType }}",
-    "OrgCode": "{{ content.deliveryDetails.destinationDetail.orgCode }}",
-    "OrgData": {},
-    "TenantId":{{ content.deliveryDetails.destinationDetail.tenantId }},
-    "Type": "{{ content.deliveryDetails.destinationDetail.type }}"
-    },
-    "DropMode": "{{ content.deliveryDetails.dropMode }}",
-    "EmptyTruckInDate": "{{ content.deliveryDetails.emptyTruckInDate }}",
-    "EstimatedPickupOrDelivery": "{{ content.deliveryDetails.estimatedPickupOrDelivery }}",
-    "FclAvailableDate": "{{ content.deliveryDetails.fclAvailableDate }}",
-    "InterimReceipt": "{{ content.deliveryDetails.interimReceipt }}",
-    "PickupOrDelivery": "{{ content.deliveryDetails.pickupOrDelivery }}",
-    "LabourCharge": {{ content.deliveryDetails.labourCharge }},
-    "LabourChargeUnit": "{{ content.deliveryDetails.labourChargeUnit }}",
-    "LabourDuration": {
-    "Hour": {{ content.deliveryDetails.labourDuration.hour }},
-    "Minute": {{ content.deliveryDetails.labourDuration.minute }},
-    "Nano": {{ content.deliveryDetails.labourDuration.nano }},
-    "Second": {{ content.deliveryDetails.labourDuration.second }}
-    },
-    "LoadedTruckGateOutDate": "{{ content.deliveryDetails.loadedTruckGateOutDate }}",
-    "PortTransportAdvised": "{{ content.deliveryDetails.portTransportAdvised }}",
-    "RequiredBy": "{{ content.deliveryDetails.requiredBy }}",
-    "ShipmentId":{{ content.deliveryDetails.shipmentId }},
-    "ShipperRef": "{{ content.deliveryDetails.shipperRef }}",
-    "SourceDetail": {
-    "AddressCode": "{{ content.deliveryDetails.sourceDetail.addressCode }}",
-    "AddressData": {},
-    "EntityId":{{ content.deliveryDetails.sourceDetail.entityId }},
-    "EntityType": "{{ content.deliveryDetails.sourceDetail.entityType }}",
-    "OrgCode": "{{ content.deliveryDetails.sourceDetail.orgCode }}",
-    "OrgData": {},
-    "TenantId":{{ content.deliveryDetails.sourceDetail.tenantId }},
-    "Type": "{{ content.deliveryDetails.sourceDetail.type }}"
-    },
-    "StorageCharge": {{ content.deliveryDetails.storageCharge }},
-    "StorageChargeUnit": "{{ content.deliveryDetails.storageChargeUnit }}",
-    "StorageChargeDuration": {
-    "Hour": {{ content.deliveryDetails.storageChargeDuration.hour }},
-    "Minute": {{ content.deliveryDetails.storageChargeDuration.minute }},
-    "Second": {{ content.deliveryDetails.storageChargeDuration.second }},
-    "Nano": {{ content.deliveryDetails.storageChargeDuration.nano }}
-    },
-    "TransporterDetail": {
-    "AddressCode": "{{ content.deliveryDetails.transporterDetail.addressCode }}",
-    "AddressData": {},
-    "EntityId":{{ content.deliveryDetails.transporterDetail.entityId }},
-    "EntityType": "{{ content.deliveryDetails.transporterDetail.entityType }}",
-    "OrgCode": "{{ content.deliveryDetails.transporterDetail.orgCode }}",
-    "OrgData": {},
-    "TenantId":{{ content.deliveryDetails.transporterDetail.tenantId }},
-    "Type": "{{ content.deliveryDetails.transporterDetail.type }}"
-    },
-    "TruckWeightDuration": {
-    "Hour": {{ content.deliveryDetails.truckWaitDuration.hour }},
-    "Minute": {{ content.deliveryDetails.truckWaitDuration.minute }},
-    "Second": {{ content.deliveryDetails.truckWaitDuration.second }},
-    "Nano": {{ content.deliveryDetails.truckWaitDuration.nano }}
-    },
-    "TruckWaitTimeCharge": {{ content.deliveryDetails.truckWaitTimeCharge }},
-    "TruckWaitTimeChargeUnit": "{{ content.deliveryDetails.truckWaitTimeChargeUnit }}",
-    "Type": "{{ content.deliveryDetails.type }}",
-    "UcrReference": "{{ content.deliveryDetails.ucrReference }}"
+        "actualPickupOrDelivery": "{{ content.PickupDetails.ActualPickupOrDelivery }}",
+        "agentDetail": {
+            "addressCode": "{{ content.PickupDetails.AgentDetail.AddressCode }}",
+            "addressData": {},
+            "entityId":{{ content.PickupDetails.AgentDetail.EntityId }},
+            "entityType": "{{ content.PickupDetails.AgentDetail.EntityType }}",
+            "orgCode": "{{ content.PickupDetails.AgentDetail.OrgCode }}",
+            "orgData": {},
+            "tenantId":{{ content.PickupDetails.AgentDetail.TenantId }},
+            "type": "{{ content.PickupDetails.AgentDetail.Type }}"
+        },
+        "brokerDetail": {
+            "addressCode": "{{ content.PickupDetails.BrokerDetail.AddressCode }}",
+            "addressData": {},
+            "entityId":{{ content.PickupDetails.BrokerDetail.EntityId }},
+            "entityType": "{{ content.PickupDetails.BrokerDetail.EntityType }}",
+            "orgCode": "{{ content.PickupDetails.BrokerDetail.OrgCode }}",
+            "orgData": {},
+            "tenantId":{{ content.PickupDetails.BrokerDetail.TenantId }},
+            "type": "{{ content.PickupDetails.BrokerDetail.Type }}"
+        },
+        "destinationDetail": {
+            "addressCode": "{{ content.PickupDetails.DestinationDetail.AddressCode }}",
+            "addressData": {},
+            "entityId":{{ content.PickupDetails.DestinationDetail.EntityId }},
+            "entityType": "{{ content.PickupDetails.DestinationDetail.EntityType }}",
+            "orgCode": "{{ content.PickupDetails.DestinationDetail.OrgCode }}",
+            "orgData": {},
+            "tenantId":{{ content.PickupDetails.DestinationDetail.TenantId }},
+            "type": "{{ content.PickupDetails.DestinationDetail.Type }}"
+        },
+        "dropMode": "{{ content.PickupDetails.DropMode }}",
+        "emptyTruckInDate": "{{ content.PickupDetails.EmptyTruckInDate }}",
+        "estimatedPickupOrDelivery": "{{ content.PickupDetails.EstimatedPickupOrDelivery }}",
+        "fclAvailableDate": "{{ content.PickupDetails.FclAvailableDate }}",
+        "interimReceipt": "{{ content.PickupDetails.InterimReceipt }}",
+        "pickupOrDelivery": "{{ content.PickupDetails.PickupOrDelivery }}",
+        "labourCharge": {{ content.PickupDetails.LabourCharge }},
+        "labourChargeUnit": "{{ content.PickupDetails.LabourChargeUnit }}",
+        "labourDuration": {
+            "hour": {{ content.PickupDetails.LabourDuration.Hour }},
+            "minute": {{ content.PickupDetails.LabourDuration.Minute }},
+            "nano": {{ content.PickupDetails.LabourDuration.Nano }},
+            "second": {{ content.PickupDetails.LabourDuration.Second }}
+        },
+        "loadedTruckGateOutDate": "{{ content.PickupDetails.LoadedTruckGateOutDate }}",
+        "portTransportAdvised": "{{ content.PickupDetails.PortTransportAdvised }}",
+        "requiredBy": "{{ content.PickupDetails.RequiredBy }}",
+        "shipmentId":{{ content.PickupDetails.ShipmentId }},
+        "shipperRef": "{{ content.PickupDetails.ShipperRef }}",
+        "sourceDetail": {
+            "addressCode": "{{ content.PickupDetails.SourceDetail.AddressCode }}",
+            "addressData": {},
+            "entityId":{{ content.PickupDetails.SourceDetail.EntityId }},
+            "entityType": "{{ content.PickupDetails.SourceDetail.EntityType }}",
+            "orgCode": "{{ content.PickupDetails.SourceDetail.OrgCode }}",
+            "orgData": {},
+            "tenantId":{{ content.PickupDetails.SourceDetail.TenantId }},
+            "type": "{{ content.PickupDetails.SourceDetail.Type }}"
+        },
+        "storageCharge": {{ content.PickupDetails.StorageCharge }},
+        "storageChargeUnit": "{{ content.PickupDetails.StorageChargeUnit }}",
+        "storageChargeDuration": {
+            "hour": {{ content.PickupDetails.StorageChargeDuration.Hour }},
+            "minute": {{ content.PickupDetails.StorageChargeDuration.Minute }},
+            "second": {{ content.PickupDetails.StorageChargeDuration.Second }},
+            "nano": {{ content.PickupDetails.StorageChargeDuration.Nano }}
+        },
+        "transporterDetail": {
+            "addressCode": "{{ content.PickupDetails.TransporterDetail.addressCode }}",
+            "addressData": {},
+            "entityId":{{ content.PickupDetails.TransporterDetail.entityId }},
+            "entityType": "{{ content.PickupDetails.TransporterDetail.entityType }}",
+            "orgCode": "{{ content.PickupDetails.TransporterDetail.orgCode }}",
+            "orgData": {},
+            "tenantId":{{ content.PickupDetails.TransporterDetail.tenantId }},
+            "type": "{{ content.PickupDetails.TransporterDetail.type }}"
+        },
+        "truckWaitDuration": {
+            "hour": {{ content.PickupDetails.TruckWeightDuration.Hour }},
+            "minute": {{ content.PickupDetails.TruckWeightDuration.Minute }},
+            "second": {{ content.PickupDetails.TruckWeightDuration.Second }},
+            "nano": {{ content.PickupDetails.TruckWeightDuration.Nano }}
+        },
+        "truckWaitTimeCharge": {{ content.PickupDetails.TruckWaitTimeCharge }},
+        "truckWaitTimeChargeUnit": "{{ content.PickupDetails.TruckWaitTimeChargeUnit }}",
+        "type": "{{ content.PickupDetails.Type }}",
+        "ucrReference": "{{ content.PickupDetails.UcrReference }}"
 },
 
 "jobsList": [
@@ -763,15 +763,15 @@
     "boedate": "{{ content.additionalDetail.Boedate }}",
     "boenumber": "{{ content.additionalDetail.Boenumber }}",
     "bondedWarehouseId":{{ content.additionalDetail.BondedWarehouseId }},
-    "BorrowedFrom": {
-    "AddressCode": "{{ content.additionalDetail.borrowedFrom.addressCode }}",
-    "AddressData": {},
-    "EntityId":{{ content.additionalDetail.borrowedFrom.entityId }},
-    "EntityType": "{{ content.additionalDetail.borrowedFrom.entityType }}",
-    "OrgCode": "{{ content.additionalDetail.borrowedFrom.orgCode }}",
-    "OrgData": {},
-    "TenantId":{{ content.additionalDetail.borrowedFrom.tenantId }},
-    "Type": "{{ content.additionalDetail.borrowedFrom.type }}"
+    "borrowedFrom": {
+        "addressCode": "{{ content.additionalDetail.BorrowedFrom.AddressCode }}",
+        "entityId":{{ content.additionalDetail.BorrowedFrom.EntityId }},
+        "entityType": "{{ content.additionalDetail.BorrowedFrom.EntityType }}",
+        "orgCode": "{{ content.additionalDetail.BorrowedFrom.OrgCode }}",
+        "tenantId":{{ content.additionalDetail.BorrowedFrom.TenantId }},
+        "type": "{{ content.additionalDetail.BorrowedFrom.Type }}"
+        "addressData": {},
+        "orgData": {},
     },
     "branchSINumber": "{{ content.additionalDetail.BranchSINumber }}",
     "chajobNumber": "{{ content.additionalDetail.ChajobNumber }}",
@@ -786,26 +786,26 @@
     "deliveryMode": "{{ content.additionalDetail.DeliveryMode }}",
     "draftPrinted":"{{ content.additionalDetail.DraftPrinted }}",
     "efreightStatus": "{{ content.additionalDetail.EfreightStatus }}",
-    "Etailor": {
-    "AddressCode": "{{ content.additionalDetail.etailor.addressCode }}",
-    "AddressData": {},
-    "EntityId":{{ content.additionalDetail.etailor.entityId }},
-    "EntityType": "{{ content.additionalDetail.etailor.entityType }}",
-    "OrgCode": "{{ content.additionalDetail.etailor.orgCode }}",
-    "OrgData": {},
-    "TenantId":{{ content.additionalDetail.etailor.tenantId }},
-    "Type": "{{ content.additionalDetail.etailor.type }}"
+    "eTailor": {
+        "addressCode": "{{ content.additionalDetail.Etailor.AddressCode }}",
+        "entityId":{{ content.additionalDetail.Etailor.EntityId }},
+        "entityType": "{{ content.additionalDetail.Etailor.EntityType }}",
+        "orgCode": "{{ content.additionalDetail.Etailor.OrgCode }}",
+        "tenantId":{{ content.additionalDetail.Etailor.TenantId }},
+        "type": "{{ content.additionalDetail.Etailor.Type }}"
+        "addressData": {},
+        "orgData": {},
     },
     "expiryDate": "{{ content.additionalDetail.ExpiryDate }}",
-    "ExportBroker": {
-    "AddressCode": "{{ content.additionalDetail.exportBroker.addressCode }}",
-    "AddressData": {},
-    "EntityId":{{ content.additionalDetail.exportBroker.entityId }},
-    "EntityType": "{{ content.additionalDetail.exportBroker.entityType }}",
-    "OrgCode": "{{ content.additionalDetail.exportBroker.orgCode }}",
-    "OrgData": {},
-    "TenantId":{{ content.additionalDetail.exportBroker.tenantId }},
-    "Type": "{{ content.additionalDetail.exportBroker.type }}"
+    "exportBroker": {
+        "addressCode": "{{ content.additionalDetail.ExportBroker.AddressCode }}",
+        "entityId":{{ content.additionalDetail.ExportBroker.EntityId }},
+        "entityType": "{{ content.additionalDetail.ExportBroker.EntityType }}",
+        "orgCode": "{{ content.additionalDetail.ExportBroker.OrgCode }}",
+        "tenantId":{{ content.additionalDetail.ExportBroker.TenantId }},
+        "type": "{{ content.additionalDetail.ExportBroker.Type }}"
+        "orgData": {},
+        "addressData": {},
     },
     "externalNotes": "{{ content.additionalDetail.ExternalNotes }}",
     "freeDays":{{ content.additionalDetail.FreeDays }},
@@ -816,15 +816,15 @@
     "igmfileDate": "{{ content.additionalDetail.IgmfileDate }}",
     "igmfileNo": "{{ content.additionalDetail.IgmfileNo }}",
     "igminwardDate": "{{ content.additionalDetail.IgminwardDate }}",
-    "ImportBroker": {
-    "AddressCode": "{{ content.additionalDetail.importBroker.addressCode }}",
-    "AddressData": {},
-    "EntityId":{{ content.additionalDetail.importBroker.entityId }},
-    "EntityType": "{{ content.additionalDetail.importBroker.entityType }}",
-    "OrgCode": "{{ content.additionalDetail.importBroker.orgCode }}",
-    "OrgData": {},
-    "TenantId":{{ content.additionalDetail.importBroker.tenantId }},
-    "Type": "{{ content.additionalDetail.importBroker.type }}"
+    "importBroker": {
+        "addressCode": "{{ content.additionalDetail.ImportBroker.AddressCode }}",
+        "entityId":{{ content.additionalDetail.ImportBroker.EntityId }},
+        "entityType": "{{ content.additionalDetail.ImportBroker.EntityType }}",
+        "orgCode": "{{ content.additionalDetail.ImportBroker.OrgCode }}",
+        "tenantId":{{ content.additionalDetail.ImportBroker.TenantId }},
+        "type": "{{ content.additionalDetail.ImportBroker.Type }}"
+        "orgData": {},
+        "addressData": {},
     },
     "importExportShipmentLock":"{{ content.additionalDetail.ImportExportShipmentLock }}",
     "inspection": "{{ content.additionalDetail.Inspection }}",
@@ -838,15 +838,15 @@
     "lgdStatus": "{{ content.additionalDetail.LgdStatus }}",
     "lineNumber":{{ content.additionalDetail.LineNumber }},
     "localLineNumber":{{ content.additionalDetail.LocalLineNumber }},
-    "NotifyParty": {
-    "AddressCode": "{{ content.additionalDetail.notifyParty.addressCode }}",
-    "AddressData": {},
-    "EntityId":{{ content.additionalDetail.notifyParty.entityId }},
-    "EntityType": "{{ content.additionalDetail.notifyParty.entityType }}",
-    "OrgCode": "{{ content.additionalDetail.notifyParty.orgCode }}",
-    "OrgData": {},
-    "TenantId":{{ content.additionalDetail.notifyParty.tenantId }},
-    "Type": "{{ content.additionalDetail.notifyParty.type }}"
+    "notifyParty": {
+        "addressCode": "{{ content.additionalDetail.NotifyParty.AddressCode }}",
+        "entityId":{{ content.additionalDetail.NotifyParty.EntityId }},
+        "entityType": "{{ content.additionalDetail.NotifyParty.EntityType }}",
+        "orgCode": "{{ content.additionalDetail.NotifyParty.OrgCode }}",
+        "tenantId":{{ content.additionalDetail.NotifyParty.TenantId }},
+        "type": "{{ content.additionalDetail.NotifyParty.Type }}"
+        "addressData": {},
+        "orgData": {},
     },
     "onBoard": "{{ content.additionalDetail.OnBoard }}",
     "onBoardDate": "{{ content.additionalDetail.OnBoardDate }}",
@@ -861,47 +861,47 @@
     "placeOfIssue":"{{ content.additionalDetail.PlaceOfIssue }}",
     "placeOfSupply":"{{ content.additionalDetail.PlaceOfSupply }}",
     "printedOriginal":"{{ content.additionalDetail.PrintedOriginal }}",
-    "ReceivingAgent": {
-    "AddressCode": "{{ content.additionalDetail.receivingAgent.addressCode }}",
-    "AddressData": {},
-    "EntityId":{{ content.additionalDetail.receivingAgent.entityId }},
-    "EntityType": "{{ content.additionalDetail.receivingAgent.entityType }}",
-    "OrgCode": "{{ content.additionalDetail.receivingAgent.orgCode }}",
-    "OrgData": {},
-    "TenantId":{{ content.additionalDetail.receivingAgent.tenantId }},
-    "Type": "{{ content.additionalDetail.receivingAgent.type }}"
+    "receivingAgent": {
+        "addressCode": "{{ content.additionalDetail.ReceivingAgent.AddressCode }}",
+        "entityId":{{ content.additionalDetail.ReceivingAgent.EntityId }},
+        "entityType": "{{ content.additionalDetail.ReceivingAgent.EntityType }}",
+        "orgCode": "{{ content.additionalDetail.ReceivingAgent.OrgCode }}",
+        "tenantId":{{ content.additionalDetail.ReceivingAgent.TenantId }},
+        "type": "{{ content.additionalDetail.ReceivingAgent.Type }}"
+        "orgData": {},
+        "addressData": {},
     },
-    "ReceivingForwarder": {
-    "AddressCode": "{{ content.additionalDetail.receivingForwarder.addressCode }}",
-    "AddressData": {},
-    "EntityId":{{ content.additionalDetail.receivingForwarder.entityId }},
-    "EntityType": "{{ content.additionalDetail.receivingForwarder.entityType }}",
-    "OrgCode": "{{ content.additionalDetail.receivingForwarder.orgCode }}",
-    "OrgData": {},
-    "TenantId":{{ content.additionalDetail.receivingForwarder.tenantId }},
-    "Type": "{{ content.additionalDetail.receivingForwarder.type }}"
+    "receivingForwarder": {
+        "addressCode": "{{ content.additionalDetail.ReceivingForwarder.AddressCode }}",
+        "entityId":{{ content.additionalDetail.ReceivingForwarder.EntityId }},
+        "entityType": "{{ content.additionalDetail.ReceivingForwarder.EntityType }}",
+        "orgCode": "{{ content.additionalDetail.ReceivingForwarder.OrgCode }}",
+        "tenantId":{{ content.additionalDetail.ReceivingForwarder.TenantId }},
+        "type": "{{ content.additionalDetail.ReceivingForwarder.Type }}"
+        "addressData": {},
+        "orgData": {},
     },
     "releaseType": "{{ content.additionalDetail.ReleaseType }}",
     "screeningStatus": "{{ content.additionalDetail.ScreeningStatus }}",
-    "SendingAgent": {
-    "AddressCode": "{{ content.additionalDetail.sendingAgent.addressCode }}",
-    "AddressData": {},
-    "EntityId":{{ content.additionalDetail.sendingAgent.entityId }},
-    "EntityType": "{{ content.additionalDetail.sendingAgent.entityType }}",
-    "OrgCode": "{{ content.additionalDetail.sendingAgent.orgCode }}",
-    "OrgData": {},
-    "TenantId":{{ content.additionalDetail.sendingAgent.tenantId }},
-    "Type": "{{ content.additionalDetail.sendingAgent.type }}"
+    "sendingAgent": {
+        "addressCode": "{{ content.additionalDetail.SendingAgent.AddressCode }}",
+        "entityId":{{ content.additionalDetail.SendingAgent.EntityId }},
+        "entityType": "{{ content.additionalDetail.SendingAgent.EntityType }}",
+        "orgCode": "{{ content.additionalDetail.SendingAgent.OrgCode }}",
+        "tenantId":{{ content.additionalDetail.SendingAgent.TenantId }},
+        "type": "{{ content.additionalDetail.SendingAgent.Type }}"
+        "addressData": {},
+        "orgData": {},
     },
-    "SendingForwarder": {
-    "AddressCode": "{{ content.additionalDetail.sendingForwarder.addressCode }}",
-    "AddressData": {},
-    "EntityId":{{ content.additionalDetail.sendingForwarder.entityId }},
-    "EntityType": "{{ content.additionalDetail.sendingForwarder.entityType }}",
-    "OrgCode": "{{ content.additionalDetail.sendingForwarder.orgCode }}",
-    "OrgData": {},
-    "TenantId":{{ content.additionalDetail.sendingForwarder.tenantId }},
-    "Type": "{{ content.additionalDetail.sendingForwarder.type }}"
+    "sendingForwarder": {
+        "addressCode": "{{ content.additionalDetail.SendingForwarder.AddressCode }}",
+        "entityId":{{ content.additionalDetail.SendingForwarder.EntityId }},
+        "entityType": "{{ content.additionalDetail.SendingForwarder.EntityType }}",
+        "orgCode": "{{ content.additionalDetail.SendingForwarder.OrgCode }}",
+        "tenantId":{{ content.additionalDetail.SendingForwarder.TenantId }},
+        "type": "{{ content.additionalDetail.SendingForwarder.Type }}"
+        "addressData": {},
+        "orgData": {},
     },
     "shipperCOD":{{ content.additionalDetail.ShipperCOD }},
     "shipperCODPM": "{{ content.additionalDetail.ShipperCODPM }}",
@@ -917,15 +917,15 @@
     "tipoDocumentConsignor": "{{ content.additionalDetail.TipoDocumentConsignor }}",
     "tipoDocumentNotifyParty": "{{ content.additionalDetail.TipoDocumentNotifyParty }}",
     "totalDuty":{{ content.additionalDetail.TotalDuty }},
-    "TraderOrSupplier": {
-    "AddressCode": "{{ content.additionalDetail.traderOrSupplier.addressCode }}",
-    "AddressData": {},
-    "EntityId":{{ content.additionalDetail.traderOrSupplier.entityId }},
-    "EntityType": "{{ content.additionalDetail.traderOrSupplier.entityType }}",
-    "OrgCode": "{{ content.additionalDetail.traderOrSupplier.orgCode }}",
-    "OrgData": {},
-    "TenantId":{{ content.additionalDetail.traderOrSupplier.tenantId }},
-    "Type": "{{ content.additionalDetail.traderOrSupplier.type }}"
+    "traderOrSupplier": {
+        "addressCode": "{{ content.additionalDetail.TraderOrSupplier.AddressCode }}",
+        "entityId":{{ content.additionalDetail.TraderOrSupplier.EntityId }},
+        "entityType": "{{ content.additionalDetail.TraderOrSupplier.EntityType }}",
+        "orgCode": "{{ content.additionalDetail.TraderOrSupplier.OrgCode }}",
+        "tenantId":{{ content.additionalDetail.TraderOrSupplier.TenantId }},
+        "type": "{{ content.additionalDetail.TraderOrSupplier.Type }}"
+        "addressData": {},
+        "orgData": {},
     },
     "warehouseId":{{ content.additionalDetail.WarehouseId }},
     "wblprinted":"{{ content.additionalDetail.Wblprinted }}"
@@ -1579,72 +1579,73 @@
     {% unless forloop.last %},{% endunless %}
 {% endfor %}
 ],
-"Client": {
-"AddressCode":"{{ content.client.addressCode }}",
-"AddressData":"{{ content.client.addressData }}",
-"EntityId":{{ content.client.entityId }},
-"EntityType":"{{ content.client.entityType }}",
-"OrgCode":"{{ content.client.orgCode }}",
-"TenantId":{{ content.client.tenantId }},
-"Type":"{{ content.client.type }}",
-"OrgData":"{{ content.client.OrgData }}"
-},
-"Consigner": {
-"AddressCode":"{{ content.consigner.addressCode }}",
-"AddressData":"{{ content.consigner.addressData }}",
-"EntityId":{{ content.consigner.entityId }},
-"EntityType":"{{ content.consigner.entityType }}",
-"OrgCode":"{{ content.consigner.orgCode }}",
-"OrgData":"{{ content.consigner.orgData }}",
-"TenantId":{{ content.consigner.tenantId }},
-"Type":"{{ content.consigner.type }}"
-},
-"Consignee": {
-"AddressCode":"{{ content.consignee.addressCode }}",
-"AddressData":"{{ content.consignee.addressData }}",
-"EntityId":{{ content.consignee.entityId }},
-"EntityType":"{{ content.consignee.entityType }}",
-"OrgCode":"{{ content.consignee.orgCode }}",
-"OrgData":"{{ content.consignee.orgData }}",
-"TenantId":{{ content.consignee.tenantId }},
-"Type":"{{ content.consignee.type }}"
-},
 
-"ServicesList": [
-{% for service in content.servicesList %}
-    {
-    "BookingDate": "{{ service.bookingDate }}",
-    "CompletionDate": "{{ service.completionDate }}",
-    "ConsolidationId": {{ service.consolidationId }},
-    "Contractor": {
-    "AddressCode": "{{ service.contractor.addressCode }}",
-    "AddressData": "{{ service.contractor.addressData }}",
-    "EntityId": {{ service.contractor.entityId }},
-    "EntityType": "{{ service.contractor.entityType }}",
-    "OrgCode": "{{ service.contractor.orgCode }}",
-    "OrgData": "{{ service.contractor.orgData }}",
-    "TenantId": {{ service.contractor.tenantId }},
-    "Type": "{{ service.contractor.type }}"
+    "client": {
+        "addressCode":"{{ content.Client.AddressCode }}",
+        "addressData":"{{ content.Client.AddressData }}",
+        "entityId":{{ content.Client.EntityId }},
+        "entityType":"{{ content.Client.EntityType }}",
+        "orgCode":"{{ content.Client.OrgCode }}",
+        "tenantId":{{ content.Client.TenantId }},
+        "type":"{{ content.Client.Type }}",
+        "OrgData":"{{ content.Client.OrgData }}"
     },
-    "RefNumber": "{{ service.refNumber }}",
-    "ServiceCount": {{ service.serviceCount }},
-    "ServiceDuration": {
-    "Nano": "{{ service.serviceDuration.nano }}",
-    "Negative": "{{ service.serviceDuration.negative }}",
-    "Seconds": "{{ service.serviceDuration.seconds }}",
-    "Units": [
-    {
-    "Datebased": "{{ service.serviceDuration.units[0].dateBased }}",
-    "Durationestimated": "{{ service.serviceDuration.units[0].durationEstimated }}",
-    "Timebased": "{{ service.serviceDuration.units[0].timeBased }}"
-    }
-    ],
-    "Zero": "{{ service.serviceDuration.zero }}"
+    "consigner": {
+        "addressCode":"{{ content.Consigner.AddressCode }}",
+        "addressData":"{{ content.Consigner.AddressData }}",
+        "entityId":{{ content.Consigner.EntityId }},
+        "entityType":"{{ content.Consigner.EntityType }}",
+        "orgCode":"{{ content.Consigner.OrgCode }}",
+        "orgData":"{{ content.Consigner.OrgData }}",
+        "tenantId":{{ content.Consigner.TenantId }},
+        "type":"{{ content.Consigner.Type }}"
     },
-    "ServiceNotes": "{{ service.serviceNotes }}",
-    "ServiceType": "{{ service.serviceType }}",
-    "ShipmentId": {{ service.shipmentId }},
-    "SrvLocation": {{ service.srvLocation }}
+    "consignee": {
+        "addressCode":"{{ content.Consignee.AddressCode }}",
+        "addressData":"{{ content.Consignee.AddressData }}",
+        "entityId":{{ content.Consignee.EntityId }},
+        "entityType":"{{ content.Consignee.EntityType }}",
+        "orgCode":"{{ content.Consignee.OrgCode }}",
+        "orgData":"{{ content.Consignee.OrgData }}",
+        "tenantId":{{ content.Consignee.TenantId }},
+        "type":"{{ content.Consignee.Type }}"
+    },
+
+"servicesList": [
+{% for service in content.ServicesList %}
+    {
+    "bookingDate": "{{ service.BookingDate }}",
+    "completionDate": "{{ service.CompletionDate }}",
+    "consolidationId": {{ service.ConsolidationId }},
+    "contractor": {
+        "addressCode": "{{ service.Contractor.AddressCode }}",
+        "addressData": "{{ service.Contractor.AddressData }}",
+        "entityId": {{ service.Contractor.EntityId }},
+        "entityType": "{{ service.Contractor.EntityType }}",
+        "orgCode": "{{ service.Contractor.OrgCode }}",
+        "orgData": "{{ service.Contractor.OrgData }}",
+        "tenantId": {{ service.Contractor.TenantId }},
+        "type": "{{ service.Contractor.Type }}"
+    },
+    "refNumber": "{{ service.RefNumber }}",
+    "serviceCount": {{ service.ServiceCount }},
+    "serviceDuration": {
+        "nano": "{{ service.ServiceDuration.Nano }}",
+        "negative": "{{ service.ServiceDuration.Negative }}",
+        "seconds": "{{ service.ServiceDuration.Seconds }}",
+        "Units": [
+            {
+            "dateBased": "{{ service.ServiceDuration.Units[0].Datebased }}",
+            "durationEstimated": "{{ service.ServiceDuration.Units[0].Durationestimated }}",
+            "timeBased": "{{ service.ServiceDuration.Units[0].Timebased }}"
+            }
+        ],
+        "zero": "{{ service.serviceDuration.Zero }}"
+    },
+    "serviceNotes": "{{ service.ServiceNotes }}",
+    "serviceType": "{{ service.ServiceType }}",
+    "shipmentId": {{ service.ShipmentId }},
+    "srvLocation": {{ service.SrvLocation }}
     }
     {% if forloop.last == false %},{% endif %}
 {% endfor %}
