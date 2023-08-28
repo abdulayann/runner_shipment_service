@@ -48,7 +48,7 @@ public class NPMController {
         return ResponseHelper.buildFailedResponse(responseMsg);
     }
 
-    @GetMapping(NPMConstants.GET_OFFERS)
+    @PostMapping(NPMConstants.GET_OFFERS)
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = NPMConstants.LIST_SUCCESSFUL),
             @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
