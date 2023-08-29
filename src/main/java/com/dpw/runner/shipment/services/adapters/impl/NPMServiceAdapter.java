@@ -36,7 +36,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
     @Value("${NPM.Offers}")
     private String npmOffersUrl;
 
-    @Value("${NPM.Offers}")
+    @Value("${NPM.OffersV8}")
     private String npmOffersV8Url;
 
 
