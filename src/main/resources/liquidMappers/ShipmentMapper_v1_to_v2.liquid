@@ -958,7 +958,7 @@
         "isExportClearance":"{{ content.IsExportClearance }}",
         "isImportClearance":"{{ content.IsImportClearance }}",
         "isInland":"{{ content.IsInland }}",
-        "lgdStatus": {{ content.LgdStatus }},
+        "lgdStatus": "{{ content.LgdStatus }}",
         "lineNumber":{{ content.LineNumber }},
         "localLineNumber":{{ content.LocalLineNumber }},
         "notifyParty": {
@@ -974,10 +974,10 @@
         "onBoard": "{{ content.OnBoard }}",
         "onBoardDate": "{{ content.OnBoardDate }}",
         "original":{{ content.Original }},
-        "ownership": {{ content.OwnershipString }},
+        "ownership": "{{ content.OwnershipString }}",
         "ownershipName": "{{ content.OwnershipName }}",
         "paidPlace":"{{ content.PaidPlace }}",
-        "passedBy": {{ content.PassedBy }},
+        "passedBy": "{{ content.PassedBy }}",
         "passedByPerson": "{{ content.PassedByPerson }}",
         "peruEntryExitPoint": "{{ content.PeruEntryExitPoint }}",
         "phase": "{{ content.Phase }}",
@@ -1063,31 +1063,31 @@
 
     "client": {
         "addressCode":"{{ content.Client.AddressCode }}",
-        "addressData":{{ content.Client.AddressData }},
+        "addressData": {},
         "entityId":{{ content.Client.EntityId }},
         "entityType":"{{ content.Client.EntityType }}",
         "orgCode":"{{ content.Client.OrgCode }}",
         "tenantId":{{ content.Client.TenantId }},
         "type":"{{ content.Client.Type }}",
-        "orgData":{{ content.Client.OrgData }}
+        "orgData":{}
     },
     "consigner": {
         "addressCode":"{{ content.Consigner.AddressCode }}",
-        "addressData": {{ content.Consigner.AddressData }},
+        "addressData": {},
         "entityId":{{ content.Consigner.EntityId }},
         "entityType":"{{ content.Consigner.EntityType }}",
         "orgCode":"{{ content.Consigner.OrgCode }}",
-        "orgData": {{ content.Consigner.OrgData }},
+        "orgData": {},
         "tenantId":{{ content.Consigner.TenantId }},
         "type":"{{ content.Consigner.Type }}"
     },
     "consignee": {
         "addressCode":"{{ content.Consignee.AddressCode }}",
-        "addressData": {{ content.Consignee.AddressData }},
+        "addressData": {},
         "entityId":{{ content.Consignee.EntityId }},
         "entityType":"{{ content.Consignee.EntityType }}",
         "orgCode":"{{ content.Consignee.OrgCode }}",
-        "orgData": {{ content.Consignee.OrgData }},
+        "orgData": {},
         "tenantId":{{ content.Consignee.TenantId }},
         "type":"{{ content.Consignee.Type }}"
     },
@@ -1100,11 +1100,11 @@
         "consolidationId": {{ service.ConsolidationId }},
         "contractor": {
             "addressCode": "{{ service.Contractor.AddressCode }}",
-            "addressData": "{{ service.Contractor.AddressData }}",
+            "addressData": {},
             "entityId": {{ service.Contractor.EntityId }},
             "entityType": "{{ service.Contractor.EntityType }}",
             "orgCode": "{{ service.Contractor.OrgCode }}",
-            "orgData": "{{ service.Contractor.OrgData }}",
+            "orgData": {},
             "tenantId": {{ service.Contractor.TenantId }},
             "type": "{{ service.Contractor.Type }}"
         },
