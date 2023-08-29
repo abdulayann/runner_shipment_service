@@ -155,4 +155,7 @@ public class CustomerBooking extends MultiTenancy {
     @Enumerated(EnumType.STRING)
     private BookingSource source;
 
+    @MasterData(type = MasterDataType.SERVICE_MODE)
+    @Column(name = "service_mode")
+    private String serviceMode;
 }

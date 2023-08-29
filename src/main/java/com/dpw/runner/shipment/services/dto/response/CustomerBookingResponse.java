@@ -21,6 +21,7 @@ import java.util.UUID;
 public class CustomerBookingResponse implements IRunnerResponse {
     private Long id;
     private UUID guid;
+    private String serviceMode;
     private BookingStatus bookingStatus;
     private PartiesResponse customer;
     private Boolean isCustomerFreeText;

@@ -44,4 +44,9 @@ public class PartiesConstants {
     public static final String AGENT_CASS_CODE = "AgentCASSCode";
 
 
+    public static final String UNLOCO_CODE = "UnlocoCode";
+    public static final String CURRENCY_CODE = "CurrencyCode";
+    public static final String FAX = "Fax";
+    public static final String SITE = "site";
+    public static final String API = "API";
 }
