@@ -128,7 +128,7 @@ public class CustomerBookingService implements ICustomerBookingService {
         CustomerBooking customerBooking = jsonHelper.convertValue(request, CustomerBooking.class);
         customerBooking.setSource(BookingSource.Runner);
 
-        npmContractUpdate(customerBooking, false, null);  // NPM update contract
+//        npmContractUpdate(customerBooking, false, null);  // NPM update contract
         try {
             createEntities(customerBooking, request);
             /**
@@ -571,7 +571,7 @@ public class CustomerBookingService implements ICustomerBookingService {
     public ResponseEntity<?> platformCreateBooking(CommonRequestModel commonRequestModel) {
         PlatformToRunnerCustomerBookingRequest request = (PlatformToRunnerCustomerBookingRequest) commonRequestModel.getData();
         String bookingNumber = request.getBookingNumber();
-        if(bookingNumber == null) {
+        if (bookingNumber == null) {
             log.error("Booking Number is empty for create Booking with Request Id {}", LoggerHelper.getRequestIdFromMDC());
         }
         Optional<CustomerBooking> customerBooking = customerBookingDao.findByBookingNumber(bookingNumber);
@@ -582,53 +582,53 @@ public class CustomerBookingService implements ICustomerBookingService {
 
         Map<String, UUID> referenceIdVsGuidContainerMap = new HashMap<>();
 
-        if(request.getContainersList() != null) {
+        if (request.getContainersList() != null) {
             List<PlatformToRunnerCustomerBookingResponse.ReferenceNumbersGuidMapResponse> referenceNumbersGuidMapResponses = new ArrayList<>();
             request.getContainersList().forEach(cont -> {
-                if(cont.getGuid() == null)
+                if (cont.getGuid() == null)
                     cont.setGuid(UUID.randomUUID());
                 referenceIdVsGuidContainerMap.put(cont.getReference_id(), cont.getGuid());
                 referenceNumbersGuidMapResponses.add(PlatformToRunnerCustomerBookingResponse.ReferenceNumbersGuidMapResponse.builder()
-                                .reference_id( cont.getReference_id())
-                                .guid(cont.getGuid())
-                                .build());
+                        .reference_id(cont.getReference_id())
+                        .guid(cont.getGuid())
+                        .build());
             });
             platformResponse.setContainers(referenceNumbersGuidMapResponses);
         }
 
-        if(request.getPackingList() != null) {
+        if (request.getPackingList() != null) {
             List<PlatformToRunnerCustomerBookingResponse.ReferenceNumbersGuidMapResponse> referenceNumbersGuidMapResponses = new ArrayList<>();
             request.getPackingList().forEach(pack -> {
-                if(pack.getGuid() == null)
+                if (pack.getGuid() == null)
                     pack.setGuid(UUID.randomUUID());
                 referenceNumbersGuidMapResponses.add(PlatformToRunnerCustomerBookingResponse.ReferenceNumbersGuidMapResponse.builder()
-                        .reference_id( pack.getReference_id())
+                        .reference_id(pack.getReference_id())
                         .guid(pack.getGuid())
                         .build());
             });
             platformResponse.setPacks(referenceNumbersGuidMapResponses);
         }
 
-        if(request.getRoutingList() != null) {
+        if (request.getRoutingList() != null) {
             List<PlatformToRunnerCustomerBookingResponse.ReferenceNumbersGuidMapResponse> referenceNumbersGuidMapResponses = new ArrayList<>();
             request.getRoutingList().forEach(route -> {
-                if(route.getGuid() == null)
+                if (route.getGuid() == null)
                     route.setGuid(UUID.randomUUID());
                 referenceNumbersGuidMapResponses.add(PlatformToRunnerCustomerBookingResponse.ReferenceNumbersGuidMapResponse.builder()
-                        .reference_id( route.getReference_id())
+                        .reference_id(route.getReference_id())
                         .guid(route.getGuid())
                         .build());
             });
             platformResponse.setRoutings(referenceNumbersGuidMapResponses);
         }
 
-        if(request.getBookingCharges() != null) {
+        if (request.getBookingCharges() != null) {
             List<PlatformToRunnerCustomerBookingResponse.ReferenceNumbersGuidMapResponse> referenceNumbersGuidMapResponses = new ArrayList<>();
             request.getBookingCharges().forEach(charge -> {
-                if(charge.getGuid() == null)
+                if (charge.getGuid() == null)
                     charge.setGuid(UUID.randomUUID());
                 referenceNumbersGuidMapResponses.add(PlatformToRunnerCustomerBookingResponse.ReferenceNumbersGuidMapResponse.builder()
-                        .reference_id( charge.getReference_id())
+                        .reference_id(charge.getReference_id())
                         .guid(charge.getGuid())
                         .build());
 
@@ -660,14 +660,14 @@ public class CustomerBookingService implements ICustomerBookingService {
         assignCarrierDetailsToRequest(customerBookingRequest, request);
         ResponseEntity<RunnerResponse<CustomerBookingResponse>> response = null;
         customerBookingRequest.setSource(BookingSource.Platform);
-        if(customerBooking.isEmpty()){
+        if (customerBooking.isEmpty()) {
             this.createPlatformBooking(customerBookingRequest);
         } else {
-            if(customerBooking.get().getId() != null)
+            if (customerBooking.get().getId() != null)
                 customerBookingRequest.setId(customerBooking.get().getId());
-            if(customerBooking.get().getGuid() != null)
+            if (customerBooking.get().getGuid() != null)
                 customerBookingRequest.setGuid(customerBooking.get().getGuid());
-            if(customerBooking.get().getCarrierDetails() != null){
+            if (customerBooking.get().getCarrierDetails() != null) {
                 customerBookingRequest.getCarrierDetails().setId(customerBooking.get().getCarrierDetails().getId());
                 customerBookingRequest.getCarrierDetails().setGuid(customerBooking.get().getCarrierDetails().getGuid());
             }
@@ -676,61 +676,61 @@ public class CustomerBookingService implements ICustomerBookingService {
             Map<UUID, Long> guidVsIdPackingMap = new HashMap<>();
             Map<UUID, Long> guidVsIdRoutingMap = new HashMap<>();
             Map<UUID, Long> guidVsIdChargesMap = new HashMap<>();
-            if(customerBooking.get().getContainersList() != null) {
+            if (customerBooking.get().getContainersList() != null) {
                 customerBooking.get().getContainersList().forEach(cont -> {
                     guidVsIdContainerMap.put(cont.getGuid(), cont.getId());
                 });
             }
 
-            if(customerBooking.get().getPackingList() != null) {
+            if (customerBooking.get().getPackingList() != null) {
                 customerBooking.get().getPackingList().forEach(pack -> {
                     guidVsIdPackingMap.put(pack.getGuid(), pack.getId());
                 });
             }
 
-            if(customerBooking.get().getRoutingList() != null) {
+            if (customerBooking.get().getRoutingList() != null) {
                 customerBooking.get().getRoutingList().forEach(route -> {
                     guidVsIdRoutingMap.put(route.getGuid(), route.getId());
                 });
             }
 
-            if(customerBooking.get().getBookingCharges() != null) {
+            if (customerBooking.get().getBookingCharges() != null) {
                 customerBooking.get().getBookingCharges().forEach(charge -> {
                     guidVsIdChargesMap.put(charge.getGuid(), charge.getId());
                 });
             }
 
-            if(customerBookingRequest.getContainersList() != null) {
+            if (customerBookingRequest.getContainersList() != null) {
                 customerBookingRequest.getContainersList().forEach(cont -> {
-                    if(cont.getGuid() != null){
-                        if(guidVsIdContainerMap.containsKey(cont.getGuid()))
+                    if (cont.getGuid() != null) {
+                        if (guidVsIdContainerMap.containsKey(cont.getGuid()))
                             cont.setId(guidVsIdContainerMap.get(cont.getGuid()));
                     }
                 });
             }
 
-            if(customerBookingRequest.getPackingList() != null) {
+            if (customerBookingRequest.getPackingList() != null) {
                 customerBookingRequest.getPackingList().forEach(pack -> {
-                    if(pack.getGuid() != null){
-                        if(guidVsIdPackingMap.containsKey(pack.getGuid()))
+                    if (pack.getGuid() != null) {
+                        if (guidVsIdPackingMap.containsKey(pack.getGuid()))
                             pack.setId(guidVsIdPackingMap.get(pack.getGuid()));
                     }
                 });
             }
 
-            if(customerBookingRequest.getRoutingList() != null) {
+            if (customerBookingRequest.getRoutingList() != null) {
                 customerBookingRequest.getRoutingList().forEach(route -> {
-                    if(route.getGuid() != null){
-                        if(guidVsIdRoutingMap.containsKey(route.getGuid()))
+                    if (route.getGuid() != null) {
+                        if (guidVsIdRoutingMap.containsKey(route.getGuid()))
                             route.setId(guidVsIdRoutingMap.get(route.getGuid()));
                     }
                 });
             }
 
-            if(customerBookingRequest.getBookingCharges() != null) {
+            if (customerBookingRequest.getBookingCharges() != null) {
                 customerBookingRequest.getBookingCharges().forEach(charge -> {
-                    if(charge.getGuid() != null){
-                        if(guidVsIdChargesMap.containsKey(charge.getGuid()))
+                    if (charge.getGuid() != null) {
+                        if (guidVsIdChargesMap.containsKey(charge.getGuid()))
                             charge.setId(guidVsIdChargesMap.get(charge.getGuid()));
                     }
                 });
@@ -743,7 +743,7 @@ public class CustomerBookingService implements ICustomerBookingService {
     }
 
     private void setOrgAndAddressToParties(PlatformToRunnerCustomerBookingRequest request) {
-        if(request.getCustomer() != null) {
+        if (request.getCustomer() != null) {
             String orgCode = request.getCustomer().getOrgCode();
             String addressCode = request.getCustomer().getAddressCode();
             transformOrgAndAddressPayload(request.getCustomer(), addressCode, orgCode);
@@ -758,19 +758,19 @@ public class CustomerBookingService implements ICustomerBookingService {
             transformOrgAndAddressToRawData(request.getNotifyParty());
         }
 
-        if(request.getBookingCharges() != null && !request.getBookingCharges().isEmpty()) {
+        if (request.getBookingCharges() != null && !request.getBookingCharges().isEmpty()) {
             request.getBookingCharges().forEach(charge -> {
-                if(charge.getCreditor() != null) {
+                if (charge.getCreditor() != null) {
                     String orgCode = charge.getCreditor().getOrgCode();
                     String addressCode = charge.getCreditor().getAddressCode();
                     transformOrgAndAddressPayload(charge.getCreditor(), addressCode, orgCode);
                 }
-                if(charge.getDebtor() != null) {
+                if (charge.getDebtor() != null) {
                     String orgCode = charge.getDebtor().getOrgCode();
                     String addressCode = charge.getDebtor().getAddressCode();
                     transformOrgAndAddressPayload(charge.getDebtor(), addressCode, orgCode);
                 } else {
-                    if(charge.getCreditor() != null)
+                    if (charge.getCreditor() != null)
                         charge.setDebtor(charge.getCreditor());
                 }
             });
@@ -778,45 +778,45 @@ public class CustomerBookingService implements ICustomerBookingService {
         }
     }
 
-    private void transformOrgAndAddressToRawData (PartiesRequest partiesRequest) {
+    private void transformOrgAndAddressToRawData(PartiesRequest partiesRequest) {
         Map<String, Object> orgData = partiesRequest.getOrgData();
         Map<String, Object> addressData = partiesRequest.getAddressData();
 
         String orgString = "";
         String addressString = "";
-        if(orgData.containsKey(PartiesConstants.FULLNAME)) {
-            orgString = orgString.concat((String)orgData.get(PartiesConstants.FULLNAME));
-            addressString = addressString.concat((String)orgData.get(PartiesConstants.FULLNAME) + "|");
+        if (orgData.containsKey(PartiesConstants.FULLNAME)) {
+            orgString = orgString.concat((String) orgData.get(PartiesConstants.FULLNAME));
+            addressString = addressString.concat((String) orgData.get(PartiesConstants.FULLNAME) + "|");
         }
         partiesRequest.setOrgData(Map.of(PartiesConstants.RAW_DATA, orgString));
-        if(addressData.containsKey(PartiesConstants.ADDRESS1)) {
+        if (addressData.containsKey(PartiesConstants.ADDRESS1)) {
             addressString = addressString.concat((String) addressData.get(PartiesConstants.ADDRESS1) + "|");
         }
-        if(addressData.containsKey(PartiesConstants.ADDRESS2)) {
+        if (addressData.containsKey(PartiesConstants.ADDRESS2)) {
             addressString = addressString.concat((String) addressData.get(PartiesConstants.ADDRESS2) + "|");
         }
-        if(addressData.containsKey(PartiesConstants.CITY)) {
+        if (addressData.containsKey(PartiesConstants.CITY)) {
             addressString = addressString.concat((String) addressData.get(PartiesConstants.CITY) + "|");
         }
-        if(addressData.containsKey(PartiesConstants.STATE)) {
+        if (addressData.containsKey(PartiesConstants.STATE)) {
             addressString = addressString.concat((String) addressData.get(PartiesConstants.STATE) + "|");
         }
-        if(addressData.containsKey(PartiesConstants.COUNTRY)) {
+        if (addressData.containsKey(PartiesConstants.COUNTRY)) {
             addressString = addressString.concat((String) addressData.get(PartiesConstants.COUNTRY) + "|");
         }
-        if(addressData.containsKey(PartiesConstants.ZIP_POST_CODE)) {
+        if (addressData.containsKey(PartiesConstants.ZIP_POST_CODE)) {
             addressString = addressString.concat((String) addressData.get(PartiesConstants.ZIP_POST_CODE) + "|");
         }
-        if(addressData.containsKey(PartiesConstants.MOBILE)) {
+        if (addressData.containsKey(PartiesConstants.MOBILE)) {
             addressString = addressString.concat((String) addressData.get(PartiesConstants.MOBILE) + "|");
         }
-        if(addressData.containsKey(PartiesConstants.PHONE)) {
+        if (addressData.containsKey(PartiesConstants.PHONE)) {
             addressString = addressString.concat((String) addressData.get(PartiesConstants.PHONE) + "|");
         }
         partiesRequest.setAddressData(Map.of(PartiesConstants.RAW_DATA, addressString));
     }
 
-    private void transformOrgAndAddressPayload (PartiesRequest request, String addressCode, String orgCode) {
+    private void transformOrgAndAddressPayload(PartiesRequest request, String addressCode, String orgCode) {
 
         CRPRetrieveRequest retrieveRequest = CRPRetrieveRequest.builder().searchString(orgCode).build();
         var response = new CRPRetrieveResponse();
@@ -824,12 +824,12 @@ public class CustomerBookingService implements ICustomerBookingService {
             ResponseEntity<CRPRetrieveResponse> crpResponse = (ResponseEntity<CRPRetrieveResponse>) crpServiceAdapter.retrieveCRPService(CommonRequestModel.buildRequest(retrieveRequest));
             response = modelMapper.map(crpResponse.getBody(), CRPRetrieveResponse.class);
         } catch (Exception e) {
-            log.error("CRP Retrieve failed due to: "+ e.getMessage());
+            log.error("CRP Retrieve failed due to: " + e.getMessage());
             throw new RuntimeException(e);
         }
-        if(response == null) {
-            log.error("No organization exist in CRP with OrgCode: "+ orgCode);
-            throw new DataRetrievalFailureException("No organization exist in CRP with OrgCode: "+ orgCode);
+        if (response == null) {
+            log.error("No organization exist in CRP with OrgCode: " + orgCode);
+            throw new DataRetrievalFailureException("No organization exist in CRP with OrgCode: " + orgCode);
         }
 
         Map<String, Object> orgData = new HashMap<>();
@@ -847,7 +847,7 @@ public class CustomerBookingService implements ICustomerBookingService {
             var billableFlagList = companyCodeIssuerDetailsList.stream().filter(x -> x.getIdentifierCodeType().equals(PartiesConstants.BILLABLE_FLAG)).collect(Collectors.toList());
             if(!fusionSiteIdList.isEmpty())
                 fusionSiteIdentifier = fusionSiteIdList.get(0).getIdentifierCode();
-            if(!billableFlagList.isEmpty())
+            if (!billableFlagList.isEmpty())
                 billableFlag = billableFlagList.get(0).getIdentifierCode();
         }
 
@@ -934,37 +934,37 @@ public class CustomerBookingService implements ICustomerBookingService {
     }
 
     private void npmContractUpdate(CustomerBooking customerBooking, Boolean isAlteration, CustomerBooking oldEntity) {
-        if(customerBooking.getTransportType().equals(Constants.TRANSPORT_MODE_SEA) && customerBooking.getCargoType().equals(Constants.CARGO_TYPE_FCL) &&
+        if (customerBooking.getTransportType().equals(Constants.TRANSPORT_MODE_SEA) && customerBooking.getCargoType().equals(Constants.CARGO_TYPE_FCL) &&
                 StringUtility.isNotEmpty(customerBooking.getContractId()) && customerBooking.getBookingCharges() != null && !customerBooking.getBookingCharges().isEmpty()) {
 
             List<LoadInfoRequest> loadInfoRequestList = containersListForLoad(customerBooking, oldEntity, customerBooking.getBookingStatus() == BookingStatus.CANCELLED);
-            if(!loadInfoRequestList.isEmpty())
+            if (!loadInfoRequestList.isEmpty())
                 npmContractUpdatePaylaod(customerBooking, isAlteration, loadInfoRequestList);
         }
     }
 
     private List<LoadInfoRequest> containersListForLoad(CustomerBooking customerBooking, CustomerBooking oldEntity, Boolean isCancelled) {
         Map<Long, Containers> idVsContainerMap;
-        if(oldEntity != null && oldEntity.getContainersList() != null) {
-            idVsContainerMap = oldEntity.getContainersList().stream().collect(Collectors.toMap(Containers::getId, c->c));
+        if (oldEntity != null && oldEntity.getContainersList() != null) {
+            idVsContainerMap = oldEntity.getContainersList().stream().collect(Collectors.toMap(Containers::getId, c -> c));
         } else {
             idVsContainerMap = new HashMap<>();
         }
         List<LoadInfoRequest> loadInfoRequestList = new ArrayList<>();
-        if(!isCancelled && customerBooking.getContainersList() != null) {
+        if (!isCancelled && customerBooking.getContainersList() != null) {
             customerBooking.getContainersList().forEach(cont -> {
-                if(cont.getId() == null) {
+                if (cont.getId() == null) {
                     loadInfoRequestList.add(containerLoadConstruct(cont, CustomerBookingConstants.REMOVE, cont.getContainerCount()));
                 } else {
-                    if(idVsContainerMap.containsKey(cont.getId())) {
-                        if(!cont.getContainerCode().equals(idVsContainerMap.get(cont.getId()).getContainerCode())) {
+                    if (idVsContainerMap.containsKey(cont.getId())) {
+                        if (!cont.getContainerCode().equals(idVsContainerMap.get(cont.getId()).getContainerCode())) {
                             loadInfoRequestList.add(containerLoadConstruct(cont, CustomerBookingConstants.REMOVE, cont.getContainerCount()));
                             loadInfoRequestList.add(containerLoadConstruct(idVsContainerMap.get(cont.getId()), CustomerBookingConstants.ADD, idVsContainerMap.get(cont.getId()).getContainerCount()));
 
                         } else if (!cont.getCommodityCode().equals(idVsContainerMap.get(cont.getId()).getCommodityCode())) {
                             loadInfoRequestList.add(containerLoadConstruct(cont, CustomerBookingConstants.REMOVE, cont.getContainerCount()));
                             loadInfoRequestList.add(containerLoadConstruct(idVsContainerMap.get(cont.getId()), CustomerBookingConstants.ADD, idVsContainerMap.get(cont.getId()).getContainerCount()));
-                        } else if (cont.getContainerCount() > idVsContainerMap.get(cont.getId()).getContainerCount()){
+                        } else if (cont.getContainerCount() > idVsContainerMap.get(cont.getId()).getContainerCount()) {
                             Long containerCount = cont.getContainerCount() - idVsContainerMap.get(cont.getId()).getContainerCount();
                             loadInfoRequestList.add(containerLoadConstruct(cont, CustomerBookingConstants.REMOVE, containerCount));
                         } else if (cont.getContainerCount() < idVsContainerMap.get(cont.getId()).getContainerCount()) {
@@ -975,7 +975,7 @@ public class CustomerBookingService implements ICustomerBookingService {
                     }
                 }
             });
-            if(!idVsContainerMap.isEmpty()){
+            if (!idVsContainerMap.isEmpty()) {
                 idVsContainerMap.values().forEach(cont -> {
                     loadInfoRequestList.add(containerLoadConstruct(cont, CustomerBookingConstants.ADD, cont.getContainerCount()));
                 });
@@ -1006,7 +1006,7 @@ public class CustomerBookingService implements ICustomerBookingService {
 
     private void npmContractUpdatePaylaod(CustomerBooking customerBooking, Boolean isAlteration, List<LoadInfoRequest> loadInfoRequestList) {
         String contractStatus = null;
-        if(customerBooking.getContractStatus().equals(CustomerBookingConstants.SINGLE_USAGE) && customerBooking.getBookingStatus() == BookingStatus.CANCELLED){
+        if (customerBooking.getContractStatus().equals(CustomerBookingConstants.SINGLE_USAGE) && customerBooking.getBookingStatus() == BookingStatus.CANCELLED) {
             contractStatus = CustomerBookingConstants.ENABLED;
         } else if (customerBooking.getContractStatus().equals(CustomerBookingConstants.SINGLE_USAGE)) {
             contractStatus = CustomerBookingConstants.DISABLED;
@@ -1024,7 +1024,7 @@ public class CustomerBookingService implements ICustomerBookingService {
         try {
             npmService.updateContracts(CommonRequestModel.buildRequest(updateContractRequest));
         } catch (Exception e) {
-            log.error("Update Contract Request failed due to: "+ e.getMessage());
+            log.error("Update Contract Request failed due to: " + e.getMessage());
             throw new RuntimeException(e);
         }
     }
@@ -1047,16 +1047,17 @@ public class CustomerBookingService implements ICustomerBookingService {
 
     /**
      * To be used to fetch dependent masterdata*
+     *
      * @param customerBooking
      * @param customerBookingResponse
      */
-    private void createCustomerBookingResponse (CustomerBooking customerBooking, CustomerBookingResponse customerBookingResponse) {
+    private void createCustomerBookingResponse(CustomerBooking customerBooking, CustomerBookingResponse customerBookingResponse) {
         this.addAllMasterDatas(customerBooking, customerBookingResponse);
         this.addAllUnlocationDatas(customerBooking, customerBookingResponse);
         this.addDedicatedMasterData(customerBooking, customerBookingResponse);
     }
 
-    private void addAllMasterDatas (CustomerBooking customerBooking, CustomerBookingResponse customerBookingResponse) {
+    private void addAllMasterDatas(CustomerBooking customerBooking, CustomerBookingResponse customerBookingResponse) {
         customerBookingResponse.setMasterData(masterDataUtils.addMasterData(customerBookingResponse, CustomerBooking.class));
         customerBookingResponse.getCarrierDetails().setMasterData(masterDataUtils.addMasterData(customerBookingResponse.getCarrierDetails(), CarrierDetails.class));
         customerBookingResponse.getRoutingList().forEach(r -> r.setMasterData(masterDataUtils.addMasterData(r, Routings.class)));
@@ -1064,19 +1065,19 @@ public class CustomerBookingService implements ICustomerBookingService {
         customerBookingResponse.getPackingList().forEach(c -> c.setMasterData(masterDataUtils.addMasterData(c, Packing.class)));
     }
 
-    private void addAllUnlocationDatas (CustomerBooking customerBooking, CustomerBookingResponse customerBookingResponse) {
+    private void addAllUnlocationDatas(CustomerBooking customerBooking, CustomerBookingResponse customerBookingResponse) {
         customerBookingResponse.getCarrierDetails().setUnlocationData(masterDataUtils.addUnlocationData(customerBookingResponse.getCarrierDetails(), CarrierDetails.class, EntityTransferConstants.LOCATION_SERVICE_GUID));
         customerBookingResponse.getRoutingList().forEach(r -> r.setUnlocationData(masterDataUtils.addUnlocationData(r, Routings.class, EntityTransferConstants.LOCATION_SERVICE_GUID)));
     }
 
-    private void addDedicatedMasterData (CustomerBooking customerBooking, CustomerBookingResponse customerBookingResponse) {
+    private void addDedicatedMasterData(CustomerBooking customerBooking, CustomerBookingResponse customerBookingResponse) {
         customerBookingResponse.getCarrierDetails().setCarrierMasterData(masterDataUtils.carrierMasterData(customerBookingResponse.getCarrierDetails(), CarrierDetails.class));
-        customerBookingResponse.getRoutingList().forEach(r -> r.setCarrierMasterData( masterDataUtils.carrierMasterData(r, Routings.class)));
-        customerBookingResponse.getContainersList().forEach(r -> r.setCommodityTypeData( masterDataUtils.commodityMasterData(r, Containers.class)));
-        customerBookingResponse.getPackingList().forEach(r -> r.setCommodityTypeData( masterDataUtils.commodityMasterData(r, Packing.class)));
-        customerBookingResponse.getContainersList().forEach(r -> r.setContainerCodeData( masterDataUtils.containerCodeMasterData(r, Containers.class)));
+        customerBookingResponse.getRoutingList().forEach(r -> r.setCarrierMasterData(masterDataUtils.carrierMasterData(r, Routings.class)));
+        customerBookingResponse.getContainersList().forEach(r -> r.setCommodityTypeData(masterDataUtils.commodityMasterData(r, Containers.class)));
+        customerBookingResponse.getPackingList().forEach(r -> r.setCommodityTypeData(masterDataUtils.commodityMasterData(r, Packing.class)));
+        customerBookingResponse.getContainersList().forEach(r -> r.setContainerCodeData(masterDataUtils.containerCodeMasterData(r, Containers.class)));
         customerBookingResponse.getCarrierDetails().setVesselsMasterData(masterDataUtils.vesselsMasterData(customerBookingResponse.getCarrierDetails(), CarrierDetails.class));
-        customerBookingResponse.getBookingCharges().forEach(c -> c.setChargeTypeMasterData( masterDataUtils.chargeTypeMasterData(c, BookingCharges.class)));
+        customerBookingResponse.getBookingCharges().forEach(c -> c.setChargeTypeMasterData(masterDataUtils.chargeTypeMasterData(c, BookingCharges.class)));
     }
 
 

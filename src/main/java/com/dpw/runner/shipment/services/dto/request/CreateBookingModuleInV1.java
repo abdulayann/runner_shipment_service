@@ -15,7 +15,7 @@ import java.util.UUID;
 @Builder
 public class CreateBookingModuleInV1 {
 
-    private boolean IsP100Booking = true;
+    private Boolean IsP100Booking = true;
     private BookingEntity Entity;
 
     @Data
@@ -55,8 +55,8 @@ public class CreateBookingModuleInV1 {
         private String CustomShipmentType;
         private String Incoterm;
         private String ServiceMode;
-        private boolean IsShipmentCreateEnabled;
-        private boolean IsConsolidationCreateEnabled;
+        private Boolean IsShipmentCreateEnabled;
+        private Boolean IsConsolidationCreateEnabled;
         private String BookingType;
         private String Status;
 
@@ -101,7 +101,7 @@ public class CreateBookingModuleInV1 {
             private String DocType;
             private String FileName;
             private String Path;
-            private boolean ClientEnabled;
+            private Boolean ClientEnabled;
             private String EventCode;
         }
 
@@ -125,7 +125,7 @@ public class CreateBookingModuleInV1 {
             private String ChargeableUnit;
             private String GoodsDescription;
             private String CommodityCode;
-            private boolean HazardousCheckBox;
+            private Boolean HazardousCheckBox;
             private String HsCode;
         }
 
@@ -149,9 +149,9 @@ public class CreateBookingModuleInV1 {
             private String Mobile;
             private String Fax;
             private String Email;
-            private boolean ActiveClient;
+            private Boolean ActiveClient;
             private String DefaultAddressSiteIdentifier;
-            private boolean Receivables;
+            private Boolean Receivables;
             private List<OrgDetailAddress> Addresses;
 
 

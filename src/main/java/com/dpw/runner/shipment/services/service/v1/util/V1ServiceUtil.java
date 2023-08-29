@@ -60,7 +60,7 @@ public class V1ServiceUtil {
                 .RoutingList(createRoutingList(customerBooking.getRoutingList()))
                 .Documents(createDocuments(customerBooking.getFileRepoList()))
                 .Loosecargos(createLooseCarges(customerBooking.getPackingList()))
-                .OrgDetails(createOrgDetails(customerBooking))
+                .OrgDetails(null)
                 .build();
     }
 
@@ -68,16 +68,25 @@ public class V1ServiceUtil {
         if (customerBooking == null)
             return null;
         List<CreateBookingModuleInV1.BookingEntity.OrgDetail> list = new ArrayList<>();
-        list.add(convertParty(customerBooking.getConsignee()));
-        list.add(convertParty(customerBooking.getConsignor()));
-        list.add(convertParty(customerBooking.getNotifyParty()));
-        list.add(convertParty(customerBooking.getCustomer()));
+        var consignee = convertParty(customerBooking.getConsignee());
+        var consignor = convertParty(customerBooking.getConsignor());
+        var notify = convertParty(customerBooking.getNotifyParty());
+        var customer = convertParty(customerBooking.getCustomer());
+        if (consignee != null)
+            list.add(consignee);
+        if (consignor != null)
+            list.add(consignor);
+        if (notify != null)
+            list.add(notify);
+        if (customer != null)
+            list.add(customer);
         return list;
     }
 
     private static CreateBookingModuleInV1.BookingEntity.OrgDetail convertParty(Parties party) {
         if (party == null)
             return null;
+        var addressData = party.getAddressData();
         var orgData = party == null || party.getOrgData() == null ? Collections.emptyMap() : party.getOrgData();
         return CreateBookingModuleInV1.BookingEntity.OrgDetail.builder()
                 .OrgSource(PartiesConstants.API)
@@ -85,6 +94,9 @@ public class V1ServiceUtil {
                 .FullName((String) orgData.get(PartiesConstants.FULLNAME))
                 .Address1((String) orgData.get(PartiesConstants.ADDRESS1))
                 .Address2((String) orgData.get(PartiesConstants.ADDRESS2))
+                .Addresses(List.of(CreateBookingModuleInV1.BookingEntity.OrgDetail.OrgDetailAddress.builder()
+                        .AddressShortCode((String) addressData.get("AddressShortCode"))
+                        .Address1((String) orgData.get(PartiesConstants.ADDRESS1)).build()))
                 .Country((String) orgData.get(PartiesConstants.COUNTRY))
                 .CityCode((String) orgData.get(PartiesConstants.CITY_CODE))
                 .State((String) orgData.get(PartiesConstants.STATE))
