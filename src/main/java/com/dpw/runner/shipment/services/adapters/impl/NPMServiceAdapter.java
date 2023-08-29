@@ -36,6 +36,10 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
     @Value("${NPM.Offers}")
     private String npmOffersUrl;
 
+    @Value("${NPM.Offers}")
+    private String npmOffersV8Url;
+
+
     @Value("${NPM.Update}")
     private String npmUpdateUrl;
 
@@ -73,6 +77,14 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
         return response;
     }
 
+    @Override
+    public ResponseEntity<?> fetchOffersV8(CommonRequestModel req) throws Exception {
+        String url = npmBaseUrl + npmOffersV8Url;
+        NPMFetchOffersRequestFromUI fetchOffersRequest = (NPMFetchOffersRequestFromUI) req.getData();
+        ResponseEntity<?> response = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(createNPMOffersV8Request(fetchOffersRequest)), Object.class);
+        return response;
+    }
+
     private NPMFetchOffersRequest createNPMOffersRequest(NPMFetchOffersRequestFromUI request) {
         Optional<CustomerBooking> customerBooking = customerBookingDao.findById(request.getBookingId());
         boolean isAlteration = false;
@@ -89,7 +101,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
                 .preferred_date(request.getPreferredDate())
                 .preferred_date_type(request.getPreferredDateType())
                 .carrier(NPMConstants.ANY) //hardcoded
-                .loads_information(createLoadsInfo(request, customerBooking.get(), isAlteration))
+                .loads_information(createLoadsInfo(request, customerBooking.get(), isAlteration, NPMConstants.OFFERS_V2))
                 .mode_of_transport(request.getModeOfTransport())
                 .product_name(request.getCargoType()) // {TODO :: have to keep a mapping which is not present}
                 .contract_details(createContractDetails(request))
@@ -105,6 +117,29 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
                 .build();
     }
 
+    private NPMFetchOffersRequest createNPMOffersV8Request(NPMFetchOffersRequestFromUI request) {
+        Optional<CustomerBooking> customerBooking = customerBookingDao.findById(request.getBookingId());
+        boolean isAlteration = false;
+        if (customerBooking.isPresent() && !customerBooking.get().getBookingCharges().isEmpty()) {
+            isAlteration = true;
+        }
+
+        return NPMFetchOffersRequest.builder()
+                .origin(request.getOrigin())
+                .destination(request.getDestination())
+                .preferred_date(request.getPreferredDate())
+                .preferred_date_type(request.getPreferredDateType())
+                .loads_info(createLoadsInfo(request, customerBooking.get(), false, NPMConstants.OFFERS_V8)) // TODO -; loads_info instead of loads_information
+                .mode_of_transport(request.getModeOfTransport())
+                .shipment_movement(customerBooking.map(cb -> cb.getDirection()).orElse(null))
+                .service_mode(request.getServiceMode())
+                .business_info(createBusinessInfo(request))
+                .contracts_info(createContractInfo(request))
+                .fetch_default_rates(request.isFetchDefaultRates())
+                .carrier_code(request.getCarrierCode())
+                .build();
+    }
+
     private NPMFetchOffersRequest.ContractDetails createContractDetails(NPMFetchOffersRequestFromUI request) {
         return NPMFetchOffersRequest.ContractDetails.builder()
                 .contracts(Collections.singletonList(request.getContractsInfo().getContractId()))
@@ -112,16 +147,29 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
                 .build();
     }
 
-    private List<NPMFetchOffersRequest.LoadInformation> createLoadsInfo(NPMFetchOffersRequestFromUI request, CustomerBooking customerBooking, boolean isAlteration) {
+    private NPMFetchOffersRequest.ContractsInfo createContractInfo(NPMFetchOffersRequestFromUI request) {
+        return NPMFetchOffersRequest.ContractsInfo.builder()
+                .customer_org_id(request.getContractsInfo().getCustomerOrgId())
+                .contract_id(request.getContractsInfo().getContractId())
+                .build();
+    }
+
+    private NPMFetchOffersRequest.BusinessInfo createBusinessInfo(NPMFetchOffersRequestFromUI request){
+        return NPMFetchOffersRequest.BusinessInfo.builder()
+                .product_name(request.getCargoType()).
+                build();
+    }
+
+    private List<NPMFetchOffersRequest.LoadInformation> createLoadsInfo(NPMFetchOffersRequestFromUI request, CustomerBooking customerBooking, boolean isAlteration, String offerType) {
         //First Time
         List<NPMFetchOffersRequest.LoadInformation> result = new ArrayList<>();
         if (isAlteration == false) {
             var containers = request.getContainers();
             var packs = request.getPacks();
             result.addAll(containers.stream().map(
-                    c -> createLoadInfoFromContainers(request, c)).collect(Collectors.toList()));
+                    c -> createLoadInfoFromContainers(request, c, offerType)).collect(Collectors.toList()));
             result.addAll(packs.stream().map(
-                    p -> createLoadInfoFromPacks(request, p)).collect(Collectors.toList()));
+                    p -> createLoadInfoFromPacks(request, p, offerType)).collect(Collectors.toList()));
             return result;
         }
 
@@ -133,7 +181,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
         result.addAll(request.getContainers().stream().map(
                 c -> {
                     NPMFetchOffersRequest.LoadInformation model =
-                            createLoadInfoFromContainers(request, c);
+                            createLoadInfoFromContainers(request, c, offerType);
                     if (existingContainers.containsKey(c.getId())) {
                         Containers container = existingContainers.get(c.getId());
                         if (c.getQuantity() > container.getContainerCount())
@@ -148,7 +196,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
         result.addAll(request.getPacks().stream().map(
                 p -> {
                     NPMFetchOffersRequest.LoadInformation model =
-                            createLoadInfoFromPacks(request, p);
+                            createLoadInfoFromPacks(request, p, offerType);
                     if (existingPacks.containsKey(p.getId())) {
                         Packing packing = existingPacks.get(p.getId());
                         model.getLoad_attributes().setQuantity(Long.valueOf(packing.getPacks()));
@@ -161,12 +209,14 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
         return result;
     }
 
-    private NPMFetchOffersRequest.LoadInformation createLoadInfoFromPacks(NPMFetchOffersRequestFromUI request, NPMFetchOffersRequestFromUI.Pack p) {
+    private NPMFetchOffersRequest.LoadInformation createLoadInfoFromPacks(NPMFetchOffersRequestFromUI request, NPMFetchOffersRequestFromUI.Pack p,
+                                                                          String offerType) {
         return NPMFetchOffersRequest.LoadInformation.builder()
                 .load_detail(NPMFetchOffersRequest.LoadDetail.builder()
                         .load_type(request.getCargoType())
                         .cargo_type(p.getPackageType())
-                        .product_category_code(p.getCommodity())
+                        .product_category_code(NPMConstants.OFFERS_V2.equals(offerType)?p.getCommodity():null)
+                        .commodity(NPMConstants.OFFERS_V8.equals(offerType)?p.getCommodity():null)
                         .build())
                 .load_attributes(NPMFetchOffersRequest.LoadAttributes.builder()
                         .chargeable(p.getChargeable())
@@ -183,12 +233,14 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
     }
 
     private NPMFetchOffersRequest.LoadInformation createLoadInfoFromContainers(NPMFetchOffersRequestFromUI request,
-                                                                               NPMFetchOffersRequestFromUI.Container containerFromRequest) {
+                                                                               NPMFetchOffersRequestFromUI.Container containerFromRequest,
+                                                                               String offerType) {
         return NPMFetchOffersRequest.LoadInformation.builder()
                 .load_detail(NPMFetchOffersRequest.LoadDetail.builder()
                         .load_type(request.getCargoType())
                         .cargo_type(containerFromRequest.getContainerType())
-                        .product_category_code(containerFromRequest.getCommodityCode())
+                        .product_category_code(NPMConstants.OFFERS_V2.equals(offerType)? containerFromRequest.getCommodityCode() : null)
+                        .commodity(NPMConstants.OFFERS_V8.equals(offerType)? containerFromRequest.getCommodityCode() : null)
                         .build())
                 .load_attributes(NPMFetchOffersRequest.LoadAttributes.builder()
                         .delta_quantity(containerFromRequest.getQuantity())
