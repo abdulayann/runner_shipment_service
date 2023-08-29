@@ -23,8 +23,8 @@ public class V1ServiceUtil {
                 .ContractId(customerBooking.getContractId())
                 .NotifyPartyCode(Objects.isNull(customerBooking.getNotifyParty()) ? null : customerBooking.getNotifyParty().getOrgCode())
                 .NotifyPartyAddressCode(Objects.isNull(customerBooking.getNotifyParty()) ? null : customerBooking.getNotifyParty().getAddressCode())
-                .Carrier(customerBooking.getCarrierDetails().getShippingLine())
-                .VesselName(customerBooking.getCarrierDetails().getVessel())
+                .Carrier(customerBooking.getCarrierDetails() != null ? customerBooking.getCarrierDetails().getShippingLine() : null)
+                .VesselName(customerBooking.getCarrierDetails() != null ? customerBooking.getCarrierDetails().getVessel() : null)
                 .Packs(Long.valueOf(customerBooking.getQuantity()))
                 .PacksUnit(customerBooking.getQuantityUnit())
                 .Weight(customerBooking.getGrossWeight())
@@ -34,13 +34,13 @@ public class V1ServiceUtil {
                 .Volume(customerBooking.getVolume())
                 .VolumeUnit(customerBooking.getVolumeUnit())
                 .ReferenceNo(customerBooking.getBookingNumber())
-                .CreatedDate(DateTimeFormatter.ofPattern(CustomerBookingConstants.DATE_FORMAT).format(customerBooking.getCreatedAt()))
-                .ClientCode(customerBooking.getCustomer().getOrgCode())
-                .ClientAddressShortCode(customerBooking.getCustomer().getAddressCode())
-                .ConsignerCode(customerBooking.getConsignor().getOrgCode())
-                .ConsignerAddressCode(customerBooking.getConsignor().getAddressCode())
-                .ConsigneeCode(customerBooking.getConsignee().getOrgCode())
-                .ConsigneeAddressCode(customerBooking.getConsignee().getAddressCode())
+                .CreatedDate(customerBooking.getCreatedAt() != null ? DateTimeFormatter.ofPattern(CustomerBookingConstants.DATE_FORMAT).format(customerBooking.getCreatedAt()) : null)
+                .ClientCode(customerBooking.getCustomer() != null ? customerBooking.getCustomer().getOrgCode() : null)
+                .ClientAddressShortCode(customerBooking.getCustomer() != null ? customerBooking.getCustomer().getAddressCode() : null)
+                .ConsignerCode(customerBooking.getConsignor() != null ? customerBooking.getConsignor().getOrgCode() : null)
+                .ConsignerAddressCode(customerBooking.getConsignor() != null ? customerBooking.getConsignor().getAddressCode() : null)
+                .ConsigneeCode(customerBooking.getConsignee() != null ? customerBooking.getConsignee().getOrgCode() : null)
+                .ConsigneeAddressCode(customerBooking.getConsignee() != null ? customerBooking.getConsignee().getAddressCode() : null)
                 .OriginCode(carrierDetails.map(c -> c.getOrigin()).orElse(null))
                 .DestinationCode(carrierDetails.map(c -> c.getDestination()).orElse(null))
                 .originPortCode(carrierDetails.map(c -> c.getOriginPort()).orElse(null))
@@ -64,6 +64,8 @@ public class V1ServiceUtil {
     }
 
     private static List<CreateBookingModuleInV1.BookingEntity.OrgDetail> createOrgDetails(CustomerBooking customerBooking) {
+        if (customerBooking == null)
+            return null;
         List<CreateBookingModuleInV1.BookingEntity.OrgDetail> list = new ArrayList<>();
         list.add(convertParty(customerBooking.getConsignee()));
         list.add(convertParty(customerBooking.getConsignor()));
@@ -73,6 +75,8 @@ public class V1ServiceUtil {
     }
 
     private static CreateBookingModuleInV1.BookingEntity.OrgDetail convertParty(Parties party) {
+        if (party == null)
+            return null;
         var orgData = party == null || party.getOrgData() == null ? Collections.emptyMap() : party.getOrgData();
         return CreateBookingModuleInV1.BookingEntity.OrgDetail.builder()
                 .OrgSource(PartiesConstants.API)
@@ -97,6 +101,8 @@ public class V1ServiceUtil {
     }
 
     private static List<CreateBookingModuleInV1.BookingEntity.LooseCargo> createLooseCarges(List<Packing> packingList) {
+        if (packingList == null)
+            return null;
         return packingList.stream().filter(Objects::nonNull)
                 .map(packing -> CreateBookingModuleInV1.BookingEntity.LooseCargo.builder()
                         .ReferenceGuid(packing.getGuid())
@@ -120,6 +126,8 @@ public class V1ServiceUtil {
     }
 
     private static List<CreateBookingModuleInV1.BookingEntity.Document> createDocuments(List<FileRepo> fileRepoList) {
+        if (fileRepoList == null)
+            return null;
         return fileRepoList.stream().filter(Objects::nonNull).map(fileRepo -> CreateBookingModuleInV1.BookingEntity.Document.builder()
                 .ClientEnabled(fileRepo.getClientEnabled())
                 .DocType(fileRepo.getDocType())
@@ -130,6 +138,8 @@ public class V1ServiceUtil {
     }
 
     private static List<CreateBookingModuleInV1.BookingEntity.Routing> createRoutingList(List<Routings> routingList) {
+        if (routingList == null)
+            return null;
         return routingList.stream().filter(Objects::nonNull).map(routings ->
                 CreateBookingModuleInV1.BookingEntity.Routing.builder()
                         .ReferenceGuid(routings.getGuid())
@@ -142,6 +152,8 @@ public class V1ServiceUtil {
     }
 
     private static List<CreateBookingModuleInV1.BookingEntity.QuoteContainer> createContainers(List<Containers> containersList) {
+        if (containersList == null)
+            return null;
         return containersList.stream().filter(Objects::nonNull).map(container ->
                 CreateBookingModuleInV1.BookingEntity.QuoteContainer.builder()
                         .ContainerTypeCode(container.getContainerCode())
