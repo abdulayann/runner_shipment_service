@@ -23,6 +23,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.*;
 
 @Repository
@@ -134,5 +135,20 @@ public class ShipmentDao implements IShipmentDao {
     @Override
     public Optional<ShipmentDetails> findByHouseBill(String Hbl){
         return shipmentRepository.findByHouseBill(Hbl);
+    }
+
+    @Override
+    public void updateDateAndStatus(long id, LocalDateTime date, Integer status){
+        Optional<ShipmentDetails> shipmentDetails = shipmentRepository.findById(id);
+        if(shipmentDetails.isPresent()) {
+            ShipmentDetails shipment = shipmentDetails.get();
+            if(date != null) {
+                shipment.getAdditionalDetails().setDateOfIssue(date);
+            }
+            if(status != null) {
+                shipment.setStatus(status);
+            }
+            shipmentRepository.save(shipment);
+        }
     }
 }

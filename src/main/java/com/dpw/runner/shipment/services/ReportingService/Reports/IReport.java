@@ -54,7 +54,7 @@ public abstract class IReport {
     @Autowired
     private IAwbRepository awbRepository;
 
-    abstract Map<String, Object> getData(Long id);
+    public abstract Map<String, Object> getData(Long id);
     abstract IDocumentModel getDocumentModel(Long id);
     abstract Map<String, Object> populateDictionary(IDocumentModel documentModel);
 

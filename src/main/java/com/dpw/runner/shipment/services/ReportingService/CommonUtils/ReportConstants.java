@@ -1,5 +1,9 @@
 package com.dpw.runner.shipment.services.ReportingService.CommonUtils;
 
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
+
 public class ReportConstants
 {
     public static final String MASTER_BILL = "MasterBill";
@@ -239,6 +243,7 @@ public class ReportConstants
     public static final String CC_REVENUE_TOTAL = "CollectRevenueTotal";
     public static final String AT = "At";
     public static final String SHIPMENT_IDS = "shipmentIds";
+    public static final String SHIPMENT_ID = "ShipmentId";
     public static final String SHIPMENT_TYPE = "ShipmentType";
     public static final String CUSTOM_SHIPMENT_TYPE = "CustomShipmentType";
     public static final String BLComments = "Bl_Comments";
@@ -400,4 +405,59 @@ public class ReportConstants
     public static final String BOOKING_NO_BASED_ON_TYPE = "BookingNoBasedOnType";
     public static final String MOTHER_REFERENCE_NO = "MotherReferenceNo";
     public static final String FEEDER_REFERENCE_NO = "FeederReferenceNo";
+
+    public static final Set OBJECT_TYPE_REPORTS = new HashSet(Arrays.asList("ImportConsolManifest", "ExportConsolManifest", "ImportShipmentManifest", "ExportShipmentManifest"));
+
+    public static final String OBJECT_TYPE = "OBJECT_TYPE";
+    public static final String AWB_LABLE = "AWBLable";
+    public static final String COMMERCIAL_INVOICE = "CommercialInvoice";
+    public static final String CUSTOMS_INSTRUCTION = "CustomsInstructions";
+    public static final String SEAWAY_BILL = "SeawayBill";
+    public static final String SHIP_TRUCKWAY_BILL = "ShipTruckwayBill";
+    public static final String CONS_TRUCKWAY_BIll = "ConsTruckwayBill";
+    public static final String SHIP_TRUCK_DRIVER_PROOF = "ShipTruckDriverProof";
+    public static final String CONS_TRUCK_DRIVER_PROOF = "ConsTruckDriverProof";
+    public static final String SHIPMENT_CAN_DOCUMENT = "CAN";
+    public static final String CUSTOMS_INSTRUCTIONS = "CustomsInstructions";
+    public static final String AIRWAY_BILL = "AirwayBill";
+    public static final String SHIPMENT_HOUSE_BILL = "HouseBill";
+    public static final String FREIGHT_CERTIFICATION = "FreightCertification";
+    public static final String PRE_ALERT = "PreAlert";
+    public static final String PROOF_OF_DELIVERY = "ProofOfDelivery";
+    public static final String PICKUP_ORDER = "PickupOrder";
+    public static final String CSR = "CSR";
+    public static final String SHIPPING_REQUEST = "ShippingRequest";
+    public static final String SHIPPING_REQUEST_AIR = "ShippingRequestAir";
+    public static final String IMPORT_SHIPMENT_MANIFEST = "ImportShipmentManifest";
+    public static final String EXPORT_SHIPMENT_MANIFEST = "ExportShipmentManifest";
+    public static final String IMPORT_CONSOL_MANIFEST = "ImportConsolManifest";
+    public static final String EXPORT_CONSOL_MANIFEST = "ExportConsolManifest";
+    public static final String AWB_NEUTRAL = "AWBNeutral";
+    public static final String CARGO_MANIFEST = "CargoManifest";
+    public static final String CONSOLIDATED_PACKING_LIST = "ConsolidatedPackingList";
+    public static final String COSTAL_DOC = "COSTALdoc";
+    public static final String SHIPPING_INSTRUCTION = "ShippingInstruction";
+    public static final Set NEW_TEMPLATE_FLOW = new HashSet(Arrays.asList("ShipTruckwayBill", "ConsTruckwayBill", "ShipTruckDriverProof", "ConsTruckDriverProof", "ShippingRequest", "ShippingRequestAir", "ExportShipmentManifest", "ImportShipmentManifest", "ExportConsolManifest", "ImportConsolManifest"));
+
+
+    public static final String TRANS_AIR = "AIR";
+    public static final String AIR = "AIR";
+    public static final String SEA = "SEA";
+    public static final String EXP = "EXP";
+
+    public static final String ORIGINAL = "ORIGINAL";
+    public static final String SURRENDER = "SURRENDER";
+    public static final String NEUTRAL = "NEUTRAL";
+    public static final String DRAFT = "DRAFT";
+    public static final String PRINTED_ORIGINAL = "PrintedOriginal";
+    public static final String HOUSE_BILL_TYPE = "HouseBillType";
+    public static final String COUNT = "Count";
+    public static final String HAWB_NUMBER = "HAWBNumber";
+    public static final String PRINTING_FOR = "PrintingFor";
+    public static final String LOGO = "Logo";
+    public static final String INCREMENTAL_ORIGINALS = "IncrementalOriginals";
+    public static final String ORIGINAL_OR_COPY = "OrginalOrCopy";
+    public static final String COPY = "COPY";
+    public static final String DISABLE_ORIGINAL = "DisableOriginal";
+    public static final String ID = "Id";
 }
