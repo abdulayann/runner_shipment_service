@@ -61,7 +61,29 @@ public class V1ServiceUtil {
                 .Documents(createDocuments(customerBooking.getFileRepoList()))
                 .Loosecargos(createLooseCarges(customerBooking.getPackingList()))
                 .OrgDetails(null)
+                .QuoteCharges(createQuoteCharges(customerBooking.getBookingCharges()))
                 .build();
+    }
+
+    private static List<CreateBookingModuleInV1.BookingEntity.QuoteCharge> createQuoteCharges(List<BookingCharges> bookingCharges) {
+        if (bookingCharges == null) return null;
+        return bookingCharges.stream().filter(Objects::nonNull).map(bc ->
+                CreateBookingModuleInV1.BookingEntity.QuoteCharge.builder()
+                        .OverseasSellCurrency(bc.getOverseasSellCurrency())
+                        .ChargeTypeCode(bc.getChargeType())
+                        .CostExchange(bc.getCostExchange())
+                        .EstimatedCost(bc.getEstimatedCost())
+                        .EstimatedRevenue(bc.getEstimatedRevenue())
+                        .LocalCostAmount(bc.getLocalCostAmount())
+                        .LocalCostCurrency(bc.getLocalCostCurrency())
+                        .LocalSellAmount(bc.getLocalSellAmount())
+                        .LocalSellCurrency(bc.getLocalSellCurrency())
+                        .NoGST(bc.getNoGST())
+                        .OverseasCostCurrency(bc.getOverseasCostCurrency())
+                        .OverseasSellAmount(bc.getOverseasSellAmount())
+                        .SellExchange(bc.getSellExchange())
+                        .TaxPercentage(bc.getTaxPercentage())
+                        .build()).collect(Collectors.toList());
     }
 
     private static List<CreateBookingModuleInV1.BookingEntity.OrgDetail> createOrgDetails(CustomerBooking customerBooking) {
@@ -119,7 +141,7 @@ public class V1ServiceUtil {
         return packingList.stream().filter(Objects::nonNull)
                 .map(packing -> CreateBookingModuleInV1.BookingEntity.LooseCargo.builder()
                         .ReferenceGuid(packing.getGuid())
-                        .Packs(Long.valueOf(packing.getPacks()))
+                        .Packs(packing.getPacks() == null ? 0 : Long.valueOf(packing.getPacks()))
                         .PacksUnit(packing.getPacksType())
                         .Length(packing.getLength())
                         .Height(packing.getHeight())

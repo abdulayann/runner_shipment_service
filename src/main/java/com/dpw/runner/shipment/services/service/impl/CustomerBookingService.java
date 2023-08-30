@@ -29,10 +29,12 @@ import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.BookingSource;
 import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
+import com.dpw.runner.shipment.services.exception.exceptions.V1ServiceException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.ICustomerBookingService;
+import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.nimbusds.jose.util.Pair;
@@ -44,6 +46,7 @@ import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
@@ -61,6 +64,8 @@ import static com.dpw.runner.shipment.services.utils.CommonUtils.convertToEntity
 @Service
 @Slf4j
 public class CustomerBookingService implements ICustomerBookingService {
+    @Autowired
+    private IV1Service v1Service;
 
     @Autowired
     private ModelMapper modelMapper;
@@ -373,6 +378,8 @@ public class CustomerBookingService implements ICustomerBookingService {
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
         CustomerBooking customerBooking = jsonHelper.convertValue(request, CustomerBooking.class);
+        customerBooking.setCreatedAt(oldEntity.get().getCreatedAt());
+        customerBooking.setCreatedBy(oldEntity.get().getCreatedBy());
         customerBooking.setSource(BookingSource.Runner);
 
         // NPM update contract
@@ -413,6 +420,7 @@ public class CustomerBookingService implements ICustomerBookingService {
 
     private void updateEntities(CustomerBooking customerBooking, CustomerBookingRequest request) throws Exception {
         customerBooking = customerBookingDao.save(customerBooking);
+        customerBooking = customerBookingDao.findById(customerBooking.getId()).get();
         Long bookingId = customerBooking.getId();
 
         List<PackingRequest> packingRequest = request.getPackingList();
@@ -459,6 +467,11 @@ public class CustomerBookingService implements ICustomerBookingService {
             }
             bookingCharges = bookingChargesDao.updateEntityFromBooking(bookingCharges, bookingId);
             customerBooking.setBookingCharges(bookingCharges);
+        }
+        if (customerBooking.getBookingStatus().equals(BookingStatus.READY_FOR_SHIPMENT)) {
+            var response = v1Service.createBooking(customerBooking);
+            if (!response.getStatusCode().equals(HttpStatus.OK))
+                throw new V1ServiceException("Cannot create booking in v1 for the customerBooking guid: " + customerBooking.getGuid());
         }
     }
 

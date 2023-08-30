@@ -66,7 +66,28 @@ public class CreateBookingModuleInV1 {
         private List<Document> Documents;
         private List<LooseCargo> Loosecargos;
         private List<OrgDetail> OrgDetails;
-        // ... other properties ...
+        private List<QuoteCharge> QuoteCharges;
+
+        @Data
+        @Builder
+        @NoArgsConstructor
+        @AllArgsConstructor
+        public static class QuoteCharge {
+            public String ChargeTypeCode;
+            public Boolean NoGST;
+            public BigDecimal EstimatedRevenue;
+            public BigDecimal LocalSellAmount;
+            public String LocalSellCurrency;
+            public BigDecimal OverseasSellAmount;
+            public String OverseasSellCurrency;
+            public BigDecimal SellExchange;
+            public BigDecimal EstimatedCost;
+            public BigDecimal LocalCostAmount;
+            public String LocalCostCurrency;
+            public BigDecimal CostExchange;
+            public String OverseasCostCurrency;
+            public BigDecimal TaxPercentage;
+        }
 
         @Data
         @Builder
