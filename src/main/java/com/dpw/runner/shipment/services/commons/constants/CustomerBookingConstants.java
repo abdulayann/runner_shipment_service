@@ -1,6 +1,10 @@
 package com.dpw.runner.shipment.services.commons.constants;
 
 public class CustomerBookingConstants {
+
+
+    public static final String DATE_FORMAT = "yyyy/MM/dd";
+    public static String ONE = "1";
     public static final String Customer_Booking_API_HANDLE = "/api/v2/customer-booking";
     public static final String PLATFORM_CREATE_BOOKING = "/platform-create-update";
     public static final String PLATFORM_UPDATE_BOOKING = "/platform-update";
@@ -15,6 +19,9 @@ public class CustomerBookingConstants {
     public static final String RESPONSE_CONTAINER_LIST = "List";
     public static final String BOOKING_ID = "Booking Id";
     public static final String BILLABLE_IDENTIFIER = "&identifierCode=Yes&identifierCodeType=BILLABLE_FLAG";
+    public static final String STD = "STD";
+    public static final String FCL = "FCL";
+    public static final String ONLINE = "ONLINE";
     public static final String RUNNER = "RUNNER";
     public static final String REMOVE = "REMOVE";
     public static final String ADD = "ADD";

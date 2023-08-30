@@ -118,19 +118,19 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
         if (isAlteration == false) {
             var containers = request.getContainers();
             var packs = request.getPacks();
-            result.addAll(containers.stream().map(
+            result.addAll(containers.stream().filter(Objects::nonNull).map(
                     c -> createLoadInfoFromContainers(request, c)).collect(Collectors.toList()));
-            result.addAll(packs.stream().map(
+            result.addAll(packs.stream().filter(Objects::nonNull).map(
                     p -> createLoadInfoFromPacks(request, p)).collect(Collectors.toList()));
             return result;
         }
 
         //otherwise : its second time : isAlteration = true
 
-        Map<Long, Containers> existingContainers = customerBooking != null ? customerBooking.getContainersList().stream().collect(Collectors.toMap(Containers::getId, c -> c)) : new HashMap<>();
-        Map<Long, Packing> existingPacks = customerBooking != null ? customerBooking.getPackingList().stream().collect(Collectors.toMap(Packing::getId, c -> c)) : new HashMap<>();
+        Map<Long, Containers> existingContainers = customerBooking != null ? customerBooking.getContainersList().stream().filter(Objects::nonNull).collect(Collectors.toMap(Containers::getId, c -> c)) : new HashMap<>();
+        Map<Long, Packing> existingPacks = customerBooking != null ? customerBooking.getPackingList().stream().filter(Objects::nonNull).collect(Collectors.toMap(Packing::getId, c -> c)) : new HashMap<>();
 
-        result.addAll(request.getContainers().stream().map(
+        result.addAll(request.getContainers().stream().filter(Objects::nonNull).map(
                 c -> {
                     NPMFetchOffersRequest.LoadInformation model =
                             createLoadInfoFromContainers(request, c);
@@ -145,7 +145,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
                     return model;
                 }).collect(Collectors.toList()));
 
-        result.addAll(request.getPacks().stream().map(
+        result.addAll(request.getPacks().stream().filter(Objects::nonNull).map(
                 p -> {
                     NPMFetchOffersRequest.LoadInformation model =
                             createLoadInfoFromPacks(request, p);

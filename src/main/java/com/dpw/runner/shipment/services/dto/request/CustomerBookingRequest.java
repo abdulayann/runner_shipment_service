@@ -18,9 +18,10 @@ import java.util.UUID;
 @ToString
 @AllArgsConstructor
 @NoArgsConstructor
-public class CustomerBookingRequest  extends CommonRequest implements IRunnerRequest {
+public class CustomerBookingRequest extends CommonRequest implements IRunnerRequest {
     private Long id;
     private BookingStatus bookingStatus;
+    private String serviceMode;
     private PartiesRequest customer;
     private Boolean isCustomerFreeText;
     private PartiesRequest consignor;
@@ -50,6 +51,7 @@ public class CustomerBookingRequest  extends CommonRequest implements IRunnerReq
     private String contractId;
     private String contractStatus;
     private BookingSource source;
+    private String businessCode;
     private List<ContainerRequest> containersList;
     private List<PackingRequest> packingList;
     private List<RoutingsRequest> routingList;
