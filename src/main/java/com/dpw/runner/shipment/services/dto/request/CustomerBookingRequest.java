@@ -51,6 +51,7 @@ public class CustomerBookingRequest extends CommonRequest implements IRunnerRequ
     private String contractId;
     private String contractStatus;
     private BookingSource source;
+    private String businessCode;
     private List<ContainerRequest> containersList;
     private List<PackingRequest> packingList;
     private List<RoutingsRequest> routingList;

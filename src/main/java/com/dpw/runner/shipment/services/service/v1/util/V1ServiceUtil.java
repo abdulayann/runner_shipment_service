@@ -7,6 +7,7 @@ import com.dpw.runner.shipment.services.entity.*;
 
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class V1ServiceUtil {
 
@@ -122,7 +123,7 @@ public class V1ServiceUtil {
                         .CommodityCode(packing.getCommodity())
                         .HazardousCheckBox(packing.getHazardous())
                         .HsCode(packing.getHSCode())
-                        .build()).toList();
+                        .build()).collect(Collectors.toList());
     }
 
     private static List<CreateBookingModuleInV1.BookingEntity.Document> createDocuments(List<FileRepo> fileRepoList) {
@@ -134,7 +135,7 @@ public class V1ServiceUtil {
                 .Path(fileRepo.getPath())
                 .FileName(fileRepo.getFileName())
                 .EventCode(fileRepo.getEventCode())
-                .build()).toList();
+                .build()).collect(Collectors.toList());
     }
 
     private static List<CreateBookingModuleInV1.BookingEntity.Routing> createRoutingList(List<Routings> routingList) {
@@ -148,7 +149,7 @@ public class V1ServiceUtil {
                         .PolCode(routings.getPol())
                         .PodCode(routings.getPod())
                         .build()
-        ).toList();
+        ).collect(Collectors.toList());
     }
 
     private static List<CreateBookingModuleInV1.BookingEntity.QuoteContainer> createContainers(List<Containers> containersList) {
@@ -163,7 +164,7 @@ public class V1ServiceUtil {
                         .WeightUnit(container.getGrossWeightUnit())
                         .ReferenceGuid(container.getGuid())
                         .build()
-        ).toList();
+        ).collect(Collectors.toList());
     }
 
 }
