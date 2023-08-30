@@ -11,6 +11,7 @@ import com.dpw.runner.shipment.services.dto.request.npm.UpdateContractRequest;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.CustomerBooking;
 import com.dpw.runner.shipment.services.entity.Packing;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -53,7 +54,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
     public ResponseEntity<?> fetchContracts(CommonRequestModel commonRequestModel) throws Exception {
         ListContractRequest listContractRequest = (ListContractRequest) commonRequestModel.getData();
         String url = npmBaseUrl + npmContracts;
-        ResponseEntity<?> response = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(listContractRequest), Object.class);
+        ResponseEntity<?> response = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(new ObjectMapper().writeValueAsString(listContractRequest)), Object.class);
         return response;
     }
 
@@ -69,7 +70,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
     public ResponseEntity<?> fetchOffers(CommonRequestModel req) throws Exception {
         String url = npmBaseUrl + npmOffersUrl;
         NPMFetchOffersRequestFromUI fetchOffersRequest = (NPMFetchOffersRequestFromUI) req.getData();
-        ResponseEntity<?> response = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(createNPMOffersRequest(fetchOffersRequest)), Object.class);
+        ResponseEntity<?> response = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(new ObjectMapper().writeValueAsString(createNPMOffersRequest(fetchOffersRequest))), Object.class);
         return response;
     }
 
