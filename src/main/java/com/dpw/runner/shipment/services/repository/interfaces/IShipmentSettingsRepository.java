@@ -21,4 +21,7 @@ public interface IShipmentSettingsRepository extends MultiTenancyRepository<Ship
     List<ShipmentSettingsDetails> findAll();
     @Query("SELECT sd.shipmentConsoleImportApproverRole FROM ShipmentSettingsDetails sd WHERE sd.tenantId = ?1")
     Integer getShipmentConsoleImportApprovarRole(int tenantId);
+
+    @Query("SELECT sd FROM ShipmentSettingsDetails sd WHERE sd.tenantId In ?1")
+    List<ShipmentSettingsDetails> getTenantSetting(List<Integer> tenantId);
 }

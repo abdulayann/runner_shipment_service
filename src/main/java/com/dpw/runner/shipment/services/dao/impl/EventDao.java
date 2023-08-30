@@ -4,12 +4,15 @@ import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IEventDao;
+import com.dpw.runner.shipment.services.dto.request.CustomAutoEventRequest;
 import com.dpw.runner.shipment.services.entity.ELDetails;
 import com.dpw.runner.shipment.services.entity.Events;
+import com.dpw.runner.shipment.services.entity.HblTermsConditionTemplate;
 import com.dpw.runner.shipment.services.entity.enums.LifecycleHooks;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.IEventRepository;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.validator.ValidatorUtility;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
@@ -20,6 +23,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDate;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -160,6 +164,76 @@ public class EventDao implements IEventDao {
                     : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
             log.error(responseMsg, e);
             throw new Exception(e);
+        }
+    }
+
+    @Override
+    public void autoGenerateEvents(CustomAutoEventRequest request) {
+        try {
+            if(!checkIfEventsRowExistsForEntityTypeAndEntityId(request)) {
+                createAutomatedEventRequest(request.entityType, request.entityId, request.eventCode, request.isEstimatedRequired, request.isActualRequired);
+            }
+        } catch (Exception e) {
+            log.error("Error occured while trying to auto create runner event, Request recieved is = " + request + ". Exception raised is: " +  e);
+            throw new ValidationException("Error occured while trying to auto create runner event, Request recieved is = " + request , e);
+        }
+    }
+
+    public List<Events> getTheDataFromEntity(String EntityType, long EntityID, boolean publicEvent)
+    {
+        ListCommonRequest listCommonRequest;
+        if(publicEvent)
+        {
+            listCommonRequest = CommonUtils.andCriteria("entityId", EntityID, "=", null);
+            CommonUtils.andCriteria("entityType", EntityType, "=", listCommonRequest);
+            CommonUtils.andCriteria("publicTrackingEvent", 1, "=", listCommonRequest);
+        } else {
+            listCommonRequest = CommonUtils.andCriteria("entityId", EntityID, "=", null);
+            CommonUtils.andCriteria("entityType", EntityType, "=", listCommonRequest);
+            CommonUtils.andCriteria("publicTrackingEvent", 0, "=", listCommonRequest);
+        }
+
+
+        Pair<Specification<Events>, Pageable> pair = fetchData(listCommonRequest, Events.class);
+        Page<Events> events = findAll(pair.getLeft(), pair.getRight());
+        if(events.getContent().size()>0) {
+            return events.getContent();
+        }
+        return null;
+    }
+
+    public boolean checkIfEventsRowExistsForEntityTypeAndEntityId(CustomAutoEventRequest request) {
+        List<Events> eventsRowList =  getTheDataFromEntity(request.entityType, request.entityId, true);
+        if(eventsRowList != null && eventsRowList.size() > 0) {
+            for(Events eventsRow : eventsRowList) {
+                if(eventsRow.getEventCode().equalsIgnoreCase(request.eventCode)) {
+                    log.info("Event already exists for given id: " + request.entityId + " and type: " + request.entityType + " and event code : " + request.eventCode);
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    public void createAutomatedEventRequest(String entityType, long entityId, String eventCode, boolean isEstimatedRequired, boolean isActualRequired)
+    {
+        try{
+            Events eventsRow = new Events();
+            if(isActualRequired) {
+                eventsRow.setActual(LocalDate.now().atStartOfDay());
+            }
+
+            if(isEstimatedRequired){
+                eventsRow.setEstimated(LocalDate.now().atStartOfDay());
+            }
+            eventsRow.setSource(Constants.CARGO_RUNNER);
+            eventsRow.setIsPublicTrackingEvent(true);
+            eventsRow.setEntityType(entityType);
+            eventsRow.setEntityId(entityId);
+            eventsRow.setEventCode(eventCode);
+            eventRepository.save(eventsRow);
+        } catch(Exception e){
+            log.error("Error occured while trying to create runner event, Exception raised is: " +  e);
         }
     }
 }
