@@ -748,13 +748,13 @@ public class CustomerBookingService implements ICustomerBookingService {
             String addressCode = request.getCustomer().getAddressCode();
             transformOrgAndAddressPayload(request.getCustomer(), addressCode, orgCode);
         }
-        if(request.getIsConsignorFreeText() && request.getConsignor() != null) {
+        if(request.isConsignorFreeText() && request.getConsignor() != null) {
             transformOrgAndAddressToRawData(request.getConsignor());
         }
-        if(request.getIsConsigneeFreeText() && request.getConsignee() != null) {
+        if(request.isConsigneeFreeText() && request.getConsignee() != null) {
             transformOrgAndAddressToRawData(request.getConsignee());
         }
-        if(request.getIsNotifyPartyFreeText() && request.getNotifyParty() != null) {
+        if(request.isNotifyPartyFreeText() && request.getNotifyParty() != null) {
             transformOrgAndAddressToRawData(request.getNotifyParty());
         }
 
