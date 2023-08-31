@@ -1,1 +1,0 @@
-Delete from validations where entity = 'JOBS';
