@@ -38,6 +38,11 @@ public class NPMFetchOffersRequest extends CommonRequest implements IRunnerReque
     private boolean fetch_default_rates;
     private boolean is_alteration;
     private String offer_type;
+    private BusinessInfo business_info;
+    private ContractsInfo contracts_info;
+    private String shipment_movement;
+    private List<LoadInformation> loads_info;
+    private String carrier_code;
 
     @Builder
     @Data
@@ -65,6 +70,7 @@ public class NPMFetchOffersRequest extends CommonRequest implements IRunnerReque
         private String load_type;
         private String cargo_type;
         private String product_category_code;
+        private String commodity;
     }
 
 
@@ -91,5 +97,23 @@ public class NPMFetchOffersRequest extends CommonRequest implements IRunnerReque
     public static class ContractDetails {
         private List<String> contracts;
         private String company_code;
+    }
+
+    @Builder
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class BusinessInfo {
+        private String product_name;
+        private String tenant_id;
+    }
+
+    @Builder
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class ContractsInfo {
+        private String customer_org_id;
+        private String contract_id;
     }
 }

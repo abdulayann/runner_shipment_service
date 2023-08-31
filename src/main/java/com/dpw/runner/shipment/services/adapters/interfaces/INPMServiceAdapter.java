@@ -10,4 +10,6 @@ public interface INPMServiceAdapter {
     ResponseEntity<?> updateContracts(CommonRequestModel commonRequestModel) throws Exception;
 
     ResponseEntity<?> fetchOffers(CommonRequestModel commonRequestModel) throws Exception;
+
+    ResponseEntity<?> fetchOffersV8(CommonRequestModel commonRequestModel) throws Exception;
 }
