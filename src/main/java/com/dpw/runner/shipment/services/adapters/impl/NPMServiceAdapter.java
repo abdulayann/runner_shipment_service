@@ -113,7 +113,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
                 .mode_of_transport(request.getModeOfTransport())
                 .product_name(request.getCargoType()) // {TODO :: have to keep a mapping which is not present}
                 .contract_details(createContractDetails(request))
-                .shipment_type(customerBooking.map(cb -> cb.getDirection()).orElse(null))
+                .shipment_type(request.getDirection() != null ? request.getDirection() : customerBooking.map(cb -> cb.getDirection()).orElse(null))
                 .service_mode(request.getServiceMode())
                 .fetch_default_rates(request.isFetchDefaultRates())
                 .slab_rates(false)
@@ -152,6 +152,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
     }
 
     private NPMFetchOffersRequest.ContractDetails createContractDetails(NPMFetchOffersRequestFromUI request) {
+        if(request.getContractsInfo() == null) return null;
         return NPMFetchOffersRequest.ContractDetails.builder()
                 .contracts(Collections.singletonList(request.getContractsInfo() == null? null:request.getContractsInfo().getContractId()))
                 .company_code(null)

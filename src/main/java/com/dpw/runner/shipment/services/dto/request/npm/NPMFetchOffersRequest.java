@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.dto.request.npm;
 
 import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -35,8 +36,8 @@ public class NPMFetchOffersRequest extends CommonRequest implements IRunnerReque
     private String scope_restriction;
     private String service_category;
     private String customer_category;
-    private boolean fetch_default_rates;
-    private boolean is_alteration;
+    private Boolean fetch_default_rates;
+    private Boolean is_alteration;
     private String offer_type;
     private BusinessInfo business_info;
     private ContractsInfo contracts_info;
