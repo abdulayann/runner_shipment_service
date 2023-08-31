@@ -11,6 +11,7 @@ import com.dpw.runner.shipment.services.dto.request.npm.UpdateContractRequest;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.CustomerBooking;
 import com.dpw.runner.shipment.services.entity.Packing;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,6 +45,9 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
     @Value("${NPM.Update}")
     private String npmUpdateUrl;
 
+    @Autowired
+    JsonHelper jsonHelper;
+
     private final RestTemplate restTemplate;
 
     @Autowired
@@ -58,7 +62,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
     public ResponseEntity<?> fetchContracts(CommonRequestModel commonRequestModel) throws Exception {
         ListContractRequest listContractRequest = (ListContractRequest) commonRequestModel.getData();
         String url = npmBaseUrl + npmContracts;
-        ResponseEntity<?> response = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(new ObjectMapper().writeValueAsString(listContractRequest)), Object.class);
+        ResponseEntity<?> response = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJson(listContractRequest)), Object.class);
         return response;
     }
 
@@ -66,7 +70,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
     public ResponseEntity<?> updateContracts(CommonRequestModel commonRequestModel) throws Exception {
         UpdateContractRequest updateContractRequest = (UpdateContractRequest) commonRequestModel.getData();
         String url = npmBaseUrl + npmUpdateUrl;
-        ResponseEntity<?> response = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(updateContractRequest), Object.class);
+        ResponseEntity<?> response = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJson(updateContractRequest)), Object.class);
         return response;
     }
 
@@ -74,7 +78,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
     public ResponseEntity<?> fetchOffers(CommonRequestModel req) throws Exception {
         String url = npmBaseUrl + npmOffersUrl;
         NPMFetchOffersRequestFromUI fetchOffersRequest = (NPMFetchOffersRequestFromUI) req.getData();
-        ResponseEntity<?> response = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(new ObjectMapper().writeValueAsString(createNPMOffersRequest(fetchOffersRequest))), Object.class);
+        ResponseEntity<?> response = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJson(createNPMOffersRequest(fetchOffersRequest))), Object.class);
         return response;
     }
 
@@ -82,14 +86,17 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
     public ResponseEntity<?> fetchOffersV8(CommonRequestModel req) throws Exception {
         String url = npmBaseUrl + npmOffersV8Url;
         NPMFetchOffersRequestFromUI fetchOffersRequest = (NPMFetchOffersRequestFromUI) req.getData();
-        ResponseEntity<?> response = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(new ObjectMapper().writeValueAsString(createNPMOffersV8Request(fetchOffersRequest))), Object.class);
+        ResponseEntity<?> response = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJson(createNPMOffersV8Request(fetchOffersRequest))), Object.class);
         return response;
     }
 
     private NPMFetchOffersRequest createNPMOffersRequest(NPMFetchOffersRequestFromUI request) {
-        Optional<CustomerBooking> customerBooking = customerBookingDao.findById(request.getBookingId());
+        Optional<CustomerBooking> customerBooking = Optional.empty();
+        if(request.getBookingId() != null){
+            customerBooking = customerBookingDao.findById(request.getBookingId());
+        }
         boolean isAlteration = false;
-        if (customerBooking.isPresent() && !customerBooking.get().getBookingCharges().isEmpty()) {
+        if (customerBooking!= null && customerBooking.isPresent() && !customerBooking.get().getBookingCharges().isEmpty()) {
             isAlteration = true;
         }
 
@@ -102,7 +109,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
                 .preferred_date(request.getPreferredDate())
                 .preferred_date_type(request.getPreferredDateType())
                 .carrier(NPMConstants.ANY) //hardcoded
-                .loads_information(createLoadsInfo(request, customerBooking.get(), isAlteration, NPMConstants.OFFERS_V2))
+                .loads_information(createLoadsInfo(request, customerBooking.isPresent() ? customerBooking.get() : null, isAlteration, NPMConstants.OFFERS_V2))
                 .mode_of_transport(request.getModeOfTransport())
                 .product_name(request.getCargoType()) // {TODO :: have to keep a mapping which is not present}
                 .contract_details(createContractDetails(request))
@@ -119,9 +126,12 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
     }
 
     private NPMFetchOffersRequest createNPMOffersV8Request(NPMFetchOffersRequestFromUI request) {
-        Optional<CustomerBooking> customerBooking = customerBookingDao.findById(request.getBookingId());
+        Optional<CustomerBooking> customerBooking = Optional.empty();
+        if(request.getBookingId() != null){
+            customerBooking = customerBookingDao.findById(request.getBookingId());
+        }
         boolean isAlteration = false;
-        if (customerBooking.isPresent() && !customerBooking.get().getBookingCharges().isEmpty()) {
+        if (customerBooking!= null && customerBooking.isPresent() && !customerBooking.get().getBookingCharges().isEmpty()) {
             isAlteration = true;
         }
 
@@ -130,7 +140,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
                 .destination(request.getDestination())
                 .preferred_date(request.getPreferredDate())
                 .preferred_date_type(request.getPreferredDateType())
-                .loads_info(createLoadsInfo(request, customerBooking.get(), false, NPMConstants.OFFERS_V8)) // TODO -; loads_info instead of loads_information
+                .loads_info(createLoadsInfo(request, customerBooking.isPresent() ? customerBooking.get() : null, false, NPMConstants.OFFERS_V8)) // TODO -; loads_info instead of loads_information
                 .mode_of_transport(request.getModeOfTransport())
                 .shipment_movement(customerBooking.map(cb -> cb.getDirection()).orElse(null))
                 .service_mode(request.getServiceMode())
@@ -143,15 +153,15 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
 
     private NPMFetchOffersRequest.ContractDetails createContractDetails(NPMFetchOffersRequestFromUI request) {
         return NPMFetchOffersRequest.ContractDetails.builder()
-                .contracts(Collections.singletonList(request.getContractsInfo().getContractId()))
+                .contracts(Collections.singletonList(request.getContractsInfo() == null? null:request.getContractsInfo().getContractId()))
                 .company_code(null)
                 .build();
     }
 
     private NPMFetchOffersRequest.ContractsInfo createContractInfo(NPMFetchOffersRequestFromUI request) {
         return NPMFetchOffersRequest.ContractsInfo.builder()
-                .customer_org_id(request.getContractsInfo().getCustomerOrgId())
-                .contract_id(request.getContractsInfo().getContractId())
+                .customer_org_id(request.getContractsInfo() != null ? request.getContractsInfo().getCustomerOrgId() : null)
+                .contract_id(request.getContractsInfo() != null?request.getContractsInfo().getContractId():null)
                 .build();
     }
 
@@ -165,8 +175,8 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
         //First Time
         List<NPMFetchOffersRequest.LoadInformation> result = new ArrayList<>();
         if (isAlteration == false) {
-            var containers = request.getContainers();
-            var packs = request.getPacks();
+            var containers = request.getContainers() != null ? request.getContainers() : new ArrayList<NPMFetchOffersRequestFromUI.Container>();
+            var packs = request.getPacks() != null ? request.getPacks() : new ArrayList<NPMFetchOffersRequestFromUI.Pack>();
             result.addAll(containers.stream().filter(Objects::nonNull).map(
                     c -> createLoadInfoFromContainers(request, c, offerType)).collect(Collectors.toList()));
             result.addAll(packs.stream().filter(Objects::nonNull).map(
@@ -179,33 +189,37 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
         Map<Long, Containers> existingContainers = customerBooking != null ? customerBooking.getContainersList().stream().filter(Objects::nonNull).collect(Collectors.toMap(Containers::getId, c -> c)) : new HashMap<>();
         Map<Long, Packing> existingPacks = customerBooking != null ? customerBooking.getPackingList().stream().filter(Objects::nonNull).collect(Collectors.toMap(Packing::getId, c -> c)) : new HashMap<>();
 
-        result.addAll(request.getContainers().stream().filter(Objects::nonNull).map(
-                c -> {
-                    NPMFetchOffersRequest.LoadInformation model =
-                            createLoadInfoFromContainers(request, c, offerType);
-                    if (existingContainers.containsKey(c.getId())) {
-                        Containers container = existingContainers.get(c.getId());
-                        if (c.getQuantity() > container.getContainerCount())
-                            model.getLoad_attributes().setDelta_quantity(c.getQuantity() - container.getContainerCount());
-                        else
-                            model.getLoad_attributes().setDelta_quantity(c.getQuantity());
+        if(request.getContainers() != null) {
+            result.addAll(request.getContainers().stream().filter(Objects::nonNull).map(
+                    c -> {
+                        NPMFetchOffersRequest.LoadInformation model =
+                                createLoadInfoFromContainers(request, c, offerType);
+                        if (existingContainers.containsKey(c.getId())) {
+                            Containers container = existingContainers.get(c.getId());
+                            if (c.getQuantity() > container.getContainerCount())
+                                model.getLoad_attributes().setDelta_quantity(c.getQuantity() - container.getContainerCount());
+                            else
+                                model.getLoad_attributes().setDelta_quantity(c.getQuantity());
+                        }
+
+                        return model;
+                    }).collect(Collectors.toList()));
+        }
+        if(request.getPacks() != null) {
+
+            result.addAll(request.getPacks().stream().filter(Objects::nonNull).map(
+                    p -> {
+                        NPMFetchOffersRequest.LoadInformation model =
+                                createLoadInfoFromPacks(request, p, offerType);
+                        if (existingPacks.containsKey(p.getId())) {
+                            Packing packing = existingPacks.get(p.getId());
+                            model.getLoad_attributes().setQuantity(Long.valueOf(packing.getPacks()));
+                        }
+
+                        return model;
                     }
-
-                    return model;
-                }).collect(Collectors.toList()));
-
-        result.addAll(request.getPacks().stream().filter(Objects::nonNull).map(
-                p -> {
-                    NPMFetchOffersRequest.LoadInformation model =
-                            createLoadInfoFromPacks(request, p, offerType);
-                    if (existingPacks.containsKey(p.getId())) {
-                        Packing packing = existingPacks.get(p.getId());
-                        model.getLoad_attributes().setQuantity(Long.valueOf(packing.getPacks()));
-                    }
-
-                    return model;
-                }
-        ).collect(Collectors.toList()));
+            ).collect(Collectors.toList()));
+        }
 
         return result;
     }
