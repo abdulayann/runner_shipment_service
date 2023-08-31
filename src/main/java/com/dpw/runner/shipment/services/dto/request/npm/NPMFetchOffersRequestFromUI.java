@@ -40,6 +40,7 @@ public class NPMFetchOffersRequestFromUI extends CommonRequest implements IRunne
     private String carrierCode;
     private String pol;
     private String pod;
+    private String direction;
 
     @Data
     @NoArgsConstructor
@@ -47,14 +48,10 @@ public class NPMFetchOffersRequestFromUI extends CommonRequest implements IRunne
     @Builder
     public static class Container {
         private Long id;
-        @JsonProperty("container_type")
         private String containerType;
-        @JsonProperty("commodity_code")
         private String commodityCode;
         private Long quantity;
-        @JsonProperty("gross_weight")
         private BigDecimal grossWeight;
-        @JsonProperty("gross_weight_unit")
         private String grossWeightUnit;
     }
 
@@ -70,20 +67,14 @@ public class NPMFetchOffersRequestFromUI extends CommonRequest implements IRunne
         private BigDecimal height;
         private String uom;
         private BigDecimal chargeable;
-        @JsonProperty("weight_unit")
         private String weightUnit;
-        @JsonProperty("volume_unit")
         private String volumeUnit;
         private BigDecimal volume;
         private BigDecimal weight;
-        @JsonProperty("chargeable_unit")
         private String chargeableUnit;
         private String commodity;
-        @JsonProperty("is_hazardous")
         private boolean isHazardous;
-        @JsonProperty("goods_description")
         private String goodsDescription;
-        @JsonProperty("package_type")
         private String packageType;
     }
 
