@@ -37,7 +37,7 @@ public class BookingChargesRequest extends CommonRequest implements IRunnerReque
     private String overseasCostCurrency;
     private String localCostCurrency;
     private BigDecimal currentCostRate;
-//    private String costRateCurrency;
+    private String costRateCurrency;
 //    private BigDecimal costExchange;
 //    private String costAccount;
 //    private String costComments;
@@ -61,8 +61,8 @@ public class BookingChargesRequest extends CommonRequest implements IRunnerReque
     private BigDecimal overseasSellAmount;
     private String overseasSellCurrency;
     private String localSellCurrency;
-//    private BigDecimal currentSellRate;
-//    private String sellRateCurrency;
+    private BigDecimal currentSellRate;
+    private String sellRateCurrency;
     private BigDecimal sellExchange;
 //    private String revenueAccount;
 //    private String revenueComments;
