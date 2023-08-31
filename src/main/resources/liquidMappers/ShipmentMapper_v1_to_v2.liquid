@@ -995,12 +995,12 @@
             "addressData": {}
         },
         "receivingForwarder": {
-            "addressCode": "{{ content.ReceivingForwarder.AddressCode }}",
-            "entityId":{{ content.ReceivingForwarder.EntityId }},
-            "entityType": "{{ content.ReceivingForwarder.EntityType }}",
-            "orgCode": "{{ content.ReceivingForwarder.OrgCode }}",
-            "tenantId":{{ content.ReceivingForwarder.TenantId }},
-            "type": "{{ content.ReceivingForwarder.Type }}",
+            "addressCode": "{{ content.ReceivingForwarderParty.AddressCode }}",
+            "entityId":{{ content.ReceivingForwarderParty.EntityId }},
+            "entityType": "{{ content.ReceivingForwarderParty.EntityType }}",
+            "orgCode": "{{ content.ReceivingForwarderParty.OrgCode }}",
+            "tenantId":{{ content.ReceivingForwarderParty.TenantId }},
+            "type": "{{ content.ReceivingForwarderParty.Type }}",
             "addressData": {},
             "orgData": {}
         },
@@ -1017,12 +1017,12 @@
             "orgData": {}
         },
         "sendingForwarder": {
-            "addressCode": "{{ content.SendingForwarder.AddressCode }}",
-            "entityId":{{ content.SendingForwarder.EntityId }},
-            "entityType": "{{ content.SendingForwarder.EntityType }}",
-            "orgCode": "{{ content.SendingForwarder.OrgCode }}",
-            "tenantId":{{ content.SendingForwarder.TenantId }},
-            "type": "{{ content.SendingForwarder.Type }}",
+            "addressCode": "{{ content.SendingForwarderParty.AddressCode }}",
+            "entityId":{{ content.SendingForwarderParty.EntityId }},
+            "entityType": "{{ content.SendingForwarderParty.EntityType }}",
+            "orgCode": "{{ content.SendingForwarderParty.OrgCode }}",
+            "tenantId":{{ content.SendingForwarderParty.TenantId }},
+            "type": "{{ content.SendingForwarderParty.Type }}",
             "addressData": {},
             "orgData": {}
         },
@@ -1041,12 +1041,12 @@
         "tipoDocumentNotifyParty": "{{ content.TipoDocumentNotifyParty }}",
         "totalDuty":{{ content.TotalDuty }},
         "traderOrSupplier": {
-            "addressCode": "{{ content.TraderOrSupplier.AddressCode }}",
-            "entityId":{{ content.TraderOrSupplier.EntityId }},
-            "entityType": "{{ content.TraderOrSupplier.EntityType }}",
-            "orgCode": "{{ content.TraderOrSupplier.OrgCode }}",
-            "tenantId":{{ content.TraderOrSupplier.TenantId }},
-            "type": "{{ content.TraderOrSupplier.Type }}",
+            "addressCode": "{{ content.TraderOrSupplierParty.AddressCode }}",
+            "entityId":{{ content.TraderOrSupplierParty.EntityId }},
+            "entityType": "{{ content.TraderOrSupplierParty.EntityType }}",
+            "orgCode": "{{ content.TraderOrSupplierParty.OrgCode }}",
+            "tenantId":{{ content.TraderOrSupplierParty.TenantId }},
+            "type": "{{ content.TraderOrSupplierParty.Type }}",
             "addressData": {},
             "orgData": {}
         },
@@ -1072,24 +1072,24 @@
         "orgData":{}
     },
     "consigner": {
-        "addressCode":"{{ content.Consigner.AddressCode }}",
+        "addressCode":"{{ content.ConsignerParty.AddressCode }}",
         "addressData": {},
-        "entityId":{{ content.Consigner.EntityId }},
-        "entityType":"{{ content.Consigner.EntityType }}",
-        "orgCode":"{{ content.Consigner.OrgCode }}",
+        "entityId":{{ content.ConsignerParty.EntityId }},
+        "entityType":"{{ content.ConsignerParty.EntityType }}",
+        "orgCode":"{{ content.ConsignerParty.OrgCode }}",
         "orgData": {},
-        "tenantId":{{ content.Consigner.TenantId }},
-        "type":"{{ content.Consigner.Type }}"
+        "tenantId":{{ content.ConsignerParty.TenantId }},
+        "type":"{{ content.ConsignerParty.Type }}"
     },
     "consignee": {
-        "addressCode":"{{ content.Consignee.AddressCode }}",
+        "addressCode":"{{ content.ConsigneeParty.AddressCode }}",
         "addressData": {},
-        "entityId":{{ content.Consignee.EntityId }},
-        "entityType":"{{ content.Consignee.EntityType }}",
-        "orgCode":"{{ content.Consignee.OrgCode }}",
+        "entityId":{{ content.ConsigneeParty.EntityId }},
+        "entityType":"{{ content.ConsigneeParty.EntityType }}",
+        "orgCode":"{{ content.ConsigneeParty.OrgCode }}",
         "orgData": {},
-        "tenantId":{{ content.Consignee.TenantId }},
-        "type":"{{ content.Consignee.Type }}"
+        "tenantId":{{ content.ConsigneeParty.TenantId }},
+        "type":"{{ content.ConsigneeParty.Type }}"
     },
 
     "servicesList": [
