@@ -28,9 +28,8 @@ public class PlatformServiceAdapter implements IPlatformServiceAdapter {
 
     @Override
     public ResponseEntity<?> createAtPlatform(CommonRequestModel requestModel) throws Exception {
-        //TODO:: Abhishek modify the api request and url for create
         PlatformCreateRequest request = (PlatformCreateRequest) requestModel.getData();
-        String url = baseUrl + "??";
+        String url = baseUrl + "booking/external";
         ResponseEntity<?> responseEntity = restTemplate.exchange(RequestEntity.post(URI.create(url)).build(), Object.class);
         return responseEntity;
     }

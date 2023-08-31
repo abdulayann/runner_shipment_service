@@ -11,6 +11,7 @@ import com.dpw.runner.shipment.services.dto.request.npm.UpdateContractRequest;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.CustomerBooking;
 import com.dpw.runner.shipment.services.entity.Packing;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -57,7 +58,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
     public ResponseEntity<?> fetchContracts(CommonRequestModel commonRequestModel) throws Exception {
         ListContractRequest listContractRequest = (ListContractRequest) commonRequestModel.getData();
         String url = npmBaseUrl + npmContracts;
-        ResponseEntity<?> response = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(listContractRequest), Object.class);
+        ResponseEntity<?> response = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(new ObjectMapper().writeValueAsString(listContractRequest)), Object.class);
         return response;
     }
 
@@ -73,7 +74,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
     public ResponseEntity<?> fetchOffers(CommonRequestModel req) throws Exception {
         String url = npmBaseUrl + npmOffersUrl;
         NPMFetchOffersRequestFromUI fetchOffersRequest = (NPMFetchOffersRequestFromUI) req.getData();
-        ResponseEntity<?> response = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(createNPMOffersRequest(fetchOffersRequest)), Object.class);
+        ResponseEntity<?> response = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(new ObjectMapper().writeValueAsString(createNPMOffersRequest(fetchOffersRequest))), Object.class);
         return response;
     }
 
@@ -81,7 +82,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
     public ResponseEntity<?> fetchOffersV8(CommonRequestModel req) throws Exception {
         String url = npmBaseUrl + npmOffersV8Url;
         NPMFetchOffersRequestFromUI fetchOffersRequest = (NPMFetchOffersRequestFromUI) req.getData();
-        ResponseEntity<?> response = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(createNPMOffersV8Request(fetchOffersRequest)), Object.class);
+        ResponseEntity<?> response = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(new ObjectMapper().writeValueAsString(createNPMOffersV8Request(fetchOffersRequest))), Object.class);
         return response;
     }
 
@@ -166,19 +167,19 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
         if (isAlteration == false) {
             var containers = request.getContainers();
             var packs = request.getPacks();
-            result.addAll(containers.stream().map(
+            result.addAll(containers.stream().filter(Objects::nonNull).map(
                     c -> createLoadInfoFromContainers(request, c, offerType)).collect(Collectors.toList()));
-            result.addAll(packs.stream().map(
+            result.addAll(packs.stream().filter(Objects::nonNull).map(
                     p -> createLoadInfoFromPacks(request, p, offerType)).collect(Collectors.toList()));
             return result;
         }
 
         //otherwise : its second time : isAlteration = true
 
-        Map<Long, Containers> existingContainers = customerBooking != null ? customerBooking.getContainersList().stream().collect(Collectors.toMap(Containers::getId, c -> c)) : new HashMap<>();
-        Map<Long, Packing> existingPacks = customerBooking != null ? customerBooking.getPackingList().stream().collect(Collectors.toMap(Packing::getId, c -> c)) : new HashMap<>();
+        Map<Long, Containers> existingContainers = customerBooking != null ? customerBooking.getContainersList().stream().filter(Objects::nonNull).collect(Collectors.toMap(Containers::getId, c -> c)) : new HashMap<>();
+        Map<Long, Packing> existingPacks = customerBooking != null ? customerBooking.getPackingList().stream().filter(Objects::nonNull).collect(Collectors.toMap(Packing::getId, c -> c)) : new HashMap<>();
 
-        result.addAll(request.getContainers().stream().map(
+        result.addAll(request.getContainers().stream().filter(Objects::nonNull).map(
                 c -> {
                     NPMFetchOffersRequest.LoadInformation model =
                             createLoadInfoFromContainers(request, c, offerType);
@@ -193,7 +194,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
                     return model;
                 }).collect(Collectors.toList()));
 
-        result.addAll(request.getPacks().stream().map(
+        result.addAll(request.getPacks().stream().filter(Objects::nonNull).map(
                 p -> {
                     NPMFetchOffersRequest.LoadInformation model =
                             createLoadInfoFromPacks(request, p, offerType);

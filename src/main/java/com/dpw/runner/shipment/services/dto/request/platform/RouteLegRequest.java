@@ -10,9 +10,10 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class RouteLegRequest {
-    private String order;
+    private Long order;
     private String origin_code;
     private String origin_location_type;
     private String destination_code;
     private String destination_location_type;
+    private String transport_mode;
 }

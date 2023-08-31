@@ -224,12 +224,28 @@ public class DbAccessHelper {
         return tableNames.get(key).getFieldName() == null ? key : tableNames.get(key).getFieldName();
     }
 
+    static private Enum<?> getEnum(String enumFullName, String enumName) {
+        @SuppressWarnings("unchecked")
+        final Class<Enum> cl;
+        try {
+            cl = (Class<Enum>)Class.forName(enumFullName);
+            @SuppressWarnings("unchecked")
+            final Enum result = Enum.valueOf(cl, enumName);
+            return result;
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
 
     private static <T> Predicate createSpecification(Class dataType, Criteria input, Path path, CriteriaBuilder criteriaBuilder, String fieldName) {
         switch (input.getOperator()) {
             case "=":
                 if (dataType.isAssignableFrom(String.class)) {
                     return criteriaBuilder.equal(criteriaBuilder.lower(path.get(fieldName)), (((String) input.getValue()).toLowerCase()));
+                }
+                else if(dataType.isEnum()) {
+                    return criteriaBuilder.equal(path.get(fieldName), getEnum(dataType.getName(), (String) input.getValue()));
                 }
                 return criteriaBuilder.equal(path.get(fieldName), input.getValue());
 
