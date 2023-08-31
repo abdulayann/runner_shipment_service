@@ -26,6 +26,7 @@ import org.springframework.web.client.RestTemplate;
 import static com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil.createBookingRequestForV1;
 
 @Service
+//@EnableAsync
 public class V1ServiceImpl implements IV1Service {
 
     private static final Logger log = LoggerFactory.getLogger(V1ServiceImpl.class);
@@ -205,6 +206,7 @@ public class V1ServiceImpl implements IV1Service {
     private String CHARGE_TYPE_URL;
 
     @Override
+//    @Async
     public ResponseEntity<?> createBooking(CustomerBooking customerBooking) {
         try {
             long time = System.currentTimeMillis();
