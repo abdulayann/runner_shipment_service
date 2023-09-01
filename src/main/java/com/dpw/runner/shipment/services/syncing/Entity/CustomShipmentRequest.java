@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.syncing.Entity;
 
 import lombok.Data;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -34,7 +35,7 @@ public class CustomShipmentRequest {
     public String AndesStatusString;
     public String AndesStatusResponseText;
     public String AndesTicket;
-    public Decimal? AssessValue;
+    public BigDecimal AssessValue;
     public String Betype;
     public String BlchargesDisplay;//TODO : REMOVE
     public String BlexporterShipment;
@@ -69,7 +70,7 @@ public class CustomShipmentRequest {
     public PartyRequestV2 ImportBroker;
     public Boolean ImportExportShipmentLock;
 
-    public Decimal? InvoiceValue;
+    public BigDecimal InvoiceValue;
     public LocalDateTime InwardDateAndTime;
     public Boolean IsCmsHBLSent;
     public Boolean IsCreditOverrideApproved;
@@ -105,7 +106,7 @@ public class CustomShipmentRequest {
     public Boolean SurrenderPrinted;
     public String TipoDocumentConsignee;
     public String TipoDocumentNotifyParty;
-    public Decimal? TotalDuty;
+    public BigDecimal TotalDuty;
     public PartyRequestV2 TraderOrSupplier;
     public long WarehouseId;
     public Boolean Wblprinted;
@@ -132,7 +133,7 @@ public class CustomShipmentRequest {
     // public String ReferenceNo;
     public String BookingType;
     public Boolean CargoFinanceBooking;
-    // public Decimal? Chargeable;
+    // public BigDecimal Chargeable;
     // public String ChargableUnit;
 
     public String ConsolidationReferenceNumber;
@@ -155,11 +156,11 @@ public class CustomShipmentRequest {
 
     public Integer LockedBy;
     // public String MarksnNums;
-    public Decimal? NetWeight;
+    public BigDecimal NetWeight;
     public String NetWeightUnit;
 
     public String PaymentTerms;
-    public ShipmentStatus? PrevShipmentStatus;
+    public Integer PrevShipmentStatus;
     public Integer ReceivingBranch;
 
     // "route": "string",   // ---Missing--- Available in shipmentsRow (RouteId)

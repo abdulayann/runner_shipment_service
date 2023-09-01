@@ -64,7 +64,7 @@ public class ContainerRequestV2 {
     public String PackageHeight;
     public String PackageLength;
     public String Packs;
-//    public List<PackRequestV2> PacksList;
+    public List<PackingRequestV2> PacksList;  // Different PackRequestV2 was there in create test record model v1
     public String PacksType;
     public String PacrNumber;
     public PartyRequestV2 PickupAddressJson;
