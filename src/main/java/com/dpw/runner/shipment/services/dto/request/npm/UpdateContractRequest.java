@@ -19,5 +19,16 @@ public class UpdateContractRequest implements IRunnerRequest {
     private String source;
     private String source_type;
     private Boolean is_alteration;
+    private BusinessInfo business_info;
     private List<LoadInfoRequest> loads_info;
+
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class BusinessInfo {
+        private String product_name;
+        private String tenant_id;
+    }
 }

@@ -1034,6 +1034,7 @@ public class CustomerBookingService implements ICustomerBookingService {
                 .contract_status(contractStatus)
                 .source(CustomerBookingConstants.RUNNER)
                 .source_type(CustomerBookingConstants.RUNNER)
+                .business_info(UpdateContractRequest.BusinessInfo.builder().product_name("FCL").build())
                 .loads_info(loadInfoRequestList)
                 .is_alteration(isAlteration)
                 .build();
