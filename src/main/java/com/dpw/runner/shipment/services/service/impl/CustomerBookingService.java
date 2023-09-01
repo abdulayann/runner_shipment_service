@@ -133,20 +133,18 @@ public class CustomerBookingService implements ICustomerBookingService {
         CustomerBooking customerBooking = jsonHelper.convertValue(request, CustomerBooking.class);
         customerBooking.setSource(BookingSource.Runner);
 
-//        npmContractUpdate(customerBooking, false, null);  // NPM update contract
+        npmContractUpdate(customerBooking, false, null);  // NPM update contract
         try {
             createEntities(customerBooking, request);
             /**
              * Platform service integration
              * Criteria for update call to platform service : check flag IsPlatformBookingCreated, if true then update otherwise dont update
              */
-            if(!customerBooking.getIsPlatformBookingCreated() && !customerBooking.getBookingCharges().isEmpty())
-            {
+            if (!customerBooking.getIsPlatformBookingCreated() && !customerBooking.getBookingCharges().isEmpty()) {
                 platformServiceAdapter.createAtPlatform(createPlatformCreateRequest(customerBooking));
                 customerBooking.setIsPlatformBookingCreated(true);
                 customerBookingDao.save(customerBooking);
-            }
-            else if (customerBooking.getIsPlatformBookingCreated() != null && customerBooking.getIsPlatformBookingCreated()) {
+            } else if (customerBooking.getIsPlatformBookingCreated() != null && customerBooking.getIsPlatformBookingCreated()) {
                 platformServiceAdapter.updateAtPlaform(createPlatformUpdateRequest(customerBooking));
             }
         } catch (Exception e) {
@@ -233,8 +231,7 @@ public class CustomerBookingService implements ICustomerBookingService {
         return CommonRequestModel.builder().data(platformUpdateRequest).build();
     }
 
-    private CommonRequestModel createPlatformCreateRequest(CustomerBooking customerBooking)
-    {
+    private CommonRequestModel createPlatformCreateRequest(CustomerBooking customerBooking) {
         var carrierDetails = Optional.ofNullable(customerBooking.getCarrierDetails());
         PlatformCreateRequest platformCreateRequest = PlatformCreateRequest.builder()
                 .booking_ref_code(customerBooking.getBookingNumber())
@@ -254,8 +251,7 @@ public class CustomerBookingService implements ICustomerBookingService {
         return CommonRequestModel.builder().data(platformCreateRequest).build();
     }
 
-    private OrgRequest createOrgRequest(Parties parties)
-    {
+    private OrgRequest createOrgRequest(Parties parties) {
         return OrgRequest.builder()
                 .org_id(parties.getOrgCode())
                 .office_id(parties.getAddressCode())
@@ -386,7 +382,7 @@ public class CustomerBookingService implements ICustomerBookingService {
         customerBooking.setSource(BookingSource.Runner);
 
         // NPM update contract
-        if(oldEntity.get().getBookingCharges() != null) {
+        if (oldEntity.get().getBookingCharges() != null) {
             npmContractUpdate(customerBooking, true, oldEntity.get());
         } else {
             npmContractUpdate(customerBooking, false, oldEntity.get());
@@ -398,8 +394,7 @@ public class CustomerBookingService implements ICustomerBookingService {
             log.error(e.getMessage());
             throw new RuntimeException(e);
         }
-        if(!customerBooking.getIsPlatformBookingCreated() && !customerBooking.getBookingCharges().isEmpty())
-        {
+        if (!customerBooking.getIsPlatformBookingCreated() && !customerBooking.getBookingCharges().isEmpty()) {
             try {
                 platformServiceAdapter.createAtPlatform(createPlatformCreateRequest(customerBooking));
                 customerBooking.setIsPlatformBookingCreated(true);
@@ -408,8 +403,7 @@ public class CustomerBookingService implements ICustomerBookingService {
                 log.error("ERROR creating in Platform in Update Booking API, ERROR : " + e.getMessage());
                 throw new RuntimeException(e);
             }
-        }
-        else if (customerBooking.getIsPlatformBookingCreated() != null && customerBooking.getIsPlatformBookingCreated()) {
+        } else if (customerBooking.getIsPlatformBookingCreated() != null && customerBooking.getIsPlatformBookingCreated()) {
             try {
                 platformServiceAdapter.updateAtPlaform(createPlatformUpdateRequest(customerBooking));
             } catch (Exception e) {
@@ -764,13 +758,13 @@ public class CustomerBookingService implements ICustomerBookingService {
             String addressCode = request.getCustomer().getAddressCode();
             transformOrgAndAddressPayload(request.getCustomer(), addressCode, orgCode);
         }
-        if(request.isConsignorFreeText() && request.getConsignor() != null) {
+        if (request.isConsignorFreeText() && request.getConsignor() != null) {
             transformOrgAndAddressToRawData(request.getConsignor());
         }
-        if(request.isConsigneeFreeText() && request.getConsignee() != null) {
+        if (request.isConsigneeFreeText() && request.getConsignee() != null) {
             transformOrgAndAddressToRawData(request.getConsignee());
         }
-        if(request.isNotifyPartyFreeText() && request.getNotifyParty() != null) {
+        if (request.isNotifyPartyFreeText() && request.getNotifyParty() != null) {
             transformOrgAndAddressToRawData(request.getNotifyParty());
         }
 
@@ -852,16 +846,16 @@ public class CustomerBookingService implements ICustomerBookingService {
         Map<String, Object> addressData = new HashMap<>();
         CRPRetrieveResponse.CRPAddressDetails crpAddressDetails = new CRPRetrieveResponse.CRPAddressDetails();
         List<CRPRetrieveResponse.CRPAddressDetails> crpAddressDetailsList = response.getCompanyOfficeDetails().stream().filter(x -> x.getOfficeReference().equals(addressCode)).collect(Collectors.toList());
-        if(!crpAddressDetailsList.isEmpty())
+        if (!crpAddressDetailsList.isEmpty())
             crpAddressDetails = crpAddressDetailsList.get(0);
 
         String fusionSiteIdentifier = null;
         String billableFlag = "";
         List<CRPRetrieveResponse.CompanyCodeIssuerDetails> companyCodeIssuerDetailsList = response.getCompanyCodeIssuerDetails().stream().filter(x -> x.getIdentifierValue().equals(addressCode)).collect(Collectors.toList());
-        if(!companyCodeIssuerDetailsList.isEmpty()) {
+        if (!companyCodeIssuerDetailsList.isEmpty()) {
             var fusionSiteIdList = companyCodeIssuerDetailsList.stream().filter(x -> x.getIdentifierCodeType().equals(PartiesConstants.FUSION_SITE_ID)).collect(Collectors.toList());
             var billableFlagList = companyCodeIssuerDetailsList.stream().filter(x -> x.getIdentifierCodeType().equals(PartiesConstants.BILLABLE_FLAG)).collect(Collectors.toList());
-            if(!fusionSiteIdList.isEmpty())
+            if (!fusionSiteIdList.isEmpty())
                 fusionSiteIdentifier = fusionSiteIdList.get(0).getIdentifierCode();
             if (!billableFlagList.isEmpty())
                 billableFlag = billableFlagList.get(0).getIdentifierCode();
