@@ -417,7 +417,6 @@ public class CustomerBookingService implements ICustomerBookingService {
 
     private void updateEntities(CustomerBooking customerBooking, CustomerBookingRequest request) throws Exception {
         customerBooking = customerBookingDao.save(customerBooking);
-        customerBooking = customerBookingDao.findById(customerBooking.getId()).get();
         Long bookingId = customerBooking.getId();
 
         List<PackingRequest> packingRequest = request.getPackingList();
