@@ -13,21 +13,20 @@ public class CustomerBookingValidations {
     public void onSave(CustomerBooking oldEntity, CustomerBooking newEntity) {
         // FCL
         switch (newEntity.getBookingStatus()) {
-            case PENDING_FOR_KYC -> {
+            case PENDING_FOR_KYC:
                 if (Objects.isNull(newEntity.getCustomer()) || (newEntity.getIsCustomerFreeText() && Objects.isNull(newEntity.getCustomer().getOrgData()))
                          || (! newEntity.getIsCustomerFreeText() && Objects.isNull(newEntity.getCustomer().getOrgCode())) )
                     throw new MandatoryFieldException(String.format(CustomerBookingConstants.MANDATORY_FIELD, "Customer detail"));
                 break;
-            }
-            case PENDING_FOR_CREDIT_LIMIT -> {
+
+            case PENDING_FOR_CREDIT_LIMIT:
                 this.validateOnPendingForCreditCheck(newEntity);
                 break;
-            }
-            case READY_FOR_SHIPMENT -> {
+
+            case READY_FOR_SHIPMENT:
                 this.validateOnPendingForCreditCheck(newEntity);
                 this.validateOnReadyForShipment(newEntity);
                 break;
-            }
         }
     }
 

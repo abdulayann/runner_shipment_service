@@ -75,7 +75,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
     public ResponseEntity<?> updateContracts(CommonRequestModel commonRequestModel) throws Exception {
         UpdateContractRequest updateContractRequest = (UpdateContractRequest) commonRequestModel.getData();
         String url = npmBaseUrl + npmUpdateUrl;
-        ResponseEntity<?> response = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJson(updateContractRequest)), Object.class);
+        ResponseEntity<?> response = restTemplate.exchange(RequestEntity.patch(URI.create(url)).body(jsonHelper.convertToJson(updateContractRequest)), Object.class);
         return ResponseHelper.buildDependentServiceResponse(response.getBody(),0,0);
     }
 
