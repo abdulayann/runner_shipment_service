@@ -29,7 +29,7 @@ public class PlatformServiceAdapter implements IPlatformServiceAdapter {
     @Override
     public ResponseEntity<?> createAtPlatform(CommonRequestModel requestModel) throws Exception {
         PlatformCreateRequest request = (PlatformCreateRequest) requestModel.getData();
-        String url = baseUrl + "booking/external";
+        String url = baseUrl + "/booking/external";
         ResponseEntity<?> responseEntity = restTemplate.exchange(RequestEntity.post(URI.create(url)).build(), Object.class);
         return responseEntity;
     }
@@ -37,7 +37,7 @@ public class PlatformServiceAdapter implements IPlatformServiceAdapter {
     @Override
     public ResponseEntity<?> updateAtPlaform(CommonRequestModel requestModel) throws Exception {
         PlatformUpdateRequest request = (PlatformUpdateRequest) requestModel.getData();
-        String url = baseUrl + "booking/external";
+        String url = baseUrl + "/notifications/booking/" + request.getBooking_reference_code();
         ResponseEntity<?> responseEntity = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(request), Object.class);
         return responseEntity;
     }
