@@ -60,24 +60,63 @@ public class V1ServiceUtil {
                 .RoutingList(createRoutingList(customerBooking.getRoutingList()))
                 .Documents(createDocuments(customerBooking.getFileRepoList()))
                 .Loosecargos(createLooseCarges(customerBooking.getPackingList()))
-                .OrgDetails(createOrgDetails(customerBooking))
+                .OrgDetails(null)
+                .QuoteCharges(createQuoteCharges(customerBooking.getBookingCharges()))
                 .build();
+    }
+
+    private static List<CreateBookingModuleInV1.BookingEntity.QuoteCharge> createQuoteCharges(List<BookingCharges> bookingCharges) {
+        if (bookingCharges == null) return null;
+        return bookingCharges.stream().filter(Objects::nonNull).map(bc ->
+                CreateBookingModuleInV1.BookingEntity.QuoteCharge.builder()
+                        .OverseasSellCurrency(bc.getOverseasSellCurrency())
+                        .ChargeTypeCode(bc.getChargeType())
+                        .CostExchange(bc.getCostExchange())
+                        .EstimatedCost(bc.getEstimatedCost())
+                        .EstimatedRevenue(bc.getEstimatedRevenue())
+                        .LocalCostAmount(bc.getLocalCostAmount())
+                        .LocalCostCurrency(bc.getLocalCostCurrency())
+                        .LocalSellAmount(bc.getLocalSellAmount())
+                        .LocalSellCurrency(bc.getLocalSellCurrency())
+                        .NoGST(bc.getNoGST())
+                        .OverseasCostCurrency(bc.getOverseasCostCurrency())
+                        .OverseasSellAmount(bc.getOverseasSellAmount())
+                        .SellExchange(bc.getSellExchange())
+                        .TaxPercentage(bc.getTaxPercentage())
+                        .ContainersGuid(createContainersGuid(bc))
+                        .build()).collect(Collectors.toList());
+    }
+
+    private static List<UUID> createContainersGuid(BookingCharges bc) {
+        if (bc.getContainersList() == null)
+            return new ArrayList<>();
+        return bc.getContainersList().stream().filter(Objects::nonNull)
+                .map(container -> container.getGuid()).collect(Collectors.toList());
     }
 
     private static List<CreateBookingModuleInV1.BookingEntity.OrgDetail> createOrgDetails(CustomerBooking customerBooking) {
         if (customerBooking == null)
             return null;
         List<CreateBookingModuleInV1.BookingEntity.OrgDetail> list = new ArrayList<>();
-        list.add(convertParty(customerBooking.getConsignee()));
-        list.add(convertParty(customerBooking.getConsignor()));
-        list.add(convertParty(customerBooking.getNotifyParty()));
-        list.add(convertParty(customerBooking.getCustomer()));
+        var consignee = convertParty(customerBooking.getConsignee());
+        var consignor = convertParty(customerBooking.getConsignor());
+        var notify = convertParty(customerBooking.getNotifyParty());
+        var customer = convertParty(customerBooking.getCustomer());
+        if (consignee != null)
+            list.add(consignee);
+        if (consignor != null)
+            list.add(consignor);
+        if (notify != null)
+            list.add(notify);
+        if (customer != null)
+            list.add(customer);
         return list;
     }
 
     private static CreateBookingModuleInV1.BookingEntity.OrgDetail convertParty(Parties party) {
         if (party == null)
             return null;
+        var addressData = party.getAddressData();
         var orgData = party == null || party.getOrgData() == null ? Collections.emptyMap() : party.getOrgData();
         return CreateBookingModuleInV1.BookingEntity.OrgDetail.builder()
                 .OrgSource(PartiesConstants.API)
@@ -85,6 +124,9 @@ public class V1ServiceUtil {
                 .FullName((String) orgData.get(PartiesConstants.FULLNAME))
                 .Address1((String) orgData.get(PartiesConstants.ADDRESS1))
                 .Address2((String) orgData.get(PartiesConstants.ADDRESS2))
+                .Addresses(List.of(CreateBookingModuleInV1.BookingEntity.OrgDetail.OrgDetailAddress.builder()
+                        .AddressShortCode((String) addressData.get("AddressShortCode"))
+                        .Address1((String) orgData.get(PartiesConstants.ADDRESS1)).build()))
                 .Country((String) orgData.get(PartiesConstants.COUNTRY))
                 .CityCode((String) orgData.get(PartiesConstants.CITY_CODE))
                 .State((String) orgData.get(PartiesConstants.STATE))
@@ -107,7 +149,7 @@ public class V1ServiceUtil {
         return packingList.stream().filter(Objects::nonNull)
                 .map(packing -> CreateBookingModuleInV1.BookingEntity.LooseCargo.builder()
                         .ReferenceGuid(packing.getGuid())
-                        .Packs(Long.valueOf(packing.getPacks()))
+                        .Packs(packing.getPacks() == null ? 0 : Long.valueOf(packing.getPacks()))
                         .PacksUnit(packing.getPacksType())
                         .Length(packing.getLength())
                         .Height(packing.getHeight())

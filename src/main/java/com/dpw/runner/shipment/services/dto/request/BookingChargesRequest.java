@@ -79,5 +79,4 @@ public class BookingChargesRequest extends CommonRequest implements IRunnerReque
     private BigDecimal taxType4;
     private BigDecimal revenueLineTotal;
     private List<UUID> containersUUID;
-    private List<BookingContainerRequest> containers;
 }

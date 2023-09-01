@@ -25,4 +25,5 @@ public class ChargesRequest {
     private BigDecimal exchange_rate;
     private UUID charge_id;
     private List<TaxDTO> taxes;
+    private boolean is_grouped;
 }
