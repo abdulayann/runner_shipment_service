@@ -83,7 +83,15 @@ public class V1ServiceUtil {
                         .OverseasSellAmount(bc.getOverseasSellAmount())
                         .SellExchange(bc.getSellExchange())
                         .TaxPercentage(bc.getTaxPercentage())
+                        .ContainersGuid(createContainersGuid(bc))
                         .build()).collect(Collectors.toList());
+    }
+
+    private static List<UUID> createContainersGuid(BookingCharges bc) {
+        if (bc.getContainersList() == null)
+            return new ArrayList<>();
+        return bc.getContainersList().stream().filter(Objects::nonNull)
+                .map(container -> container.getGuid()).collect(Collectors.toList());
     }
 
     private static List<CreateBookingModuleInV1.BookingEntity.OrgDetail> createOrgDetails(CustomerBooking customerBooking) {

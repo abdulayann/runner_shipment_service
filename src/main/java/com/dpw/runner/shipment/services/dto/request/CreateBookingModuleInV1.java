@@ -73,20 +73,21 @@ public class CreateBookingModuleInV1 {
         @NoArgsConstructor
         @AllArgsConstructor
         public static class QuoteCharge {
-            public String ChargeTypeCode;
-            public Boolean NoGST;
-            public BigDecimal EstimatedRevenue;
-            public BigDecimal LocalSellAmount;
-            public String LocalSellCurrency;
-            public BigDecimal OverseasSellAmount;
-            public String OverseasSellCurrency;
-            public BigDecimal SellExchange;
-            public BigDecimal EstimatedCost;
-            public BigDecimal LocalCostAmount;
-            public String LocalCostCurrency;
-            public BigDecimal CostExchange;
-            public String OverseasCostCurrency;
-            public BigDecimal TaxPercentage;
+            private String ChargeTypeCode;
+            private Boolean NoGST;
+            private BigDecimal EstimatedRevenue;
+            private BigDecimal LocalSellAmount;
+            private String LocalSellCurrency;
+            private BigDecimal OverseasSellAmount;
+            private String OverseasSellCurrency;
+            private BigDecimal SellExchange;
+            private BigDecimal EstimatedCost;
+            private BigDecimal LocalCostAmount;
+            private String LocalCostCurrency;
+            private BigDecimal CostExchange;
+            private String OverseasCostCurrency;
+            private BigDecimal TaxPercentage;
+            private List<UUID> ContainersGuid;
         }
 
         @Data

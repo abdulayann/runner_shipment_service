@@ -157,8 +157,11 @@ public class CustomerBookingService implements ICustomerBookingService {
         return ResponseHelper.buildSuccessResponse(jsonHelper.convertValue(customerBooking, CustomerBookingResponse.class));
     }
 
-    private void createEntities(CustomerBooking customerBooking, CustomerBookingRequest request) throws Exception{
-        if(customerBooking.getBookingNumber() == null) {
+    private void createEntities(CustomerBooking customerBooking, CustomerBookingRequest request) throws Exception {
+        if (customerBooking.getIsPlatformBookingCreated() == null) {
+            customerBooking.setIsPlatformBookingCreated(false);
+        }
+        if (customerBooking.getBookingNumber() == null) {
             customerBooking.setBookingNumber(generateBookingNumber());
         }
         customerBooking = customerBookingDao.save(customerBooking);
