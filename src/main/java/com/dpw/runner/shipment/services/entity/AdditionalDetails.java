@@ -1,11 +1,18 @@
 package com.dpw.runner.shipment.services.entity;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.entity.enums.AndesStatus;
 import com.dpw.runner.shipment.services.entity.enums.LGDStatus;
 import com.dpw.runner.shipment.services.entity.enums.Ownership;
+import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
+import com.dpw.runner.shipment.services.utils.MasterData;
+import com.dpw.runner.shipment.services.utils.OrganizationData;
+import com.dpw.runner.shipment.services.utils.UnlocationData;
 import lombok.*;
 import lombok.experimental.Accessors;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.Where;
 
 import javax.persistence.*;
 import java.math.BigDecimal;
@@ -20,6 +27,8 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Accessors(chain = true)
+@SQLDelete(sql = "UPDATE shipment_additional_details SET is_deleted = true WHERE id=?")
+@Where(clause = "is_deleted = false")
 public class AdditionalDetails extends MultiTenancy {
 
     @Column(name = "customs_no_issue_date")
@@ -64,9 +73,11 @@ public class AdditionalDetails extends MultiTenancy {
     private String BEType;
 
     @Column(name = "custom_location")
+    @MasterData(type = MasterDataType.CUSTOM_LOCATION, cascade = Constants.CUSTOM_CITY)
     private String customLocation;
 
     @Column(name = "custom_city")
+    @MasterData(type = MasterDataType.CUSTOM_CITY)
     private String customCity;
 
     @Column(name = "is_import_clearance")
@@ -152,6 +163,11 @@ public class AdditionalDetails extends MultiTenancy {
     @Column(name = "ownership_name")
     private String ownershipName;
 
+    @OneToOne(fetch = FetchType.LAZY, targetEntity = Parties.class, cascade = CascadeType.ALL)
+    @JoinColumn(name = "ownership_org", referencedColumnName = "id")
+    @OrganizationData
+    private Parties ownershipOrg;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "passed_by")
     private Ownership passedBy;
@@ -200,18 +216,22 @@ public class AdditionalDetails extends MultiTenancy {
     private Long bondedWarehouseId;
 
     @Column(name = "release_type")
+    @MasterData(type = MasterDataType.RELEASE_TYPE)
     private String releaseType;
 
     @Column(name = "house_bill_type")
+    @MasterData(type = MasterDataType.HOUSE_BILL_TYPE)
     private String houseBillType;
 
     @Column(name = "on_board")
+    @MasterData(type = MasterDataType.ON_BOARD)
     private String onBoard;
 
     @Column(name = "on_board_date")
     private LocalDateTime onBoardDate;
 
     @Column(name = "delivery_mode_id")
+    @MasterData(type = MasterDataType.HBL_DELIVERY_MODE)
     private String deliveryMode;
 
     @Column(name = "original")
@@ -221,22 +241,28 @@ public class AdditionalDetails extends MultiTenancy {
     private Integer copy;
 
     @Column(name = "bl_charges_display")
+    @MasterData(type = MasterDataType.CHARGES_APPLY)
     private String BLChargesDisplay;
 
     @Column(name = "bl_exporter_shipment")
+    @MasterData(type = MasterDataType.EXPORTER_STMT)
     private String BLExporterShipment;
 
     @Column(name = "screening_status")
+    @MasterData(type = MasterDataType.SCREENING_STATUS)
     private String screeningStatus;
 
     @Column(name = "paid_place")
-    private Long paidPlace;
+    @UnlocationData
+    private String paidPlace;
 
-    @Column(name = "place_of_issue_id")
-    private Long placeOfIssue;
+    @Column(name = "place_of_issue")
+    @UnlocationData
+    private String placeOfIssue;
 
     @Column(name = "place_of_supply")
-    private Long placeOfSupply;
+    @UnlocationData
+    private String placeOfSupply;
 
     @Column(name = "date_of_issue")
     private LocalDateTime dateOfIssue;
@@ -245,6 +271,7 @@ public class AdditionalDetails extends MultiTenancy {
     private LocalDateTime dateOfReceipt;
 
     @Column(name = "goods_co_id")
+    @MasterData(type = MasterDataType.COUNTRIES)
     private String goodsCO;
 
     @Column(name = "boe_number")
@@ -265,47 +292,56 @@ public class AdditionalDetails extends MultiTenancy {
     @Column(name = "surrender_printed")
     private Boolean surrenderPrinted;
 
-    @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL)
+    @OneToOne(fetch = FetchType.LAZY, targetEntity = Parties.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "notify_party_id", referencedColumnName = "id")
+    @OrganizationData
     private Parties notifyParty;
 
-    @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL)
+    @OneToOne(fetch = FetchType.LAZY, targetEntity = Parties.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "import_broker_id", referencedColumnName = "id")
+    @OrganizationData
     private Parties importBroker;
 
-    @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL)
+    @OneToOne(fetch = FetchType.LAZY, targetEntity = Parties.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "export_broker_id", referencedColumnName = "id")
+    @OrganizationData
     private Parties exportBroker;
 
-    @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL)
+    @OneToOne(fetch = FetchType.LAZY, targetEntity = Parties.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "sending_forwarder_id", referencedColumnName = "id")
+    @OrganizationData
     private Parties sendingForwarder;
 
-    @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL)
+    @OneToOne(fetch = FetchType.LAZY, targetEntity = Parties.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "receiving_forwarder_id", referencedColumnName = "id")
+    @OrganizationData
     private Parties receivingForwarder;
 
-    @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL)
+    @OneToOne(fetch = FetchType.LAZY, targetEntity = Parties.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "trader_or_supplier_id", referencedColumnName = "id")
+    @OrganizationData
     private Parties traderOrSupplier;
 
-    @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL)
+    @OneToOne(fetch = FetchType.LAZY, targetEntity = Parties.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "etailor_id", referencedColumnName = "id")
+    @OrganizationData
     private Parties eTailor;
 
-    @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL)
+    @OneToOne(fetch = FetchType.LAZY, targetEntity = Parties.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "borrowed_from_id", referencedColumnName = "id")
+    @OrganizationData
     private Parties borrowedFrom;
 
-    @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL)
+    @OneToOne(fetch = FetchType.LAZY, targetEntity = Parties.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "sending_agent_id", referencedColumnName = "id")
+    @OrganizationData
     private Parties sendingAgent;
 
-    @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL)
+    @OneToOne(fetch = FetchType.LAZY, targetEntity = Parties.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "receiving_agent_id", referencedColumnName = "id")
+    @OrganizationData
     private Parties receivingAgent;
 
     @Column(name = "shipment_id")
     private Long shipmentId;
-
 }

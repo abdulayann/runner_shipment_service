@@ -1,9 +1,11 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IBookingCarriageDao;
 import com.dpw.runner.shipment.services.entity.BookingCarriage;
+import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.repository.interfaces.IBookingCarriageRepository;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
@@ -13,17 +15,16 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.validator.ValidatorUtility;
+import com.dpw.runner.shipment.services.entity.enums.LifecycleHooks;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.convertToClass;
 
 @Repository
 @Slf4j
@@ -31,8 +32,17 @@ public class BookingCarriageDao implements IBookingCarriageDao {
     @Autowired
     private IBookingCarriageRepository bookingCarriageRepository;
 
+    @Autowired
+    private ValidatorUtility validatorUtility;
+
+    @Autowired
+    private JsonHelper jsonHelper;
+
     @Override
     public BookingCarriage save(BookingCarriage bookingCarriage) {
+        Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(bookingCarriage) , Constants.CARRIAGE, LifecycleHooks.ON_CREATE, false);
+        if (! errors.isEmpty())
+            throw new ValidationException(errors.toString());
         return bookingCarriageRepository.save(bookingCarriage);
     }
 
@@ -65,13 +75,12 @@ public class BookingCarriageDao implements IBookingCarriageDao {
             if (bookingCarriageList != null && bookingCarriageList.size() != 0) {
                 for (BookingCarriage request : bookingCarriageList) {
                     Long id = request.getId();
-                    request.setShipmentId(shipmentId);
                     if (id != null) {
                         hashMap.remove(id);
                     }
                     bookingCarriagesRequestList.add(request);
                 }
-                responseBookingCarriage = saveBookingCarriage(bookingCarriagesRequestList);
+                responseBookingCarriage = saveEntityFromShipment(bookingCarriagesRequestList, shipmentId);
             }
             deleteBookingCarriage(hashMap);
             return responseBookingCarriage;
@@ -83,7 +92,7 @@ public class BookingCarriageDao implements IBookingCarriageDao {
         }
     }
 
-    private List<BookingCarriage> saveBookingCarriage(List<BookingCarriage> bookingCarriages) {
+    public List<BookingCarriage> saveEntityFromShipment(List<BookingCarriage> bookingCarriages, Long shipmentId) {
         List<BookingCarriage> res = new ArrayList<>();
         for(BookingCarriage req : bookingCarriages){
             if(req.getId() != null){
@@ -94,6 +103,7 @@ public class BookingCarriageDao implements IBookingCarriageDao {
                     throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
                 }
             }
+            req.setShipmentId(shipmentId);
             req = save(req);
             res.add(req);
         }
@@ -108,6 +118,44 @@ public class BookingCarriageDao implements IBookingCarriageDao {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_DELETE_EXCEPTION_MSG;
             log.error(responseMsg, e);
+        }
+    }
+
+    public List<BookingCarriage> updateEntityFromShipment(List<BookingCarriage> bookingCarriageList, Long shipmentId, List<BookingCarriage> oldEntityList) throws Exception {
+        String responseMsg;
+        List<BookingCarriage> responseBookingCarriage = new ArrayList<>();
+        Map<UUID, BookingCarriage> bookingMap = new HashMap<>();
+        if(oldEntityList != null && oldEntityList.size() > 0) {
+            for (BookingCarriage entity:
+                    oldEntityList) {
+                bookingMap.put(entity.getGuid(), entity);
+            }
+        }
+        try {
+
+            BookingCarriage oldEntity;
+            List<BookingCarriage> bookingCarriagesRequestList = new ArrayList<>();
+            if (bookingCarriageList != null && bookingCarriageList.size() != 0) {
+                for (BookingCarriage request : bookingCarriageList) {
+                    oldEntity = bookingMap.get(request.getGuid());
+                    if(oldEntity != null) {
+                        bookingMap.remove(oldEntity.getGuid());
+                        request.setId(oldEntity.getId());
+                    }
+                    bookingCarriagesRequestList.add(request);
+                }
+                responseBookingCarriage = saveEntityFromShipment(bookingCarriagesRequestList, shipmentId);
+            }
+            Map<Long, BookingCarriage> hashMap = new HashMap<>();
+            bookingMap.forEach((s, bookingCarriage) ->  hashMap.put(bookingCarriage.getId(), bookingCarriage));
+
+            deleteBookingCarriage(hashMap);
+            return responseBookingCarriage;
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
+            log.error(responseMsg, e);
+            throw new Exception(e);
         }
     }
 }

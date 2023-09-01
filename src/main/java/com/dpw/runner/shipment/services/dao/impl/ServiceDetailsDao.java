@@ -14,16 +14,12 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.convertToClass;
 
 @Repository
 @Slf4j
@@ -65,13 +61,12 @@ public class ServiceDetailsDao implements IServiceDetailsDao {
             if (serviceDetailsList != null && serviceDetailsList.size() != 0) {
                 for (ServiceDetails request : serviceDetailsList) {
                     Long id = request.getId();
-                    request.setShipmentId(shipmentId);
                     if (id != null) {
                         hashMap.remove(id);
                     }
                     serviceDetailsRequests.add(request);
                 }
-                responseServiceDetails = saveServiceDetails(serviceDetailsRequests);
+                responseServiceDetails = saveEntityFromShipment(serviceDetailsRequests, shipmentId);
             }
             deleteServiceDetails(hashMap);
             return responseServiceDetails;
@@ -83,7 +78,7 @@ public class ServiceDetailsDao implements IServiceDetailsDao {
         }
     }
 
-    private List<ServiceDetails> saveServiceDetails(List<ServiceDetails> serviceDetailsRequests) {
+    public List<ServiceDetails> saveEntityFromShipment(List<ServiceDetails> serviceDetailsRequests, Long shipmentId) {
         List<ServiceDetails> res = new ArrayList<>();
         for(ServiceDetails req : serviceDetailsRequests){
             if(req.getId() != null){
@@ -94,6 +89,7 @@ public class ServiceDetailsDao implements IServiceDetailsDao {
                     throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
                 }
             }
+            req.setShipmentId(shipmentId);
             req = save(req);
             res.add(req);
         }
@@ -108,6 +104,43 @@ public class ServiceDetailsDao implements IServiceDetailsDao {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_DELETE_EXCEPTION_MSG;
             log.error(responseMsg, e);
+        }
+    }
+
+    public List<ServiceDetails> updateEntityFromShipment(List<ServiceDetails> serviceDetailsList, Long shipmentId, List<ServiceDetails> oldEntityList) throws Exception {
+        String responseMsg;
+        List<ServiceDetails> responseServiceDetails = new ArrayList<>();
+        Map<UUID, ServiceDetails> serviceDetailsMap = new HashMap<>();
+        if(oldEntityList != null && oldEntityList.size() > 0) {
+            for (ServiceDetails entity:
+                    oldEntityList) {
+                serviceDetailsMap.put(entity.getGuid(), entity);
+            }
+        }
+
+        try {
+            ServiceDetails oldEntity;
+            List<ServiceDetails> serviceDetailsRequests = new ArrayList<>();
+            if (serviceDetailsList != null && serviceDetailsList.size() != 0) {
+                for (ServiceDetails request : serviceDetailsList) {
+                    oldEntity = serviceDetailsMap.get(request.getGuid());
+                    if(oldEntity != null) {
+                        serviceDetailsMap.remove(oldEntity.getGuid());
+                        request.setId(oldEntity.getId());
+                    }
+                    serviceDetailsRequests.add(request);
+                }
+                responseServiceDetails = saveEntityFromShipment(serviceDetailsRequests, shipmentId);
+            }
+            Map<Long, ServiceDetails> hashMap = new HashMap<>();
+            serviceDetailsMap.forEach((s, serviceDetails) ->  hashMap.put(serviceDetails.getId(), serviceDetails));
+            deleteServiceDetails(hashMap);
+            return responseServiceDetails;
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
+            log.error(responseMsg, e);
+            throw new Exception(e);
         }
     }
 }

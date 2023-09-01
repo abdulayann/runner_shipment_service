@@ -2,16 +2,21 @@ package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
+import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.dao.interfaces.IEventDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IJobDao;
+import com.dpw.runner.shipment.services.dto.request.EventsRequest;
 import com.dpw.runner.shipment.services.dto.request.JobRequest;
 import com.dpw.runner.shipment.services.dto.response.JobResponse;
 import com.dpw.runner.shipment.services.entity.BookingCarriage;
+import com.dpw.runner.shipment.services.entity.Events;
 import com.dpw.runner.shipment.services.entity.Jobs;
-import com.dpw.runner.shipment.services.entity.Notes;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IJobService;
@@ -28,15 +33,11 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.*;
 
 
 @Slf4j
@@ -46,7 +47,13 @@ public class JobService implements IJobService {
     IJobDao jobDao;
 
     @Autowired
-    ModelMapper modelMapper;
+    IEventDao eventDao;
+
+    @Autowired
+    private JsonHelper jsonHelper;
+
+    @Autowired
+    private AuditLogService auditLogService;
 
     @Override
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
@@ -56,8 +63,26 @@ public class JobService implements IJobService {
             log.debug("Request is empty for Job create with Request Id {}", LoggerHelper.getRequestIdFromMDC());
         }
         Jobs job = convertRequestToEntity(request);
+        List<EventsRequest> eventsRequestList = request.getEventsList();
         try {
             job = jobDao.save(job);
+            Long jobId = job.getId();
+            if(eventsRequestList != null){
+              List<Events> events = eventDao.saveEntityFromOtherEntity(
+                      convertToEntityList(eventsRequestList, Events.class), jobId, Constants.JOBS);
+              job.setEventsList(events);
+            }
+
+            // audit logs
+            auditLogService.addAuditLog(
+                    AuditLogMetaData.builder()
+                            .newData(job)
+                            .prevData(null)
+                            .parent(Jobs.class.getSimpleName())
+                            .parentId(job.getId())
+                            .operation(DBOperationType.CREATE.name()).build()
+            );
+
             log.info("Job created successfully for Id {} with Request Id {}", job.getId(), LoggerHelper.getRequestIdFromMDC());
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -87,9 +112,26 @@ public class JobService implements IJobService {
         }
 
         Jobs jobs = convertRequestToEntity(request);
+        List<EventsRequest> eventsRequestList = request.getEventsList();
         jobs.setId(oldEntity.get().getId());
+        if(eventsRequestList != null){
+            List<Events> events = eventDao.saveEntityFromOtherEntity(
+                    convertToEntityList(eventsRequestList, Events.class), jobs.getId(), Constants.JOBS);
+            jobs.setEventsList(events);
+        }
         try {
+            String oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
             jobs = jobDao.save(jobs);
+
+            // audit logs
+            auditLogService.addAuditLog(
+                    AuditLogMetaData.builder()
+                            .newData(jobs)
+                            .prevData(jsonHelper.readFromJson(oldEntityJsonString, Jobs.class))
+                            .parent(Jobs.class.getSimpleName())
+                            .parentId(jobs.getId())
+                            .operation(DBOperationType.UPDATE.name()).build()
+            );
             log.info("Updated the job details for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -167,7 +209,18 @@ public class JobService implements IJobService {
             return ResponseHelper.buildFailedResponse(Constants.NO_DATA);
         }
         try {
+            String oldEntityJsonString = jsonHelper.convertToJson(targetJob.get());
             jobDao.delete(targetJob.get());
+
+            // audit logs
+            auditLogService.addAuditLog(
+                    AuditLogMetaData.builder()
+                            .newData(null)
+                            .prevData(jsonHelper.readFromJson(oldEntityJsonString, Jobs.class))
+                            .parent(Jobs.class.getSimpleName())
+                            .parentId(targetJob.get().getId())
+                            .operation(DBOperationType.DELETE.name()).build()
+            );
             log.info("Deleted job for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -207,11 +260,11 @@ public class JobService implements IJobService {
     }
 
     private IRunnerResponse convertEntityToDto(Jobs job) {
-        return modelMapper.map(job, JobResponse.class);
+        return jsonHelper.convertValue(job, JobResponse.class);
     }
 
     private Jobs convertRequestToEntity(JobRequest request) {
-        return modelMapper.map(request, Jobs.class);
+        return jsonHelper.convertValue(request, Jobs.class);
     }
 
     private List<IRunnerResponse> convertEntityListToDtoList(List<Jobs> lst) {

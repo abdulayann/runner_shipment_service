@@ -9,7 +9,7 @@ import java.time.LocalDateTime;
 public class EventsResponse implements IRunnerResponse {
     private Long id;
     private String guid;
-    private String masterList;
+    private String eventCode;
     private Long shipmentId;
     private String description;
     private LocalDateTime estimated;

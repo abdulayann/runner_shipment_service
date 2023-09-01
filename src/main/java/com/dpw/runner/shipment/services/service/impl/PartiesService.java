@@ -1,6 +1,8 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
+import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
@@ -8,7 +10,10 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IPartiesDao;
 import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
 import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
+import com.dpw.runner.shipment.services.entity.Notes;
+import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.entity.Parties;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IPartiesDetailsService;
@@ -39,7 +44,10 @@ public class PartiesService implements IPartiesDetailsService {
     private IPartiesDao partiesDao;
 
     @Autowired
-    private ModelMapper modelMapper;
+    private JsonHelper jsonHelper;
+
+    @Autowired
+    private AuditLogService auditLogService;
 
     @Override
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
@@ -48,17 +56,28 @@ public class PartiesService implements IPartiesDetailsService {
         if(request == null) {
             log.debug("Request is empty for Parties create with Request Id {}", LoggerHelper.getRequestIdFromMDC());
         }
-        Parties notes = convertRequestToPartiesDetailsEntity(request);
+        Parties parties = convertRequestToPartiesDetailsEntity(request);
         try {
-            notes = partiesDao.save(notes);
-            log.info("Parties Details created successfully for Id {} with Request Id {}", notes.getId(), LoggerHelper.getRequestIdFromMDC());
+            parties = partiesDao.save(parties);
+
+            // audit logs
+            auditLogService.addAuditLog(
+                    AuditLogMetaData.builder()
+                            .newData(parties)
+                            .prevData(null)
+                            .parent(Parties.class.getSimpleName())
+                            .parentId(parties.getId())
+                            .operation(DBOperationType.CREATE.name()).build()
+            );
+
+            log.info("Parties Details created successfully for Id {} with Request Id {}", parties.getId(), LoggerHelper.getRequestIdFromMDC());
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(responseMsg);
         }
-        return ResponseHelper.buildSuccessResponse(convertEntityToDto(notes));
+        return ResponseHelper.buildSuccessResponse(convertEntityToDto(parties));
     }
 
     @Override
@@ -79,10 +98,21 @@ public class PartiesService implements IPartiesDetailsService {
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
 
-        Parties notes = convertRequestToPartiesDetailsEntity(request);
-        notes.setId(oldEntity.get().getId());
+        Parties parties = convertRequestToPartiesDetailsEntity(request);
+        parties.setId(oldEntity.get().getId());
         try {
-            notes = partiesDao.save(notes);
+            String oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
+            parties = partiesDao.save(parties);
+
+            // audit logs
+            auditLogService.addAuditLog(
+                    AuditLogMetaData.builder()
+                            .newData(parties)
+                            .prevData(jsonHelper.readFromJson(oldEntityJsonString, Parties.class))
+                            .parent(Parties.class.getSimpleName())
+                            .parentId(parties.getId())
+                            .operation(DBOperationType.UPDATE.name()).build()
+            );
             log.info("Updated the Parties details for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -90,7 +120,7 @@ public class PartiesService implements IPartiesDetailsService {
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(responseMsg);
         }
-        return ResponseHelper.buildSuccessResponse(convertEntityToDto(notes));
+        return ResponseHelper.buildSuccessResponse(convertEntityToDto(parties));
     }
 
     @Override
@@ -153,12 +183,23 @@ public class PartiesService implements IPartiesDetailsService {
             }
             long id = request.getId();
 
-            Optional<Parties> note = partiesDao.findById(id);
-            if (note.isEmpty()) {
+            Optional<Parties> parties = partiesDao.findById(id);
+            if (parties.isEmpty()) {
                 log.debug("PartiesDetails is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
-            partiesDao.delete(note.get());
+            String oldEntityJsonString = jsonHelper.convertToJson(parties.get());
+            partiesDao.delete(parties.get());
+
+            // audit logs
+            auditLogService.addAuditLog(
+                    AuditLogMetaData.builder()
+                            .newData(null)
+                            .prevData(jsonHelper.readFromJson(oldEntityJsonString, Parties.class))
+                            .parent(Parties.class.getSimpleName())
+                            .parentId(parties.get().getId())
+                            .operation(DBOperationType.DELETE.name()).build()
+            );
             log.info("Deleted party detail for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
             return ResponseHelper.buildSuccessResponse();
         } catch (Exception e) {
@@ -198,11 +239,11 @@ public class PartiesService implements IPartiesDetailsService {
     }
 
     private PartiesResponse convertEntityToDto(Parties notes) {
-        return modelMapper.map(notes, PartiesResponse.class);
+        return jsonHelper.convertValue(notes, PartiesResponse.class);
     }
 
     private Parties convertRequestToPartiesDetailsEntity(PartiesRequest request) {
-        return modelMapper.map(request, Parties.class);
+        return jsonHelper.convertValue(request, Parties.class);
     }
 
     private List<IRunnerResponse> convertEntityListToDtoList(final List<Parties> lst) {

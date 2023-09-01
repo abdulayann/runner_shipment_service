@@ -12,6 +12,7 @@ import com.dpw.runner.shipment.services.dto.request.ViewsRequest;
 import com.dpw.runner.shipment.services.dto.response.ViewsResponse;
 import com.dpw.runner.shipment.services.entity.DefaultViews;
 import com.dpw.runner.shipment.services.entity.Views;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IViewsService;
@@ -42,7 +43,7 @@ public class ViewsService implements IViewsService {
     private IDefaultViewsDao defaultViewsDao;
 
     @Autowired
-    private ModelMapper modelMapper;
+    private JsonHelper jsonHelper;
 
     @Transactional
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
@@ -61,7 +62,7 @@ public class ViewsService implements IViewsService {
                 DefaultViews defaultView = new DefaultViews();
                 defaultView.setDefaultViewId(views.getId());
                 defaultView.setEntity(views.getEntity());
-                defaultView.setUsername(UserContext.getUser().getUserName());
+                defaultView.setUsername(UserContext.getUser().getUsername());
                 defaultViewsDao.save(defaultView);
                 log.info("Default Views Details created successfully for Id {} with Request Id {}", views.getId(), LoggerHelper.getRequestIdFromMDC());
             }
@@ -97,7 +98,7 @@ public class ViewsService implements IViewsService {
         try {
             view = viewsDao.save(view);
             log.info("Updated the view details for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
-            Optional<DefaultViews> oldDefaultView = defaultViewsDao.findByUsername(UserContext.getUser().getUserName());
+            Optional<DefaultViews> oldDefaultView = defaultViewsDao.findByUsername(UserContext.getUser().getUsername());
             if(oldDefaultView.isPresent())
             {
                 if(oldDefaultView.get().getDefaultViewId() != view.getId())
@@ -112,7 +113,7 @@ public class ViewsService implements IViewsService {
                 DefaultViews defaultView = new DefaultViews();
                 defaultView.setDefaultViewId(view.getId());
                 defaultView.setEntity(view.getEntity());
-                defaultView.setUsername(UserContext.getUser().getUserName());
+                defaultView.setUsername(UserContext.getUser().getUsername());
                 defaultViewsDao.save(defaultView);
                 log.info("Created the Default View details for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
             }
@@ -224,7 +225,7 @@ public class ViewsService implements IViewsService {
     }
 
     private ViewsResponse convertEntityToDto(Views view) {
-        return modelMapper.map(view, ViewsResponse.class);
+        return jsonHelper.convertValue(view, ViewsResponse.class);
     }
 
     private List<IRunnerResponse> convertEntityListToDtoList(List<Views> lst) {
@@ -236,6 +237,6 @@ public class ViewsService implements IViewsService {
     }
 
     public Views convertRequestToEntity(ViewsRequest request) {
-        return modelMapper.map(request, Views.class);
+        return jsonHelper.convertValue(request, Views.class);
     }
 }

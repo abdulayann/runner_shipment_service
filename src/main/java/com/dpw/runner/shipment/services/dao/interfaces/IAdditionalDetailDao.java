@@ -16,5 +16,5 @@ public interface IAdditionalDetailDao {
 
     void delete(AdditionalDetails additionalDetails);
 
-    AdditionalDetails updateEntityFromShipment(AdditionalDetails additionalDetail, Long shipmentId) throws Exception;
+    AdditionalDetails updateEntityFromShipment(AdditionalDetails additionalDetail) throws Exception;
 }

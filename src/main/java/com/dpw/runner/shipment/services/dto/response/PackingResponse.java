@@ -5,13 +5,17 @@ import io.swagger.annotations.ApiModel;
 import lombok.Data;
 
 import java.math.BigDecimal;
+import java.util.Map;
+import java.util.UUID;
 
 @Data
 @ApiModel(value = "Packing response model")
 public class PackingResponse implements IRunnerResponse {
     private Long id;
+    private UUID guid;
     private Long consolidationId;
     private Long shipmentId;
+    private Long bookingId;
     private Integer DGGoodsId;
     private Integer DGSubstanceId;
     private String packs;
@@ -61,5 +65,8 @@ public class PackingResponse implements IRunnerResponse {
     private String shipmentNumber;
     private Long innerPacksId;
     private Long innerPacksCount;
+    public Map<String, String> unlocationData;
+    public Map<String, String> masterData;
+    public Map<String, String> commodityTypeData;
 }
 

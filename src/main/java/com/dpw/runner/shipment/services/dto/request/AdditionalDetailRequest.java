@@ -62,6 +62,7 @@ public class AdditionalDetailRequest extends CommonRequest implements IRunnerReq
     private Boolean isInland;
     private Ownership ownership;
     private String ownershipName;
+    private PartiesRequest ownershipOrg;
     private Ownership passedBy;
     private String passedByPerson;
     private LGDStatus lgdStatus;
@@ -87,9 +88,9 @@ public class AdditionalDetailRequest extends CommonRequest implements IRunnerReq
     private String BLChargesDisplay;
     private String BLExporterShipment;
     private String screeningStatus;
-    private Long paidPlace;
-    private Long placeOfIssue;
-    private Long placeOfSupply;
+    private String paidPlace;
+    private String placeOfIssue;
+    private String placeOfSupply;
     private LocalDateTime dateOfIssue;
     private LocalDateTime dateOfReceipt;
     private String goodsCO;

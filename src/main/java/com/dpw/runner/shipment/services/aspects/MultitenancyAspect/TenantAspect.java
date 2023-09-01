@@ -35,8 +35,6 @@ public class TenantAspect {
     public void beforeFindOfMultiTenancyRepository() {
 
         long tenantId = tenantContext.getCurrentTenant();
-        ;
-
 
         permissions = new HashSet<>();
         permissions.add("SuperAdmin");

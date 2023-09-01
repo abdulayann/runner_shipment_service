@@ -4,7 +4,6 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import io.swagger.annotations.ApiModel;
 import lombok.*;
-import org.openapitools.jackson.nullable.JsonNullable;
 
 import java.time.LocalDateTime;
 
@@ -17,15 +16,13 @@ import java.time.LocalDateTime;
 @Builder
 public class BookingCarriageRequest extends CommonRequest implements IRunnerRequest {
     private Long id;
-    private JsonNullable<Long> bookingId;
-    private JsonNullable<Long> shipmentId;
-    private JsonNullable<Long> vesselId;
-    private JsonNullable<Long> polId;
-    private JsonNullable<Long> podId;
-    private JsonNullable<LocalDateTime> eta;
-    private JsonNullable<LocalDateTime> etd;
-    private JsonNullable<String> vessel;
-    private JsonNullable<String> voyage;
-    private JsonNullable<String> carriageType;
-    private JsonNullable<String> carriageMode;
+    private Long shipmentId;
+    private String portOfLoading;
+    private String portOfDischarge;
+    private LocalDateTime eta;
+    private LocalDateTime etd;
+    private String vessel;
+    private String voyage;
+    private String carriageType;
+    private String carriageMode;
 }

@@ -7,6 +7,7 @@ import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.entity.*;
 //import org.openapitools.jackson.nullable.JsonNullable;
 import com.dpw.runner.shipment.services.mapper.BookingCarriageMapper;
+import com.dpw.runner.shipment.services.mapper.ShipmentDetailsMapper;
 import org.mapstruct.factory.Mappers;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -22,6 +23,8 @@ public class TestDataGenerator {
     public IShipmentDao shipmentDao;
     private ICarrierDao carrierDao;
     private IPartiesDao partiesDao;
+    private BookingCarriageMapper bookingCarriageMapper;
+    private ShipmentDetailsMapper shipmentDetailsMapper;
 
     private List<String> TRANSPORT_MODES = Arrays.asList("SEA", "ROAD", "RAIL", "AIR");
     private List<String> SHIPMENT_TYPE = Arrays.asList("FCL", "LCL");
@@ -54,10 +57,12 @@ public class TestDataGenerator {
     @Autowired
     public TestDataGenerator(IShipmentDao shipmentDao,
                              ICarrierDao carrierDao,
-                             IPartiesDao partiesDao) {
+                             IPartiesDao partiesDao, BookingCarriageMapper bookingCarriageMapper, ShipmentDetailsMapper shipmentDetailsMapper) {
         this.shipmentDao = shipmentDao;
         this.carrierDao = carrierDao;
         this.partiesDao = partiesDao;
+        this.bookingCarriageMapper = bookingCarriageMapper;
+        this.shipmentDetailsMapper = shipmentDetailsMapper;
     }
 
     public List<ShipmentDetails> populateH2WithTestData() {
@@ -215,7 +220,6 @@ public class TestDataGenerator {
             shipmentRequest1.setNotesList(createNotesRequest(new Random().nextInt(10)));
             shipmentRequest1.setReferenceNumbersList(createReferenceNumberRequest(new Random().nextInt(10)));
             shipmentRequest1.setRoutingsList(createRountingsRequest(new Random().nextInt(10)));
-            shipmentRequest1.setPickupDeliveryDetailsList(createPickupDeliverDetailsRequest(10));
             shipmentRequest1.setServicesList(createServiceDetailsRequest(10));
 
             requests.add(shipmentRequest1);
@@ -270,8 +274,8 @@ public class TestDataGenerator {
                     .etd(LocalDateTime.now())
                     .ata(LocalDateTime.now())
                     .atd(LocalDateTime.now())
-                    .polId((long) random)
-                    .podId((long) random)
+                    .pol(generateString(5))
+                    .pod(generateString(5))
                     .build());
         }
         return list;
@@ -423,8 +427,8 @@ public class TestDataGenerator {
         List<BookingCarriageRequest> bookingCarriageRequests = new ArrayList<>();
         for (int i = 0; i < count; i++) {
             int random = new Random().nextInt(10);
-            bookingCarriageRequests.add(mapper.getRequest(BookingCarriage.builder().vesselId((long) random)
-                    .podId((long) random).podId((long) random).eta(LocalDateTime.now()).etd(LocalDateTime.now())
+            bookingCarriageRequests.add(mapper.getRequest(BookingCarriage.builder()
+                    .eta(LocalDateTime.now()).etd(LocalDateTime.now())
                     .vessel(generateString(5)).voyage(generateString(5))
                     .carriageType(CARRIAGE_TYPES.get(new Random().nextInt(10) % CARRIAGE_TYPES.size()))
                     .build()));
@@ -437,7 +441,7 @@ public class TestDataGenerator {
 
         return AdditionalDetailRequest.builder().releaseType(generateString(3)).houseBillType(generateString(3))
                 .deliveryMode(TRANSPORT_MODES.get(random % TRANSPORT_MODES.size())).screeningStatus(generateString(3)).original(1).printedOriginal(true)
-                .hsnNumber(Integer.toUnsignedLong(random)).paidPlace(Integer.toUnsignedLong(random)).placeOfIssue(Integer.toUnsignedLong(random))
+                .hsnNumber(Integer.toUnsignedLong(random))
                 .BOENumber(generateString(10)).build();
 
     }
@@ -480,7 +484,7 @@ public class TestDataGenerator {
 
     private ShipmentRequest createShipmentData() {
         int random = new Random().nextInt(100);
-        ShipmentRequest shipmentRequest = ShipmentRequest.builder()
+        return shipmentDetailsMapper.getRequest(ShipmentDetails.builder()
                 .direction(DIRECTIONS.get(random % DIRECTIONS.size())).status(random % 2)
                 .source(SOURCE.get(random % SOURCE.size())).transportMode(TRANSPORT_MODES.get(random % TRANSPORT_MODES.size())).shipmentType(SHIPMENT_TYPE.get(random % SHIPMENT_TYPE.size()))
                 .houseBill(generateString(10)).masterBill(generateString(10)).bookingReference(generateString(10)).consolRef(generateString(10)).paymentTerms(generateString(3))
@@ -489,8 +493,7 @@ public class TestDataGenerator {
                 .chargable(new BigDecimal(random)).chargeableUnit(VOLUME_UNIT.get(new Random().nextInt(100) % VOLUME_UNIT.size()))
                 .netWeight(new BigDecimal(random)).netWeightUnit(WEIGHT_UNIT.get(new Random().nextInt(100) % WEIGHT_UNIT.size()))
                 .noOfPacks(random).packsUnit("BAG").shipmentId("SHP000" + new Random().nextInt(40))
-                .build();
-        return shipmentRequest;
+                .build());
     }
 
 

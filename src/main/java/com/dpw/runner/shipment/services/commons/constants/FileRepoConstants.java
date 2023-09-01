@@ -19,4 +19,11 @@ public class FileRepoConstants {
     public static final String FILE_REPO_ID = "File Repo Id";
 
     public static final String RESPONSE_CONTAINER_LIST = "List";
+
+    public static final String UPLOAD_DOCUMENT = "/upload-document";
+    public static final String DOWNLOAD_DOCUMENT = "/download-document";
+    public static final String UPLOAD_DOCUMENT_SUCCESSFUL = "Successful Upload Documents To Document Service";
+    public static final String UPLOAD_DOCUMENT_FAILED = "Error While Uploading Documents To Document Service";
+    public static final String DOWNLOAD_DOCUMENT_SUCCESSFUL = "Successful Download Document From Document Service";
+    public static final String DOWNLOAD_DOCUMENT_FAILED = "Error While Downloading Document From Document Service";
 }

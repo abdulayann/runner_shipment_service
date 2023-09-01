@@ -37,4 +37,11 @@ public class StringUtility {
     public static String getEmptyString() {
         return "";
     }
+
+    public static String convertToString(Object object) {
+        if (object == null)
+            return getEmptyString();
+
+        return String.valueOf(object);
+    }
 }

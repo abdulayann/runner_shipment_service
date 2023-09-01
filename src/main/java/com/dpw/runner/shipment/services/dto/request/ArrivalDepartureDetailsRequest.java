@@ -18,16 +18,15 @@ import java.util.UUID;
 public class ArrivalDepartureDetailsRequest implements IRunnerRequest {
     private Long id;
     private UUID guid;
-    private PartiesRequest dContainerYardId;
-    private PartiesRequest dTransportPortId;
-    private PartiesRequest dFirstForeignPortId;
-    private PartiesRequest dLastForeignPortId;
-    private PartiesRequest aContainerYardId;
-    private PartiesRequest aTransportPortId;
-    private PartiesRequest aFirstArrivalPortId;
-    private PartiesRequest aLastForeignPortId;
-    private LocalDateTime dFirstForeignPortArrivalDate;
-    private LocalDateTime dLastForeignPortDepartureDate;
-    private LocalDateTime aFirstArrivalPortArrivalDate;
-    private LocalDateTime aLastForeignPortDepartureDate;
+    private PartiesRequest containerYardId;
+    private PartiesRequest transportPortId;
+    private PartiesRequest CTOId;
+    private PartiesRequest CFSId;
+    private PartiesRequest firstForeignPortId;
+    private PartiesRequest lastForeignPortId;
+    private String firstForeignPort;
+    private String lastForeignPort;
+    private String type;
+    private LocalDateTime firstForeignPortArrivalDate;
+    private LocalDateTime lastForeignPortDepartureDate;
 }

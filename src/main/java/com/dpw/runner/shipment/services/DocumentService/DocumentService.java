@@ -1,5 +1,8 @@
 package com.dpw.runner.shipment.services.DocumentService;
 
+import com.dpw.runner.shipment.services.dto.request.TemplateUploadRequest;
+import com.dpw.runner.shipment.services.dto.response.TemplateUploadResponse;
+import com.dpw.runner.shipment.services.dto.response.UploadDocumentResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
@@ -31,12 +34,19 @@ public class DocumentService {
     private String organizationId;
     @Value("${DocumentService.applicationId}")
     private String applicationId;
+    @Value("${TemplateDocumentService.BaseUrl}")
+    private String templateBaseUrl;
+    @Value("${TemplateDocumentService.xApiKey}")
+    private String templatexApiKey;
+    @Value("${TemplateDocumentService.organizationId}")
+    private String templateOrganizationId;
+    @Value("${TemplateDocumentService.applicationId}")
+    private String templateApplicationId;
     @Autowired
     private RestTemplate restTemplate;
 
-    public String PostDocument(MultipartFile file, Long tenantId, String entityType, Long entityId) throws Exception{
+    public ResponseEntity<UploadDocumentResponse> PostDocument(MultipartFile file, String path) throws Exception{
 
-        String path = tenantId.toString() + "/" + entityType + "/" + entityId.toString();
         String url = BaseUrl+UploadFileUrl;
 
         HttpHeaders headers = new HttpHeaders();
@@ -51,11 +61,11 @@ public class DocumentService {
 
         HttpEntity<Object> request = new HttpEntity<Object>(body, headers);
 
-        ResponseEntity<String> response = restTemplate.postForEntity(url, request, String.class);
-        return response.getBody();
+        ResponseEntity<UploadDocumentResponse> response = restTemplate.postForEntity(url, request, UploadDocumentResponse.class);
+        return response;
     }
 
-    public ResponseEntity<String> DownloadDocument(String path) throws Exception{
+    public ResponseEntity<?> DownloadDocument(String path) throws Exception{
 
         String url = BaseUrl+DownloadFileUrl;
 
@@ -71,7 +81,60 @@ public class DocumentService {
 
         HttpEntity<Object> request = new HttpEntity<Object>(headers);
 
-        ResponseEntity<String> response = restTemplate.exchange(urlTemplate, HttpMethod.GET, request, String.class);
+        ResponseEntity<?> response = restTemplate.exchange(urlTemplate, HttpMethod.GET, request, byte[].class);
+
+        return response;
+    }
+
+    public ResponseEntity<TemplateUploadResponse> CreateDocumentTemplate(TemplateUploadRequest templateRequest) throws Exception{
+        String url = templateBaseUrl;
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+        headers.add("x-api-key", xApikey);
+
+        MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+        body.set("file", templateRequest.getFile().getResource());
+        body.set("organizationId", templateOrganizationId);
+        body.set("applicationId", templateApplicationId);
+        body.set("templateName", templateRequest.getFile().getOriginalFilename());
+        body.set("metadata", "{\"exporterName\": \"Honda-UK\",\"bookingNumber\": \"DPW897890\"}");
+
+        HttpEntity<Object> request = new HttpEntity<Object>(body, headers);
+
+        ResponseEntity<TemplateUploadResponse> response = restTemplate.exchange(url, HttpMethod.POST, request, TemplateUploadResponse.class);
+        return response;
+    }
+    public ResponseEntity<?> UpdateDocumentTemplate(TemplateUploadRequest templateRequest) throws Exception{
+        String url = templateBaseUrl+templateRequest.getPreviousFileId();
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+        headers.add("x-api-key", templatexApiKey);
+        headers.add("X-DPW-ApplicationId", templateApplicationId);
+
+        MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+        body.set("file", templateRequest.getFile().getResource());
+        body.set("organizationId", templateOrganizationId);
+        body.set("applicationId", templateApplicationId);
+        body.set("templateName", templateRequest.getFile().getOriginalFilename());
+        body.set("metadata", "{\"exporterName\": \"Honda-UK\",\"bookingNumber\": \"DPW897890\"}");
+        HttpEntity<Object> request = new HttpEntity<Object>(body, headers);
+
+        ResponseEntity<?> response = restTemplate.exchange(url, HttpMethod.PUT, request, String.class);
+        return response;
+    }
+    public ResponseEntity<?> DownloadDocumentTemplate(Object json, String templateId) throws Exception {
+        // TODO Provide json object with proper format
+        String url = templateBaseUrl+templateId+"/document";
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("x-api-key", templatexApiKey);
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        HttpEntity<Object> request = new HttpEntity<Object>(json,headers);
+
+        ResponseEntity<?> response = restTemplate.exchange(url, HttpMethod.POST, request, byte[].class);
 
         return response;
     }

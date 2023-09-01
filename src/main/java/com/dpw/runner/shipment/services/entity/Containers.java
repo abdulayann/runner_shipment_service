@@ -1,9 +1,16 @@
 package com.dpw.runner.shipment.services.entity;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.entity.enums.ContainerStatus;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
+import com.dpw.runner.shipment.services.utils.DedicatedMasterData;
+import com.dpw.runner.shipment.services.utils.MasterData;
 import lombok.*;
 import lombok.experimental.Accessors;
+import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Where;
 
 import javax.persistence.*;
@@ -14,20 +21,27 @@ import java.util.List;
 @Entity
 @Setter
 @Getter
+@Builder
 @Table(name = "containers")
 @Accessors(chain = true)
 @ToString(onlyExplicitlyIncluded = true)
 @NoArgsConstructor
 @AllArgsConstructor
+@SQLDelete(sql = "UPDATE containers SET is_deleted = true WHERE id=?")
+@Where(clause = "is_deleted = false")
 public class Containers extends MultiTenancy {
 
     @Column(name = "consolidation_id")
     private Long consolidationId;
 
+    @Column(name = "booking_id")
+    private Long bookingId;
+
     @Column(name = "logging_id")
     private Long loggingId;
 
     @Column(name = "container_code")
+    @DedicatedMasterData(type = Constants.CONTAINER_TYPE_MASTER_DATA)
     private String containerCode;
 
     @Column(name = "container_number")
@@ -61,6 +75,7 @@ public class Containers extends MultiTenancy {
     private String measurementUnit;
 
     @Column(name = "commodity_code")
+    @DedicatedMasterData(type = Constants.COMMODITY_TYPE_MASTER_DATA)
     private String commodityCode;
 
     @Column(name = "hs_code")
@@ -121,12 +136,14 @@ public class Containers extends MultiTenancy {
     private String maxTempUnit;
 
     @Column(name = "hbl_delivery_mode")
+    @MasterData(type = MasterDataType.HBL_DELIVERY_MODE)
     private String hblDeliveryMode;
 
     @Column(name = "allocation_date")
     private LocalDateTime allocationDate;
 
     @Column(name = "dg_class")
+    @MasterData(type = MasterDataType.DG_CLASS)
     private String dgClass;
 
     @Column(name = "hazardous")
@@ -229,11 +246,30 @@ public class Containers extends MultiTenancy {
     @Column(name = "volume_utilization")
     private String volumeUtilization;
 
-    @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL)
+    @OneToOne(fetch = FetchType.LAZY, targetEntity = Parties.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "pickup_address_id", referencedColumnName = "id")
     private Parties pickupAddress;
 
-    @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL)
+    @OneToOne(fetch = FetchType.LAZY, targetEntity = Parties.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "delivery_address_id", referencedColumnName = "id")
     private Parties deliveryAddress;
+
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "entityId")
+    @Where(clause = "entity_type = 'CONTAINERS'")
+    private List<Events> eventsList;
+
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "containerId")
+    private List<Packing> packsList;
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(name = "shipments_containers_mapping",
+            joinColumns = @JoinColumn(name = "container_id"),
+            inverseJoinColumns = @JoinColumn(name = "shipment_id"))
+    @JsonIgnoreProperties("containersList")
+    private List<ShipmentDetails> shipmentsList;
+
+    @ManyToMany(fetch = FetchType.LAZY,
+            mappedBy = "containersList")
+    @JsonIgnore
+    private List<BookingCharges> bookingCharges;
 }

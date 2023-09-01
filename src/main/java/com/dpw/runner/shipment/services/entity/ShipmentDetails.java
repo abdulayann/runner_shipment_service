@@ -2,9 +2,17 @@ package com.dpw.runner.shipment.services.entity;
 
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
+import com.dpw.runner.shipment.services.utils.DedicatedMasterData;
+import com.dpw.runner.shipment.services.utils.MasterData;
+import com.dpw.runner.shipment.services.utils.OrganizationData;
 import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
 import lombok.*;
 import lombok.experimental.Accessors;
+import org.hibernate.annotations.BatchSize;
+import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.TypeDef;
 import org.hibernate.annotations.Where;
 
@@ -25,11 +33,13 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 @TypeDef(name = "jsonb", typeClass = JsonBinaryType.class)
+@SQLDelete(sql = "UPDATE shipment_details SET is_deleted = true WHERE id=?")
+@Where(clause = "is_deleted = false")
 public class ShipmentDetails extends MultiTenancy {
 
     private static final long serialVersionUID = 190794279984274725L;
 
-    @OneToOne(targetEntity = CarrierDetails.class)
+    @OneToOne(fetch = FetchType.LAZY, targetEntity = CarrierDetails.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "carrier_detail_id", referencedColumnName = "id")
     private CarrierDetails carrierDetails;
 
@@ -37,30 +47,38 @@ public class ShipmentDetails extends MultiTenancy {
     private String houseBill;
 
     @Column(name = "transport_mode")
+    @MasterData(type = MasterDataType.TRANSPORT_MODE)
     private String transportMode;
 
     @Column(name = "direction")
+    @MasterData(type = MasterDataType.CUSTOM_SHIPMENT_TYPE)
     private String direction;
 
     @Column(name = "shipment_type")
+    @MasterData(type = MasterDataType.CONTAINER_CATEGORY, cascade = Constants.TRANSPORT_MODE)
     private String shipmentType;
 
-    @ManyToMany(targetEntity = Containers.class)
+    @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(name = "shipments_containers_mapping",
             joinColumns = @JoinColumn(name = "shipment_id"),
             inverseJoinColumns = @JoinColumn(name = "container_id"))
-    private List<Containers> containers;
+    @JsonIgnoreProperties("shipmentsList")
+    @BatchSize(size = 50)
+    private List<Containers> containersList;
 
     @Column(name = "status")
     private Integer status;
 
     @Column(name = "source")
+    @MasterData(type = MasterDataType.SOURCE_TYPE)
     private String source;
 
     @Column(name = "job_type")
+    @MasterData(type = MasterDataType.SHIPMENT_TYPE)
     private String jobType;
 
     @Column(name = "service_type")
+    @MasterData(type = MasterDataType.SERVICE_MODE)
     private String serviceType;
 
     @Column(name = "master_bill")
@@ -79,6 +97,7 @@ public class ShipmentDetails extends MultiTenancy {
     private String paymentTerms;
 
     @Column(name = "incoterms")
+    @MasterData(type = MasterDataType.INCOTERMS)
     private String incoterms;
 
     @Column(name = "shipment_id")
@@ -88,7 +107,7 @@ public class ShipmentDetails extends MultiTenancy {
     private Boolean isDomestic;
 
     @Column(name = "assigned_to")
-    private Integer assignedTo;
+    private String assignedTo;
 
     @Column(name = "additional_terms")
     private String additionalTerms;
@@ -102,7 +121,9 @@ public class ShipmentDetails extends MultiTenancy {
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "shipmentId")
     private List<ELDetails> elDetailsList;
 
-    @OneToMany(fetch = FetchType.LAZY, mappedBy = "shipmentId")
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "entityId")
+    @Where(clause = "entity_type = 'SHIPMENT'")
+    @BatchSize(size = 50)
     private List<Events> eventsList;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "entityId")
@@ -128,12 +149,14 @@ public class ShipmentDetails extends MultiTenancy {
     private BigDecimal weight;
 
     @Column(name = "weight_unit")
+    @MasterData(type = MasterDataType.WEIGHT_UNIT)
     private String weightUnit;
 
     @Column(name = "volume")
     private BigDecimal volume;
 
     @Column(name = "volume_unit")
+    @MasterData(type = MasterDataType.VOLUME_UNIT)
     private String volumeUnit;
 
     @Column(name = "volumetric_weight")
@@ -152,18 +175,21 @@ public class ShipmentDetails extends MultiTenancy {
     private BigDecimal netWeight;
 
     @Column(name = "net_weight_unit")
+    @MasterData(type = MasterDataType.WEIGHT_UNIT)
     private String netWeightUnit;
 
     @Column(name = "no_of_packs")
     private Integer noOfPacks;
 
     @Column(name = "packs_unit")
+    @MasterData(type = MasterDataType.PACKS_UNIT)
     private String packsUnit;
 
     @Column(name = "inner_packs")
     private Integer innerPacks;
 
     @Column(name = "inner_pack_unit")
+    @MasterData(type = MasterDataType.PACKS_UNIT)
     private String innerPackUnit;
 
     @Column(name = "freight_local")
@@ -176,13 +202,14 @@ public class ShipmentDetails extends MultiTenancy {
     private Integer freightOverseas;
 
     @Column(name = "freightOverseas_Currency")
+    @DedicatedMasterData(type = Constants.CURRENCY_MASTER_DATA)
     private String freightOverseasCurrency;
 
     @Column(name = "auto_update_wt_vol")
-    private boolean autoUpdateWtVol;
+    private Boolean autoUpdateWtVol;
 
     @Column(name = "container_auto_wv_update")
-    private boolean containerAutoWeightVolumeUpdate;
+    private Boolean containerAutoWeightVolumeUpdate;
 
     @Column(name = "marks_num")
     private String marksNum;
@@ -191,13 +218,13 @@ public class ShipmentDetails extends MultiTenancy {
     private String entryDetail;
 
     @Column(name = "is_locked")
-    private boolean isLocked;
+    private Boolean isLocked;
 
     @Column(name = "locked_by")
     private String lockedBy;
 
     @Column(name = "is_notify_consignee_equal")
-    private boolean isNotifyConsigneeEqual;
+    private Boolean isNotifyConsigneeEqual;
 
     //ShipmentOrderId
 
@@ -205,7 +232,7 @@ public class ShipmentDetails extends MultiTenancy {
     private String bookingType;
 
     @Column(name = "cargo_finance_booking")
-    private boolean cargoFinanceBooking;
+    private Boolean cargoFinanceBooking;
 
     @Column(name = "booking_number")
     private String bookingNumber;
@@ -214,25 +241,28 @@ public class ShipmentDetails extends MultiTenancy {
     private String route;
 
     @Column(name = "source_tenant_id")
-    private long SourceTenantId;
+    private Long sourceTenantId;
 
     @Column(name = "documentation_partner")
-    private long documentationPartner;
+    private Long documentationPartner;
 
     @Column(name = "triangulation_partner")
-    private long triangulationPartner;
+    private Long triangulationPartner;
 
     @Column(name = "receiving_branch")
-    private long receivingBranch;
+    private Long receivingBranch;
 
     @Column(name = "intra_branch")
-    private boolean intraBranch;
+    private Boolean intraBranch;
 
     @Column(name = "prev_shipment_status")
     private Integer prevShipmentStatus;
 
     @Column(name = "is_shipment_read_only")
-    private boolean isShipmentReadOnly;
+    private Boolean isShipmentReadOnly;
+
+    @Column(name = "shipment_created_on")
+    private LocalDateTime shipmentCreatedOn;
 
     @Column(name = "shipment_completed_by")
     private String shipmentCompletedBy;
@@ -246,7 +276,19 @@ public class ShipmentDetails extends MultiTenancy {
     @Column(name = "finance_closed_on")
     private LocalDateTime financeClosedOn;
 
-    @OneToOne(targetEntity = AdditionalDetails.class)
+    @Column(name = "goods_value")
+    public BigDecimal goodsValue;
+
+    @Column(name = "goods_value_currency")
+    public String goodsValueCurrency;
+
+    @Column(name = "insurance_value")
+    public BigDecimal insuranceValue;
+
+    @Column(name = "insurance_value_currency")
+    public String InsuranceValueCurrency;
+
+    @OneToOne(fetch = FetchType.LAZY, targetEntity = AdditionalDetails.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "additional_details_id", referencedColumnName = "id")
     private AdditionalDetails additionalDetails;
 
@@ -258,22 +300,43 @@ public class ShipmentDetails extends MultiTenancy {
     @Where(clause = "entity_type = 'SHIPMENT'")
     private List<Notes> notesList;
 
-    @OneToMany(fetch = FetchType.LAZY, mappedBy = "shipmentId")
-    private List<PickupDeliveryDetails> pickupDeliveryDetailsList;
+    @OneToOne(fetch = FetchType.LAZY, targetEntity = PickupDeliveryDetails.class, cascade = CascadeType.ALL)
+    @JoinColumn(name = "delivery_details_id", referencedColumnName = "id")
+    private PickupDeliveryDetails deliveryDetails;
 
-    @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL)
+    @OneToOne(fetch = FetchType.LAZY, targetEntity = PickupDeliveryDetails.class, cascade = CascadeType.ALL)
+    @JoinColumn(name = "pickup_details_id", referencedColumnName = "id")
+    private PickupDeliveryDetails pickupDetails;
+
+    @OneToOne(fetch = FetchType.LAZY, targetEntity = Parties.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "client_id", referencedColumnName = "id")
+    @OrganizationData
     private Parties client;
 
-    @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL)
+    @OneToOne(fetch = FetchType.LAZY, targetEntity = Parties.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "consigner_id", referencedColumnName = "id")
+    @OrganizationData
     private Parties consigner;
 
-    @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL)
+    @OneToOne(fetch = FetchType.LAZY, targetEntity = Parties.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "consignee_id", referencedColumnName = "id")
+    @OrganizationData
     private Parties consignee;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "shipmentId")
     private List<Jobs> jobsList;
 
+    @ManyToMany
+    @JoinTable(name = "console_shipment_mapping",
+            joinColumns = @JoinColumn(name = "shipment_id"),
+            inverseJoinColumns = @JoinColumn(name = "consolidation_id"))
+    @JsonIgnoreProperties("shipmentsList")
+    private List<ConsolidationDetails> consolidationList;
+
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "entityId")
+    @Where(clause = "entity_type = 'SHIPMENT_ADDRESSES'")
+    private List<Parties> shipmentAddresses;
+
+    @Column(name = "job_status")
+    private String jobStatus;
 }

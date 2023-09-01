@@ -1,18 +1,23 @@
 package com.dpw.runner.shipment.services.service.impl;
 
-import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.DocumentService.DocumentService;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.commons.constants.FileRepoConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IFileRepoDao;
 import com.dpw.runner.shipment.services.dto.request.EntityIdAndTypeRequest;
 import com.dpw.runner.shipment.services.dto.request.FileRepoRequest;
-import com.dpw.runner.shipment.services.dto.request.EntityIdAndTypeRequest;
+import com.dpw.runner.shipment.services.dto.request.UploadDocumentRequest;
+import com.dpw.runner.shipment.services.dto.response.EventsResponse;
 import com.dpw.runner.shipment.services.dto.response.FileRepoResponse;
+import com.dpw.runner.shipment.services.dto.response.UploadDocumentResponse;
 import com.dpw.runner.shipment.services.entity.FileRepo;
-import com.dpw.runner.shipment.services.entity.Packing;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IFileRepoService;
@@ -24,20 +29,19 @@ import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListRequestFromEntityId;
 
 @Service
 @Slf4j
@@ -45,7 +49,9 @@ public class FileRepoService implements IFileRepoService {
     @Autowired
     private IFileRepoDao fileRepoDao;
     @Autowired
-    private ModelMapper modelMapper;
+    private JsonHelper jsonHelper;
+    @Autowired
+    private DocumentService documentService;
 
     @Override
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
@@ -234,11 +240,63 @@ public class FileRepoService implements IFileRepoService {
     }
 
     private FileRepo mapToEntityFromRequest(FileRepoRequest request) {
-        return modelMapper.map(request, FileRepo.class);
+        return jsonHelper.convertValue(request, FileRepo.class);
     }
 
     private FileRepoResponse convertToResponse(FileRepo fileRepo) {
-        return modelMapper.map(fileRepo, FileRepoResponse.class);
+        return jsonHelper.convertValue(fileRepo, FileRepoResponse.class);
     }
 
+    @Override
+    public ResponseEntity<?> uploadDocument(CommonRequestModel commonRequestModel) {
+        UploadDocumentRequest uploadDocumentRequest = (UploadDocumentRequest) commonRequestModel.getData();
+
+        List<MultipartFile> files = uploadDocumentRequest.getFiles();
+        Long entityId = uploadDocumentRequest.getEntityId();
+        String entityType = uploadDocumentRequest.getEntityType();
+        List<IRunnerResponse> responseBodyList = new ArrayList<>();
+        for (var file: files) {
+            String filename = file.getOriginalFilename();
+            Integer tenantId = UserContext.getUser().TenantId;
+            String path = tenantId.toString() + "/" + entityType + "/" + entityId.toString() + "/" + UUID.randomUUID().toString();
+            ResponseEntity<UploadDocumentResponse> responseBody;
+            try {
+                responseBody = documentService.PostDocument(file, path);
+                if(responseBody.getStatusCode() != HttpStatus.OK && responseBody.getStatusCode() != HttpStatus.CREATED) {
+                    String responseMsg = FileRepoConstants.UPLOAD_DOCUMENT_FAILED + " : " + responseBody.getBody();
+                    return ResponseHelper.buildFailedResponse(responseMsg);
+                }
+            } catch (Exception e) {
+                String responseMsg = e.getMessage() != null ? e.getMessage()
+                        : FileRepoConstants.UPLOAD_DOCUMENT_FAILED;
+                log.error(responseMsg, e);
+                return ResponseHelper.buildFailedResponse(responseMsg);
+            }
+            FileRepoRequest fileRepoRequest = FileRepoRequest.builder().fileName(filename).path(responseBody.getBody().getPath()).
+                    entityId(entityId).entityType(entityType).docType(uploadDocumentRequest.getDocType()).
+                    clientEnabled(uploadDocumentRequest.getClientEnabled()).eventCode(uploadDocumentRequest.getEventCode()).build();
+            ResponseEntity<RunnerResponse<EventsResponse>> response = (ResponseEntity<RunnerResponse<EventsResponse>>)create(CommonRequestModel.buildRequest(fileRepoRequest));
+            responseBodyList.add(response.getBody().getData());
+        }
+        return ResponseHelper.buildListSuccessResponse(responseBodyList);
+    }
+
+    public ResponseEntity<?> downloadDocument(CommonRequestModel commonRequestModel) {
+        FileRepoResponse response = (FileRepoResponse) ((RunnerResponse) retrieveById(commonRequestModel).getBody()).getData();
+        String path = response.getPath();
+        ResponseEntity<?> responseBody;
+        try {
+            responseBody = documentService.DownloadDocument(path);
+            if(responseBody.getStatusCode() != HttpStatus.OK) {
+                String responseMsg = FileRepoConstants.DOWNLOAD_DOCUMENT_FAILED + " : " + responseBody.getBody();
+                return ResponseHelper.buildFailedResponse(responseMsg);
+            }
+        } catch (Exception e) {
+            String responseMsg = e.getMessage() != null ? e.getMessage()
+                    : FileRepoConstants.DOWNLOAD_DOCUMENT_FAILED;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+        return responseBody;
+    }
 }

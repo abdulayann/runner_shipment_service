@@ -13,5 +13,8 @@ public interface INotesDao {
     Page<Notes> findAll(Specification<Notes> spec, Pageable pageable);
     Optional<Notes> findById(Long id);
     void delete(Notes notes);
-    List<Notes> updateEntityFromShipment(List<Notes> notesList, Long shipmentId) throws Exception;
+    List<Notes> findByEntityIdAndEntityType(Long entityId, String entityType);
+    List<Notes> updateEntityFromOtherEntity(List<Notes> notesList, Long entityId, String entityType) throws Exception;
+    List<Notes> saveEntityFromOtherEntity(List<Notes> notesRequests, Long entityId, String entityType);
+    List<Notes> updateEntityFromOtherEntity(List<Notes> notesList, Long entityId, String entityType, List<Notes> oldEntityList) throws Exception;
 }

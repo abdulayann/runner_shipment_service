@@ -18,4 +18,6 @@ public class ListCommonRequest implements IRunnerRequest{
     @Min(value = 1, message = Constants.PageNumberError)
     private int pageNo;
     private int pageSize;
+    private List<String> includeTbls;
+    private String containsText;
 }

@@ -1,10 +1,15 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IRoutingsDao;
 import com.dpw.runner.shipment.services.entity.Routings;
+import com.dpw.runner.shipment.services.entity.enums.LifecycleHooks;
+import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.IRoutingsRepository;
+import com.dpw.runner.shipment.services.validator.ValidatorUtility;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,7 +25,6 @@ import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.convertToClass;
 
 @Repository
 @Slf4j
@@ -28,8 +32,17 @@ public class RoutingsDao implements IRoutingsDao {
     @Autowired
     private IRoutingsRepository routingsRepository;
 
+    @Autowired
+    private ValidatorUtility validatorUtility;
+
+    @Autowired
+    private JsonHelper jsonHelper;
+
     @Override
     public Routings save(Routings routings) {
+        Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(routings) , Constants.ROUTING, LifecycleHooks.ON_CREATE, false);
+        if (! errors.isEmpty())
+            throw new ValidationException(errors.toString());
         return routingsRepository.save(routings);
     }
 
@@ -48,6 +61,7 @@ public class RoutingsDao implements IRoutingsDao {
         routingsRepository.delete(routings);
     }
 
+    @Override
     public List<Routings> updateEntityFromShipment(List<Routings> routingsList, Long shipmentId) throws Exception {
         String responseMsg;
         List<Routings> responseRoutings = new ArrayList<>();
@@ -62,13 +76,12 @@ public class RoutingsDao implements IRoutingsDao {
             if (routingsList != null && routingsList.size() != 0) {
                 for (Routings request : routingsList) {
                     Long id = request.getId();
-                    request.setShipmentId(shipmentId);
                     if (id != null) {
                         hashMap.remove(id);
                     }
                     routingsRequestList.add(request);
                 }
-                responseRoutings = saveRoutings(routingsRequestList);
+                responseRoutings = saveEntityFromShipment(routingsRequestList, shipmentId);
             }
             deleteRoutings(hashMap);
             return responseRoutings;
@@ -80,7 +93,8 @@ public class RoutingsDao implements IRoutingsDao {
         }
     }
 
-    private List<Routings> saveRoutings(List<Routings> routings) {
+    @Override
+    public List<Routings> saveEntityFromShipment(List<Routings> routings, Long shipmentId) {
         List<Routings> res = new ArrayList<>();
         for(Routings req : routings){
             if(req.getId() != null){
@@ -91,6 +105,107 @@ public class RoutingsDao implements IRoutingsDao {
                     throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
                 }
             }
+            req.setShipmentId(shipmentId);
+            req = save(req);
+            res.add(req);
+        }
+        return res;
+    }
+
+    @Override
+    public List<Routings> updateEntityFromBooking(List<Routings> routingsList, Long bookingId) throws Exception {
+        String responseMsg;
+        List<Routings> responseRoutings = new ArrayList<>();
+        try {
+            ListCommonRequest listCommonRequest = constructListCommonRequest("bookingId", bookingId, "=");
+            Pair<Specification<Routings>, Pageable> pair = fetchData(listCommonRequest, Routings.class);
+            Page<Routings> routings = findAll(pair.getLeft(), pair.getRight());
+            Map<Long, Routings> hashMap = routings.stream()
+                    .collect(Collectors.toMap(Routings::getId, Function.identity()));
+            List<Routings> routingsRequestList = new ArrayList<>();
+            if (routingsList != null && routingsList.size() != 0) {
+                for (Routings request : routingsList) {
+                    Long id = request.getId();
+                    if (id != null) {
+                        hashMap.remove(id);
+                    }
+                    routingsRequestList.add(request);
+                }
+                responseRoutings = saveEntityFromBooking(routingsRequestList, bookingId);
+            }
+            deleteRoutings(hashMap);
+            return responseRoutings;
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
+            log.error(responseMsg, e);
+            throw new Exception(e);
+        }
+    }
+
+    @Override
+    public List<Routings> saveEntityFromBooking(List<Routings> routings, Long bookingId) {
+        List<Routings> res = new ArrayList<>();
+        for(Routings req : routings){
+            if(req.getId() != null){
+                long id = req.getId();
+                Optional<Routings> oldEntity = findById(id);
+                if (!oldEntity.isPresent()) {
+                    log.debug("Routing is null for Id {}", req.getId());
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
+            }
+            req.setBookingId(bookingId);
+            req = save(req);
+            res.add(req);
+        }
+        return res;
+    }
+
+    public List<Routings> updateEntityFromConsole(List<Routings> routingsList, Long consolidationId) throws Exception {
+        String responseMsg;
+        List<Routings> responseRoutings = new ArrayList<>();
+        try {
+            // TODO- Handle Transactions here
+            ListCommonRequest listCommonRequest = constructListCommonRequest("consolidationId", consolidationId, "=");
+            Pair<Specification<Routings>, Pageable> pair = fetchData(listCommonRequest, Routings.class);
+            Page<Routings> routings = findAll(pair.getLeft(), pair.getRight());
+            Map<Long, Routings> hashMap = routings.stream()
+                    .collect(Collectors.toMap(Routings::getId, Function.identity()));
+            List<Routings> routingsRequestList = new ArrayList<>();
+            if (routingsList != null && routingsList.size() != 0) {
+                for (Routings request : routingsList) {
+                    Long id = request.getId();
+                    if (id != null) {
+                        hashMap.remove(id);
+                    }
+                    routingsRequestList.add(request);
+                }
+                responseRoutings = saveEntityFromConsole(routingsRequestList, consolidationId);
+            }
+            deleteRoutings(hashMap);
+            return responseRoutings;
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
+            log.error(responseMsg, e);
+            throw new Exception(e);
+        }
+    }
+
+    @Override
+    public List<Routings> saveEntityFromConsole(List<Routings> routings, Long consolidationId) {
+        List<Routings> res = new ArrayList<>();
+        for(Routings req : routings){
+            if(req.getId() != null){
+                long id = req.getId();
+                Optional<Routings> oldEntity = findById(id);
+                if (!oldEntity.isPresent()) {
+                    log.debug("Routing is null for Id {}", req.getId());
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
+            }
+            req.setConsolidationId(consolidationId);
             req = save(req);
             res.add(req);
         }
@@ -105,6 +220,44 @@ public class RoutingsDao implements IRoutingsDao {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_DELETE_EXCEPTION_MSG;
             log.error(responseMsg, e);
+        }
+    }
+
+    @Override
+    public List<Routings> updateEntityFromShipment(List<Routings> routingsList, Long shipmentId, List<Routings> oldEntityList) throws Exception {
+        String responseMsg;
+        Map<UUID, Routings> routingMap = new HashMap<>();
+        if(oldEntityList != null && oldEntityList.size() > 0) {
+            for (Routings entity:
+                    oldEntityList) {
+                routingMap.put(entity.getGuid(), entity);
+            }
+        }
+
+        List<Routings> responseRoutings = new ArrayList<>();
+        try {
+            Routings oldEntity;
+            List<Routings> routingsRequestList = new ArrayList<>();
+            if (routingsList != null && routingsList.size() != 0) {
+                for (Routings request : routingsList) {
+                    oldEntity = routingMap.get(request.getGuid());
+                    if(oldEntity != null) {
+                        routingMap.remove(oldEntity.getGuid());
+                        request.setId(oldEntity.getId());
+                    }
+                    routingsRequestList.add(request);
+                }
+                responseRoutings = saveEntityFromShipment(routingsRequestList, shipmentId);
+            }
+            Map<Long, Routings> hashMap = new HashMap<>();
+            routingMap.forEach((s, routings) ->  hashMap.put(routings.getId(), routings));
+            deleteRoutings(hashMap);
+            return responseRoutings;
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
+            log.error(responseMsg, e);
+            throw new Exception(e);
         }
     }
 }

@@ -1,6 +1,8 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
+import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
@@ -9,7 +11,9 @@ import com.dpw.runner.shipment.services.dao.interfaces.IELDetailsDao;
 import com.dpw.runner.shipment.services.dto.request.ELDetailsRequest;
 import com.dpw.runner.shipment.services.dto.request.ElNumbersRequest;
 import com.dpw.runner.shipment.services.dto.response.ELDetailsResponse;
+import com.dpw.runner.shipment.services.entity.CarrierDetails;
 import com.dpw.runner.shipment.services.entity.ELDetails;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IELDetailsService;
@@ -43,7 +47,10 @@ public class ELDetailsService implements IELDetailsService {
     private IELDetailsDao elDetailsDao;
 
     @Autowired
-    private ModelMapper modelMapper;
+    private JsonHelper jsonHelper;
+
+    @Autowired
+    private AuditLogService auditLogService;
 
     @Transactional
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
@@ -55,6 +62,17 @@ public class ELDetailsService implements IELDetailsService {
         ELDetails elDetails = convertRequestToELDetails(request);
         try {
             elDetails = elDetailsDao.save(elDetails);
+
+            // audit logs
+            auditLogService.addAuditLog(
+                    AuditLogMetaData.builder()
+                            .newData(elDetails)
+                            .prevData(null)
+                            .parent(ELDetails.class.getSimpleName())
+                            .parentId(elDetails.getId())
+                            .operation(DBOperationType.CREATE.name()).build()
+            );
+
             log.info("EL Details created successfully for Id {} with Request Id {}", elDetails.getId(), LoggerHelper.getRequestIdFromMDC());
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -86,7 +104,18 @@ public class ELDetailsService implements IELDetailsService {
         ELDetails elDetails = convertRequestToELDetails(request);
         elDetails.setId(oldEntity.get().getId());
         try {
+            String oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
             elDetails = elDetailsDao.save(elDetails);
+
+            // audit logs
+            auditLogService.addAuditLog(
+                    AuditLogMetaData.builder()
+                            .newData(elDetails)
+                            .prevData(jsonHelper.readFromJson(oldEntityJsonString, ELDetails.class))
+                            .parent(ELDetails.class.getSimpleName())
+                            .parentId(elDetails.getId())
+                            .operation(DBOperationType.UPDATE.name()).build()
+            );
             log.info("Updated the EL details for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -163,7 +192,19 @@ public class ELDetailsService implements IELDetailsService {
                 log.debug("El Details is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
+
+            String oldEntityJsonString = jsonHelper.convertToJson(elDetails.get());
             elDetailsDao.delete(elDetails.get());
+
+            // audit logs
+            auditLogService.addAuditLog(
+                    AuditLogMetaData.builder()
+                            .newData(null)
+                            .prevData(jsonHelper.readFromJson(oldEntityJsonString, ELDetails.class))
+                            .parent(ELDetails.class.getSimpleName())
+                            .parentId(elDetails.get().getId())
+                            .operation(DBOperationType.DELETE.name()).build()
+            );
             log.info("Deleted EL detail for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
             return ResponseHelper.buildSuccessResponse();
         } catch (Exception e) {
@@ -231,11 +272,11 @@ public class ELDetailsService implements IELDetailsService {
     }
 
     private ELDetailsResponse convertEntityToDto(ELDetails elDetails) {
-        return modelMapper.map(elDetails, ELDetailsResponse.class);
+        return jsonHelper.convertValue(elDetails, ELDetailsResponse.class);
     }
 
     private ELDetails convertRequestToELDetails(ELDetailsRequest request) {
-        return modelMapper.map(request, ELDetails.class);
+        return jsonHelper.convertValue(request, ELDetails.class);
     }
 
     private List<IRunnerResponse> convertEntityListToDtoList(final List<ELDetails> lst) {

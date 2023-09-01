@@ -4,7 +4,10 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 
 
 @Getter
@@ -14,19 +17,67 @@ import java.util.List;
 public class UsersDto {
 
     private Integer Id;
+    public String Username;
+    public String DisplayName;
+    public String Email;
+    public Boolean IsAdmin;;
+    public Integer TenantId;
+    public String TenantDisplayName;
+    public String Code;
+    public String TenantLogo;
+    public String TenantPrintLogo;
+    public String TenantCountryCode;
+    public String HouseBillLogo;
+    public Integer CompanyId;
+    public String CompanyCurrency;
+    public Boolean AddhocCharges;
+    public Boolean CurrencyOverride;
+    public Boolean FusionIntegration;
+    public String InvoicePrefix;
+    public Boolean InvoiceNumberLock;
+    public String LocalRefPrefix;
+    public Boolean LocalRefLock;
+    public Boolean TaxType1;
+    public Boolean TaxType2;
+    public Boolean TaxType3;
+    public Boolean TaxType4;
+    public Boolean Details;
+    public Boolean ChargeCodeAlt;
+    public String Header;
+    public String Footer;
+    public Boolean LocalCurrencyLock;
+    public Boolean HousebillNumberLock;
+    public String HousebillPrefix;
+    public String QuoteFooter;
+    public Boolean QuoteNumberLock;
+    public String QuotePrefix;
+    public Boolean OrgCodeLock ;
+    public Map<String, Boolean> Permissions;
+    public String EmployeeToken;
+    public List<String> userAllowedPermissions;
+    public HashSet<String> customeTenantCountry;
+    public Boolean allowedTenantCustom;
+    public Boolean allowTenantForAEB;
+    public HashSet<String> operationReportTenants;
+    public HashSet<String> billChargeSaveAndAddEnabledTenants;
+    public HashSet<String> elSettingCountry;
+    public Long UserId;
+    public String TimeZoneId;
+    public Boolean EnableTimeZone;
+    public HashSet<String> vildenEnabledCountrySet;
+    public HashSet<String> dischargePortCountrySet;
+    public List<String> DisableSavedFiltersTenantCodes;
+    public List<String> EnableSavedFiltersTenantCodes;
+    public Boolean EnableSavedFilters;
+    public Integer DepartmentId;
+    public String DepartmentName;
 
-    private Integer UserId;
-
-    private String UserName;
-
-    private String DisplayName;
-
-    private String Email;
-
-    private Integer IsActive;
-
-    private Integer TenantId;
-
-    private List<String> Permissions;
+    public String GwEmpCode;
+    public String GwDeptCode;
+    public String Erp10EmpCode;
+    public String Erp10DeptCode;
+    public Boolean UnicoRelated;
+    public String AgentIATACode;
+    public String AgentCASSCode;
 
 }

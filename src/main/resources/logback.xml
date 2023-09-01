@@ -1,0 +1,33 @@
+<configuration>
+    <property name="LOGS_PATH" value="logs" />
+    <property resource = "application.properties" />
+    <property resource = "application-${props_profile:-dev}.properties" />
+
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="SYSLOG-TCP" class="com.papertrailapp.logback.Syslog4jAppender">
+        <layout class="ch.qos.logback.classic.PatternLayout">
+            <pattern>${papertrail_app} ${papertrail_app}-${hostName} ${spring.application.name}: [%thread] %X{request_id} %-5level %logger{35}: %m%n%xEx</pattern>
+        </layout>
+        <syslogConfig class="org.productivity.java.syslog4j.impl.net.udp.UDPNetSyslogConfig">
+            <host>${papertrail_host}</host>
+            <port>${papertrail_port}</port>
+            <maxMessageLength>128000</maxMessageLength>
+            <sendLocalName>false</sendLocalName>
+        </syslogConfig>
+    </appender>
+
+    <logger name="dpw.runner" level="debug" additivity="false">
+        <appender-ref ref="SYSLOG-TCP" />
+        <appender-ref ref="STDOUT" />
+    </logger>
+
+    <root level="debug">
+<!--        <appender-ref ref="SYSLOG-TCP" />-->
+        <appender-ref ref="STDOUT" />
+    </root>
+</configuration>

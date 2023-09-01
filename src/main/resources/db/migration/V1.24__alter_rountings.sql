@@ -1,0 +1,6 @@
+ALTER TABLE IF EXISTS routings
+    ADD COLUMN carrier VARCHAR,
+    DROP COLUMN pol_id,
+    DROP COLUMN pod_id,
+    ADD COLUMN pol VARCHAR,
+    ADD COLUMN pod VARCHAR;

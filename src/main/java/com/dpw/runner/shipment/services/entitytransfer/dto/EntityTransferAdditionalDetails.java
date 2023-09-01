@@ -1,0 +1,111 @@
+package com.dpw.runner.shipment.services.entitytransfer.dto;
+
+import com.dpw.runner.shipment.services.entity.enums.AndesStatus;
+import com.dpw.runner.shipment.services.entity.enums.LGDStatus;
+import com.dpw.runner.shipment.services.entity.enums.Ownership;
+import com.dpw.runner.shipment.services.entitytransfer.common.request.IEntityTranferBaseEntity;
+import lombok.*;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.Map;
+
+@Data
+@ToString
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+public class EntityTransferAdditionalDetails implements IEntityTranferBaseEntity {
+    public LocalDateTime customsNoIssueDate;
+    public LocalDateTime expiryDate;
+    public String inspection;
+    public String airwayBillDims;
+    public BigDecimal shipperCOD;
+    public String shipperCODPM;
+    public String phase;
+    public BigDecimal spotRate;
+    public String spotRateType;
+    public String efreightStatus;
+    public Boolean importExportShipmentLock;
+    public String CHAJobNumber;
+    public String ADCode;
+    public String BEType;
+    public String customLocation;
+    public String customCity;
+    public Boolean isImportClearance;
+    public Boolean isExportClearance;
+    public String IGMFileNo;
+    public String IECode;
+    public String branchSINumber;
+    public AndesStatus andesStatus;
+    public LocalDateTime andesResponseDate;
+    public String andesStatusResponseText;
+    public String peruEntryExitPoint;
+    public String tipoDocumentNotifyParty;
+    public String tipoDocumentConsignee;
+    public String tipoDocumentConsignor;
+    public String andesTicket;
+    public Long warehouseId;
+    public String activityType;
+    public Long hsnNumber;
+    public LocalDateTime IGMFileDate;
+    public LocalDateTime IGMInwardDate;
+    public LocalDateTime inwardDateAndTime;
+    public Long lineNumber;
+    public Long subLineNumber;
+    public Long localLineNumber;
+    public String SMTPIGMNumber;
+    public LocalDateTime SMTPIGMDate;
+    public Boolean isInland;
+    public Ownership ownership;
+    public String ownershipName;
+    public Ownership passedBy;
+    public String passedByPerson;
+    public LGDStatus lgdStatus;
+    public Boolean isCmsHBLSent;
+    public Boolean isCreditOverrideApproved;
+    public BigDecimal freeDays;
+    public String customHouse;
+    public String supplierInvoiceNumber;
+    public LocalDateTime supplierInvoiceDate;
+    public BigDecimal invoiceValue;
+    public BigDecimal assessValue;
+    public BigDecimal CIFValue;
+    public BigDecimal totalDuty;
+    public String externalNotes;
+    public Long bondedWarehouseId;
+    public String releaseType;
+    public String houseBillType;
+    public String onBoard;
+    public LocalDateTime onBoardDate;
+    public String deliveryMode;
+    public Integer original;
+    public Integer copy;
+    public String BLChargesDisplay;
+    public String BLExporterShipment;
+    public String screeningStatus;
+    public String paidPlace;
+    public String placeOfIssue;
+    public String placeOfSupply;
+    public LocalDateTime dateOfIssue;
+    public LocalDateTime dateOfReceipt;
+    public String goodsCO;
+    public String BOENumber;
+    public LocalDateTime BOEDate;
+    public Boolean printedOriginal;
+    public Boolean WBLPrinted;
+    public Boolean draftPrinted;
+    public Boolean surrenderPrinted;
+    public EntityTransferParties notifyParty;
+    public EntityTransferParties importBroker;
+    public EntityTransferParties exportBroker;
+    public EntityTransferParties sendingForwarder;
+    public EntityTransferParties receivingForwarder;
+    public EntityTransferParties traderOrSupplier;
+    public EntityTransferParties eTailor;
+    public EntityTransferParties borrowedFrom;
+    public EntityTransferParties sendingAgent;
+    public EntityTransferParties receivingAgent;
+    Map<String, EntityTransferMasterLists> masterData;
+    Map<String, EntityTransferUnLocations> unlocationData;
+}

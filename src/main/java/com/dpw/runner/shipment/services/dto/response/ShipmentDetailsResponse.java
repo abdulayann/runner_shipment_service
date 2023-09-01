@@ -1,8 +1,6 @@
 package com.dpw.runner.shipment.services.dto.response;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.dto.request.*;
-import com.dpw.runner.shipment.services.entity.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -11,6 +9,7 @@ import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 @Builder
 @NoArgsConstructor
@@ -35,7 +34,7 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     private String incoterms;
     private String shipmentId;
     private Boolean isDomestic;
-    private Integer assignedTo;
+    private String assignedTo;
     private String additionalTerms;
     private String goodsDescription;
     private BigDecimal weight;
@@ -60,9 +59,9 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     private boolean containerAutoWeightVolumeUpdate;
     private String marksNum;
     private String entryDetail;
-    private boolean isLocked;
+    private Boolean isLocked;
     private String lockedBy;
-    private boolean isNotifyConsigneeEqual;
+    private Boolean isNotifyConsigneeEqual;
     private String bookingType;
     private boolean cargoFinanceBooking;
     private String bookingNumber;
@@ -81,9 +80,10 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     private PartiesResponse client;
     private PartiesResponse consigner;
     private PartiesResponse consignee;
-    private AdditionalDetailResponse additionalDetail;
+    private AdditionalDetailResponse additionalDetails;
     private CarrierDetailResponse carrierDetails;
-    private List<PickupDeliveryDetailsResponse> pickupDeliveryDetailsList;
+    private PickupDeliveryDetailsResponse pickupDetails;
+    private PickupDeliveryDetailsResponse deliveryDetails;
     private List<NotesResponse> notesList;
     private List<TruckDriverDetailsResponse> truckDriverDetails;
     private List<ServiceDetailsResponse> servicesList;
@@ -102,4 +102,13 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     private Long container20RECount;
     private Long container40GPCount;
     private Long container40RECount;
+    private String jobStatus;
+    public Map<String, String> masterData;
+    public Map<String, String> unlocationData;
+    public Map<String, String> currenciesMasterData;
+    public BigDecimal goodsValue;
+    public String goodsValueCurrency;
+    public BigDecimal insuranceValue;
+    public String InsuranceValueCurrency;
+    private LocalDateTime shipmentCreatedOn;
 }

@@ -1,6 +1,8 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
+import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
@@ -8,7 +10,9 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IReferenceNumbersDao;
 import com.dpw.runner.shipment.services.dto.request.ReferenceNumbersRequest;
 import com.dpw.runner.shipment.services.dto.response.ReferenceNumbersResponse;
+import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.entity.ReferenceNumbers;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IReferenceNumbersService;
@@ -44,7 +48,10 @@ public class ReferenceNumbersService implements IReferenceNumbersService {
     private IReferenceNumbersDao referenceNumbersDao;
 
     @Autowired
-    private ModelMapper modelMapper;
+    private JsonHelper jsonHelper;
+
+    @Autowired
+    private AuditLogService auditLogService;
 
     @Transactional
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
@@ -57,6 +64,17 @@ public class ReferenceNumbersService implements IReferenceNumbersService {
         ReferenceNumbers referenceNumbers = convertRequestToEntity(request);
         try {
             referenceNumbers = referenceNumbersDao.save(referenceNumbers);
+
+            // audit logs
+            auditLogService.addAuditLog(
+                    AuditLogMetaData.builder()
+                            .newData(referenceNumbers)
+                            .prevData(null)
+                            .parent(ReferenceNumbers.class.getSimpleName())
+                            .parentId(referenceNumbers.getId())
+                            .operation(DBOperationType.CREATE.name()).build()
+            );
+
             log.info("Reference Number Details created successfully for Id {} with Request Id {}", referenceNumbers.getId(), LoggerHelper.getRequestIdFromMDC());
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -88,7 +106,19 @@ public class ReferenceNumbersService implements IReferenceNumbersService {
         ReferenceNumbers referenceNumbers = convertRequestToEntity(request);
         referenceNumbers.setId(oldEntity.get().getId());
         try {
+            String oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
             referenceNumbers = referenceNumbersDao.save(referenceNumbers);
+
+            // audit logs
+            auditLogService.addAuditLog(
+                    AuditLogMetaData.builder()
+                            .newData(referenceNumbers)
+                            .prevData(jsonHelper.readFromJson(oldEntityJsonString, ReferenceNumbers.class))
+                            .parent(ReferenceNumbers.class.getSimpleName())
+                            .parentId(referenceNumbers.getId())
+                            .operation(DBOperationType.UPDATE.name()).build()
+            );
+
             log.info("Updated the Reference Number details for Id {} with Requestr Id {}", id, LoggerHelper.getRequestIdFromMDC());
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -164,7 +194,19 @@ public class ReferenceNumbersService implements IReferenceNumbersService {
                 log.debug("Reference Numbers is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
+
+            String oldEntityJsonString = jsonHelper.convertToJson(referenceNumbers.get());
             referenceNumbersDao.delete(referenceNumbers.get());
+
+            // audit logs
+            auditLogService.addAuditLog(
+                    AuditLogMetaData.builder()
+                            .newData(null)
+                            .prevData(jsonHelper.readFromJson(oldEntityJsonString, ReferenceNumbers.class))
+                            .parent(ReferenceNumbers.class.getSimpleName())
+                            .parentId(referenceNumbers.get().getId())
+                            .operation(DBOperationType.DELETE.name()).build()
+            );
             log.info("Deleted reference number for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
             return ResponseHelper.buildSuccessResponse();
         } catch (Exception e) {
@@ -203,7 +245,7 @@ public class ReferenceNumbersService implements IReferenceNumbersService {
     }
 
     private ReferenceNumbersResponse convertEntityToDto(ReferenceNumbers referenceNumbers) {
-        return modelMapper.map(referenceNumbers, ReferenceNumbersResponse.class);
+        return jsonHelper.convertValue(referenceNumbers, ReferenceNumbersResponse.class);
     }
 
     private List<IRunnerResponse> convertEntityListToDtoList(List<ReferenceNumbers> lst) {
@@ -215,6 +257,6 @@ public class ReferenceNumbersService implements IReferenceNumbersService {
     }
 
     public ReferenceNumbers convertRequestToEntity(ReferenceNumbersRequest request) {
-        return modelMapper.map(request, ReferenceNumbers.class);
+        return jsonHelper.convertValue(request, ReferenceNumbers.class);
     }
 }

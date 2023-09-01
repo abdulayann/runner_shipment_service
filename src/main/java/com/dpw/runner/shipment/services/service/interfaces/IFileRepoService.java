@@ -10,4 +10,6 @@ import org.springframework.stereotype.Service;
 @Service
 public interface IFileRepoService extends ICommonService {
     ResponseEntity<?> retrieveByEntityIdAndEntityType(CommonRequestModel commonRequestModel);
+    ResponseEntity<?> uploadDocument(CommonRequestModel commonRequestModel);
+    ResponseEntity<?> downloadDocument(CommonRequestModel commonRequestModel);
 }

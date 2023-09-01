@@ -9,17 +9,16 @@ import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
+import com.dpw.runner.shipment.services.dto.patchRequest.BookingCarriagePatchRequest;
 import com.dpw.runner.shipment.services.dto.request.BookingCarriageRequest;
 import com.dpw.runner.shipment.services.dto.response.BookingCarriageResponse;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
-import com.dpw.runner.shipment.services.mapper.BookingCarriageMapper;
 import com.dpw.runner.shipment.services.service.interfaces.IBookingCarriageService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import lombok.extern.slf4j.Slf4j;
-import org.mapstruct.factory.Mappers;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -41,7 +40,7 @@ public class BookingCarriageController {
             @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
     })
     @PostMapping(ApiConstants.API_CREATE)
-    public ResponseEntity<RunnerResponse<BookingCarriageResponse>> createBookingCarriageData(@RequestBody @Valid Object request) {
+    public ResponseEntity<RunnerResponse<BookingCarriageResponse>> createBookingCarriageData(@RequestBody @Valid BookingCarriageRequest request) {
         String responseMsg;
         try {
             BookingCarriageRequest req = objectMapper.convertValue(request, BookingCarriageRequest.class);
@@ -76,7 +75,7 @@ public class BookingCarriageController {
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = BookingCarriageConstants.BOOKING_CARRIAGE_UPDATE_SUCCESSFUL, response = RunnerResponse.class)})
     @PutMapping(ApiConstants.API_UPDATE)
-    public ResponseEntity<RunnerResponse> update(@RequestBody @Valid Object request) {
+    public ResponseEntity<RunnerResponse> update(@RequestBody @Valid BookingCarriageRequest request) {
         String responseMsg;
         try {
             BookingCarriageRequest req = objectMapper.convertValue(request, BookingCarriageRequest.class);
@@ -93,8 +92,7 @@ public class BookingCarriageController {
     public ResponseEntity<RunnerResponse> partialUpdate(@RequestBody @Valid Object request) {
         String responseMsg;
         try {
-            BookingCarriageMapper mapper = Mappers.getMapper(BookingCarriageMapper.class);
-            BookingCarriageRequest req = objectMapper.convertValue(request, BookingCarriageRequest.class);
+            BookingCarriagePatchRequest req = objectMapper.convertValue(request, BookingCarriagePatchRequest.class);
             return (ResponseEntity<RunnerResponse>) bookingCarriageService.partialUpdate(CommonRequestModel.buildRequest(req));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()

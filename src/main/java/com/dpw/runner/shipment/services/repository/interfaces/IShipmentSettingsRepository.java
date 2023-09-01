@@ -1,15 +1,24 @@
 package com.dpw.runner.shipment.services.repository.interfaces;
 
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancyRepository;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-public interface IShipmentSettingsRepository extends JpaRepository<ShipmentSettingsDetails, Long> {
+public interface IShipmentSettingsRepository extends MultiTenancyRepository<ShipmentSettingsDetails> {
     Page<ShipmentSettingsDetails> findAll(Specification<ShipmentSettingsDetails> spec, Pageable pageable);
     Optional<ShipmentSettingsDetails> findByGuid(UUID guid);
+    default Optional<ShipmentSettingsDetails> findById(Long id) {
+        Specification<ShipmentSettingsDetails> spec = (root, criteriaQuery, criteriaBuilder) -> criteriaBuilder.equal(root.get("id"), id);
+        return findOne(spec);
+    }
+    List<ShipmentSettingsDetails> findAll();
+    @Query("SELECT sd.shipmentConsoleImportApproverRole FROM ShipmentSettingsDetails sd WHERE sd.tenantId = ?1")
+    Integer getShipmentConsoleImportApprovarRole(int tenantId);
 }

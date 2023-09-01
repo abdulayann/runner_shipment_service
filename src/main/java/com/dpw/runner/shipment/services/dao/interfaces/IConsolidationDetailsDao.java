@@ -6,11 +6,18 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 
+import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 public interface IConsolidationDetailsDao {
     ConsolidationDetails save(ConsolidationDetails consolidationDetails);
+    ConsolidationDetails update(ConsolidationDetails consolidationDetails);
     Page<ConsolidationDetails> findAll(Specification<ConsolidationDetails> spec, Pageable pageable);
     Optional<ConsolidationDetails> findById(Long id);
     void delete(ConsolidationDetails consolidationDetails);
+    List<ConsolidationDetails> saveAll(List<ConsolidationDetails> consolidationDetails);
+    Optional<ShipmentDetails> findShipmentById(Long shipmentId);
+    Optional<ConsolidationDetails> findByGuid (UUID guid);
+    Optional<ConsolidationDetails> findByBol (String bol);
 }

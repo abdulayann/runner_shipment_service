@@ -5,7 +5,7 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.Criteria;
 import com.dpw.runner.shipment.services.commons.requests.FilterCriteria;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
-import com.dpw.runner.shipment.services.utils.CommonUtils;
+import com.dpw.runner.shipment.services.utils.PermissionUtil;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Before;
@@ -18,6 +18,8 @@ import javax.persistence.EntityManager;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
+
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_LIST_PERMISSION;
 
 @Aspect
 @Component
@@ -35,18 +37,23 @@ public class PermissionsAspect {
             return;
         }
         ListCommonRequest listCommonRequest = (ListCommonRequest) commonRequestModel.getData();
-        List<String> permissionList = PermissionsContext.getPermissions();
+        List<String> permissionList = PermissionsContext.getPermissions(SHIPMENT_LIST_PERMISSION);
         permissionList.sort(new Comparator<String>() {
             @Override
             public int compare(String o1, String o2) {
                 return Integer.compare(o1.length(), o2.length());
             }
         });
-        List<FilterCriteria> criterias = CommonUtils.generateFilterCriteriaFromPermissions(permissionList);
+        List<FilterCriteria> criterias = PermissionUtil.generateFilterCriteriaFromPermissions(permissionList);
 
         FilterCriteria criteria1 = FilterCriteria.builder().innerFilter(listCommonRequest.getFilterCriteria()).build();
-        FilterCriteria criteria2 = FilterCriteria.builder().innerFilter(criterias).logicOperator("AND").build();
-        listCommonRequest.setFilterCriteria(Arrays.asList(criteria1, criteria2));
+        FilterCriteria criteria2 = FilterCriteria.builder().innerFilter(criterias).build();
+        if(criteria1.getInnerFilter().size() > 0){
+            criteria2.setLogicOperator("AND");
+            listCommonRequest.setFilterCriteria(Arrays.asList(criteria1, criteria2));
+        }
+        else
+            listCommonRequest.setFilterCriteria(Arrays.asList(criteria2));
     }
 
     private FilterCriteria constructCriteria(String fieldName, Object value, String operator, String logicalOperator) {

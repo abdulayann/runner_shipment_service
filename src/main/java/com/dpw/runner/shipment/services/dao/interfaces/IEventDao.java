@@ -13,5 +13,7 @@ public interface IEventDao {
     Page<Events> findAll(Specification<Events> spec, Pageable pageable);
     Optional<Events> findById(Long id);
     void delete(Events events);
-    List<Events> updateEntityFromShipment(List<Events> eventsList, Long shipmentId) throws Exception;
+    List<Events> updateEntityFromOtherEntity(List<Events> eventsList, Long entityId, String entityType) throws Exception;
+    List<Events> saveEntityFromOtherEntity(List<Events> events, Long entityId, String entityType);
+    List<Events> updateEntityFromOtherEntity(List<Events> eventsList, Long entityId, String entityType, List<Events> oldEntityList) throws Exception;
 }

@@ -9,4 +9,8 @@ public class ShipmentSettingsConstants {
     public static final String SHIPMENT_SETTINGS_LIST_SUCCESSFUL = "Successful Shipment Settings Data List Retrieval";
     public static final String RESPONSE_CONTAINER_LIST = "List";
     public static final String SHIPMENT_SETTINGS_DELETE_SUCCESSFUL = "Successful Shipment Settings Data Delete";
+    public static final String SHIPMENT_SETTINGS_TEMPLATE_UPLOAD_SUCCESSFUL = "Shipment Settings Template Upload Successfully To Doc Service";
+    public static final String UPLOAD_TEMPLATE = "/template-upload";
+    public static final String UPLOAD_TEMPLATE_FAILED = "Error While Uploading Documents To Document Service";
+    public static final String UPDATE_TEMPLATE_FAILED = "Error While Updating Documents To Document Service";
 }

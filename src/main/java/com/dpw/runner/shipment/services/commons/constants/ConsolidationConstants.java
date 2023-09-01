@@ -17,4 +17,10 @@ public class ConsolidationConstants {
 
     public static final String RESPONSE_CONTAINER_LIST = "List";
 
+    public static final String LOCK_TOGGLE_SUCCESSFUL = "Successfully toggled lock";
+
+    public static final String CONSOLIDATION_LOCKED = "Current Consolidation is Locked, try unlocking it first !";
+
+    public static final String CONSOLIDATION_CALCULATION_SUCCESSFUL = "Successful Required Calculation";
+    public static final String CONSOLIDATION_V1_CREATE = "/createV1Consolidation";
 }

@@ -17,4 +17,7 @@ public interface IShipmentService extends ICommonService{
     ResponseEntity<?> completeRetrieveById(CommonRequestModel commonRequestModel) throws ExecutionException, InterruptedException;
 
     ResponseEntity<?> completeUpdate(CommonRequestModel commonRequestModel) throws Exception;
+    ResponseEntity<?> partialUpdate(CommonRequestModel commonRequestModel) throws Exception;
+    ResponseEntity<?> toggleLock(CommonRequestModel commonRequestModel);
+    ResponseEntity<?> completeV1ShipmentCreateAndUpdate(CommonRequestModel commonRequestModel) throws Exception;
 }

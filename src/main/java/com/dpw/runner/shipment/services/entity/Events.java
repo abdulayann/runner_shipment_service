@@ -3,6 +3,8 @@ package com.dpw.runner.shipment.services.entity;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import lombok.*;
 import lombok.experimental.Accessors;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.Where;
 
 import javax.persistence.*;
 import java.time.LocalDateTime;
@@ -15,16 +17,18 @@ import java.time.LocalDateTime;
 @ToString(onlyExplicitlyIncluded = true)
 @NoArgsConstructor
 @AllArgsConstructor
+@SQLDelete(sql = "UPDATE events SET is_deleted = true WHERE id=?")
+@Where(clause = "is_deleted = false")
 public class Events extends MultiTenancy {
 
-    @Column(name = "shipment_id")
-    private Long shipmentId;
+    @Column(name = "entity_id")
+    private Long entityId;
 
-    @Column(name = "consolidation_id")
-    private Long consolidationId;
+    @Column(name = "entity_type")
+    private String entityType;
 
-    @Column(name = "master_list")
-    private String masterList;
+    @Column(name = "event_code")
+    private String eventCode;
 
     @Column(name = "description")
     private String description;

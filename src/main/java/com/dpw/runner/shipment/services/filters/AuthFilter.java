@@ -17,13 +17,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
+import org.springframework.util.AntPathMatcher;
 
 import javax.servlet.*;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.text.ParseException;
-import java.util.UUID;
+import java.util.*;
 
 @Component
 @Order(1)
@@ -36,55 +37,68 @@ public class AuthFilter implements Filter {
     TokenUtility tokenUtility;
     private static final String VALIDATION_ERROR = "Failed to Validate Auth Token";
 
+    private final String[] ignoredPaths = new String[]{"/actuator/**",
+            "/v2/api-docs",
+            "/swagger-resources",
+            "/swagger-resources/**",
+            "/configuration/ui",
+            "/configuration/security",
+            "/swagger-ui.html",
+            "/webjars/**",
+            "/api/v2/enums/**"};
+
+    protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
+        return Arrays.stream(ignoredPaths)
+                .anyMatch(e -> new AntPathMatcher().match(e, request.getServletPath()));
+    }
 
     @Override
     public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain) throws IOException, ServletException {
 
-        IUserService userService = getUserServiceFactory.returnUserService();
         HttpServletRequest req = (HttpServletRequest) servletRequest;
+        if(shouldNotFilter(req))
+        {
+            filterChain.doFilter(servletRequest, servletResponse);
+            return;
+        }
+        IUserService userService = getUserServiceFactory.returnUserService();
         HttpServletResponse res = (HttpServletResponse) servletResponse;
         long time = System.currentTimeMillis();
         String authToken = req.getHeader("Authorization");
-        String xBrowserTimeZone = req.getHeader("x-browser-time-zone");
-
-        String fullURL = getFullURL(req);
-        log.info(String.format("Request, Method:- %s ,Path:-%s ", req.getMethod(), fullURL));
-
-        String userName = null;
-        if (!Strings.isEmpty(authToken)) {
-            try {
-                userName = tokenUtility.getUserNameFromToken(authToken, res);
-            } catch (ParseException | BadJWTException e) {
-                writeUnauthorizedResponse(res, VALIDATION_ERROR+":"+e.getMessage());
-                return;
-            }
-            RequestAuthContext.setAuthToken(authToken);
-
+        if(authToken == null)
+        {
+            res.setStatus(HttpStatus.FORBIDDEN.value());
+            return;
         }
-        userName = "Test";  // remove this
-        if(userName!=null){
-            UsersDto userByUserName = userService.getUserByUserName(userName);
-            if (userByUserName == null) {
-                String errormessage = "Auth failed:- User " + userName + " is not onboarded on shipment service";
-                log.info(errormessage);
-                res.setContentType("application/json");
-                res.setStatus(HttpStatus.FORBIDDEN.value());
-                //res.getWriter().write(filterLevelException(new UnAuthorizedException(errormessage)));
-                return;
-            }
-            log.debug("Auth Successful, username:-{},tenantId:-{}",userByUserName.getUserName(),userByUserName.getTenantId());
-            UserContext.setUser(userByUserName);
-            TenantContext.setCurrentTenant(userByUserName.getTenantId());
-            PermissionsContext.setPermissions(userByUserName.getPermissions());
+
+        UsersDto user = userService.getUserByToken(authToken);
+        if (user == null) {
+            String errormessage = "Auth failed:- User is not onboarded on shipment service";
+            log.info(errormessage);
+            res.setContentType("application/json");
+            res.setStatus(HttpStatus.FORBIDDEN.value());
+            //res.getWriter().write(filterLevelException(new UnAuthorizedException(errormessage)));
+            return;
         }
+        log.debug("Auth Successful, username:-{},tenantId:-{}", user.getUsername(), user.getTenantId());
+        UserContext.setUser(user);
+        RequestAuthContext.setAuthToken(authToken);
+        TenantContext.setCurrentTenant(user.getTenantId());
+        List<String> grantedPermissions = new ArrayList<>();
+        for (Map.Entry<String,Boolean> entry : user.getPermissions().entrySet())
+        {
+            if(entry.getValue())
+            {
+                grantedPermissions.add(entry.getKey());
+            }
+        }
+        PermissionsContext.setPermissions(grantedPermissions);
         MDC.put("request_id", UUID.randomUUID().toString());
-        MDC.put(Constants.BROWSER_TIMEZONE, xBrowserTimeZone);
         try {
             filterChain.doFilter(servletRequest, servletResponse);
             log.info(String.format("Request Finished , Total Time in milis:- %s", (System.currentTimeMillis() - time)));
         }finally {
             MDC.remove("request_id");
-            MDC.remove(Constants.BROWSER_TIMEZONE);
             TenantContext.removeTenant();
             RequestAuthContext.removeToken();
             UserContext.removeUser();
@@ -101,6 +115,7 @@ public class AuthFilter implements Filter {
             return requestURL.append('?').append(queryString).toString();
         }
     }
+
     public void writeUnauthorizedResponse(HttpServletResponse res, String errormessage) throws IOException {
         log.info(errormessage);
         res.setContentType("application/json");

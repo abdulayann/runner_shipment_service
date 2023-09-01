@@ -15,4 +15,6 @@ public interface IELDetailsDao {
     void delete(ELDetails elDetails);
     Optional<ELDetails> findByElNumber(String elNumber);
     List<ELDetails> updateEntityFromShipment(List<ELDetails> elDetailsList, Long shipmentId) throws Exception;
+    List<ELDetails> saveEntityFromShipment(List<ELDetails> elDetails, Long shipmentId);
+    List<ELDetails> updateEntityFromShipment(List<ELDetails> elDetailsList, Long shipmentId, List<ELDetails> oldEntityList) throws Exception;
 }

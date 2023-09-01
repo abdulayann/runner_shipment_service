@@ -1,19 +1,27 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.PackingConstants;
-import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
-import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
-import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
+import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
+import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IPackingDao;
 import com.dpw.runner.shipment.services.dto.request.PackingRequest;
+import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.PackingResponse;
-import com.dpw.runner.shipment.services.entity.BookingCarriage;
+import com.dpw.runner.shipment.services.entity.Containers;
+import com.dpw.runner.shipment.services.entity.Jobs;
+import com.dpw.runner.shipment.services.entity.Notes;
 import com.dpw.runner.shipment.services.entity.Packing;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingService;
+import com.dpw.runner.shipment.services.utils.CSVParsingUtil;
+import com.dpw.runner.shipment.services.utils.UnitConversionUtility;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
@@ -22,13 +30,16 @@ import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.servlet.http.HttpServletResponse;
+import java.io.PrintWriter;
+import java.math.BigDecimal;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -36,26 +47,46 @@ import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
+import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
 
 @Slf4j
 @Service
 public class PackingService implements IPackingService {
     @Autowired
     IPackingDao packingDao;
+
     @Autowired
-    ModelMapper modelMapper;
+    IContainerDao containersDao;
+    @Autowired
+    private JsonHelper jsonHelper;
+
+    @Autowired
+    private AuditLogService auditLogService;
+
+    private final CSVParsingUtil<Packing> parser = new CSVParsingUtil<>(Packing.class);
 
     @Transactional
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
         String responseMsg;
         PackingRequest request = null;
         request = (PackingRequest) commonRequestModel.getData();
-        if(request == null) {
+        if (request == null) {
             log.debug("Request is empty for Packing create with Request Id {}", LoggerHelper.getRequestIdFromMDC());
         }
         Packing packing = convertRequestToEntity(request);
         try {
             packing = packingDao.save(packing);
+
+            // audit logs
+            auditLogService.addAuditLog(
+                    AuditLogMetaData.builder()
+                            .newData(packing)
+                            .prevData(null)
+                            .parent(Packing.class.getSimpleName())
+                            .parentId(packing.getId())
+                            .operation(DBOperationType.CREATE.name()).build()
+            );
+
             log.info("Packing Details created successfully for Id {} with Request Id {}", packing.getId(), LoggerHelper.getRequestIdFromMDC());
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -66,15 +97,57 @@ public class PackingService implements IPackingService {
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(packing));
     }
 
+    @Override
+    public void uploadPacking(BulkUploadRequest request) throws Exception {
+        List<Packing> packingList = parser.parseCSVFile(request.getFile());
+        packingList.stream().forEach(packing -> {
+            packing.setConsolidationId(packing.getConsolidationId());
+        });
+        packingDao.saveAll(packingList);
+    }
+
+    @Override
+    public void downloadPacking(HttpServletResponse response, BulkDownloadRequest request) throws Exception {
+        List<Packing> result = new ArrayList<>();
+        if (request.getShipmentId() != null) {
+            ListCommonRequest req = constructListCommonRequest("shipment_id", request.getShipmentId(), "=");
+            Pair<Specification<Packing>, Pageable> pair = fetchData(req, Packing.class);
+            Page<Packing> packings = packingDao.findAll(pair.getLeft(), pair.getRight());
+            List<Packing> packingList = packings.getContent();
+            result.addAll(packingList);
+        }
+
+        if (request.getConsolidationId() != null) {
+            ListCommonRequest req2 = constructListCommonRequest("consolidation_id", request.getConsolidationId(), "=");
+            Pair<Specification<Packing>, Pageable> pair = fetchData(req2, Packing.class);
+            Page<Packing> packings = packingDao.findAll(pair.getLeft(), pair.getRight());
+            List<Packing> packingList = packings.getContent();
+            if (result.isEmpty()) {
+                result.addAll(packingList);
+            } else {
+                result = result.stream().filter(result::contains).collect(Collectors.toList());
+            }
+        }
+        response.setContentType("text/csv");
+        response.setHeader("Content-Disposition", "attachment; filename=\"packings.csv\"");
+
+        try (PrintWriter writer = response.getWriter()) {
+            writer.println(parser.generateCSVHeader());
+            for (Packing packing : result) {
+                writer.println(parser.formatContainerAsCSVLine(packing));
+            }
+        }
+    }
+
     @Transactional
     public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
         String responseMsg;
         PackingRequest request = (PackingRequest) commonRequestModel.getData();
-        if(request == null) {
+        if (request == null) {
             log.debug("Request is empty for Packing update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
         }
 
-        if(request.getId() == null) {
+        if (request.getId() == null) {
             log.debug("Request Id is null for Packing update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
         }
         long id = request.getId();
@@ -87,7 +160,18 @@ public class PackingService implements IPackingService {
         Packing packing = convertRequestToEntity(request);
         packing.setId(oldEntity.get().getId());
         try {
+            String oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
             packing = packingDao.save(packing);
+
+            // audit logs
+            auditLogService.addAuditLog(
+                    AuditLogMetaData.builder()
+                            .newData(packing)
+                            .prevData(jsonHelper.readFromJson(oldEntityJsonString, Packing.class))
+                            .parent(Packing.class.getSimpleName())
+                            .parentId(packing.getId())
+                            .operation(DBOperationType.UPDATE.name()).build()
+            );
             log.info("Updated the packing details for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -102,7 +186,7 @@ public class PackingService implements IPackingService {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
-            if(request == null) {
+            if (request == null) {
                 log.error("Request is empty for Packing list with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
             // construct specifications for filter request
@@ -128,7 +212,7 @@ public class PackingService implements IPackingService {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
-            if(request == null) {
+            if (request == null) {
                 log.error("Request is empty for Packing async list with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
             // construct specifications for filter request
@@ -152,10 +236,10 @@ public class PackingService implements IPackingService {
     @Override
     public ResponseEntity<?> delete(CommonRequestModel commonRequestModel) {
         String responseMsg;
-        if(commonRequestModel == null) {
+        if (commonRequestModel == null) {
             log.debug("Request is empty for Packing delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
         }
-        if(commonRequestModel.getId() == null) {
+        if (commonRequestModel.getId() == null) {
             log.debug("Request Id is null for Packing delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
         }
         Long id = commonRequestModel.getId();
@@ -166,7 +250,18 @@ public class PackingService implements IPackingService {
             return ResponseHelper.buildFailedResponse(PackingConstants.NO_DATA);
         }
         try {
+            String oldEntityJsonString = jsonHelper.convertToJson(targetPacking.get());
             packingDao.delete(targetPacking.get());
+
+            // audit logs
+            auditLogService.addAuditLog(
+                    AuditLogMetaData.builder()
+                            .newData(null)
+                            .prevData(jsonHelper.readFromJson(oldEntityJsonString, Packing.class))
+                            .parent(Packing.class.getSimpleName())
+                            .parentId(targetPacking.get().getId())
+                            .operation(DBOperationType.DELETE.name()).build()
+            );
             log.info("Deleted packing for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -182,10 +277,10 @@ public class PackingService implements IPackingService {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
-            if(request == null) {
+            if (request == null) {
                 log.error("Request is empty for Packing retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
-            if(request.getId() == null) {
+            if (request.getId() == null) {
                 log.error("Request Id is null for Packing retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
             long id = request.getId();
@@ -205,12 +300,69 @@ public class PackingService implements IPackingService {
         }
     }
 
+    @Override
+    public ResponseEntity<?> calculateWeightVolumne(CommonRequestModel commonRequestModel) throws Exception {
+        PackingRequest request = (PackingRequest) commonRequestModel.getData();
+        Containers newContainer = null;
+
+        List<IRunnerResponse> finalContainers = new ArrayList<>();
+
+        if(request.getContainerId() != null) {
+
+            newContainer = containersDao.findById(request.getContainerId()).get();
+
+            if(request.getId() == null) {
+                addWeightVolume(request, newContainer);
+                finalContainers.add(convertEntityToDto(newContainer));
+            } else {
+                Packing packing = packingDao.findById(request.getId()).get();
+                Containers oldContainer = containersDao.findById(packing.getContainerId()).get();
+
+                Containers container = addWeightVolume(request, newContainer);
+
+                if(oldContainer.getId() == newContainer.getId()) {
+                    subtractWeightVolume(container.getAchievedWeight(), newContainer, packing, container.getAchievedVolume(), request);
+                }
+                if(oldContainer.getId() != newContainer.getId()) {
+                    subtractWeightVolume(container.getAchievedWeight(), oldContainer, packing, container.getAchievedVolume(), request);
+                    finalContainers.add(convertEntityToDto(oldContainer));
+                }
+                finalContainers.add(convertEntityToDto(newContainer));
+            }
+        }
+        return ResponseHelper.buildListSuccessResponse(finalContainers);
+    }
+
+    private static Containers addWeightVolume(PackingRequest request, Containers newContainer) throws Exception {
+        BigDecimal finalWeight = request.getWeight().add(newContainer.getAchievedWeight());
+        BigDecimal finalVolume = request.getVolume().add(newContainer.getAchievedVolume());
+        finalWeight = new BigDecimal(convertUnit(Constants.MASS, finalWeight, newContainer.getAchievedWeightUnit(), request.getWeightUnit()).toString());
+        finalVolume = new BigDecimal(UnitConversionUtility.convertUnit(Constants.VOLUME, finalVolume, newContainer.getAchievedVolumeUnit(), request.getVolumeUnit()).toString());
+        newContainer.setAchievedWeight(finalWeight);
+        newContainer.setAchievedVolume(finalVolume);
+        return newContainer;
+    }
+
+    private static void subtractWeightVolume(BigDecimal finalWeight, Containers newContainer, Packing packing, BigDecimal finalVolume, PackingRequest request) throws Exception {
+        finalWeight = newContainer.getAchievedWeight().subtract(packing.getWeight());
+        finalVolume = newContainer.getAchievedVolume().subtract(packing.getVolume());
+        finalWeight = new BigDecimal(convertUnit(Constants.MASS, finalWeight, newContainer.getAchievedWeightUnit(), request.getWeightUnit()).toString());
+        finalVolume = new BigDecimal(UnitConversionUtility.convertUnit(Constants.VOLUME, finalVolume, newContainer.getAchievedVolumeUnit(), request.getVolumeUnit()).toString());
+
+        newContainer.setAchievedWeight(finalWeight);
+        newContainer.setAchievedVolume(finalVolume);
+    }
+
     private IRunnerResponse convertEntityToDto(Packing packing) {
-        return modelMapper.map(packing, PackingResponse.class);
+        return jsonHelper.convertValue(packing, PackingResponse.class);
+    }
+
+    private IRunnerResponse convertEntityToDto(Containers packing) {
+        return jsonHelper.convertValue(packing, ContainerResponse.class);
     }
 
     private Packing convertRequestToEntity(PackingRequest request) {
-        return modelMapper.map(request, Packing.class);
+        return jsonHelper.convertValue(request, Packing.class);
     }
 
     private List<IRunnerResponse> convertEntityListToDtoList(List<Packing> lst) {

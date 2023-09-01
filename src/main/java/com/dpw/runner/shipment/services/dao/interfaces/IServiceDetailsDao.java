@@ -14,4 +14,6 @@ public interface IServiceDetailsDao {
     Optional<ServiceDetails> findById(Long id);
     void delete(ServiceDetails serviceDetails);
     List<ServiceDetails> updateEntityFromShipment(List<ServiceDetails> serviceDetailsList, Long shipmentId) throws Exception;
+    List<ServiceDetails> saveEntityFromShipment(List<ServiceDetails> serviceDetailsRequests, Long shipmentId);
+    List<ServiceDetails> updateEntityFromShipment(List<ServiceDetails> serviceDetailsList, Long shipmentId, List<ServiceDetails> oldEntityList) throws Exception;
 }

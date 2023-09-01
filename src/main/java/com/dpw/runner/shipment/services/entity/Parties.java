@@ -5,10 +5,11 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
 import lombok.*;
 import lombok.experimental.Accessors;
-import org.hibernate.annotations.Type;
-import org.hibernate.annotations.TypeDef;
+import org.hibernate.annotations.*;
 
 import javax.persistence.*;
+import javax.persistence.Entity;
+import javax.persistence.Table;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -24,6 +25,9 @@ import java.util.UUID;
 @AllArgsConstructor
 @Builder
 @TypeDef(name = "jsonb", typeClass = JsonBinaryType.class)
+@SQLDelete(sql = "UPDATE parties SET is_deleted = true WHERE id=?")
+@Where(clause = "is_deleted = false")
+@BatchSize(size = 50)
 public class Parties extends MultiTenancy {
 
     private static final long serialVersionUID = 190794279984274725L;

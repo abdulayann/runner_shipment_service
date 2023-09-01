@@ -9,7 +9,9 @@ import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.RoutingsRequest;
+import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
 import com.dpw.runner.shipment.services.dto.response.RoutingsResponse;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.impl.RoutingsService;
 import io.swagger.annotations.ApiResponse;
@@ -32,6 +34,9 @@ public class RoutingsController {
     @Autowired
     private RoutingsService routingsService;
 
+    @Autowired
+    JsonHelper jsonHelper;
+
     @PostMapping(ApiConstants.API_CREATE)
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = RoutingsConstants.ROUTINGS_CREATE_SUCCESSFUL),
@@ -39,7 +44,8 @@ public class RoutingsController {
     })
     public ResponseEntity<RunnerResponse<RoutingsResponse>> create(@RequestBody @Valid @NonNull RoutingsRequest request) {
         try {
-            return (ResponseEntity<RunnerResponse<RoutingsResponse>>) routingsService.create(CommonRequestModel.buildRequest(request));
+            RoutingsRequest req = jsonHelper.convertValue(request, RoutingsRequest.class);
+            return (ResponseEntity<RunnerResponse<RoutingsResponse>>) routingsService.create(CommonRequestModel.buildRequest(req));
         } catch (Exception e) {
             String responseMsg = e.getMessage() != null ? e.getMessage() : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
             log.error(responseMsg, e);

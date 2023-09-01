@@ -1,19 +1,22 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
+import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IBookingCarriageDao;
+import com.dpw.runner.shipment.services.dto.patchRequest.BookingCarriagePatchRequest;
 import com.dpw.runner.shipment.services.dto.request.BookingCarriageRequest;
 import com.dpw.runner.shipment.services.dto.response.BookingCarriageResponse;
 import com.dpw.runner.shipment.services.entity.BookingCarriage;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.mapper.BookingCarriageMapper;
 import com.dpw.runner.shipment.services.service.interfaces.IBookingCarriageService;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
@@ -27,16 +30,12 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import javax.swing.text.html.Option;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 
 @SuppressWarnings("ALL")
 @Service
@@ -46,22 +45,36 @@ public class BookingCarriageService implements IBookingCarriageService {
     private IBookingCarriageDao bookingCarriageDao;
 
     @Autowired
-    private ModelMapper modelMapper;
+    private JsonHelper jsonHelper;
 
     @Autowired
     private BookingCarriageMapper bookingCarriageMapper;
+
+    @Autowired
+    private AuditLogService auditLogService;
 
     @Transactional
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
         String responseMsg;
         BookingCarriageRequest request = null;
         request = (BookingCarriageRequest) commonRequestModel.getData();
-        if(request == null) {
+        if (request == null) {
             log.debug("Request is empty for Booking Carriage Create for Request Id {}", LoggerHelper.getRequestIdFromMDC());
         }
         BookingCarriage bookingCarriage = bookingCarriageMapper.map(request);
         try {
             bookingCarriage = bookingCarriageDao.save(bookingCarriage);
+
+            // audit logs
+            auditLogService.addAuditLog(
+                    AuditLogMetaData.builder()
+                            .newData(bookingCarriage)
+                            .prevData(null)
+                            .parent(BookingCarriage.class.getSimpleName())
+                            .parentId(bookingCarriage.getId())
+                            .operation(DBOperationType.CREATE.name()).build()
+            );
+
             log.info("Booking Carriage created successfully for Id {} with Request Id {}", bookingCarriage.getId(), LoggerHelper.getRequestIdFromMDC());
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -76,11 +89,11 @@ public class BookingCarriageService implements IBookingCarriageService {
     public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
         String responseMsg;
         BookingCarriageRequest request = (BookingCarriageRequest) commonRequestModel.getData();
-        if(request == null) {
+        if (request == null) {
             log.error("Request is empty for booking carriage update for Request Id {}", LoggerHelper.getRequestIdFromMDC());
         }
 
-        if(request.getId() == null) {
+        if (request.getId() == null) {
             log.error("Request Id is null for booking carriage update for Request Id {}", LoggerHelper.getRequestIdFromMDC());
         }
         long id = request.getId();
@@ -91,10 +104,21 @@ public class BookingCarriageService implements IBookingCarriageService {
         }
 
         BookingCarriage bookingCarriage = bookingCarriageMapper.map(request);
-        bookingCarriage.setId(oldEntity.get().getId());
         try {
+            String oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
             bookingCarriage = bookingCarriageDao.save(bookingCarriage);
-            log.info("Updated the booking carriage details for Id {} with Request Id {}",id, LoggerHelper.getRequestIdFromMDC());
+
+            // audit logs
+            auditLogService.addAuditLog(
+                    AuditLogMetaData.builder()
+                            .newData(bookingCarriage)
+                            .prevData(jsonHelper.readFromJson(oldEntityJsonString, BookingCarriage.class))
+                            .parent(BookingCarriage.class.getSimpleName())
+                            .parentId(bookingCarriage.getId())
+                            .operation(DBOperationType.UPDATE.name()).build()
+            );
+
+            log.info("Updated the booking carriage details for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
@@ -108,7 +132,7 @@ public class BookingCarriageService implements IBookingCarriageService {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
-            if(request == null) {
+            if (request == null) {
                 log.error("Request is empty for booking carriage list for Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
             // construct specifications for filter request
@@ -134,12 +158,12 @@ public class BookingCarriageService implements IBookingCarriageService {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
-            if(request == null) {
+            if (request == null) {
                 log.error("Request is empty for booking carriage async list with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
             // construct specifications for filter request
             Pair<Specification<BookingCarriage>, Pageable> tuple = fetchData(request, BookingCarriage.class);
-            Page<BookingCarriage> bookingCarriagePage  = bookingCarriageDao.findAll(tuple.getLeft(), tuple.getRight());
+            Page<BookingCarriage> bookingCarriagePage = bookingCarriageDao.findAll(tuple.getLeft(), tuple.getRight());
             log.info("Booking carriage async list retrieved successfully for Request Id {} ", LoggerHelper.getRequestIdFromMDC());
             return CompletableFuture.completedFuture(
                     ResponseHelper
@@ -160,10 +184,10 @@ public class BookingCarriageService implements IBookingCarriageService {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
-            if(request == null) {
+            if (request == null) {
                 log.error("Request is empty for booking carriage delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
-            if(request.getId() == null) {
+            if (request.getId() == null) {
                 log.error("Request Id is null for booking carriage delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
             long id = request.getId();
@@ -172,7 +196,20 @@ public class BookingCarriageService implements IBookingCarriageService {
                 log.debug("Booking Carriage is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
+
+            String oldEntityJsonString = jsonHelper.convertToJson(bookingCarriage.get());
             bookingCarriageDao.delete(bookingCarriage.get());
+
+            // audit logs
+            auditLogService.addAuditLog(
+                    AuditLogMetaData.builder()
+                            .newData(null)
+                            .prevData(jsonHelper.readFromJson(oldEntityJsonString, BookingCarriage.class))
+                            .parent(BookingCarriage.class.getSimpleName())
+                            .parentId(bookingCarriage.get().getId())
+                            .operation(DBOperationType.DELETE.name()).build()
+            );
+
             log.info("Deleted booking carriage for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
             return ResponseHelper.buildSuccessResponse();
         } catch (Exception e) {
@@ -187,10 +224,10 @@ public class BookingCarriageService implements IBookingCarriageService {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
-            if(request == null) {
+            if (request == null) {
                 log.error("Request is empty for booking carriage retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
-            if(request.getId() == null) {
+            if (request.getId() == null) {
                 log.error("Request Id is null for booking carriage retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
             long id = request.getId();
@@ -213,11 +250,11 @@ public class BookingCarriageService implements IBookingCarriageService {
     @Transactional
     public ResponseEntity<?> partialUpdate(CommonRequestModel commonRequestModel) {
         String responseMsg;
-        BookingCarriageRequest request = (BookingCarriageRequest) commonRequestModel.getData();
-        if(request == null) {
+        BookingCarriagePatchRequest request = (BookingCarriagePatchRequest) commonRequestModel.getData();
+        if (request == null) {
             log.error("Request is empty for booking carriage update for Request Id {}", LoggerHelper.getRequestIdFromMDC());
         }
-        if(request.getId() == null) {
+        if (request.getId() == null) {
             log.error("Request Id is null for booking carriage update for Request Id {}", LoggerHelper.getRequestIdFromMDC());
         }
         long id = request.getId();
@@ -231,7 +268,7 @@ public class BookingCarriageService implements IBookingCarriageService {
         bookingCarriageMapper.update(request, existingEntity);
         try {
             existingEntity = bookingCarriageDao.save(existingEntity);
-            log.info("Updated the booking carriage details for Id {} with Request Id {}",id, LoggerHelper.getRequestIdFromMDC());
+            log.info("Updated the booking carriage details for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
@@ -243,7 +280,7 @@ public class BookingCarriageService implements IBookingCarriageService {
     }
 
     private BookingCarriageResponse convertEntityToDto(BookingCarriage bookingCarriage) {
-        return modelMapper.map(bookingCarriage, BookingCarriageResponse.class);
+        return jsonHelper.convertValue(bookingCarriage, BookingCarriageResponse.class);
     }
 
     private List<IRunnerResponse> convertEntityListToDtoList(List<BookingCarriage> lst) {
@@ -255,6 +292,6 @@ public class BookingCarriageService implements IBookingCarriageService {
     }
 
     public BookingCarriage convertRequestToEntity(BookingCarriageRequest request) {
-        return modelMapper.map(request, BookingCarriage.class);
+        return jsonHelper.convertValue(request, BookingCarriage.class);
     }
 }

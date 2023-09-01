@@ -14,16 +14,12 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.convertToClass;
 
 @Repository
 @Slf4j
@@ -70,13 +66,12 @@ public class ELDetailsDao implements IELDetailsDao {
             if (elDetailsList != null && elDetailsList.size() != 0) {
                 for (ELDetails request : elDetailsList) {
                     Long id = request.getId();
-                    request.setShipmentId(shipmentId);
                     if (id != null) {
                         hashMap.remove(id);
                     }
                     elDetailsRequestList.add(request);
                 }
-                responseELDetails = saveELDetails(elDetailsRequestList);
+                responseELDetails = saveEntityFromShipment(elDetailsRequestList, shipmentId);
             }
             deleteELDetails(hashMap);
             return responseELDetails;
@@ -88,7 +83,7 @@ public class ELDetailsDao implements IELDetailsDao {
         }
     }
 
-    private List<ELDetails> saveELDetails(List<ELDetails> elDetails) {
+    public List<ELDetails> saveEntityFromShipment(List<ELDetails> elDetails, Long shipmentId) {
         List<ELDetails> res = new ArrayList<>();
         for(ELDetails req : elDetails){
             if(req.getId() != null){
@@ -99,6 +94,7 @@ public class ELDetailsDao implements IELDetailsDao {
                     throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
                 }
             }
+            req.setShipmentId(shipmentId);
             req = save(req);
             res.add(req);
         }
@@ -113,6 +109,42 @@ public class ELDetailsDao implements IELDetailsDao {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_DELETE_EXCEPTION_MSG;
             log.error(responseMsg, e);
+        }
+    }
+
+    public List<ELDetails> updateEntityFromShipment(List<ELDetails> elDetailsList, Long shipmentId, List<ELDetails> oldEntityList) throws Exception {
+        String responseMsg;
+        List<ELDetails> responseELDetails = new ArrayList<>();
+        Map<UUID, ELDetails> elDetailsMap = new HashMap<>();
+        if(oldEntityList != null && oldEntityList.size() > 0) {
+            for (ELDetails entity:
+                    oldEntityList) {
+                elDetailsMap.put(entity.getGuid(), entity);
+            }
+        }
+        try {
+            ELDetails oldEntity;
+            List<ELDetails> elDetailsRequestList = new ArrayList<>();
+            if (elDetailsList != null && elDetailsList.size() != 0) {
+                for (ELDetails request : elDetailsList) {
+                    oldEntity = elDetailsMap.get(request.getGuid());
+                    if(oldEntity != null) {
+                        elDetailsMap.remove(oldEntity.getGuid());
+                        request.setId(oldEntity.getId());
+                    }
+                    elDetailsRequestList.add(request);
+                }
+                responseELDetails = saveEntityFromShipment(elDetailsRequestList, shipmentId);
+            }
+            Map<Long, ELDetails> hashMap = new HashMap<>();
+            elDetailsMap.forEach((s, elDetails) ->  hashMap.put(elDetails.getId(), elDetails));
+            deleteELDetails(hashMap);
+            return responseELDetails;
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
+            log.error(responseMsg, e);
+            throw new Exception(e);
         }
     }
 }

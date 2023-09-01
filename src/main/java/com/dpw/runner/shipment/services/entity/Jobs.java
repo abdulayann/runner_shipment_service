@@ -3,8 +3,8 @@ package com.dpw.runner.shipment.services.entity;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import lombok.*;
 import lombok.experimental.Accessors;
+import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Where;
-
 import javax.persistence.*;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -17,6 +17,8 @@ import java.util.List;
 @ToString(onlyExplicitlyIncluded = true)
 @NoArgsConstructor
 @AllArgsConstructor
+@SQLDelete(sql = "UPDATE jobs SET is_deleted = true WHERE id=?")
+@Where(clause = "is_deleted = false")
 public class Jobs extends MultiTenancy {
 
     @Column(name = "shipment_id")
@@ -80,5 +82,9 @@ public class Jobs extends MultiTenancy {
 
     @Column(name = "country_of_origin")
     private String countryOfOrigin;
+
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "entityId")
+    @Where(clause = "entity_type = 'JOBS'")
+    private List<Events> eventsList;
 
 }

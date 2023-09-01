@@ -8,6 +8,7 @@ import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @Getter
@@ -22,6 +23,7 @@ public class ContainerRequest extends CommonRequest implements IRunnerRequest {
     private Long id;
     private UUID guid;
     private Long consolidationId;
+    private Long bookingId;
     private Long loggingId;
     private String containerCode;
     private String containerNumber;
@@ -92,4 +94,7 @@ public class ContainerRequest extends CommonRequest implements IRunnerRequest {
     private String volumeUtilization;
     private PartiesRequest pickupAddress;
     private PartiesRequest deliveryAddress;
+    private List<EventsRequest> eventsList;
+    private List<PackingRequest> packsList;
+    private List<ShipmentRequest> shipmentsList;
 }
