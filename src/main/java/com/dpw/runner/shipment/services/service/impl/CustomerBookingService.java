@@ -266,7 +266,7 @@ public class CustomerBookingService implements ICustomerBookingService {
                 bookingCharge -> {
                     charges.add(
                             ChargesRequest.builder()
-                                    .load_uuid(bookingCharge.getContainersList().stream().map(c -> c.getGuid()).collect(Collectors.toList()))
+                                    .load_uuid(bookingCharge.getContainersList() != null ? bookingCharge.getContainersList().stream().map(c -> c.getGuid()).collect(Collectors.toList()) : null)
                                     .charge_group("ORIGIN_CHARGES") //TODO - fetch from charge type master
                                     .charge_code(bookingCharge.getChargeType())
                                     .charge_code_desc(bookingCharge.getChargeType()) //TODO - Fetch charge type master and set charge_code_desc = description
@@ -276,6 +276,7 @@ public class CustomerBookingService implements ICustomerBookingService {
                                     .charge_currency(bookingCharge.getOverseasSellCurrency())
                                     .exchange_rate(bookingCharge.getSellExchange())
                                     .charge_id(bookingCharge.getGuid())
+                                    .is_grouped(bookingCharge.getContainersList() != null && bookingCharge.getContainersList().size() > 1)
                                     .taxes(null) // optional
                                     .build()
                     );
