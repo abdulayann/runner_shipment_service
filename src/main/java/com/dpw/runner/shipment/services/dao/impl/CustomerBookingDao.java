@@ -32,8 +32,6 @@ public class CustomerBookingDao implements ICustomerBookingDao {
     @Autowired
     private ICustomerBookingRepository customerBookingRepository;
 
-    @Autowired
-    private IV1Service v1Service;
 
     @Autowired
     private ValidatorUtility validatorUtility;
@@ -60,11 +58,6 @@ public class CustomerBookingDao implements ICustomerBookingDao {
         }
         customValidations.onSave(old, customerBooking); //Custom Validations
         var resp = customerBookingRepository.save(customerBooking);
-        if (old != null && old.getBookingStatus() != resp.getBookingStatus() && resp.getBookingStatus().equals(BookingStatus.READY_FOR_SHIPMENT)) {
-            var response = v1Service.createBooking(customerBooking);
-            if (!response.getStatusCode().equals(HttpStatus.OK))
-                throw new V1ServiceException("Cannot create booking in v1 for the customerBooking guid: " + customerBooking.getGuid());
-        }
         return resp;
     }
 
