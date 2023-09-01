@@ -121,6 +121,13 @@ public class CustomerBookingService implements ICustomerBookingService {
             Map.entry("createdBy", RunnerEntityMapping.builder().tableName("CustomerBooking").dataType(String.class).fieldName("createdBy").build())
     );
 
+    private Map<BookingStatus, String> platformStatusMap = Map.ofEntries(
+            Map.entry(BookingStatus.CANCELLED, "CANCELLED"),
+            Map.entry(BookingStatus.READY_FOR_SHIPMENT, "CONFIRMED"),
+            Map.entry(BookingStatus.PENDING_FOR_KYC, "BOOKED"),
+            Map.entry(BookingStatus.PENDING_FOR_CREDIT_LIMIT, "BOOKED")
+    );
+
     @Override
     @Transactional
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
@@ -223,7 +230,7 @@ public class CustomerBookingService implements ICustomerBookingService {
                 .charges(createCharges(customerBooking))
                 .carrier_code(carrierDetails.map(c -> c.getJourneyNumber()).orElse(null))
                 .air_carrier_details(null)
-                .status(customerBooking.getBookingStatus().getDescription())
+                .status(platformStatusMap.get(customerBooking.getBookingStatus()))
                 .pickup_date(null)
                 .eta(carrierDetails.map(c -> c.getEta()).orElse(null))
                 .ets(carrierDetails.map(c -> c.getEtd()).orElse(null))
