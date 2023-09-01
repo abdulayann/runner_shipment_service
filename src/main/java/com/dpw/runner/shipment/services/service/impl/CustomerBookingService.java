@@ -12,6 +12,7 @@ import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.RunnerEntityMapping;
+import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
@@ -838,8 +839,8 @@ public class CustomerBookingService implements ICustomerBookingService {
         CRPRetrieveRequest retrieveRequest = CRPRetrieveRequest.builder().searchString(orgCode).build();
         var response = new CRPRetrieveResponse();
         try {
-            ResponseEntity<CRPRetrieveResponse> crpResponse = (ResponseEntity<CRPRetrieveResponse>) crpServiceAdapter.retrieveCRPService(CommonRequestModel.buildRequest(retrieveRequest));
-            response = modelMapper.map(crpResponse.getBody(), CRPRetrieveResponse.class);
+            ResponseEntity<DependentServiceResponse> crpResponse = (ResponseEntity<DependentServiceResponse>) crpServiceAdapter.retrieveCRPService(CommonRequestModel.buildRequest(retrieveRequest));
+            response = modelMapper.map(crpResponse.getBody().getData(), CRPRetrieveResponse.class);
         } catch (Exception e) {
             log.error("CRP Retrieve failed due to: " + e.getMessage());
             throw new RuntimeException(e);
@@ -852,20 +853,24 @@ public class CustomerBookingService implements ICustomerBookingService {
         Map<String, Object> orgData = new HashMap<>();
         Map<String, Object> addressData = new HashMap<>();
         CRPRetrieveResponse.CRPAddressDetails crpAddressDetails = new CRPRetrieveResponse.CRPAddressDetails();
-        List<CRPRetrieveResponse.CRPAddressDetails> crpAddressDetailsList = response.getCompanyOfficeDetails().stream().filter(x -> x.getOfficeReference().equals(addressCode)).collect(Collectors.toList());
-        if (!crpAddressDetailsList.isEmpty())
-            crpAddressDetails = crpAddressDetailsList.get(0);
+        if(response.getCompanyOfficeDetails() != null) {
+            List<CRPRetrieveResponse.CRPAddressDetails> crpAddressDetailsList = response.getCompanyOfficeDetails().stream().filter(x -> x.getOfficeReference().equals(addressCode)).collect(Collectors.toList());
+            if (!crpAddressDetailsList.isEmpty())
+                crpAddressDetails = crpAddressDetailsList.get(0);
+        }
 
         String fusionSiteIdentifier = null;
         String billableFlag = "";
-        List<CRPRetrieveResponse.CompanyCodeIssuerDetails> companyCodeIssuerDetailsList = response.getCompanyCodeIssuerDetails().stream().filter(x -> x.getIdentifierValue().equals(addressCode)).collect(Collectors.toList());
-        if (!companyCodeIssuerDetailsList.isEmpty()) {
-            var fusionSiteIdList = companyCodeIssuerDetailsList.stream().filter(x -> x.getIdentifierCodeType().equals(PartiesConstants.FUSION_SITE_ID)).collect(Collectors.toList());
-            var billableFlagList = companyCodeIssuerDetailsList.stream().filter(x -> x.getIdentifierCodeType().equals(PartiesConstants.BILLABLE_FLAG)).collect(Collectors.toList());
-            if (!fusionSiteIdList.isEmpty())
-                fusionSiteIdentifier = fusionSiteIdList.get(0).getIdentifierCode();
-            if (!billableFlagList.isEmpty())
-                billableFlag = billableFlagList.get(0).getIdentifierCode();
+        if(response.getCompanyCodeIssuerDetails() != null) {
+            List<CRPRetrieveResponse.CompanyCodeIssuerDetails> companyCodeIssuerDetailsList = response.getCompanyCodeIssuerDetails().stream().filter(x -> x.getIdentifierValue().equals(addressCode)).collect(Collectors.toList());
+            if (!companyCodeIssuerDetailsList.isEmpty()) {
+                var fusionSiteIdList = companyCodeIssuerDetailsList.stream().filter(x -> x.getIdentifierCodeType().equals(PartiesConstants.FUSION_SITE_ID)).collect(Collectors.toList());
+                var billableFlagList = companyCodeIssuerDetailsList.stream().filter(x -> x.getIdentifierCodeType().equals(PartiesConstants.BILLABLE_FLAG)).collect(Collectors.toList());
+                if (!fusionSiteIdList.isEmpty())
+                    fusionSiteIdentifier = fusionSiteIdList.get(0).getIdentifierCode();
+                if (!billableFlagList.isEmpty())
+                    billableFlag = billableFlagList.get(0).getIdentifierCode();
+            }
         }
 
         orgData.put(PartiesConstants.ORGANIZATION_CODE, response.getCompanyReference());
