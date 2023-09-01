@@ -45,7 +45,7 @@ public class CRPServiceAdapter implements com.dpw.runner.shipment.services.adapt
             responseEntity = ResponseHelper.buildSuccessResponse();
         }
         log.info("Retrieve CRP: with response: {}", responseEntity);
-        return responseEntity;
+        return ResponseHelper.buildDependentServiceResponse(responseEntity.getBody(),0,0);
     }
 
     public ResponseEntity<?> listCRPService(CommonRequestModel requestModel) throws Exception {
@@ -60,6 +60,6 @@ public class CRPServiceAdapter implements com.dpw.runner.shipment.services.adapt
             responseEntity = ResponseHelper.buildSuccessResponse();
         }
         log.info("List CRP: with response: {}", responseEntity);
-        return responseEntity;
+        return ResponseHelper.buildDependentServiceResponse(responseEntity.getBody(),0,0);
     }
 }

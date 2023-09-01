@@ -12,6 +12,7 @@ import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.CustomerBooking;
 import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,6 +20,8 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
 import java.net.URI;
@@ -48,13 +51,15 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
     @Autowired
     JsonHelper jsonHelper;
 
+    @Value("${NPM.xApikeyV2}")
+    private String xApikeyV2;
+
     private final RestTemplate restTemplate;
 
     @Autowired
     public NPMServiceAdapter(@Qualifier("restTemplateForNPM") RestTemplate restTemplate) {
         this.restTemplate = restTemplate;
     }
-
     @Autowired
     private ICustomerBookingDao customerBookingDao;
 
@@ -63,7 +68,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
         ListContractRequest listContractRequest = (ListContractRequest) commonRequestModel.getData();
         String url = npmBaseUrl + npmContracts;
         ResponseEntity<?> response = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJson(listContractRequest)), Object.class);
-        return response;
+        return ResponseHelper.buildDependentServiceResponse(response.getBody(),0,0);
     }
 
     @Override
@@ -71,7 +76,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
         UpdateContractRequest updateContractRequest = (UpdateContractRequest) commonRequestModel.getData();
         String url = npmBaseUrl + npmUpdateUrl;
         ResponseEntity<?> response = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJson(updateContractRequest)), Object.class);
-        return response;
+        return ResponseHelper.buildDependentServiceResponse(response.getBody(),0,0);
     }
 
     @Override
@@ -79,7 +84,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
         String url = npmBaseUrl + npmOffersUrl;
         NPMFetchOffersRequestFromUI fetchOffersRequest = (NPMFetchOffersRequestFromUI) req.getData();
         ResponseEntity<?> response = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJson(createNPMOffersRequest(fetchOffersRequest))), Object.class);
-        return response;
+        return ResponseHelper.buildDependentServiceResponse(response.getBody(),0,0);
     }
 
     @Override
@@ -87,7 +92,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
         String url = npmBaseUrl + npmOffersV8Url;
         NPMFetchOffersRequestFromUI fetchOffersRequest = (NPMFetchOffersRequestFromUI) req.getData();
         ResponseEntity<?> response = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJson(createNPMOffersV8Request(fetchOffersRequest))), Object.class);
-        return response;
+        return ResponseHelper.buildDependentServiceResponse(response.getBody(),0,0);
     }
 
     private NPMFetchOffersRequest createNPMOffersRequest(NPMFetchOffersRequestFromUI request) {

@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.adapters.interfaces.IPlatformServiceAdap
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.dto.request.platform.PlatformCreateRequest;
 import com.dpw.runner.shipment.services.dto.request.platform.PlatformUpdateRequest;
+import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -29,16 +30,16 @@ public class PlatformServiceAdapter implements IPlatformServiceAdapter {
     @Override
     public ResponseEntity<?> createAtPlatform(CommonRequestModel requestModel) throws Exception {
         PlatformCreateRequest request = (PlatformCreateRequest) requestModel.getData();
-        String url = baseUrl + "booking/external";
+        String url = baseUrl + "/booking/external";
         ResponseEntity<?> responseEntity = restTemplate.exchange(RequestEntity.post(URI.create(url)).build(), Object.class);
-        return responseEntity;
+        return ResponseHelper.buildDependentServiceResponse(responseEntity.getBody(),0,0);
     }
 
     @Override
     public ResponseEntity<?> updateAtPlaform(CommonRequestModel requestModel) throws Exception {
         PlatformUpdateRequest request = (PlatformUpdateRequest) requestModel.getData();
-        String url = baseUrl + "booking/external";
+        String url = baseUrl + "/notifications/booking/" + request.getBooking_reference_code();
         ResponseEntity<?> responseEntity = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(request), Object.class);
-        return responseEntity;
+        return ResponseHelper.buildDependentServiceResponse(responseEntity.getBody(),0,0);
     }
 }
