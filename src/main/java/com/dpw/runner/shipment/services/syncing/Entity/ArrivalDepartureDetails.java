@@ -1,7 +1,10 @@
 package com.dpw.runner.shipment.services.syncing.Entity;
 
+import lombok.Data;
+
 import java.time.LocalDateTime;
 
+@Data
 public class ArrivalDepartureDetails {
     public PartyRequestV2 AcontainerYardId;
     public PartyRequestV2 AfirstArrivalPortId;

@@ -1,7 +1,10 @@
 package com.dpw.runner.shipment.services.syncing.Entity;
 
+import lombok.Data;
+
 import java.math.BigDecimal;
 
+@Data
 public class PackingRequestV2 {
 
     public String OriginName;
