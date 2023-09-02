@@ -30,6 +30,7 @@ import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.BookingSource;
 import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferChargeType;
 import com.dpw.runner.shipment.services.exception.exceptions.V1ServiceException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
@@ -148,7 +149,7 @@ public class CustomerBookingService implements ICustomerBookingService {
              * Platform service integration
              * Criteria for update call to platform service : check flag IsPlatformBookingCreated, if true then update otherwise dont update
              */
-            if (!customerBooking.getIsPlatformBookingCreated() && !customerBooking.getBookingCharges().isEmpty()) {
+            if (!Objects.isNull(customerBooking.getBusinessCode()) && !customerBooking.getIsPlatformBookingCreated() && !customerBooking.getBookingCharges().isEmpty()) {
                 platformServiceAdapter.createAtPlatform(createPlatformCreateRequest(customerBooking));
                 customerBooking.setIsPlatformBookingCreated(true);
                 customerBookingDao.save(customerBooking);
@@ -254,7 +255,7 @@ public class CustomerBookingService implements ICustomerBookingService {
                 .route(createRoute(customerBooking))
                 .charges(createCharges(customerBooking))
                 .business_code(customerBooking.getBusinessCode())
-                .bill_to_party(createOrgRequest(customerBooking.getCustomer()))
+                .bill_to_party(Arrays.asList(createOrgRequest(customerBooking.getCustomer())))
                 .build();
         return CommonRequestModel.builder().data(platformCreateRequest).build();
     }
@@ -270,22 +271,25 @@ public class CustomerBookingService implements ICustomerBookingService {
     private List<ChargesRequest> createCharges(CustomerBooking customerBooking) {
         var bookingCharges = customerBooking.getBookingCharges();
         List<ChargesRequest> charges = new ArrayList<>();
+        List<String> chargeTypes = bookingCharges.stream().map(c -> c.getChargeType()).collect(Collectors.toList());
+        Map<String, EntityTransferChargeType> chargeTypeMap = masterDataUtils.getChargeTypes(chargeTypes);
+
         bookingCharges.forEach(
                 bookingCharge -> {
                     charges.add(
                             ChargesRequest.builder()
                                     .load_uuid(bookingCharge.getContainersList() != null ? bookingCharge.getContainersList().stream().map(c -> c.getGuid()).collect(Collectors.toList()) : null)
-                                    .charge_group("ORIGIN_CHARGES") //TODO - fetch from charge type master
+                                    .charge_group(chargeTypeMap.containsKey(bookingCharge.getChargeType()) ? chargeTypeMap.get(bookingCharge.getChargeType()).getServices() : null)
                                     .charge_code(bookingCharge.getChargeType())
-                                    .charge_code_desc(bookingCharge.getChargeType()) //TODO - Fetch charge type master and set charge_code_desc = description
+                                    .charge_code_desc(chargeTypeMap.containsKey(bookingCharge.getChargeType()) ? chargeTypeMap.get(bookingCharge.getChargeType()).getDescription() : null)
                                     .base_charge_value(bookingCharge.getLocalSellAmount())
                                     .charge_value(bookingCharge.getOverseasSellAmount())
                                     .base_currency(bookingCharge.getLocalSellCurrency())
                                     .charge_currency(bookingCharge.getOverseasSellCurrency())
                                     .exchange_rate(bookingCharge.getSellExchange())
-                                    .charge_id(bookingCharge.getGuid())
                                     .is_grouped(bookingCharge.getContainersList() != null && bookingCharge.getContainersList().size() > 1)
                                     .taxes(null) // optional
+                                    .client_charge_id(bookingCharge.getGuid().toString())
                                     .build()
                     );
                 }
@@ -302,7 +306,7 @@ public class CustomerBookingService implements ICustomerBookingService {
             legRequestList.add(RouteLegRequest.builder()
                     .destination_code(routingsList.get(counter).getPod())
                     .origin_code(routingsList.get(counter).getPol())
-                    .order(routingsList.get(counter).getLeg())
+                    .order(String.valueOf(routingsList.get(counter).getLeg()))
                     .transport_mode(routingsList.get(counter).getMode())
                     .build());
         }
@@ -403,7 +407,7 @@ public class CustomerBookingService implements ICustomerBookingService {
             log.error(e.getMessage());
             throw new RuntimeException(e);
         }
-        if (!customerBooking.getIsPlatformBookingCreated() && !customerBooking.getBookingCharges().isEmpty()) {
+        if (!Objects.isNull(customerBooking.getBusinessCode()) && !customerBooking.getIsPlatformBookingCreated() && !customerBooking.getBookingCharges().isEmpty()) {
             try {
                 platformServiceAdapter.createAtPlatform(createPlatformCreateRequest(customerBooking));
                 customerBooking.setIsPlatformBookingCreated(true);
@@ -1053,7 +1057,7 @@ public class CustomerBookingService implements ICustomerBookingService {
     }
 
     private String generateBookingNumber() {
-        return "SROF" + "-" + getRandomNumberString(6) + "-" + getRandomNumberString(5);
+        return "DBAR" + "-" + getRandomNumberString(6) + "-" + getRandomNumberString(5);
     }
 
     public static String getRandomNumberString(int digit) {

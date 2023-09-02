@@ -23,7 +23,7 @@ public class ChargesRequest {
     private String base_currency;
     private String charge_currency;
     private BigDecimal exchange_rate;
-    private UUID charge_id;
     private List<TaxDTO> taxes;
-    private boolean is_grouped;
+    private Boolean is_grouped;
+    private String client_charge_id;
 }

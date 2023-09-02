@@ -1,5 +1,7 @@
 package com.dpw.runner.shipment.services.dto.request.platform;
 
+import com.dpw.runner.shipment.services.entity.BookingCharges;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -21,11 +23,11 @@ public class LoadRequest {
     private String product_name;
     private String pickup_date;
     private String sailing_date;
-    private boolean is_odc;
-    private boolean is_reefer;
+    private Boolean is_odc;
+    private Boolean is_reefer;
     private ReeferInfoRequest reefer_info;
-    private boolean is_package;
-    private boolean is_hazardous;
+    private Boolean is_package;
+    private Boolean is_hazardous;
     private HazardousInfoRequest hazardous_info;
     private BigDecimal weight;
     private String weight_uom;

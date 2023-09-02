@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class RouteLegRequest {
-    private Long order;
+    private String order;
     private String origin_code;
     private String origin_location_type;
     private String destination_code;
