@@ -411,13 +411,8 @@ public class MasterDataUtils{
         List<Object> field = new ArrayList<>(List.of(EntityTransferConstants.CHARGE_CODE));
         String operator = Operators.IN.getValue();
         criteria.addAll(List.of(field, operator, List.of(chargeCode)));
-
-
         V1DataResponse v1DataResponse = v1Service.fetchChargeCodeData(CommonV1ListRequest.builder().criteriaRequests(criteria).build());
         List<EntityTransferChargeType> list = jsonHelper.convertValueToList(v1DataResponse.entities, EntityTransferChargeType.class);
-
-        Map<String, EntityTransferChargeType> response1 = list.stream().collect(Collectors.toMap(EntityTransferChargeType::getChargeCode, Function.identity()));
-//
         return list.stream().collect(Collectors.toMap(EntityTransferChargeType::getChargeCode, Function.identity()));
 
     }

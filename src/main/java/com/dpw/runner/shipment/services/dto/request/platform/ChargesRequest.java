@@ -25,5 +25,5 @@ public class ChargesRequest {
     private BigDecimal exchange_rate;
     private List<TaxDTO> taxes;
     private Boolean is_grouped;
-    private String client_charge_id;
+    private String charge_id;
 }

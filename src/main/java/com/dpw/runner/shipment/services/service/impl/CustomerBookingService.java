@@ -149,12 +149,16 @@ public class CustomerBookingService implements ICustomerBookingService {
              * Platform service integration
              * Criteria for update call to platform service : check flag IsPlatformBookingCreated, if true then update otherwise dont update
              */
-            if (!Objects.isNull(customerBooking.getBusinessCode()) && !customerBooking.getIsPlatformBookingCreated() && !customerBooking.getBookingCharges().isEmpty()) {
-                platformServiceAdapter.createAtPlatform(createPlatformCreateRequest(customerBooking));
-                customerBooking.setIsPlatformBookingCreated(true);
-                customerBookingDao.save(customerBooking);
-            } else if (customerBooking.getIsPlatformBookingCreated() != null && customerBooking.getIsPlatformBookingCreated()) {
-                platformServiceAdapter.updateAtPlaform(createPlatformUpdateRequest(customerBooking));
+            try {
+                if (!Objects.isNull(customerBooking.getBusinessCode()) && !customerBooking.getBookingCharges().isEmpty()) {
+                    platformServiceAdapter.createAtPlatform(createPlatformCreateRequest(customerBooking));
+                    customerBooking.setIsPlatformBookingCreated(true);
+                    customerBookingDao.save(customerBooking);
+                }
+            }
+            catch (Exception ex) {
+                log.error("Booking Creation error from Platform for booking number: {} with error message: {}", customerBooking.getBookingNumber(), ex.getMessage());
+//                throw new RuntimeException(ex);
             }
         } catch (Exception e) {
             log.error(e.getMessage());
@@ -228,7 +232,6 @@ public class CustomerBookingService implements ICustomerBookingService {
                 .origin_code(carrierDetails.map(c -> c.getOrigin()).orElse(null))
                 .destination_code(carrierDetails.map(c -> c.getDestination()).orElse(null))
                 .load(createLoad(customerBooking))
-                .route(createRoute(customerBooking))
                 .charges(createCharges(customerBooking))
                 .carrier_code(carrierDetails.map(c -> c.getJourneyNumber()).orElse(null))
                 .air_carrier_details(null)
@@ -278,7 +281,7 @@ public class CustomerBookingService implements ICustomerBookingService {
                 bookingCharge -> {
                     charges.add(
                             ChargesRequest.builder()
-                                    .load_uuid(bookingCharge.getContainersList() != null ? bookingCharge.getContainersList().stream().map(c -> c.getGuid()).collect(Collectors.toList()) : null)
+                                    .load_uuid(Objects.isNull(bookingCharge.getContainersList()) || bookingCharge.getContainersList().isEmpty() ? null : bookingCharge.getContainersList().stream().map(c -> c.getGuid()).collect(Collectors.toList()))
                                     .charge_group(chargeTypeMap.containsKey(bookingCharge.getChargeType()) ? chargeTypeMap.get(bookingCharge.getChargeType()).getServices() : null)
                                     .charge_code(bookingCharge.getChargeType())
                                     .charge_code_desc(chargeTypeMap.containsKey(bookingCharge.getChargeType()) ? chargeTypeMap.get(bookingCharge.getChargeType()).getDescription() : null)
@@ -289,7 +292,7 @@ public class CustomerBookingService implements ICustomerBookingService {
                                     .exchange_rate(bookingCharge.getSellExchange())
                                     .is_grouped(bookingCharge.getContainersList() != null && bookingCharge.getContainersList().size() > 1)
                                     .taxes(null) // optional
-                                    .client_charge_id(bookingCharge.getGuid().toString())
+                                    .charge_id(bookingCharge.getGuid().toString())
                                     .build()
                     );
                 }
@@ -389,9 +392,11 @@ public class CustomerBookingService implements ICustomerBookingService {
             log.debug("Booking Details is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
+        boolean isCreatedInPlatform = !Objects.isNull(oldEntity.get().getIsPlatformBookingCreated()) && oldEntity.get().getIsPlatformBookingCreated();
         CustomerBooking customerBooking = jsonHelper.convertValue(request, CustomerBooking.class);
         customerBooking.setCreatedAt(oldEntity.get().getCreatedAt());
         customerBooking.setCreatedBy(oldEntity.get().getCreatedBy());
+        customerBooking.setIsPlatformBookingCreated(isCreatedInPlatform);
         customerBooking.setSource(BookingSource.Runner);
 
         // NPM update contract
@@ -402,21 +407,22 @@ public class CustomerBookingService implements ICustomerBookingService {
         }
 
         try {
-            this.updateEntities(customerBooking, request);
+            customerBooking = this.updateEntities(customerBooking, request);
         } catch (Exception e) {
             log.error(e.getMessage());
             throw new RuntimeException(e);
         }
-        if (!Objects.isNull(customerBooking.getBusinessCode()) && !customerBooking.getIsPlatformBookingCreated() && !customerBooking.getBookingCharges().isEmpty()) {
+        if (!Objects.isNull(customerBooking.getBusinessCode()) && !customerBooking.getBookingCharges().isEmpty()
+                && ! isCreatedInPlatform) {
             try {
                 platformServiceAdapter.createAtPlatform(createPlatformCreateRequest(customerBooking));
                 customerBooking.setIsPlatformBookingCreated(true);
                 customerBookingDao.save(customerBooking);
             } catch (Exception e) {
                 log.error("ERROR creating in Platform in Update Booking API, ERROR : " + e.getMessage());
-                throw new RuntimeException(e);
+//                throw new RuntimeException(e);
             }
-        } else if (customerBooking.getIsPlatformBookingCreated() != null && customerBooking.getIsPlatformBookingCreated()) {
+        } else if (isCreatedInPlatform) {
             try {
                 platformServiceAdapter.updateAtPlaform(createPlatformUpdateRequest(customerBooking));
             } catch (Exception e) {
@@ -428,7 +434,7 @@ public class CustomerBookingService implements ICustomerBookingService {
         return ResponseHelper.buildSuccessResponse(jsonHelper.convertValue(customerBooking, CustomerBookingResponse.class));
     }
 
-    private void updateEntities(CustomerBooking customerBooking, CustomerBookingRequest request) throws Exception {
+    private CustomerBooking updateEntities(CustomerBooking customerBooking, CustomerBookingRequest request) throws Exception {
         customerBooking = customerBookingDao.save(customerBooking);
         Long bookingId = customerBooking.getId();
 
@@ -482,6 +488,7 @@ public class CustomerBookingService implements ICustomerBookingService {
             if (!response.getStatusCode().equals(HttpStatus.OK))
                 throw new V1ServiceException("Cannot create booking in v1 for the customerBooking guid: " + customerBooking.getGuid());
         }
+        return customerBooking;
     }
 
     @Override
@@ -911,7 +918,7 @@ public class CustomerBookingService implements ICustomerBookingService {
         CustomerBooking customerBooking = jsonHelper.convertValue(request, CustomerBooking.class);
         customerBooking.setSource(BookingSource.Platform);
         try {
-            this.updateEntities(customerBooking, request);
+            customerBooking = this.updateEntities(customerBooking, request);
         } catch (Exception e) {
             log.error(e.getMessage());
             TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
