@@ -60,7 +60,7 @@ public class V1ServiceUtil {
                 .RoutingList(createRoutingList(customerBooking.getRoutingList()))
                 .Documents(createDocuments(customerBooking.getFileRepoList()))
                 .Loosecargos(createLooseCarges(customerBooking.getPackingList()))
-                .OrgDetails(null)
+                .OrgDetails(createOrgDetails(customerBooking))
                 .QuoteCharges(createQuoteCharges(customerBooking.getBookingCharges()))
                 .build();
     }
@@ -126,7 +126,9 @@ public class V1ServiceUtil {
                 .Address2((String) orgData.get(PartiesConstants.ADDRESS2))
                 .Addresses(List.of(CreateBookingModuleInV1.BookingEntity.OrgDetail.OrgDetailAddress.builder()
                         .AddressShortCode((String) addressData.get("AddressShortCode"))
-                        .Address1((String) orgData.get(PartiesConstants.ADDRESS1)).build()))
+                        .Address1((String) orgData.get(PartiesConstants.ADDRESS1))
+                        .Country(addressData.containsKey("Country") ? (String) addressData.get("Country") :
+                                (String) orgData.get(PartiesConstants.COUNTRY)).build()))
                 .Country((String) orgData.get(PartiesConstants.COUNTRY))
                 .CityCode((String) orgData.get(PartiesConstants.CITY_CODE))
                 .State((String) orgData.get(PartiesConstants.STATE))
