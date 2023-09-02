@@ -18,6 +18,8 @@ import org.springframework.stereotype.Component;
 
 import java.lang.reflect.Field;
 import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Component
@@ -401,5 +403,22 @@ public class MasterDataUtils{
             return fieldNameChargeTypeDataMap;
         }
         return null;
+    }
+
+    public Map<String, EntityTransferChargeType> getChargeTypes(List<String> chargeCode) {
+        List<Object> criteria = new ArrayList<>();
+        Map<String, EntityTransferChargeType> response = new HashMap<>();
+        List<Object> field = new ArrayList<>(List.of(EntityTransferConstants.CHARGE_CODE));
+        String operator = Operators.IN.getValue();
+        criteria.addAll(List.of(field, operator, List.of(chargeCode)));
+
+
+        V1DataResponse v1DataResponse = v1Service.fetchChargeCodeData(CommonV1ListRequest.builder().criteriaRequests(criteria).build());
+        List<EntityTransferChargeType> list = jsonHelper.convertValueToList(v1DataResponse.entities, EntityTransferChargeType.class);
+
+        Map<String, EntityTransferChargeType> response1 = list.stream().collect(Collectors.toMap(EntityTransferChargeType::getChargeCode, Function.identity()));
+//
+        return list.stream().collect(Collectors.toMap(EntityTransferChargeType::getChargeCode, Function.identity()));
+
     }
 }
