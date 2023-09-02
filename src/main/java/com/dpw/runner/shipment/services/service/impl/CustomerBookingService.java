@@ -169,7 +169,7 @@ public class CustomerBookingService implements ICustomerBookingService {
             customerBooking.setIsPlatformBookingCreated(false);
         }
         if (customerBooking.getBookingNumber() == null) {
-            customerBooking.setBookingNumber(generateBookingNumber());
+            customerBooking.setBookingNumber(generateBookingNumber(customerBooking.getCargoType()));
         }
         customerBooking = customerBookingDao.save(customerBooking);
         Long bookingId = customerBooking.getId();
@@ -1056,20 +1056,25 @@ public class CustomerBookingService implements ICustomerBookingService {
         }
     }
 
-    private String generateBookingNumber() {
-        return "DBAR" + "-" + getRandomNumberString(6) + "-" + getRandomNumberString(5);
+    private String generateBookingNumber(String cargoType) {
+        String prefix = "DBAR";
+        if(Objects.equals(cargoType, "FCL"))
+            prefix = "DBFC";
+        else if(Objects.equals(cargoType, "LCL"))
+            prefix = "DBLC";
+        return prefix + "-" + getRandomNumberString(7) + "-" + getRandomNumberString(6);
     }
 
     public static String getRandomNumberString(int digit) {
         Random rnd = new Random();
         int number = 0;
-        if (digit == 6)
-            number = rnd.nextInt(999999);
+        if (digit == 7)
+            number = rnd.nextInt(9999999);
         else
-            number = rnd.nextInt(99999);
-        if (digit == 6)
-            return String.format("%06d", number);
-        return String.format("%05d", number);
+            number = rnd.nextInt(999999);
+        if (digit == 7)
+            return String.format("%07d", number);
+        return String.format("%06d", number);
     }
 
     /**
