@@ -45,6 +45,10 @@ public class ShipmentSync implements IShipmentSync {
 
         cs.setFinanceClosedByUser(sd.getFinanceClosedBy());
 
+        // Fully auto-mapped entities
+        // Events, jobs, referenceNumbers, docs, elDetails, services, notes
+        // packing (except OriginName field)
+
         // assigning child entities not automatically mapped
         // entityID also gets assigned as a part of this mapping
         mapTruckDriverDetail(cs, sd);
