@@ -9,11 +9,11 @@ import java.util.UUID;
 @Data
 public class PartyRequestV2 {
     private String AddressCode;
-    private Map<String, Object> AddressData;
-    private long EntityID;
+    private Map<String, Object> AddressData;    //could be object as well
+    private Long EntityID;
     private String EntityType;
     private String OrgCode;
-    private Map<String, Object> OrgData;
+    private Map<String, Object> OrgData;        //could be object as well
     private int TenantId;
     private String Type;
     private UUID Guid;

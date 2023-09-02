@@ -1,13 +1,74 @@
 package com.dpw.runner.shipment.services.syncing.Entity;
 
 import lombok.Data;
-
+;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 @Data
 public class CustomShipmentRequest {
+
+    public UUID Guid;
+    public String HouseBill;
+    public String TransportMode;
+    public String Custom_ShipType;
+    public String ContainerType;
+    public String Source;
+    public String MasterBill;
+    public Boolean IsDomestic;
+    public BigDecimal Weight;
+    public String WeightUnit;
+    public Integer Inners;
+    public String InnersUnit;
+    public BigDecimal FreightLocal;
+    public String FreightLocalCurrency;
+    public BigDecimal FreightOverseas;
+    public String FreightOverseasCurrency;
+    public String EntryDetail;
+    public String AdditionalTerms;
+    public String Description;
+
+    public BigDecimal Volume;
+    public String VolumeUnit;
+    public BigDecimal VolumeWeight;
+    public String WeightVolumeUnit;
+    public BigDecimal Chargeable;
+    public String ChargableUnit;
+    public Integer Packs;
+    public String PacksUnit;
+    public String ShipmentId;
+
+    public LocalDateTime Eta;
+    public LocalDateTime Etd;
+    public String OriginName;
+    public String Voyage;
+    public String AirwayBillDims;
+    public String EfreightStatus;
+
+    public String HouseBillType;
+    public String Inspection;
+    public String OnBoard;
+    public String Phase;
+
+    public Long PlaceofIssue;
+    public Long PlaceofSupply;
+    public String ReleaseType;
+    public String ScreeningStatus;
+    public BigDecimal ShipperCod;
+    public String ShipperCodpm;
+
+    public BigDecimal SpotRate;
+    public String SpotRateType;
+    public LocalDateTime CustomsNoIssueDate;
+    public LocalDateTime DateofIssue;
+    public LocalDateTime ExpiryDate;
+    public LocalDateTime OnBoardDate;
+
+
+
+    // %%%%%%%%%%%%%% Custom shipment properties from here %%%%%%%%%%%%%%%%
     //Jobs
     public List<JobRequestV2> JobsList;
 
@@ -27,7 +88,6 @@ public class CustomShipmentRequest {
     public String TruckRefNumber;
     public String Vessel;
 
-
     //adding addtional details here
     public String ActivityType;
     public String Adcode;
@@ -41,12 +101,12 @@ public class CustomShipmentRequest {
     public String BlexporterShipment;
     public LocalDateTime Boedate;
     public String Boenumber;
-    public long BondedWarehouseId;
+    public Long BondedWarehouseId; //int64
     public PartyRequestV2 BorrowedFrom;
     public String BranchSINumber;
     public String ChajobNumber;
-    public long Cifvalue;
-    public long Copy;
+    public Long Cifvalue; //int64
+    public Long Copy; //int64
     public String CustomCity;
     public String CustomHouse;
     public String CustomLocation;
@@ -59,10 +119,10 @@ public class CustomShipmentRequest {
 
     public PartyRequestV2 ExportBroker;
     public String ExternalNotes;
-    public long FreeDays;
+    public Long FreeDays; //int64
     public String GoodsCO;
 
-    public long HsnNumber;
+    public Long HsnNumber; //int64
     public String Iecode;
     public LocalDateTime IgmfileDate;
     public String IgmfileNo;
@@ -78,19 +138,18 @@ public class CustomShipmentRequest {
     public Boolean IsImportClearance;
     public Boolean IsInland;
     public String LgdStatus;
-    public long LineNumber;
-    public long LocalLineNumber;
+    public Long LineNumber; //int64
+    public Long LocalLineNumber; //int64
     public PartyRequestV2 NotifyParty;
 
 
-    public long Original;
+    public Long Original; //int64
     public String OwnershipString;
     public String OwnershipName;
 
     public String PassedByString;
     public String PassedByPerson;
     public String PeruEntryExitPoint;
-
 
 
     public Boolean PrintedOriginal;
@@ -100,7 +159,7 @@ public class CustomShipmentRequest {
     public PartyRequestV2 SendingForwarder;
     public LocalDateTime Smtpigmdate;
     public String Smtpigmnumber;
-    public long SubLineNumber;
+    public Long SubLineNumber; //int64
     public LocalDateTime SupplierInvoiceDate;
     public String SupplierInvoiceNumber;
     public Boolean SurrenderPrinted;
@@ -108,7 +167,7 @@ public class CustomShipmentRequest {
     public String TipoDocumentNotifyParty;
     public BigDecimal TotalDuty;
     public PartyRequestV2 TraderOrSupplier;
-    public long WarehouseId;
+    public Long WarehouseId; //int64
     public Boolean Wblprinted;
     // ---- Additional Details ends here
     public String StatusString;
@@ -155,7 +214,7 @@ public class CustomShipmentRequest {
     public Boolean IsShipmentReadOnly;
 
     public Integer LockedBy;
-    // public String MarksnNums;
+     public String MarksnNums;
     public BigDecimal NetWeight;
     public String NetWeightUnit;
 
@@ -179,7 +238,6 @@ public class CustomShipmentRequest {
     public String DestinationPortName;
     public String TipoDocumentConsignor;
     public String DestinationName;
-
 
 
 
