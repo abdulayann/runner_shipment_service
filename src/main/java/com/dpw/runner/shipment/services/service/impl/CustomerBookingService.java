@@ -247,7 +247,7 @@ public class CustomerBookingService implements ICustomerBookingService {
                 .destination_code(carrierDetails.map(c -> c.getDestination()).orElse(null))
                 .pol(carrierDetails.map(c -> c.getOriginPort()).orElse(null))
                 .pod(carrierDetails.map(c -> c.getDestinationPort()).orElse(null))
-                .contract_id(customerBooking.getContractId().toString())
+                .contract_id(customerBooking.getContractId())
                 .created_at(customerBooking.getCreatedAt())
                 .customer_org_id(customerBooking.getCustomer().getOrgCode())
                 .load(createLoad(customerBooking))
