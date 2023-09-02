@@ -5,4 +5,5 @@ import com.dpw.runner.shipment.services.syncing.Entity.CustomShipmentRequest;
 
 public interface IShipmentSync {
     CustomShipmentRequest sync(ShipmentDetails shipmentDetails);
+    ShipmentDetails reverseSync(CustomShipmentRequest cs);
 }

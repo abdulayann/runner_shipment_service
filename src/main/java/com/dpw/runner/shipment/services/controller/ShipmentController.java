@@ -17,6 +17,8 @@ import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
+import com.dpw.runner.shipment.services.syncing.Entity.CustomShipmentRequest;
+import com.dpw.runner.shipment.services.syncing.impl.ShipmentSync;
 import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
@@ -41,6 +43,8 @@ public class ShipmentController {
 
     @Autowired
     private IShipmentService shipmentService;
+    @Autowired
+    ShipmentSync shipmentSync;
     @Autowired
     JsonHelper jsonHelper;
 
@@ -176,5 +180,17 @@ public class ShipmentController {
             log.error(responseMsg, e);
         }
         return (ResponseEntity<RunnerResponse<ShipmentDetailsResponse>>) ResponseHelper.buildFailedResponse(responseMsg);
+    }
+
+    @PostMapping("/sync")
+    public ResponseEntity<?> syncShipment(@RequestBody CustomShipmentRequest request){
+        String responseMsg = "failure executing :(";
+        try {
+            ShipmentDetails shipmentDetails = shipmentSync.reverseSync(request);
+            return ResponseHelper.buildSuccessResponse();
+        } catch (Exception e){
+
+        }
+        return ResponseHelper.buildFailedResponse(responseMsg);
     }
 }
