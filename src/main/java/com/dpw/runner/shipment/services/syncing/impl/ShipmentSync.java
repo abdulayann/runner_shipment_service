@@ -6,6 +6,7 @@ import com.dpw.runner.shipment.services.entity.TruckDriverDetails;
 import com.dpw.runner.shipment.services.syncing.Entity.*;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
 import org.modelmapper.ModelMapper;
+import org.modelmapper.convention.MatchingStrategies;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -22,7 +23,13 @@ public class ShipmentSync implements IShipmentSync {
     public CustomShipmentRequest sync(ShipmentDetails sd) {
         CustomShipmentRequest cs = new CustomShipmentRequest();
 
+        // First map nested entity that are root level properties in v1
+        mapAdditionalDetails(cs, sd);
+        mapCarrierDetails(cs, sd);
+        // Map remaining object so there's no info lost for root -> root properties
+        // example Guid
         cs = modelMapper.map(sd, CustomShipmentRequest.class);
+
         // assigning root level properties not previously mapped
         cs.setCustom_ShipType(sd.getDirection());
         cs.setContainerType(sd.getShipmentType());
@@ -40,15 +47,9 @@ public class ShipmentSync implements IShipmentSync {
 
         cs.setFinanceClosedByUser(sd.getFinanceClosedBy());
 
-
-        mapAdditionalDetails(cs, sd);
-        mapCarrierDetails(cs, sd);
-
         // assigning child entities not automatically mapped
         // entityID also gets assigned as a part of this mapping
-
         mapTruckDriverDetail(cs, sd);
-        //Routing IsDomestic <- domestic (no mapped via mapper)
         cs.setRoutings(convertToList(sd.getRoutingsList(), RoutingsRequestV2.class));
         cs.setReferenceNumbers(convertToList(sd.getReferenceNumbersList(), ReferenceNumbersRequestV2.class));
         cs.setPackings(convertToList(sd.getPackingList(), PackingRequestV2.class));
@@ -80,11 +81,15 @@ public class ShipmentSync implements IShipmentSync {
     }
 
     private void mapCarrierDetails(CustomShipmentRequest cs, ShipmentDetails sd) {
-
+        if(sd.getCarrierDetails() == null)
+            return;
+        modelMapper.map(sd.getCarrierDetails(), cs);
     }
 
     private void mapAdditionalDetails(CustomShipmentRequest cs, ShipmentDetails sd) {
-
+        if(sd.getAdditionalDetails() == null)
+            return;
+        modelMapper.map(sd.getAdditionalDetails(), cs);
     }
 
     private <T,P> List<P> convertToList(final List<T> lst, Class<P> clazz) {
