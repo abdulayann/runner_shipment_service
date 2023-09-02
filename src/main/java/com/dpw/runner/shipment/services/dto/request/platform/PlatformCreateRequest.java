@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.dto.request.platform;
 
 import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
 
 import java.time.LocalDateTime;
@@ -14,6 +15,7 @@ import java.util.List;
 @AllArgsConstructor
 @Data
 public class PlatformCreateRequest extends CommonRequest implements IRunnerRequest {
+    @JsonProperty(value = "booking_reference_code")
     private String booking_ref_code;
     private String business_code;
     private String origin_code;
@@ -26,6 +28,6 @@ public class PlatformCreateRequest extends CommonRequest implements IRunnerReque
     private List<LoadRequest> load;
     private RouteRequest route;
     private List<ChargesRequest> charges;
-    private OrgRequest bill_to_party;
+    private List<OrgRequest> bill_to_party;
 
 }
