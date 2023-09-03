@@ -67,6 +67,7 @@ public class ConsolidationSync implements IConsolidationSync {
         ConsolidationDetailsRequest response = new ConsolidationDetailsRequest();
         String responseMsg;
         try {
+            response = modelMapper.map(request, ConsolidationDetailsRequest.class);
             response.setBookingType(request.getShipmentType());
             response.setCoLoadBookingReference(request.getCoLoadBookingRef());
             response.setConsolidationType(request.getType());
@@ -91,8 +92,6 @@ public class ConsolidationSync implements IConsolidationSync {
             response.setFileRepoList(convertToList(request.getDocsList(), FileRepoRequest.class));
 
             mapReverseShipmentGuids(response, request);
-            response = modelMapper.map(request, ConsolidationDetailsRequest.class);
-
 
             return consolidationService.completeV1ConsolidationCreateAndUpdate(CommonRequestModel.buildRequest(response));
         } catch (Exception e) {
