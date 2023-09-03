@@ -419,15 +419,13 @@ public class CustomerBookingService implements ICustomerBookingService {
                 customerBooking.setIsPlatformBookingCreated(true);
                 customerBookingDao.save(customerBooking);
             } catch (Exception e) {
-                log.error("ERROR creating in Platform in Update Booking API, ERROR : " + e.getMessage());
-//                throw new RuntimeException(e);
+                log.error("Booking Creation error from Platform for booking number: {} with error message: {}", customerBooking.getBookingNumber(), e.getMessage());
             }
         } else if (isCreatedInPlatform) {
             try {
                 platformServiceAdapter.updateAtPlaform(createPlatformUpdateRequest(customerBooking));
             } catch (Exception e) {
-                log.error("ERROR updating in Platform in Update Booking API, ERROR : " + e.getMessage());
-                throw new RuntimeException(e);
+                log.error("Booking Update error from Platform for booking number: {} with error message: {}", customerBooking.getBookingNumber(), e.getMessage());
             }
         }
 
