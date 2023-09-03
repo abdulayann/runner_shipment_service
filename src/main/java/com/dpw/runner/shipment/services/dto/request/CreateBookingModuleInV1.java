@@ -174,6 +174,8 @@ public class CreateBookingModuleInV1 {
             private Boolean ActiveClient;
             private String DefaultAddressSiteIdentifier;
             private Boolean Receivables;
+            private Boolean Consigner;
+            private Boolean Consignee;
             private List<OrgDetailAddress> Addresses;
 
 
