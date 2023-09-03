@@ -8,6 +8,7 @@ import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.CustomerBooking;
 import com.dpw.runner.shipment.services.exception.exceptions.UnAuthorizedException;
 import com.dpw.runner.shipment.services.exception.exceptions.V1ServiceException;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.V1AuthHelper;
 import org.slf4j.Logger;
@@ -202,6 +203,8 @@ public class V1ServiceImpl implements IV1Service {
     @Value("${v1service.url.base}${v1service.url.chargeType}")
     private String CHARGE_TYPE_URL;
 
+    @Autowired
+    private JsonHelper jsonHelper;
     @Override
 //    @Async
     public ResponseEntity<?> createBooking(CustomerBooking customerBooking) {
