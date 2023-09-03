@@ -176,11 +176,10 @@ public class ConsolidationController {
             @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
     })
     @PostMapping(ConsolidationConstants.CONSOLIDATION_V1_CREATE)
-    public ResponseEntity<RunnerResponse<ConsolidationDetailsResponse>> createV1Consolidation(@RequestBody @Valid ConsolidationDetailsRequest request) {
+    public ResponseEntity<RunnerResponse<ConsolidationDetailsResponse>> createV1Consolidation(@RequestBody @Valid CustomConsolidationRequest request) {
         String responseMsg;
         try {
-            ConsolidationDetailsRequest req = jsonHelper.convertValue(request, ConsolidationDetailsRequest.class);
-            return (ResponseEntity<RunnerResponse<ConsolidationDetailsResponse>>) consolidationService.completeV1ConsolidationCreateAndUpdate(CommonRequestModel.buildRequest(req));
+            return (ResponseEntity<RunnerResponse<ConsolidationDetailsResponse>>) consolidationSync.reverseSync(CommonRequestModel.buildRequest(request));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;

@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.syncing.Entity;
 
+import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import lombok.Data;
 
@@ -9,7 +10,7 @@ import java.util.List;
 import java.util.UUID;
 
 @Data
-public class CustomConsolidationRequest implements IRunnerResponse {
+public class CustomConsolidationRequest implements IRunnerResponse, IRunnerRequest {
 
     public AchievedQuantities AchievedQuantities;
     public String AdditionalTerms;
