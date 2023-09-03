@@ -1,7 +1,6 @@
 package com.dpw.runner.shipment.services.syncing.Entity;
 
 import lombok.Data;
-;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -154,9 +153,9 @@ public class CustomShipmentRequest {
 
     public Boolean PrintedOriginal;
     public PartyRequestV2 ReceivingAgent;
-    public PartyRequestV2 ReceivingForwarder;
+    public PartyRequestV2 ReceivingForwarderParty;
     public PartyRequestV2 SendingAgent;
-    public PartyRequestV2 SendingForwarder;
+    public PartyRequestV2 SendingForwarderParty;
     public LocalDateTime Smtpigmdate;
     public String Smtpigmnumber;
     public Long SubLineNumber; //int64
@@ -166,7 +165,7 @@ public class CustomShipmentRequest {
     public String TipoDocumentConsignee;
     public String TipoDocumentNotifyParty;
     public BigDecimal TotalDuty;
-    public PartyRequestV2 TraderOrSupplier;
+    public PartyRequestV2 TraderOrSupplierParty;
     public Long WarehouseId; //int64
     public Boolean Wblprinted;
     // ---- Additional Details ends here
@@ -181,8 +180,8 @@ public class CustomShipmentRequest {
 
 
     // Missing Properties
-    public PartyRequestV2 Consigner;
-    public PartyRequestV2 Consignee;
+    public PartyRequestV2 ConsignerParty;
+    public PartyRequestV2 ConsigneeParty;
     public PartyRequestV2 Client;
     public String AssignedTo;
     public Boolean AutoUpdateWtVol;
@@ -251,9 +250,9 @@ public class CustomShipmentRequest {
     // Carrier, Client discuss w/ chirag, Container object clarity rqd
     public List<ElDetailsRequestV2> ELDetails;
     public List<EventsRequestV2> EventsList;
-    public List<FileRepoRequestV2> Docs;
+    public List<FileRepoRequestV2> Docs_;
     // Packing object doubt ? discuss w/ chirag
-    public List<PackingRequestV2> Packings;
+    public List<PackingRequestV2> Packings_;
     public List<ReferenceNumbersRequestV2> ReferenceNumbers;
     public List<RoutingsRequestV2> Routings;
     public List<ShipmentServiceRequestV2> ServicesList;

@@ -49,13 +49,17 @@ public class ShipmentSync implements IShipmentSync {
         // Events, jobs, referenceNumbers, docs, elDetails, services, notes
         // packing (except OriginName field)
 
+        //Mapping root party objects that are not auto-mapped
+        cs.setConsignerParty(mapPartyObject(sd.getConsigner()));
+        cs.setConsigneeParty(mapPartyObject(sd.getConsignee()));
+
         // assigning child entities not automatically mapped
         // entityID also gets assigned as a part of this mapping
         mapTruckDriverDetail(cs, sd);
         cs.setRoutings(convertToList(sd.getRoutingsList(), RoutingsRequestV2.class));
         cs.setReferenceNumbers(convertToList(sd.getReferenceNumbersList(), ReferenceNumbersRequestV2.class));
-        cs.setPackings(convertToList(sd.getPackingList(), PackingRequestV2.class));
-        cs.setDocs(convertToList(sd.getFileRepoList(), FileRepoRequestV2.class));
+        cs.setPackings_(convertToList(sd.getPackingList(), PackingRequestV2.class));
+        cs.setDocs_(convertToList(sd.getFileRepoList(), FileRepoRequestV2.class));
         cs.setELDetails(convertToList(sd.getElDetailsList(), ElDetailsRequestV2.class));
 
         // Container missing mappings
@@ -69,8 +73,10 @@ public class ShipmentSync implements IShipmentSync {
     
     public ShipmentDetails reverseSync(CustomShipmentRequest cs) {
         ShipmentDetails sd = new ShipmentDetails();
-        sd.setCarrierDetails(modelMapper.map(cs, CarrierDetails.class));
-        sd.setAdditionalDetails(modelMapper.map(cs, AdditionalDetails.class));
+        mapCarrierDetailsReverse(sd, cs);
+        mapAdditionalDetailsReverse(sd, cs);
+
+        sd = modelMapper.map(cs, ShipmentDetails.class);
 
         sd.setDirection(cs.getCustom_ShipType());
         sd.setShipmentType(cs.getContainerType());
@@ -83,14 +89,13 @@ public class ShipmentSync implements IShipmentSync {
         sd.setChargable(cs.getChargeable());
         sd.setChargeableUnit(cs.getChargableUnit());
         sd.setNoOfPacks(cs.getPacks());
-
         sd.setFinanceClosedBy(cs.getFinanceClosedByUser());
 
         mapTruckDriverDetailReverse(cs, sd);
         sd.setRoutingsList(convertToList(cs.getRoutings(), Routings.class));
         sd.setReferenceNumbersList(convertToList(cs.getReferenceNumbers(), ReferenceNumbers.class));
-        sd.setPackingList(convertToList(cs.getPackings(), Packing.class));
-        sd.setFileRepoList(convertToList(cs.getDocs(), FileRepo.class));
+        sd.setPackingList(convertToList(cs.getPackings_(), Packing.class));
+        sd.setFileRepoList(convertToList(cs.getDocs_(), FileRepo.class));
         sd.setElDetailsList(convertToList(cs.getELDetails(), ELDetails.class));
 
         sd.setBookingCarriagesList(convertToList(cs.getBookingCarriages(), BookingCarriage.class));
@@ -98,6 +103,17 @@ public class ShipmentSync implements IShipmentSync {
         return sd;
     }
 
+    private PartyRequestV2 mapPartyObject(Parties sourcePartyObject) {
+        if(sourcePartyObject == null)
+            return null;
+        return modelMapper.map(sourcePartyObject, PartyRequestV2.class);
+    }
+
+    private Parties mapPartyObject(PartyRequestV2 sourcePartyObject) {
+        if(sourcePartyObject == null)
+            return null;
+        return modelMapper.map(sourcePartyObject, Parties.class);
+    }
 
     private void mapTruckDriverDetail(CustomShipmentRequest cs, ShipmentDetails sd) {
         if(sd.getTruckDriverDetails() == null)
@@ -138,12 +154,41 @@ public class ShipmentSync implements IShipmentSync {
         if(sd.getCarrierDetails() == null)
             return;
         modelMapper.map(sd.getCarrierDetails(), cs);
+        cs.setDestinationName(sd.getCarrierDetails().getDestination());
+        cs.setDestinationPortName(sd.getCarrierDetails().getDestinationPort());
+        cs.setOriginName(sd.getCarrierDetails().getOrigin());
+        cs.setOriginPortName(sd.getCarrierDetails().getOriginPort());
+
+    }
+
+    private void mapCarrierDetailsReverse(ShipmentDetails sd, CustomShipmentRequest cs) {
+        if(sd.getCarrierDetails() == null)
+            return;
+        CarrierDetails carrierDetails = modelMapper.map(cs, CarrierDetails.class);
+        carrierDetails.setDestination(cs.getDestinationName());
+        carrierDetails.setDestinationPort(cs.getDestinationPortName());
+        carrierDetails.setOrigin(cs.getOriginName());
+        carrierDetails.setOriginPort(cs.getOriginPortName());
+        sd.setCarrierDetails(carrierDetails);
     }
 
     private void mapAdditionalDetails(CustomShipmentRequest cs, ShipmentDetails sd) {
         if(sd.getAdditionalDetails() == null)
             return;
         modelMapper.map(sd.getAdditionalDetails(), cs);
+        cs.setReceivingForwarderParty(mapPartyObject(sd.getAdditionalDetails().getReceivingForwarder()));
+        cs.setSendingForwarderParty(mapPartyObject(sd.getAdditionalDetails().getSendingForwarder()));
+        cs.setTraderOrSupplierParty(mapPartyObject(sd.getAdditionalDetails().getTraderOrSupplier()));
+    }
+
+    private void mapAdditionalDetailsReverse(ShipmentDetails sd, CustomShipmentRequest cs) {
+        if(sd.getAdditionalDetails() == null)
+            return;
+        AdditionalDetails additionalDetails = modelMapper.map(cs, AdditionalDetails.class);
+        additionalDetails.setReceivingForwarder(mapPartyObject(cs.getReceivingForwarderParty()));
+        additionalDetails.setSendingForwarder(mapPartyObject(cs.getSendingForwarderParty()));
+        additionalDetails.setTraderOrSupplier(mapPartyObject(cs.getTraderOrSupplierParty()));
+        sd.setAdditionalDetails(additionalDetails);
     }
 
     private <T,P> List<P> convertToList(final List<T> lst, Class<P> clazz) {

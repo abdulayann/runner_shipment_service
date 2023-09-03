@@ -189,7 +189,9 @@ public class ShipmentController {
             ShipmentDetails shipmentDetails = shipmentSync.reverseSync(request);
             return ResponseHelper.buildSuccessResponse();
         } catch (Exception e){
-
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : "Error syncing provided Shipment";
+            log.error(responseMsg, e);
         }
         return ResponseHelper.buildFailedResponse(responseMsg);
     }
