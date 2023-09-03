@@ -144,6 +144,8 @@ public class V1ServiceUtil {
                 .ActiveClient(Boolean.TRUE)
                 .DefaultAddressSiteIdentifier(PartiesConstants.SITE)
                 .Receivables(Boolean.TRUE)
+                .Consigner(Boolean.TRUE)
+                .Consignee(Boolean.TRUE)
                 .build();
     }
 
