@@ -125,8 +125,10 @@ public class V1ServiceUtil {
                 .Address1((String) orgData.get(PartiesConstants.ADDRESS1))
                 .Address2((String) orgData.get(PartiesConstants.ADDRESS2))
                 .Addresses(List.of(CreateBookingModuleInV1.BookingEntity.OrgDetail.OrgDetailAddress.builder()
+                        .CompanyName((String) orgData.get(PartiesConstants.FULLNAME))
                         .AddressShortCode((String) addressData.get("AddressShortCode"))
                         .Address1((String) orgData.get(PartiesConstants.ADDRESS1))
+                        .SiteIdentifier((String) addressData.get(PartiesConstants.SITE_IDENTIFIER))
                         .Country(addressData.containsKey("Country") ? (String) addressData.get("Country") :
                                 (String) orgData.get(PartiesConstants.COUNTRY)).build()))
                 .Country((String) orgData.get(PartiesConstants.COUNTRY))
