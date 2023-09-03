@@ -1,21 +1,39 @@
 package com.dpw.runner.shipment.services.syncing.impl;
 
+import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.Ownership;
 import com.dpw.runner.shipment.services.syncing.Entity.*;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
+import com.dpw.runner.shipment.services.utils.V1AuthHelper;
+import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
+import org.springframework.retry.support.RetryTemplate;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Component
+@Slf4j
 public class ShipmentSync implements IShipmentSync {
 
     @Autowired
     ModelMapper modelMapper;
+    @Autowired
+    RestTemplate restTemplate;
+    private RetryTemplate retryTemplate = RetryTemplate.builder()
+            .maxAttempts(3)
+            .fixedBackoff(1000)
+            .retryOn(Exception.class)
+            .build();;
+
+    @Value("${v1service.url.base}${v1service.url.shipmentSync}")
+    private String SHIPMENT_V1_SYNC_URL;
 
     @Override
     public CustomShipmentRequest sync(ShipmentDetails sd) {
@@ -67,6 +85,14 @@ public class ShipmentSync implements IShipmentSync {
         // PickupAddressJSON and DeliveryAddressJSON (could be renamed for easy mapping)
 
         cs.setBookingCarriages(convertToList(sd.getBookingCarriagesList(), BookingCarriageRequestV2.class));
+
+        CustomShipmentRequest finalCs = cs;
+        retryTemplate.execute(ctx -> {
+            log.info("Current retry : {}", ctx.getRetryCount());
+            HttpEntity<V1DataResponse> entity = new HttpEntity(finalCs, V1AuthHelper.getHeaders());
+            var response = this.restTemplate.postForEntity(this.SHIPMENT_V1_SYNC_URL, entity, V1DataResponse.class, new Object[0]);
+            return response;
+        });
 
         return cs;
     }
