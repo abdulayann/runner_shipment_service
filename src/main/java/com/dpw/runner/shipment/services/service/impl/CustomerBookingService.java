@@ -322,7 +322,7 @@ public class CustomerBookingService implements ICustomerBookingService {
     private List<LoadRequest> createLoad(final CustomerBooking customerBooking) {
         List<LoadRequest> loadRequests = new ArrayList<>();
         //Container -> FCL
-        if (customerBooking.getCargoType().equals("FCL")) {
+        if (customerBooking.getCargoType() != null && customerBooking.getCargoType().equals("FCL")) {
             List<Containers> containers = customerBooking.getContainersList();
             containers.forEach(container -> {
                 loadRequests.add(LoadRequest.builder()
@@ -342,7 +342,7 @@ public class CustomerBookingService implements ICustomerBookingService {
             });
         }
 
-        if (customerBooking.getCargoType().equals("LCL") || customerBooking.getCargoType().equals("LSE")) {
+        if (customerBooking.getCargoType() != null && (customerBooking.getCargoType().equals("LCL") || customerBooking.getCargoType().equals("LSE"))) {
             List<Packing> packings = customerBooking.getPackingList();
             packings.forEach(packing -> {
                 loadRequests.add(LoadRequest.builder()
@@ -366,7 +366,7 @@ public class CustomerBookingService implements ICustomerBookingService {
     }
 
     private DimensionDTO getDimension(CustomerBooking booking, Packing packing) {
-        if (booking.getCargoType().equals("LCL") || booking.getCargoType().equals("LSE"))
+        if (booking.getCargoType() != null && (booking.getCargoType().equals("LCL") || booking.getCargoType().equals("LSE")))
             return DimensionDTO.builder()
                     .length(packing.getLength())
                     .width(packing.getWidth())
@@ -863,7 +863,7 @@ public class CustomerBookingService implements ICustomerBookingService {
         Map<String, Object> addressData = new HashMap<>();
         CRPRetrieveResponse.CRPAddressDetails crpAddressDetails = new CRPRetrieveResponse.CRPAddressDetails();
         if(response.getCompanyOfficeDetails() != null) {
-            List<CRPRetrieveResponse.CRPAddressDetails> crpAddressDetailsList = response.getCompanyOfficeDetails().stream().filter(x -> x.getOfficeReference().equals(addressCode)).collect(Collectors.toList());
+            List<CRPRetrieveResponse.CRPAddressDetails> crpAddressDetailsList = response.getCompanyOfficeDetails().stream().filter(x -> Objects.equals(x.getOfficeReference(), addressCode)).collect(Collectors.toList());
             if (!crpAddressDetailsList.isEmpty())
                 crpAddressDetails = crpAddressDetailsList.get(0);
         }
@@ -871,10 +871,10 @@ public class CustomerBookingService implements ICustomerBookingService {
         String fusionSiteIdentifier = null;
         String billableFlag = "";
         if(response.getCompanyCodeIssuerDetails() != null) {
-            List<CRPRetrieveResponse.CompanyCodeIssuerDetails> companyCodeIssuerDetailsList = response.getCompanyCodeIssuerDetails().stream().filter(x -> x.getIdentifierValue().equals(addressCode)).collect(Collectors.toList());
+            List<CRPRetrieveResponse.CompanyCodeIssuerDetails> companyCodeIssuerDetailsList = response.getCompanyCodeIssuerDetails().stream().filter(x -> Objects.equals(x.getIdentifierValue(), addressCode)).collect(Collectors.toList());
             if (!companyCodeIssuerDetailsList.isEmpty()) {
-                var fusionSiteIdList = companyCodeIssuerDetailsList.stream().filter(x -> x.getIdentifierCodeType().equals(PartiesConstants.FUSION_SITE_ID)).collect(Collectors.toList());
-                var billableFlagList = companyCodeIssuerDetailsList.stream().filter(x -> x.getIdentifierCodeType().equals(PartiesConstants.BILLABLE_FLAG)).collect(Collectors.toList());
+                var fusionSiteIdList = companyCodeIssuerDetailsList.stream().filter(x -> Objects.equals(x.getIdentifierCodeType(), PartiesConstants.FUSION_SITE_ID)).collect(Collectors.toList());
+                var billableFlagList = companyCodeIssuerDetailsList.stream().filter(x -> Objects.equals(x.getIdentifierCodeType(), PartiesConstants.BILLABLE_FLAG)).collect(Collectors.toList());
                 if (!fusionSiteIdList.isEmpty())
                     fusionSiteIdentifier = fusionSiteIdList.get(0).getIdentifierCode();
                 if (!billableFlagList.isEmpty())
@@ -965,7 +965,7 @@ public class CustomerBookingService implements ICustomerBookingService {
     }
 
     private void npmContractUpdate(CustomerBooking customerBooking, Boolean isAlteration, CustomerBooking oldEntity) {
-        if (customerBooking.getTransportType().equals(Constants.TRANSPORT_MODE_SEA) && customerBooking.getCargoType().equals(Constants.CARGO_TYPE_FCL) &&
+        if (customerBooking.getTransportType() != null && customerBooking.getTransportType().equals(Constants.TRANSPORT_MODE_SEA) && customerBooking.getCargoType() != null && customerBooking.getCargoType().equals(Constants.CARGO_TYPE_FCL) &&
                 StringUtility.isNotEmpty(customerBooking.getContractId()) && customerBooking.getBookingCharges() != null && !customerBooking.getBookingCharges().isEmpty()) {
 
             List<LoadInfoRequest> loadInfoRequestList = containersListForLoad(customerBooking, oldEntity, customerBooking.getBookingStatus() == BookingStatus.CANCELLED);
@@ -1037,9 +1037,9 @@ public class CustomerBookingService implements ICustomerBookingService {
 
     private void npmContractUpdatePaylaod(CustomerBooking customerBooking, Boolean isAlteration, List<LoadInfoRequest> loadInfoRequestList) {
         String contractStatus = null;
-        if (customerBooking.getContractStatus().equals(CustomerBookingConstants.SINGLE_USAGE) && customerBooking.getBookingStatus() == BookingStatus.CANCELLED) {
+        if (customerBooking.getContractStatus() != null && customerBooking.getContractStatus().equals(CustomerBookingConstants.SINGLE_USAGE) && customerBooking.getBookingStatus() == BookingStatus.CANCELLED) {
             contractStatus = CustomerBookingConstants.ENABLED;
-        } else if (customerBooking.getContractStatus().equals(CustomerBookingConstants.SINGLE_USAGE)) {
+        } else if (customerBooking.getContractStatus() != null && customerBooking.getContractStatus().equals(CustomerBookingConstants.SINGLE_USAGE)) {
             contractStatus = CustomerBookingConstants.DISABLED;
         }
 
