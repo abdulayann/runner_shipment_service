@@ -147,7 +147,8 @@ public class CustomerBookingService implements ICustomerBookingService {
              * Platform service integration
              * Criteria for update call to platform service : check flag IsPlatformBookingCreated, if true then update otherwise dont update
              */
-            if (!Objects.isNull(customerBooking.getBusinessCode()) && !Objects.isNull(customerBooking.getBookingCharges()) && !customerBooking.getBookingCharges().isEmpty()) {
+            if (!Objects.isNull(customerBooking.getBusinessCode()) && Objects.equals(customerBooking.getBookingStatus(), BookingStatus.PENDING_FOR_CREDIT_LIMIT)
+                    && !Objects.isNull(customerBooking.getBookingCharges()) && !customerBooking.getBookingCharges().isEmpty()) {
                 bookingIntegrationsUtility.createBookingInPlatform(customerBooking);
             }
         } catch (Exception e) {
@@ -251,8 +252,8 @@ public class CustomerBookingService implements ICustomerBookingService {
             log.error(e.getMessage());
             throw new RuntimeException(e);
         }
-        if (!Objects.isNull(customerBooking.getBusinessCode()) && !customerBooking.getBookingCharges().isEmpty()
-                && ! isCreatedInPlatform) {
+        if (!Objects.isNull(customerBooking.getBusinessCode()) && Objects.equals(customerBooking.getBookingStatus(), BookingStatus.PENDING_FOR_CREDIT_LIMIT)
+                && !customerBooking.getBookingCharges().isEmpty() && !isCreatedInPlatform ) {
             bookingIntegrationsUtility.createBookingInPlatform(customerBooking);
         } else if (isCreatedInPlatform) {
             bookingIntegrationsUtility.updateBookingInPlatform(customerBooking);
