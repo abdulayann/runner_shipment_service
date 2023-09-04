@@ -775,13 +775,13 @@ public class CustomerBookingService implements ICustomerBookingService {
             String addressCode = request.getCustomer().getAddressCode();
             transformOrgAndAddressPayload(request.getCustomer(), addressCode, orgCode);
         }
-        if (request.isConsignorFreeText() && request.getConsignor() != null) {
+        if ( (Objects.isNull(request.getIsConsignorFreeText()) || request.getIsConsignorFreeText()) && request.getConsignor() != null) {
             transformOrgAndAddressToRawData(request.getConsignor());
         }
-        if (request.isConsigneeFreeText() && request.getConsignee() != null) {
+        if ( (Objects.isNull(request.getIsConsigneeFreeText()) || request.getIsConsigneeFreeText()) && request.getConsignee() != null) {
             transformOrgAndAddressToRawData(request.getConsignee());
         }
-        if (request.isNotifyPartyFreeText() && request.getNotifyParty() != null) {
+        if ((Objects.isNull(request.getIsNotifyPartyFreeText()) || request.getIsNotifyPartyFreeText()) && request.getNotifyParty() != null) {
             transformOrgAndAddressToRawData(request.getNotifyParty());
         }
 

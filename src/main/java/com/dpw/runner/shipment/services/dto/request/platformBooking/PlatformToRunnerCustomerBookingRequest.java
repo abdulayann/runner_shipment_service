@@ -26,13 +26,13 @@ public class PlatformToRunnerCustomerBookingRequest implements IRunnerRequest {
     @JsonProperty("status")
     private BookingStatus bookingStatus;
     private PartiesRequest customer;
-    private boolean isCustomerFreeText;
+    private Boolean isCustomerFreeText;
     private PartiesRequest consignor;
-    private boolean isConsignorFreeText;
+    private Boolean isConsignorFreeText;
     private PartiesRequest consignee;
-    private boolean isConsigneeFreeText;
+    private Boolean isConsigneeFreeText;
     private PartiesRequest notifyParty;
-    private boolean isNotifyPartyFreeText;
+    private Boolean isNotifyPartyFreeText;
     private String customerEmail;
     private String bookingNumber;
     private LocalDateTime bookingDate;
