@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.dao.impl;
 
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.enums.LifecycleHooks;
@@ -10,6 +11,7 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.IContainerRepository;
 import com.dpw.runner.shipment.services.validator.ValidatorUtility;
+import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
@@ -19,6 +21,11 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
 
 import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
+import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 
 
 @Repository
@@ -76,22 +83,58 @@ public class ContainerDao implements IContainerDao {
         String responseMsg;
         List<Containers> responseContainers = new ArrayList<>();
         try {
-            // TODO- Handle Transactions here
+            ListCommonRequest listCommonRequest = constructListCommonRequest("bookingId", bookingId, "=");
+            Pair<Specification<Containers>, Pageable> pair = fetchData(listCommonRequest, Containers.class);
+            Page<Containers> containers = findAll(pair.getLeft(), pair.getRight());
+            Map<Long, Containers> hashMap = containers.stream()
+                    .collect(Collectors.toMap(Containers::getId, Function.identity()));
+            List<Containers> containersRequestList = new ArrayList<>();
             if (containersList != null && containersList.size() != 0) {
-                List<Containers> containerList = new ArrayList<>(containersList);
-                if(bookingId != null) {
-                    for (Containers containers: containerList) {
-                        containers.setBookingId(bookingId);
+                for (Containers request : containersList) {
+                    Long id = request.getId();
+                    if (id != null) {
+                        hashMap.remove(id);
                     }
+                    containersRequestList.add(request);
                 }
-                responseContainers = saveAll(containerList);
+                responseContainers = saveEntityFromBooking(containersRequestList, bookingId);
             }
+            deleteContainers(hashMap);
             return responseContainers;
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
             log.error(responseMsg, e);
             throw new Exception(e);
+        }
+    }
+
+    public List<Containers> saveEntityFromBooking(List<Containers> containers, Long bookingId) {
+        List<Containers> res = new ArrayList<>();
+        for (Containers req : containers) {
+            if (req.getId() != null) {
+                long id = req.getId();
+                Optional<Containers> oldEntity = findById(id);
+                if (!oldEntity.isPresent()) {
+                    log.debug("Containers is null for Id {}", req.getId());
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
+            }
+            req.setBookingId(bookingId);
+            req = save(req);
+            res.add(req);
+        }
+        return res;
+    }
+
+    private void deleteContainers(Map<Long, Containers> hashMap) {
+        String responseMsg;
+        try {
+            hashMap.values().forEach(this::delete);
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_DELETE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
         }
     }
 
