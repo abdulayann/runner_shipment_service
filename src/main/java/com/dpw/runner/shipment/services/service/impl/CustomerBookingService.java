@@ -1096,26 +1096,38 @@ public class CustomerBookingService implements ICustomerBookingService {
 
     private void addAllMasterDatas(CustomerBooking customerBooking, CustomerBookingResponse customerBookingResponse) {
         customerBookingResponse.setMasterData(masterDataUtils.addMasterData(customerBookingResponse, CustomerBooking.class));
-        customerBookingResponse.getCarrierDetails().setMasterData(masterDataUtils.addMasterData(customerBookingResponse.getCarrierDetails(), CarrierDetails.class));
-        customerBookingResponse.getRoutingList().forEach(r -> r.setMasterData(masterDataUtils.addMasterData(r, Routings.class)));
-        customerBookingResponse.getContainersList().forEach(c -> c.setMasterData(masterDataUtils.addMasterData(c, Containers.class)));
-        customerBookingResponse.getPackingList().forEach(c -> c.setMasterData(masterDataUtils.addMasterData(c, Packing.class)));
+        if (!Objects.isNull(customerBookingResponse.getCarrierDetails()))
+            customerBookingResponse.getCarrierDetails().setMasterData(masterDataUtils.addMasterData(customerBookingResponse.getCarrierDetails(), CarrierDetails.class));
+        if (!Objects.isNull(customerBookingResponse.getRoutingList()))
+            customerBookingResponse.getRoutingList().forEach(r -> r.setMasterData(masterDataUtils.addMasterData(r, Routings.class)));
+        if (!Objects.isNull(customerBookingResponse.getContainersList()))
+            customerBookingResponse.getContainersList().forEach(c -> c.setMasterData(masterDataUtils.addMasterData(c, Containers.class)));
+        if (!Objects.isNull(customerBookingResponse.getPackingList()))
+            customerBookingResponse.getPackingList().forEach(c -> c.setMasterData(masterDataUtils.addMasterData(c, Packing.class)));
     }
 
     private void addAllUnlocationDatas(CustomerBooking customerBooking, CustomerBookingResponse customerBookingResponse) {
-        customerBookingResponse.getCarrierDetails().setUnlocationData(masterDataUtils.addUnlocationData(customerBookingResponse.getCarrierDetails(), CarrierDetails.class, EntityTransferConstants.LOCATION_SERVICE_GUID));
-        customerBookingResponse.getRoutingList().forEach(r -> r.setUnlocationData(masterDataUtils.addUnlocationData(r, Routings.class, EntityTransferConstants.LOCATION_SERVICE_GUID)));
+        if (!Objects.isNull(customerBookingResponse.getCarrierDetails()))
+            customerBookingResponse.getCarrierDetails().setUnlocationData(masterDataUtils.addUnlocationData(customerBookingResponse.getCarrierDetails(), CarrierDetails.class, EntityTransferConstants.LOCATION_SERVICE_GUID));
+        if (!Objects.isNull(customerBookingResponse.getRoutingList()))
+            customerBookingResponse.getRoutingList().forEach(r -> r.setUnlocationData(masterDataUtils.addUnlocationData(r, Routings.class, EntityTransferConstants.LOCATION_SERVICE_GUID)));
     }
 
     private void addDedicatedMasterData(CustomerBooking customerBooking, CustomerBookingResponse customerBookingResponse) {
-        customerBookingResponse.getCarrierDetails().setCarrierMasterData(masterDataUtils.carrierMasterData(customerBookingResponse.getCarrierDetails(), CarrierDetails.class));
-        customerBookingResponse.getRoutingList().forEach(r -> r.setCarrierMasterData(masterDataUtils.carrierMasterData(r, Routings.class)));
-        customerBookingResponse.getContainersList().forEach(r -> r.setCommodityTypeData(masterDataUtils.commodityMasterData(r, Containers.class)));
-        customerBookingResponse.getPackingList().forEach(r -> r.setCommodityTypeData(masterDataUtils.commodityMasterData(r, Packing.class)));
-        customerBookingResponse.getContainersList().forEach(r -> r.setContainerCodeData(masterDataUtils.containerCodeMasterData(r, Containers.class)));
-        customerBookingResponse.getCarrierDetails().setVesselsMasterData(masterDataUtils.vesselsMasterData(customerBookingResponse.getCarrierDetails(), CarrierDetails.class));
-        customerBookingResponse.getBookingCharges().forEach(c -> c.setChargeTypeMasterData(masterDataUtils.chargeTypeMasterData(c, BookingCharges.class)));
+        if (!Objects.isNull(customerBookingResponse.getCarrierDetails())) {
+            customerBookingResponse.getCarrierDetails().setCarrierMasterData(masterDataUtils.carrierMasterData(customerBookingResponse.getCarrierDetails(), CarrierDetails.class));
+            customerBookingResponse.getCarrierDetails().setVesselsMasterData(masterDataUtils.vesselsMasterData(customerBookingResponse.getCarrierDetails(), CarrierDetails.class));
+        }
+        if (!Objects.isNull(customerBookingResponse.getContainersList())) {
+            customerBookingResponse.getContainersList().forEach(r -> r.setCommodityTypeData(masterDataUtils.commodityMasterData(r, Containers.class)));
+            customerBookingResponse.getContainersList().forEach(r -> r.setContainerCodeData(masterDataUtils.containerCodeMasterData(r, Containers.class)));
+        }
+        if (!Objects.isNull(customerBookingResponse.getRoutingList()))
+            customerBookingResponse.getRoutingList().forEach(r -> r.setCarrierMasterData(masterDataUtils.carrierMasterData(r, Routings.class)));
+        if (!Objects.isNull(customerBookingResponse.getPackingList()))
+            customerBookingResponse.getPackingList().forEach(r -> r.setCommodityTypeData(masterDataUtils.commodityMasterData(r, Packing.class)));
+        if (!Objects.isNull(customerBookingResponse.getBookingCharges()))
+            customerBookingResponse.getBookingCharges().forEach(c -> c.setChargeTypeMasterData(masterDataUtils.chargeTypeMasterData(c, BookingCharges.class)));
     }
-
 
 }
