@@ -13,6 +13,7 @@ import org.springframework.context.support.DefaultMessageSourceResolvable;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -75,5 +76,13 @@ public class CustomExceptionHandler extends ResponseEntityExceptionHandler {
         log.error("Return Response with data {}", errors.toString());
 
         return (ResponseEntity<Object>) ResponseHelper.buildFailedResponse(Constants.Validation_Exception, errors);
+    }
+
+    @Override
+    public final ResponseEntity<Object> handleHttpMessageNotReadable(HttpMessageNotReadableException ex, HttpHeaders headers,
+                                                                     HttpStatus status, WebRequest request) {
+        RunnerResponse runnerResponse =
+                new RunnerResponse(false, new ApiError(HttpStatus.BAD_REQUEST, ex.getLocalizedMessage()));
+        return new ResponseEntity(runnerResponse, HttpStatus.BAD_REQUEST);
     }
 }
