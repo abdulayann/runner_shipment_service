@@ -31,6 +31,9 @@ public class MasterDataUtils{
     private JsonHelper jsonHelper;
 
     public Map<String, String> carrierMasterData (IRunnerResponse entityPayload, Class baseClass) {
+        if (Objects.isNull(entityPayload))
+            return null;
+
         Map<String, String> fieldNameCarrierDataMap = new HashMap<>();
         Map<String, String> keyCarrierDataMap = new HashMap<>();
         Map<String, String> fieldNameKeyMap = new HashMap<>();
@@ -78,6 +81,9 @@ public class MasterDataUtils{
     }
 
     public Map<String, String> currencyMasterData (BaseEntity entityPayload, Class baseClass) {
+        if (Objects.isNull(entityPayload))
+            return null;
+
         Map<String, String> fieldNameCurrencyDataMap = new HashMap<>();
         Map<String, String> keyCurrencyDataMap = new HashMap<>();
         Map<String, String> fieldNameKeyMap = new HashMap<>();
@@ -125,6 +131,9 @@ public class MasterDataUtils{
     }
 
     public Map<String, String> addMasterData (IRunnerResponse entityPayload, Class mainClass) {
+        if (Objects.isNull(entityPayload))
+            return null;
+
         List<MasterListRequest> requests = new ArrayList<>();
         Map<String, String> fieldNameKeyMap = new HashMap<>();
         Map<String, String> keyMasterDataMap = new HashMap<>();
@@ -174,6 +183,9 @@ public class MasterDataUtils{
     }
 
     public Map<String, String> addUnlocationData (IRunnerResponse entityPayload, Class baseClass, String onField) {
+        if (Objects.isNull(entityPayload))
+            return null;
+
         Map<String, String> fieldNameUnlocationDataMap = new HashMap<>();
         Map<String, String> keyUnlocationDataMap = new HashMap<>();
         Map<String, String> fieldNameKeyMap = new HashMap<>();
@@ -218,6 +230,9 @@ public class MasterDataUtils{
     }
 
     public Map<String, String> commodityMasterData (IRunnerResponse entityPayload, Class baseClass) {
+        if (Objects.isNull(entityPayload))
+            return null;
+
         Map<String, String> fieldNameCommodityDataMap = new HashMap<>();
         Map<String, String> keyCommodityDataMap = new HashMap<>();
         Map<String, String> fieldNameKeyMap = new HashMap<>();
@@ -265,6 +280,9 @@ public class MasterDataUtils{
     }
 
     public Map<String, String> containerCodeMasterData (IRunnerResponse entityPayload, Class baseClass) {
+        if (Objects.isNull(entityPayload))
+            return null;
+
         Map<String, String> fieldNameContainerCodeDataMap = new HashMap<>();
         Map<String, String> keyContainerCodeDataMap = new HashMap<>();
         Map<String, String> fieldNameKeyMap = new HashMap<>();
@@ -312,6 +330,9 @@ public class MasterDataUtils{
     }
 
     public Map<String, String> vesselsMasterData (IRunnerResponse entityPayload, Class baseClass) {
+        if (Objects.isNull(entityPayload))
+            return null;
+
         Map<String, String> fieldNameVesselDataMap = new HashMap<>();
         Map<String, String> keyVesselDataMap = new HashMap<>();
         Map<String, String> fieldNameKeyMap = new HashMap<>();
@@ -359,6 +380,9 @@ public class MasterDataUtils{
     }
 
     public Map<String, String> chargeTypeMasterData (IRunnerResponse entityPayload, Class baseClass) {
+        if (Objects.isNull(entityPayload))
+            return null;
+
         Map<String, String> fieldNameChargeTypeDataMap = new HashMap<>();
         Map<String, String> keyChargeTypeDataMap = new HashMap<>();
         Map<String, String> fieldNameKeyMap = new HashMap<>();
@@ -406,6 +430,8 @@ public class MasterDataUtils{
     }
 
     public Map<String, EntityTransferChargeType> getChargeTypes(List<String> chargeCode) {
+        if (Objects.isNull(chargeCode) || chargeCode.isEmpty())
+            return null;
         List<Object> criteria = new ArrayList<>();
         Map<String, EntityTransferChargeType> response = new HashMap<>();
         List<Object> field = new ArrayList<>(List.of(EntityTransferConstants.CHARGE_CODE));

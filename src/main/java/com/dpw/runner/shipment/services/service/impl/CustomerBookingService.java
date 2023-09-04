@@ -150,7 +150,7 @@ public class CustomerBookingService implements ICustomerBookingService {
              * Criteria for update call to platform service : check flag IsPlatformBookingCreated, if true then update otherwise dont update
              */
             try {
-                if (!Objects.isNull(customerBooking.getBusinessCode()) && !customerBooking.getBookingCharges().isEmpty()) {
+                if (!Objects.isNull(customerBooking.getBusinessCode()) && !Objects.isNull(customerBooking.getBookingCharges()) && !customerBooking.getBookingCharges().isEmpty()) {
                     platformServiceAdapter.createAtPlatform(createPlatformCreateRequest(customerBooking));
                     customerBooking.setIsPlatformBookingCreated(true);
                     customerBookingDao.save(customerBooking);
