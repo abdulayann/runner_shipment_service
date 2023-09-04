@@ -5,6 +5,6 @@ import lombok.Data;
 @Data
 public class NoteRequestV2 {
     private String InsertUserDisplayName;
-    private Boolean Isprivate;
+    private Boolean IsPublic;
     private String Text;
 }

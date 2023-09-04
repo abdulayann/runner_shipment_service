@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.syncing.Entity;
 
 import lombok.Data;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 
@@ -20,22 +21,22 @@ public class PickupDeliveryDetailsRequestV2 {
     private LocalDateTime FclAvailableDate;
     private String InterimReceipt;
     private LocalDateTime PickupOrDelivery;
-    private Long LabourCharge; // int64
+    private BigDecimal LabourCharge;
     private String LabourChargeUnit;
-    private LocalTime LabourLocalTime;
+    private LocalTime LabourDuration;
     private LocalDateTime LoadedTruckGateOutDate;
     private LocalDateTime PortTransportAdvised;
     private LocalDateTime RequiredBy;
-    private Long ShipmentId; // int64
+    private Long ShipmentId;
     private String ShipperRef;
     private PartyRequestV2 SourceDetail;
-    private Long StorageCharge; // int64
+    private BigDecimal StorageCharge;
     private String StorageChargeUnit;
-    private LocalTime StorageChargeLocalTime;
+    private LocalTime StorageChargeDuration;
     private PartyRequestV2 TransporterDetail;
-    private LocalTime TruckWeightLocalTime;
+    private LocalTime TruckWeightDuration;
     private String TruckWaitTimeChargeUnit;
-    private Long TruckWaitTimeCharge; // int64
+    private BigDecimal TruckWaitTimeCharge;
 
     private String Type;
     private String UcrReference;
