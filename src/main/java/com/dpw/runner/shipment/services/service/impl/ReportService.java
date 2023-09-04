@@ -3,25 +3,27 @@ package com.dpw.runner.shipment.services.service.impl;
 import com.dpw.runner.shipment.services.DocumentService.DocumentService;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.Models.DocPages;
+import com.dpw.runner.shipment.services.ReportingService.Models.DocUploadRequest;
 import com.dpw.runner.shipment.services.ReportingService.Reports.HblReport;
 import com.dpw.runner.shipment.services.ReportingService.ReportsFactory;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.EventConstants;
 import com.dpw.runner.shipment.services.commons.enums.MawbPrintFor;
+import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
+import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.dao.impl.HblDao;
 import com.dpw.runner.shipment.services.dao.impl.ShipmentSettingsDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IEventDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IHblTermsConditionTemplateDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
+import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.request.CustomAutoEventRequest;
 import com.dpw.runner.shipment.services.dto.request.ReportRequest;
-import com.dpw.runner.shipment.services.entity.HblTermsConditionTemplate;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.dto.request.UploadDocumentRequest;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
 import com.dpw.runner.shipment.services.entity.enums.TypeOfHblPrint;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.service.interfaces.IFileRepoService;
 import com.dpw.runner.shipment.services.service.interfaces.IReportService;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
@@ -30,7 +32,10 @@ import com.itextpdf.text.Image;
 import com.itextpdf.text.Rectangle;
 import com.itextpdf.text.pdf.*;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.IOUtils;
+import org.apache.tomcat.util.http.fileupload.FileItem;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.stereotype.Service;
 
 import java.io.*;
@@ -67,6 +72,15 @@ public class ReportService implements IReportService {
 
     @Autowired
     private IEventDao eventDao;
+
+    @Autowired
+    private IHblDao hblDao;
+
+    @Autowired
+    private IFileRepoDao fileRepoDao;
+
+    @Autowired
+    private IFileRepoService fileRepoService;
 
     @Override
     public byte[] getDocumentData(ReportRequest reportRequest) throws DocumentException, IOException {
@@ -415,17 +429,17 @@ public class ReportService implements IReportService {
 
             if (pdfByteContent != null)
             {
-                //TODO - document upload
-//                DocUploadRequest docUploadRequest = new DocUploadRequest();
-//                docUploadRequest.EntityType = Texts.Forms.Membership.ModuleEntityType.Shipments;
-//                docUploadRequest.Id = Convert.ToInt64(ReportId);
-//                docUploadRequest.Type = Texts.Forms.Membership.DocumentKeys.ShipmentHouseBill;
-//                docUploadRequest.ReportId = ReportId;
-//                CreateTestRecordsResponse res = AddHouseBillToRepo(docUploadRequest, printType, pdfByteContent);
-//                if (res.Status == false)
-//                {
-//                    throw new ValidationException("Unable to upload doc");
-//                }
+                DocUploadRequest docUploadRequest = new DocUploadRequest();
+                docUploadRequest.setEntityType(Constants.Shipments);
+                docUploadRequest.setId(Long.parseLong(reportRequest.getReportId()));
+                docUploadRequest.setType(ReportConstants.SHIPMENT_HOUSE_BILL);
+                docUploadRequest.setReportId(reportRequest.getReportId());
+                try {
+                    AddHouseBillToRepo(docUploadRequest, reportRequest.getPrintType(), pdfByteContent, tenantSettingsRow);
+                } catch (Exception e) {
+                    log.error(e.getMessage());
+                    throw new ValidationException("Unable to upload doc");
+                }
             }
             if (reportRequest.getPrintType().equalsIgnoreCase(TypeOfHblPrint.Draft.name()))
             {
@@ -453,17 +467,17 @@ public class ReportService implements IReportService {
         }
         if (reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.SEAWAY_BILL) && pdfByteContent != null)
         {
-            //TODO - document upload
-//            DocUploadRequest docUploadRequest = new DocUploadRequest();
-//            docUploadRequest.EntityType = Texts.Forms.Membership.ModuleEntityType.Shipments;
-//            docUploadRequest.Id = Convert.ToInt64(ReportId);
-//            docUploadRequest.Type = Texts.Forms.Membership.DocumentKeys.SeawayBill;
-//            docUploadRequest.ReportId = ReportId;
-//            CreateTestRecordsResponse res = AddHouseBillToRepo(docUploadRequest, "Draft".toUpperCase(), pdfByteContent);
-//            if (res.Status == false)
-//            {
-//                throw new ValidationException("Unable to upload doc");
-//            }
+            DocUploadRequest docUploadRequest = new DocUploadRequest();
+            docUploadRequest.setEntityType(Constants.Shipments);
+            docUploadRequest.setId(Long.parseLong(reportRequest.getReportId()));
+            docUploadRequest.setType(ReportConstants.SEAWAY_BILL);
+            docUploadRequest.setReportId(reportRequest.getReportId());
+            try {
+                AddHouseBillToRepo(docUploadRequest, TypeOfHblPrint.Draft.name().toUpperCase(), pdfByteContent, tenantSettingsRow);
+            } catch (Exception e) {
+                log.error(e.getMessage());
+                throw new ValidationException("Unable to upload doc");
+            }
             createAutoEvent(reportRequest.getReportId(), EventConstants.MASTER_SEAWAY_BILL_OR_NOT, tenantSettingsRow);
         }
         if (reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.SHIPPING_INSTRUCTION) && pdfByteContent != null)
@@ -1006,6 +1020,43 @@ public class ReportService implements IReportService {
             eventReq.entityType = Constants.Shipments;
             eventReq.eventCode = eventCode;
             eventDao.autoGenerateEvents(eventReq);
+        }
+    }
+
+    public void AddHouseBillToRepo(DocUploadRequest uploadRequest, String printType, byte[] document, ShipmentSettingsDetails shipmentSettingsDetails) throws IOException {
+        List<Hbl> blObjectList = hblDao.findByShipmentId(Long.parseLong(uploadRequest.getReportId()));
+        Hbl blObject = blObjectList.get(0);
+        String fileVersion = null;
+        if(printType.equalsIgnoreCase(TypeOfHblPrint.Original.name())){
+            fileVersion =  blObject.getHblData().getOriginalSeq().toString();
+            blObject.getHblData().setOriginalSeq(blObject.getHblData().getOriginalSeq() + 1);
+        }else{
+            fileVersion = blObject.getHblData().getVersion().toString();
+            blObject.getHblData().setVersion(blObject.getHblData().getVersion()+ 1);
+        }
+        String filename = uploadRequest.getType() + "_" + printType +"_"+ uploadRequest.getId()+ "_" + fileVersion + ".pdf";
+        ListCommonRequest listCommonRequest = CommonUtils.andCriteria("entityType", uploadRequest.getEntityType(), "=", null);
+        CommonUtils.andCriteria("entityId", uploadRequest.getId(), "=", listCommonRequest);
+        CommonUtils.andCriteria("fileName", filename, "=", listCommonRequest);
+        List<FileRepo> fileRepos = fileRepoDao.findByList(listCommonRequest);
+        if(fileRepos != null && fileRepos.size() >0) {
+            return;
+        }
+
+        UploadDocumentRequest uploadDocumentRequest = new UploadDocumentRequest();
+        uploadDocumentRequest.setDocType(uploadRequest.getType());
+        uploadDocumentRequest.setEntityId(uploadRequest.getId());
+        uploadDocumentRequest.setEntityType(uploadRequest.getEntityType());
+        uploadDocumentRequest.setFileResource(CommonUtils.getByteResource(new ByteArrayInputStream(document), filename));
+
+        Optional<ShipmentDetails> shipmentsRow = shipmentDao.findById(uploadRequest.getId());
+        ShipmentDetails shipmentDetails = null;
+        if(shipmentsRow.isPresent()) {
+            shipmentDetails = shipmentsRow.get();
+        }
+
+        if(shipmentDetails.getAdditionalDetails().getOriginal() >= 1) {
+            createAutoEvent(uploadRequest.getReportId(), EventConstants.GENERATE_BL_EVENT_EXCLUSIVE_OF_DRAFT, shipmentSettingsDetails);
         }
     }
 }

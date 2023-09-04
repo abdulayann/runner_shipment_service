@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.dto.response.TemplateUploadResponse;
 import com.dpw.runner.shipment.services.dto.response.UploadDocumentResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.*;
 import org.springframework.stereotype.Component;
 import org.springframework.util.LinkedMultiValueMap;
@@ -136,6 +137,26 @@ public class DocumentService {
 
         ResponseEntity<?> response = restTemplate.exchange(url, HttpMethod.POST, request, byte[].class);
 
+        return response;
+    }
+
+    public ResponseEntity<UploadDocumentResponse> PostDocument(ByteArrayResource file, String path) throws Exception{
+
+        String url = BaseUrl+UploadFileUrl;
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+        headers.add("x-api-key", xApikey);
+        headers.add("X-DPW-ApplicationId", applicationId);
+
+        MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+        body.set("organizationId", organizationId);
+        body.set("file", file);
+        body.set("path", path);
+
+        HttpEntity<Object> request = new HttpEntity<Object>(body, headers);
+
+        ResponseEntity<UploadDocumentResponse> response = restTemplate.postForEntity(url, request, UploadDocumentResponse.class);
         return response;
     }
 }
