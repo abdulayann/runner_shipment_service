@@ -25,6 +25,7 @@ import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -255,14 +256,39 @@ public class FileRepoService implements IFileRepoService {
         Long entityId = uploadDocumentRequest.getEntityId();
         String entityType = uploadDocumentRequest.getEntityType();
         List<IRunnerResponse> responseBodyList = new ArrayList<>();
-        for (var file: files) {
-            String filename = file.getOriginalFilename();
+        if(files != null) {
+            for (var file : files) {
+                String filename = file.getOriginalFilename();
+                Integer tenantId = UserContext.getUser().TenantId;
+                String path = tenantId.toString() + "/" + entityType + "/" + entityId.toString() + "/" + UUID.randomUUID().toString();
+                ResponseEntity<UploadDocumentResponse> responseBody;
+                try {
+                    responseBody = documentService.PostDocument(file, path);
+                    if (responseBody.getStatusCode() != HttpStatus.OK && responseBody.getStatusCode() != HttpStatus.CREATED) {
+                        String responseMsg = FileRepoConstants.UPLOAD_DOCUMENT_FAILED + " : " + responseBody.getBody();
+                        return ResponseHelper.buildFailedResponse(responseMsg);
+                    }
+                } catch (Exception e) {
+                    String responseMsg = e.getMessage() != null ? e.getMessage()
+                            : FileRepoConstants.UPLOAD_DOCUMENT_FAILED;
+                    log.error(responseMsg, e);
+                    return ResponseHelper.buildFailedResponse(responseMsg);
+                }
+                FileRepoRequest fileRepoRequest = FileRepoRequest.builder().fileName(filename).path(responseBody.getBody().getPath()).
+                        entityId(entityId).entityType(entityType).docType(uploadDocumentRequest.getDocType()).
+                        clientEnabled(uploadDocumentRequest.getClientEnabled()).eventCode(uploadDocumentRequest.getEventCode()).build();
+                ResponseEntity<RunnerResponse<EventsResponse>> response = (ResponseEntity<RunnerResponse<EventsResponse>>) create(CommonRequestModel.buildRequest(fileRepoRequest));
+                responseBodyList.add(response.getBody().getData());
+            }
+        } else if(uploadDocumentRequest.getFileResource() != null) {
+            ByteArrayResource file = uploadDocumentRequest.getFileResource();
+            String filename = file.getFilename();
             Integer tenantId = UserContext.getUser().TenantId;
             String path = tenantId.toString() + "/" + entityType + "/" + entityId.toString() + "/" + UUID.randomUUID().toString();
             ResponseEntity<UploadDocumentResponse> responseBody;
             try {
                 responseBody = documentService.PostDocument(file, path);
-                if(responseBody.getStatusCode() != HttpStatus.OK && responseBody.getStatusCode() != HttpStatus.CREATED) {
+                if (responseBody.getStatusCode() != HttpStatus.OK && responseBody.getStatusCode() != HttpStatus.CREATED) {
                     String responseMsg = FileRepoConstants.UPLOAD_DOCUMENT_FAILED + " : " + responseBody.getBody();
                     return ResponseHelper.buildFailedResponse(responseMsg);
                 }
@@ -275,7 +301,7 @@ public class FileRepoService implements IFileRepoService {
             FileRepoRequest fileRepoRequest = FileRepoRequest.builder().fileName(filename).path(responseBody.getBody().getPath()).
                     entityId(entityId).entityType(entityType).docType(uploadDocumentRequest.getDocType()).
                     clientEnabled(uploadDocumentRequest.getClientEnabled()).eventCode(uploadDocumentRequest.getEventCode()).build();
-            ResponseEntity<RunnerResponse<EventsResponse>> response = (ResponseEntity<RunnerResponse<EventsResponse>>)create(CommonRequestModel.buildRequest(fileRepoRequest));
+            ResponseEntity<RunnerResponse<EventsResponse>> response = (ResponseEntity<RunnerResponse<EventsResponse>>) create(CommonRequestModel.buildRequest(fileRepoRequest));
             responseBodyList.add(response.getBody().getData());
         }
         return ResponseHelper.buildListSuccessResponse(responseBodyList);

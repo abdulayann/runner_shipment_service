@@ -12,12 +12,14 @@ import org.krysalis.barcode4j.impl.upcean.EAN13Bean;
 import org.krysalis.barcode4j.output.bitmap.BitmapCanvasProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.stereotype.Component;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 
 import java.math.BigDecimal;
@@ -246,5 +248,14 @@ public class CommonUtils {
         }
         stamper.close();
         return ((ByteArrayOutputStream)ms).toByteArray();
+    }
+
+    public static ByteArrayResource getByteResource(InputStream inputStream, String fileName) throws IOException {
+        return new ByteArrayResource(inputStream.readAllBytes()) {
+            @Override
+            public String getFilename() {
+                return fileName;
+            }
+        };
     }
 }
