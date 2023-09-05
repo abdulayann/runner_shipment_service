@@ -43,7 +43,7 @@ public class ShipmentSync implements IShipmentSync {
             .maxAttempts(3)
             .fixedBackoff(1000)
             .retryOn(Exception.class)
-            .build();;
+            .build();
 
     @Value("${v1service.url.base}${v1service.url.shipmentSync}")
     private String SHIPMENT_V1_SYNC_URL;
@@ -230,6 +230,9 @@ public class ShipmentSync implements IShipmentSync {
     }
 
     private void mapCarrierDetailsReverse(CustomShipmentSyncRequest cs, ShipmentDetails sd) {
+        // Destination shipment ID is long string source will cause problems
+        cs.setShipmentId(null);
+
         CarrierDetails carrierDetails = modelMapper.map(cs, CarrierDetails.class);
         carrierDetails.setDestination(cs.getDestinationName());
         carrierDetails.setDestinationPort(cs.getDestinationPortName());
