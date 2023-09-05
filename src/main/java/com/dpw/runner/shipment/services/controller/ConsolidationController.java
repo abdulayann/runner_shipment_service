@@ -8,12 +8,13 @@ import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.ConsolidationDetailsRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentAttachDetachRequest;
-import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationService;
+import com.dpw.runner.shipment.services.syncing.Entity.CustomConsolidationRequest;
+import com.dpw.runner.shipment.services.syncing.interfaces.IConsolidationSync;
 import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
@@ -35,6 +36,9 @@ public class ConsolidationController {
 
     @Autowired
     private IConsolidationService consolidationService;
+
+    @Autowired
+    private IConsolidationSync consolidationSync;
 
     @Autowired
     JsonHelper jsonHelper;
@@ -172,16 +176,28 @@ public class ConsolidationController {
             @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
     })
     @PostMapping(ConsolidationConstants.CONSOLIDATION_V1_CREATE)
-    public ResponseEntity<RunnerResponse<ConsolidationDetailsResponse>> createV1Consolidation(@RequestBody @Valid ConsolidationDetailsRequest request) {
+    public ResponseEntity<RunnerResponse<ConsolidationDetailsResponse>> createV1Consolidation(@RequestBody @Valid CustomConsolidationRequest request) {
         String responseMsg;
         try {
-            ConsolidationDetailsRequest req = jsonHelper.convertValue(request, ConsolidationDetailsRequest.class);
-            return (ResponseEntity<RunnerResponse<ConsolidationDetailsResponse>>) consolidationService.completeV1ConsolidationCreateAndUpdate(CommonRequestModel.buildRequest(req));
+            return (ResponseEntity<RunnerResponse<ConsolidationDetailsResponse>>) consolidationSync.reverseSync(CommonRequestModel.buildRequest(request));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
         }
         return (ResponseEntity<RunnerResponse<ConsolidationDetailsResponse>>) ResponseHelper.buildFailedResponse(responseMsg);
+    }
+
+    @PostMapping(ApiConstants.API_GET_CUSTOM_REQ) // API is only for testing purpose
+    public ResponseEntity<RunnerResponse<CustomConsolidationRequest>> getCustomConsol(@RequestBody @Valid ConsolidationDetailsRequest request) {
+        String responseMsg;
+        try {
+            return (ResponseEntity<RunnerResponse<CustomConsolidationRequest>>) consolidationSync.sync(request);
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+        }
+        return (ResponseEntity<RunnerResponse<CustomConsolidationRequest>>) ResponseHelper.buildFailedResponse(responseMsg);
     }
 }
