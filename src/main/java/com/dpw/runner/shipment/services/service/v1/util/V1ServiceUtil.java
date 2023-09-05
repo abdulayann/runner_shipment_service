@@ -26,7 +26,7 @@ public class V1ServiceUtil {
                 .NotifyPartyAddressCode(Objects.isNull(customerBooking.getNotifyParty()) ? null : customerBooking.getNotifyParty().getAddressCode())
                 .Carrier(customerBooking.getCarrierDetails() != null ? customerBooking.getCarrierDetails().getShippingLine() : null)
                 .VesselName(customerBooking.getCarrierDetails() != null ? customerBooking.getCarrierDetails().getVessel() : null)
-                .Packs(Long.valueOf(customerBooking.getQuantity()))
+                .Packs(Long.valueOf(!Objects.isNull(customerBooking.getQuantity()) ? customerBooking.getQuantity() : 0))
                 .PacksUnit(customerBooking.getQuantityUnit())
                 .Weight(customerBooking.getGrossWeight())
                 .WeightUnit(customerBooking.getGrossWeightUnit())
