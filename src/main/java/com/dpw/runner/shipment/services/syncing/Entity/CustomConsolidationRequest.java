@@ -134,7 +134,7 @@ public class CustomConsolidationRequest implements IRunnerResponse, IRunnerReque
     @JsonProperty
     private List<RoutingsRequestV2> RoutingsList;
     @JsonProperty
-    private List<CustomShipmentRequest> ShipmentList;
+    private List<CustomShipmentSyncRequest> ShipmentList;
     @JsonProperty
     private List<TruckDriverDetailsRequestV2> TruckDriverDetail;
 
