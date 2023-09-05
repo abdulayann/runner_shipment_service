@@ -33,6 +33,7 @@ import com.dpw.runner.shipment.services.service_bus.AzureServiceBusTopic;
 import com.dpw.runner.shipment.services.service_bus.ISBProperties;
 import com.dpw.runner.shipment.services.service_bus.SBUtilsImpl;
 import com.dpw.runner.shipment.services.service_bus.model.EventMessage;
+import com.dpw.runner.shipment.services.syncing.impl.ShipmentSync;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -157,6 +158,8 @@ public class ShipmentService implements IShipmentService {
 
     @Autowired
     private AuditLogService auditLogService;
+    @Autowired
+    ShipmentSync shipmentSync;
 
     private List<String> TRANSPORT_MODES = Arrays.asList("SEA", "ROAD", "RAIL", "AIR");
     private List<String> SHIPMENT_TYPE = Arrays.asList("FCL", "LCL");
@@ -587,8 +590,9 @@ public class ShipmentService implements IShipmentService {
             if (serviceDetailsRequest != null)
                 shipmentDetails.setServicesList(serviceDetailsDao.saveEntityFromShipment(convertToEntityList(serviceDetailsRequest, ServiceDetails.class), shipmentId));
 
-            EventMessage eventMessage = EventMessage.builder().messageType(Constants.SERVICE).entity(Constants.SHIPMENT).request(shipmentDetails).build();
-            sbUtils.sendMessagesToTopic(isbProperties, azureServiceBusTopic.getTopic(), Arrays.asList(new ServiceBusMessage(jsonHelper.convertToJsonIncludeNulls(eventMessage))));
+            shipmentSync.sync(shipmentDetails);
+//            EventMessage eventMessage = EventMessage.builder().messageType(Constants.SERVICE).entity(Constants.SHIPMENT).request(shipmentDetails).build();
+//            sbUtils.sendMessagesToTopic(isbProperties, azureServiceBusTopic.getTopic(), Arrays.asList(new ServiceBusMessage(jsonHelper.convertToJsonIncludeNulls(eventMessage))));
 
             // audit logs
             auditLogService.addAuditLog(
@@ -1421,7 +1425,7 @@ public class ShipmentService implements IShipmentService {
             List<Containers> updatedContainers = null;
             if (containerRequestList != null) {
                 updatedContainers = containerDao.updateEntityFromShipmentConsole(convertToEntityList(containerRequestList, Containers.class), null, oldContainers);
-            } else {
+            } else if(oldEntity != null && !oldEntity.isEmpty()){
                 updatedContainers = oldEntity.get().getContainersList();
             }
             entity.setContainersList(updatedContainers);
