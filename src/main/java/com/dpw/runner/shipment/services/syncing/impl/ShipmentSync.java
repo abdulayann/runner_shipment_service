@@ -1,9 +1,16 @@
 package com.dpw.runner.shipment.services.syncing.impl;
 
+import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
+import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.Ownership;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import com.dpw.runner.shipment.services.service.impl.ShipmentService;
 import com.dpw.runner.shipment.services.syncing.Entity.*;
+import com.dpw.runner.shipment.services.syncing.Entity.response.CustomShipmentSyncResponse;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
 import com.dpw.runner.shipment.services.utils.V1AuthHelper;
 import lombok.extern.slf4j.Slf4j;
@@ -11,6 +18,7 @@ import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
+import org.springframework.http.ResponseEntity;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
@@ -25,7 +33,12 @@ public class ShipmentSync implements IShipmentSync {
     @Autowired
     ModelMapper modelMapper;
     @Autowired
+    JsonHelper jsonHelper;
+    @Autowired
     RestTemplate restTemplate;
+    @Autowired
+    ShipmentService shipmentService;
+
     private RetryTemplate retryTemplate = RetryTemplate.builder()
             .maxAttempts(3)
             .fixedBackoff(1000)
@@ -36,17 +49,19 @@ public class ShipmentSync implements IShipmentSync {
     private String SHIPMENT_V1_SYNC_URL;
 
     @Override
-    public CustomShipmentRequest sync(ShipmentDetails sd) {
-        CustomShipmentRequest cs = new CustomShipmentRequest();
+    public ResponseEntity<?> sync(ShipmentDetails sd) {
+        CustomShipmentSyncRequest temp = new CustomShipmentSyncRequest();
 
         // First map nested entity that are root level properties in v1
-        mapAdditionalDetails(cs, sd);
-        mapCarrierDetails(cs, sd);
+        mapAdditionalDetails(temp, sd);
+        mapCarrierDetails(temp, sd);
         // Map remaining object so there's no info lost for root -> root properties
         // example Guid
-        cs = modelMapper.map(sd, CustomShipmentRequest.class);
+       CustomShipmentSyncRequest cs = modelMapper.map(sd, CustomShipmentSyncRequest.class);
+       modelMapper.map(temp, cs);
 
         // assigning root level properties not previously mapped
+        cs.setReferenceNo(sd.getBookingReference());
         cs.setCustom_ShipType(sd.getDirection());
         cs.setContainerType(sd.getShipmentType());
         cs.setStatusString(sd.getStatus().toString());
@@ -86,47 +101,72 @@ public class ShipmentSync implements IShipmentSync {
 
         cs.setBookingCarriages(convertToList(sd.getBookingCarriagesList(), BookingCarriageRequestV2.class));
 
-        CustomShipmentRequest finalCs = cs;
-        retryTemplate.execute(ctx -> {
-            log.info("Current retry : {}", ctx.getRetryCount());
+        String finalCs = jsonHelper.convertToJson(cs);
+//        retryTemplate.execute(ctx -> {
+//            log.info("Current retry : {}", ctx.getRetryCount());
+//            HttpEntity<V1DataResponse> entity = new HttpEntity(finalCs, V1AuthHelper.getHeaders());
+//            var response = this.restTemplate.postForEntity(this.SHIPMENT_V1_SYNC_URL, entity, V1DataResponse.class, new Object[0]);
+//            return response;
+//        });
+
+        try {
             HttpEntity<V1DataResponse> entity = new HttpEntity(finalCs, V1AuthHelper.getHeaders());
             var response = this.restTemplate.postForEntity(this.SHIPMENT_V1_SYNC_URL, entity, V1DataResponse.class, new Object[0]);
-            return response;
-        });
+//            return response;
+            log.info("{}", response);
+        } catch (Exception e){
+            log.error("{}", e.getMessage());
+        }
 
-        return cs;
+        return ResponseHelper.buildSuccessResponse(modelMapper.map(cs, CustomShipmentSyncResponse.class));
     }
     
-    public ShipmentDetails reverseSync(CustomShipmentRequest cs) {
-        ShipmentDetails sd = new ShipmentDetails();
-        mapCarrierDetailsReverse(sd, cs);
-        mapAdditionalDetailsReverse(sd, cs);
+    public ResponseEntity<?> reverseSync(CustomShipmentSyncRequest cs) {
+        String responseMsg;
+        try {
+            ShipmentDetails sd = modelMapper.map(cs, ShipmentDetails.class);
 
-        sd = modelMapper.map(cs, ShipmentDetails.class);
+            mapCarrierDetailsReverse(cs, sd);
+            mapAdditionalDetailsReverse(cs, sd);
 
-        sd.setDirection(cs.getCustom_ShipType());
-        sd.setShipmentType(cs.getContainerType());
-        sd.setStatus(Integer.parseInt(cs.getStatusString()));
-        sd.setSalesAgent(cs.getSalesAgentId());
-        sd.setInnerPacks(cs.getInners());
-        sd.setInnerPackUnit(cs.getInnersUnit());
-        sd.setMarksNum(cs.getMarksnNums());
-        sd.setConsolRef(cs.getConsolidationReferenceNumber());
-        sd.setChargable(cs.getChargeable());
-        sd.setChargeableUnit(cs.getChargableUnit());
-        sd.setNoOfPacks(cs.getPacks());
-        sd.setFinanceClosedBy(cs.getFinanceClosedByUser());
+//            // Clarity required
+//            if(cs.getStatusString() != null && !cs.getStatusString().isEmpty()){
+//                sd.setStatus(Integer.parseInt(cs.getStatusString())); // ENUM MAPPING ?
+//            }
 
-        mapTruckDriverDetailReverse(cs, sd);
-        sd.setRoutingsList(convertToList(cs.getRoutings(), Routings.class));
-        sd.setReferenceNumbersList(convertToList(cs.getReferenceNumbers(), ReferenceNumbers.class));
-        sd.setPackingList(convertToList(cs.getPackings_(), Packing.class));
-        sd.setFileRepoList(convertToList(cs.getDocs_(), FileRepo.class));
-        sd.setElDetailsList(convertToList(cs.getELDetails(), ELDetails.class));
+            sd.setBookingReference(cs.getReferenceNo());
+            sd.setDirection(cs.getCustom_ShipType());
+            sd.setShipmentType(cs.getContainerType());
+            sd.setSalesAgent(cs.getSalesAgentId());
+            sd.setInnerPacks(cs.getInners());
+            sd.setInnerPackUnit(cs.getInnersUnit());
+            sd.setMarksNum(cs.getMarksnNums());
+            sd.setConsolRef(cs.getConsolidationReferenceNumber());
+            sd.setChargable(cs.getChargeable());
+            sd.setChargeableUnit(cs.getChargableUnit());
+            sd.setNoOfPacks(cs.getPacks());
+            sd.setFinanceClosedBy(cs.getFinanceClosedByUser());
 
-        sd.setBookingCarriagesList(convertToList(cs.getBookingCarriages(), BookingCarriage.class));
+            sd.setConsigner(mapPartyObject(cs.getConsignerParty()));
+            sd.setConsignee(mapPartyObject(cs.getConsigneeParty()));
 
-        return sd;
+            mapTruckDriverDetailReverse(cs, sd);
+            sd.setRoutingsList(convertToList(cs.getRoutings(), Routings.class));
+            sd.setReferenceNumbersList(convertToList(cs.getReferenceNumbers(), ReferenceNumbers.class));
+            sd.setPackingList(convertToList(cs.getPackings_(), Packing.class));
+            sd.setFileRepoList(convertToList(cs.getDocs_(), FileRepo.class));
+            sd.setElDetailsList(convertToList(cs.getELDetails(), ELDetails.class));
+
+            sd.setBookingCarriagesList(convertToList(cs.getBookingCarriages(), BookingCarriage.class));
+
+            return shipmentService.completeV1ShipmentCreateAndUpdate(CommonRequestModel.
+                    buildRequest(modelMapper.map(sd, ShipmentRequest.class)));
+        } catch (Exception e){
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
     }
 
     private PartyRequestV2 mapPartyObject(Parties sourcePartyObject) {
@@ -141,7 +181,7 @@ public class ShipmentSync implements IShipmentSync {
         return modelMapper.map(sourcePartyObject, Parties.class);
     }
 
-    private void mapTruckDriverDetail(CustomShipmentRequest cs, ShipmentDetails sd) {
+    private void mapTruckDriverDetail(CustomShipmentSyncRequest cs, ShipmentDetails sd) {
         if(sd.getTruckDriverDetails() == null)
             return;
 
@@ -160,7 +200,7 @@ public class ShipmentSync implements IShipmentSync {
 
     }
 
-    private void mapTruckDriverDetailReverse(CustomShipmentRequest cs, ShipmentDetails sd) {
+    private void mapTruckDriverDetailReverse(CustomShipmentSyncRequest cs, ShipmentDetails sd) {
         if(cs.getTruckDriverDetail() == null)
             return;
 
@@ -176,10 +216,12 @@ public class ShipmentSync implements IShipmentSync {
         sd.setTruckDriverDetails(req);
     }
 
-    private void mapCarrierDetails(CustomShipmentRequest cs, ShipmentDetails sd) {
+    private void mapCarrierDetails(CustomShipmentSyncRequest cs, ShipmentDetails sd) {
         if(sd.getCarrierDetails() == null)
             return;
-        modelMapper.map(sd.getCarrierDetails(), cs);
+        modelMapper.typeMap(CarrierDetails.class, CustomShipmentSyncRequest.class)
+                .addMappings(mp -> mp.skip(CustomShipmentSyncRequest::setDestination))
+                .map(sd.getCarrierDetails(), cs);
         cs.setDestinationName(sd.getCarrierDetails().getDestination());
         cs.setDestinationPortName(sd.getCarrierDetails().getDestinationPort());
         cs.setOriginName(sd.getCarrierDetails().getOrigin());
@@ -187,9 +229,7 @@ public class ShipmentSync implements IShipmentSync {
 
     }
 
-    private void mapCarrierDetailsReverse(ShipmentDetails sd, CustomShipmentRequest cs) {
-        if(sd.getCarrierDetails() == null)
-            return;
+    private void mapCarrierDetailsReverse(CustomShipmentSyncRequest cs, ShipmentDetails sd) {
         CarrierDetails carrierDetails = modelMapper.map(cs, CarrierDetails.class);
         carrierDetails.setDestination(cs.getDestinationName());
         carrierDetails.setDestinationPort(cs.getDestinationPortName());
@@ -198,7 +238,7 @@ public class ShipmentSync implements IShipmentSync {
         sd.setCarrierDetails(carrierDetails);
     }
 
-    private void mapAdditionalDetails(CustomShipmentRequest cs, ShipmentDetails sd) {
+    private void mapAdditionalDetails(CustomShipmentSyncRequest cs, ShipmentDetails sd) {
         if(sd.getAdditionalDetails() == null)
             return;
         modelMapper.map(sd.getAdditionalDetails(), cs);
@@ -207,9 +247,7 @@ public class ShipmentSync implements IShipmentSync {
         cs.setTraderOrSupplierParty(mapPartyObject(sd.getAdditionalDetails().getTraderOrSupplier()));
     }
 
-    private void mapAdditionalDetailsReverse(ShipmentDetails sd, CustomShipmentRequest cs) {
-        if(sd.getAdditionalDetails() == null)
-            return;
+    private void mapAdditionalDetailsReverse(CustomShipmentSyncRequest cs, ShipmentDetails sd) {
         AdditionalDetails additionalDetails = modelMapper.map(cs, AdditionalDetails.class);
         additionalDetails.setReceivingForwarder(mapPartyObject(cs.getReceivingForwarderParty()));
         additionalDetails.setSendingForwarder(mapPartyObject(cs.getSendingForwarderParty()));

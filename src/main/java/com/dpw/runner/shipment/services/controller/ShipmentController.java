@@ -17,13 +17,14 @@ import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
-import com.dpw.runner.shipment.services.syncing.Entity.CustomShipmentRequest;
+import com.dpw.runner.shipment.services.syncing.Entity.CustomShipmentSyncRequest;
 import com.dpw.runner.shipment.services.syncing.impl.ShipmentSync;
 import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -47,6 +48,8 @@ public class ShipmentController {
     ShipmentSync shipmentSync;
     @Autowired
     JsonHelper jsonHelper;
+    @Autowired
+    ModelMapper modelMapper;
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = "Successful Shipment Details Data List Retrieval", responseContainer = "List")})
     @PostMapping(value = "/list-shipment")
@@ -182,12 +185,24 @@ public class ShipmentController {
         return (ResponseEntity<RunnerResponse<ShipmentDetailsResponse>>) ResponseHelper.buildFailedResponse(responseMsg);
     }
 
-    @PostMapping("/sync")
-    public ResponseEntity<?> syncShipment(@RequestBody CustomShipmentRequest request){
+    @PostMapping(ApiConstants.API_GET_CUSTOM_REQ)
+    public ResponseEntity<RunnerResponse<CustomShipmentSyncRequest>> getCustomConsol(@RequestBody @Valid ShipmentDetails request) {
+        String responseMsg;
+        try {
+            return (ResponseEntity<RunnerResponse<CustomShipmentSyncRequest>>) shipmentSync.sync(request);
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+        }
+        return (ResponseEntity<RunnerResponse<CustomShipmentSyncRequest>>) ResponseHelper.buildFailedResponse(responseMsg);
+    }
+
+    @PostMapping("sync")
+    public ResponseEntity<?> syncShipment(@RequestBody @Valid CustomShipmentSyncRequest request){
         String responseMsg = "failure executing :(";
         try {
-            ShipmentDetails shipmentDetails = shipmentSync.reverseSync(request);
-            return ResponseHelper.buildSuccessResponse();
+            return shipmentSync.reverseSync(request);
         } catch (Exception e){
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : "Error syncing provided Shipment";

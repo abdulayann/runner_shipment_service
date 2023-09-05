@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.syncing.Entity;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 import org.apache.poi.hpsf.GUID;
 
@@ -8,14 +9,24 @@ import java.util.UUID;
 
 @Data
 public class PartyRequestV2 {
+    @JsonProperty("AddressCode")
     private String AddressCode;
-    private Map<String, Object> AddressData;    //could be object as well
+    @JsonProperty("AddressData")
+    private Map<String, Object> AddressData;
+    @JsonProperty("EntityID")
     private Long EntityID;
+    @JsonProperty("EntityType")
     private String EntityType;
+    @JsonProperty("OrgCode")
     private String OrgCode;
-    private Map<String, Object> OrgData;        //could be object as well
+    @JsonProperty("OrgData")
+    private Map<String, Object> OrgData;
+    @JsonProperty("TenantId")
     private int TenantId;
+    @JsonProperty("Type")
     private String Type;
+    @JsonProperty("Guid")
     private UUID Guid;
+    @JsonProperty("Id")
     private long Id;
 }
