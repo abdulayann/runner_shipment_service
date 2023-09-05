@@ -84,7 +84,11 @@ public class BookingIntegrationsUtility {
     public ResponseEntity<?> createShipmentInV1(CustomerBooking customerBooking) {
         try {
             var response = v1Service.createBooking(customerBooking);
-            this.saveErrorResponse(customerBooking.getId(), Constants.BOOKING, IntegrationType.V1_SHIPMENT_CREATION, Status.SUCCESS, "SAVED SUCESSFULLY");
+            if (!response.getStatusCode().equals(HttpStatus.OK)) {
+                this.saveErrorResponse(customerBooking.getId(), Constants.BOOKING, IntegrationType.V1_SHIPMENT_CREATION, Status.FAILED, response.toString());
+            } else {
+                this.saveErrorResponse(customerBooking.getId(), Constants.BOOKING, IntegrationType.V1_SHIPMENT_CREATION, Status.SUCCESS, "SAVED SUCESSFULLY");
+            }
             return response;
         } catch (Exception ex) {
             log.error("Booking Creation error from Platform for booking number: {} with error message: {}", customerBooking.getBookingNumber(), ex.getMessage());
