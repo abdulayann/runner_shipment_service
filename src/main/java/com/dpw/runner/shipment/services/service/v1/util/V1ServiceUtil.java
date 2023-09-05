@@ -61,14 +61,14 @@ public class V1ServiceUtil {
                 .Documents(createDocuments(customerBooking.getFileRepoList()))
                 .Loosecargos(createLooseCarges(customerBooking.getPackingList()))
                 .OrgDetails(createOrgDetails(customerBooking))
-                .QuoteCharges(createQuoteCharges(customerBooking.getBookingCharges()))
+                .BillCharges(createQuoteCharges(customerBooking.getBookingCharges()))
                 .build();
     }
 
-    private static List<CreateBookingModuleInV1.BookingEntity.QuoteCharge> createQuoteCharges(List<BookingCharges> bookingCharges) {
+    private static List<CreateBookingModuleInV1.BookingEntity.BillCharge> createQuoteCharges(List<BookingCharges> bookingCharges) {
         if (bookingCharges == null) return null;
         return bookingCharges.stream().filter(Objects::nonNull).map(bc ->
-                CreateBookingModuleInV1.BookingEntity.QuoteCharge.builder()
+                CreateBookingModuleInV1.BookingEntity.BillCharge.builder()
                         .OverseasSellCurrency(bc.getOverseasSellCurrency())
                         .ChargeTypeCode(bc.getChargeType())
                         .CostExchange(bc.getCostExchange())

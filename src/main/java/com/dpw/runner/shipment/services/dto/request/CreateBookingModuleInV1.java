@@ -66,13 +66,13 @@ public class CreateBookingModuleInV1 {
         private List<Document> Documents;
         private List<LooseCargo> Loosecargos;
         private List<OrgDetail> OrgDetails;
-        private List<QuoteCharge> QuoteCharges;
+        private List<BillCharge> BillCharges;
 
         @Data
         @Builder
         @NoArgsConstructor
         @AllArgsConstructor
-        public static class QuoteCharge {
+        public static class BillCharge {
             private String ChargeTypeCode;
             private Boolean NoGST;
             private BigDecimal EstimatedRevenue;
