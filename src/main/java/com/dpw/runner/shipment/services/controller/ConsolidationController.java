@@ -188,7 +188,7 @@ public class ConsolidationController {
         return (ResponseEntity<RunnerResponse<ConsolidationDetailsResponse>>) ResponseHelper.buildFailedResponse(responseMsg);
     }
 
-    @PostMapping(ApiConstants.API_GET_CUSTOM_REQ)
+    @PostMapping(ApiConstants.API_GET_CUSTOM_REQ) // API is only for testing purpose
     public ResponseEntity<RunnerResponse<CustomConsolidationRequest>> getCustomConsol(@RequestBody @Valid ConsolidationDetailsRequest request) {
         String responseMsg;
         try {

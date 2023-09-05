@@ -3,16 +3,23 @@ package com.dpw.runner.shipment.services.syncing.impl;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.dto.request.*;
+import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.enums.Ownership;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationService;
 import com.dpw.runner.shipment.services.syncing.Entity.*;
 import com.dpw.runner.shipment.services.syncing.interfaces.IConsolidationSync;
+import com.dpw.runner.shipment.services.utils.V1AuthHelper;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
 import org.springframework.http.ResponseEntity;
+import org.springframework.retry.support.RetryTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -29,9 +36,25 @@ public class ConsolidationSync implements IConsolidationSync {
     @Autowired
     private IConsolidationService consolidationService;
 
+    @Autowired
+    RestTemplate restTemplate;
+
+    @Autowired
+    JsonHelper jsonHelper;
+    private RetryTemplate retryTemplate = RetryTemplate.builder()
+            .maxAttempts(3)
+            .fixedBackoff(1000)
+            .retryOn(Exception.class)
+            .build();
+
+    @Value("${v1service.url.base}${v1service.url.consolidationSync}")
+    private String CONSOLIDATION_V1_SYNC_URL;
+
     @Override
     public ResponseEntity<?> sync(ConsolidationDetailsRequest request) {
         CustomConsolidationRequest response = new CustomConsolidationRequest();
+
+        response = modelMapper.map(request, CustomConsolidationRequest.class);
         response.setShipmentType(request.getBookingType());
         response.setCoLoadBookingRef(request.getCoLoadBookingReference());
         response.setType(request.getConsolidationType());
@@ -56,7 +79,15 @@ public class ConsolidationSync implements IConsolidationSync {
         response.setDocsList(convertToList(request.getFileRepoList(), FileRepoRequestV2.class));
 
         mapShipmentGuids(response, request);
-        response = modelMapper.map(request, CustomConsolidationRequest.class);
+
+        response.setGuid(request.getGuid());
+        String consolidationRequest = jsonHelper.convertToJson(response);
+        retryTemplate.execute(ctx -> {
+            log.info("Current retry : {}", ctx.getRetryCount());
+            HttpEntity<V1DataResponse> entity = new HttpEntity(consolidationRequest, V1AuthHelper.getHeaders());
+            var response_ = this.restTemplate.postForEntity(this.CONSOLIDATION_V1_SYNC_URL, entity, V1DataResponse.class, new Object[0]);
+            return response_;
+        });
 
         return ResponseHelper.buildSuccessResponse(response);
     }
@@ -92,7 +123,7 @@ public class ConsolidationSync implements IConsolidationSync {
             response.setFileRepoList(convertToList(request.getDocsList(), FileRepoRequest.class));
 
             mapReverseShipmentGuids(response, request);
-
+            response.setGuid(request.getGuid());
             return consolidationService.completeV1ConsolidationCreateAndUpdate(CommonRequestModel.buildRequest(response));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -232,10 +263,11 @@ public class ConsolidationSync implements IConsolidationSync {
             return;
         response.setCarrierDetails(new CarrierDetailRequest());
         modelMapper.map(request, response.getCarrierDetails());
-        response.getCarrierDetails().setDestination(request.getDestinationName());
-        response.getCarrierDetails().setDestinationPort(request.getDestinationPortName());
-        response.getCarrierDetails().setOrigin(request.getOriginName());
-        response.getCarrierDetails().setOriginPort(request.getOriginPortName());
+        response.getCarrierDetails().setDestination(request.getDestinationPortName());
+//        response.getCarrierDetails().setDestinationPort(request.getDestinationPortName());
+        response.getCarrierDetails().setOrigin(request.getOriginPortName());
+//        response.getCarrierDetails().setOriginPort(request.getOriginPortName());
+        response.getCarrierDetails().setId(null);
     }
 
     private void mapAchievedQuantities(CustomConsolidationRequest response, ConsolidationDetailsRequest request) {
@@ -253,6 +285,7 @@ public class ConsolidationSync implements IConsolidationSync {
         modelMapper.map(request, response.getAchievedQuantities());
         response.getAchievedQuantities().setConsolidatedVolume(request.getConsolidatedVolume());
         response.getAchievedQuantities().setConsolidatedVolumeUnit(request.getConsolidatiedVolumeUnit());
+        response.getAchievedQuantities().setId(null);
     }
 
     private void mapAllocations(CustomConsolidationRequest response, ConsolidationDetailsRequest request) {
@@ -270,6 +303,7 @@ public class ConsolidationSync implements IConsolidationSync {
         modelMapper.map(request, response.getAllocations());
         response.getAllocations().setChargable(request.getChargeable());
         response.getAllocations().setIsTemperatureControlled(request.getIsTemparatureControlled());
+        response.getAllocations().setId(null);
     }
 
     private void mapArrivalDepartureDetails(CustomConsolidationRequest response_, ConsolidationDetailsRequest request_) {

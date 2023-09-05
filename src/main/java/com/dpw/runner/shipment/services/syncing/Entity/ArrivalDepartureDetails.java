@@ -8,43 +8,43 @@ import java.time.LocalDateTime;
 @Data
 public class ArrivalDepartureDetails {
     @JsonProperty("AcontainerYardId")
-    public PartyRequestV2 AcontainerYardId;
+    private PartyRequestV2 AcontainerYardId;
     @JsonProperty("AfirstArrivalPortId")
-    public PartyRequestV2 AfirstArrivalPortId;
+    private PartyRequestV2 AfirstArrivalPortId;
     @JsonProperty("AlastForeignPortId")
-    public PartyRequestV2 AlastForeignPortId;
+    private PartyRequestV2 AlastForeignPortId;
     @JsonProperty("AfirstForeignPort")
-    public String AfirstForeignPort;
+    private String AfirstForeignPort;
     @JsonProperty("AlastForeignPort")
-    public String AlastForeignPort;
+    private String AlastForeignPort;
     @JsonProperty("ACTOId")
-    public PartyRequestV2 ACTOId;
+    private PartyRequestV2 ACTOId;
     @JsonProperty("ACFSId")
-    public PartyRequestV2 ACFSId;
+    private PartyRequestV2 ACFSId;
     @JsonProperty("AfirstArrivalPortArrivalDate")
-    public LocalDateTime AfirstArrivalPortArrivalDate;
+    private LocalDateTime AfirstArrivalPortArrivalDate;
     @JsonProperty("AlastForeignPortDepartureDate")
-    public LocalDateTime AlastForeignPortDepartureDate;
+    private LocalDateTime AlastForeignPortDepartureDate;
     @JsonProperty("AtransportPortId")
-    public PartyRequestV2 AtransportPortId;
+    private PartyRequestV2 AtransportPortId;
     @JsonProperty("DcontainerYardId")
-    public PartyRequestV2 DcontainerYardId;
+    private PartyRequestV2 DcontainerYardId;
     @JsonProperty("DtransportPortId")
-    public PartyRequestV2 DtransportPortId;
+    private PartyRequestV2 DtransportPortId;
     @JsonProperty("DCTOId")
-    public PartyRequestV2 DCTOId;
+    private PartyRequestV2 DCTOId;
     @JsonProperty("DCFSId")
-    public PartyRequestV2 DCFSId;
+    private PartyRequestV2 DCFSId;
     @JsonProperty("DfirstForeignPortArrivalDate")
-    public LocalDateTime DfirstForeignPortArrivalDate;
+    private LocalDateTime DfirstForeignPortArrivalDate;
     @JsonProperty("DfirstForeignPortId")
-    public PartyRequestV2 DfirstForeignPortId;
+    private PartyRequestV2 DfirstForeignPortId;
     @JsonProperty("DfirstForeignPort")
-    public String DfirstForeignPort;
+    private String DfirstForeignPort;
     @JsonProperty("DlastForeignPortDepartureDate")
-    public LocalDateTime DlastForeignPortDepartureDate;
+    private LocalDateTime DlastForeignPortDepartureDate;
     @JsonProperty("DlastForeignPortId")
-    public PartyRequestV2 DlastForeignPortId;
+    private PartyRequestV2 DlastForeignPortId;
     @JsonProperty("DlastForeignPort")
-    public String DlastForeignPort;
+    private String DlastForeignPort;
 }

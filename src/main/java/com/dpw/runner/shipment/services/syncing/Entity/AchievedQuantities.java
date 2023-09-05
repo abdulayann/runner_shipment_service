@@ -9,25 +9,25 @@ import java.util.UUID;
 @Data
 public class AchievedQuantities {
     @JsonProperty("ConsolidatiedVolume")
-    public BigDecimal ConsolidatiedVolume;
+    private BigDecimal ConsolidatiedVolume;
     @JsonProperty("ConsolidatiedVolumeUnit")
-    public String ConsolidatiedVolumeUnit;
+    private String ConsolidatiedVolumeUnit;
     @JsonProperty("ConsolidatiedWeight")
-    public BigDecimal ConsolidatiedWeight;
+    private BigDecimal ConsolidatiedWeight;
     @JsonProperty("ConsolidatiedWeightUnit")
-    public String ConsolidatiedWeightUnit;
+    private String ConsolidatiedWeightUnit;
     @JsonProperty("ConsolidationChargeQuantityUnit")
-    public String ConsolidationChargeQuantityUnit;
+    private String ConsolidationChargeQuantityUnit;
     @JsonProperty("ConsolidationChargeQuantity")
-    public BigDecimal ConsolidationChargeQuantity;
+    private BigDecimal ConsolidationChargeQuantity;
     @JsonProperty("Guid")
-    public UUID Guid;
+    private UUID Guid;
     @JsonProperty("VolumeUtilization")
-    public String VolumeUtilization;
+    private String VolumeUtilization;
     @JsonProperty("WeightUtilization")
-    public String WeightUtilization;
+    private String WeightUtilization;
     @JsonProperty("WeightVolumeUnit")
-    public String WeightVolumeUnit;
+    private String WeightVolumeUnit;
     @JsonProperty("WeightVolume")
-    public BigDecimal WeightVolume;
+    private BigDecimal WeightVolume;
 }

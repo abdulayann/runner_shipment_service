@@ -1,40 +1,42 @@
 package com.dpw.runner.shipment.services.syncing.Entity;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.Data;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+@Data
 public class Allocations {
     @JsonProperty("Chargable")
-    public BigDecimal Chargable;
+    private BigDecimal Chargable;
     @JsonProperty("ChargeableUnit")
-    public String ChargeableUnit;
+    private String ChargeableUnit;
     @JsonProperty("Guid")
-    public UUID Guid;
+    private UUID Guid;
     @JsonProperty("CutoffDate")
-    public LocalDateTime CutoffDate;
+    private LocalDateTime CutoffDate;
     @JsonProperty("Hazardous")
-    public Boolean Hazardous;
+    private Boolean Hazardous;
     @JsonProperty("IsTemparatureControlled")
-    public Boolean IsTemparatureControlled;
+    private Boolean IsTemparatureControlled;
     @JsonProperty("MaxTemp")
-    public BigDecimal MaxTemp;
+    private BigDecimal MaxTemp;
     @JsonProperty("MaxTempUnit")
-    public String MaxTempUnit;
+    private String MaxTempUnit;
     @JsonProperty("MinTemp")
-    public BigDecimal MinTemp;
+    private BigDecimal MinTemp;
     @JsonProperty("MinTempUnit")
-    public String MinTempUnit;
+    private String MinTempUnit;
     @JsonProperty("ShipmentsCount")
-    public Long ShipmentsCount;
+    private Long ShipmentsCount;
     @JsonProperty("Volume")
-    public BigDecimal Volume;
+    private BigDecimal Volume;
     @JsonProperty("VolumeUnit")
-    public String VolumeUnit;
+    private String VolumeUnit;
     @JsonProperty("WeightUnit")
-    public String WeightUnit;
+    private String WeightUnit;
     @JsonProperty("Weight")
-    public BigDecimal Weight;
+    private BigDecimal Weight;
 }
