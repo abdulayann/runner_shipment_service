@@ -161,4 +161,7 @@ public class CustomerBooking extends MultiTenancy {
     @MasterData(type = MasterDataType.SERVICE_MODE)
     @Column(name = "service_mode")
     private String serviceMode;
+
+    @Column(name = "shipment_id")
+    private String shipmentId;
 }
