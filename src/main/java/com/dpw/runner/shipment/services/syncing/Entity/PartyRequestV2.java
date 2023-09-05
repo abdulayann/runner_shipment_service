@@ -27,6 +27,4 @@ public class PartyRequestV2 {
     private String Type;
     @JsonProperty("Guid")
     private UUID Guid;
-    @JsonProperty("Id")
-    private long Id;
 }

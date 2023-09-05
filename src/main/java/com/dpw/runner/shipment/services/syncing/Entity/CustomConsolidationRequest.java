@@ -79,7 +79,7 @@ public class CustomConsolidationRequest implements IRunnerResponse, IRunnerReque
     public List<PackingRequestV2> PackingList;
     public List<ReferenceNumbersRequestV2> ReferenceNumbersList;
     public List<RoutingsRequestV2> RoutingsList;
-    public List<CustomShipmentRequest> ShipmentList;
+    public List<CustomShipmentSyncRequest> ShipmentList;
     public List<TruckDriverDetailsRequestV2> TruckDriverDetail;
 
     public String FirstLoadString;
