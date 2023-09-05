@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.dto.v1.request.CreateShipmentTaskRequest
 import com.dpw.runner.shipment.services.dto.v1.response.SendEntityResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.TenantIdResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1ShipmentCreationResponse;
 import com.dpw.runner.shipment.services.entity.CustomerBooking;
 import com.dpw.runner.shipment.services.exception.exceptions.UnAuthorizedException;
 import com.dpw.runner.shipment.services.exception.exceptions.V1ServiceException;
@@ -206,12 +207,11 @@ public class V1ServiceImpl implements IV1Service {
     @Autowired
     private JsonHelper jsonHelper;
     @Override
-//    @Async
     public ResponseEntity<?> createBooking(CustomerBooking customerBooking) {
         try {
             long time = System.currentTimeMillis();
             HttpEntity<V1DataResponse> entity = new HttpEntity(createBookingRequestForV1(customerBooking), V1AuthHelper.getHeaders());
-            var response = this.restTemplate.postForEntity(this.CUSTOMER_BOOKING_URL, entity, V1DataResponse.class, new Object[0]);
+            var response = this.restTemplate.postForEntity(this.CUSTOMER_BOOKING_URL, entity, V1ShipmentCreationResponse.class, new Object[0]);
             return response;
         } catch (Exception exception) {
             throw new V1ServiceException(exception.getMessage());

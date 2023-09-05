@@ -19,6 +19,7 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.stereotype.Component;
@@ -80,8 +81,7 @@ public class BookingIntegrationsUtility {
     }
 
 
-    @Async
-    public void createShipmentInV1(CustomerBooking customerBooking) {
+    public ResponseEntity<?> createShipmentInV1(CustomerBooking customerBooking) {
         try {
             var response = v1Service.createBooking(customerBooking);
             if (!response.getStatusCode().equals(HttpStatus.OK)) {
@@ -89,9 +89,11 @@ public class BookingIntegrationsUtility {
             } else {
                 this.saveErrorResponse(customerBooking.getId(), Constants.BOOKING, IntegrationType.V1_SHIPMENT_CREATION, Status.SUCCESS, "SAVED SUCESSFULLY");
             }
+            return response;
         } catch (Exception ex) {
             this.saveErrorResponse(customerBooking.getId(), Constants.BOOKING, IntegrationType.V1_SHIPMENT_CREATION, Status.FAILED, ex.getLocalizedMessage());
             log.error("Booking Creation error from Platform for booking number: {} with error message: {}", customerBooking.getBookingNumber(), ex.getMessage());
+            throw ex;
         }
     }
     private void saveErrorResponse(Long entityId, String entityType, IntegrationType integrationType, Status status, String message) {
