@@ -24,4 +24,6 @@ public class ShipmentConstants {
     public static final String SHIPMENT_TYPE_DRT = "DRT";
 
     public static final String SHIPMENT_V1_CREATE = "/createV1Shipment";
+
+    public static final String SHIPMENT_SYNC_SUCCESSFUL = "Shipment synced successfully";
 }

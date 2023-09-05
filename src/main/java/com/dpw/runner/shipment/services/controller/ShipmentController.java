@@ -185,8 +185,12 @@ public class ShipmentController {
         return (ResponseEntity<RunnerResponse<ShipmentDetailsResponse>>) ResponseHelper.buildFailedResponse(responseMsg);
     }
 
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = ShipmentConstants.CREATE_SUCCESSFUL),
+            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
+    })
     @PostMapping(ApiConstants.API_GET_CUSTOM_REQ)
-    public ResponseEntity<RunnerResponse<CustomShipmentSyncRequest>> getCustomConsol(@RequestBody @Valid ShipmentDetails request) {
+    public ResponseEntity<RunnerResponse<CustomShipmentSyncRequest>> getCustomShipment(@RequestBody @Valid ShipmentDetails request) {
         String responseMsg;
         try {
             return (ResponseEntity<RunnerResponse<CustomShipmentSyncRequest>>) shipmentSync.sync(request);
@@ -198,8 +202,12 @@ public class ShipmentController {
         return (ResponseEntity<RunnerResponse<CustomShipmentSyncRequest>>) ResponseHelper.buildFailedResponse(responseMsg);
     }
 
-    @PostMapping("sync")
-    public ResponseEntity<?> syncShipment(@RequestBody @Valid CustomShipmentSyncRequest request){
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = ShipmentConstants.SHIPMENT_SYNC_SUCCESSFUL),
+            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
+    })
+    @PostMapping(ApiConstants.SYNC)
+    public ResponseEntity<?> syncShipmentToService(@RequestBody @Valid CustomShipmentSyncRequest request){
         String responseMsg = "failure executing :(";
         try {
             return shipmentSync.reverseSync(request);

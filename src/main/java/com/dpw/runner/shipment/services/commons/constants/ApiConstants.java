@@ -41,4 +41,5 @@ public class ApiConstants {
     public static final String DETACH_SHIPMENTS = "detach-shipments";
     public static final String SAVE_FROM_V1 = "save/from/v1";
     public static final String API_GET_CUSTOM_REQ = "getCustomReq";
+    public static final String SYNC = "sync";
 }
