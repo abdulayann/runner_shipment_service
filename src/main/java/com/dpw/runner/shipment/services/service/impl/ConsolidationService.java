@@ -1,7 +1,6 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 
-import com.azure.messaging.servicebus.ServiceBusMessage;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
@@ -25,7 +24,7 @@ import com.dpw.runner.shipment.services.service.interfaces.IConsolidationService
 import com.dpw.runner.shipment.services.service_bus.AzureServiceBusTopic;
 import com.dpw.runner.shipment.services.service_bus.ISBProperties;
 import com.dpw.runner.shipment.services.service_bus.SBUtilsImpl;
-import com.dpw.runner.shipment.services.service_bus.model.EventMessage;
+import com.dpw.runner.shipment.services.syncing.interfaces.IConsolidationSync;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.util.Pair;
@@ -124,6 +123,9 @@ public class ConsolidationService implements IConsolidationService {
 
     @Autowired
     private AzureServiceBusTopic azureServiceBusTopic;
+
+    @Autowired
+    private IConsolidationSync consolidationSync;
 
     private List<String> TRANSPORT_MODES = Arrays.asList("SEA", "ROAD", "RAIL", "AIR");
     private List<String> SHIPMENT_TYPE = Arrays.asList("FCL", "LCL");
@@ -319,8 +321,9 @@ public class ConsolidationService implements IConsolidationService {
             if (routingsRequest != null)
                 createRoutingsAsync(consolidationDetails, routingsRequest);
 
-            EventMessage eventMessage = EventMessage.builder().messageType(Constants.SERVICE).entity(Constants.CONSOLIDATION).request(consolidationDetails).build();
-            sbUtils.sendMessagesToTopic(isbProperties, azureServiceBusTopic.getTopic(), Arrays.asList(new ServiceBusMessage(jsonHelper.convertToJsonIncludeNulls(eventMessage))));
+            consolidationSync.sync(request);
+            // EventMessage eventMessage = EventMessage.builder().messageType(Constants.SERVICE).entity(Constants.CONSOLIDATION).request(consolidationDetails).build();
+            // sbUtils.sendMessagesToTopic(isbProperties, azureServiceBusTopic.getTopic(), Arrays.asList(new ServiceBusMessage(jsonHelper.convertToJsonIncludeNulls(eventMessage))));
 
         } catch (Exception e) {
             log.error(e.getMessage());

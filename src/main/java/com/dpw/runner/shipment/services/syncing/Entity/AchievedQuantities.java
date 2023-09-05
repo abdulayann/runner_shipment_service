@@ -7,16 +7,16 @@ import java.util.UUID;
 
 @Data
 public class AchievedQuantities {
-    public BigDecimal ConsolidatiedVolume;
-    public String ConsolidatiedVolumeUnit;
-    public BigDecimal ConsolidatiedWeight;
-    public String ConsolidatiedWeightUnit;
-    public String ConsolidationChargeQuantityUnit;
-    public BigDecimal ConsolidationChargeQuantity;
-    public UUID Guid;
-    public Long Id;
-    public String VolumeUtilization;
-    public String WeightUtilization;
-    public String WeightVolumeUnit;
-    public BigDecimal WeightVolume;
+    private BigDecimal ConsolidatiedVolume;
+    private String ConsolidatiedVolumeUnit;
+    private BigDecimal ConsolidatiedWeight;
+    private String ConsolidatiedWeightUnit;
+    private String ConsolidationChargeQuantityUnit;
+    private BigDecimal ConsolidationChargeQuantity;
+    private UUID Guid;
+    private Long Id;
+    private String VolumeUtilization;
+    private String WeightUtilization;
+    private String WeightVolumeUnit;
+    private BigDecimal WeightVolume;
 }

@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.syncing.Entity;
 
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
 import java.math.BigDecimal;
@@ -12,268 +13,499 @@ import java.util.UUID;
 @Data
 public class CustomConsolidationRequest implements IRunnerResponse, IRunnerRequest {
 
-    public AchievedQuantities AchievedQuantities;
-    public String AdditionalTerms;
-    public Allocations Allocations;
-    public ArrivalDepartureDetails ArrivalDepartureDetails;
+    @JsonProperty
+    private AchievedQuantities AchievedQuantities;
+    @JsonProperty
+    private String AdditionalTerms;
+    @JsonProperty
+    private Allocations Allocations;
+    @JsonProperty
+    private ArrivalDepartureDetails ArrivalDepartureDetails;
 
-    // public Integer Copy;
+    // @JsonProperty
+    // private Integer Copy;
 
     // Carrier details
-    public String DestinationName;
-    public String DestinationPortName;
-    public String OriginPortName;
-    public String OriginName;
-    public String ShipmentId;
-    public String ShippingLine;
-    public String Voyage;
+    @JsonProperty
+    private String DestinationName;
+    @JsonProperty
+    private String DestinationPortName;
+    @JsonProperty
+    private String OriginPortName;
+    @JsonProperty
+    private String OriginName;
+    @JsonProperty
+    private String ShipmentId;
+    @JsonProperty
+    private String ShippingLine;
+    @JsonProperty
+    private String Voyage;
 
-    public List<ContainerRequestV2> ContainersList;
+    @JsonProperty
+    private List<ContainerRequestV2> ContainersList;
 
-    public Long BondedWarehouseId;
+    @JsonProperty
+    private Long BondedWarehouseId;
 
-    public LocalDateTime CargoClosingTime;
+    @JsonProperty
+    private LocalDateTime CargoClosingTime;
 
-    public BigDecimal ConsolidatedVolume;
-    public LocalDateTime DocsClosingTime;
-    public Integer DocumentationPartner;
-    public LocalDateTime DOIssueDate;
-    public String DOPlaceOfIssueName;
-    public String EDITransactionId;
-    // public LocalDateTime EstimatedTerminalCutoff;
+    @JsonProperty
+    private BigDecimal ConsolidatedVolume;
+    @JsonProperty
+    private LocalDateTime DocsClosingTime;
+    @JsonProperty
+    private Integer DocumentationPartner;
+    @JsonProperty
+    private LocalDateTime DOIssueDate;
+    @JsonProperty
+    private String DOPlaceOfIssueName;
+    @JsonProperty
+    private String EDITransactionId;
+    // @JsonProperty
+    // private LocalDateTime EstimatedTerminalCutoff;
 
-    public UUID Guid;
-    public Long Id;
-    public Boolean IntraBranch;
-    public LocalDateTime InwardDateandTime;
+    @JsonProperty
+    private UUID Guid;
+    @JsonProperty
+    private Long Id;
+    @JsonProperty
+    private Boolean IntraBranch;
+    @JsonProperty
+    private LocalDateTime InwardDateandTime;
 
-    public Boolean IsInland;
-    public Boolean IsReceivingAgentFreeTextAddress;
-    public Boolean IsSendingAgentFreeTextAddress;
+    @JsonProperty
+    private Boolean IsInland;
+    @JsonProperty
+    private Boolean IsReceivingAgentFreeTextAddress;
+    @JsonProperty
+    private Boolean IsSendingAgentFreeTextAddress;
 
-    public Integer LockedBy;
-    public String MarksnNums;
-    public String MrnNumber;
-    public Long MsnNumber;
+    @JsonProperty
+    private Integer LockedBy;
+    @JsonProperty
+    private String MarksnNums;
+    @JsonProperty
+    private String MrnNumber;
+    @JsonProperty
+    private Long MsnNumber;
 
-    public String PackageType;
+    @JsonProperty
+    private String PackageType;
 
-    public String ReceivingAgentFreeTextAddress;
-    public Integer ReceivingBranch;
-    public String ReferenceNumber;
+    @JsonProperty
+    private String ReceivingAgentFreeTextAddress;
+    @JsonProperty
+    private Integer ReceivingBranch;
+    @JsonProperty
+    private String ReferenceNumber;
 
-    public String SendingAgentFreeTextAddress;
-    public LocalDateTime Smtpigmdate;
-    public String Smtpigmnumber;
-    public Integer SourceTenantId;
-    public String SpecialInstructions;
-    public Integer TriangulationPartner;
-    public Long WarehouseId;
+    @JsonProperty
+    private String SendingAgentFreeTextAddress;
+    @JsonProperty
+    private LocalDateTime Smtpigmdate;
+    @JsonProperty
+    private String Smtpigmnumber;
+    @JsonProperty
+    private Integer SourceTenantId;
+    @JsonProperty
+    private String SpecialInstructions;
+    @JsonProperty
+    private Integer TriangulationPartner;
+    @JsonProperty
+    private Long WarehouseId;
 
-    public List<JobRequestV2> JobsList;
-    public List<NoteRequestV2> NotesList;
-    public List<BookingCarriageRequestV2> BookingCarriagesListE;
-    public List<ElDetailsRequestV2> ElDetailsList;
-    public List<EventsRequestV2> EventsList;
-    public List<FileRepoRequestV2> DocsList;
-    public List<PackingRequestV2> PackingList;
-    public List<ReferenceNumbersRequestV2> ReferenceNumbersList;
-    public List<RoutingsRequestV2> RoutingsList;
-    public List<CustomShipmentRequest> ShipmentList;
-    public List<TruckDriverDetailsRequestV2> TruckDriverDetail;
+    @JsonProperty
+    private List<JobRequestV2> JobsList;
+    @JsonProperty
+    private List<NoteRequestV2> NotesList;
+    @JsonProperty
+    private List<BookingCarriageRequestV2> BookingCarriagesListE;
+    @JsonProperty
+    private List<ElDetailsRequestV2> ElDetailsList;
+    @JsonProperty
+    private List<EventsRequestV2> EventsList;
+    @JsonProperty
+    private List<FileRepoRequestV2> DocsList;
+    @JsonProperty
+    private List<PackingRequestV2> PackingList;
+    @JsonProperty
+    private List<ReferenceNumbersRequestV2> ReferenceNumbersList;
+    @JsonProperty
+    private List<RoutingsRequestV2> RoutingsList;
+    @JsonProperty
+    private List<CustomShipmentRequest> ShipmentList;
+    @JsonProperty
+    private List<TruckDriverDetailsRequestV2> TruckDriverDetail;
 
-    public String FirstLoadString;
-    public String LastDischargeString;
-    public String IGMFileNo;
-    public LocalDateTime IGMFileDate;
-    public LocalDateTime IGMInwardDate;
-    public LocalDateTime SMTPIGMDate;
-    public String SMTPIGMNumber;
+    @JsonProperty
+    private String FirstLoadString;
+    @JsonProperty
+    private String LastDischargeString;
+    @JsonProperty
+    private String IGMFileNo;
+    @JsonProperty
+    private LocalDateTime IGMFileDate;
+    @JsonProperty
+    private LocalDateTime IGMInwardDate;
+    @JsonProperty
+    private LocalDateTime SMTPIGMDate;
+    @JsonProperty
+    private String SMTPIGMNumber;
 
-    public List<UUID> ShipmentGuids;
+    @JsonProperty
+    private List<UUID> ShipmentGuids;
 
-    public PartyRequestV2 SendingAgent;
-    public PartyRequestV2 ReceivingAgent;
-    public PartyRequestV2 BorrowedFrom;
-    public PartyRequestV2 Creditor;
-    public PartyRequestV2 CoLoadWith;
+    @JsonProperty
+    private PartyRequestV2 SendingAgent;
+    @JsonProperty
+    private PartyRequestV2 ReceivingAgent;
+    @JsonProperty
+    private PartyRequestV2 BorrowedFrom;
+    @JsonProperty
+    private PartyRequestV2 Creditor;
+    @JsonProperty
+    private PartyRequestV2 CoLoadWith;
 
-    public String Description;
-    public String PlaceOfIssueString;
+    @JsonProperty
+    private String Description;
+    @JsonProperty
+    private String PlaceOfIssueString;
 
     ///////// Original Consol Request
 
 
-    public List<String> shipmentRefNumbers;
-    public String Type;
-    public String ConsolidationNumber;
-    // public Long ConsolidationId;
-    public String TransportMode;
-    public String DeliveryMode;
-    public String ContainerType;
-    public String FirstLoad;
-    public String LastDischarge;
-    public String POLId;
-    public String PODId;
-    public LocalDateTime Eta;
-    public LocalDateTime Ata;
-    public LocalDateTime Etd;
-    public LocalDateTime Atd;
-    public Boolean IsDomestic;
-    public String VoyageNumber;
-    public String Vessel;
-    public String FlightNumber;
-    public String AircraftType;
-    public String AircraftRegistration;
-    public String TruckRefNumber;
-    public String OtherInfo;
-    public String JourneyNumber;
-    public String JourneyRefNumber;
-    public String Bol;
-    public String MAWB;
-    public String ServiceLevel;
-    public String Payment;
-//    public List<ConsolidationContainersRow> ConsolidationContainers;
+    @JsonProperty
+    private List<String> shipmentRefNumbers;
+    @JsonProperty
+    private String Type;
+    @JsonProperty
+    private String ConsolidationNumber;
+    // @JsonProperty
+    // private Long ConsolidationId;
+    @JsonProperty
+    private String TransportMode;
+    @JsonProperty
+    private String DeliveryMode;
+    @JsonProperty
+    private String ContainerType;
+    @JsonProperty
+    private String FirstLoad;
+    @JsonProperty
+    private String LastDischarge;
+    @JsonProperty
+    private String POLId;
+    @JsonProperty
+    private String PODId;
+    @JsonProperty
+    private LocalDateTime Eta;
+    @JsonProperty
+    private LocalDateTime Ata;
+    @JsonProperty
+    private LocalDateTime Etd;
+    @JsonProperty
+    private LocalDateTime Atd;
+    @JsonProperty
+    private Boolean IsDomestic;
+    @JsonProperty
+    private String VoyageNumber;
+    @JsonProperty
+    private String Vessel;
+    @JsonProperty
+    private String FlightNumber;
+    @JsonProperty
+    private String AircraftType;
+    @JsonProperty
+    private String AircraftRegistration;
+    @JsonProperty
+    private String TruckRefNumber;
+    @JsonProperty
+    private String OtherInfo;
+    @JsonProperty
+    private String JourneyNumber;
+    @JsonProperty
+    private String JourneyRefNumber;
+    @JsonProperty
+    private String Bol;
+    @JsonProperty
+    private String MAWB;
+    @JsonProperty
+    private String ServiceLevel;
+    @JsonProperty
+    private String Payment;
+//    @JsonProperty
+//    private List<ConsolidationContainersRow> ConsolidationContainers;
 
-//    public List<CommonContainersRequest> CommonContainers;
+//    @JsonProperty
+//    private List<CommonContainersRequest> CommonContainers;
 
-    // public List<ShipmentsRow> Shipments;
-//    public List<RoutingsRow> Routings;
-    public Long SendingAgentId;
-    public Integer SendingAgentAddressId;
-    public Long ReceivingAgentId;
-    public Integer ReceivingAgentAddressId;
-    public String Carrier;
-    public Long CreditorId;
-    public Integer CreditorAddressId;
-    public String CarrierBookingRef;
-    public String AgentReference;
-    public Long CoLoadWithId;
-    public Integer CoLoadWithAddressId;
-    public String CoLoadMBL;
-    public String CoLoadBookingRef;
+    // @JsonProperty
+    // private List<ShipmentsRow> Shipments;
+//    @JsonProperty
+//    private List<RoutingsRow> Routings;
+    @JsonProperty
+    private Long SendingAgentId;
+    @JsonProperty
+    private Integer SendingAgentAddressId;
+    @JsonProperty
+    private Long ReceivingAgentId;
+    @JsonProperty
+    private Integer ReceivingAgentAddressId;
+    @JsonProperty
+    private String Carrier;
+    @JsonProperty
+    private Long CreditorId;
+    @JsonProperty
+    private Integer CreditorAddressId;
+    @JsonProperty
+    private String CarrierBookingRef;
+    @JsonProperty
+    private String AgentReference;
+    @JsonProperty
+    private Long CoLoadWithId;
+    @JsonProperty
+    private Integer CoLoadWithAddressId;
+    @JsonProperty
+    private String CoLoadMBL;
+    @JsonProperty
+    private String CoLoadBookingRef;
 
-    public Long dCTOId;
-    public Integer dCTOAddressId;
-    public Long dCFSId;
-    public Long dCYDId;
-    public Long dPortTransportId;
-    public Integer dCFSAddressId;
-    public Long dCYDAddressId;
-    public Long dPortTransportAddressId;
-    public Integer dContainerYardId; // Currently not used. Kept for backward compatibility.
-    public Integer dTransportPortId;// Currently not used. Kept for backward compatibility.
-    public Integer dFirstForeignPortId;
-    public LocalDateTime dFirstForeignPortArrivalDate;
-    public LocalDateTime dLastForeignPortDepartureDate;
-    public Integer dLastForeignPortId;
+    @JsonProperty
+    private Long dCTOId;
+    @JsonProperty
+    private Integer dCTOAddressId;
+    @JsonProperty
+    private Long dCFSId;
+    @JsonProperty
+    private Long dCYDId;
+    @JsonProperty
+    private Long dPortTransportId;
+    @JsonProperty
+    private Integer dCFSAddressId;
+    @JsonProperty
+    private Long dCYDAddressId;
+    @JsonProperty
+    private Long dPortTransportAddressId;
+    @JsonProperty
+    private Integer dContainerYardId; // Currently not used. Kept for backward compatibility.
+    @JsonProperty
+    private Integer dTransportPortId;// Currently not used. Kept for backward compatibility.
+    @JsonProperty
+    private Integer dFirstForeignPortId;
+    @JsonProperty
+    private LocalDateTime dFirstForeignPortArrivalDate;
+    @JsonProperty
+    private LocalDateTime dLastForeignPortDepartureDate;
+    @JsonProperty
+    private Integer dLastForeignPortId;
 
-    public Long aCTOId;
-    public Integer aCTOAddressId;
-    public Long aCFSId;
-    public Long aCYDId;
-    public Long aPortTransportId;
-    public Integer aCFSAddressId;
-    public Long aCYDAddressId;
-    public Long aPortTransportAddressId;
-    public Integer aContainerYardId; // Currently not used. Kept for backward compatibility.
-    public Integer aTransportPortId;// Currently not used. Kept for backward compatibility.
-    public Integer aFirstArrivalPortId;
-    public LocalDateTime aFirstArrivalPortArrivalDate;
-    public LocalDateTime aLastForeignPortDepartureDate;
-    public Integer aLastForeignPortId;
-    public String ManifestPrint;
-    public String PrinOtherDocs;
-    public String AWBDims;
-    public String ReleaseType;
-    public Integer Originals;
-    public Integer Copy;
-    public String PlaceOfIssue;
-    public LocalDateTime MasterBillIssueDate;
-    public Long ShipmentsCount;
-    public BigDecimal Weight;
-    public String WeightUnit;
-    public BigDecimal Volume;
-    public String VolumeUnit;
-    public BigDecimal Chargeable;
-    public String ChargeableUnit;
-    public LocalDateTime CutoffDate;
-    public Boolean Hazardous;
-    public String DGClass;
-    public String DGSubstance;
-    public Boolean IsTemparatureControlled;
-    public BigDecimal MinTemp;
-    public BigDecimal MaxTemp;
-    public String MinTempUnit;
-    public String MaxTempUnit;
-    public Boolean Override;
-    public BigDecimal WeightVolume;
-    public String WeightVolumeUnit;
-    public BigDecimal ConsolidatedWeight;
-    public String ConsolidatedWeightUnit;
-    public String WeightUtilization;
-    public BigDecimal ConsolidatiedVolume;
-    public String ConsolidatiedVolumeUnit;
-    public String VolumeUtilization;
-    public BigDecimal ConsolidationChargeQuantity;
-    public String ConsolidationChargeQuantityUnit;
-//    public List<DGRow> DGClasses;
-//    public List<DGSubstanceRow> DGSubstances;
-    // public List<TemperatureClassRow> TempClasses;
-//    public List<ReferenceNumbersRow> ReferenceNumbers;
-//    public List<ConsolidationAddressRow> ConsolidationAddresses;
+    @JsonProperty
+    private Long aCTOId;
+    @JsonProperty
+    private Integer aCTOAddressId;
+    @JsonProperty
+    private Long aCFSId;
+    @JsonProperty
+    private Long aCYDId;
+    @JsonProperty
+    private Long aPortTransportId;
+    @JsonProperty
+    private Integer aCFSAddressId;
+    @JsonProperty
+    private Long aCYDAddressId;
+    @JsonProperty
+    private Long aPortTransportAddressId;
+    @JsonProperty
+    private Integer aContainerYardId; // Currently not used. Kept for backward compatibility.
+    @JsonProperty
+    private Integer aTransportPortId;// Currently not used. Kept for backward compatibility.
+    @JsonProperty
+    private Integer aFirstArrivalPortId;
+    @JsonProperty
+    private LocalDateTime aFirstArrivalPortArrivalDate;
+    @JsonProperty
+    private LocalDateTime aLastForeignPortDepartureDate;
+    @JsonProperty
+    private Integer aLastForeignPortId;
+    @JsonProperty
+    private String ManifestPrint;
+    @JsonProperty
+    private String PrinOtherDocs;
+    @JsonProperty
+    private String AWBDims;
+    @JsonProperty
+    private String ReleaseType;
+    @JsonProperty
+    private Integer Originals;
+    @JsonProperty
+    private Integer Copy;
+    @JsonProperty
+    private String PlaceOfIssue;
+    @JsonProperty
+    private LocalDateTime MasterBillIssueDate;
+    @JsonProperty
+    private Long ShipmentsCount;
+    @JsonProperty
+    private BigDecimal Weight;
+    @JsonProperty
+    private String WeightUnit;
+    @JsonProperty
+    private BigDecimal Volume;
+    @JsonProperty
+    private String VolumeUnit;
+    @JsonProperty
+    private BigDecimal Chargeable;
+    @JsonProperty
+    private String ChargeableUnit;
+    @JsonProperty
+    private LocalDateTime CutoffDate;
+    @JsonProperty
+    private Boolean Hazardous;
+    @JsonProperty
+    private String DGClass;
+    @JsonProperty
+    private String DGSubstance;
+    @JsonProperty
+    private Boolean IsTemparatureControlled;
+    @JsonProperty
+    private BigDecimal MinTemp;
+    @JsonProperty
+    private BigDecimal MaxTemp;
+    @JsonProperty
+    private String MinTempUnit;
+    @JsonProperty
+    private String MaxTempUnit;
+    @JsonProperty
+    private Boolean Override;
+    @JsonProperty
+    private BigDecimal WeightVolume;
+    @JsonProperty
+    private String WeightVolumeUnit;
+    @JsonProperty
+    private BigDecimal ConsolidatedWeight;
+    @JsonProperty
+    private String ConsolidatedWeightUnit;
+    @JsonProperty
+    private String WeightUtilization;
+    @JsonProperty
+    private BigDecimal ConsolidatiedVolume;
+    @JsonProperty
+    private String ConsolidatiedVolumeUnit;
+    @JsonProperty
+    private String VolumeUtilization;
+    @JsonProperty
+    private BigDecimal ConsolidationChargeQuantity;
+    @JsonProperty
+    private String ConsolidationChargeQuantityUnit;
+//    @JsonProperty
+//    private List<DGRow> DGClasses;
+//    @JsonProperty
+//    private List<DGSubstanceRow> DGSubstances;
+    // @JsonProperty
+    // private List<TemperatureClassRow> TempClasses;
+//    @JsonProperty
+//    private List<ReferenceNumbersRow> ReferenceNumbers;
+//    @JsonProperty
+//    private List<ConsolidationAddressRow> ConsolidationAddresses;
 
-    public List<Long> ShipmentIds;
-    public String TotalContainers;
-    public String TotalPackages;
-    public String TotalWeight;
-    public LocalDateTime EstimatedTerminalCutoff;
-    public LocalDateTime TerminalCutoff;
-    public LocalDateTime BookingCutoff;
-    public LocalDateTime ShipInstructionCutoff;
-    public LocalDateTime HazardousBookingCutoff;
-    public LocalDateTime VerifiedGrossMassCutoff;
-    public LocalDateTime ReeferCutoff;
+    @JsonProperty
+    private List<Long> ShipmentIds;
+    @JsonProperty
+    private String TotalContainers;
+    @JsonProperty
+    private String TotalPackages;
+    @JsonProperty
+    private String TotalWeight;
+    @JsonProperty
+    private LocalDateTime EstimatedTerminalCutoff;
+    @JsonProperty
+    private LocalDateTime TerminalCutoff;
+    @JsonProperty
+    private LocalDateTime BookingCutoff;
+    @JsonProperty
+    private LocalDateTime ShipInstructionCutoff;
+    @JsonProperty
+    private LocalDateTime HazardousBookingCutoff;
+    @JsonProperty
+    private LocalDateTime VerifiedGrossMassCutoff;
+    @JsonProperty
+    private LocalDateTime ReeferCutoff;
 
-    public String ShipmentType;
-    public String ReferenceNo;
-    public String DeclarationType;
+    @JsonProperty
+    private String ShipmentType;
+    @JsonProperty
+    private String ReferenceNo;
+    @JsonProperty
+    private String DeclarationType;
 
-    public Integer Bookingstatus;
-    public String BookingId;
-//    public List<OrdersRow> ShipmentOrders;
-//    public List<FileRepoRow> Docs;
-    public Boolean IsCharter;
-    public Boolean IsCargoOnly;
-    public Boolean IsLinked;
-//    public List<BillRow> consolidatedBill;
+    @JsonProperty
+    private Integer Bookingstatus;
+    @JsonProperty
+    private String BookingId;
+//    @JsonProperty
+//    private List<OrdersRow> ShipmentOrders;
+//    @JsonProperty
+//    private List<FileRepoRow> Docs;
+    @JsonProperty
+    private Boolean IsCharter;
+    @JsonProperty
+    private Boolean IsCargoOnly;
+    @JsonProperty
+    private Boolean IsLinked;
+//    @JsonProperty
+//    private List<BillRow> consolidatedBill;
 
     //for print
-    public String SendingAgentName;
-    public String SendingAgentAddress1;
-    public String SendingAgentAddress2;
-    public String SendingAgentCity;
-    public String SendingAgentCountry;
-    public String SendingAgentEmail;
-    public String SendingAgentContactPhone;
-    public String SendingAgentFaxNumber;
+    @JsonProperty
+    private String SendingAgentName;
+    @JsonProperty
+    private String SendingAgentAddress1;
+    @JsonProperty
+    private String SendingAgentAddress2;
+    @JsonProperty
+    private String SendingAgentCity;
+    @JsonProperty
+    private String SendingAgentCountry;
+    @JsonProperty
+    private String SendingAgentEmail;
+    @JsonProperty
+    private String SendingAgentContactPhone;
+    @JsonProperty
+    private String SendingAgentFaxNumber;
 
-    public String ReceivingAgentName;
-    public String ReceivinAgentAddress1;
-    public String ReceivingAgentContactPhone;
-    public String ReceivingAgentEmail;
-    public String ReceivingAgentCountry;
-    public String ReceivingAgentCity;
-    public String ReceivinAgentAddress2;
-    public String ReceivingAgentFaxNumber;
+    @JsonProperty
+    private String ReceivingAgentName;
+    @JsonProperty
+    private String ReceivinAgentAddress1;
+    @JsonProperty
+    private String ReceivingAgentContactPhone;
+    @JsonProperty
+    private String ReceivingAgentEmail;
+    @JsonProperty
+    private String ReceivingAgentCountry;
+    @JsonProperty
+    private String ReceivingAgentCity;
+    @JsonProperty
+    private String ReceivinAgentAddress2;
+    @JsonProperty
+    private String ReceivingAgentFaxNumber;
 
-    public String CTOName;
-    public String CTOAddress1;
-    public String CTOContactPhone;
-    public String CTOEmail;
-    public String CTOCountry;
-    public String CTOCity;
-    public String CTOAddress2;
-    public String CTOFaxPhone;
-    public Boolean IsLocked;
+    @JsonProperty
+    private String CTOName;
+    @JsonProperty
+    private String CTOAddress1;
+    @JsonProperty
+    private String CTOContactPhone;
+    @JsonProperty
+    private String CTOEmail;
+    @JsonProperty
+    private String CTOCountry;
+    @JsonProperty
+    private String CTOCity;
+    @JsonProperty
+    private String CTOAddress2;
+    @JsonProperty
+    private String CTOFaxPhone;
+    @JsonProperty
+    private Boolean IsLocked;
 }
