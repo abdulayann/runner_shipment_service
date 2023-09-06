@@ -18,6 +18,7 @@ import java.util.List;
 public class NPMFetchOffersRequestFromUI extends CommonRequest implements IRunnerRequest {
     private String origin;
     private String destination;
+    private String countryCode;
     @JsonProperty("booking_id")
     private Long bookingId;
     @JsonProperty("preferred_date")

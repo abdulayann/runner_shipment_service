@@ -16,6 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 
 import java.net.URI;
+import java.util.Objects;
 
 @Service
 @Slf4j
@@ -51,7 +52,7 @@ public class CRPServiceAdapter implements com.dpw.runner.shipment.services.adapt
     public ResponseEntity<?> listCRPService(CommonRequestModel requestModel) throws Exception {
         CRPListRequest request = (CRPListRequest) requestModel.getData();
         log.info("List CRP: with request: {}", request.toString());
-        String url = crpServiceListUrl + request.getSearchString() + (request.isBillable() ? CustomerBookingConstants.BILLABLE_IDENTIFIER : StringUtility.getEmptyString());
+        String url = crpServiceListUrl + (Objects.isNull(request.getSearchString()) ? StringUtility.getEmptyString() : request.getSearchString().replaceAll(" ", "")) + (request.isBillable() ? CustomerBookingConstants.BILLABLE_IDENTIFIER : StringUtility.getEmptyString());
         log.info("List CRP: To Url: {}", url);
         ResponseEntity<?> responseEntity;
         try {
