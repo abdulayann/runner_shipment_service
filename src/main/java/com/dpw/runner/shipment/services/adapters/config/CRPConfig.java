@@ -19,12 +19,16 @@ public class CRPConfig {
     @Value("${crp.service.provider.code}")
     private String serviceProviderCode;
 
+    @Value("${crp.service.company.ref}")
+    private String companyRef;
+
     @Bean
     public RestTemplate restTemplateForCRP() {
         RestTemplate restTemplate = new RestTemplate();
         restTemplate.getInterceptors().add((request, body, execution) -> {
             HttpHeaders headers = request.getHeaders();
             headers.set("X-API-KEY", apiKey);
+            headers.set("X-COMPANY-REFERENCE", companyRef);
             headers.set("X-CLIENT-TYPE-CODE", clientTypeCode);
             headers.set("X-SERVICE-PROVIDER-CODE", serviceProviderCode);
             headers.setContentType(MediaType.APPLICATION_JSON);

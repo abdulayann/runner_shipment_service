@@ -543,38 +543,9 @@ public class ConsolidationService implements IConsolidationService {
 
             ConsolidationDetails entity = jsonHelper.convertValue(consolidationDetailsRequest, ConsolidationDetails.class);
 
-            List<Packing> oldPackingList = oldEntity.get().getPackingList();
-            List<Containers> oldContainerList = oldEntity.get().getContainersList();
-            List<Events> oldEventsList = oldEntity.get().getEventsList();
-            List<FileRepo> oldFileRepoList = oldEntity.get().getFileRepoList();
-            List<Jobs> oldJobList = oldEntity.get().getJobsList();
-            List<ReferenceNumbers> oldReferenceNumbersList = oldEntity.get().getReferenceNumbersList();
-            List<Routings> oldRoutingsList = oldEntity.get().getRoutingsList();
-
             entity = consolidationDetailsDao.update(entity);
 
             ConsolidationDetailsResponse response = jsonHelper.convertValue(entity, ConsolidationDetailsResponse.class);
-            if(containerRequestList == null) {
-                response.setContainersList(convertToDtoList(oldContainerList, ContainerResponse.class));
-            }
-            if (packingRequestList == null) {
-                response.setPackingList(convertToDtoList(oldPackingList, PackingResponse.class));
-            }
-            if (eventsRequestList == null) {
-                response.setEventsList(convertToDtoList(oldEventsList, EventsResponse.class));
-            }
-            if (fileRepoRequestList == null) {
-                response.setFileRepoList(convertToDtoList(oldFileRepoList, FileRepoResponse.class));
-            }
-            if (jobRequestList == null) {
-                response.setJobsList(convertToDtoList(oldJobList, JobResponse.class));
-            }
-            if (referenceNumbersRequestList == null) {
-                response.setReferenceNumbersList(convertToDtoList(oldReferenceNumbersList, ReferenceNumbersResponse.class));
-            }
-            if (routingsRequestList == null) {
-                response.setRoutingsList(convertToDtoList(oldRoutingsList, RoutingsResponse.class));
-            }
             if(containerRequestList != null) {
                 List<Containers> updatedContainers = containerDao.updateEntityFromShipmentConsole(convertToEntityList(containerRequestList, Containers.class), id);
                 response.setContainersList(convertToDtoList(updatedContainers, ContainerResponse.class));
@@ -609,7 +580,8 @@ public class ConsolidationService implements IConsolidationService {
             String responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
-            return ResponseHelper.buildFailedResponse(responseMsg);
+            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+            throw new RuntimeException(e);
         }
     }
 
@@ -1157,76 +1129,6 @@ public class ConsolidationService implements IConsolidationService {
                 updatedContainers = oldEntity.get().getContainersList();
             }
 
-
-            CarrierDetails updatedCarrierDetails = null;
-            if (carrierDetailRequest != null) {
-                CarrierDetails oldCarrierDetails;
-
-                if(oldConsolidation != null && oldConsolidation.getCarrierDetails() != null) {
-                    oldCarrierDetails = oldEntity.get().getCarrierDetails();
-                    carrierDetailRequest.setId(oldCarrierDetails.getId());
-                }
-                CarrierDetails cd = convertToClass(carrierDetailRequest, CarrierDetails.class);
-                updatedCarrierDetails = carrierDao.updateEntityFromShipmentConsole(cd);
-                entity.setCarrierDetails(updatedCarrierDetails);
-            }
-            else {
-                entity.setCarrierDetails(oldEntity.get().getCarrierDetails());
-            }
-
-            Allocations updatedAllocations = null;
-            if (allocationsRequest != null) {
-                if(oldConsolidation != null && oldConsolidation.getAllocations() != null) {
-                    Allocations oldAllocations = oldEntity.get().getAllocations();
-                    allocationsRequest.setId(oldAllocations.getId());
-                }
-                updatedAllocations = allocationsDao.updateEntityFromShipmentConsole(convertToClass(allocationsRequest, Allocations.class));
-                entity.setAllocations(updatedAllocations);
-            }
-            AchievedQuantities updatedAchievedQuantities = null;
-            if (achievedQuantitiesRequest != null) {
-                if(oldConsolidation != null && oldConsolidation.getAchievedQuantities() != null) {
-                    AchievedQuantities oldAchievedQuantities = oldEntity.get().getAchievedQuantities();
-                    achievedQuantitiesRequest.setId(oldAchievedQuantities.getId());
-                }
-                updatedAchievedQuantities = achievedQuantitiesDao.updateEntityFromShipmentConsole(convertToClass(achievedQuantitiesRequest, AchievedQuantities.class));
-                entity.setAchievedQuantities(updatedAchievedQuantities);
-            }
-
-            if(entity.getSendingAgent() == null && oldEntity.isPresent())
-                entity.setSendingAgent(oldEntity.get().getSendingAgent());
-            if(entity.getReceivingAgent() == null && oldEntity.isPresent())
-                entity.setReceivingAgent(oldEntity.get().getReceivingAgent());
-            if(entity.getBorrowedFrom() == null && oldEntity.isPresent())
-                entity.setBorrowedFrom(oldEntity.get().getBorrowedFrom());
-            if(entity.getCreditor() == null && oldEntity.isPresent())
-                entity.setCreditor(oldEntity.get().getCreditor());
-            if(entity.getCoLoadWith() == null && oldEntity.isPresent())
-                entity.setCoLoadWith(oldEntity.get().getCoLoadWith());
-            if(entity.getDepartureDetails() == null && oldEntity.isPresent())
-                entity.setDepartureDetails(oldEntity.get().getDepartureDetails());
-            if(entity.getArrivalDetails() == null && oldEntity.isPresent())
-                entity.setArrivalDetails(oldEntity.get().getArrivalDetails());
-
-            List<Packing> oldPackings = null;
-            List<Events> oldEvents = null;
-            List<Jobs> oldJobs = null;
-            List<ReferenceNumbers> oldReferenceNumbers= null;
-            List<Routings> oldRoutings= null;
-            List<FileRepo> oldFileRepoList = null;
-            List<TruckDriverDetails> oldTruckDriverDetailsRequestList = null;
-            List<Parties> oldConsolidationAddresses = null;
-            if(oldConsolidation != null) {
-                oldPackings = oldEntity.get().getPackingList();
-                oldEvents = oldEntity.get().getEventsList();
-                oldJobs = oldEntity.get().getJobsList();
-                oldReferenceNumbers = oldEntity.get().getReferenceNumbersList();
-                oldRoutings = oldEntity.get().getRoutingsList();
-                oldFileRepoList = oldEntity.get().getFileRepoList();
-                oldTruckDriverDetailsRequestList = oldEntity.get().getTruckDriverDetails();
-                oldConsolidationAddresses = oldEntity.get().getConsolidationAddresses();
-            }
-
             if(id == null) {
                 entity = consolidationDetailsDao.save(entity);
             } else {
@@ -1236,10 +1138,6 @@ public class ConsolidationService implements IConsolidationService {
             ConsolidationDetailsResponse response = jsonHelper.convertValue(entity, ConsolidationDetailsResponse.class);
             response.setContainersList(updatedContainers.stream().map(e -> jsonHelper.convertValue(e, ContainerResponse.class)).collect(Collectors.toList()));
 
-
-            if (carrierDetailRequest != null) {
-                response.setCarrierDetails(convertToClass(updatedCarrierDetails, CarrierDetailResponse.class));
-            }
             if (packingRequestList != null) {
                 List<Packing> updatedPackings = packingDao.updateEntityFromConsole(convertToEntityList(packingRequestList, Packing.class), id);
                 response.setPackingList(convertToDtoList(updatedPackings, PackingResponse.class));
@@ -1269,7 +1167,8 @@ public class ConsolidationService implements IConsolidationService {
             String responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
-            return ResponseHelper.buildFailedResponse(responseMsg);
+            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+            throw new RuntimeException(e);
         }
     }
 }

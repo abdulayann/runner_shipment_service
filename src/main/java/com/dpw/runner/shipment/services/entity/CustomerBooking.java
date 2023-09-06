@@ -4,6 +4,8 @@ package com.dpw.runner.shipment.services.entity;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.entity.enums.BookingSource;
 import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
+import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
+import com.dpw.runner.shipment.services.utils.MasterData;
 import lombok.*;
 import lombok.experimental.Accessors;
 import org.hibernate.annotations.SQLDelete;
@@ -70,6 +72,7 @@ public class CustomerBooking extends MultiTenancy {
     private LocalDateTime bookingDate;
 
     @Column(name = "inco_terms")
+    @MasterData(type = MasterDataType.INCOTERMS)
     private String incoTerms;
 
     @OneToOne(fetch = FetchType.LAZY, targetEntity = CarrierDetails.class, cascade = CascadeType.ALL)
@@ -77,46 +80,54 @@ public class CustomerBooking extends MultiTenancy {
     private CarrierDetails carrierDetails;
 
     @Column(name = "transport_type")
-    private String transportType;
+    @MasterData(type = MasterDataType.TRANSPORT_MODE)
+    private String transportType; //SEA, AIR
 
     @Column(name = "cargo_type")
-    private String cargoType;
+    @MasterData(type = MasterDataType.CONTAINER_CATEGORY)
+    private String cargoType; //LCL, FCL, LSE
 
     @Column(name = "direction")
+    @MasterData(type = MasterDataType.CUSTOM_SHIPMENT_TYPE)
     private String direction;
 
     @Column(name = "quantity")
     private Integer quantity;
 
     @Column(name = "quantity_unit")
+    @MasterData(type = MasterDataType.PACKS_UNIT)
     private String quantityUnit;
 
     @Column(name = "gross_weight")
     private BigDecimal grossWeight;
 
     @Column(name = "gross_weight_unit")
+    @MasterData(type = MasterDataType.WEIGHT_UNIT)
     private String grossWeightUnit;
 
     @Column(name = "volume")
     private BigDecimal volume;
 
     @Column(name = "volume_unit")
+    @MasterData(type = MasterDataType.VOLUME_UNIT)
     private String volumeUnit;
 
     @Column(name = "weight_volume")
     private BigDecimal weightVolume;
 
     @Column(name = "weight_volume_unit")
+    @MasterData(type = MasterDataType.WEIGHT_UNIT)
     private String weightVolumeUnit;
 
     @Column(name = "chargeable")
     private BigDecimal chargeable;
 
     @Column(name = "chargeable_unit")
+    @MasterData(type = MasterDataType.VOLUME_UNIT)
     private String chargeableUnit;
 
     @Column(name = "contract_id")
-    private UUID contractId;
+    private String contractId;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "bookingId")
     private List<Containers> containersList;
@@ -144,4 +155,13 @@ public class CustomerBooking extends MultiTenancy {
     @Enumerated(EnumType.STRING)
     private BookingSource source;
 
+    @Column(name = "business_code")
+    private String businessCode;
+
+    @MasterData(type = MasterDataType.SERVICE_MODE)
+    @Column(name = "service_mode")
+    private String serviceMode;
+
+    @Column(name = "shipment_id")
+    private String shipmentId;
 }

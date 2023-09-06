@@ -8,6 +8,7 @@ import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Map;
 import java.util.UUID;
 
 @Data
@@ -88,4 +89,8 @@ public class ContainerResponse implements IRunnerResponse {
     private String volumeUtilization;
     private PartiesResponse pickupAddress;
     private PartiesResponse deliveryAddress;
+    public Map<String, String> unlocationData;
+    public Map<String, String> masterData;
+    public Map<String, String> commodityTypeData;
+    public Map<String, String> containerCodeData;
 }

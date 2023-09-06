@@ -25,6 +25,7 @@ public class Constants {
     public static final String NO_DATA = "Not Found!";
     public static final String SHIPMENT = "SHIPMENT";
     public static final String BOOKING = "BOOKING";
+    public static final String BOOKING_CHARGES = "BOOKING_CHARGES";
     public static final String CONSOLIDATION = "CONSOLIDATION";
     public static final String TENANT_SETTINGS = "TENANT_SETTINGS";
     public static final String ROUTING = "ROUTING";
@@ -55,6 +56,7 @@ public class Constants {
     public static final String TRANSPORT_MODE_FSA = "FSA";
     public static final String TRANSPORT_MODE_FAS = "FAS";
     public static final String SHIPMENT_TYPE_LCL = "LCL";
+    public static final String CARGO_TYPE_FCL = "FCL";
 
 
     //MasterDataFactory
@@ -80,6 +82,7 @@ public class Constants {
     /** Enum Constants **/
 
     public static final String SHIPMENT_STATUS = "ShipmentStatus";
+    public static final String BOOKING_STATUS = "BookingStatus";
 
     public static final String MASTER_LIST = "MasterList";
     public static final String OWNERSHIP = "OwnerShip";
@@ -98,6 +101,7 @@ public class Constants {
     public static final String CURRENCY_MASTER_DATA = "Currency";
     public static final String VESSEL_MASTER_DATA = "Vessel";
     public static final String CARRIER_MASTER_DATA = "Carrier";
+    public static final String CHARGE_TYPE_MASTER_DATA = "ChargeType";
     public static final String CUSTOM_CITY = "customCity";
 
     public static final String DEFAULT_DATE_FORMAT = "MM/dd/yyyy";

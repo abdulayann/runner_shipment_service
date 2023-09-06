@@ -18,19 +18,12 @@ import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.v1.response.V1ContainerTypeResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.*;
-import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.entity.enums.GenerationType;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCarrier;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCurrency;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.mapper.ShipmentDetailsMapper;
-import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest;
-import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.masterdata.response.CarrierResponse;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
@@ -40,11 +33,8 @@ import com.dpw.runner.shipment.services.service_bus.AzureServiceBusTopic;
 import com.dpw.runner.shipment.services.service_bus.ISBProperties;
 import com.dpw.runner.shipment.services.service_bus.SBUtilsImpl;
 import com.dpw.runner.shipment.services.service_bus.model.EventMessage;
-import com.dpw.runner.shipment.services.utils.DedicatedMasterData;
-import com.dpw.runner.shipment.services.utils.MasterData;
+import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
-import com.dpw.runner.shipment.services.utils.UnlocationData;
-import com.dpw.runner.shipment.services.validator.enums.Operators;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
@@ -62,7 +52,6 @@ import org.springframework.transaction.interceptor.TransactionAspectSupport;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.StringUtils;
 
-import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -163,6 +152,8 @@ public class ShipmentService implements IShipmentService {
 
     @Autowired
     private AzureServiceBusTopic azureServiceBusTopic;
+    @Autowired
+    private MasterDataUtils masterDataUtils;
 
     @Autowired
     private AuditLogService auditLogService;
@@ -871,45 +862,11 @@ public class ShipmentService implements IShipmentService {
             }
             entity.setContainersList(updatedContainers);
 
-            List<BookingCarriage> oldBookingCarriages = oldEntity.get().getBookingCarriagesList();
-            List<Packing> oldPackings = oldEntity.get().getPackingList();
-            List<ELDetails> oldELDetails = oldEntity.get().getElDetailsList();
-            List<Events> oldEvents = oldEntity.get().getEventsList();
-            List<Jobs> oldJobs = oldEntity.get().getJobsList();
-            List<ReferenceNumbers> oldReferenceNumbers = oldEntity.get().getReferenceNumbersList();
-            List<Routings> oldRoutings = oldEntity.get().getRoutingsList();
-            List<ServiceDetails> oldServiceDetails = oldEntity.get().getServicesList();
-
             entity = shipmentDao.update(entity);
 
             attachConsolidations(entity.getId(), tempConsolIds);
 
             ShipmentDetailsResponse response = shipmentDetailsMapper.map(entity);
-
-            if (bookingCarriageRequestList == null) {
-                response.setBookingCarriagesList(convertToDtoList(oldBookingCarriages, BookingCarriageResponse.class));
-            }
-            if (packingRequestList == null) {
-                response.setPackingList(convertToDtoList(oldPackings, PackingResponse.class));
-            }
-            if (elDetailsRequestList == null) {
-                response.setElDetailsList(convertToDtoList(oldELDetails, ELDetailsResponse.class));
-            }
-            if (eventsRequestList == null) {
-                response.setEventsList(convertToDtoList(oldEvents, EventsResponse.class));
-            }
-            if (jobRequestList == null) {
-                response.setJobsList(convertToDtoList(oldJobs, JobResponse.class));
-            }
-            if (referenceNumbersRequestList == null) {
-                response.setReferenceNumbersList(convertToDtoList(oldReferenceNumbers, ReferenceNumbersResponse.class));
-            }
-            if (routingsRequestList == null) {
-                response.setRoutingsList(convertToDtoList(oldRoutings, RoutingsResponse.class));
-            }
-            if (serviceDetailsRequestList == null) {
-                response.setServicesList(convertToDtoList(oldServiceDetails, ServiceDetailsResponse.class));
-            }
 
             if (bookingCarriageRequestList != null) {
                 List<BookingCarriage> updatedBookingCarriages = bookingCarriageDao.updateEntityFromShipment(convertToEntityList(bookingCarriageRequestList, BookingCarriage.class), id);
@@ -946,14 +903,10 @@ public class ShipmentService implements IShipmentService {
             if (fileRepoRequestList != null) {
                 List<FileRepo> updatedFileRepos = fileRepoDao.updateEntityFromOtherEntity(convertToEntityList(fileRepoRequestList, FileRepo.class), id, Constants.SHIPMENT);
                 response.setFileRepoList(convertToDtoList(updatedFileRepos, FileRepoResponse.class));
-            } else {
-                response.setFileRepoList(convertToDtoList(fileRepoDao.findByEntityIdAndEntityType(id, Constants.SHIPMENT), FileRepoResponse.class));
             }
             if (notesRequestList != null) {
                 List<Notes> updatedNotes = notesDao.updateEntityFromOtherEntity(convertToEntityList(notesRequestList, Notes.class), id, Constants.SHIPMENT);
                 response.setNotesList(convertToDtoList(updatedNotes, NotesResponse.class));
-            } else {
-                response.setNotesList(convertToDtoList(notesDao.findByEntityIdAndEntityType(id, Constants.SHIPMENT), NotesResponse.class));
             }
 
             return ResponseHelper.buildSuccessResponse(response);
@@ -961,7 +914,8 @@ public class ShipmentService implements IShipmentService {
             String responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
-            return ResponseHelper.buildFailedResponse(responseMsg);
+            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+            throw new RuntimeException(e);
         }
     }
 
@@ -1472,70 +1426,6 @@ public class ShipmentService implements IShipmentService {
             }
             entity.setContainersList(updatedContainers);
 
-            AdditionalDetails updatedAdditionalDetails = null;
-            if (additionalDetailRequest != null) {
-                AdditionalDetails oldAdditionalDetails;
-
-                if(oldShipment != null && oldShipment.getAdditionalDetails() != null) {
-                    oldAdditionalDetails = oldEntity.get().getAdditionalDetails();
-                    additionalDetailRequest.setId(oldAdditionalDetails.getId());
-                }
-                updatedAdditionalDetails = additionalDetailDao.updateEntityFromShipment(convertToClass(additionalDetailRequest, AdditionalDetails.class));
-                entity.setAdditionalDetails(updatedAdditionalDetails);
-            }
-            else {
-                entity.setAdditionalDetails(oldEntity.get().getAdditionalDetails());
-            }
-
-            CarrierDetails updatedCarrierDetails = null;
-            if (carrierDetailRequest != null) {
-                CarrierDetails oldCarrierDetails;
-
-                if(oldShipment != null && oldShipment.getCarrierDetails() != null) {
-                    oldCarrierDetails = oldEntity.get().getCarrierDetails();
-                    carrierDetailRequest.setId(oldCarrierDetails.getId());
-                }
-                updatedCarrierDetails = carrierDao.updateEntityFromShipmentConsole(convertToClass(carrierDetailRequest, CarrierDetails.class));
-                entity.setCarrierDetails(updatedCarrierDetails);
-            }
-            else {
-                entity.setCarrierDetails(oldEntity.get().getCarrierDetails());
-            }
-
-            if(entity.getClient() == null)
-                entity.setClient(oldEntity.get().getClient());
-            if(entity.getConsignee() == null)
-                entity.setConsignee(oldEntity.get().getConsignee());
-            if(entity.getConsigner() == null)
-                entity.setConsigner(oldEntity.get().getConsigner());
-            if(entity.getPickupDetails() == null)
-                entity.setPickupDetails(oldEntity.get().getPickupDetails());
-            if(entity.getDeliveryDetails() == null)
-                entity.setDeliveryDetails(oldEntity.get().getDeliveryDetails());
-
-            List<BookingCarriage> oldBookingCarriages = null;
-            List<Packing> oldPackings = null;
-            List<ELDetails> oldELDetails = null;
-            List<Events> oldEvents = null;
-            List<Jobs> oldJobs = null;
-            List<ReferenceNumbers> oldReferenceNumbers= null;
-            List<Routings> oldRoutings= null;
-            List<ServiceDetails> oldServiceDetails = null;
-            List<FileRepo> oldFileRepoList = null;
-            List<Notes> oldNoteList = null;
-            if(oldShipment != null) {
-                oldBookingCarriages = oldEntity.get().getBookingCarriagesList();
-                oldPackings = oldEntity.get().getPackingList();
-                oldELDetails = oldEntity.get().getElDetailsList();
-                oldEvents = oldEntity.get().getEventsList();
-                oldJobs = oldEntity.get().getJobsList();
-                oldReferenceNumbers = oldEntity.get().getReferenceNumbersList();
-                oldRoutings = oldEntity.get().getRoutingsList();
-                oldServiceDetails = oldEntity.get().getServicesList();
-                oldFileRepoList = oldEntity.get().getFileRepoList();
-                oldNoteList = oldEntity.get().getNotesList();
-            }
-
             if(id == null) {
                 entity = shipmentDao.save(entity);
             } else {
@@ -1546,76 +1436,75 @@ public class ShipmentService implements IShipmentService {
 
             ShipmentDetailsResponse response = shipmentDetailsMapper.map(entity);
 
-            if(bookingCarriageRequestList == null) {
-                response.setBookingCarriagesList(convertToDtoList(oldBookingCarriages, BookingCarriageResponse.class));
-            }
-            if (packingRequestList == null) {
-                response.setPackingList(convertToDtoList(oldPackings, PackingResponse.class));
-            }
-            if (elDetailsRequestList == null) {
-                response.setElDetailsList(convertToDtoList(oldELDetails, ELDetailsResponse.class));
-            }
-            if (eventsRequestList == null) {
-                response.setEventsList(convertToDtoList(oldEvents, EventsResponse.class));
-            }
-            if (jobRequestList == null) {
-                response.setJobsList(convertToDtoList(oldJobs, JobResponse.class));
-            }
-            if (referenceNumbersRequestList == null) {
-                response.setReferenceNumbersList(convertToDtoList(oldReferenceNumbers, ReferenceNumbersResponse.class));
-            }
-            if (routingsRequestList == null) {
-                response.setRoutingsList(convertToDtoList(oldRoutings, RoutingsResponse.class));
-            }
-            if (serviceDetailsRequestList == null) {
-                response.setServicesList(convertToDtoList(oldServiceDetails, ServiceDetailsResponse.class));
-            }
-
             if (bookingCarriageRequestList != null) {
-                List<BookingCarriage> updatedBookingCarriages = bookingCarriageDao.updateEntityFromShipment(convertToEntityList(bookingCarriageRequestList, BookingCarriage.class), id, oldBookingCarriages);
+                ListCommonRequest listCommonRequest = constructListCommonRequest("shipmentId", entity.getId(), "=");
+                Pair<Specification<BookingCarriage>, Pageable> bookingCarriagePair = fetchData(listCommonRequest, BookingCarriage.class);
+                Page<BookingCarriage> oldBookingCarriages = bookingCarriageDao.findAll(bookingCarriagePair.getLeft(), bookingCarriagePair.getRight());
+                List<BookingCarriage> updatedBookingCarriages = bookingCarriageDao.updateEntityFromShipment(convertToEntityList(bookingCarriageRequestList, BookingCarriage.class), id, oldBookingCarriages.stream().toList());
                 response.setBookingCarriagesList(convertToDtoList(updatedBookingCarriages, BookingCarriageResponse.class));
             }
             if (packingRequestList != null) {
-                List<Packing> updatedPackings = packingDao.updateEntityFromShipment(convertToEntityList(packingRequestList, Packing.class), id, oldPackings);
+                ListCommonRequest listCommonRequest = constructListCommonRequest("shipmentId", entity.getId(), "=");
+                Pair<Specification<Packing>, Pageable> packingPair = fetchData(listCommonRequest, Packing.class);
+                Page<Packing> oldPackings = packingDao.findAll(packingPair.getLeft(), packingPair.getRight());
+                List<Packing> updatedPackings = packingDao.updateEntityFromShipment(convertToEntityList(packingRequestList, Packing.class), id, oldPackings.stream().toList());
                 response.setPackingList(convertToDtoList(updatedPackings, PackingResponse.class));
             }
             if (elDetailsRequestList != null) {
-                List<ELDetails> updatedELDetails = elDetailsDao.updateEntityFromShipment(convertToEntityList(elDetailsRequestList, ELDetails.class), id, oldELDetails);
+                ListCommonRequest listCommonRequest = constructListCommonRequest("shipmentId", entity.getId(), "=");
+                Pair<Specification<ELDetails>, Pageable> elDetailsPair = fetchData(listCommonRequest, ELDetails.class);
+                Page<ELDetails> oldELDetails = elDetailsDao.findAll(elDetailsPair.getLeft(), elDetailsPair.getRight());
+                List<ELDetails> updatedELDetails = elDetailsDao.updateEntityFromShipment(convertToEntityList(elDetailsRequestList, ELDetails.class), id, oldELDetails.stream().toList());
                 response.setElDetailsList(convertToDtoList(updatedELDetails, ELDetailsResponse.class));
             }
             if (eventsRequestList != null) {
-                List<Events> updatedEvents = eventDao.updateEntityFromOtherEntity(convertToEntityList(eventsRequestList, Events.class), id, Constants.SHIPMENT, oldEvents);
+                ListCommonRequest listCommonRequest = constructListRequestFromEntityId(entity.getId(), Constants.SHIPMENT);
+                Pair<Specification<Events>, Pageable> pair = fetchData(listCommonRequest, Events.class);
+                Page<Events> oldEvents = eventDao.findAll(pair.getLeft(), pair.getRight());
+                List<Events> updatedEvents = eventDao.updateEntityFromOtherEntity(convertToEntityList(eventsRequestList, Events.class), id, Constants.SHIPMENT, oldEvents.stream().toList());
                 response.setEventsList(convertToDtoList(updatedEvents, EventsResponse.class));
             }
             if (jobRequestList != null) {
-                List<Jobs> updatedJobs = jobDao.updateEntityFromShipment(convertToEntityList(jobRequestList, Jobs.class), id, oldJobs);
+                ListCommonRequest listCommonRequest = constructListCommonRequest("shipmentId", entity.getId(), "=");
+                Pair<Specification<Jobs>, Pageable> pair = fetchData(listCommonRequest, Jobs.class);
+                Page<Jobs> oldJobs = jobDao.findAll(pair.getLeft(), pair.getRight());
+                List<Jobs> updatedJobs = jobDao.updateEntityFromShipment(convertToEntityList(jobRequestList, Jobs.class), id, oldJobs.stream().toList());
                 response.setJobsList(convertToDtoList(updatedJobs, JobResponse.class));
             }
             if (referenceNumbersRequestList != null) {
-                List<ReferenceNumbers> updatedReferenceNumbers = referenceNumbersDao.updateEntityFromShipment(convertToEntityList(referenceNumbersRequestList, ReferenceNumbers.class), id, oldReferenceNumbers);
+                ListCommonRequest listCommonRequest = constructListCommonRequest("shipmentId", entity.getId(), "=");
+                Pair<Specification<ReferenceNumbers>, Pageable> pair = fetchData(listCommonRequest, ReferenceNumbers.class);
+                Page<ReferenceNumbers> oldReferenceNumbers = referenceNumbersDao.findAll(pair.getLeft(), pair.getRight());
+                List<ReferenceNumbers> updatedReferenceNumbers = referenceNumbersDao.updateEntityFromShipment(convertToEntityList(referenceNumbersRequestList, ReferenceNumbers.class), id, oldReferenceNumbers.stream().toList());
                 response.setReferenceNumbersList(convertToDtoList(updatedReferenceNumbers, ReferenceNumbersResponse.class));
             }
             if (routingsRequestList != null) {
-                List<Routings> updatedRoutings = routingsDao.updateEntityFromShipment(convertToEntityList(routingsRequestList, Routings.class), id, oldRoutings);
+                ListCommonRequest listCommonRequest = constructListCommonRequest("shipmentId", entity.getId(), "=");
+                Pair<Specification<Routings>, Pageable> pair = fetchData(listCommonRequest, Routings.class);
+                Page<Routings> oldRoutings = routingsDao.findAll(pair.getLeft(), pair.getRight());
+                List<Routings> updatedRoutings = routingsDao.updateEntityFromShipment(convertToEntityList(routingsRequestList, Routings.class), id, oldRoutings.stream().toList());
                 response.setRoutingsList(convertToDtoList(updatedRoutings, RoutingsResponse.class));
             }
             if (serviceDetailsRequestList != null) {
-                List<ServiceDetails> updatedServiceDetails = serviceDetailsDao.updateEntityFromShipment(convertToEntityList(serviceDetailsRequestList, ServiceDetails.class), id, oldServiceDetails);
+                ListCommonRequest listCommonRequest = constructListCommonRequest("shipmentId", entity.getId(), "=");
+                Pair<Specification<ServiceDetails>, Pageable> pair = fetchData(listCommonRequest, ServiceDetails.class);
+                Page<ServiceDetails> oldServiceDetails = serviceDetailsDao.findAll(pair.getLeft(), pair.getRight());
+                List<ServiceDetails> updatedServiceDetails = serviceDetailsDao.updateEntityFromShipment(convertToEntityList(serviceDetailsRequestList, ServiceDetails.class), id, oldServiceDetails.stream().toList());
                 response.setServicesList(convertToDtoList(updatedServiceDetails, ServiceDetailsResponse.class));
             }
             if (fileRepoRequestList != null) {
-                List<FileRepo> updatedFileRepos = fileRepoDao.updateEntityFromOtherEntity(convertToEntityList(fileRepoRequestList, FileRepo.class), id, Constants.SHIPMENT, oldFileRepoList);
+                ListCommonRequest listCommonRequest = constructListRequestFromEntityId(entity.getId(), Constants.SHIPMENT);
+                Pair<Specification<FileRepo>, Pageable> pair = fetchData(listCommonRequest, FileRepo.class);
+                Page<FileRepo> oldFileRepoList = fileRepoDao.findAll(pair.getLeft(), pair.getRight());
+                List<FileRepo> updatedFileRepos = fileRepoDao.updateEntityFromOtherEntity(convertToEntityList(fileRepoRequestList, FileRepo.class), id, Constants.SHIPMENT, oldFileRepoList.stream().toList());
                 response.setFileRepoList(convertToDtoList(updatedFileRepos, FileRepoResponse.class));
             }
-            else {
-                response.setFileRepoList(convertToDtoList(fileRepoDao.findByEntityIdAndEntityType(id, Constants.SHIPMENT), FileRepoResponse.class));
-            }
             if (notesRequestList != null) {
-                List<Notes> updatedNotes = notesDao.updateEntityFromOtherEntity(convertToEntityList(notesRequestList, Notes.class), id, Constants.SHIPMENT, oldNoteList);
+                ListCommonRequest listCommonRequest = constructListRequestFromEntityId(entity.getId(), Constants.SHIPMENT);
+                Pair<Specification<Notes>, Pageable> pair = fetchData(listCommonRequest, Notes.class);
+                Page<Notes> oldNoteList = notesDao.findAll(pair.getLeft(), pair.getRight());
+                List<Notes> updatedNotes = notesDao.updateEntityFromOtherEntity(convertToEntityList(notesRequestList, Notes.class), id, Constants.SHIPMENT, oldNoteList.stream().toList());
                 response.setNotesList(convertToDtoList(updatedNotes, NotesResponse.class));
-            }
-            else {
-                response.setNotesList(convertToDtoList(notesDao.findByEntityIdAndEntityType(id, Constants.SHIPMENT), NotesResponse.class));
             }
 
             return ResponseHelper.buildSuccessResponse(response);
@@ -1634,205 +1523,24 @@ public class ShipmentService implements IShipmentService {
         this.addDedicatedMasterData(shipmentDetails, shipmentDetailsResponse);
     }
     private void addAllMasterDatas (ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse) {
-        shipmentDetailsResponse.setMasterData(addMasterData(shipmentDetailsResponse, ShipmentDetails.class));
-        shipmentDetailsResponse.getAdditionalDetails().setMasterData(addMasterData(shipmentDetailsResponse.getAdditionalDetails(), AdditionalDetails.class));
-        shipmentDetailsResponse.getCarrierDetails().setMasterData(addMasterData(shipmentDetailsResponse.getCarrierDetails(), CarrierDetails.class));
+        shipmentDetailsResponse.setMasterData(masterDataUtils.addMasterData(shipmentDetailsResponse, ShipmentDetails.class));
+        shipmentDetailsResponse.getAdditionalDetails().setMasterData(masterDataUtils.addMasterData(shipmentDetailsResponse.getAdditionalDetails(), AdditionalDetails.class));
+        shipmentDetailsResponse.getCarrierDetails().setMasterData(masterDataUtils.addMasterData(shipmentDetailsResponse.getCarrierDetails(), CarrierDetails.class));
     }
 
-    private Map<String, String> addMasterData (IRunnerResponse entityPayload, Class mainClass) {
-        List<MasterListRequest> requests = new ArrayList<>();
-        Map<String, String> fieldNameKeyMap = new HashMap<>();
-        Map<String, String> keyMasterDataMap = new HashMap<>();
-        Map<String, String> fieldNameMasterDataMap = new HashMap<>();
-        for(Field field : mainClass.getDeclaredFields())
-        {
-            if (field.isAnnotationPresent(MasterData.class))
-            {
-                try {
-                    Field field1 = Class.forName(entityPayload.getClass().getName()).getDeclaredField(field.getName());
-                    field1.setAccessible(true);
-                    String itemValue = (String) field1.get(entityPayload);
-                    String itemType = field.getDeclaredAnnotation(MasterData.class).type().getDescription();
-                    String itemTypeName = field.getDeclaredAnnotation(MasterData.class).type().name();
-                    String cascadeField = field.getDeclaredAnnotation(MasterData.class).cascade();
-                    String cascade = null;
 
-                    if(!cascadeField.equals("")){
-                        Field field2 = entityPayload.getClass().getDeclaredField(cascadeField);
-                        field2.setAccessible(true);
-                        cascade = (String) field2.get(entityPayload);
-                    }
-                    if(itemValue != null) {
-                        requests.add(MasterListRequest.builder().ItemType(itemType).ItemValue(itemValue).Cascade(cascade).build());
-                        String key = itemValue + '#' + itemTypeName;
-                        fieldNameKeyMap.put(field.getName(), key);
-                    }
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
-                }
-            }
-        }
-        if(requests.size() > 0) {
-            V1DataResponse response = v1Service.fetchMultipleMasterData(requests);
-            List<EntityTransferMasterLists> masterLists = jsonHelper.convertValueToList(response.entities, EntityTransferMasterLists.class);
-            masterLists.forEach(masterData -> {
-                String key = masterData.ItemValue + '#' + MasterDataType.masterData(masterData.ItemType).name();
-                keyMasterDataMap.put(key, masterData.getItemDescription());
-            });
-            fieldNameKeyMap.forEach((key, value) -> {
-                if(keyMasterDataMap.containsKey(value))
-                    fieldNameMasterDataMap.put(key, keyMasterDataMap.get(value));
-            });
-            return fieldNameMasterDataMap;
-        }
-        return null;
-    }
 
     private void addAllUnlocationDatas (ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse) {
-        shipmentDetailsResponse.getAdditionalDetails().setUnlocationData(addUnlocationData(shipmentDetailsResponse.getAdditionalDetails(), AdditionalDetails.class));
-        shipmentDetailsResponse.getCarrierDetails().setUnlocationData(addUnlocationData(shipmentDetailsResponse.getCarrierDetails(), CarrierDetails.class));
+        shipmentDetailsResponse.getAdditionalDetails().setUnlocationData(masterDataUtils.addUnlocationData(shipmentDetailsResponse.getAdditionalDetails(), AdditionalDetails.class, EntityTransferConstants.UNLOCATION_CODE));
+        shipmentDetailsResponse.getCarrierDetails().setUnlocationData(masterDataUtils.addUnlocationData(shipmentDetailsResponse.getCarrierDetails(), CarrierDetails.class, EntityTransferConstants.UNLOCATION_CODE));
     }
 
-    private Map<String, String> addUnlocationData (IRunnerResponse entityPayload, Class baseClass) {
-        Map<String, String> fieldNameUnlocationDataMap = new HashMap<>();
-        Map<String, String> keyUnlocationDataMap = new HashMap<>();
-        Map<String, String> fieldNameKeyMap = new HashMap<>();
-        List<String> locCodesList = new ArrayList<>();
-        for(Field field  : baseClass.getDeclaredFields())
-        {
-            if (field.isAnnotationPresent(UnlocationData.class))
-            {
-                try {
-                    Field field1 = entityPayload.getClass().getDeclaredField(field.getName());
-                    field1.setAccessible(true);
-                    String locCode = (String) field1.get(entityPayload);
-                    if(locCode != null && !locCode.equals("")) {
-                        locCodesList.add(locCode);
-                        fieldNameKeyMap.put(field.getName(), locCode);
-                    }
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
-                }
-            }
-        }
-        if(locCodesList.size() > 0){
-            CommonV1ListRequest request = new CommonV1ListRequest();
-            List<Object> criteria = new ArrayList<>();
-            List<Object> field = new ArrayList<>(List.of(EntityTransferConstants.UNLOCATION_CODE));
-            String operator = Operators.IN.getValue();
-            criteria.addAll(List.of(field, operator, List.of(locCodesList)));
-            request.setCriteriaRequests(criteria);
-            V1DataResponse response = v1Service.fetchUnlocation(request);
 
-            List<EntityTransferUnLocations> unLocationsList = jsonHelper.convertValueToList(response.entities, EntityTransferUnLocations.class);
-            unLocationsList.forEach(unloc -> {
-                keyUnlocationDataMap.put(unloc.LocCode, unloc.NameWoDiacritics);
-            });
-            fieldNameKeyMap.forEach((key, value) -> {
-                if(keyUnlocationDataMap.containsKey(value))
-                    fieldNameUnlocationDataMap.put(key, keyUnlocationDataMap.get(value));
-            });
-            return fieldNameUnlocationDataMap;
-        }
-        return null;
-    }
 
     private void addDedicatedMasterData (ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse) {
-        shipmentDetailsResponse.getCarrierDetails().setCarrierMasterData(carrierMasterData(shipmentDetailsResponse.getCarrierDetails(), CarrierDetails.class));
-        shipmentDetailsResponse.setCurrenciesMasterData(currencyMasterData(shipmentDetails, ShipmentDetails.class));
+        shipmentDetailsResponse.getCarrierDetails().setCarrierMasterData(masterDataUtils.carrierMasterData(shipmentDetailsResponse.getCarrierDetails(), CarrierDetails.class));
+        shipmentDetailsResponse.setCurrenciesMasterData(masterDataUtils.currencyMasterData(shipmentDetails, ShipmentDetails.class));
     }
 
-    private Map<String, String> carrierMasterData (IRunnerResponse entityPayload, Class baseClass) {
-        Map<String, String> fieldNameCarrierDataMap = new HashMap<>();
-        Map<String, String> keyCarrierDataMap = new HashMap<>();
-        Map<String, String> fieldNameKeyMap = new HashMap<>();
-        List<String> itemValueList = new ArrayList<>();
-        log.info("CarrierMasterData");
-        for(Field field  : baseClass.getDeclaredFields())
-        {
-            if (field.isAnnotationPresent(DedicatedMasterData.class) && field.getDeclaredAnnotation(DedicatedMasterData.class).type().equals(Constants.CARRIER_MASTER_DATA))
-            {
-                try {
-                    log.info("CarrierField: "+field.getName());
-                    Field field1 = entityPayload.getClass().getDeclaredField(field.getName());
-                    field1.setAccessible(true);
-                    String itemValue = (String) field1.get(entityPayload);
-                    if(itemValue != null && !itemValue.equals("")) {
-                        itemValueList.add(itemValue);
-                        fieldNameKeyMap.put(field.getName(), itemValue);
-                    }
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
-                }
-            }
-        }
-        if(itemValueList.size() > 0){
-            log.info("CarrierList: "+itemValueList);
-            CommonV1ListRequest request = new CommonV1ListRequest();
-            List<Object> criteria = new ArrayList<>();
-            List<Object> field = new ArrayList<>(List.of(EntityTransferConstants.ITEM_VALUE));
-            String operator = Operators.IN.getValue();
-            criteria.addAll(List.of(field, operator, List.of(itemValueList)));
-            request.setCriteriaRequests(criteria);
-            V1DataResponse response = v1Service.fetchCarrierMasterData(request);
 
-            List<EntityTransferCarrier> carrierList = jsonHelper.convertValueToList(response.entities, EntityTransferCarrier.class);
-            carrierList.forEach(carrier -> {
-                keyCarrierDataMap.put(carrier.getItemValue(), carrier.ItemDescription);
-            });
-            fieldNameKeyMap.forEach((key, value) -> {
-                if(keyCarrierDataMap.containsKey(value))
-                    fieldNameCarrierDataMap.put(key, keyCarrierDataMap.get(value));
-            });
-            return fieldNameCarrierDataMap;
-        }
-        return null;
-    }
-
-    private Map<String, String> currencyMasterData (BaseEntity entityPayload, Class baseClass) {
-        Map<String, String> fieldNameCurrencyDataMap = new HashMap<>();
-        Map<String, String> keyCurrencyDataMap = new HashMap<>();
-        Map<String, String> fieldNameKeyMap = new HashMap<>();
-        List<String> currencyCodeList = new ArrayList<>();
-        log.info("CurrencyMasterData");
-        for(Field field  : baseClass.getDeclaredFields())
-        {
-            if (field.isAnnotationPresent(DedicatedMasterData.class) && field.getDeclaredAnnotation(DedicatedMasterData.class).type().equals(Constants.CURRENCY_MASTER_DATA))
-            {
-                try {
-                    log.info("CurrencyField: "+field.getName());
-                    Field field1 = entityPayload.getClass().getDeclaredField(field.getName());
-                    field1.setAccessible(true);
-                    String currencyCode = (String) field1.get(entityPayload);
-                    if(currencyCode != null && !currencyCode.equals("")) {
-                        currencyCodeList.add(currencyCode);
-                        fieldNameKeyMap.put(field.getName(), currencyCode);
-                    }
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
-                }
-            }
-        }
-        if(currencyCodeList.size() > 0){
-            log.info("CurrencyList: "+currencyCodeList);
-            CommonV1ListRequest request = new CommonV1ListRequest();
-            List<Object> criteria = new ArrayList<>();
-            List<Object> field = new ArrayList<>(List.of(EntityTransferConstants.CURRENCY_CODE));
-            String operator = Operators.IN.getValue();
-            criteria.addAll(List.of(field, operator, List.of(currencyCodeList)));
-            request.setCriteriaRequests(criteria);
-            V1DataResponse response = v1Service.fetchCurrenciesData(request);
-
-            List<EntityTransferCurrency> currencyList = jsonHelper.convertValueToList(response.entities, EntityTransferCurrency.class);
-            currencyList.forEach(currency -> {
-                keyCurrencyDataMap.put(currency.getCurrenyCode(), currency.CurrenyDescription);
-            });
-            fieldNameKeyMap.forEach((key, value) -> {
-                if(keyCurrencyDataMap.containsKey(value))
-                    fieldNameCurrencyDataMap.put(key, keyCurrencyDataMap.get(value));
-            });
-            return fieldNameCurrencyDataMap;
-        }
-        return null;
-    }
 }

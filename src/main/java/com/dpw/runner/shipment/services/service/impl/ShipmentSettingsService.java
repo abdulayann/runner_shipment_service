@@ -36,6 +36,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.interceptor.TransactionAspectSupport;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -79,6 +80,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
     private ISBProperties isbProperties;
     @Autowired
     private AzureServiceBusTopic azureServiceBusTopic;
+    private Boolean fromV1 = false;
 
     @Transactional
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
@@ -113,15 +115,20 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
                 shipmentSettingsDetails.setProductSequenceConfig(productSequenceConfigDao.saveEntityFromSettings(shipmentSettingsDetails.getProductSequenceConfig(), shipmentSettingsDetails.getId()));
             }
 
-            EventMessage eventMessage = EventMessage.builder().messageType(Constants.SERVICE).entity(Constants.TENANT_SETTINGS).request(shipmentSettingsDetails).build();
-            sbUtils.sendMessagesToTopic(isbProperties, azureServiceBusTopic.getTopic(), Arrays.asList(new ServiceBusMessage(jsonHelper.convertToJsonIncludeNulls(eventMessage))));
+            if(!fromV1) {
+                EventMessage eventMessage = EventMessage.builder().messageType(Constants.SERVICE).entity(Constants.TENANT_SETTINGS).request(shipmentSettingsDetails).build();
+                sbUtils.sendMessagesToTopic(isbProperties, azureServiceBusTopic.getTopic(), Arrays.asList(new ServiceBusMessage(jsonHelper.convertToJsonIncludeNulls(eventMessage))));
+            }
+            else
+                fromV1 = false;
 
             log.info("Shipment Setting Details created successfully for Id {} with Request Id {}", shipmentSettingsDetails.getId(), LoggerHelper.getRequestIdFromMDC());
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
-            return ResponseHelper.buildFailedResponse(responseMsg);
+            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+            throw new RuntimeException(e);
         }
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(shipmentSettingsDetails));
     }
@@ -153,7 +160,8 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
-            return ResponseHelper.buildFailedResponse(responseMsg);
+            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+            throw new RuntimeException(e);
         }
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(shipmentSettingsDetails));
     }
@@ -193,14 +201,18 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
 
         try {
             request.setId(oldEntity.get().getId());
+            request.setGuid(oldEntity.get().getGuid());
             if(request.getHawbLockSettings() != null && oldEntity.get().getHawbLockSettings() != null) {
                 request.getHawbLockSettings().setId(oldEntity.get().getHawbLockSettings().getId());
+                request.getHawbLockSettings().setGuid(oldEntity.get().getHawbLockSettings().getGuid());
             }
             if(request.getMawbLockSettings() != null && oldEntity.get().getMawbLockSettings() != null) {
                 request.getMawbLockSettings().setId(oldEntity.get().getMawbLockSettings().getId());
+                request.getMawbLockSettings().setGuid(oldEntity.get().getMawbLockSettings().getGuid());
             }
             if(request.getHblLockSettings() != null && oldEntity.get().getHblLockSettings() != null) {
                 request.getHblLockSettings().setId(oldEntity.get().getHblLockSettings().getId());
+                request.getHblLockSettings().setGuid(oldEntity.get().getHblLockSettings().getGuid());
             }
             ShipmentSettingsDetails shipmentSettingsDetails = convertRequestToEntity(request);
 
@@ -256,15 +268,59 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
                 response.setProductSequenceConfig(convertToDtoList(productSequenceConfigs, ProductSequenceConfigResponse.class));
             }
 
-            EventMessage eventMessage = EventMessage.builder().messageType(Constants.SERVICE).entity(Constants.TENANT_SETTINGS).request(response).build();
-            sbUtils.sendMessagesToTopic(isbProperties, azureServiceBusTopic.getTopic(), Arrays.asList(new ServiceBusMessage(jsonHelper.convertToJsonIncludeNulls(eventMessage))));
+            if(!fromV1) {
+                EventMessage eventMessage = EventMessage.builder().messageType(Constants.SERVICE).entity(Constants.TENANT_SETTINGS).request(response).build();
+                sbUtils.sendMessagesToTopic(isbProperties, azureServiceBusTopic.getTopic(), Arrays.asList(new ServiceBusMessage(jsonHelper.convertToJsonIncludeNulls(eventMessage))));
+            }
+            else
+                fromV1 = false;
 
             return ResponseHelper.buildSuccessResponse(response);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
-            return ResponseHelper.buildFailedResponse(responseMsg);
+            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Transactional
+    @Override
+    public ResponseEntity<?> completeSettingsUpdateCreateV1(CommonRequestModel commonRequestModel) throws Exception {
+        String responseMsg;
+        ShipmentSettingRequest request = (ShipmentSettingRequest) commonRequestModel.getData();
+        if(request == null) {
+            log.error("Request is empty for Shipment Settings update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+        }
+
+        if(request.getId() == null && request.getTenantId() == null) {
+            log.error("Request Id and Tenant Id is null for Shipment Settings update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+        }
+        if(request.getTenantId() != null) {
+            try{
+                fromV1 = true;
+                return completeUpdate(commonRequestModel);
+            } catch (Exception e) {
+                responseMsg = e.getMessage() != null ? e.getMessage()
+                        : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
+                log.error(responseMsg, e);
+                TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+                throw new RuntimeException(e);
+            }
+        }
+        else {
+            try{
+                fromV1 = true;
+                return create(commonRequestModel);
+            } catch (Exception e) {
+                responseMsg = e.getMessage() != null ? e.getMessage()
+                        : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
+                log.error(responseMsg, e);
+                TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+                throw new RuntimeException(e);
+            }
         }
     }
 

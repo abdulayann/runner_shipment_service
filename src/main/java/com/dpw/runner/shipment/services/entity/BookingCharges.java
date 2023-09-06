@@ -1,7 +1,9 @@
 package com.dpw.runner.shipment.services.entity;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
+import com.dpw.runner.shipment.services.utils.DedicatedMasterData;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -26,6 +28,7 @@ public class BookingCharges extends MultiTenancy {
     private String seqNo;
 
     @Column(name = "charges_type")
+    @DedicatedMasterData(type = Constants.CHARGE_TYPE_MASTER_DATA)
     private String chargeType; //charge type master data
 
     @Column(name = "details")
@@ -68,7 +71,7 @@ public class BookingCharges extends MultiTenancy {
     private String overseasCostCurrency; //currencies master data
 
     @Column(name = "local_cost_currency")
-    private BigDecimal localCostCurrency; //currencies master data
+    private String localCostCurrency; //currencies master data
 
     @Column(name = "current_cost_rate")
     private BigDecimal currentCostRate;
@@ -141,7 +144,7 @@ public class BookingCharges extends MultiTenancy {
     private String overseasSellCurrency; //currencies master data
 
     @Column(name = "local_sell_currency")
-    private BigDecimal localSellCurrency; //currencies master data
+    private String localSellCurrency; //currencies master data
 
     @Column(name = "current_sell_rate")
     private BigDecimal currentSellRate;
@@ -197,7 +200,7 @@ public class BookingCharges extends MultiTenancy {
 
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(name = "container_charges_mapping",
-            joinColumns = { @JoinColumn(name = "charge_id") },
-            inverseJoinColumns = { @JoinColumn(name = "container_id") })
+            joinColumns = {@JoinColumn(name = "charge_id")},
+            inverseJoinColumns = {@JoinColumn(name = "container_id")})
     private List<Containers> containersList;
 }

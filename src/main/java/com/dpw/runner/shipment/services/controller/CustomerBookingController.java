@@ -11,9 +11,9 @@ import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.CustomerBookingRequest;
-import com.dpw.runner.shipment.services.dto.request.PlatformToRunnerCustomerBookingRequest;
-import com.dpw.runner.shipment.services.dto.request.booking.CRPListRequest;
-import com.dpw.runner.shipment.services.dto.request.booking.CRPRetrieveRequest;
+import com.dpw.runner.shipment.services.dto.request.platformBooking.PlatformToRunnerCustomerBookingRequest;
+import com.dpw.runner.shipment.services.dto.request.crp.CRPListRequest;
+import com.dpw.runner.shipment.services.dto.request.crp.CRPRetrieveRequest;
 import com.dpw.runner.shipment.services.dto.response.CustomerBookingResponse;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
@@ -62,7 +62,7 @@ public class CustomerBookingController {
     }
 
 
-    @GetMapping(CustomerBookingConstants.CRP_LIST)
+    @PostMapping(CustomerBookingConstants.CRP_LIST)
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = CustomerBookingConstants.LIST_SUCCESSFUL),
             @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
@@ -80,7 +80,7 @@ public class CustomerBookingController {
         return ResponseHelper.buildFailedResponse(responseMsg);
     }
 
-    @GetMapping(CustomerBookingConstants.CRP_RETRIEVE)
+    @PostMapping(CustomerBookingConstants.CRP_RETRIEVE)
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = CustomerBookingConstants.RETRIEVE_SUCCESSFUL),
             @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)

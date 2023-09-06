@@ -33,6 +33,7 @@ sed -i "s/NAMESPACE_NAME/$namespace/g" $app_service_yaml_path
 #Replace vars in Config
 sed -i "s/NAMESPACE_NAME/$namespace/g" $app_config_yaml_path
 sed -i "s/ENV_NAME/$env_Name/g" $app_config_yaml_path
+sed -i "s/license_key/$new_relic_license_key/g" $app_config_yaml_path
 
 #Replace vars in Deployment
 sed -i "s/MIN_CPU/$MIN_CPU/g" $app_deployment_yaml_path

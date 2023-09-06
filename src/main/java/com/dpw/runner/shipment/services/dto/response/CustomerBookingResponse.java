@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.dto.response;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.entity.enums.BookingSource;
 import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
 import io.swagger.annotations.ApiModel;
 import lombok.*;
@@ -8,6 +9,7 @@ import lombok.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Data
@@ -17,6 +19,9 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 public class CustomerBookingResponse implements IRunnerResponse {
+    private Long id;
+    private UUID guid;
+    private String serviceMode;
     private BookingStatus bookingStatus;
     private PartiesResponse customer;
     private Boolean isCustomerFreeText;
@@ -44,10 +49,16 @@ public class CustomerBookingResponse implements IRunnerResponse {
     private String weightVolumeUnit;
     private BigDecimal chargeable;
     private String chargeableUnit;
-    private UUID contractId;
+    private String contractId;
+    private String createdBy;
+    private String contractStatus;
+    private BookingSource source;
+    private String businessCode;
+    private String shipmentId;
     private List<ContainerResponse> containersList;
     private List<PackingResponse> packingList;
     private List<RoutingsResponse> routingList;
     private List<BookingChargesResponse> bookingCharges;
     private List<FileRepoResponse> fileRepoList;
+    public Map<String, String> masterData;
 }

@@ -21,7 +21,7 @@ public class PlatformConfig {
         RestTemplate restTemplate = new RestTemplate();
         restTemplate.getInterceptors().add((request, body, execution) -> {
             HttpHeaders headers = request.getHeaders();
-            headers.set("booking_api_key", apiKey);
+            headers.set("X-Api-Key", apiKey);
             headers.set("client_id", clientId);
             headers.setContentType(MediaType.APPLICATION_JSON);
             return execution.execute(request, body);

@@ -14,6 +14,7 @@ public class EntityTransferConstants {
     public static final String SEND_SHIPMENT_NO_SHIPMENT_FOUND = "No Shipment Present With Shipment Id: ";
     public static final String SEND_CONSOLIDATION_NO_CONSOLIDATION_FOUND = "No Consolidation Present With Consolidation Id: ";
     public static final String UNLOCATION_CODE = "LocCode";
+    public static final String LOCATION_SERVICE_GUID = "LocationsReferenceGUID";
     public static final String ITEM_VALUE = "ItemValue";
     public static final String CODE = "Code";
     public static final String CURRENCY_CODE = "CurrenyCode";
@@ -21,5 +22,6 @@ public class EntityTransferConstants {
     public static final String MMSI = "Mmsi";
     public static final String SELECT_SENDTOBRANCH_OR_SENDTOORG = "Please select atleast one send to branch or send to org option";
     public static final String APPROVAL_ROLE_NOT_ASSIGNED = "Approval role not assigned to tenant: ";
+    public static final String CHARGE_CODE = "ChargeCode";
 
 }

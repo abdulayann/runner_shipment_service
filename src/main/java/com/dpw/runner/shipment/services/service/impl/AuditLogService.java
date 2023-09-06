@@ -204,7 +204,7 @@ public class AuditLogService implements IAuditLogService {
         }
     }
 
-    private Object getChanges(BaseEntity newEntity, BaseEntity prevEntity, String operation) throws JsonProcessingException, IllegalAccessException {
+    private Map<String, AuditLogChanges> getChanges(BaseEntity newEntity, BaseEntity prevEntity, String operation) throws JsonProcessingException, IllegalAccessException {
         List<Field> fields = null;
         if (operation.equals(DBOperationType.CREATE.name())) {
             fields = getListOfAllFields(newEntity);
