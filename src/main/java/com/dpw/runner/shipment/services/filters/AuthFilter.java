@@ -1,11 +1,13 @@
 package com.dpw.runner.shipment.services.filters;
 
 import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.constants.LoggingConstants;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.RequestAuthContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.aspects.PermissionsValidationAspect.PermissionsContext;
+import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.service.impl.GetUserServiceFactory;
 import com.dpw.runner.shipment.services.service.interfaces.IUserService;
 import com.dpw.runner.shipment.services.utils.TokenUtility;
@@ -55,6 +57,7 @@ public class AuthFilter implements Filter {
     @Override
     public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain) throws IOException, ServletException {
 
+        LoggerHelper.putRequestId(UUID.randomUUID().toString());
         HttpServletRequest req = (HttpServletRequest) servletRequest;
         if(shouldNotFilter(req))
         {
@@ -93,12 +96,11 @@ public class AuthFilter implements Filter {
             }
         }
         PermissionsContext.setPermissions(grantedPermissions);
-        MDC.put("request_id", UUID.randomUUID().toString());
         try {
             filterChain.doFilter(servletRequest, servletResponse);
             log.info(String.format("Request Finished , Total Time in milis:- %s", (System.currentTimeMillis() - time)));
         }finally {
-            MDC.remove("request_id");
+            MDC.remove(LoggingConstants.REQUEST_ID);
             TenantContext.removeTenant();
             RequestAuthContext.removeToken();
             UserContext.removeUser();
