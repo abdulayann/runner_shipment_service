@@ -14,6 +14,7 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationService;
 import com.dpw.runner.shipment.services.syncing.Entity.CustomConsolidationRequest;
+import com.dpw.runner.shipment.services.syncing.interfaces.IConsolidationReverseSync;
 import com.dpw.runner.shipment.services.syncing.interfaces.IConsolidationSync;
 import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
@@ -39,6 +40,9 @@ public class ConsolidationController {
 
     @Autowired
     private IConsolidationSync consolidationSync;
+
+    @Autowired
+    private IConsolidationReverseSync consolidationReverseSync;
 
     @Autowired
     JsonHelper jsonHelper;
@@ -179,7 +183,7 @@ public class ConsolidationController {
     public ResponseEntity<RunnerResponse<ConsolidationDetailsResponse>> createV1Consolidation(@RequestBody @Valid CustomConsolidationRequest request) {
         String responseMsg;
         try {
-            return (ResponseEntity<RunnerResponse<ConsolidationDetailsResponse>>) consolidationSync.reverseSync(CommonRequestModel.buildRequest(request));
+            return (ResponseEntity<RunnerResponse<ConsolidationDetailsResponse>>) consolidationReverseSync.reverseSync(CommonRequestModel.buildRequest(request));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;

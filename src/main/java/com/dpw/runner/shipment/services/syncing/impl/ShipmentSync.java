@@ -1,14 +1,11 @@
 package com.dpw.runner.shipment.services.syncing.impl;
 
-import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
-import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
-import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
-import com.dpw.runner.shipment.services.entity.*;
-import com.dpw.runner.shipment.services.entity.enums.Ownership;
+import com.dpw.runner.shipment.services.entity.CarrierDetails;
+import com.dpw.runner.shipment.services.entity.Parties;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
-import com.dpw.runner.shipment.services.service.impl.ShipmentService;
 import com.dpw.runner.shipment.services.syncing.Entity.*;
 import com.dpw.runner.shipment.services.syncing.Entity.response.CustomShipmentSyncResponse;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
@@ -36,8 +33,6 @@ public class ShipmentSync implements IShipmentSync {
     JsonHelper jsonHelper;
     @Autowired
     RestTemplate restTemplate;
-    @Autowired
-    ShipmentService shipmentService;
 
     private RetryTemplate retryTemplate = RetryTemplate.builder()
             .maxAttempts(3)
@@ -120,65 +115,11 @@ public class ShipmentSync implements IShipmentSync {
 
         return ResponseHelper.buildSuccessResponse(modelMapper.map(cs, CustomShipmentSyncResponse.class));
     }
-    
-    public ResponseEntity<?> reverseSync(CustomShipmentSyncRequest cs) {
-        String responseMsg;
-        try {
-            ShipmentDetails sd = modelMapper.map(cs, ShipmentDetails.class);
-
-            mapCarrierDetailsReverse(cs, sd);
-            mapAdditionalDetailsReverse(cs, sd);
-
-//            // Clarity required
-//            if(cs.getStatusString() != null && !cs.getStatusString().isEmpty()){
-//                sd.setStatus(Integer.parseInt(cs.getStatusString())); // ENUM MAPPING ?
-//            }
-
-            sd.setBookingReference(cs.getReferenceNo());
-            sd.setDirection(cs.getCustom_ShipType());
-            sd.setShipmentType(cs.getContainerType());
-            sd.setSalesAgent(cs.getSalesAgentId());
-            sd.setInnerPacks(cs.getInners());
-            sd.setInnerPackUnit(cs.getInnersUnit());
-            sd.setMarksNum(cs.getMarksnNums());
-            sd.setConsolRef(cs.getConsolidationReferenceNumber());
-            sd.setChargable(cs.getChargeable());
-            sd.setChargeableUnit(cs.getChargableUnit());
-            sd.setNoOfPacks(cs.getPacks());
-            sd.setFinanceClosedBy(cs.getFinanceClosedByUser());
-
-            sd.setConsigner(mapPartyObject(cs.getConsignerParty()));
-            sd.setConsignee(mapPartyObject(cs.getConsigneeParty()));
-
-            mapTruckDriverDetailReverse(cs, sd);
-            sd.setRoutingsList(convertToList(cs.getRoutings(), Routings.class));
-            sd.setReferenceNumbersList(convertToList(cs.getReferenceNumbers(), ReferenceNumbers.class));
-            sd.setPackingList(convertToList(cs.getPackings_(), Packing.class));
-            sd.setFileRepoList(convertToList(cs.getDocs_(), FileRepo.class));
-            sd.setElDetailsList(convertToList(cs.getELDetails(), ELDetails.class));
-
-            sd.setBookingCarriagesList(convertToList(cs.getBookingCarriages(), BookingCarriage.class));
-
-            return shipmentService.completeV1ShipmentCreateAndUpdate(CommonRequestModel.
-                    buildRequest(modelMapper.map(sd, ShipmentRequest.class)));
-        } catch (Exception e){
-            responseMsg = e.getMessage() != null ? e.getMessage()
-                    : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
-            log.error(responseMsg, e);
-            return ResponseHelper.buildFailedResponse(responseMsg);
-        }
-    }
 
     private PartyRequestV2 mapPartyObject(Parties sourcePartyObject) {
         if(sourcePartyObject == null)
             return null;
         return modelMapper.map(sourcePartyObject, PartyRequestV2.class);
-    }
-
-    private Parties mapPartyObject(PartyRequestV2 sourcePartyObject) {
-        if(sourcePartyObject == null)
-            return null;
-        return modelMapper.map(sourcePartyObject, Parties.class);
     }
 
     private void mapTruckDriverDetail(CustomShipmentSyncRequest cs, ShipmentDetails sd) {
@@ -200,22 +141,6 @@ public class ShipmentSync implements IShipmentSync {
 
     }
 
-    private void mapTruckDriverDetailReverse(CustomShipmentSyncRequest cs, ShipmentDetails sd) {
-        if(cs.getTruckDriverDetail() == null)
-            return;
-
-        List<TruckDriverDetails> req = cs.getTruckDriverDetail().stream()
-                .map(item -> {
-                    TruckDriverDetails t;
-                    t = modelMapper.map(item, TruckDriverDetails.class);
-                    t.setTransporterName(item.getTransporterNameOrg());
-                    t.setTransporterType(Ownership.valueOf(item.getTransporterTypeString()));
-                    return t;
-                })
-                .toList();
-        sd.setTruckDriverDetails(req);
-    }
-
     private void mapCarrierDetails(CustomShipmentSyncRequest cs, ShipmentDetails sd) {
         if(sd.getCarrierDetails() == null)
             return;
@@ -229,18 +154,6 @@ public class ShipmentSync implements IShipmentSync {
 
     }
 
-    private void mapCarrierDetailsReverse(CustomShipmentSyncRequest cs, ShipmentDetails sd) {
-        // Destination shipment ID is long string source will cause problems
-        cs.setShipmentId(null);
-
-        CarrierDetails carrierDetails = modelMapper.map(cs, CarrierDetails.class);
-        carrierDetails.setDestination(cs.getDestinationName());
-        carrierDetails.setDestinationPort(cs.getDestinationPortName());
-        carrierDetails.setOrigin(cs.getOriginName());
-        carrierDetails.setOriginPort(cs.getOriginPortName());
-        sd.setCarrierDetails(carrierDetails);
-    }
-
     private void mapAdditionalDetails(CustomShipmentSyncRequest cs, ShipmentDetails sd) {
         if(sd.getAdditionalDetails() == null)
             return;
@@ -248,14 +161,6 @@ public class ShipmentSync implements IShipmentSync {
         cs.setReceivingForwarderParty(mapPartyObject(sd.getAdditionalDetails().getReceivingForwarder()));
         cs.setSendingForwarderParty(mapPartyObject(sd.getAdditionalDetails().getSendingForwarder()));
         cs.setTraderOrSupplierParty(mapPartyObject(sd.getAdditionalDetails().getTraderOrSupplier()));
-    }
-
-    private void mapAdditionalDetailsReverse(CustomShipmentSyncRequest cs, ShipmentDetails sd) {
-        AdditionalDetails additionalDetails = modelMapper.map(cs, AdditionalDetails.class);
-        additionalDetails.setReceivingForwarder(mapPartyObject(cs.getReceivingForwarderParty()));
-        additionalDetails.setSendingForwarder(mapPartyObject(cs.getSendingForwarderParty()));
-        additionalDetails.setTraderOrSupplier(mapPartyObject(cs.getTraderOrSupplierParty()));
-        sd.setAdditionalDetails(additionalDetails);
     }
 
     private <T,P> List<P> convertToList(final List<T> lst, Class<P> clazz) {

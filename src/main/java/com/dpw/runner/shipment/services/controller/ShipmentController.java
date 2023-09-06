@@ -18,6 +18,7 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
 import com.dpw.runner.shipment.services.syncing.Entity.CustomShipmentSyncRequest;
+import com.dpw.runner.shipment.services.syncing.impl.ShipmentReverseSync;
 import com.dpw.runner.shipment.services.syncing.impl.ShipmentSync;
 import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
@@ -46,6 +47,8 @@ public class ShipmentController {
     private IShipmentService shipmentService;
     @Autowired
     ShipmentSync shipmentSync;
+    @Autowired
+    ShipmentReverseSync shipmentReverseSync;
     @Autowired
     JsonHelper jsonHelper;
     @Autowired
@@ -210,7 +213,7 @@ public class ShipmentController {
     public ResponseEntity<?> syncShipmentToService(@RequestBody @Valid CustomShipmentSyncRequest request){
         String responseMsg = "failure executing :(";
         try {
-            return shipmentSync.reverseSync(request);
+            return shipmentReverseSync.reverseSync(request);
         } catch (Exception e){
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : "Error syncing provided Shipment";

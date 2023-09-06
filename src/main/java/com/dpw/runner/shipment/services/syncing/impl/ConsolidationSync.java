@@ -1,13 +1,10 @@
 package com.dpw.runner.shipment.services.syncing.impl;
 
-import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
-import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
-import com.dpw.runner.shipment.services.dto.request.*;
+import com.dpw.runner.shipment.services.dto.request.ArrivalDepartureDetailsRequest;
+import com.dpw.runner.shipment.services.dto.request.ConsolidationDetailsRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
-import com.dpw.runner.shipment.services.entity.enums.Ownership;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
-import com.dpw.runner.shipment.services.service.interfaces.IConsolidationService;
 import com.dpw.runner.shipment.services.syncing.Entity.*;
 import com.dpw.runner.shipment.services.syncing.interfaces.IConsolidationSync;
 import com.dpw.runner.shipment.services.utils.V1AuthHelper;
@@ -32,9 +29,6 @@ public class ConsolidationSync implements IConsolidationSync {
 
     @Autowired
     ModelMapper modelMapper;
-
-    @Autowired
-    private IConsolidationService consolidationService;
 
     @Autowired
     RestTemplate restTemplate;
@@ -92,47 +86,6 @@ public class ConsolidationSync implements IConsolidationSync {
         return ResponseHelper.buildSuccessResponse(response);
     }
 
-    @Override
-    public ResponseEntity<?> reverseSync(CommonRequestModel request_) {
-        CustomConsolidationRequest request = (CustomConsolidationRequest) request_.getData();
-        ConsolidationDetailsRequest response = new ConsolidationDetailsRequest();
-        String responseMsg;
-        try {
-            response = modelMapper.map(request, ConsolidationDetailsRequest.class);
-            response.setBookingType(request.getShipmentType());
-            response.setCoLoadBookingReference(request.getCoLoadBookingRef());
-            response.setConsolidationType(request.getType());
-            response.setContainerCategory(request.getContainerType());
-            response.setDoPlaceOfIssue(request.getDOPlaceOfIssueName());
-            response.setFirstLoad(request.getFirstLoadString());
-            response.setLastDischarge(request.getLastDischargeString());
-            response.setOriginal(request.getOriginals());
-            response.setPrintOtherDocs(request.getPrinOtherDocs());
-            response.setReferenceNumber(request.getReferenceNo());
-
-            mapReverseCarrierDetails(response, request);
-            mapReverseAchievedQuantities(response, request);
-            mapReverseAllocations(response, request);
-
-            response.setPlaceOfIssue(request.getPlaceOfIssueString());
-
-            mapReverseArrivalDepartureDetails(response, request);
-            mapReverseTruckDriverDetail(response, request);
-            mapReversePackings(response, request);
-            mapReverseJobs(response, request);
-            response.setFileRepoList(convertToList(request.getDocsList(), FileRepoRequest.class));
-
-            mapReverseShipmentGuids(response, request);
-            response.setGuid(request.getGuid());
-            return consolidationService.completeV1ConsolidationCreateAndUpdate(CommonRequestModel.buildRequest(response));
-        } catch (Exception e) {
-            responseMsg = e.getMessage() != null ? e.getMessage()
-                    : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
-            log.error(responseMsg, e);
-            return ResponseHelper.buildFailedResponse(responseMsg);
-        }
-    }
-
     private void mapShipmentGuids(CustomConsolidationRequest response, ConsolidationDetailsRequest request) {
         if(request == null || request.getShipmentsList() == null)
             return;
@@ -142,19 +95,6 @@ public class ConsolidationSync implements IConsolidationSync {
                 })
                 .collect(Collectors.toList());
         response.setShipmentGuids(req);
-    }
-
-    private void mapReverseShipmentGuids(ConsolidationDetailsRequest response, CustomConsolidationRequest request) {
-        if(request == null || request.getShipmentGuids() == null)
-            return;
-        List<ShipmentRequest> req = request.getShipmentGuids().stream()
-                .map(item -> {
-                    ShipmentRequest p = new ShipmentRequest();
-                    p.setGuid(item);
-                    return p;
-                })
-                .collect(Collectors.toList());
-        response.setShipmentsList(req);
     }
 
     private void mapJobs(CustomConsolidationRequest response, ConsolidationDetailsRequest request) {
@@ -172,22 +112,6 @@ public class ConsolidationSync implements IConsolidationSync {
         response.setJobsList(req);
     }
 
-    private void mapReverseJobs(ConsolidationDetailsRequest response, CustomConsolidationRequest request) {
-        if(request == null || request.getJobsList() == null)
-            return;
-        List<JobRequest> req = request.getJobsList().stream()
-                .map(item -> {
-                    JobRequest p;
-                    p = modelMapper.map(item, JobRequest.class);
-                    p.setEventsList(new ArrayList<>());
-                    if(item.getEvents() != null)
-                        modelMapper.map(item.getEvents(), p.getEventsList());
-                    return p;
-                })
-                .collect(Collectors.toList());
-        response.setJobsList(req);
-    }
-
     private void mapPackings(CustomConsolidationRequest response, ConsolidationDetailsRequest request) {
         if(request == null || request.getPackingList() == null)
             return;
@@ -196,20 +120,6 @@ public class ConsolidationSync implements IConsolidationSync {
                     PackingRequestV2 p;
                     p = modelMapper.map(item, PackingRequestV2.class);
                     p.setOriginName(item.getOrigin());
-                    return p;
-                })
-                .collect(Collectors.toList());
-        response.setPackingList(req);
-    }
-
-    private void mapReversePackings(ConsolidationDetailsRequest response, CustomConsolidationRequest request) {
-        if(request == null || request.getPackingList() == null)
-            return;
-        List<PackingRequest> req = request.getPackingList().stream()
-                .map(item -> {
-                    PackingRequest p;
-                    p = modelMapper.map(item, PackingRequest.class);
-                    p.setOrigin(item.getOriginName());
                     return p;
                 })
                 .collect(Collectors.toList());
@@ -232,22 +142,6 @@ public class ConsolidationSync implements IConsolidationSync {
         response.setTruckDriverDetail(req);
     }
 
-    private void mapReverseTruckDriverDetail(ConsolidationDetailsRequest response, CustomConsolidationRequest request) {
-        if(request == null || request.getTruckDriverDetail() == null)
-            return;
-        List<TruckDriverDetailsRequest> req = request.getTruckDriverDetail().stream()
-                .map(item -> {
-                    TruckDriverDetailsRequest t;
-                    t = modelMapper.map(item, TruckDriverDetailsRequest.class);
-                    t.setTransporterName(item.getTransporterNameOrg());
-                    //ENUM
-                    t.setTransporterType(Ownership.valueOf(item.getTransporterTypeString()));
-                    return t;
-                })
-                .collect(Collectors.toList());
-        response.setTruckDriverDetails(req);
-    }
-
     private void mapCarrierDetails(CustomConsolidationRequest response, ConsolidationDetailsRequest request) {
         if(request == null || request.getCarrierDetails() == null)
             return;
@@ -258,18 +152,6 @@ public class ConsolidationSync implements IConsolidationSync {
         response.setOriginPortName(request.getCarrierDetails().getOriginPort());
     }
 
-    private void mapReverseCarrierDetails(ConsolidationDetailsRequest response, CustomConsolidationRequest request) {
-        if(request == null)
-            return;
-        response.setCarrierDetails(new CarrierDetailRequest());
-        modelMapper.map(request, response.getCarrierDetails());
-        response.getCarrierDetails().setDestination(request.getDestinationPortName());
-//        response.getCarrierDetails().setDestinationPort(request.getDestinationPortName());
-        response.getCarrierDetails().setOrigin(request.getOriginPortName());
-//        response.getCarrierDetails().setOriginPort(request.getOriginPortName());
-        response.getCarrierDetails().setId(null);
-    }
-
     private void mapAchievedQuantities(CustomConsolidationRequest response, ConsolidationDetailsRequest request) {
         if(request == null || request.getAchievedQuantities() == null)
             return;
@@ -278,32 +160,12 @@ public class ConsolidationSync implements IConsolidationSync {
         response.setConsolidatiedVolumeUnit(request.getAchievedQuantities().getConsolidatedVolumeUnit());
     }
 
-    private void mapReverseAchievedQuantities(ConsolidationDetailsRequest response, CustomConsolidationRequest request) {
-        if(request == null)
-            return;
-        response.setAchievedQuantities(new AchievedQuantitiesRequest());
-        modelMapper.map(request, response.getAchievedQuantities());
-        response.getAchievedQuantities().setConsolidatedVolume(request.getConsolidatedVolume());
-        response.getAchievedQuantities().setConsolidatedVolumeUnit(request.getConsolidatiedVolumeUnit());
-        response.getAchievedQuantities().setId(null);
-    }
-
     private void mapAllocations(CustomConsolidationRequest response, ConsolidationDetailsRequest request) {
         if(request == null || request.getAllocations() == null)
             return;
         modelMapper.map(request.getAllocations(), response);
         response.setChargeable(request.getAllocations().getChargable());
         response.setIsTemparatureControlled(request.getAllocations().getIsTemperatureControlled());
-    }
-
-    private void mapReverseAllocations(ConsolidationDetailsRequest response, CustomConsolidationRequest request) {
-        if(request == null)
-            return;
-        response.setAllocations(new AllocationsRequest());
-        modelMapper.map(request, response.getAllocations());
-        response.getAllocations().setChargable(request.getChargeable());
-        response.getAllocations().setIsTemperatureControlled(request.getIsTemparatureControlled());
-        response.getAllocations().setId(null);
     }
 
     private void mapArrivalDepartureDetails(CustomConsolidationRequest response_, ConsolidationDetailsRequest request_) {
@@ -356,57 +218,6 @@ public class ConsolidationSync implements IConsolidationSync {
             if(request2.getCFSId() != null)
                 response.setDCFSId(modelMapper.map(request2.getCFSId(), PartyRequestV2.class));
         }
-    }
-
-    private void mapReverseArrivalDepartureDetails(ConsolidationDetailsRequest response_, CustomConsolidationRequest request_) {
-        if(request_ == null || request_.getArrivalDepartureDetails() == null)
-            return;
-
-        ArrivalDepartureDetails request = request_.getArrivalDepartureDetails();
-
-        // Arrival Details
-        ArrivalDepartureDetailsRequest response1 = new ArrivalDepartureDetailsRequest();
-
-        if(request.getAcontainerYardId() != null)
-            response1.setContainerYardId(modelMapper.map(request.getAcontainerYardId(), PartiesRequest.class));
-        response1.setFirstForeignPortArrivalDate(request.getAfirstArrivalPortArrivalDate());
-        response1.setFirstForeignPort(request.getAfirstForeignPort());
-        if(request.getAfirstArrivalPortId() != null)
-            response1.setFirstForeignPortId(modelMapper.map(request.getAfirstArrivalPortId(), PartiesRequest.class));
-        response1.setLastForeignPortDepartureDate(request.getAlastForeignPortDepartureDate());
-        response1.setLastForeignPort(request.getAlastForeignPort());
-        if(request.getAlastForeignPortId() != null)
-            response1.setLastForeignPortId(modelMapper.map(request.getAlastForeignPortId(), PartiesRequest.class));
-        if(request.getAtransportPortId() != null)
-            response1.setTransportPortId(modelMapper.map(request.getAtransportPortId(), PartiesRequest.class));
-        if(request.getACTOId() != null)
-            response1.setCTOId(modelMapper.map(request.getACTOId(), PartiesRequest.class));
-        if(request.getACFSId() != null)
-            response1.setCFSId(modelMapper.map(request.getACFSId(), PartiesRequest.class));
-
-        response_.setArrivalDetails(response1);
-
-        // Departure Details
-        ArrivalDepartureDetailsRequest response2 = new ArrivalDepartureDetailsRequest();
-
-        if(request.getDcontainerYardId() != null)
-            response2.setContainerYardId(modelMapper.map(request.getDcontainerYardId(), PartiesRequest.class));
-        response2.setFirstForeignPortArrivalDate(request.getDfirstForeignPortArrivalDate());
-        response2.setFirstForeignPort(request.getDfirstForeignPort());
-        if(request.getDfirstForeignPortId() != null)
-            response2.setFirstForeignPortId(modelMapper.map(request.getDfirstForeignPortId(), PartiesRequest.class));
-        response2.setLastForeignPortDepartureDate(request.getDlastForeignPortDepartureDate());
-        response2.setLastForeignPort(request.getDlastForeignPort());
-        if(request.getDlastForeignPortId() != null)
-            response2.setLastForeignPortId(modelMapper.map(request.getDlastForeignPortId(), PartiesRequest.class));
-        if(request.getDtransportPortId() != null)
-            response2.setTransportPortId(modelMapper.map(request.getDtransportPortId(), PartiesRequest.class));
-        if(request.getDCTOId() != null)
-            response2.setCTOId(modelMapper.map(request.getDCTOId(), PartiesRequest.class));
-        if(request.getDCFSId() != null)
-            response2.setCFSId(modelMapper.map(request.getDCFSId(), PartiesRequest.class));
-
-        response_.setDepartureDetails(response2);
     }
 
     private <T,P> List<P> convertToList(final List<T> lst, Class<P> clazz) {
