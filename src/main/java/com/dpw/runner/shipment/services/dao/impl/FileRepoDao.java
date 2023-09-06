@@ -151,4 +151,11 @@ public class FileRepoDao implements IFileRepoDao {
             throw new Exception(e);
         }
     }
+
+    @Override
+    public List<FileRepo> findByList(ListCommonRequest request) {
+        Pair<Specification<FileRepo>, Pageable> tuple = fetchData(request, FileRepo.class);
+        Page<FileRepo> fileRepoPage  = findAll(tuple.getLeft(), tuple.getRight());
+        return fileRepoPage.getContent();
+    }
 }

@@ -2,8 +2,8 @@ package com.dpw.runner.shipment.services.helpers;
 
 import com.dpw.runner.shipment.services.commons.responses.*;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.http.*;
 
 import java.util.List;
 
@@ -94,6 +94,18 @@ public class ResponseHelper {
         log.debug("Return Response with data {}", runnerResponse);
         runnerResponse.setRequestId(LoggerHelper.getRequestIdFromMDC());
         return new ResponseEntity<>(runnerResponse, HttpStatus.OK);
+    }
+
+    public static ResponseEntity<?> buildFileResponse(byte[] bytes) {
+        ByteArrayResource resource = new ByteArrayResource(bytes);
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                .contentLength(resource.contentLength())
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        ContentDisposition.attachment()
+                                .filename("whatever")
+                                .build().toString())
+                .body(resource);
     }
 }
 

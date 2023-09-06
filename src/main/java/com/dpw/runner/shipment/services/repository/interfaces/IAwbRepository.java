@@ -13,4 +13,6 @@ import java.util.List;
 public interface IAwbRepository extends MultiTenancyRepository<Awb> {
     Page<Awb> findAll(Specification<Awb> spec, Pageable pageable);
     List<Awb> findByShipmentId(Long shipmentId);
+    List<Awb> findByConsolidationId(Long shipmentId);
+
 }

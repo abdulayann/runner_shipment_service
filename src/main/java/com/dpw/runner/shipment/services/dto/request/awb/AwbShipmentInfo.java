@@ -24,7 +24,9 @@ public class AwbShipmentInfo {
     private String noOfCopies;
     private String status;
     private String awbNumber;
+    //TODO- Loc Code
     private String originAirport;
+    //TODO- Loc Code
     private String destinationAirport;
     private String firstCarrier;
     private Integer abrId;

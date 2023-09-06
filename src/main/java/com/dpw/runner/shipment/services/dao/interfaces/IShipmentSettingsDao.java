@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.data.jpa.repository.Query;
 
 import java.util.List;
 import java.util.Optional;
@@ -18,4 +19,5 @@ public interface IShipmentSettingsDao {
     List<ShipmentSettingsDetails> list();
     Optional<ShipmentSettingsDetails> findByGuid(UUID guid);
     Integer getShipmentConsoleImportApprovarRole(int tenantId);
+    List<ShipmentSettingsDetails> getSettingsByTenantIds(List<Integer> tenantId);
 }

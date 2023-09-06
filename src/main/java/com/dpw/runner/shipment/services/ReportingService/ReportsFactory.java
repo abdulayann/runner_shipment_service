@@ -3,8 +3,9 @@ package com.dpw.runner.shipment.services.ReportingService;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.Reports.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
-
+@Component
 public class ReportsFactory {
     @Autowired
     private ArrivalNoticeReport arrivalNoticeReport;
@@ -29,7 +30,7 @@ public class ReportsFactory {
                 return bookingConfirmationReport;
             case ReportConstants.DELIVERY_ORDER:
                 return deliveryOrderReport;
-            case ReportConstants.HBL:
+            case ReportConstants.HOUSE_BILL:
                 return hblReport;
             case ReportConstants.HAWB:
                 return hawbReport;

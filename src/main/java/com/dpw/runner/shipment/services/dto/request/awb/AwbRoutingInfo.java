@@ -14,8 +14,9 @@ import java.time.LocalDateTime;
 public class AwbRoutingInfo {
     private Long entityId;
     private String entityType;
-    private Integer origin;
-    private Integer destination;
+    //TODO- LocCode
+    private String origin;
+    private String destination;
     private String  byCarrier;
     private String  flightNumber;
     private LocalDateTime flightDate;

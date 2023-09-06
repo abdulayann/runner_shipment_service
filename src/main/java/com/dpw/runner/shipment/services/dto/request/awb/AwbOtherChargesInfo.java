@@ -15,7 +15,7 @@ import java.util.UUID;
 public class AwbOtherChargesInfo {
     private Integer entityId;
     private String entityType;
-    private Integer chargeTypeId;
+    private String chargeTypeId;
     private BigDecimal rate;
     private Integer chargeBasis;
     private BigDecimal amount;

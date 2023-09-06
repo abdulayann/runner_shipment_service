@@ -106,5 +106,13 @@ public class Constants {
 
     public static final String DEFAULT_DATE_FORMAT = "MM/dd/yyyy";
 
+    public static final String AGENT_PREFIX = "A";
+    public static final String CARRIER_PREFIX = "C";
+
+    public static final String CARGO_RUNNER = "CargoRunner";
+
+    public static final String Shipments = "[Shipments]";
+
+
 
 }
