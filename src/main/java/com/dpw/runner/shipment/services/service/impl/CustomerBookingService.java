@@ -747,12 +747,12 @@ public class CustomerBookingService implements ICustomerBookingService {
 
     private CustomerBookingResponse updatePlatformBooking(CustomerBookingRequest request) {
         CustomerBooking customerBooking = jsonHelper.convertValue(request, CustomerBooking.class);
+        customerBooking.setIsPlatformBookingCreated(Boolean.TRUE);
         customerBooking.setSource(BookingSource.Platform);
         try {
             customerBooking = this.updateEntities(customerBooking, request);
         } catch (Exception e) {
             log.error(e.getMessage());
-            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
             throw new RuntimeException(e);
         }
         return jsonHelper.convertValue(customerBooking, CustomerBookingResponse.class);
@@ -764,6 +764,7 @@ public class CustomerBookingService implements ICustomerBookingService {
         }
         CustomerBooking customerBooking = jsonHelper.convertValue(request, CustomerBooking.class);
         customerBooking.setSource(BookingSource.Platform);
+        customerBooking.setIsPlatformBookingCreated(Boolean.TRUE);
         try {
             createEntities(customerBooking, request);
         } catch (Exception e) {
