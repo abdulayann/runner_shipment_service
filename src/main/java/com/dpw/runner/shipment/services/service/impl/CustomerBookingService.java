@@ -8,10 +8,8 @@ import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.*;
-import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
-import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
-import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
-import com.dpw.runner.shipment.services.commons.requests.RunnerEntityMapping;
+import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
+import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
@@ -110,6 +108,8 @@ public class CustomerBookingService implements ICustomerBookingService {
 
     @Autowired
     private ICRPServiceAdapter crpServiceAdapter;
+    @Autowired
+    private AuditLogService auditLogService;
 
     private static final Map<String, String> loadTypeMap = Map.of("SEA", "LCL", "AIR", "LSE");
 
@@ -215,6 +215,14 @@ public class CustomerBookingService implements ICustomerBookingService {
             }
             customerBooking.setBookingCharges(bookingCharges);
         }
+        auditLogService.addAuditLog(
+                AuditLogMetaData.builder()
+                        .newData(customerBooking)
+                        .prevData(null)
+                        .parent(CustomerBooking.class.getSimpleName())
+                        .parentId(customerBooking.getId())
+                        .operation(DBOperationType.CREATE.name()).build()
+        );
     }
 
     @Override
@@ -248,7 +256,7 @@ public class CustomerBookingService implements ICustomerBookingService {
         }
 
         try {
-            customerBooking = this.updateEntities(customerBooking, request);
+            customerBooking = this.updateEntities(customerBooking, request, jsonHelper.convertToJson(oldEntity.get()));
         } catch (Exception e) {
             log.error(e.getMessage());
             throw new RuntimeException(e);
@@ -263,7 +271,7 @@ public class CustomerBookingService implements ICustomerBookingService {
         return ResponseHelper.buildSuccessResponse(jsonHelper.convertValue(customerBooking, CustomerBookingResponse.class));
     }
 
-    private CustomerBooking updateEntities(CustomerBooking customerBooking, CustomerBookingRequest request) throws Exception {
+    private CustomerBooking updateEntities(CustomerBooking customerBooking, CustomerBookingRequest request, String oldEntity) throws Exception {
         customerBooking = customerBookingDao.save(customerBooking);
         Long bookingId = customerBooking.getId();
 
@@ -319,6 +327,14 @@ public class CustomerBookingService implements ICustomerBookingService {
                 customerBooking = customerBookingDao.save(customerBooking);
             }
         }
+        auditLogService.addAuditLog(
+                AuditLogMetaData.builder()
+                        .newData(customerBooking)
+                        .prevData(jsonHelper.readFromJson(oldEntity, CustomerBooking.class))
+                        .parent(CustomerBooking.class.getSimpleName())
+                        .parentId(customerBooking.getId())
+                        .operation(DBOperationType.UPDATE.name()).build()
+        );
         return customerBooking;
     }
 
@@ -596,7 +612,7 @@ public class CustomerBookingService implements ICustomerBookingService {
                 });
             }
 
-            this.updatePlatformBooking(customerBookingRequest);
+            this.updatePlatformBooking(customerBookingRequest, customerBooking.get());
         }
 
         return ResponseHelper.buildSuccessResponse(platformResponse);
@@ -745,12 +761,12 @@ public class CustomerBookingService implements ICustomerBookingService {
         request.setAddressData(addressData);
     }
 
-    private CustomerBookingResponse updatePlatformBooking(CustomerBookingRequest request) {
+    private CustomerBookingResponse updatePlatformBooking(CustomerBookingRequest request, CustomerBooking oldEntity) {
         CustomerBooking customerBooking = jsonHelper.convertValue(request, CustomerBooking.class);
         customerBooking.setIsPlatformBookingCreated(Boolean.TRUE);
         customerBooking.setSource(BookingSource.Platform);
         try {
-            customerBooking = this.updateEntities(customerBooking, request);
+            customerBooking = this.updateEntities(customerBooking, request, jsonHelper.convertToJson(oldEntity));
         } catch (Exception e) {
             log.error(e.getMessage());
             throw new RuntimeException(e);

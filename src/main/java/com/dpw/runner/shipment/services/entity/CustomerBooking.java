@@ -164,4 +164,8 @@ public class CustomerBooking extends MultiTenancy {
 
     @Column(name = "shipment_id")
     private String shipmentId;
+
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "entityId")
+    @Where(clause = "entity = 'CustomerBooking'")
+    private List<AuditLog> logsList;
 }

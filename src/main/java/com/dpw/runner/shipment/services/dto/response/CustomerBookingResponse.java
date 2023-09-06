@@ -60,5 +60,6 @@ public class CustomerBookingResponse implements IRunnerResponse {
     private List<RoutingsResponse> routingList;
     private List<BookingChargesResponse> bookingCharges;
     private List<FileRepoResponse> fileRepoList;
+    private List<AuditLogResponse> logsList;
     public Map<String, String> masterData;
 }
