@@ -30,7 +30,7 @@ public class ReportsFactory {
                 return bookingConfirmationReport;
             case ReportConstants.DELIVERY_ORDER:
                 return deliveryOrderReport;
-            case ReportConstants.HBL:
+            case ReportConstants.HOUSE_BILL:
                 return hblReport;
             case ReportConstants.HAWB:
                 return hawbReport;

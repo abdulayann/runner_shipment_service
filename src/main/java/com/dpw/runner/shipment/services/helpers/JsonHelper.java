@@ -36,6 +36,7 @@ public class JsonHelper {
         try {
             mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
             mapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
+            mapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
             return mapper.writeValueAsString(object);
         } catch (JsonProcessingException e) {
             log.error("Failed to Parse given Json");
