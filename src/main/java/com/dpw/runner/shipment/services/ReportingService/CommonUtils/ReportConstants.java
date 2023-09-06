@@ -460,4 +460,8 @@ public class ReportConstants
     public static final String COPY = "COPY";
     public static final String DISABLE_ORIGINAL = "DisableOriginal";
     public static final String ID = "Id";
+
+    // APis
+    public static final String REPORT_API_HANDLE = "/api/v2/report";
+    public static final String REPORT_CREATE_SUCCESSFUL = "Successful Report Creation";
 }

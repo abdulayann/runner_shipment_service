@@ -95,7 +95,9 @@ public class BookingConfirmationReport extends IReport{
         masterData = getMasterListData(MasterDataType.SERVICE_MODE, bookingConfirmationModel.shipment.getServiceType());
         bookingConfirmationModel.serviceMode = (masterData != null ? masterData.getItemDescription() : null);
 
-        masterData = getMasterListData(MasterDataType.COUNTRIES, paidPlace.getCountry());
+        if(paidPlace != null) {
+            masterData = getMasterListData(MasterDataType.COUNTRIES, paidPlace.getCountry());
+        }
         bookingConfirmationModel.paidPlaceCountry = (masterData != null ? masterData.getItemDescription() : null);
         List<BookingCarriage> bookingCarriages = bookingConfirmationModel.shipment.getBookingCarriagesList();
         BookingCarriage bookingCarriage = null;

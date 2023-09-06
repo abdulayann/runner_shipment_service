@@ -83,7 +83,8 @@ public class ReportService implements IReportService {
     private IFileRepoService fileRepoService;
 
     @Override
-    public byte[] getDocumentData(ReportRequest reportRequest) throws DocumentException, IOException {
+    public byte[] getDocumentData(CommonRequestModel request) throws DocumentException, IOException {
+        ReportRequest reportRequest = (ReportRequest) request.getData();
 
         ShipmentSettingsDetails tenantSettingsRow = new ShipmentSettingsDetails();
 
@@ -504,7 +505,9 @@ public class ReportService implements IReportService {
 
     public byte[] GetFromDocumentService(Object json, String templateId) {
         try {
-            return (byte[]) documentService.DownloadDocumentTemplate(jsonHelper.convertToJson(json), templateId).getBody();
+            Map<String, Object> jsonMap = new HashMap<>();
+            jsonMap.put("data", json);
+            return (byte[]) documentService.DownloadDocumentTemplate(jsonHelper.convertToJson(jsonMap), templateId).getBody();
         } catch (Exception e) {
             log.error(e.getMessage());
             return null;

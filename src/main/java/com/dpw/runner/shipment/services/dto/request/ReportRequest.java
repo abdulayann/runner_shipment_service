@@ -1,9 +1,10 @@
 package com.dpw.runner.shipment.services.dto.request;
 
+import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import lombok.Getter;
 
 @Getter
-public class ReportRequest {
+public class ReportRequest implements IRunnerRequest {
     String reportInfo;
     String reportKey;
     String reportId;
