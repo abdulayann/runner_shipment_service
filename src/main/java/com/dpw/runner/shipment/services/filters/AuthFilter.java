@@ -73,8 +73,18 @@ public class AuthFilter implements Filter {
             res.setStatus(HttpStatus.FORBIDDEN.value());
             return;
         }
+        UsersDto user = null;
+        try{
+            user = userService.getUserByToken(authToken);
+        } catch (Exception e)
+        {
+            String errormessage = "Auth failed:- User is not onboarded on shipment service";
+            log.info(errormessage);
+            res.setContentType("application/json");
+            res.setStatus(HttpStatus.FORBIDDEN.value());
+            return;
+        }
 
-        UsersDto user = userService.getUserByToken(authToken);
         if (user == null) {
             String errormessage = "Auth failed:- User is not onboarded on shipment service";
             log.info(errormessage);
