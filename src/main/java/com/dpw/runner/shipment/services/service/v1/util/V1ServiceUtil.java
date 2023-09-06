@@ -124,6 +124,18 @@ public class V1ServiceUtil {
         var consignor = convertParty(customerBooking.getConsignor());
         var notify = convertParty(customerBooking.getNotifyParty());
         var customer = convertParty(customerBooking.getCustomer());
+        Set<CreateBookingModuleInV1.BookingEntity.OrgDetail> hs = new HashSet<>();
+        if (customerBooking.getBookingCharges() != null) {
+            for (var bc : customerBooking.getBookingCharges()) {
+                var creditor = convertParty(bc.getCreditor());
+                var debtor = convertParty(bc.getDebtor());
+                if (creditor != null)
+                    hs.add(creditor);
+                if (debtor != null)
+                    hs.add(debtor);
+            }
+        }
+        list.addAll(hs);
         if (consignee != null)
             list.add(consignee);
         if (consignor != null)
