@@ -1,5 +1,7 @@
 package com.dpw.runner.shipment.services.service.v1.impl;
 
+import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
 import com.dpw.runner.shipment.services.dto.v1.request.CreateConsolidationTaskRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.CreateShipmentTaskRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.SendEntityResponse;
@@ -51,6 +53,9 @@ public class V1ServiceImpl implements IV1Service {
 
     @Value("${v1service.url.base}${v1service.url.carrierData}")
     private String CARRIER_MASTER_DATA_URL;
+
+    @Value("${v1service.url.base}${v1service.url.carrierOrgRefFilteredData}")
+    private String CARRIER_MASTER_DATA_ORG_REF_FILTER_URL;
 
     @Value("${v1service.url.base}${v1service.url.carrierDataCreate}")
     private String CARRIER_MASTER_DATA_CREATE_URL;
@@ -289,13 +294,20 @@ public class V1ServiceImpl implements IV1Service {
     }
 
     @Override
-    public V1DataResponse fetchCarrierMasterData(Object request) {
+    public V1DataResponse fetchCarrierMasterData(Object request_) {
         ResponseEntity masterDataResponse = null;
 
         try {
             long time = System.currentTimeMillis();
+            CarrierListObject req = jsonHelper.convertValue(request_, CarrierListObject.class);
+            Object request = req.getListObject();
             HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
-            masterDataResponse = this.restTemplate.postForEntity(this.CARRIER_MASTER_DATA_URL, entity, V1DataResponse.class, new Object[0]);
+            if(req.getListObject() != null && req.getType() != null && (req.getType().equals(Constants.CONSOLIDATION_TYPE_AGT) || req.getType().equals(Constants.CONSOLIDATION_TYPE_CLD))) {
+                masterDataResponse = this.restTemplate.postForEntity(this.CARRIER_MASTER_DATA_URL, entity, V1DataResponse.class, new Object[0]);
+            }
+            else {
+                masterDataResponse = this.restTemplate.postForEntity(this.CARRIER_MASTER_DATA_ORG_REF_FILTER_URL, entity, V1DataResponse.class, new Object[0]);
+            }
             log.info("Token time taken in getCarrierMasterData() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) masterDataResponse.getBody();
         } catch (HttpStatusCodeException var6) {
