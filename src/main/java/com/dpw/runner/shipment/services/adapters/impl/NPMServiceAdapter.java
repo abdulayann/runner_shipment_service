@@ -5,9 +5,11 @@ import com.dpw.runner.shipment.services.commons.constants.NPMConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.dao.interfaces.ICustomerBookingDao;
 import com.dpw.runner.shipment.services.dto.request.ListContractRequest;
+import com.dpw.runner.shipment.services.dto.request.exchangeRates.ExchangeRatesRequest;
 import com.dpw.runner.shipment.services.dto.request.npm.NPMFetchOffersRequest;
 import com.dpw.runner.shipment.services.dto.request.npm.NPMFetchOffersRequestFromUI;
 import com.dpw.runner.shipment.services.dto.request.npm.UpdateContractRequest;
+import com.dpw.runner.shipment.services.dto.response.ExchangeRates.ExchangeRatesResponse;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.CustomerBooking;
 import com.dpw.runner.shipment.services.entity.Packing;
@@ -54,11 +56,17 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
     @Value("${NPM.xApikeyV2}")
     private String xApikeyV2;
 
+    @Value("${npm.exchange.rate.url}")
+    private String exchangeRateUrl;
+
     private final RestTemplate restTemplate;
 
+    private final RestTemplate restTemp;
+
     @Autowired
-    public NPMServiceAdapter(@Qualifier("restTemplateForNPM") RestTemplate restTemplate) {
+    public NPMServiceAdapter(@Qualifier("restTemplateForNPM") RestTemplate restTemplate, @Qualifier("restTemplateForExchangeRates") RestTemplate restTemp) {
         this.restTemplate = restTemplate;
+        this.restTemp = restTemp;
     }
     @Autowired
     private ICustomerBookingDao customerBookingDao;
@@ -95,6 +103,23 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
         return ResponseHelper.buildDependentServiceResponse(response.getBody(),0,0);
     }
 
+    private String getCurrencyCode(String countryCode)
+    {
+        String url = exchangeRateUrl;
+        ExchangeRatesRequest exchangeRatesRequest = ExchangeRatesRequest.builder().country_code(Arrays.asList(countryCode)).build();
+        try {
+            var exchangeRatesResponse = restTemp.exchange(RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJson(exchangeRatesRequest)), ExchangeRatesResponse.class);
+            if(exchangeRatesResponse.getBody() != null && exchangeRatesResponse.getBody().getData() != null && !exchangeRatesResponse.getBody().getData().isEmpty())
+            {
+                return exchangeRatesResponse.getBody().getData().get(0).getCurrency_code();
+            }
+        } catch(Exception e)
+        {
+            log.error("Exchange Rates API failed due to: " + e.getMessage());
+        }
+        return null;
+    }
+
     private NPMFetchOffersRequest createNPMOffersRequest(NPMFetchOffersRequestFromUI request) {
         Optional<CustomerBooking> customerBooking = Optional.empty();
         if(request.getBookingId() != null){
@@ -111,6 +136,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
                 .POD(request.getPod())
                 .POL(request.getPol())
                 .exchange_rates(null)
+                .currency(getCurrencyCode(request.getCountryCode()))
                 .preferred_date(request.getPreferredDate())
                 .preferred_date_type(request.getPreferredDateType())
                 .carrier(NPMConstants.ANY) //hardcoded
