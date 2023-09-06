@@ -108,8 +108,10 @@ public class CreateBookingModuleInV1 {
             private BigDecimal CurrentCostRate;
             private BigDecimal CurrentSellRate;
             private BigDecimal LocalTax;
-
-
+            private String DebtorCode;
+            private String CreditorCode;
+            private String DebitorAddressCode;
+            private String CreditorAddressCode;
         }
 
         @Data

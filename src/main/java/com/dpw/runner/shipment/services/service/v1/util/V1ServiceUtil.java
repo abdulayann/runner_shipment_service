@@ -102,6 +102,10 @@ public class V1ServiceUtil {
                         .CurrentCostRate(bc.getCurrentCostRate())
                         .CurrentSellRate(bc.getCurrentSellRate())
                         .LocalTax(bc.getLocalTax())
+                        .DebtorCode(bc.getDebtor() != null ? bc.getDebtor().getOrgCode() : null)
+                        .CreditorCode(bc.getCreditor() != null ? bc.getCreditor().getOrgCode() : null)
+                        .DebitorAddressCode(bc.getDebtor() != null ? bc.getDebtor().getAddressCode() : null)
+                        .CreditorAddressCode(bc.getCreditor() != null ? bc.getCreditor().getAddressCode() : null)
                         .build()).collect(Collectors.toList());
     }
 
