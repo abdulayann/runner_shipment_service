@@ -294,14 +294,14 @@ public class V1ServiceImpl implements IV1Service {
     }
 
     @Override
-    public V1DataResponse fetchCarrierMasterData(Object request_) {
+    public V1DataResponse fetchCarrierMasterData(Object request) {
         ResponseEntity masterDataResponse = null;
 
         try {
             long time = System.currentTimeMillis();
-            CarrierListObject req = jsonHelper.convertValue(request_, CarrierListObject.class);
-            Object request = req.getListObject();
-            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            CarrierListObject req = jsonHelper.convertValue(request, CarrierListObject.class);
+            Object requestCriteria = req.getListObject();
+            HttpEntity<V1DataResponse> entity = new HttpEntity(requestCriteria, V1AuthHelper.getHeaders());
             if(req.getListObject() != null && req.getType() != null && (req.getType().equals(Constants.CONSOLIDATION_TYPE_AGT) || req.getType().equals(Constants.CONSOLIDATION_TYPE_CLD))) {
                 masterDataResponse = this.restTemplate.postForEntity(this.CARRIER_MASTER_DATA_URL, entity, V1DataResponse.class, new Object[0]);
             }
