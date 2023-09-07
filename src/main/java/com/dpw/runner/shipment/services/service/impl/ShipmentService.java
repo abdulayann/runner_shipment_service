@@ -793,7 +793,6 @@ public class ShipmentService implements IShipmentService {
         entity.setId(oldEntity.get().getId());
         if (entity.getContainersList() == null)
             entity.setContainersList(oldEntity.get().getContainersList());
-
         entity = shipmentDao.update(entity);
         return ResponseHelper.buildSuccessResponse(objectMapper.convertValue(entity, ShipmentDetailsResponse.class));
     }
