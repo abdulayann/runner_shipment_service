@@ -527,7 +527,7 @@ public class ShipmentService implements IShipmentService {
             directShipmentMAWBCheck(request);
 
         ShipmentDetails shipmentDetails = jsonHelper.convertValue(request, ShipmentDetails.class);
-        AdditionalDetails additionalDetails = jsonHelper.convertValue(request.getAdditionalDetail(), AdditionalDetails.class);
+        AdditionalDetails additionalDetails = jsonHelper.convertValue(request.getAdditionalDetails(), AdditionalDetails.class);
         CarrierDetails carrierDetails = jsonHelper.convertValue(request.getCarrierDetails(), CarrierDetails.class);
 
         try {
@@ -818,7 +818,7 @@ public class ShipmentService implements IShipmentService {
 
         List<BookingCarriageRequest> bookingCarriageRequestList = shipmentRequest.getBookingCarriagesList();
         List<PackingRequest> packingRequestList = shipmentRequest.getPackingList();
-        AdditionalDetailRequest additionalDetailRequest = shipmentRequest.getAdditionalDetail();
+        AdditionalDetailRequest additionalDetailRequest = shipmentRequest.getAdditionalDetails();
         List<ContainerRequest> containerRequestList = shipmentRequest.getContainersList();
         List<ELDetailsRequest> elDetailsRequestList = shipmentRequest.getElDetailsList();
         List<EventsRequest> eventsRequestList = shipmentRequest.getEventsList();
@@ -1378,7 +1378,7 @@ public class ShipmentService implements IShipmentService {
 
         List<BookingCarriageRequest> bookingCarriageRequestList = shipmentRequest.getBookingCarriagesList();
         List<PackingRequest> packingRequestList = shipmentRequest.getPackingList();
-        AdditionalDetailRequest additionalDetailRequest = shipmentRequest.getAdditionalDetail();
+        AdditionalDetailRequest additionalDetailRequest = shipmentRequest.getAdditionalDetails();
         List<ContainerRequest> containerRequestList = shipmentRequest.getContainersList();
         List<ELDetailsRequest> elDetailsRequestList = shipmentRequest.getElDetailsList();
         List<EventsRequest> eventsRequestList = shipmentRequest.getEventsList();
