@@ -233,6 +233,8 @@ public class BookingIntegrationsUtility {
                 .destination_code(carrierDetails.map(c -> c.getDestination()).orElse(null))
                 .load(createLoad(customerBooking))
                 .charges(createCharges(customerBooking))
+                .pol(carrierDetails.map(c -> c.getOriginPort()).orElse(null))
+                .pod(carrierDetails.map(c -> c.getDestinationPort()).orElse(null))
                 .carrier_code(carrierDetails.map(c -> c.getJourneyNumber()).orElse(null))
                 .air_carrier_details(null)
                 .status(platformStatusMap.get(customerBooking.getBookingStatus()))

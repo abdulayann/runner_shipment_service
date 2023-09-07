@@ -102,6 +102,10 @@ public class V1ServiceUtil {
                         .CurrentCostRate(bc.getCurrentCostRate())
                         .CurrentSellRate(bc.getCurrentSellRate())
                         .LocalTax(bc.getLocalTax())
+                        .DebtorCode(bc.getDebtor() != null ? bc.getDebtor().getOrgCode() : null)
+                        .CreditorCode(bc.getCreditor() != null ? bc.getCreditor().getOrgCode() : null)
+                        .DebitorAddressCode(bc.getDebtor() != null ? bc.getDebtor().getAddressCode() : null)
+                        .CreditorAddressCode(bc.getCreditor() != null ? bc.getCreditor().getAddressCode() : null)
                         .build()).collect(Collectors.toList());
     }
 
@@ -120,6 +124,17 @@ public class V1ServiceUtil {
         var consignor = convertParty(customerBooking.getConsignor(), customerBooking.getIsConsignorFreeText());
         var notify = convertParty(customerBooking.getNotifyParty(), customerBooking.getIsNotifyPartyFreeText());
         var customer = convertParty(customerBooking.getCustomer(), customerBooking.getIsCustomerFreeText());
+        Set<CreateBookingModuleInV1.BookingEntity.OrgDetail> hs = new HashSet<>();
+        if (customerBooking.getBookingCharges() != null) {
+            for (var bc : customerBooking.getBookingCharges()) {
+                var creditor = convertParty(bc.getCreditor(), false);
+                var debtor = convertParty(bc.getDebtor(), true);
+                if (creditor != null)
+                    list.add(creditor);
+                if (debtor != null)
+                    list.add(debtor);
+            }
+        }
         if (consignee != null)
             list.add(consignee);
         if (consignor != null)
