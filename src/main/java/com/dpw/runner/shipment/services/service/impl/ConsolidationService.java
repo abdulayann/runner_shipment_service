@@ -353,7 +353,7 @@ public class ConsolidationService implements IConsolidationService {
 
         catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
-                    : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
+                    : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
         }
     }
@@ -498,16 +498,9 @@ public class ConsolidationService implements IConsolidationService {
         entity.setId(oldEntity.get().getId());
         if (entity.getContainersList() == null)
             entity.setContainersList(oldEntity.get().getContainersList());
-        try {
-            entity = consolidationDetailsDao.update(entity);
-            return ResponseHelper.buildSuccessResponse(jsonHelper.convertValue(entity, ConsolidationDetailsResponse.class));
-        }
-        catch (Exception e) {
-            responseMsg = e.getMessage() != null ? e.getMessage()
-                    : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
-            log.error(responseMsg, e);
-            return ResponseHelper.buildFailedResponse(responseMsg);
-        }
+        entity = consolidationDetailsDao.update(entity);
+        return ResponseHelper.buildSuccessResponse(jsonHelper.convertValue(entity, ConsolidationDetailsResponse.class));
+
     }
 
     @Transactional
