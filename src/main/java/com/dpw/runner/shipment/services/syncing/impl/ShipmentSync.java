@@ -97,21 +97,12 @@ public class ShipmentSync implements IShipmentSync {
         cs.setBookingCarriages(convertToList(sd.getBookingCarriagesList(), BookingCarriageRequestV2.class));
 
         String finalCs = jsonHelper.convertToJson(cs);
-//        retryTemplate.execute(ctx -> {
-//            log.info("Current retry : {}", ctx.getRetryCount());
-//            HttpEntity<V1DataResponse> entity = new HttpEntity(finalCs, V1AuthHelper.getHeaders());
-//            var response = this.restTemplate.postForEntity(this.SHIPMENT_V1_SYNC_URL, entity, V1DataResponse.class, new Object[0]);
-//            return response;
-//        });
-
-        try {
+        retryTemplate.execute(ctx -> {
+            log.info("Current retry : {}", ctx.getRetryCount());
             HttpEntity<V1DataResponse> entity = new HttpEntity(finalCs, V1AuthHelper.getHeaders());
             var response = this.restTemplate.postForEntity(this.SHIPMENT_V1_SYNC_URL, entity, V1DataResponse.class, new Object[0]);
-//            return response;
-            log.info("{}", response);
-        } catch (Exception e){
-            log.error("{}", e.getMessage());
-        }
+            return response;
+        });
 
         return ResponseHelper.buildSuccessResponse(modelMapper.map(cs, CustomShipmentSyncResponse.class));
     }

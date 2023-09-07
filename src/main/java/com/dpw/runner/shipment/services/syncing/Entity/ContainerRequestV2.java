@@ -1,5 +1,7 @@
 package com.dpw.runner.shipment.services.syncing.Entity;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -7,78 +9,152 @@ import java.util.UUID;
 
 public class ContainerRequestV2 {
 
-    public UUID Guid;
-    public BigDecimal AchievedVolume;
-    public String AchievedVolumeUnit;
-    public BigDecimal AchievedWeight;
-    public String AchievedWeightUnit;
-    public BigDecimal AllocatedVolume;
-    public String AllocatedVolumeUnit;
-    public BigDecimal AllocatedWeight;
-    public String AllocatedWeightUnit;
-    public LocalDateTime AllocationDate;
-    public String CarrierSealNumber;
-    public BigDecimal Chargeable;
-    public String ChargeableUnit;
-    public String CommodityCode;
-    public Long ConsolidationId;
-    public String ContainerCode;
-    public String ContainerComments;
-    public String ContainerCount;
-    public String ContainerNumber;
-    public String ContainerStuffingLocationName;
-    public String CustomsReleaseCode;
-    public String CustomsSealNumber;
-    public PartyRequestV2 DeliveryAddressJson;
-    public String DescriptionOfGoods;
-    public String DgClassString;
-    public List<EventsRequestV2> EventsList;
-    public String ExtraParams;
-    public BigDecimal GrossVolume;
-    public String GrossVolumeUnit;
-    public BigDecimal GrossWeight;
-    public String GrossWeightUnit;
-    public Boolean IsHazardous;
-    public String HazardousUn;
-    public String HblDeliveryMode;
-    public String HsCode;
-    public String InnerPackageMeasurementUnit;
-    public String InnerPackageNumber;
-    public String InnerPackageType;
-    public Boolean IsEmpty;
-    public Boolean IsOwnContainer;
-    public Boolean IsReefer;
-    public Boolean IsShipperOwned;
-    public Boolean IsTemperatureMaintained;
-    public String MarksnNums;
-    public BigDecimal MaxTemp;
-    public String MaxTempUnit;
-    public BigDecimal MinTemp;
-    public String MinTempUnit;
-    public BigDecimal Measurement;
-    public String MeasurementUnit;
-    public BigDecimal NetWeight;
-    public String NetWeightUnit;
-    public Long NoOfPackages;
-    public String PackageBreadth;
-    public String PackageHeight;
-    public String PackageLength;
-    public String Packs;
-    public List<PackingRequestV2> PacksList;  // Different PackRequestV2 was there in create test record model v1
-    public String PacksType;
-    public String PacrNumber;
-    public PartyRequestV2 PickupAddressJson;
-    public String Remarks;
-    public String SealNumber;
-    public String SerialNumber;
-    public List<Long> ShipmentsList;
-    public String ShipperSealNumber;
-    public String StatusString;
-    public BigDecimal TareWeight;
-    public String TareWeightUnit;
-    public String TerminalOperatorSealNumber;
-    public String TransportMode;
-    public String VeterinarySealNumber;
-    public String VolumeUtilization;
-    public String WeightUtilization;
+    @JsonProperty("Guid")
+    private UUID Guid;
+    @JsonProperty("AchievedVolume")
+    private BigDecimal AchievedVolume;
+    @JsonProperty("AchievedVolumeUnit")
+    private String AchievedVolumeUnit;
+    @JsonProperty("AchievedWeight")
+    private BigDecimal AchievedWeight;
+    @JsonProperty("AchievedWeightUnit")
+    private String AchievedWeightUnit;
+    @JsonProperty("AllocatedVolume")
+    private BigDecimal AllocatedVolume;
+    @JsonProperty("AllocatedVolumeUnit")
+    private String AllocatedVolumeUnit;
+    @JsonProperty("AllocatedWeight")
+    private BigDecimal AllocatedWeight;
+    @JsonProperty("AllocatedWeightUnit")
+    private String AllocatedWeightUnit;
+    @JsonProperty("AllocationDate")
+    private LocalDateTime AllocationDate;
+    @JsonProperty("CarrierSealNumber")
+    private String CarrierSealNumber;
+    @JsonProperty("Chargeable")
+    private BigDecimal Chargeable;
+    @JsonProperty("ChargeableUnit")
+    private String ChargeableUnit;
+    @JsonProperty("CommodityCode")
+    private String CommodityCode;
+    @JsonProperty("ConsolidationId")
+    private Long ConsolidationId;
+    @JsonProperty("ContainerCode")
+    private String ContainerCode;
+    @JsonProperty("ContainerComments")
+    private String ContainerComments;
+    @JsonProperty("ContainerCount")
+    private String ContainerCount;
+    @JsonProperty("ContainerNumber")
+    private String ContainerNumber;
+    @JsonProperty("ContainerStuffingLocationName")
+    private String ContainerStuffingLocationName;
+    @JsonProperty("CustomsReleaseCode")
+    private String CustomsReleaseCode;
+    @JsonProperty("CustomsSealNumber")
+    private String CustomsSealNumber;
+    @JsonProperty("DeliveryAddressJson")
+    private PartyRequestV2 DeliveryAddressJson;
+    @JsonProperty("DescriptionOfGoods")
+    private String DescriptionOfGoods;
+    @JsonProperty("DgClassString")
+    private String DgClassString;
+    @JsonProperty("EventsList")
+    private List<EventsRequestV2> EventsList;
+    @JsonProperty("ExtraParams")
+    private String ExtraParams;
+    @JsonProperty("GrossVolume")
+    private BigDecimal GrossVolume;
+    @JsonProperty("GrossVolumeUnit")
+    private String GrossVolumeUnit;
+    @JsonProperty("GrossWeight")
+    private BigDecimal GrossWeight;
+    @JsonProperty("GrossWeightUnit")
+    private String GrossWeightUnit;
+    @JsonProperty("IsHazardous")
+    private Boolean IsHazardous;
+    @JsonProperty("HazardousUn")
+    private String HazardousUn;
+    @JsonProperty("HblDeliveryMode")
+    private String HblDeliveryMode;
+    @JsonProperty("HsCode")
+    private String HsCode;
+    @JsonProperty("InnerPackageMeasurementUnit")
+    private String InnerPackageMeasurementUnit;
+    @JsonProperty("InnerPackageNumber")
+    private String InnerPackageNumber;
+    @JsonProperty("InnerPackageType")
+    private String InnerPackageType;
+    @JsonProperty("IsEmpty")
+    private Boolean IsEmpty;
+    @JsonProperty("IsOwnContainer")
+    private Boolean IsOwnContainer;
+    @JsonProperty("IsReefer")
+    private Boolean IsReefer;
+    @JsonProperty("IsShipperOwned")
+    private Boolean IsShipperOwned;
+    @JsonProperty("IsTemperatureMaintained")
+    private Boolean IsTemperatureMaintained;
+    @JsonProperty("MarksnNums")
+    private String MarksnNums;
+    @JsonProperty("MaxTemp")
+    private BigDecimal MaxTemp;
+    @JsonProperty("MaxTempUnit")
+    private String MaxTempUnit;
+    @JsonProperty("MinTemp")
+    private BigDecimal MinTemp;
+    @JsonProperty("MinTempUnit")
+    private String MinTempUnit;
+    @JsonProperty("Measurement")
+    private BigDecimal Measurement;
+    @JsonProperty("MeasurementUnit")
+    private String MeasurementUnit;
+    @JsonProperty("NetWeight")
+    private BigDecimal NetWeight;
+    @JsonProperty("NetWeightUnit")
+    private String NetWeightUnit;
+    @JsonProperty("NoOfPackages")
+    private Long NoOfPackages;
+    @JsonProperty("PackageBreadth")
+    private String PackageBreadth;
+    @JsonProperty("PackageHeight")
+    private String PackageHeight;
+    @JsonProperty("PackageLength")
+    private String PackageLength;
+    @JsonProperty("Packs")
+    private String Packs;
+    @JsonProperty("PacksList")
+    private List<PackingRequestV2> PacksList;  // Different PackRequestV2 was there in create test record model v1
+    @JsonProperty("PacksType")
+    private String PacksType;
+    @JsonProperty("PacrNumber")
+    private String PacrNumber;
+    @JsonProperty("PickupAddressJson")
+    private PartyRequestV2 PickupAddressJson;
+    @JsonProperty("Remarks")
+    private String Remarks;
+    @JsonProperty("SealNumber")
+    private String SealNumber;
+    @JsonProperty("SerialNumber")
+    private String SerialNumber;
+    @JsonProperty("ShipmentsList")
+    private List<Long> ShipmentsList;
+    @JsonProperty("ShipperSealNumber")
+    private String ShipperSealNumber;
+    @JsonProperty("StatusString")
+    private String StatusString;
+    @JsonProperty("TareWeight")
+    private BigDecimal TareWeight;
+    @JsonProperty("TareWeightUnit")
+    private String TareWeightUnit;
+    @JsonProperty("TerminalOperatorSealNumber")
+    private String TerminalOperatorSealNumber;
+    @JsonProperty("TransportMode")
+    private String TransportMode;
+    @JsonProperty("VeterinarySealNumber")
+    private String VeterinarySealNumber;
+    @JsonProperty("VolumeUtilization")
+    private String VolumeUtilization;
+    @JsonProperty("WeightUtilization")
+    private String WeightUtilization;
 }

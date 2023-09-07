@@ -13,499 +13,499 @@ import java.util.UUID;
 @Data
 public class CustomConsolidationRequest implements IRunnerResponse, IRunnerRequest {
 
-    @JsonProperty
+    @JsonProperty("AchievedQuantities")
     private AchievedQuantities AchievedQuantities;
-    @JsonProperty
+    @JsonProperty("AdditionalTerms")
     private String AdditionalTerms;
-    @JsonProperty
+    @JsonProperty("Allocations")
     private Allocations Allocations;
-    @JsonProperty
+    @JsonProperty("ArrivalDepartureDetails")
     private ArrivalDepartureDetails ArrivalDepartureDetails;
 
-    // @JsonProperty
+    // @JsonProperty("Copy
     // private Integer Copy;
 
     // Carrier details
-    @JsonProperty
+    @JsonProperty("DestinationName")
     private String DestinationName;
-    @JsonProperty
+    @JsonProperty("DestinationPortName")
     private String DestinationPortName;
-    @JsonProperty
+    @JsonProperty("OriginPortName")
     private String OriginPortName;
-    @JsonProperty
+    @JsonProperty("OriginName")
     private String OriginName;
-    @JsonProperty
+    @JsonProperty("ShipmentId")
     private String ShipmentId;
-    @JsonProperty
+    @JsonProperty("ShippingLine")
     private String ShippingLine;
-    @JsonProperty
+    @JsonProperty("Voyage")
     private String Voyage;
 
-    @JsonProperty
+    @JsonProperty("ContainersList")
     private List<ContainerRequestV2> ContainersList;
 
-    @JsonProperty
+    @JsonProperty("BondedWarehouseId")
     private Long BondedWarehouseId;
 
-    @JsonProperty
+    @JsonProperty("CargoClosingTime")
     private LocalDateTime CargoClosingTime;
 
-    @JsonProperty
+    @JsonProperty("ConsolidatedVolume")
     private BigDecimal ConsolidatedVolume;
-    @JsonProperty
+    @JsonProperty("DocsClosingTime")
     private LocalDateTime DocsClosingTime;
-    @JsonProperty
+    @JsonProperty("DocumentationPartner")
     private Integer DocumentationPartner;
-    @JsonProperty
+    @JsonProperty("DOIssueDate")
     private LocalDateTime DOIssueDate;
-    @JsonProperty
+    @JsonProperty("DOPlaceOfIssueName")
     private String DOPlaceOfIssueName;
-    @JsonProperty
+    @JsonProperty("EDITransactionId")
     private String EDITransactionId;
-    // @JsonProperty
+    // @JsonProperty("EstimatedTerminalCutoff
     // private LocalDateTime EstimatedTerminalCutoff;
 
-    @JsonProperty
+    @JsonProperty("Guid")
     private UUID Guid;
-    @JsonProperty
+    @JsonProperty("Id")
     private Long Id;
-    @JsonProperty
+    @JsonProperty("IntraBranch")
     private Boolean IntraBranch;
-    @JsonProperty
+    @JsonProperty("InwardDateandTime")
     private LocalDateTime InwardDateandTime;
 
-    @JsonProperty
+    @JsonProperty("IsInland")
     private Boolean IsInland;
-    @JsonProperty
+    @JsonProperty("IsReceivingAgentFreeTextAddress")
     private Boolean IsReceivingAgentFreeTextAddress;
-    @JsonProperty
+    @JsonProperty("IsSendingAgentFreeTextAddress")
     private Boolean IsSendingAgentFreeTextAddress;
 
-    @JsonProperty
+    @JsonProperty("LockedBy")
     private Integer LockedBy;
-    @JsonProperty
+    @JsonProperty("MarksnNums")
     private String MarksnNums;
-    @JsonProperty
+    @JsonProperty("MrnNumber")
     private String MrnNumber;
-    @JsonProperty
+    @JsonProperty("MsnNumber")
     private Long MsnNumber;
 
-    @JsonProperty
+    @JsonProperty("PackageType")
     private String PackageType;
 
-    @JsonProperty
+    @JsonProperty("ReceivingAgentFreeTextAddress")
     private String ReceivingAgentFreeTextAddress;
-    @JsonProperty
+    @JsonProperty("ReceivingBranch")
     private Integer ReceivingBranch;
-    @JsonProperty
+    @JsonProperty("ReferenceNumber")
     private String ReferenceNumber;
 
-    @JsonProperty
+    @JsonProperty("SendingAgentFreeTextAddress")
     private String SendingAgentFreeTextAddress;
-    @JsonProperty
+    @JsonProperty("Smtpigmdate")
     private LocalDateTime Smtpigmdate;
-    @JsonProperty
+    @JsonProperty("Smtpigmnumber")
     private String Smtpigmnumber;
-    @JsonProperty
+    @JsonProperty("SourceTenantId")
     private Integer SourceTenantId;
-    @JsonProperty
+    @JsonProperty("SpecialInstructions")
     private String SpecialInstructions;
-    @JsonProperty
+    @JsonProperty("TriangulationPartner")
     private Integer TriangulationPartner;
-    @JsonProperty
+    @JsonProperty("WarehouseId")
     private Long WarehouseId;
 
-    @JsonProperty
+    @JsonProperty("JobsList")
     private List<JobRequestV2> JobsList;
-    @JsonProperty
+    @JsonProperty("NotesList")
     private List<NoteRequestV2> NotesList;
-    @JsonProperty
+    @JsonProperty("BookingCarriagesListE")
     private List<BookingCarriageRequestV2> BookingCarriagesListE;
-    @JsonProperty
+    @JsonProperty("ElDetailsList")
     private List<ElDetailsRequestV2> ElDetailsList;
-    @JsonProperty
+    @JsonProperty("EventsList")
     private List<EventsRequestV2> EventsList;
-    @JsonProperty
+    @JsonProperty("DocsList")
     private List<FileRepoRequestV2> DocsList;
-    @JsonProperty
+    @JsonProperty("PackingList")
     private List<PackingRequestV2> PackingList;
-    @JsonProperty
+    @JsonProperty("ReferenceNumbersList")
     private List<ReferenceNumbersRequestV2> ReferenceNumbersList;
-    @JsonProperty
+    @JsonProperty("RoutingsList")
     private List<RoutingsRequestV2> RoutingsList;
-    @JsonProperty
+    @JsonProperty("ShipmentList")
     private List<CustomShipmentSyncRequest> ShipmentList;
-    @JsonProperty
+    @JsonProperty("TruckDriverDetail")
     private List<TruckDriverDetailsRequestV2> TruckDriverDetail;
 
-    @JsonProperty
+    @JsonProperty("FirstLoadString")
     private String FirstLoadString;
-    @JsonProperty
+    @JsonProperty("LastDischargeString")
     private String LastDischargeString;
-    @JsonProperty
+    @JsonProperty("IGMFileNo")
     private String IGMFileNo;
-    @JsonProperty
+    @JsonProperty("IGMFileDate")
     private LocalDateTime IGMFileDate;
-    @JsonProperty
+    @JsonProperty("IGMInwardDate")
     private LocalDateTime IGMInwardDate;
-    @JsonProperty
+    @JsonProperty("SMTPIGMDate")
     private LocalDateTime SMTPIGMDate;
-    @JsonProperty
+    @JsonProperty("SMTPIGMNumber")
     private String SMTPIGMNumber;
 
-    @JsonProperty
+    @JsonProperty("ShipmentGuids")
     private List<UUID> ShipmentGuids;
 
-    @JsonProperty
+    @JsonProperty("SendingAgent")
     private PartyRequestV2 SendingAgent;
-    @JsonProperty
+    @JsonProperty("ReceivingAgent")
     private PartyRequestV2 ReceivingAgent;
-    @JsonProperty
+    @JsonProperty("BorrowedFrom")
     private PartyRequestV2 BorrowedFrom;
-    @JsonProperty
+    @JsonProperty("Creditor")
     private PartyRequestV2 Creditor;
-    @JsonProperty
+    @JsonProperty("CoLoadWith")
     private PartyRequestV2 CoLoadWith;
 
-    @JsonProperty
+    @JsonProperty("Description")
     private String Description;
-    @JsonProperty
+    @JsonProperty("PlaceOfIssueString")
     private String PlaceOfIssueString;
 
     ///////// Original Consol Request
 
 
-    @JsonProperty
+    @JsonProperty("shipmentRefNumbers")
     private List<String> shipmentRefNumbers;
-    @JsonProperty
+    @JsonProperty("Type")
     private String Type;
-    @JsonProperty
+   @JsonProperty("ConsolidationNumber")
     private String ConsolidationNumber;
-    // @JsonProperty
+    // @JsonProperty("ConsolidationId
     // private Long ConsolidationId;
-    @JsonProperty
+    @JsonProperty("TransportMode")
     private String TransportMode;
-    @JsonProperty
+    @JsonProperty("DeliveryMode")
     private String DeliveryMode;
-    @JsonProperty
+    @JsonProperty("ContainerType")
     private String ContainerType;
-    @JsonProperty
+    @JsonProperty("FirstLoad")
     private String FirstLoad;
-    @JsonProperty
+    @JsonProperty("LastDischarge")
     private String LastDischarge;
-    @JsonProperty
+    @JsonProperty("POLId")
     private String POLId;
-    @JsonProperty
+    @JsonProperty("PODId")
     private String PODId;
-    @JsonProperty
+    @JsonProperty("Eta")
     private LocalDateTime Eta;
-    @JsonProperty
+    @JsonProperty("Ata")
     private LocalDateTime Ata;
-    @JsonProperty
+    @JsonProperty("Etd")
     private LocalDateTime Etd;
-    @JsonProperty
+    @JsonProperty("Atd")
     private LocalDateTime Atd;
-    @JsonProperty
+    @JsonProperty("IsDomestic")
     private Boolean IsDomestic;
-    @JsonProperty
+    @JsonProperty("VoyageNumber")
     private String VoyageNumber;
-    @JsonProperty
+    @JsonProperty("Vessel")
     private String Vessel;
-    @JsonProperty
+    @JsonProperty("FlightNumber")
     private String FlightNumber;
-    @JsonProperty
+    @JsonProperty("AircraftType")
     private String AircraftType;
-    @JsonProperty
+    @JsonProperty("AircraftRegistration")
     private String AircraftRegistration;
-    @JsonProperty
+    @JsonProperty("TruckRefNumber")
     private String TruckRefNumber;
-    @JsonProperty
+    @JsonProperty("OtherInfo")
     private String OtherInfo;
-    @JsonProperty
+    @JsonProperty("JourneyNumber")
     private String JourneyNumber;
-    @JsonProperty
+    @JsonProperty("JourneyRefNumber")
     private String JourneyRefNumber;
-    @JsonProperty
+    @JsonProperty("Bol")
     private String Bol;
-    @JsonProperty
+    @JsonProperty("MAWB")
     private String MAWB;
-    @JsonProperty
+    @JsonProperty("ServiceLevel")
     private String ServiceLevel;
-    @JsonProperty
+    @JsonProperty("Payment")
     private String Payment;
-//    @JsonProperty
+//    @JsonProperty("ConsolidationContainers
 //    private List<ConsolidationContainersRow> ConsolidationContainers;
 
-//    @JsonProperty
+//    @JsonProperty("CommonContainers
 //    private List<CommonContainersRequest> CommonContainers;
 
-    // @JsonProperty
+    // @JsonProperty("Shipments
     // private List<ShipmentsRow> Shipments;
-//    @JsonProperty
+//    @JsonProperty("Routings
 //    private List<RoutingsRow> Routings;
-    @JsonProperty
+    @JsonProperty("SendingAgentId")
     private Long SendingAgentId;
-    @JsonProperty
+    @JsonProperty("SendingAgentAddressId")
     private Integer SendingAgentAddressId;
-    @JsonProperty
+    @JsonProperty("ReceivingAgentId")
     private Long ReceivingAgentId;
-    @JsonProperty
+    @JsonProperty("ReceivingAgentAddressId")
     private Integer ReceivingAgentAddressId;
-    @JsonProperty
+    @JsonProperty("Carrier")
     private String Carrier;
-    @JsonProperty
+    @JsonProperty("CreditorId")
     private Long CreditorId;
-    @JsonProperty
+    @JsonProperty("CreditorAddressId")
     private Integer CreditorAddressId;
-    @JsonProperty
+    @JsonProperty("CarrierBookingRef")
     private String CarrierBookingRef;
-    @JsonProperty
+    @JsonProperty("AgentReference")
     private String AgentReference;
-    @JsonProperty
+    @JsonProperty("CoLoadWithId")
     private Long CoLoadWithId;
-    @JsonProperty
+    @JsonProperty("CoLoadWithAddressId")
     private Integer CoLoadWithAddressId;
-    @JsonProperty
+    @JsonProperty("CoLoadMBL")
     private String CoLoadMBL;
-    @JsonProperty
+    @JsonProperty("CoLoadBookingRef")
     private String CoLoadBookingRef;
 
-    @JsonProperty
+    @JsonProperty("dCTOId")
     private Long dCTOId;
-    @JsonProperty
+    @JsonProperty("dCTOAddressId")
     private Integer dCTOAddressId;
-    @JsonProperty
+    @JsonProperty("dCFSId")
     private Long dCFSId;
-    @JsonProperty
+    @JsonProperty("dCYDId")
     private Long dCYDId;
-    @JsonProperty
+    @JsonProperty("dPortTransportId")
     private Long dPortTransportId;
-    @JsonProperty
+    @JsonProperty("dCFSAddressId")
     private Integer dCFSAddressId;
-    @JsonProperty
+    @JsonProperty("dCYDAddressId")
     private Long dCYDAddressId;
-    @JsonProperty
+    @JsonProperty("dPortTransportAddressId")
     private Long dPortTransportAddressId;
-    @JsonProperty
+    @JsonProperty("dContainerYardId")
     private Integer dContainerYardId; // Currently not used. Kept for backward compatibility.
-    @JsonProperty
+    @JsonProperty("dTransportPortId")
     private Integer dTransportPortId;// Currently not used. Kept for backward compatibility.
-    @JsonProperty
+    @JsonProperty("dFirstForeignPortId")
     private Integer dFirstForeignPortId;
-    @JsonProperty
+    @JsonProperty("dFirstForeignPortArrivalDate")
     private LocalDateTime dFirstForeignPortArrivalDate;
-    @JsonProperty
+    @JsonProperty("dLastForeignPortDepartureDate")
     private LocalDateTime dLastForeignPortDepartureDate;
-    @JsonProperty
+    @JsonProperty("dLastForeignPortId")
     private Integer dLastForeignPortId;
 
-    @JsonProperty
+    @JsonProperty("aCTOId")
     private Long aCTOId;
-    @JsonProperty
+    @JsonProperty("aCTOAddressId")
     private Integer aCTOAddressId;
-    @JsonProperty
+    @JsonProperty("aCFSId")
     private Long aCFSId;
-    @JsonProperty
+    @JsonProperty("aCYDId")
     private Long aCYDId;
-    @JsonProperty
+    @JsonProperty("aPortTransportId")
     private Long aPortTransportId;
-    @JsonProperty
+    @JsonProperty("aCFSAddressId")
     private Integer aCFSAddressId;
-    @JsonProperty
+    @JsonProperty("aCYDAddressId")
     private Long aCYDAddressId;
-    @JsonProperty
+    @JsonProperty("aPortTransportAddressId")
     private Long aPortTransportAddressId;
-    @JsonProperty
+    @JsonProperty("aContainerYardId")
     private Integer aContainerYardId; // Currently not used. Kept for backward compatibility.
-    @JsonProperty
+    @JsonProperty("aTransportPortId")
     private Integer aTransportPortId;// Currently not used. Kept for backward compatibility.
-    @JsonProperty
+    @JsonProperty("aFirstArrivalPortId")
     private Integer aFirstArrivalPortId;
-    @JsonProperty
+    @JsonProperty("aFirstArrivalPortArrivalDate")
     private LocalDateTime aFirstArrivalPortArrivalDate;
-    @JsonProperty
+    @JsonProperty("aLastForeignPortDepartureDate")
     private LocalDateTime aLastForeignPortDepartureDate;
-    @JsonProperty
+    @JsonProperty("aLastForeignPortId")
     private Integer aLastForeignPortId;
-    @JsonProperty
+    @JsonProperty("ManifestPrint")
     private String ManifestPrint;
-    @JsonProperty
+    @JsonProperty("PrinOtherDocs")
     private String PrinOtherDocs;
-    @JsonProperty
+    @JsonProperty("AWBDims")
     private String AWBDims;
-    @JsonProperty
+    @JsonProperty("ReleaseType")
     private String ReleaseType;
-    @JsonProperty
+    @JsonProperty("Originals")
     private Integer Originals;
-    @JsonProperty
+    @JsonProperty("Copy")
     private Integer Copy;
-    @JsonProperty
+    @JsonProperty("PlaceOfIssue")
     private String PlaceOfIssue;
-    @JsonProperty
+    @JsonProperty("MasterBillIssueDate")
     private LocalDateTime MasterBillIssueDate;
-    @JsonProperty
+    @JsonProperty("ShipmentsCount")
     private Long ShipmentsCount;
-    @JsonProperty
+    @JsonProperty("Weight")
     private BigDecimal Weight;
-    @JsonProperty
+    @JsonProperty("WeightUnit")
     private String WeightUnit;
-    @JsonProperty
+    @JsonProperty("Volume")
     private BigDecimal Volume;
-    @JsonProperty
+    @JsonProperty("VolumeUnit")
     private String VolumeUnit;
-    @JsonProperty
+    @JsonProperty("Chargeable")
     private BigDecimal Chargeable;
-    @JsonProperty
+    @JsonProperty("ChargeableUnit")
     private String ChargeableUnit;
-    @JsonProperty
+    @JsonProperty("CutoffDate")
     private LocalDateTime CutoffDate;
-    @JsonProperty
+    @JsonProperty("Hazardous")
     private Boolean Hazardous;
-    @JsonProperty
+    @JsonProperty("DGClass")
     private String DGClass;
-    @JsonProperty
+    @JsonProperty("DGSubstance")
     private String DGSubstance;
-    @JsonProperty
+    @JsonProperty("IsTemparatureControlled")
     private Boolean IsTemparatureControlled;
-    @JsonProperty
+    @JsonProperty("MinTemp")
     private BigDecimal MinTemp;
-    @JsonProperty
+    @JsonProperty("MaxTemp")
     private BigDecimal MaxTemp;
-    @JsonProperty
+    @JsonProperty("MinTempUnit")
     private String MinTempUnit;
-    @JsonProperty
+    @JsonProperty("MaxTempUnit")
     private String MaxTempUnit;
-    @JsonProperty
+    @JsonProperty("Override")
     private Boolean Override;
-    @JsonProperty
+    @JsonProperty("WeightVolume")
     private BigDecimal WeightVolume;
-    @JsonProperty
+    @JsonProperty("WeightVolumeUnit")
     private String WeightVolumeUnit;
-    @JsonProperty
+    @JsonProperty("ConsolidatedWeight")
     private BigDecimal ConsolidatedWeight;
-    @JsonProperty
+    @JsonProperty("ConsolidatedWeightUnit")
     private String ConsolidatedWeightUnit;
-    @JsonProperty
+    @JsonProperty("WeightUtilization")
     private String WeightUtilization;
-    @JsonProperty
+    @JsonProperty("ConsolidatiedVolume")
     private BigDecimal ConsolidatiedVolume;
-    @JsonProperty
+    @JsonProperty("ConsolidatiedVolumeUnit")
     private String ConsolidatiedVolumeUnit;
-    @JsonProperty
+    @JsonProperty("VolumeUtilization")
     private String VolumeUtilization;
-    @JsonProperty
+    @JsonProperty("ConsolidationChargeQuantity")
     private BigDecimal ConsolidationChargeQuantity;
-    @JsonProperty
+    @JsonProperty("ConsolidationChargeQuantityUnit")
     private String ConsolidationChargeQuantityUnit;
-//    @JsonProperty
+//    @JsonProperty("DGClasses
 //    private List<DGRow> DGClasses;
-//    @JsonProperty
+//    @JsonProperty("DGSubstances
 //    private List<DGSubstanceRow> DGSubstances;
-    // @JsonProperty
+    // @JsonProperty("TempClasses
     // private List<TemperatureClassRow> TempClasses;
-//    @JsonProperty
+//    @JsonProperty("ReferenceNumbers
 //    private List<ReferenceNumbersRow> ReferenceNumbers;
-//    @JsonProperty
+//    @JsonProperty("ConsolidationAddresses
 //    private List<ConsolidationAddressRow> ConsolidationAddresses;
 
-    @JsonProperty
+    @JsonProperty("ShipmentIds")
     private List<Long> ShipmentIds;
-    @JsonProperty
+    @JsonProperty("TotalContainers")
     private String TotalContainers;
-    @JsonProperty
+    @JsonProperty("TotalPackages")
     private String TotalPackages;
-    @JsonProperty
+    @JsonProperty("TotalWeight")
     private String TotalWeight;
-    @JsonProperty
+    @JsonProperty("EstimatedTerminalCutoff")
     private LocalDateTime EstimatedTerminalCutoff;
-    @JsonProperty
+    @JsonProperty("TerminalCutoff")
     private LocalDateTime TerminalCutoff;
-    @JsonProperty
+    @JsonProperty("BookingCutoff")
     private LocalDateTime BookingCutoff;
-    @JsonProperty
+    @JsonProperty("ShipInstructionCutoff")
     private LocalDateTime ShipInstructionCutoff;
-    @JsonProperty
+    @JsonProperty("HazardousBookingCutoff")
     private LocalDateTime HazardousBookingCutoff;
-    @JsonProperty
+    @JsonProperty("VerifiedGrossMassCutoff")
     private LocalDateTime VerifiedGrossMassCutoff;
-    @JsonProperty
+    @JsonProperty("ReeferCutoff")
     private LocalDateTime ReeferCutoff;
 
-    @JsonProperty
+    @JsonProperty("ShipmentType")
     private String ShipmentType;
-    @JsonProperty
+    @JsonProperty("ReferenceNo")
     private String ReferenceNo;
-    @JsonProperty
+    @JsonProperty("DeclarationType")
     private String DeclarationType;
 
-    @JsonProperty
+    @JsonProperty("Bookingstatus")
     private Integer Bookingstatus;
-    @JsonProperty
+    @JsonProperty("BookingId")
     private String BookingId;
-//    @JsonProperty
+//    @JsonProperty("ShipmentOrders
 //    private List<OrdersRow> ShipmentOrders;
-//    @JsonProperty
+//    @JsonProperty("Docs
 //    private List<FileRepoRow> Docs;
-    @JsonProperty
+    @JsonProperty("IsCharter")
     private Boolean IsCharter;
-    @JsonProperty
+    @JsonProperty("IsCargoOnly")
     private Boolean IsCargoOnly;
-    @JsonProperty
+    @JsonProperty("IsLinked")
     private Boolean IsLinked;
-//    @JsonProperty
+//    @JsonProperty("consolidatedBill
 //    private List<BillRow> consolidatedBill;
 
     //for print
-    @JsonProperty
+    @JsonProperty("SendingAgentName")
     private String SendingAgentName;
-    @JsonProperty
+    @JsonProperty("SendingAgentAddress1")
     private String SendingAgentAddress1;
-    @JsonProperty
+    @JsonProperty("SendingAgentAddress2")
     private String SendingAgentAddress2;
-    @JsonProperty
+    @JsonProperty("SendingAgentCity")
     private String SendingAgentCity;
-    @JsonProperty
+    @JsonProperty("SendingAgentCountry")
     private String SendingAgentCountry;
-    @JsonProperty
+    @JsonProperty("SendingAgentEmail")
     private String SendingAgentEmail;
-    @JsonProperty
+    @JsonProperty("SendingAgentContactPhone")
     private String SendingAgentContactPhone;
-    @JsonProperty
+    @JsonProperty("SendingAgentFaxNumber")
     private String SendingAgentFaxNumber;
 
-    @JsonProperty
+    @JsonProperty("ReceivingAgentName")
     private String ReceivingAgentName;
-    @JsonProperty
+    @JsonProperty("ReceivinAgentAddress1")
     private String ReceivinAgentAddress1;
-    @JsonProperty
+    @JsonProperty("ReceivingAgentContactPhone")
     private String ReceivingAgentContactPhone;
-    @JsonProperty
+    @JsonProperty("ReceivingAgentEmail")
     private String ReceivingAgentEmail;
-    @JsonProperty
+    @JsonProperty("ReceivingAgentCountry")
     private String ReceivingAgentCountry;
-    @JsonProperty
+    @JsonProperty("ReceivingAgentCity")
     private String ReceivingAgentCity;
-    @JsonProperty
+    @JsonProperty("ReceivinAgentAddress2")
     private String ReceivinAgentAddress2;
-    @JsonProperty
+    @JsonProperty("ReceivingAgentFaxNumber")
     private String ReceivingAgentFaxNumber;
 
-    @JsonProperty
+    @JsonProperty("CTOName")
     private String CTOName;
-    @JsonProperty
+    @JsonProperty("CTOAddress1")
     private String CTOAddress1;
-    @JsonProperty
+    @JsonProperty("CTOContactPhone")
     private String CTOContactPhone;
-    @JsonProperty
+    @JsonProperty("CTOEmail")
     private String CTOEmail;
-    @JsonProperty
+    @JsonProperty("CTOCountry")
     private String CTOCountry;
-    @JsonProperty
+    @JsonProperty("CTOCity")
     private String CTOCity;
-    @JsonProperty
+    @JsonProperty("CTOAddress2")
     private String CTOAddress2;
-    @JsonProperty
+    @JsonProperty("CTOFaxPhone")
     private String CTOFaxPhone;
-    @JsonProperty
+    @JsonProperty("IsLocked")
     private Boolean IsLocked;
 }
