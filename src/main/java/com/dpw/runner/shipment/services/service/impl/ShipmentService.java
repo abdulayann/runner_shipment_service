@@ -1,7 +1,6 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 
-import com.azure.messaging.servicebus.ServiceBusMessage;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
@@ -32,7 +31,6 @@ import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service_bus.AzureServiceBusTopic;
 import com.dpw.runner.shipment.services.service_bus.ISBProperties;
 import com.dpw.runner.shipment.services.service_bus.SBUtilsImpl;
-import com.dpw.runner.shipment.services.service_bus.model.EventMessage;
 import com.dpw.runner.shipment.services.syncing.impl.ShipmentSync;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
@@ -530,7 +528,7 @@ public class ShipmentService implements IShipmentService {
             directShipmentMAWBCheck(request);
 
         ShipmentDetails shipmentDetails = jsonHelper.convertValue(request, ShipmentDetails.class);
-        AdditionalDetails additionalDetails = jsonHelper.convertValue(request.getAdditionalDetail(), AdditionalDetails.class);
+        AdditionalDetails additionalDetails = jsonHelper.convertValue(request.getAdditionalDetails(), AdditionalDetails.class);
         CarrierDetails carrierDetails = jsonHelper.convertValue(request.getCarrierDetails(), CarrierDetails.class);
 
         try {
@@ -822,7 +820,7 @@ public class ShipmentService implements IShipmentService {
 
         List<BookingCarriageRequest> bookingCarriageRequestList = shipmentRequest.getBookingCarriagesList();
         List<PackingRequest> packingRequestList = shipmentRequest.getPackingList();
-        AdditionalDetailRequest additionalDetailRequest = shipmentRequest.getAdditionalDetail();
+        AdditionalDetailRequest additionalDetailRequest = shipmentRequest.getAdditionalDetails();
         List<ContainerRequest> containerRequestList = shipmentRequest.getContainersList();
         List<ELDetailsRequest> elDetailsRequestList = shipmentRequest.getElDetailsList();
         List<EventsRequest> eventsRequestList = shipmentRequest.getEventsList();
@@ -1382,7 +1380,7 @@ public class ShipmentService implements IShipmentService {
 
         List<BookingCarriageRequest> bookingCarriageRequestList = shipmentRequest.getBookingCarriagesList();
         List<PackingRequest> packingRequestList = shipmentRequest.getPackingList();
-        AdditionalDetailRequest additionalDetailRequest = shipmentRequest.getAdditionalDetail();
+        AdditionalDetailRequest additionalDetailRequest = shipmentRequest.getAdditionalDetails();
         List<ContainerRequest> containerRequestList = shipmentRequest.getContainersList();
         List<ELDetailsRequest> elDetailsRequestList = shipmentRequest.getElDetailsList();
         List<EventsRequest> eventsRequestList = shipmentRequest.getEventsList();
@@ -1432,6 +1430,7 @@ public class ShipmentService implements IShipmentService {
 
             if(id == null) {
                 entity = shipmentDao.save(entity);
+                id = entity.getId();
             } else {
                 entity = shipmentDao.update(entity);
             }
