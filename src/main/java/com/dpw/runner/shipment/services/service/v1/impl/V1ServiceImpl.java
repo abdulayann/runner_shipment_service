@@ -216,8 +216,9 @@ public class V1ServiceImpl implements IV1Service {
             HttpEntity<V1DataResponse> entity = new HttpEntity(createBookingRequestForV1(customerBooking), V1AuthHelper.getHeaders());
             return this.restTemplate.postForEntity(this.CUSTOMER_BOOKING_URL, entity, V1ShipmentCreationResponse.class, new Object[0]);
         } catch (Exception exception) {
-            var message = ((HttpServerErrorException.InternalServerError) exception).getResponseBodyAsString();
-            throw new V1ServiceException(jsonHelper.readFromJson(message, V1ErrorResponse.class).getError().getMessage());
+//            var message = ((HttpServerErrorException.InternalServerError) exception).getResponseBodyAsString();
+//            throw new V1ServiceException(jsonHelper.readFromJson(message, V1ErrorResponse.class).getError().getMessage());
+            throw new V1ServiceException(exception.getMessage());
         }
     }
 
