@@ -2,15 +2,24 @@ package com.dpw.runner.shipment.services.validator.custom.validations;
 
 import com.dpw.runner.shipment.services.entity.CustomerBooking;
 import com.dpw.runner.shipment.services.exception.exceptions.MandatoryFieldException;
+import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.validator.constants.CustomerBookingConstants;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.Objects;
 
 @Service
+@Slf4j
 public class CustomerBookingValidations {
 
     public void onSave(CustomerBooking oldEntity, CustomerBooking newEntity) {
+        if (!Objects.isNull(oldEntity)) {
+            if (!Objects.equals(oldEntity.getBookingNumber(), newEntity.getBookingNumber())) {
+                log.error("Updating Booking number from {} to {} is not allowed.", oldEntity.getBookingNumber(), newEntity.getBookingNumber());
+                throw new ValidationException(String.format("Updating Booking number from: %s to: %s is not allowed.", oldEntity.getBookingNumber(), newEntity.getBookingNumber()));
+            }
+        }
         // FCL
         switch (newEntity.getBookingStatus()) {
             case PENDING_FOR_KYC:
