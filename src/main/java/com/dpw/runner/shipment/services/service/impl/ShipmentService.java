@@ -793,6 +793,7 @@ public class ShipmentService implements IShipmentService {
         entity.setId(oldEntity.get().getId());
         if (entity.getContainersList() == null)
             entity.setContainersList(oldEntity.get().getContainersList());
+
         entity = shipmentDao.update(entity);
         return ResponseHelper.buildSuccessResponse(objectMapper.convertValue(entity, ShipmentDetailsResponse.class));
     }
@@ -866,7 +867,18 @@ public class ShipmentService implements IShipmentService {
             }
             entity.setContainersList(updatedContainers);
 
+            String oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
             entity = shipmentDao.update(entity);
+
+            // audit logs
+            auditLogService.addAuditLog(
+                    AuditLogMetaData.builder()
+                            .newData(entity)
+                            .prevData(jsonHelper.readFromJson(oldEntityJsonString, ShipmentDetails.class))
+                            .parent(ShipmentDetails.class.getSimpleName())
+                            .parentId(entity.getId())
+                            .operation(DBOperationType.UPDATE.name()).build()
+            );
 
             attachConsolidations(entity.getId(), tempConsolIds);
 
@@ -991,7 +1003,19 @@ public class ShipmentService implements IShipmentService {
                 log.debug("Shipment Details is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
+            String oldEntityJsonString = jsonHelper.convertToJson(shipmentDetails.get());
             shipmentDao.delete(shipmentDetails.get());
+
+            // audit logs
+            auditLogService.addAuditLog(
+                    AuditLogMetaData.builder()
+                            .newData(null)
+                            .prevData(jsonHelper.readFromJson(oldEntityJsonString, ShipmentDetails.class))
+                            .parent(ShipmentDetails.class.getSimpleName())
+                            .parentId(shipmentDetails.get().getId())
+                            .operation(DBOperationType.DELETE.name()).build()
+            );
+
             log.info("Deleted Shipment details for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
             return ResponseHelper.buildSuccessResponse();
         } catch (Exception e) {
