@@ -116,10 +116,10 @@ public class V1ServiceUtil {
         if (customerBooking == null)
             return null;
         List<CreateBookingModuleInV1.BookingEntity.OrgDetail> list = new ArrayList<>();
-        var consignee = convertParty(customerBooking.getConsignee());
-        var consignor = convertParty(customerBooking.getConsignor());
-        var notify = convertParty(customerBooking.getNotifyParty());
-        var customer = convertParty(customerBooking.getCustomer());
+        var consignee = convertParty(customerBooking.getConsignee(), customerBooking.getIsConsigneeFreeText());
+        var consignor = convertParty(customerBooking.getConsignor(), customerBooking.getIsConsignorFreeText());
+        var notify = convertParty(customerBooking.getNotifyParty(), customerBooking.getIsNotifyPartyFreeText());
+        var customer = convertParty(customerBooking.getCustomer(), customerBooking.getIsCustomerFreeText());
         if (consignee != null)
             list.add(consignee);
         if (consignor != null)
@@ -131,8 +131,8 @@ public class V1ServiceUtil {
         return list;
     }
 
-    private static CreateBookingModuleInV1.BookingEntity.OrgDetail convertParty(Parties party) {
-        if (party == null)
+    private static CreateBookingModuleInV1.BookingEntity.OrgDetail convertParty(Parties party, Boolean isFreeText) {
+        if (Objects.isNull(party) || Objects.isNull(isFreeText) || isFreeText || Objects.isNull(party.getOrgCode()) || Objects.isNull(party.getAddressCode()))
             return null;
         var addressData = party.getAddressData();
         var orgData = party == null || party.getOrgData() == null ? Collections.emptyMap() : party.getOrgData();
