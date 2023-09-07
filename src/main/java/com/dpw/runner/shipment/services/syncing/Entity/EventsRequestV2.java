@@ -1,36 +1,35 @@
 package com.dpw.runner.shipment.services.syncing.Entity;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.Data;
 
 import java.time.LocalDateTime;
 
+@Data
 public class EventsRequestV2 {
 
     @JsonProperty("Actual")
-    public LocalDateTime Actual;
+    private LocalDateTime Actual;
     @JsonProperty("Description")
-    public String Description;
+    private String Description;
     @JsonProperty("Estimated")
-    public LocalDateTime Estimated;
+    private LocalDateTime Estimated;
     @JsonProperty("Event_estimate_update_reasons")
-    public String Event_estimate_update_reasons;
-    @JsonProperty("IsPublicTrackingEvent")
-    public Boolean IsPublicTrackingEvent;
+    private String Event_estimate_update_reasons;
+    @JsonProperty("IsprivateTrackingEvent")
+    private Boolean IsprivateTrackingEvent;
     @JsonProperty("Latitude")
-    public String Latitude;
+    private String Latitude;
     @JsonProperty("Longitude")
-    public String Longitude;
+    private String Longitude;
     @JsonProperty("EventCode")
-    public String EventCode;
+    private String EventCode;
     @JsonProperty("MasterList")
-    public String MasterList; // Not Present in Events Row
+    private String MasterList; // Not Present in Events Row
     @JsonProperty("PlaceDescription")
-    public String PlaceDescription;
+    private String PlaceDescription;
     @JsonProperty("PlaceName")
-    public String PlaceName;
+    private String PlaceName;
     @JsonProperty("Source")
-    public String Source;
-//    public Long EntityID;
-//    public String EntityType;
-    // public Int32 TenantId;
+    private String Source;
 }
