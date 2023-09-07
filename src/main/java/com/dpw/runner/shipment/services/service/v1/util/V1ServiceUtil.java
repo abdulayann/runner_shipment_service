@@ -120,15 +120,15 @@ public class V1ServiceUtil {
         if (customerBooking == null)
             return null;
         List<CreateBookingModuleInV1.BookingEntity.OrgDetail> list = new ArrayList<>();
-        var consignee = convertParty(customerBooking.getConsignee());
-        var consignor = convertParty(customerBooking.getConsignor());
-        var notify = convertParty(customerBooking.getNotifyParty());
-        var customer = convertParty(customerBooking.getCustomer());
+        var consignee = convertParty(customerBooking.getConsignee(), customerBooking.getIsConsigneeFreeText());
+        var consignor = convertParty(customerBooking.getConsignor(), customerBooking.getIsConsignorFreeText());
+        var notify = convertParty(customerBooking.getNotifyParty(), customerBooking.getIsNotifyPartyFreeText());
+        var customer = convertParty(customerBooking.getCustomer(), customerBooking.getIsCustomerFreeText());
         Set<CreateBookingModuleInV1.BookingEntity.OrgDetail> hs = new HashSet<>();
         if (customerBooking.getBookingCharges() != null) {
             for (var bc : customerBooking.getBookingCharges()) {
-                var creditor = convertParty(bc.getCreditor());
-                var debtor = convertParty(bc.getDebtor());
+                var creditor = convertParty(bc.getCreditor(), false);
+                var debtor = convertParty(bc.getDebtor(), true);
                 if (creditor != null)
                     hs.add(creditor);
                 if (debtor != null)
@@ -147,8 +147,8 @@ public class V1ServiceUtil {
         return list;
     }
 
-    private static CreateBookingModuleInV1.BookingEntity.OrgDetail convertParty(Parties party) {
-        if (party == null)
+    private static CreateBookingModuleInV1.BookingEntity.OrgDetail convertParty(Parties party, Boolean isFreeText) {
+        if (Objects.isNull(party) || Objects.isNull(isFreeText) || isFreeText || Objects.isNull(party.getOrgCode()) || Objects.isNull(party.getAddressCode()))
             return null;
         var addressData = party.getAddressData();
         var orgData = party == null || party.getOrgData() == null ? Collections.emptyMap() : party.getOrgData();

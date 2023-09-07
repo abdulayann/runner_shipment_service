@@ -23,6 +23,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Repository;
 
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
@@ -55,6 +56,12 @@ public class CustomerBookingDao implements ICustomerBookingDao {
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
             old = oldEntity.get();
+        } else {
+            Optional<CustomerBooking> oldEntity = this.findByBookingNumber(customerBooking.getBookingNumber());
+            if (oldEntity.isPresent()) {
+                log.error("Booking with booking number: {} already exists.", customerBooking.getBookingNumber());
+                throw new ValidationException(String.format("Booking with booking number: %s already exists.", customerBooking.getBookingNumber()));
+            }
         }
         customValidations.onSave(old, customerBooking); //Custom Validations
         var resp = customerBookingRepository.save(customerBooking);
