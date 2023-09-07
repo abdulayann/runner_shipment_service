@@ -22,8 +22,6 @@ public class PackingRequestV2 {
     private Long ConsolidationId;
     @JsonProperty("ContainerNumber")
     private String ContainerNumber;
-    @JsonProperty("ContainerId")
-    private Long ContainerId;
     @JsonProperty("CountryCode")
     private String CountryCode;
     @JsonProperty("CustomsReleaseCode")
