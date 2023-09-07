@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.utils;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.dto.response.CustomerBookingResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.entitytransfer.dto.*;
@@ -10,6 +11,7 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
+import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.validator.enums.Operators;
 import lombok.extern.slf4j.Slf4j;
@@ -218,7 +220,7 @@ public class MasterDataUtils{
 
             List<EntityTransferUnLocations> unLocationsList = jsonHelper.convertValueToList(response.entities, EntityTransferUnLocations.class);
             unLocationsList.forEach(unloc -> {
-                keyUnlocationDataMap.put(onField == EntityTransferConstants.UNLOCATION_CODE ? unloc.LocCode : unloc.LocationsReferenceGUID, unloc.NameWoDiacritics);
+                keyUnlocationDataMap.put(onField == EntityTransferConstants.UNLOCATION_CODE ? unloc.LocCode : unloc.LocationsReferenceGUID, unloc.LocCode + " " + unloc.NameWoDiacritics);
             });
             fieldNameKeyMap.forEach((key, value) -> {
                 if(keyUnlocationDataMap.containsKey(value))
@@ -441,5 +443,61 @@ public class MasterDataUtils{
         List<EntityTransferChargeType> list = jsonHelper.convertValueToList(v1DataResponse.entities, EntityTransferChargeType.class);
         return list.stream().collect(Collectors.toMap(EntityTransferChargeType::getChargeCode, Function.identity()));
 
+    }
+
+    public void setLocationData(List<IRunnerResponse> responseList) {
+        Set<String> locCodes = new HashSet<>();
+        for (IRunnerResponse response : responseList) {
+            if (((CustomerBookingResponse) response).getCarrierDetails() != null) {
+                if (StringUtility.isNotEmpty(((CustomerBookingResponse) response).getCarrierDetails().getOriginPort())) {
+                    locCodes.add(((CustomerBookingResponse) response).getCarrierDetails().getOriginPort());
+                }
+                if (StringUtility.isNotEmpty(((CustomerBookingResponse) response).getCarrierDetails().getDestinationPort())) {
+                    locCodes.add(((CustomerBookingResponse) response).getCarrierDetails().getDestinationPort());
+                }
+                if (StringUtility.isNotEmpty(((CustomerBookingResponse) response).getCarrierDetails().getOrigin())) {
+                    locCodes.add(((CustomerBookingResponse) response).getCarrierDetails().getOrigin());
+                }
+                if (StringUtility.isNotEmpty(((CustomerBookingResponse) response).getCarrierDetails().getDestination())) {
+                    locCodes.add(((CustomerBookingResponse) response).getCarrierDetails().getDestination());
+                }
+            }
+        }
+
+        if (locCodes.size() > 0) {
+            List<Object> criteria = Arrays.asList(
+                    Arrays.asList("LocationsReferenceGUID"),
+                    "In",
+                    Arrays.asList(locCodes)
+            );
+            CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(criteria).build();
+            V1DataResponse v1DataResponse = v1Service.fetchUnlocation(commonV1ListRequest);
+            List<UnlocationsResponse> unlocationsResponse = jsonHelper.convertValueToList(v1DataResponse.entities, UnlocationsResponse.class);
+            if (unlocationsResponse != null && unlocationsResponse.size() > 0) {
+                Map<String, String> locationMap = new HashMap<>();
+                for (UnlocationsResponse unlocation : unlocationsResponse) {
+                    locationMap.put(unlocation.getLocationsReferenceGUID(), unlocation.getLocCode() + " " + unlocation.getNameWoDiacritics());
+                }
+
+                for (IRunnerResponse response : responseList) {
+                    if (((CustomerBookingResponse) response).getCarrierDetails() != null) {
+                        Map<String, String> unlocationData = new HashMap<>();
+                        if (StringUtility.isNotEmpty(((CustomerBookingResponse) response).getCarrierDetails().getOriginPort())) {
+                            unlocationData.put("originPort", locationMap.get(((CustomerBookingResponse) response).getCarrierDetails().getOriginPort()));
+                        }
+                        if (StringUtility.isNotEmpty(((CustomerBookingResponse) response).getCarrierDetails().getDestinationPort())) {
+                            unlocationData.put("destinationPort", locationMap.get(((CustomerBookingResponse) response).getCarrierDetails().getDestinationPort()));
+                        }
+                        if (StringUtility.isNotEmpty(((CustomerBookingResponse) response).getCarrierDetails().getOrigin())) {
+                            unlocationData.put("origin", locationMap.get(((CustomerBookingResponse) response).getCarrierDetails().getOrigin()));
+                        }
+                        if (StringUtility.isNotEmpty(((CustomerBookingResponse) response).getCarrierDetails().getDestination())) {
+                            unlocationData.put("destination", locationMap.get(((CustomerBookingResponse) response).getCarrierDetails().getDestination()));
+                        }
+                        ((CustomerBookingResponse) response).getCarrierDetails().setUnlocationData(unlocationData);
+                    }
+                }
+            }
+        }
     }
 }
