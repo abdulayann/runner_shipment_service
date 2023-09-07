@@ -537,6 +537,8 @@ public class CustomerBookingService implements ICustomerBookingService {
         if (customerBooking.isEmpty()) {
             this.createPlatformBooking(customerBookingRequest);
         } else {
+            if (Objects.equals(customerBooking.get().getBookingStatus(), BookingStatus.READY_FOR_SHIPMENT))
+                throw new ValidationException("Booking alterations are not allowed once booking moved to Ready For Shipment.");
             if (customerBooking.get().getId() != null)
                 customerBookingRequest.setId(customerBooking.get().getId());
             if (customerBooking.get().getGuid() != null)
