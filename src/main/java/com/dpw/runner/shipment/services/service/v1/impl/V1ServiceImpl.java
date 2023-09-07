@@ -22,6 +22,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 
@@ -219,8 +220,9 @@ public class V1ServiceImpl implements IV1Service {
             long time = System.currentTimeMillis();
             HttpEntity<V1DataResponse> entity = new HttpEntity(createBookingRequestForV1(customerBooking), V1AuthHelper.getHeaders());
             return this.restTemplate.postForEntity(this.CUSTOMER_BOOKING_URL, entity, V1ShipmentCreationResponse.class, new Object[0]);
-        } catch (HttpClientErrorException exception) {
-            throw new V1ServiceException(jsonHelper.readFromJson(exception.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
+        } catch (Exception exception) {
+            var message = ((HttpServerErrorException.InternalServerError) exception).getResponseBodyAsString();
+            throw new V1ServiceException(jsonHelper.readFromJson(message, V1ErrorResponse.class).getError().getMessage());
         }
     }
 
