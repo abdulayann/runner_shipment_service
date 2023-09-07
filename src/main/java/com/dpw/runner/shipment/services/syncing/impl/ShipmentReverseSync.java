@@ -28,9 +28,10 @@ public class ShipmentReverseSync {
     @Autowired
     ShipmentService shipmentService;
 
-    public ResponseEntity<?> reverseSync(CustomShipmentSyncRequest cs) {
+    public ResponseEntity<?> reverseSync(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
+            CustomShipmentSyncRequest cs = (CustomShipmentSyncRequest) commonRequestModel.getData();
             ShipmentDetails sd = modelMapper.map(cs, ShipmentDetails.class);
 
             mapCarrierDetailsReverse(cs, sd);

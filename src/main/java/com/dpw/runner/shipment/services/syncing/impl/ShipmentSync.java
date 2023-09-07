@@ -47,14 +47,15 @@ public class ShipmentSync implements IShipmentSync {
     public ResponseEntity<?> sync(ShipmentDetails sd) {
         CustomShipmentSyncRequest temp = new CustomShipmentSyncRequest();
 
+        CustomShipmentSyncRequest cs = modelMapper.map(sd, CustomShipmentSyncRequest.class);
         // First map nested entity that are root level properties in v1
-        mapAdditionalDetails(temp, sd);
-        mapCarrierDetails(temp, sd);
+        mapAdditionalDetails(cs, sd);
+        mapCarrierDetails(cs, sd);
+
+        // setting this null for now because giving random string value in v1
+        cs.setShipmentId(null);
         // Map remaining object so there's no info lost for root -> root properties
         // example Guid
-       CustomShipmentSyncRequest cs = modelMapper.map(sd, CustomShipmentSyncRequest.class);
-       modelMapper.map(temp, cs);
-
         // assigning root level properties not previously mapped
         cs.setReferenceNo(sd.getBookingReference());
         cs.setCustom_ShipType(sd.getDirection());
