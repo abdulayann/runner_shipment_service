@@ -13,6 +13,7 @@ import com.dpw.runner.shipment.services.dto.response.ExchangeRates.ExchangeRates
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.CustomerBooking;
 import com.dpw.runner.shipment.services.entity.Packing;
+import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.exception.exceptions.NPMException;
 import com.dpw.runner.shipment.services.exception.response.NpmErrorResponse;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -79,6 +80,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
         try {
             ListContractRequest listContractRequest = (ListContractRequest) commonRequestModel.getData();
             String url = npmBaseUrl + npmContracts;
+            log.info("Payload sent for event: {} with request payload: {}", IntegrationType.NPM_CONTRACT_FETCH, jsonHelper.convertToJson(listContractRequest));
             ResponseEntity<?> response = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJson(listContractRequest)), Object.class);
             return ResponseHelper.buildDependentServiceResponse(response.getBody(),0,0);
         } catch (HttpStatusCodeException ex) {
@@ -93,6 +95,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
         try {
             UpdateContractRequest updateContractRequest = (UpdateContractRequest) commonRequestModel.getData();
             String url = npmBaseUrl + npmUpdateUrl;
+            log.info("Payload sent for event: {} with request payload: {}", IntegrationType.NPM_UPDATE_UTILISATION, jsonHelper.convertToJson(updateContractRequest));
             ResponseEntity<?> response = restTemplate.exchange(RequestEntity.patch(URI.create(url)).body(jsonHelper.convertToJson(updateContractRequest)), Object.class);
             return ResponseHelper.buildDependentServiceResponse(response.getBody(),0,0);
         } catch (HttpStatusCodeException ex) {
@@ -106,8 +109,10 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
     public ResponseEntity<?> fetchOffers(CommonRequestModel req) throws Exception {
         String url = npmBaseUrl + npmOffersUrl;
         NPMFetchOffersRequestFromUI fetchOffersRequest = (NPMFetchOffersRequestFromUI) req.getData();
+        var request = createNPMOffersRequest(fetchOffersRequest);
         try {
-            ResponseEntity<?> response = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJson(createNPMOffersRequest(fetchOffersRequest))), Object.class);
+            log.info("Payload sent for event: {} with request payload: {}", IntegrationType.NPM_OFFER_FETCH_V2, jsonHelper.convertToJson(request));
+            ResponseEntity<?> response = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJson(request)), Object.class);
             return ResponseHelper.buildDependentServiceResponse(response.getBody(),0,0);
         } catch (HttpStatusCodeException ex) {
             NpmErrorResponse npmErrorResponse = jsonHelper.readFromJson(ex.getResponseBodyAsString(), NpmErrorResponse.class);
@@ -121,7 +126,9 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
         try {
             String url = npmBaseUrl + npmOffersV8Url;
             NPMFetchOffersRequestFromUI fetchOffersRequest = (NPMFetchOffersRequestFromUI) req.getData();
-            ResponseEntity<?> response = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJson(createNPMOffersV8Request(fetchOffersRequest))), Object.class);
+            var request = createNPMOffersV8Request(fetchOffersRequest);
+            log.info("Payload sent for event: {} with request payload: {}", IntegrationType.NPM_OFFER_FETCH_V8, jsonHelper.convertToJson(request));
+            ResponseEntity<?> response = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJson(request)), Object.class);
             return ResponseHelper.buildDependentServiceResponse(response.getBody(),0,0);
         } catch (HttpStatusCodeException ex) {
             NpmErrorResponse npmErrorResponse = jsonHelper.readFromJson(ex.getResponseBodyAsString(), NpmErrorResponse.class);
