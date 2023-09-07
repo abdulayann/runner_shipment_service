@@ -1,4 +1,4 @@
-package com.dpw.runner.shipment.services.dto.VolumeWeightDto;
+package com.dpw.runner.shipment.services.dto.GeneralAPIRequests;
 
 import lombok.Getter;
 import lombok.Setter;

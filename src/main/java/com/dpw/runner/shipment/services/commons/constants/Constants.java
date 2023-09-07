@@ -113,6 +113,8 @@ public class Constants {
 
     public static final String Shipments = "[Shipments]";
 
+    public static final String CONSOLIDATION_TYPE_CLD = "CLD";
 
+    public static final String CONSOLIDATION_TYPE_AGT = "AGT";
 
 }
