@@ -443,6 +443,8 @@ public class CustomerBookingService implements ICustomerBookingService {
     @Transactional
     public ResponseEntity<?> platformCreateBooking(CommonRequestModel commonRequestModel) throws Exception {
         PlatformToRunnerCustomerBookingRequest request = (PlatformToRunnerCustomerBookingRequest) commonRequestModel.getData();
+        if(request.getIsSingleUsageContract() != null)
+            request.setContractStatus(request.getIsSingleUsageContract() ? "SINGLE_USAGE" : "MULTI_USAGE");
         String bookingNumber = request.getBookingNumber();
         if (bookingNumber == null) {
             log.error("Booking Number is empty for create Booking with Request Id {}", LoggerHelper.getRequestIdFromMDC());
