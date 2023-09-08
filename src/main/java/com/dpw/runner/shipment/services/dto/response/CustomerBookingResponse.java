@@ -62,4 +62,5 @@ public class CustomerBookingResponse implements IRunnerResponse {
     private List<FileRepoResponse> fileRepoList;
     private List<AuditLogResponse> logsList;
     public Map<String, String> masterData;
+    private Boolean isAutoWeightVolumeUpdate;
 }

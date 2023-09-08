@@ -21,6 +21,7 @@ public class PlatformUpdateRequest extends CommonRequest implements IRunnerReque
     private String destination_code;
     private String pol;
     private String pod;
+    private String customer_email;
     private List<LoadRequest> load;
     private List<ChargesRequest> charges;
     private List<DocumentMetaDTO> document_meta;

@@ -474,6 +474,9 @@ public class CustomerBookingService implements ICustomerBookingService {
         if (request.getPackingList() != null) {
             List<PlatformToRunnerCustomerBookingResponse.ReferenceNumbersGuidMapResponse> referenceNumbersGuidMapResponses = new ArrayList<>();
             request.getPackingList().forEach(pack -> {
+                pack.setLengthUnit(pack.getDimensionUnit());
+                pack.setWidthUnit(pack.getDimensionUnit());
+                pack.setHeightUnit(pack.getDimensionUnit());
                 if (pack.getGuid() == null)
                     pack.setGuid(UUID.randomUUID());
                 referenceNumbersGuidMapResponses.add(PlatformToRunnerCustomerBookingResponse.ReferenceNumbersGuidMapResponse.builder()
