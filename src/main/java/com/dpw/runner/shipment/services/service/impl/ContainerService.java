@@ -196,7 +196,7 @@ public class ContainerService implements IContainerService {
             log.debug("Request Id is null for Container Update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
         }
         long id = request.getId();
-
+        Optional<Containers> oldEntity = containerDao.findById(id);
         List<Long> updatedPackIds = new ArrayList<>();
         List<PackingRequest> updatedPackingRequest = new ArrayList<>();
         List<PackingRequest> packingRequestList = request.getPacksList();
@@ -223,7 +223,19 @@ public class ContainerService implements IContainerService {
         List<EventsRequest> eventsRequestList = request.getEventsList();
         try {
 
+            String oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
             containers = containerDao.save(containers);
+
+            // audit logs
+            auditLogService.addAuditLog(
+                    AuditLogMetaData.builder()
+                            .newData(containers)
+                            .prevData(jsonHelper.readFromJson(oldEntityJsonString, Containers.class))
+                            .parent(Containers.class.getSimpleName())
+                            .parentId(containers.getId())
+                            .operation(DBOperationType.UPDATE.name()).build()
+            );
+
             if (packingRequestList != null) {
                 packingDao.removeContainerFromPacking(convertToEntityList(packingRequestList, Packing.class), id, updatedPackIds);
                 packingDao.insertContainerInPacking(convertToEntityList(packingRequestWithEmptyContainerId, Packing.class), id);
@@ -311,7 +323,19 @@ public class ContainerService implements IContainerService {
         }
         try {
             packingDao.deleteEntityFromContainer(id);
+            String oldEntityJsonString = jsonHelper.convertToJson(container.get());
             containerDao.delete(container.get());
+
+            // audit logs
+            auditLogService.addAuditLog(
+                    AuditLogMetaData.builder()
+                            .newData(null)
+                            .prevData(jsonHelper.readFromJson(oldEntityJsonString, Containers.class))
+                            .parent(Containers.class.getSimpleName())
+                            .parentId(container.get().getId())
+                            .operation(DBOperationType.DELETE.name()).build()
+            );
+
             log.info("Deleted container for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
