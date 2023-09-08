@@ -39,6 +39,8 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.text.DecimalFormat;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -247,12 +249,13 @@ public class AuditLogService implements IAuditLogService {
                 if (field.getType() == BigDecimal.class) {
                     BigDecimal number1 = (BigDecimal) newValue;
                     BigDecimal number2 = (BigDecimal) prevValue;
-                    if (number1 != null && number2 != null && number1.setScale(5, BigDecimal.ROUND_DOWN).compareTo(number2.setScale(5, BigDecimal.ROUND_DOWN)) != 0) {
-                        auditLogChanges = createAuditLogChangesObject(fieldName, newValue, prevValue);
-                    } else if (!(number1 == null && number2 == null)) {
-                        auditLogChanges = createAuditLogChangesObject(fieldName, newValue, prevValue);
+                    if((number1 == null) || (number1 != null && number1.compareTo(number2) != 0)) {
+                        if (number1 != null && number2 != null && number1.setScale(5, BigDecimal.ROUND_DOWN).compareTo(number2.setScale(5, BigDecimal.ROUND_DOWN)) != 0) {
+                            auditLogChanges = createAuditLogChangesObject(fieldName, newValue, prevValue);
+                        } else if (!(number1 == null && number2 == null)) {
+                            auditLogChanges = createAuditLogChangesObject(fieldName, newValue, prevValue);
+                        }
                     }
-
                 } else if (!ObjectUtils.equals(newValue, prevValue))
                     auditLogChanges = createAuditLogChangesObject(fieldName, newValue, prevValue);
                 else continue;
