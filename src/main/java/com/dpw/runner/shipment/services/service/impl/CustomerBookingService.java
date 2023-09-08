@@ -250,7 +250,6 @@ public class CustomerBookingService implements ICustomerBookingService {
         customerBooking.setCreatedAt(oldEntity.get().getCreatedAt());
         customerBooking.setCreatedBy(oldEntity.get().getCreatedBy());
         customerBooking.setIsPlatformBookingCreated(isCreatedInPlatform);
-        customerBooking.setSource(BookingSource.Runner);
 
         // NPM update contract
         if (oldEntity.get().getBookingCharges() != null) {
@@ -533,7 +532,6 @@ public class CustomerBookingService implements ICustomerBookingService {
         CustomerBookingRequest customerBookingRequest = modelMapper.map(request, CustomerBookingRequest.class);
         assignCarrierDetailsToRequest(customerBookingRequest, request);
         ResponseEntity<RunnerResponse<CustomerBookingResponse>> response = null;
-        customerBookingRequest.setSource(BookingSource.Platform);
         if (customerBooking.isEmpty()) {
             this.createPlatformBooking(customerBookingRequest);
         } else {
