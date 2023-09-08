@@ -1,12 +1,14 @@
 package com.dpw.runner.shipment.services.syncing.Entity;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.Data;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
+@Data
 public class ContainerRequestV2 {
 
     @JsonProperty("Guid")
