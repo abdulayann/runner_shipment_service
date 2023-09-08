@@ -61,14 +61,14 @@ public class V1ServiceUtil {
                 .Documents(createDocuments(customerBooking.getFileRepoList()))
                 .Loosecargos(createLooseCarges(customerBooking.getPackingList()))
                 .OrgDetails(createOrgDetails(customerBooking))
-                .QuoteCharges(createQuoteCharges(customerBooking.getBookingCharges()))
+                .BillCharges(createQuoteCharges(customerBooking.getBookingCharges()))
                 .build();
     }
 
-    private static List<CreateBookingModuleInV1.BookingEntity.QuoteCharge> createQuoteCharges(List<BookingCharges> bookingCharges) {
+    private static List<CreateBookingModuleInV1.BookingEntity.BillCharge> createQuoteCharges(List<BookingCharges> bookingCharges) {
         if (bookingCharges == null) return null;
         return bookingCharges.stream().filter(Objects::nonNull).map(bc ->
-                CreateBookingModuleInV1.BookingEntity.QuoteCharge.builder()
+                CreateBookingModuleInV1.BookingEntity.BillCharge.builder()
                         .OverseasSellCurrency(bc.getOverseasSellCurrency())
                         .ChargeTypeCode(bc.getChargeType())
                         .CostExchange(bc.getCostExchange())
@@ -80,10 +80,32 @@ public class V1ServiceUtil {
                         .LocalSellCurrency(bc.getLocalSellCurrency())
                         .NoGST(bc.getNoGST())
                         .OverseasCostCurrency(bc.getOverseasCostCurrency())
+                        .OverseasCostAmount(bc.getOverseasCostAmount())
                         .OverseasSellAmount(bc.getOverseasSellAmount())
                         .SellExchange(bc.getSellExchange())
                         .TaxPercentage(bc.getTaxPercentage())
                         .ContainersGuid(createContainersGuid(bc))
+                        .RevenueLineTotal(bc.getRevenueLineTotal())
+                        .OverseasTax(bc.getOverseasTax())
+                        .TaxType1(bc.getTaxType1())
+                        .TaxType2(bc.getTaxType2())
+                        .TaxType3(bc.getTaxType3())
+                        .TaxType4(bc.getTaxType4())
+                        .CostTaxType4(bc.getCostTaxType4())
+                        .CostTaxType3(bc.getCostTaxType3())
+                        .CostTaxType2(bc.getCostTaxType2())
+                        .CostTaxType1(bc.getCostTaxType1())
+                        .CostLineTotal(bc.getCostLineTotal())
+                        .CostLocalTax(bc.getCostLocalTax())
+                        .CostOverseasTax(bc.getCostOverseasTax())
+                        .CostTaxPercentage(bc.getCostTaxPercentage())
+                        .CurrentCostRate(bc.getCurrentCostRate())
+                        .CurrentSellRate(bc.getCurrentSellRate())
+                        .LocalTax(bc.getLocalTax())
+                        .DebtorCode(bc.getDebtor() != null ? bc.getDebtor().getOrgCode() : null)
+                        .CreditorCode(bc.getCreditor() != null ? bc.getCreditor().getOrgCode() : null)
+                        .DebitorAddressCode(bc.getDebtor() != null ? bc.getDebtor().getAddressCode() : null)
+                        .CreditorAddressCode(bc.getCreditor() != null ? bc.getCreditor().getAddressCode() : null)
                         .build()).collect(Collectors.toList());
     }
 
@@ -98,10 +120,22 @@ public class V1ServiceUtil {
         if (customerBooking == null)
             return null;
         List<CreateBookingModuleInV1.BookingEntity.OrgDetail> list = new ArrayList<>();
-        var consignee = convertParty(customerBooking.getConsignee());
-        var consignor = convertParty(customerBooking.getConsignor());
-        var notify = convertParty(customerBooking.getNotifyParty());
-        var customer = convertParty(customerBooking.getCustomer());
+        var consignee = convertParty(customerBooking.getConsignee(), customerBooking.getIsConsigneeFreeText());
+        var consignor = convertParty(customerBooking.getConsignor(), customerBooking.getIsConsignorFreeText());
+        var notify = convertParty(customerBooking.getNotifyParty(), customerBooking.getIsNotifyPartyFreeText());
+        var customer = convertParty(customerBooking.getCustomer(), customerBooking.getIsCustomerFreeText());
+        Set<CreateBookingModuleInV1.BookingEntity.OrgDetail> hs = new HashSet<>();
+        if (customerBooking.getBookingCharges() != null) {
+            for (var bc : customerBooking.getBookingCharges()) {
+                var creditor = convertParty(bc.getCreditor(), false);
+                var debtor = convertParty(bc.getDebtor(), false);
+                if (creditor != null)
+                    hs.add(creditor);
+                if (debtor != null)
+                    hs.add(debtor);
+            }
+        }
+        list.addAll(hs);
         if (consignee != null)
             list.add(consignee);
         if (consignor != null)
@@ -113,8 +147,8 @@ public class V1ServiceUtil {
         return list;
     }
 
-    private static CreateBookingModuleInV1.BookingEntity.OrgDetail convertParty(Parties party) {
-        if (party == null)
+    private static CreateBookingModuleInV1.BookingEntity.OrgDetail convertParty(Parties party, Boolean isFreeText) {
+        if (Objects.isNull(party) || Objects.isNull(isFreeText) || isFreeText || Objects.isNull(party.getOrgCode()) || Objects.isNull(party.getAddressCode()))
             return null;
         var addressData = party.getAddressData();
         var orgData = party == null || party.getOrgData() == null ? Collections.emptyMap() : party.getOrgData();

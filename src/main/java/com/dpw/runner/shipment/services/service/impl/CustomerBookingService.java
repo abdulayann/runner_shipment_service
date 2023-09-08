@@ -8,10 +8,8 @@ import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.*;
-import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
-import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
-import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
-import com.dpw.runner.shipment.services.commons.requests.RunnerEntityMapping;
+import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
+import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
@@ -34,7 +32,9 @@ import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
 import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.entity.enums.Status;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferChargeType;
+import com.dpw.runner.shipment.services.exception.exceptions.CRPException;
 import com.dpw.runner.shipment.services.exception.exceptions.V1ServiceException;
+import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
@@ -110,6 +110,8 @@ public class CustomerBookingService implements ICustomerBookingService {
 
     @Autowired
     private ICRPServiceAdapter crpServiceAdapter;
+    @Autowired
+    private AuditLogService auditLogService;
 
     private static final Map<String, String> loadTypeMap = Map.of("SEA", "LCL", "AIR", "LSE");
 
@@ -131,7 +133,7 @@ public class CustomerBookingService implements ICustomerBookingService {
 
     @Override
     @Transactional
-    public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<?> create(CommonRequestModel commonRequestModel) throws Exception {
 
         CustomerBookingRequest request = (CustomerBookingRequest) commonRequestModel.getData();
         if (request == null) {
@@ -154,9 +156,8 @@ public class CustomerBookingService implements ICustomerBookingService {
             }
         } catch (Exception e) {
             log.error(e.getMessage());
-            throw new RuntimeException(e);
+            throw e;
         }
-
         return ResponseHelper.buildSuccessResponse(jsonHelper.convertValue(customerBooking, CustomerBookingResponse.class));
     }
 
@@ -215,11 +216,19 @@ public class CustomerBookingService implements ICustomerBookingService {
             }
             customerBooking.setBookingCharges(bookingCharges);
         }
+        auditLogService.addAuditLog(
+                AuditLogMetaData.builder()
+                        .newData(customerBooking)
+                        .prevData(null)
+                        .parent(CustomerBooking.class.getSimpleName())
+                        .parentId(customerBooking.getId())
+                        .operation(DBOperationType.CREATE.name()).build()
+        );
     }
 
     @Override
     @Transactional
-    public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<?> update(CommonRequestModel commonRequestModel) throws Exception {
         CustomerBookingRequest request = (CustomerBookingRequest) commonRequestModel.getData();
         if (request == null) {
             log.error("Request is empty for Booking update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
@@ -232,6 +241,9 @@ public class CustomerBookingService implements ICustomerBookingService {
         if (!oldEntity.isPresent()) {
             log.debug("Booking Details is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+        }
+        if (Objects.equals(oldEntity.get().getBookingStatus(), BookingStatus.READY_FOR_SHIPMENT)) {
+            throw new ValidationException("Booking alterations are not allowed once booking moved to Ready For Shipment.");
         }
         boolean isCreatedInPlatform = !Objects.isNull(oldEntity.get().getIsPlatformBookingCreated()) && oldEntity.get().getIsPlatformBookingCreated();
         CustomerBooking customerBooking = jsonHelper.convertValue(request, CustomerBooking.class);
@@ -246,13 +258,7 @@ public class CustomerBookingService implements ICustomerBookingService {
         } else {
             npmContractUpdate(customerBooking, false, oldEntity.get());
         }
-
-        try {
-            customerBooking = this.updateEntities(customerBooking, request);
-        } catch (Exception e) {
-            log.error(e.getMessage());
-            throw new RuntimeException(e);
-        }
+        customerBooking = this.updateEntities(customerBooking, request, jsonHelper.convertToJson(oldEntity.get()));
         if (!Objects.isNull(customerBooking.getBusinessCode()) && Objects.equals(customerBooking.getBookingStatus(), BookingStatus.PENDING_FOR_CREDIT_LIMIT)
                 && !customerBooking.getBookingCharges().isEmpty() && !isCreatedInPlatform ) {
             bookingIntegrationsUtility.createBookingInPlatform(customerBooking);
@@ -263,7 +269,7 @@ public class CustomerBookingService implements ICustomerBookingService {
         return ResponseHelper.buildSuccessResponse(jsonHelper.convertValue(customerBooking, CustomerBookingResponse.class));
     }
 
-    private CustomerBooking updateEntities(CustomerBooking customerBooking, CustomerBookingRequest request) throws Exception {
+    private CustomerBooking updateEntities(CustomerBooking customerBooking, CustomerBookingRequest request, String oldEntity) throws Exception {
         customerBooking = customerBookingDao.save(customerBooking);
         Long bookingId = customerBooking.getId();
 
@@ -319,6 +325,14 @@ public class CustomerBookingService implements ICustomerBookingService {
                 customerBooking = customerBookingDao.save(customerBooking);
             }
         }
+        auditLogService.addAuditLog(
+                AuditLogMetaData.builder()
+                        .newData(customerBooking)
+                        .prevData(jsonHelper.readFromJson(oldEntity, CustomerBooking.class))
+                        .parent(CustomerBooking.class.getSimpleName())
+                        .parentId(customerBooking.getId())
+                        .operation(DBOperationType.UPDATE.name()).build()
+        );
         return customerBooking;
     }
 
@@ -428,7 +442,7 @@ public class CustomerBookingService implements ICustomerBookingService {
 
     @Override
     @Transactional
-    public ResponseEntity<?> platformCreateBooking(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<?> platformCreateBooking(CommonRequestModel commonRequestModel) throws Exception {
         PlatformToRunnerCustomerBookingRequest request = (PlatformToRunnerCustomerBookingRequest) commonRequestModel.getData();
         String bookingNumber = request.getBookingNumber();
         if (bookingNumber == null) {
@@ -596,7 +610,7 @@ public class CustomerBookingService implements ICustomerBookingService {
                 });
             }
 
-            this.updatePlatformBooking(customerBookingRequest);
+            this.updatePlatformBooking(customerBookingRequest, customerBooking.get());
         }
 
         return ResponseHelper.buildSuccessResponse(platformResponse);
@@ -685,7 +699,7 @@ public class CustomerBookingService implements ICustomerBookingService {
             response = modelMapper.map(crpResponse.getBody().getData(), CRPRetrieveResponse.class);
         } catch (Exception e) {
             log.error("CRP Retrieve failed due to: " + e.getMessage());
-            throw new RuntimeException(e);
+            throw new CRPException(e.getMessage());
         }
         if (response == null) {
             log.error("No organization exist in CRP with OrgCode: " + orgCode);
@@ -745,30 +759,31 @@ public class CustomerBookingService implements ICustomerBookingService {
         request.setAddressData(addressData);
     }
 
-    private CustomerBookingResponse updatePlatformBooking(CustomerBookingRequest request) {
+    private CustomerBookingResponse updatePlatformBooking(CustomerBookingRequest request, CustomerBooking oldEntity) throws Exception {
         CustomerBooking customerBooking = jsonHelper.convertValue(request, CustomerBooking.class);
+        customerBooking.setIsPlatformBookingCreated(Boolean.TRUE);
         customerBooking.setSource(BookingSource.Platform);
         try {
-            customerBooking = this.updateEntities(customerBooking, request);
+            customerBooking = this.updateEntities(customerBooking, request, jsonHelper.convertToJson(oldEntity));
         } catch (Exception e) {
             log.error(e.getMessage());
-            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
-            throw new RuntimeException(e);
+            throw e;
         }
         return jsonHelper.convertValue(customerBooking, CustomerBookingResponse.class);
     }
 
-    private CustomerBookingResponse createPlatformBooking(CustomerBookingRequest request) {
+    private CustomerBookingResponse createPlatformBooking(CustomerBookingRequest request) throws Exception {
         if (request == null) {
             log.error("Request is null for Customer Booking Create with Request Id {}", LoggerHelper.getRequestIdFromMDC());
         }
         CustomerBooking customerBooking = jsonHelper.convertValue(request, CustomerBooking.class);
         customerBooking.setSource(BookingSource.Platform);
+        customerBooking.setIsPlatformBookingCreated(Boolean.TRUE);
         try {
             createEntities(customerBooking, request);
         } catch (Exception e) {
             log.error(e.getMessage());
-            throw new RuntimeException(e);
+            throw e;
         }
         return jsonHelper.convertValue(customerBooking, CustomerBookingResponse.class);
     }
@@ -797,7 +812,7 @@ public class CustomerBookingService implements ICustomerBookingService {
         return responseList;
     }
 
-    private void npmContractUpdate(CustomerBooking customerBooking, Boolean isAlteration, CustomerBooking oldEntity) {
+    private void npmContractUpdate(CustomerBooking customerBooking, Boolean isAlteration, CustomerBooking oldEntity) throws Exception {
         if (customerBooking.getTransportType() != null && customerBooking.getTransportType().equals(Constants.TRANSPORT_MODE_SEA) && customerBooking.getCargoType() != null && customerBooking.getCargoType().equals(Constants.CARGO_TYPE_FCL) &&
                 StringUtility.isNotEmpty(customerBooking.getContractId()) && customerBooking.getBookingCharges() != null && !customerBooking.getBookingCharges().isEmpty()) {
 
@@ -868,7 +883,7 @@ public class CustomerBookingService implements ICustomerBookingService {
         return loadInfoRequest;
     }
 
-    private void npmContractUpdatePaylaod(CustomerBooking customerBooking, Boolean isAlteration, List<LoadInfoRequest> loadInfoRequestList) {
+    private void npmContractUpdatePaylaod(CustomerBooking customerBooking, Boolean isAlteration, List<LoadInfoRequest> loadInfoRequestList) throws Exception {
         String contractStatus = null;
         if (customerBooking.getContractStatus() != null && customerBooking.getContractStatus().equals(CustomerBookingConstants.SINGLE_USAGE) && customerBooking.getBookingStatus() == BookingStatus.CANCELLED) {
             contractStatus = CustomerBookingConstants.ENABLED;
@@ -886,12 +901,7 @@ public class CustomerBookingService implements ICustomerBookingService {
                 .is_alteration(isAlteration)
                 .build();
 
-        try {
-            npmService.updateContracts(CommonRequestModel.buildRequest(updateContractRequest));
-        } catch (Exception e) {
-            log.error("Update Contract Request failed due to: " + e.getMessage());
-            throw new RuntimeException(e);
-        }
+        npmService.updateContracts(CommonRequestModel.buildRequest(updateContractRequest));
     }
 
     private String generateBookingNumber(String cargoType) {

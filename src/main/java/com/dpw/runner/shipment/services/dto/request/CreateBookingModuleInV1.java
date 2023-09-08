@@ -66,13 +66,13 @@ public class CreateBookingModuleInV1 {
         private List<Document> Documents;
         private List<LooseCargo> Loosecargos;
         private List<OrgDetail> OrgDetails;
-        private List<QuoteCharge> QuoteCharges;
+        private List<BillCharge> BillCharges;
 
         @Data
         @Builder
         @NoArgsConstructor
         @AllArgsConstructor
-        public static class QuoteCharge {
+        public static class BillCharge {
             private String ChargeTypeCode;
             private Boolean NoGST;
             private BigDecimal EstimatedRevenue;
@@ -85,9 +85,33 @@ public class CreateBookingModuleInV1 {
             private BigDecimal LocalCostAmount;
             private String LocalCostCurrency;
             private BigDecimal CostExchange;
+            private BigDecimal OverseasCostAmount;
             private String OverseasCostCurrency;
             private BigDecimal TaxPercentage;
             private List<UUID> ContainersGuid;
+            private BigDecimal RevenueLineTotal;
+            private BigDecimal OverseasTax;
+            private BigDecimal TaxType1;
+            private BigDecimal TaxType2;
+            private BigDecimal TaxType3;
+            private BigDecimal TaxType4;
+            private BigDecimal CostTaxType4;
+            private BigDecimal CostTaxType3;
+            private BigDecimal CostTaxType2;
+            private BigDecimal CostTaxType1;
+            private BigDecimal CostLineTotal;
+            private BigDecimal CostLocalTax;
+            private BigDecimal CostOverseasTax;
+            private BigDecimal CostTaxPercentage;
+            private String EstimatedCostCurrency;
+            private String EstimatedRevenueCurrency;
+            private BigDecimal CurrentCostRate;
+            private BigDecimal CurrentSellRate;
+            private BigDecimal LocalTax;
+            private String DebtorCode;
+            private String CreditorCode;
+            private String DebitorAddressCode;
+            private String CreditorAddressCode;
         }
 
         @Data

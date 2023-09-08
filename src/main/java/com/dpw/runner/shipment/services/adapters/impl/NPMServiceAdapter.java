@@ -5,12 +5,16 @@ import com.dpw.runner.shipment.services.commons.constants.NPMConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.dao.interfaces.ICustomerBookingDao;
 import com.dpw.runner.shipment.services.dto.request.ListContractRequest;
+import com.dpw.runner.shipment.services.dto.request.exchangeRates.ExchangeRatesRequest;
 import com.dpw.runner.shipment.services.dto.request.npm.NPMFetchOffersRequest;
 import com.dpw.runner.shipment.services.dto.request.npm.NPMFetchOffersRequestFromUI;
 import com.dpw.runner.shipment.services.dto.request.npm.UpdateContractRequest;
+import com.dpw.runner.shipment.services.dto.response.ExchangeRates.ExchangeRatesResponse;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.CustomerBooking;
 import com.dpw.runner.shipment.services.entity.Packing;
+import com.dpw.runner.shipment.services.exception.exceptions.NPMException;
+import com.dpw.runner.shipment.services.exception.response.NpmErrorResponse;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -22,6 +26,7 @@ import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 
 import java.net.URI;
@@ -54,45 +59,89 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
     @Value("${NPM.xApikeyV2}")
     private String xApikeyV2;
 
+    @Value("${npm.exchange.rate.url}")
+    private String exchangeRateUrl;
+
     private final RestTemplate restTemplate;
 
+    private final RestTemplate restTemp;
+
     @Autowired
-    public NPMServiceAdapter(@Qualifier("restTemplateForNPM") RestTemplate restTemplate) {
+    public NPMServiceAdapter(@Qualifier("restTemplateForNPM") RestTemplate restTemplate, @Qualifier("restTemplateForExchangeRates") RestTemplate restTemp) {
         this.restTemplate = restTemplate;
+        this.restTemp = restTemp;
     }
     @Autowired
     private ICustomerBookingDao customerBookingDao;
 
     @Override
     public ResponseEntity<?> fetchContracts(CommonRequestModel commonRequestModel) throws Exception {
-        ListContractRequest listContractRequest = (ListContractRequest) commonRequestModel.getData();
-        String url = npmBaseUrl + npmContracts;
-        ResponseEntity<?> response = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJson(listContractRequest)), Object.class);
-        return ResponseHelper.buildDependentServiceResponse(response.getBody(),0,0);
+        try {
+            ListContractRequest listContractRequest = (ListContractRequest) commonRequestModel.getData();
+            String url = npmBaseUrl + npmContracts;
+            ResponseEntity<?> response = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJson(listContractRequest)), Object.class);
+            return ResponseHelper.buildDependentServiceResponse(response.getBody(),0,0);
+        } catch (HttpStatusCodeException ex) {
+            NpmErrorResponse npmErrorResponse = jsonHelper.readFromJson(ex.getResponseBodyAsString(), NpmErrorResponse.class);
+            log.error("NPM Fetch contract failed due to: {}", jsonHelper.convertToJson(npmErrorResponse));
+            throw new NPMException(npmErrorResponse.getErrorMessage());
+        }
     }
 
     @Override
     public ResponseEntity<?> updateContracts(CommonRequestModel commonRequestModel) throws Exception {
-        UpdateContractRequest updateContractRequest = (UpdateContractRequest) commonRequestModel.getData();
-        String url = npmBaseUrl + npmUpdateUrl;
-        ResponseEntity<?> response = restTemplate.exchange(RequestEntity.patch(URI.create(url)).body(jsonHelper.convertToJson(updateContractRequest)), Object.class);
-        return ResponseHelper.buildDependentServiceResponse(response.getBody(),0,0);
+        try {
+            UpdateContractRequest updateContractRequest = (UpdateContractRequest) commonRequestModel.getData();
+            String url = npmBaseUrl + npmUpdateUrl;
+            ResponseEntity<?> response = restTemplate.exchange(RequestEntity.patch(URI.create(url)).body(jsonHelper.convertToJson(updateContractRequest)), Object.class);
+            return ResponseHelper.buildDependentServiceResponse(response.getBody(),0,0);
+        } catch (HttpStatusCodeException ex) {
+            NpmErrorResponse npmErrorResponse = jsonHelper.readFromJson(ex.getResponseBodyAsString(), NpmErrorResponse.class);
+            log.error("NPM Update contract failed due to: {}", jsonHelper.convertToJson(npmErrorResponse));
+            throw new NPMException(npmErrorResponse.getErrorMessage());
+        }
     }
 
     @Override
     public ResponseEntity<?> fetchOffers(CommonRequestModel req) throws Exception {
         String url = npmBaseUrl + npmOffersUrl;
         NPMFetchOffersRequestFromUI fetchOffersRequest = (NPMFetchOffersRequestFromUI) req.getData();
-        ResponseEntity<?> response = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJson(createNPMOffersRequest(fetchOffersRequest))), Object.class);
-        return ResponseHelper.buildDependentServiceResponse(response.getBody(),0,0);
+        try {
+            ResponseEntity<?> response = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJson(createNPMOffersRequest(fetchOffersRequest))), Object.class);
+            return ResponseHelper.buildDependentServiceResponse(response.getBody(),0,0);
+        } catch (HttpStatusCodeException ex) {
+            NpmErrorResponse npmErrorResponse = jsonHelper.readFromJson(ex.getResponseBodyAsString(), NpmErrorResponse.class);
+            log.error("NPM fetch offer failed due to: {}", jsonHelper.convertToJson(npmErrorResponse));
+            throw new NPMException(npmErrorResponse.getErrorMessage());
+        }
     }
 
     @Override
     public ResponseEntity<?> fetchOffersV8(CommonRequestModel req) throws Exception {
-        String url = npmBaseUrl + npmOffersV8Url;
-        NPMFetchOffersRequestFromUI fetchOffersRequest = (NPMFetchOffersRequestFromUI) req.getData();
-        ResponseEntity<?> response = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJson(createNPMOffersV8Request(fetchOffersRequest))), Object.class);
-        return ResponseHelper.buildDependentServiceResponse(response.getBody(),0,0);
+        try {
+            String url = npmBaseUrl + npmOffersV8Url;
+            NPMFetchOffersRequestFromUI fetchOffersRequest = (NPMFetchOffersRequestFromUI) req.getData();
+            ResponseEntity<?> response = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJson(createNPMOffersV8Request(fetchOffersRequest))), Object.class);
+            return ResponseHelper.buildDependentServiceResponse(response.getBody(),0,0);
+        } catch (HttpStatusCodeException ex) {
+            NpmErrorResponse npmErrorResponse = jsonHelper.readFromJson(ex.getResponseBodyAsString(), NpmErrorResponse.class);
+            log.error("NPM fetch offers v8/offers failed due to: {}", jsonHelper.convertToJson(npmErrorResponse));
+            throw new NPMException(npmErrorResponse.getErrorMessage());
+        }
+
+    }
+
+    private String getCurrencyCode(String countryCode)  {
+        ExchangeRatesRequest exchangeRatesRequest = ExchangeRatesRequest.builder().country_code(Arrays.asList(countryCode)).build();
+        try {
+            var exchangeRatesResponse = restTemp.exchange(RequestEntity.post(URI.create(exchangeRateUrl)).body(jsonHelper.convertToJson(exchangeRatesRequest)), ExchangeRatesResponse.class);
+            if(exchangeRatesResponse.getBody() != null && exchangeRatesResponse.getBody().getData() != null && !exchangeRatesResponse.getBody().getData().isEmpty())
+                return exchangeRatesResponse.getBody().getData().get(0).getCurrency_code();
+
+        } catch(Exception e)  {
+            log.error("Exchange Rates API failed due to: " + e.getMessage());
+        }
+        return null;
     }
 
     private NPMFetchOffersRequest createNPMOffersRequest(NPMFetchOffersRequestFromUI request) {
@@ -111,6 +160,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
                 .POD(request.getPod())
                 .POL(request.getPol())
                 .exchange_rates(null)
+                .currency(getCurrencyCode(request.getCountryCode()))
                 .preferred_date(request.getPreferredDate())
                 .preferred_date_type(request.getPreferredDateType())
                 .carrier(NPMConstants.ANY) //hardcoded

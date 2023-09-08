@@ -4,6 +4,8 @@ import com.dpw.runner.shipment.services.DocumentService.DocumentService;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.FileRepoConstants;
+import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
+import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
@@ -36,6 +38,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -54,6 +57,9 @@ public class FileRepoService implements IFileRepoService {
     @Autowired
     private DocumentService documentService;
 
+    @Autowired
+    private AuditLogService auditLogService;
+
     @Override
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
         String responseMsg;
@@ -66,6 +72,15 @@ public class FileRepoService implements IFileRepoService {
         }
         try {
             fileRepo = fileRepoDao.save(fileRepo);
+            // audit logs
+            auditLogService.addAuditLog(
+                    AuditLogMetaData.builder()
+                            .newData(fileRepo)
+                            .prevData(null)
+                            .parent(FileRepo.class.getSimpleName())
+                            .parentId(fileRepo.getId())
+                            .operation(DBOperationType.CREATE.name()).build()
+            );
             log.info("File created for successfully for Id {} with Request Id {}", fileRepo.getId(), LoggerHelper.getRequestIdFromMDC());
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -97,7 +112,19 @@ public class FileRepoService implements IFileRepoService {
         FileRepo fileRepo = mapToEntityFromRequest(request);
         fileRepo.setId(oldEntity.get().getId());
         try {
+            String oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
             fileRepo = fileRepoDao.save(fileRepo);
+
+            // audit logs
+            auditLogService.addAuditLog(
+                    AuditLogMetaData.builder()
+                            .newData(fileRepo)
+                            .prevData(jsonHelper.readFromJson(oldEntityJsonString, FileRepo.class))
+                            .parent(FileRepo.class.getSimpleName())
+                            .parentId(fileRepo.getId())
+                            .operation(DBOperationType.UPDATE.name()).build()
+            );
+
             log.info("Updated the File details for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -174,7 +201,19 @@ public class FileRepoService implements IFileRepoService {
                 log.debug("File Repo is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
+            String oldEntityJsonString = jsonHelper.convertToJson(fileRepo.get());
             fileRepoDao.delete(fileRepo.get());
+
+            // audit logs
+            auditLogService.addAuditLog(
+                    AuditLogMetaData.builder()
+                            .newData(null)
+                            .prevData(jsonHelper.readFromJson(oldEntityJsonString, FileRepo.class))
+                            .parent(FileRepo.class.getSimpleName())
+                            .parentId(fileRepo.get().getId())
+                            .operation(DBOperationType.DELETE.name()).build()
+            );
+
             log.info("Deleted file for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
             return ResponseHelper.buildSuccessResponse();
         } catch (Exception e) {
