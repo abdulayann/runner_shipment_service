@@ -21,3 +21,13 @@ spec:
                 name: runner-shipment-service
                 port:
                   number: 80
+    - host: 'qa4-runner.cargoes.com'
+      http:
+        paths:
+          - path: /shipment-service
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: runner-shipment-service
+                port:
+                  number: 80
