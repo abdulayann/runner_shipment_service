@@ -24,6 +24,7 @@ public class PlatformCreateRequest extends CommonRequest implements IRunnerReque
     private String pod;
     private String contract_id;
     private String customer_org_id;
+    private String customer_email;
     private LocalDateTime created_at;
     private List<LoadRequest> load;
     private RouteRequest route;
