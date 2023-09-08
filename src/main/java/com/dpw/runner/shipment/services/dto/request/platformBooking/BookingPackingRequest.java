@@ -27,9 +27,9 @@ public class BookingPackingRequest extends CommonRequest implements IRunnerReque
     private BigDecimal volume;
     private String volumeUnit;
     @JsonProperty("grossWeight")
-    private BigDecimal netWeight;
+    private BigDecimal weight;
     @JsonProperty("grossWeightUnit")
-    private String netWeightUnit;
+    private String weightUnit;
     private BigDecimal chargeable;
     private String chargeableUnit;
     private String commodity;

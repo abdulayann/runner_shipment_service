@@ -216,8 +216,8 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
     private NPMFetchOffersRequest.ContractDetails createContractDetails(NPMFetchOffersRequestFromUI request) {
         if(request.getContractsInfo() == null) return null;
         return NPMFetchOffersRequest.ContractDetails.builder()
-                .contracts(Collections.singletonList(request.getContractsInfo() == null? null:request.getContractsInfo().getContractId()))
-                .company_code(null)
+                .contracts(Objects.isNull(request.getContractsInfo().getContractId()) ? Arrays.asList() : Arrays.asList(request.getContractsInfo().getContractId()))
+                .company_code(request.getContractsInfo().getCustomerOrgId())
                 .build();
     }
 
