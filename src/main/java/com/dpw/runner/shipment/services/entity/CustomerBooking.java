@@ -168,4 +168,7 @@ public class CustomerBooking extends MultiTenancy {
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "entityId")
     @Where(clause = "entity = 'CustomerBooking'")
     private List<AuditLog> logsList;
+
+    @Column(name = "auto_update_weight_volume")
+    private Boolean isAutoWeightVolumeUpdate;
 }
