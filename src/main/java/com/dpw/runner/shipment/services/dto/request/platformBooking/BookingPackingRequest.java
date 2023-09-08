@@ -38,4 +38,8 @@ public class BookingPackingRequest extends CommonRequest implements IRunnerReque
     @JsonProperty("isHazardous")
     private Boolean hazardous;
     private String goodsDescription;
+    // Internals
+    private String lengthUnit;
+    private String widthUnit;
+    private String heightUnit;
 }
