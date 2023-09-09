@@ -899,7 +899,7 @@ public class CustomerBookingService implements ICustomerBookingService {
 
         UpdateContractRequest updateContractRequest = UpdateContractRequest.builder()
                 .contract_id(customerBooking.getContractId())
-                .contract_status(contractStatus)
+                .contract_state(contractStatus)
                 .source(CustomerBookingConstants.RUNNER)
                 .source_type(CustomerBookingConstants.RUNNER)
                 .business_info(UpdateContractRequest.BusinessInfo.builder().product_name("FCL").build())
