@@ -86,7 +86,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
         } catch (HttpStatusCodeException ex) {
             NpmErrorResponse npmErrorResponse = jsonHelper.readFromJson(ex.getResponseBodyAsString(), NpmErrorResponse.class);
             log.error("NPM Fetch contract failed due to: {}", jsonHelper.convertToJson(npmErrorResponse));
-            throw new NPMException(npmErrorResponse.getErrorMessage());
+            throw new NPMException("Error from NPM while fetching contracts: " + npmErrorResponse.getErrorMessage());
         }
     }
 
@@ -101,7 +101,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
         } catch (HttpStatusCodeException ex) {
             NpmErrorResponse npmErrorResponse = jsonHelper.readFromJson(ex.getResponseBodyAsString(), NpmErrorResponse.class);
             log.error("NPM Update contract failed due to: {}", jsonHelper.convertToJson(npmErrorResponse));
-            throw new NPMException(npmErrorResponse.getErrorMessage());
+            throw new NPMException("Error from NPM while updating utilisation: " + npmErrorResponse.getErrorMessage());
         }
     }
 
@@ -117,7 +117,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
         } catch (HttpStatusCodeException ex) {
             NpmErrorResponse npmErrorResponse = jsonHelper.readFromJson(ex.getResponseBodyAsString(), NpmErrorResponse.class);
             log.error("NPM fetch offer failed due to: {}", jsonHelper.convertToJson(npmErrorResponse));
-            throw new NPMException(npmErrorResponse.getErrorMessage());
+            throw new NPMException("Error from NPM while fetching offers: " + npmErrorResponse.getErrorMessage());
         }
     }
 
@@ -133,7 +133,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
         } catch (HttpStatusCodeException ex) {
             NpmErrorResponse npmErrorResponse = jsonHelper.readFromJson(ex.getResponseBodyAsString(), NpmErrorResponse.class);
             log.error("NPM fetch offers v8/offers failed due to: {}", jsonHelper.convertToJson(npmErrorResponse));
-            throw new NPMException(npmErrorResponse.getErrorMessage());
+            throw new NPMException("Error from NPM while fetching offers: " + npmErrorResponse.getErrorMessage());
         }
 
     }
