@@ -860,12 +860,12 @@ public class CustomerBookingService implements ICustomerBookingService {
                     }
                 }
             });
-            if (!idVsContainerMap.isEmpty() && StringUtility.isNotEmpty(oldEntity.getContractId())) {
+            if (!idVsContainerMap.isEmpty() && StringUtility.isNotEmpty(oldEntity.getContractId()) && oldEntity.getContractId().equals(customerBooking.getContractId())) {
                 idVsContainerMap.values().forEach(cont -> {
                     loadInfoRequestList.add(containerLoadConstruct(cont, CustomerBookingConstants.ADD, cont.getContainerCount()));
                 });
             }
-        } else if (isCancelled && oldEntity != null && oldEntity.getContainersList() != null && StringUtility.isNotEmpty(oldEntity.getContractId())) {
+        } else if (isCancelled && oldEntity != null && oldEntity.getContainersList() != null && StringUtility.isNotEmpty(oldEntity.getContractId()) && oldEntity.getContractId().equals(customerBooking.getContractId())) {
             oldEntity.getContainersList().forEach(cont -> {
                 loadInfoRequestList.add(containerLoadConstruct(cont, CustomerBookingConstants.ADD, cont.getContainerCount()));
             });
