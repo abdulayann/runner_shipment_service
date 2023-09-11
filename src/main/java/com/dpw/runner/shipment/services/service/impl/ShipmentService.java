@@ -589,7 +589,11 @@ public class ShipmentService implements IShipmentService {
             if (serviceDetailsRequest != null)
                 shipmentDetails.setServicesList(serviceDetailsDao.saveEntityFromShipment(convertToEntityList(serviceDetailsRequest, ServiceDetails.class), shipmentId));
 
-            shipmentSync.sync(shipmentDetails);
+            try {
+                shipmentSync.sync(shipmentDetails);
+            } catch (Exception e){
+                log.error("Error performing sync on shipment entity, {}", e);
+            }
 //            EventMessage eventMessage = EventMessage.builder().messageType(Constants.SERVICE).entity(Constants.SHIPMENT).request(shipmentDetails).build();
 //            sbUtils.sendMessagesToTopic(isbProperties, azureServiceBusTopic.getTopic(), Arrays.asList(new ServiceBusMessage(jsonHelper.convertToJsonIncludeNulls(eventMessage))));
 
