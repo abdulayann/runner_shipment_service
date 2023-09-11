@@ -272,6 +272,21 @@ public class MasterDataImpl implements IMasterDataService {
     }
 
     @Override
+    public ResponseEntity<?> fetchUnlocationOriginAndDestinationList(CommonRequestModel commonRequestModel) {
+        return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().fetchUnlocationOriginAndDestinationList(commonRequestModel.getDependentData()));
+    }
+
+    @Override
+    public ResponseEntity<?> fetchListUnlocationTransportModeBased(CommonRequestModel commonRequestModel) {
+        return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().fetchListUnlocationTransportModeBased(commonRequestModel.getDependentData()));
+    }
+
+    @Override
+    public ResponseEntity<?> fetchActivityMaster(CommonRequestModel commonRequestModel) {
+        return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().fetchActivityMaster(commonRequestModel.getDependentData()));
+    }
+
+    @Override
     public CompletableFuture<ResponseEntity<?>> listAsync(CommonRequestModel commonRequestModel) {
         return null;
     }

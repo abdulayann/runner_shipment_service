@@ -216,6 +216,15 @@ public class V1ServiceImpl implements IV1Service {
     @Value("${v1service.url.base}${v1service.url.retrieveTenantSettings}")
     private String RETRIEVE_TENANT_SETTINGS;
 
+    @Value("${v1service.url.base}${v1service.url.unlocationOriginAndDestinationList}")
+    private String UNLOCATION_ORIGIN_AND_DESTINATION_LIST_URL;
+
+    @Value("${v1service.url.base}${v1service.url.listUnlocationTransportModeBased}")
+    private String LIST_UNLOCATION_TRANSPORT_MODE_BASED_URL;
+
+    @Value("${v1service.url.base}${v1service.url.activityMaster}")
+    private String ACTIVITY_MASTER_URL;
+
     @Autowired
     private JsonHelper jsonHelper;
     @Override
@@ -1427,6 +1436,69 @@ public class V1ServiceImpl implements IV1Service {
             masterDataResponse = this.restTemplate.postForEntity(this.RETRIEVE_TENANT_SETTINGS, entity, V1RetrieveResponse.class, new Object[0]);
             log.info("Token time taken in tenantNameByTenantId() function " + (System.currentTimeMillis() - time));
             return (V1RetrieveResponse) masterDataResponse.getBody();
+        } catch (HttpStatusCodeException var6) {
+            if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
+                throw new UnAuthorizedException("UnAuthorizedException");
+            } else {
+                throw new V1ServiceException(var6.getMessage());
+            }
+        } catch (Exception var7) {
+            throw new V1ServiceException(var7.getMessage());
+        }
+    }
+
+    @Override
+    public V1DataResponse fetchUnlocationOriginAndDestinationList(Object request) {
+        ResponseEntity<V1DataResponse> masterDataResponse = null;
+
+        try {
+            long time = System.currentTimeMillis();
+            HttpEntity<Object> entity = new HttpEntity<>(request, V1AuthHelper.getHeaders());
+            masterDataResponse = this.restTemplate.postForEntity(this.UNLOCATION_ORIGIN_AND_DESTINATION_LIST_URL, entity, V1DataResponse.class);
+            log.info("Token time taken in fetchUnlocationOriginAndDestinationList() function " + (System.currentTimeMillis() - time));
+            return masterDataResponse.getBody();
+        } catch (HttpStatusCodeException var6) {
+            if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
+                throw new UnAuthorizedException("UnAuthorizedException");
+            } else {
+                throw new V1ServiceException(var6.getMessage());
+            }
+        } catch (Exception var7) {
+            throw new V1ServiceException(var7.getMessage());
+        }
+    }
+
+    @Override
+    public V1DataResponse fetchListUnlocationTransportModeBased(Object request) {
+        ResponseEntity<V1DataResponse> masterDataResponse = null;
+
+        try {
+            long time = System.currentTimeMillis();
+            HttpEntity<Object> entity = new HttpEntity<>(request, V1AuthHelper.getHeaders());
+            masterDataResponse = this.restTemplate.postForEntity(this.LIST_UNLOCATION_TRANSPORT_MODE_BASED_URL, entity, V1DataResponse.class);
+            log.info("Token time taken in fetchListUnlocationTransportModeBased() function " + (System.currentTimeMillis() - time));
+            return masterDataResponse.getBody();
+        } catch (HttpStatusCodeException var6) {
+            if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
+                throw new UnAuthorizedException("UnAuthorizedException");
+            } else {
+                throw new V1ServiceException(var6.getMessage());
+            }
+        } catch (Exception var7) {
+            throw new V1ServiceException(var7.getMessage());
+        }
+    }
+
+    @Override
+    public V1DataResponse fetchActivityMaster(Object request) {
+        ResponseEntity<V1DataResponse> masterDataResponse = null;
+
+        try {
+            long time = System.currentTimeMillis();
+            HttpEntity<Object> entity = new HttpEntity<>(request, V1AuthHelper.getHeaders());
+            masterDataResponse = this.restTemplate.postForEntity(this.ACTIVITY_MASTER_URL, entity, V1DataResponse.class);
+            log.info("Token time taken in fetchActivityMaster() function " + (System.currentTimeMillis() - time));
+            return masterDataResponse.getBody();
         } catch (HttpStatusCodeException var6) {
             if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
                 throw new UnAuthorizedException("UnAuthorizedException");

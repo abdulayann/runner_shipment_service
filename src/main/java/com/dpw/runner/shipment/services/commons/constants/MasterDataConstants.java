@@ -29,6 +29,9 @@ public class MasterDataConstants {
     public static final String FETCH_FLIGHT_STATUS = "/fetch-flight-status";
     public static final String TENANT_NAME_BY_ID = "/tenantNameById";
     public static final String ADDRESS_LIST = "/address-list";
+    public static final String UNLOCATION_ORIGIN_DESTINATION = "/unlocation-origin-destination";
+    public static final String UNLOCATION_WITH_TRANSPORT_MODE = "/unlocation-with-transport-mode";
+    public static final String ACTIVITY_MASTER = "/activity-master";
     public static final String TENANT_SETTINGS = "/tenantSettings";
     public static final String RETRIEVE_TENANT_SETTINGS = "/retrieve";
 
