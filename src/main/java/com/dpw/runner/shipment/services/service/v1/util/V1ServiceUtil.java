@@ -21,6 +21,7 @@ public class V1ServiceUtil {
     private static CreateBookingModuleInV1.BookingEntity createEntity(CustomerBooking customerBooking) {
         var carrierDetails = Optional.ofNullable(customerBooking.getCarrierDetails());
         return CreateBookingModuleInV1.BookingEntity.builder()
+                .Voyage(customerBooking.getCarrierDetails() != null ? customerBooking.getCarrierDetails().getVoyage() : null)
                 .ContractId(customerBooking.getContractId())
                 .NotifyPartyCode(Objects.isNull(customerBooking.getNotifyParty()) ? null : customerBooking.getNotifyParty().getOrgCode())
                 .NotifyPartyAddressCode(Objects.isNull(customerBooking.getNotifyParty()) ? null : customerBooking.getNotifyParty().getAddressCode())
