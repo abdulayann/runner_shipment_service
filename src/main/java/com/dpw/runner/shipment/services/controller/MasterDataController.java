@@ -892,4 +892,55 @@ public class MasterDataController {
         }
         return (ResponseEntity<DependentServiceResponse>) ResponseHelper.buildFailedResponse(responseMsg);
     }
+
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = ShipmentConstants.LIST_SUCCESSFUL),
+            @ApiResponse(code = 404, message = Constants.NO_DATA, response = DependentServiceResponse.class)
+    })
+    @PostMapping(MasterDataConstants.UNLOCATION + MasterDataConstants.UNLOCATION_ORIGIN_DESTINATION)
+    public ResponseEntity<DependentServiceResponse> fetchUnlocationOriginAndDestinationList(@RequestBody @Valid Object request) {
+        String responseMsg;
+        try {
+            return (ResponseEntity<DependentServiceResponse>) masterDataService.fetchUnlocationOriginAndDestinationList(CommonRequestModel.buildDependentDataRequest(request));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+        }
+        return (ResponseEntity<DependentServiceResponse>) ResponseHelper.buildFailedResponse(responseMsg);
+    }
+
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = ShipmentConstants.LIST_SUCCESSFUL),
+            @ApiResponse(code = 404, message = Constants.NO_DATA, response = DependentServiceResponse.class)
+    })
+    @PostMapping(MasterDataConstants.UNLOCATION + MasterDataConstants.UNLOCATION_WITH_TRANSPORT_MODE)
+    public ResponseEntity<DependentServiceResponse> fetchListUnlocationTransportModeBased(@RequestBody @Valid Object request) {
+        String responseMsg;
+        try {
+            return (ResponseEntity<DependentServiceResponse>) masterDataService.fetchListUnlocationTransportModeBased(CommonRequestModel.buildDependentDataRequest(request));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+        }
+        return (ResponseEntity<DependentServiceResponse>) ResponseHelper.buildFailedResponse(responseMsg);
+    }
+
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = ShipmentConstants.LIST_SUCCESSFUL),
+            @ApiResponse(code = 404, message = Constants.NO_DATA, response = DependentServiceResponse.class)
+    })
+    @PostMapping(MasterDataConstants.ACTIVITY_MASTER + ApiConstants.API_LIST)
+    public ResponseEntity<DependentServiceResponse> fetchActivityMaster(@RequestBody @Valid Object request) {
+        String responseMsg;
+        try {
+            return (ResponseEntity<DependentServiceResponse>) masterDataService.fetchActivityMaster(CommonRequestModel.buildDependentDataRequest(request));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+        }
+        return (ResponseEntity<DependentServiceResponse>) ResponseHelper.buildFailedResponse(responseMsg);
+    }
 }
