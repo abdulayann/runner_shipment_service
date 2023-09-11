@@ -121,5 +121,8 @@ public interface IV1Service {
 
     V1DataResponse tenantNameByTenantId(Object request);
     V1DataResponse fetchChargeCodeData(Object request);
+    V1DataResponse fetchUnlocationOriginAndDestinationList(Object request);
+    V1DataResponse fetchListUnlocationTransportModeBased(Object request);
+    V1DataResponse fetchActivityMaster(Object request);
 
 }

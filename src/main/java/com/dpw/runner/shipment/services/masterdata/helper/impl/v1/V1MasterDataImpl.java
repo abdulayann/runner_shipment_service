@@ -374,4 +374,25 @@ public class V1MasterDataImpl implements IMasterDataService {
     public List<MasterData> fetchByType(MasterDataType masterDataType) {
         return null;
     }
+
+    @Override
+    public DependentServiceResponse fetchUnlocationOriginAndDestinationList(Object request) {
+        V1DataResponse v1DataResponse = v1Service.fetchUnlocationOriginAndDestinationList(request);
+        return DependentServiceResponse.builder().success(true)
+                .data(v1DataResponse.entities).numberOfRecords(v1DataResponse.take).totalPages(v1DataResponse.totalCount).build();
+    }
+
+    @Override
+    public DependentServiceResponse fetchListUnlocationTransportModeBased(Object request) {
+        V1DataResponse v1DataResponse = v1Service.fetchListUnlocationTransportModeBased(request);
+        return DependentServiceResponse.builder().success(true)
+                .data(v1DataResponse.entities).numberOfRecords(v1DataResponse.take).totalPages(v1DataResponse.totalCount).build();
+    }
+
+    @Override
+    public DependentServiceResponse fetchActivityMaster(Object request) {
+        V1DataResponse v1DataResponse = v1Service.fetchActivityMaster(request);
+        return DependentServiceResponse.builder().success(true)
+                .data(v1DataResponse.entities).numberOfRecords(v1DataResponse.take).totalPages(v1DataResponse.totalCount).build();
+    }
 }
