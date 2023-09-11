@@ -323,7 +323,11 @@ public class ConsolidationService implements IConsolidationService {
             if (routingsRequest != null)
                 createRoutingsAsync(consolidationDetails, routingsRequest);
 
-            consolidationSync.sync(request);
+            try {
+                consolidationSync.sync(request);
+            } catch (Exception e){
+                log.error("Error performing sync on consolidation entity, {}", e);
+            }
             // EventMessage eventMessage = EventMessage.builder().messageType(Constants.SERVICE).entity(Constants.CONSOLIDATION).request(consolidationDetails).build();
             // sbUtils.sendMessagesToTopic(isbProperties, azureServiceBusTopic.getTopic(), Arrays.asList(new ServiceBusMessage(jsonHelper.convertToJsonIncludeNulls(eventMessage))));
 
