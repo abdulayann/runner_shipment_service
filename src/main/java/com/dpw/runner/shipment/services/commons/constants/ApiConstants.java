@@ -26,6 +26,7 @@ public class ApiConstants {
     public static final String API_LIST = "/list";
 
     public static final String API_DELETE = "/delete";
+    public static final String API_SAVE_FROM_V1 = "/save/v1";
     public static final String API_PARTIAL_UPDATE = "/patch";
     public static final String TOGGLE_LOCK = "/toggleLock";
     public static final String API_LIST_CONTAINERS_TO_ASSIGN = "/list/containers/assign";
