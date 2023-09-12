@@ -16,10 +16,10 @@ public class HblPartyDto {
     private Long id;
     private UUID guid;
     private String type;
-    private String OrgCode;
-    private Integer OrgId;
-    private String Name;
-    private String Email;
-    private String Address;
-    private String TaxId;
+    private String orgCode;
+    private Integer orgId;
+    private String name;
+    private String email;
+    private String address;
+    private String taxId;
 }
