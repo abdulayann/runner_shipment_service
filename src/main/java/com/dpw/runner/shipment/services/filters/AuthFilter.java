@@ -70,7 +70,7 @@ public class AuthFilter implements Filter {
         String authToken = req.getHeader("Authorization");
         if(authToken == null)
         {
-            res.setStatus(HttpStatus.FORBIDDEN.value());
+            res.setStatus(HttpStatus.UNAUTHORIZED.value());
             return;
         }
         UsersDto user = null;
@@ -81,7 +81,7 @@ public class AuthFilter implements Filter {
             String errormessage = "Auth failed:- User is not onboarded on shipment service";
             log.info(errormessage);
             res.setContentType("application/json");
-            res.setStatus(HttpStatus.FORBIDDEN.value());
+            res.setStatus(HttpStatus.UNAUTHORIZED.value());
             return;
         }
 
@@ -89,7 +89,7 @@ public class AuthFilter implements Filter {
             String errormessage = "Auth failed:- User is not onboarded on shipment service";
             log.info(errormessage);
             res.setContentType("application/json");
-            res.setStatus(HttpStatus.FORBIDDEN.value());
+            res.setStatus(HttpStatus.UNAUTHORIZED.value());
             //res.getWriter().write(filterLevelException(new UnAuthorizedException(errormessage)));
             return;
         }
