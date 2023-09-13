@@ -13,7 +13,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 public class AwbPaymentInfo {
-    private Integer entityId;
+    private Long entityId;
     private String entityType;
     private BigDecimal weightCharges;
     private BigDecimal valuationCharge;

@@ -10,4 +10,5 @@ public interface IAwbService {
     ResponseEntity<?> createMawb(CommonRequestModel commonRequestModel);
     ResponseEntity<?> updateGoodsAndPacksForMawb(CommonRequestModel commonRequestModel);
     ResponseEntity<?> retrieveById(CommonRequestModel commonRequestModel);
+    ResponseEntity<?> createV1Awb(CommonRequestModel commonRequestModel);
 }
