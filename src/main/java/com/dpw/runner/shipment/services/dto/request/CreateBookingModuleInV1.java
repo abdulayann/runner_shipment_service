@@ -59,7 +59,7 @@ public class CreateBookingModuleInV1 {
         private Boolean IsConsolidationCreateEnabled;
         private String BookingType;
         private String Status;
-
+        private String FmcTlcId;
 
         private List<QuoteContainer> QuoteContainers;
         private List<Routing> RoutingList;
