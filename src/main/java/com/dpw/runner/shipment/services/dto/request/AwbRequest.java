@@ -17,6 +17,8 @@ import java.util.UUID;
 public class AwbRequest implements IRunnerRequest {
     private Integer id;
     private UUID guid;
+    private UUID shipmentGuid;
+    private UUID consolidationGuid;
     private AwbShipmentInfo awbShipmentInfo;
     private List<AwbNotifyPartyInfo> awbNotifyPartyInfo;
     private List<AwbRoutingInfo> awbRoutingInfo;

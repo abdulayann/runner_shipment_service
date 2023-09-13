@@ -14,4 +14,5 @@ public interface IAwbDao {
     Page<Awb> findAll(Specification<Awb> spec, Pageable pageable);
     Optional<Awb> findById(Long id);
     List<Awb> findByShipmentId(Long shipmentId);
+    List<Awb> findByConsolidationId(Long consolidationId);
 }
