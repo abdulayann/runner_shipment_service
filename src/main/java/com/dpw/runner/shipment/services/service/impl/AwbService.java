@@ -15,7 +15,9 @@ import com.dpw.runner.shipment.services.dto.request.AwbRequest;
 import com.dpw.runner.shipment.services.dto.request.CreateAwbRequest;
 import com.dpw.runner.shipment.services.dto.request.awb.*;
 import com.dpw.runner.shipment.services.dto.response.AwbResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
@@ -23,16 +25,21 @@ import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IAwbService;
 import com.dpw.runner.shipment.services.utils.AwbUtility;
 import com.dpw.runner.shipment.services.utils.StringUtility;
+import com.dpw.runner.shipment.services.utils.V1AuthHelper;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
-import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.http.HttpEntity;
 import org.springframework.http.ResponseEntity;
+import org.springframework.retry.support.RetryTemplate;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -70,9 +77,18 @@ public class AwbService implements IAwbService {
     @Autowired
     private AuditLogService auditLogService;
 
+    @Autowired
+    private RetryTemplate retryTemplate;
+
+    @Autowired
+    RestTemplate restTemplate;
+
     private Integer totalPacks = 0;
     private List<String> attachedShipmentDescriptions = new ArrayList<>();
     private BigDecimal totalVolumetricWeightOfAwbPacks = new BigDecimal(0);
+
+    @Value("${v1service.url.base}${v1service.url.awbSync}")
+    private String AWB_V1_SYNC_URL;
 
     public ResponseEntity<?> createAwb(CommonRequestModel commonRequestModel) {
         String responseMsg;
@@ -89,6 +105,7 @@ public class AwbService implements IAwbService {
         Awb awb = new Awb();
         try {
             awb = awbDao.save(generateAwb(request));
+            callV1Sync(awb);
 
             // audit logs
             auditLogService.addAuditLog(
@@ -132,6 +149,7 @@ public class AwbService implements IAwbService {
         try {
             String oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
             awb = awbDao.save(awb);
+            callV1Sync(awb);
 
             // audit logs
             auditLogService.addAuditLog(
@@ -222,6 +240,7 @@ public class AwbService implements IAwbService {
 
             // save awb details
             awb = awbDao.save(generateMawb(request, consolidationDetails));
+            callV1Sync(awb);
 
             // map mawb and hawb affter suuccessful save
             LinkHawbMawb(consolidationDetails, awb.getId());
@@ -652,6 +671,94 @@ public class AwbService implements IAwbService {
             return awbPackingList;
         }
         return null;
+    }
+
+    public ResponseEntity<?> createV1Awb(CommonRequestModel commonRequestModel){
+        try{
+            AwbRequest request = (AwbRequest) commonRequestModel.getData();
+
+            Long entityId = null;
+            var awbType = request.getAwbShipmentInfo().getEntityType();
+            Optional<ConsolidationDetails> consolidation = consolidationDetailsDao.findByGuid(request.getConsolidationGuid());
+            Optional<ShipmentDetails> shipment = shipmentDao.findByGuid(request.getShipmentGuid());
+
+            List<Awb> existingAwb;
+            Awb awb = jsonHelper.convertValue(request, Awb.class);
+
+            if(awbType == "MAWB" && consolidation.isPresent()){
+                entityId = consolidation.get().getId();
+                awb.setConsolidationId(entityId);
+                existingAwb = awbDao.findByConsolidationId(consolidation.get().getId());
+            }
+            else if(shipment.isPresent()) {
+                entityId = shipment.get().getId();
+                awb.setShipmentId(entityId);
+                existingAwb = awbDao.findByShipmentId(shipment.get().getId());
+            }
+            else {
+                throw new RunnerException("Shipment/Consolidation not present, Please create that first !");
+            }
+
+            setEntityId(awb, entityId);
+            if(existingAwb.isEmpty()){
+                // SAVE
+            } else {
+                // UPDATE
+                awb.setId(existingAwb.get(0).getId());
+                awb.setGuid(existingAwb.get(0).getGuid());
+            }
+            awbDao.save(awb);
+            return ResponseHelper.buildSuccessResponse(jsonHelper.convertValue(awb, AwbResponse.class));
+
+        } catch (Exception e){
+            log.error("{}", e);
+            return ResponseHelper.buildFailedResponse(e.getMessage());
+        }
+    }
+
+    private void setEntityId(Awb request, Long entityId){
+        if(request.getAwbShipmentInfo() != null)
+            request.getAwbShipmentInfo().setEntityId(entityId);
+        if(request.getAwbNotifyPartyInfo() != null)
+            request.getAwbNotifyPartyInfo().forEach(i -> i.setEntityId(entityId) );
+        if(request.getAwbRoutingInfo() != null)
+            request.getAwbRoutingInfo().forEach(i -> i.setEntityId(entityId) );
+        if(request.getAwbCargoInfo() != null)
+            request.getAwbCargoInfo().setEntityId(entityId);
+        if(request.getAwbPaymentInfo() != null)
+            request.getAwbPaymentInfo().setEntityId(entityId);
+        if(request.getAwbOtherChargesInfo() != null)
+            request.getAwbOtherChargesInfo().forEach(i -> i.setEntityId(entityId) );
+        if(request.getAwbOtherInfo() != null)
+            request.getAwbOtherInfo().setEntityId(entityId);
+        if(request.getAwbOciInfo() != null)
+            request.getAwbOciInfo().forEach(i -> i.setEntityId(entityId) );
+        if(request.getAwbGoodsDescriptionInfo() != null)
+            request.getAwbGoodsDescriptionInfo().forEach(i -> i.setEntityId(entityId) );
+        if(request.getAwbSpecialHandlingCodesMappings() != null)
+            request.getAwbSpecialHandlingCodesMappings().forEach(i -> i.setEntityId(entityId) );
+    }
+
+    @Async
+    private void callV1Sync(Awb entity){
+
+        AwbResponse req = jsonHelper.convertValue(entity, AwbResponse.class);
+        if(entity.getShipmentId() != null){
+            Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(entity.getShipmentId());
+            req.setShipmentGuid(shipmentDetails.get().getGuid());
+        }
+        if(entity.getConsolidationId() != null){
+            Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(entity.getConsolidationId());
+            req.setConsolidationGuid(consolidationDetails.get().getGuid());
+        }
+
+        String finalCs = jsonHelper.convertToJson(req);
+        HttpEntity<V1DataResponse> httpEntity = new HttpEntity(finalCs, V1AuthHelper.getHeaders());
+        retryTemplate.execute(ctx -> {
+            log.info("Current retry : {}", ctx.getRetryCount());
+            var response = this.restTemplate.postForEntity(this.AWB_V1_SYNC_URL, httpEntity, V1DataResponse.class, new Object[0]);
+            return response;
+        });
     }
 
 }
