@@ -57,4 +57,6 @@ public class CustomerBookingRequest extends CommonRequest implements IRunnerRequ
     private List<RoutingsRequest> routingList;
     private List<BookingChargesRequest> bookingCharges;
     private List<FileRepoRequest> fileRepoList;
+    private Boolean isAutoWeightVolumeUpdate;
+    private String fmcTlcId;
 }
