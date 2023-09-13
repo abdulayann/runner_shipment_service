@@ -171,4 +171,7 @@ public class CustomerBooking extends MultiTenancy {
 
     @Column(name = "auto_update_weight_volume")
     private Boolean isAutoWeightVolumeUpdate;
+
+    @Column(name = "fmc_tlc_id")
+    private String fmcTlcId;
 }
