@@ -1,16 +1,24 @@
 package com.dpw.runner.shipment.services.service.impl;
 
-import com.dpw.runner.shipment.services.commons.constants.*;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.commons.constants.HblConstants;
+import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
+import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IHblDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
-import com.dpw.runner.shipment.services.dto.request.*;
+import com.dpw.runner.shipment.services.dto.request.HblGenerateRequest;
+import com.dpw.runner.shipment.services.dto.request.HblPartyDto;
+import com.dpw.runner.shipment.services.dto.request.HblRequest;
+import com.dpw.runner.shipment.services.dto.request.HblResetRequest;
 import com.dpw.runner.shipment.services.dto.request.hbl.HblCargoDto;
 import com.dpw.runner.shipment.services.dto.request.hbl.HblContainerDto;
 import com.dpw.runner.shipment.services.dto.request.hbl.HblDataDto;
 import com.dpw.runner.shipment.services.dto.response.HblResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -18,12 +26,21 @@ import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IHblService;
 import com.dpw.runner.shipment.services.utils.StringUtility;
+import com.dpw.runner.shipment.services.utils.V1AuthHelper;
+import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
-import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataRetrievalFailureException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.http.HttpEntity;
 import org.springframework.http.ResponseEntity;
+import org.springframework.retry.support.RetryTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.interceptor.TransactionAspectSupport;
+import org.springframework.web.client.RestTemplate;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -31,6 +48,10 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
+
+import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.convertToClass;
 
 
 @Slf4j
@@ -44,9 +65,54 @@ public class HblService implements IHblService {
     @Autowired
     private JsonHelper jsonHelper;
 
+    @Autowired
+    RestTemplate restTemplate;
+
+    private RetryTemplate retryTemplate = RetryTemplate.builder()
+            .maxAttempts(3)
+            .fixedBackoff(1000)
+            .retryOn(Exception.class)
+            .build();
+
+    private Boolean fromV1 = false;
+
+    @Value("${v1service.url.base}${v1service.url.hblSync}")
+    private String HBL_V1_SYNC_URL;
+
     @Override
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
-        return null;
+        String responseMsg;
+        HblRequest request = null;
+        request = (HblRequest) commonRequestModel.getData();
+        if (request == null) {
+            log.debug("Request is empty for Hbl create with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+        }
+        Hbl hbl = convertRequestToEntity(request);
+        try {
+            hbl = hblDao.save(hbl);
+            if(!fromV1) {
+                HblRequest hblRequest = convertToClass(hbl, HblRequest.class);
+                Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(hblRequest.getShipmentId());
+                hblRequest.setShipmentGuid(shipmentDetails.get().getGuid());
+                String finalHbl = jsonHelper.convertToJson(hblRequest);
+                retryTemplate.execute(ctx -> {
+                    log.info("Current retry : {}", ctx.getRetryCount());
+                    HttpEntity<V1DataResponse> entity = new HttpEntity(finalHbl, V1AuthHelper.getHeaders());
+                    var response = this.restTemplate.postForEntity(this.HBL_V1_SYNC_URL, entity, V1DataResponse.class, new Object[0]);
+                    return response;
+                });
+            }
+            else {
+                fromV1 = false;
+            }
+            log.info("Hbl Details created successfully for Id {} with Request Id {}", hbl.getId(), LoggerHelper.getRequestIdFromMDC());
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+        return ResponseHelper.buildSuccessResponse(convertEntityToDto(hbl));
     }
 
     @Override
@@ -67,6 +133,21 @@ public class HblService implements IHblService {
         old.setHblNotifyParty(hbl.getHblNotifyParty());
         try {
             hbl = hblDao.save(old);
+            if(!fromV1) {
+                HblRequest hblRequest = convertToClass(hbl, HblRequest.class);
+                Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(hblRequest.getShipmentId());
+                hblRequest.setShipmentGuid(shipmentDetails.get().getGuid());
+                String finalHbl = jsonHelper.convertToJson(hblRequest);
+                retryTemplate.execute(ctx -> {
+                    log.info("Current retry : {}", ctx.getRetryCount());
+                    HttpEntity<V1DataResponse> entity = new HttpEntity(finalHbl, V1AuthHelper.getHeaders());
+                    var response = this.restTemplate.postForEntity(this.HBL_V1_SYNC_URL, entity, V1DataResponse.class, new Object[0]);
+                    return response;
+                });
+            }
+            else {
+                fromV1 = false;
+            }
             log.info("Updated the Hbl details for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -351,6 +432,57 @@ public class HblService implements IHblService {
             hblParties.add(hblParty);
         }
         return hblParties;
+    }
+
+    @Override
+    public ResponseEntity<?> saveV1Hbl(CommonRequestModel commonRequestModel) throws Exception {
+        String responseMsg;
+        HblRequest request = (HblRequest) commonRequestModel.getData();
+        if(request == null) {
+            log.error("Request is empty for Hbl update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+        }
+
+        if(request.getShipmentGuid() == null) {
+            log.error("Request Id and Shipment Guid is null for Hbl update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+        }
+
+        ListCommonRequest listCommonRequest = constructListCommonRequest("guid", request.getShipmentGuid(), "=");
+        Pair<Specification<ShipmentDetails>, Pageable> pair = fetchData(listCommonRequest, ShipmentDetails.class);
+        Page<ShipmentDetails> shipmentDetails = shipmentDao.findAll(pair.getLeft(), pair.getRight());
+        if(shipmentDetails.isEmpty())
+        {
+            throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+        }
+        List<Hbl> hbl = hblDao.findByShipmentId(shipmentDetails.get().collect(Collectors.toList()).get(0).getId());
+
+        if(!hbl.isEmpty() && hbl.size() > 0) {
+            try{
+                fromV1 = true;
+                request.setId(hbl.get(0).getId());
+                return update(CommonRequestModel.buildRequest(request));
+            } catch (Exception e) {
+                responseMsg = e.getMessage() != null ? e.getMessage()
+                        : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
+                log.error(responseMsg, e);
+                TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+                throw new RuntimeException(e);
+            }
+        }
+        else {
+            try{
+                fromV1 = true;
+                request.setShipmentId(shipmentDetails.get().collect(Collectors.toList()).get(0).getId());
+                return create(CommonRequestModel.buildRequest(request));
+            } catch (Exception e) {
+                responseMsg = e.getMessage() != null ? e.getMessage()
+                        : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
+                log.error(responseMsg, e);
+                TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+                throw new RuntimeException(e);
+            }
+        }
+        
     }
     
 }

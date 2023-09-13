@@ -9,6 +9,7 @@ import io.swagger.annotations.ApiModel;
 import lombok.*;
 
 import java.util.List;
+import java.util.UUID;
 
 @Data
 //@Builder
@@ -17,6 +18,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class HblResponse extends HblDataDto implements IRunnerResponse {
+    private UUID shipmentGuid;
     private List<HblCargoDto> cargoes;
     private List<HblContainerDto> containers;
     private List<HblPartyDto> notifyParties;
