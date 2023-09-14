@@ -41,6 +41,7 @@ public class ShipmentReverseSync {
 //            if(cs.getStatusString() != null && !cs.getStatusString().isEmpty()){
 //                sd.setStatus(Integer.parseInt(cs.getStatusString())); // ENUM MAPPING ?
 //            }
+            sd.setLockedBy(cs.getLockedByUser());
 
             sd.setBookingReference(cs.getReferenceNo());
             sd.setDirection(cs.getCustom_ShipType());

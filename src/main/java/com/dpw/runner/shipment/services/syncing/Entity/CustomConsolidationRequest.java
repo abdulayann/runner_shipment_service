@@ -81,8 +81,12 @@ public class CustomConsolidationRequest implements IRunnerResponse, IRunnerReque
     @JsonProperty("IsSendingAgentFreeTextAddress")
     private Boolean IsSendingAgentFreeTextAddress;
 
-    @JsonProperty("LockedBy")
-    private Integer LockedBy;
+
+    // Using this field to address diff in v1 and v2
+    // v1 uses user ID and v2 uses username for lockedBy
+    @JsonProperty("LockedByUser")
+    private String LockedByUser;
+
     @JsonProperty("MarksnNums")
     private String MarksnNums;
     @JsonProperty("MrnNumber")
