@@ -387,20 +387,20 @@ public class V1MasterDataImpl implements IMasterDataService {
     public DependentServiceResponse fetchUnlocationOriginAndDestinationList(Object request) {
         V1DataResponse v1DataResponse = v1Service.fetchUnlocationOriginAndDestinationList(request);
         return DependentServiceResponse.builder().success(true)
-                .data(v1DataResponse.entities).numberOfRecords(v1DataResponse.take).totalPages(v1DataResponse.totalCount).build();
+                .data(v1DataResponse.entities).pageSize(v1DataResponse.take).numberOfRecords(v1DataResponse.totalCount).pageNo(v1DataResponse.skip).build();
     }
 
     @Override
     public DependentServiceResponse fetchListUnlocationTransportModeBased(Object request) {
         V1DataResponse v1DataResponse = v1Service.fetchListUnlocationTransportModeBased(request);
         return DependentServiceResponse.builder().success(true)
-                .data(v1DataResponse.entities).numberOfRecords(v1DataResponse.take).totalPages(v1DataResponse.totalCount).build();
+                .data(v1DataResponse.entities).pageSize(v1DataResponse.take).numberOfRecords(v1DataResponse.totalCount).pageNo(v1DataResponse.skip).build();
     }
 
     @Override
     public DependentServiceResponse fetchActivityMaster(Object request) {
         V1DataResponse v1DataResponse = v1Service.fetchActivityMaster(request);
         return DependentServiceResponse.builder().success(true)
-                .data(v1DataResponse.entities).numberOfRecords(v1DataResponse.take).totalPages(v1DataResponse.totalCount).build();
+                .data(v1DataResponse.entities).pageSize(v1DataResponse.take).numberOfRecords(v1DataResponse.totalCount).pageNo(v1DataResponse.skip).build();
     }
 }
