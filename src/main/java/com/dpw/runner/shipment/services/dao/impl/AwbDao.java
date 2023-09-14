@@ -38,4 +38,7 @@ public class AwbDao implements IAwbDao {
     public List<Awb> findByShipmentId(Long shipmentId) {
         return awbRepository.findByShipmentId(shipmentId);
     }
+
+    @Override
+    public List<Awb> findByConsolidationId(Long consolidationId) {return awbRepository.findByConsolidationId(consolidationId);}
 }
