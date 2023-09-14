@@ -20,12 +20,15 @@ public class DependentServiceResponse {
     @ApiModelProperty(position = 3, name = "data")
     private Object data;
 
-    @ApiModelProperty(position = 4, name = "pageNo")
-    private int totalPages;
-
-    @ApiModelProperty(position = 5, name = "count")
+    @ApiModelProperty(position = 4, name = "count")
     private long numberOfRecords;
 
-    @ApiModelProperty(position = 6, name = "error")
+    @ApiModelProperty(position = 5, name = "pageSize")
+    private long pageSize;
+
+    @ApiModelProperty(position = 6, name = "pageNo")
+    private long pageNo;
+
+    @ApiModelProperty(position = 7, name = "error")
     private ApiError error;
 }
