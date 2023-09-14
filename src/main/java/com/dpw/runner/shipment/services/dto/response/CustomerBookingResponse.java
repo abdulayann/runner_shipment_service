@@ -63,4 +63,5 @@ public class CustomerBookingResponse implements IRunnerResponse {
     private List<AuditLogResponse> logsList;
     public Map<String, String> masterData;
     private Boolean isAutoWeightVolumeUpdate;
+    private String fmcTlcId;
 }

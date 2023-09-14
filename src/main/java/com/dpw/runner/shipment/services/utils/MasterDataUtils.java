@@ -189,7 +189,7 @@ public class MasterDataUtils{
             return null;
 
         Map<String, String> fieldNameUnlocationDataMap = new HashMap<>();
-        Map<String, String> keyUnlocationDataMap = new HashMap<>();
+        Map<String, EntityTransferUnLocations> keyUnlocationDataMap = new HashMap<>();
         Map<String, String> fieldNameKeyMap = new HashMap<>();
         List<String> locCodesList = new ArrayList<>();
         for(Field field  : baseClass.getDeclaredFields())
@@ -220,11 +220,13 @@ public class MasterDataUtils{
 
             List<EntityTransferUnLocations> unLocationsList = jsonHelper.convertValueToList(response.entities, EntityTransferUnLocations.class);
             unLocationsList.forEach(unloc -> {
-                keyUnlocationDataMap.put(onField == EntityTransferConstants.UNLOCATION_CODE ? unloc.LocCode : unloc.LocationsReferenceGUID, unloc.LocCode + " " + unloc.NameWoDiacritics);
+                keyUnlocationDataMap.put(onField == EntityTransferConstants.UNLOCATION_CODE ? unloc.LocCode : unloc.LocationsReferenceGUID, unloc);
             });
             fieldNameKeyMap.forEach((key, value) -> {
-                if(keyUnlocationDataMap.containsKey(value))
-                    fieldNameUnlocationDataMap.put(key, keyUnlocationDataMap.get(value));
+                if(keyUnlocationDataMap.containsKey(value)) {
+                    fieldNameUnlocationDataMap.put(key, keyUnlocationDataMap.get(value).LocCode + " " + keyUnlocationDataMap.get(value).NameWoDiacritics);
+                    fieldNameUnlocationDataMap.put(key + "_country", keyUnlocationDataMap.get(value).Country);
+                }
             });
             return fieldNameUnlocationDataMap;
         }

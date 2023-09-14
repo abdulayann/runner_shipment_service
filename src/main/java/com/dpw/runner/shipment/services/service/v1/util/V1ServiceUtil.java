@@ -57,6 +57,7 @@ public class V1ServiceUtil {
                 .IsConsolidationCreateEnabled(customerBooking.getCargoType().equals(CustomerBookingConstants.FCL))
                 .BookingType(CustomerBookingConstants.ONLINE)
                 .Status(CustomerBookingConstants.ONE)
+                .FmcTlcId(customerBooking.getFmcTlcId())
                 .QuoteContainers(createContainers(customerBooking.getContainersList()))
                 .RoutingList(createRoutingList(customerBooking.getRoutingList()))
                 .Documents(createDocuments(customerBooking.getFileRepoList()))

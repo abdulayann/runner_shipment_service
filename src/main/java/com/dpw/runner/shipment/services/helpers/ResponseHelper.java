@@ -86,7 +86,7 @@ public class ResponseHelper {
         log.debug("Return Response with data {}", data);
         DependentServiceResponse runnerResponse = DependentServiceResponse.builder().success(true)
                 .requestId(LoggerHelper.getRequestIdFromMDC())
-                .data(data).numberOfRecords(count).totalPages(pageNo).build();
+                .data(data).numberOfRecords(count).pageSize(pageNo).build();
         return new ResponseEntity<>(runnerResponse, HttpStatus.OK);
     }
 
