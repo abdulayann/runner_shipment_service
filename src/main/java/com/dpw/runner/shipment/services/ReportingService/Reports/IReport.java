@@ -4,8 +4,8 @@ import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConst
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper;
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ContainerCountByCode;
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentContainers;
-import com.dpw.runner.shipment.services.ReportingService.Models.HawbModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IHblDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
@@ -381,6 +381,11 @@ public abstract class IReport {
     public ShipmentDetails getShipment(Long Id)
     {
         return shipmentDao.findById(Id).get();
+    }
+
+    public TenantModel getTenant(Integer Id)
+    {
+        return new TenantModel(); // TODO- fetch from tenants
     }
 
     public ConsolidationDetails getConsolidation(Long Id)
