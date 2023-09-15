@@ -1,8 +1,8 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.adapters.interfaces.ICRPServiceAdapter;
+import com.dpw.runner.shipment.services.adapters.interfaces.IFusionServiceAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.INPMServiceAdapter;
-import com.dpw.runner.shipment.services.adapters.interfaces.IPlatformServiceAdapter;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
@@ -19,32 +19,24 @@ import com.dpw.runner.shipment.services.dto.request.crp.CRPRetrieveRequest;
 import com.dpw.runner.shipment.services.dto.request.npm.*;
 import com.dpw.runner.shipment.services.dto.request.npm.HazardousInfoRequest;
 import com.dpw.runner.shipment.services.dto.request.platformBooking.PlatformToRunnerCustomerBookingRequest;
-import com.dpw.runner.shipment.services.dto.request.platform.*;
-import com.dpw.runner.shipment.services.dto.request.platform.AirCarrierDetailsRequest;
-import com.dpw.runner.shipment.services.dto.response.CRPRetrieveResponse;
-import com.dpw.runner.shipment.services.dto.response.CustomerBookingResponse;
-import com.dpw.runner.shipment.services.dto.response.PlatformToRunnerCustomerBookingResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1ShipmentCreationResponse;
+import com.dpw.runner.shipment.services.dto.response.*;
+import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.BookingSource;
 import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
-import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
-import com.dpw.runner.shipment.services.entity.enums.Status;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferChargeType;
 import com.dpw.runner.shipment.services.exception.exceptions.CRPException;
-import com.dpw.runner.shipment.services.exception.exceptions.V1ServiceException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.service.interfaces.ICustomerBookingService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.BookingIntegrationsUtility;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.nimbusds.jose.util.Pair;
-import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -52,13 +44,10 @@ import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
-import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.interceptor.TransactionAspectSupport;
 
 import java.time.LocalDateTime;
 import java.util.*;
@@ -98,6 +87,8 @@ public class CustomerBookingService implements ICustomerBookingService {
 
     @Autowired
     private MasterDataUtils masterDataUtils;
+    @Autowired
+    private IFusionServiceAdapter fusionServiceAdapter;
 
     @Autowired
     private INPMServiceAdapter npmService;
@@ -112,6 +103,8 @@ public class CustomerBookingService implements ICustomerBookingService {
     private ICRPServiceAdapter crpServiceAdapter;
     @Autowired
     private AuditLogService auditLogService;
+    @Autowired
+    private IV1Service v1Service;
 
     private static final Map<String, String> loadTypeMap = Map.of("SEA", "LCL", "AIR", "LSE");
 
@@ -437,6 +430,72 @@ public class CustomerBookingService implements ICustomerBookingService {
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(responseMsg);
         }
+    }
+
+    @Override
+    public ResponseEntity<?> checkCreditLimitFromFusion(CommonRequestModel commonRequestModel) throws Exception{
+        CreditLimitRequest creditLimitRequest = (CreditLimitRequest) commonRequestModel.getData();
+        V1RetrieveResponse v1RetrieveResponse = v1Service.retrieveTenantSettings();
+
+        V1TenantSettingsResponse v1TenantSettingsResponse = modelMapper.map(v1RetrieveResponse.getEntity(), V1TenantSettingsResponse.class);
+        int tenantId = userContext.getUser().TenantId;
+        List<Object> criteria = new ArrayList<>();
+        List<Object> field = new ArrayList<>(List.of(CustomerBookingConstants.TENANT_ID));
+        String operator = "=";
+        criteria.addAll(List.of(field, operator, tenantId));
+        V1DataResponse tenantName = v1Service.tenantNameByTenantId(CommonV1ListRequest.builder().criteriaRequests(criteria).build());
+
+        V1TenantResponse v1TenantResponse = modelMapper.map(((ArrayList) tenantName.entities).get(0), V1TenantResponse.class);
+
+        if(!v1TenantSettingsResponse.getEnableCreditLimitManagement() || !v1TenantSettingsResponse.getIsCreditLimitWithFusionEnabled()){
+            log.error("EnableCreditLimitManagement Or EnableCreditLimitIntegrationWithFusion is False in Branch settings with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            throw new ValidationException("EnableCreditLimitManagement Or EnableCreditLimitIntegrationWithFusion is False in Branch settings");
+        }
+        boolean isCustomerBookingRestricted = v1TenantSettingsResponse.getRestrictedItemsForCreditLimit().stream().anyMatch(p->p.equals("CUS_BK"));
+        if(!isCustomerBookingRestricted){
+            log.error("'Restrict the transaction when Credit Limit is enabled' does not include CustomerBooking with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            throw new ValidationException("'Restrict the transaction when Credit Limit is enabled' does not include CustomerBooking");
+        }
+        CheckCreditBalanceFusionRequest request = CheckCreditBalanceFusionRequest.builder().req_Params(new CheckCreditBalanceFusionRequest.ReqParams()).build();
+        if(v1TenantSettingsResponse.getCreditLimitOn() == 0){
+            request.getReq_Params().setAccount_number(creditLimitRequest.getCustomerIdentifierId());
+        }
+        else if(v1TenantSettingsResponse.getCreditLimitOn() == 1) {
+            request.getReq_Params().setSite_number(creditLimitRequest.getSiteIdentifierId());
+        }
+        if(v1TenantSettingsResponse.getIsGlobalFusionIntegrationEnabled()){
+            request.getReq_Params().setCalling_System(CustomerBookingConstants.GCR_FUSION);
+            request.getReq_Params().setBu_id(v1TenantSettingsResponse.getBusinessUnitName());
+            ResponseEntity<DependentServiceResponse> response = (ResponseEntity<DependentServiceResponse>) fusionServiceAdapter.checkCreditLimitP100(CommonRequestModel.buildRequest(request));
+            CheckCreditBalanceFusionResponse checkCreditBalanceFusionResponse = modelMapper.map(response.getBody().getData(), CheckCreditBalanceFusionResponse.class);
+            CheckCreditLimitResponse checkCreditLimitResponse = createCheckCreditLimitPayload(checkCreditBalanceFusionResponse);
+            return ResponseHelper.buildSuccessResponse(checkCreditLimitResponse);
+        }
+        else {
+            log.error("'Enable Global Fusion Integration' is false for this Tenant this is required for Customer Booking with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            throw new ValidationException("'Enable Global Fusion Integration' is false for this Tenant this is required for Customer Booking");
+        }
+    }
+
+    private CheckCreditLimitResponse createCheckCreditLimitPayload(CheckCreditBalanceFusionResponse checkCreditBalanceFusionResponse){
+        double totalCreditLimit = checkCreditBalanceFusionResponse.getData().getCreditDetails().get(0).getFunctionalCurrencyCreditLimit();
+        double outstandingAmount = checkCreditBalanceFusionResponse.getData().getCreditDetails().get(0).getOutstandingAmount();
+        double overDueAmount = checkCreditBalanceFusionResponse.getData().getCreditDetails().get(0).getOverDue();
+        double totalCreditAvailableBalance = (totalCreditLimit - outstandingAmount);
+
+        double creditLimitUtilizedPer = (outstandingAmount*100)/totalCreditLimit;
+        double overDuePer = (overDueAmount*100)/totalCreditLimit;
+        var num = CommonUtils.roundOffToTwoDecimalPlace(checkCreditBalanceFusionResponse.getData().getCreditDetails().get(0).getTotalCreditLimit());
+        return CheckCreditLimitResponse.builder()
+                .totalCreditLimit(CommonUtils.roundOffToTwoDecimalPlace(totalCreditLimit))
+                .currency(checkCreditBalanceFusionResponse.getData().getCreditDetails().get(0).getCreditLimitCurrency())
+                .outstandingAmount(CommonUtils.roundOffToTwoDecimalPlace(outstandingAmount))
+                .notDueAmount(CommonUtils.roundOffToTwoDecimalPlace(checkCreditBalanceFusionResponse.getData().getCreditDetails().get(0).getNotDue()))
+                .overdueAmount(CommonUtils.roundOffToTwoDecimalPlace(overDueAmount))
+                .totalCreditAvailableBalance(CommonUtils.roundOffToTwoDecimalPlace(totalCreditAvailableBalance))
+                .creditLimitUtilizedPer(CommonUtils.roundOffToTwoDecimalPlace(creditLimitUtilizedPer))
+                .overduePer(CommonUtils.roundOffToTwoDecimalPlace(overDuePer))
+                .build();
     }
 
     @Override

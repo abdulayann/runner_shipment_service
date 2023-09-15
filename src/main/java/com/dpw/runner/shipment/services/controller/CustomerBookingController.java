@@ -10,6 +10,7 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
+import com.dpw.runner.shipment.services.dto.request.CreditLimitRequest;
 import com.dpw.runner.shipment.services.dto.request.CustomerBookingRequest;
 import com.dpw.runner.shipment.services.dto.request.platformBooking.PlatformToRunnerCustomerBookingRequest;
 import com.dpw.runner.shipment.services.dto.request.crp.CRPListRequest;
@@ -149,4 +150,17 @@ public class CustomerBookingController {
         return (ResponseEntity<RunnerResponse>) ResponseHelper.buildFailedResponse(responseMsg);
     }
 
+    @ApiResponses(value = {@ApiResponse(code = 200, message = CustomerBookingConstants.CREDIT_LIMIT_RETRIEVE_SUCCESSFUL, response = RunnerResponse.class)})
+    @PostMapping(CustomerBookingConstants.FUSION_CHECK_CREDIT_LIMIT)
+    public ResponseEntity<?> checkCreditLimitFromFusion(@RequestBody @Valid CreditLimitRequest request) {
+        String responseMsg;
+        try {
+            return (ResponseEntity<?>) customerBookingService.checkCreditLimitFromFusion(CommonRequestModel.buildRequest(request));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : CustomerBookingConstants.CREDIT_LIMIT_RETRIEVE_ERROR;
+            log.error(responseMsg, e);
+        }
+        return ResponseHelper.buildFailedResponse(responseMsg);
+    }
 }

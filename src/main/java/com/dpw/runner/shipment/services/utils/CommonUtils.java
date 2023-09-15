@@ -9,6 +9,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
+
+import java.math.BigDecimal;
+import java.text.DecimalFormat;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -86,5 +89,10 @@ public class CommonUtils {
         return  lst.stream()
                 .map(item -> convertToClass(item, clazz))
                 .collect(Collectors.toList());
+    }
+
+    public static double roundOffToTwoDecimalPlace(double number) {
+        DecimalFormat decimalFormat = new DecimalFormat("#.##");
+        return Double.parseDouble(decimalFormat.format(number));
     }
 }
