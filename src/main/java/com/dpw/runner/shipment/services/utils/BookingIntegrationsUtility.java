@@ -92,6 +92,7 @@ public class BookingIntegrationsUtility {
             throw ex;
         }
     }
+
     private void saveErrorResponse(Long entityId, String entityType, IntegrationType integrationType, Status status, String message) {
         IntegrationResponse response = IntegrationResponse.builder()
                 .entityId(entityId).entityType(entityType).integrationType(integrationType).status(status)
