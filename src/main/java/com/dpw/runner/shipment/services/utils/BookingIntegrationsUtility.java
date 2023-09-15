@@ -91,6 +91,7 @@ public class BookingIntegrationsUtility {
             throw ex;
         }
     }
+
     private void saveErrorResponse(Long entityId, String entityType, IntegrationType integrationType, Status status, String message) {
         IntegrationResponse response = IntegrationResponse.builder()
                 .entityId(entityId).entityType(entityType).integrationType(integrationType).status(status)
@@ -211,10 +212,10 @@ public class BookingIntegrationsUtility {
                                     .charge_group(chargeTypeMap.containsKey(bookingCharge.getChargeType()) ? chargeTypeMap.get(bookingCharge.getChargeType()).getServices() : null)
                                     .charge_code(bookingCharge.getChargeType())
                                     .charge_code_desc(chargeTypeMap.containsKey(bookingCharge.getChargeType()) ? chargeTypeMap.get(bookingCharge.getChargeType()).getDescription() : null)
-                                    .base_charge_value(bookingCharge.getOverseasSellAmount())
-                                    .charge_value(bookingCharge.getLocalSellAmount())
-                                    .base_currency(bookingCharge.getOverseasSellCurrency())
-                                    .charge_currency(bookingCharge.getLocalSellCurrency())
+                                    .base_charge_value(bookingCharge.getLocalSellAmount())
+                                    .charge_value(bookingCharge.getOverseasSellAmount())
+                                    .base_currency(bookingCharge.getLocalSellCurrency())
+                                    .charge_currency(bookingCharge.getOverseasSellCurrency())
                                     .exchange_rate(bookingCharge.getSellExchange())
                                     .is_grouped(bookingCharge.getContainersList() != null && bookingCharge.getContainersList().size() > 1)
                                     .taxes(null) // optional
