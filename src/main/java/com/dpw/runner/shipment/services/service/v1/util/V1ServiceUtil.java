@@ -203,6 +203,7 @@ public class V1ServiceUtil {
                         .ChargeableUnit(packing.getChargeableUnit())
                         .GoodsDescription(packing.getGoodsDescription())
                         .CommodityCode(packing.getCommodity())
+                        .CommodityGroup(packing.getCommodityGroup())
                         .HazardousCheckBox(packing.getHazardous())
                         .HsCode(packing.getHSCode())
                         .build()).collect(Collectors.toList());
@@ -242,6 +243,7 @@ public class V1ServiceUtil {
                         .ContainerTypeCode(container.getContainerCode())
                         .Count(container.getContainerCount())
                         .CommodityCode(container.getCommodityCode())
+                        .CommodityGroup(container.getCommodityGroup())
                         .Weight(container.getGrossWeight())
                         .WeightUnit(container.getGrossWeightUnit())
                         .ReferenceGuid(container.getGuid())
