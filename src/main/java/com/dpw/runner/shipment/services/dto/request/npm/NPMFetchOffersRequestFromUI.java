@@ -42,6 +42,10 @@ public class NPMFetchOffersRequestFromUI extends CommonRequest implements IRunne
     private String pol;
     private String pod;
     private String direction;
+    private BigDecimal weight;
+    private String weight_uom;
+    private BigDecimal volume;
+    private String volume_uom;
 
     @Data
     @NoArgsConstructor
