@@ -272,4 +272,8 @@ public class Containers extends MultiTenancy {
             mappedBy = "containersList")
     @JsonIgnore
     private List<BookingCharges> bookingCharges;
+
+    @Column(name = "commodity_group")
+    @MasterData(type = MasterDataType.COMMODITY_GROUP)
+    private String commodityGroup;
 }
