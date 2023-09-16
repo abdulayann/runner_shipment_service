@@ -879,7 +879,7 @@ public class CustomerBookingService implements ICustomerBookingService {
         loadInfoRequest.setLoad_details(LoadDetailsRequest.builder()
                 .load_type(Constants.CARGO_TYPE_FCL)
                 .cargo_type(container.getContainerCode())
-                .product_category_code(container.getCommodityCode())
+                .product_category_code(container.getCommodityGroup())
                 .hazardous_info(HazardousInfoRequest.builder().is_hazardous(false).build())
                 .build());
         loadInfoRequest.setLoad_attributes(LoadAttributesRequest.builder()
