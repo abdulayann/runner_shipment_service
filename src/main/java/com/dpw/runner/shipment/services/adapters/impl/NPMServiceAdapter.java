@@ -18,15 +18,12 @@ import com.dpw.runner.shipment.services.exception.exceptions.NPMException;
 import com.dpw.runner.shipment.services.exception.response.NpmErrorResponse;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 
@@ -244,6 +241,12 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
                     c -> createLoadInfoFromContainers(request, c, offerType)).collect(Collectors.toList()));
             result.addAll(packs.stream().filter(Objects::nonNull).map(
                     p -> createLoadInfoFromPacks(request, p, offerType)).collect(Collectors.toList()));
+
+            if((request.getPacks() == null || request.getPacks().size() == 0)
+                    && NPMConstants.AIR.equals(request.getModeOfTransport())  && NPMConstants.LCL.equals(request.getCargoType()))
+            {
+                 result.add(createLoadInfoForEmptyPacksList(request));
+            }
             return result;
         }
 
@@ -285,6 +288,22 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
         }
 
         return result;
+    }
+
+    private NPMFetchOffersRequest.LoadInformation createLoadInfoForEmptyPacksList(NPMFetchOffersRequestFromUI request) {
+        return NPMFetchOffersRequest.LoadInformation.builder()
+                .load_detail(NPMFetchOffersRequest.LoadDetail.builder()
+                        .load_type(request.getCargoType())
+                        .cargo_type(NPMConstants.ANY)
+                        .product_category_code(NPMConstants.ANY)
+                        .build())
+                .load_attributes(NPMFetchOffersRequest.LoadAttributes.builder()
+                        .volume(request.getVolume())
+                        .volume_uom(request.getVolume_uom())
+                        .weight(request.getWeight())
+                        .weight_uom(request.getWeight_uom())
+                        .build())
+                .build();
     }
 
     private NPMFetchOffersRequest.LoadInformation createLoadInfoFromPacks(NPMFetchOffersRequestFromUI request, NPMFetchOffersRequestFromUI.Pack p,
