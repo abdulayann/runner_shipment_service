@@ -134,7 +134,13 @@ public enum MasterDataType {
     LG_AREA_VALUES(136, "LGAreaValues"),
     MAWB_CHARGE_TEXT(137, "MAWBChargeText"),
     MAWB_GENERATION(138, "MAWBGeneration"),
-    HAWB_GENERATION(139, "HAWBGeneration");
+    HAWB_GENERATION(139, "HAWBGeneration"),
+    BL_CARGO_TERMS(140, "BLCargoTerms"),
+    BL_REMARKS(141, "BLRemarks"),
+    CONSOLIDATION_CHECK_ORDER(142, "ConsolidationCheckOrder"),
+    CONSOL_CHECK_ETD_ETD_THRESHOLD(143,"ConsolcheckETDETDThreshold"),
+    AUTO_ATTACH_TRANSPORT(144, "AUTOATTACHTRANSPORT"),
+    COMMODITY_GROUP(145, "CommodityGroup");
 
 
     private int id;

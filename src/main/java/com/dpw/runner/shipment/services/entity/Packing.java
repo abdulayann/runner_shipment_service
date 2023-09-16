@@ -193,5 +193,9 @@ public class Packing extends MultiTenancy {
 
     @Column(name = "inner_packs_count")
     private Long innerPacksCount;
+
+    @Column(name = "commodity_group")
+    @MasterData(type = MasterDataType.COMMODITY_GROUP)
+    private String commodityGroup;
 }
 

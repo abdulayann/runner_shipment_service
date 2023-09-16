@@ -127,6 +127,7 @@ public class CreateBookingModuleInV1 {
             private BigDecimal Weight;
             private String WeightUnit;
             private UUID ReferenceGuid;
+            private String CommodityGroup;
         }
 
         @Data
@@ -175,6 +176,7 @@ public class CreateBookingModuleInV1 {
             private String CommodityCode;
             private Boolean HazardousCheckBox;
             private String HsCode;
+            private String CommodityGroup;
         }
 
         @Data
