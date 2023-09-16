@@ -32,7 +32,8 @@ public class BookingPackingRequest extends CommonRequest implements IRunnerReque
     private String weightUnit;
     private BigDecimal chargeable;
     private String chargeableUnit;
-    private String commodity;
+    @JsonProperty("commodity")
+    private String commodityGroup;
     @JsonProperty("hsCode")
     private String HSCode;
     @JsonProperty("isHazardous")
