@@ -242,7 +242,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
             result.addAll(packs.stream().filter(Objects::nonNull).map(
                     p -> createLoadInfoFromPacks(request, p, offerType)).collect(Collectors.toList()));
 
-            if(request.getPacks() == null || request.getPacks().size() == 0
+            if((request.getPacks() == null || request.getPacks().size() == 0)
                     && NPMConstants.AIR.equals(request.getModeOfTransport())  && NPMConstants.LCL.equals(request.getCargoType()))
             {
                  result.add(createLoadInfoForEmptyPacksList(request));
