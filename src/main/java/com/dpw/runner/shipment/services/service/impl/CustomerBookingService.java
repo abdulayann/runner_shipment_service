@@ -478,7 +478,7 @@ public class CustomerBookingService implements ICustomerBookingService {
     }
 
     private CheckCreditLimitResponse createCheckCreditLimitPayload(CheckCreditBalanceFusionResponse checkCreditBalanceFusionResponse){
-        double totalCreditLimit = checkCreditBalanceFusionResponse.getData().getCreditDetails().get(0).getFunctionalCurrencyCreditLimit();
+        double totalCreditLimit = checkCreditBalanceFusionResponse.getData().getCreditDetails().get(0).getTotalCreditLimit();
         double outstandingAmount = checkCreditBalanceFusionResponse.getData().getCreditDetails().get(0).getOutstandingAmount();
         double overDueAmount = checkCreditBalanceFusionResponse.getData().getCreditDetails().get(0).getOverDue();
         double totalCreditAvailableBalance = (totalCreditLimit - outstandingAmount);
