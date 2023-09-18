@@ -64,4 +64,5 @@ public class CustomerBookingResponse implements IRunnerResponse {
     public Map<String, String> masterData;
     private Boolean isAutoWeightVolumeUpdate;
     private String fmcTlcId;
+    private BigDecimal totalRevenue;
 }

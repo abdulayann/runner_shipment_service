@@ -49,6 +49,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -422,6 +423,7 @@ public class CustomerBookingService implements ICustomerBookingService {
             }
             log.info("Booking details fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
             CustomerBookingResponse customerBookingResponse = jsonHelper.convertValue(customerBooking.get(), CustomerBookingResponse.class);
+            populateTotalRevenueDetails(customerBooking.get(), customerBookingResponse);
             createCustomerBookingResponse(customerBooking.get(), customerBookingResponse);
             return ResponseHelper.buildSuccessResponse(customerBookingResponse);
         } catch (Exception e) {
@@ -1000,6 +1002,17 @@ public class CustomerBookingService implements ICustomerBookingService {
         this.addAllMasterDatas(customerBooking, customerBookingResponse);
         this.addAllUnlocationDatas(customerBooking, customerBookingResponse);
         this.addDedicatedMasterData(customerBooking, customerBookingResponse);
+    }
+
+    private void populateTotalRevenueDetails(CustomerBooking customerBooking,CustomerBookingResponse customerBookingResponse){
+        BigDecimal totalRevenue = BigDecimal.ZERO;
+        if(customerBooking != null && customerBooking.getBookingCharges() != null){
+            totalRevenue = customerBooking.getBookingCharges().stream()
+                    .filter(Objects::nonNull)
+                    .map(c -> c.getLocalSellAmount() != null ? c.getLocalSellAmount() : BigDecimal.ZERO)
+                    .reduce(BigDecimal.ZERO,BigDecimal::add);
+        }
+        customerBookingResponse.setTotalRevenue(totalRevenue);
     }
 
     private void addAllMasterDatas(CustomerBooking customerBooking, CustomerBookingResponse customerBookingResponse) {
