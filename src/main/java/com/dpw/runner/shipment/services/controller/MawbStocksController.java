@@ -7,9 +7,11 @@ import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.MawbStocksRequest;
+import com.dpw.runner.shipment.services.dto.response.JobResponse;
 import com.dpw.runner.shipment.services.dto.response.MawbStocksResponse;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IMawbStocksService;
+import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
@@ -20,6 +22,7 @@ import org.springframework.lang.NonNull;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
+import java.util.List;
 
 @SuppressWarnings("ALL")
 @RestController
@@ -77,6 +80,20 @@ public class MawbStocksController {
         CommonGetRequest request = CommonGetRequest.builder().id(id).build();
         return (ResponseEntity<RunnerResponse<MawbStocksResponse>>) mawbStocksService.retrieveById(CommonRequestModel.buildRequest(request));
     }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = MawbStocksConstants.MAWB_STOCKS_RETRIEVE_BY_ID_SUCCESSFUL)})
+    @GetMapping(ApiConstants.API_RETRIEVE_BY_ID_PARTIAL)
+    public ResponseEntity<?> retrieveByIdPartial(@RequestParam(name = "includeColumns", required = false) List<String> includeColumns, @RequestParam Long id) {
+        CommonGetRequest request = CommonGetRequest.builder().id(id).build();
+        try {
+            ResponseEntity<RunnerResponse<MawbStocksResponse>> mawb = (ResponseEntity<RunnerResponse<MawbStocksResponse>>) mawbStocksService.retrieveById(CommonRequestModel.buildRequest(request));
+            return PartialFetchUtils.fetchPartialData(mawb,includeColumns);
+        } catch (Exception ex) {
+            System.out.println(ex.toString());
+        }
+        return ResponseEntity.ok(null);
+    }
+
 
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = MawbStocksConstants.MAWB_STOCKS_LIST_SUCCESSFUL, responseContainer = MawbStocksConstants.MAWB_STOCKS_LIST_SUCCESSFUL)

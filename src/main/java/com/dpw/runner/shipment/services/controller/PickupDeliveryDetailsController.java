@@ -7,9 +7,12 @@ import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.PickupDeliveryDetailsRequest;
+import com.dpw.runner.shipment.services.dto.response.JobResponse;
+import com.dpw.runner.shipment.services.dto.response.PackingResponse;
 import com.dpw.runner.shipment.services.dto.response.PickupDeliveryDetailsResponse;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IPickupDeliveryDetailsService;
+import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
 import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
@@ -19,6 +22,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
+import java.util.List;
 
 @SuppressWarnings("ALL")
 @Slf4j
@@ -63,6 +67,18 @@ public class PickupDeliveryDetailsController {
     public ResponseEntity<RunnerResponse<PickupDeliveryDetailsResponse>> retrieveById(@ApiParam(value = PickupDeliveryDetailsConstants.PICKUP_DELIVERY_DETAILS_ID, required = true) @RequestParam Long id) {
         CommonGetRequest request = CommonGetRequest.builder().id(id).build();
         return (ResponseEntity<RunnerResponse<PickupDeliveryDetailsResponse>>) pickupDeliveryDetailsService.retrieveById(CommonRequestModel.buildRequest(request));
+    }
+    @ApiResponses(value = {@ApiResponse(code = 200, message = PickupDeliveryDetailsConstants.PICKUP_DELIVERY_DETAILS_RETRIEVE_BY_ID_SUCCESSFUL)})
+    @GetMapping(ApiConstants.API_RETRIEVE_BY_ID_PARTIAL)
+    public ResponseEntity<?> retrieveByIdPartial(@RequestParam(name = "includeColumns", required = false) List<String> includeColumns, @RequestParam Long id) {
+        CommonGetRequest request = CommonGetRequest.builder().id(id).build();
+        try {
+            ResponseEntity<RunnerResponse<PickupDeliveryDetailsResponse>> pickup = (ResponseEntity<RunnerResponse<PickupDeliveryDetailsResponse>>) pickupDeliveryDetailsService.retrieveById(CommonRequestModel.buildRequest(request));
+            return PartialFetchUtils.fetchPartialData(pickup,includeColumns);
+        } catch (Exception ex) {
+            System.out.println(ex.toString());
+        }
+        return ResponseEntity.ok(null);
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = PickupDeliveryDetailsConstants.PICKUP_DELIVERY_DETAILS_UPDATE_SUCCESSFUL, response = RunnerResponse.class)})

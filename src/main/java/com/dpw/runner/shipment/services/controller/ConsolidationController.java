@@ -8,14 +8,17 @@ import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.ConsolidationDetailsRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentAttachDetachRequest;
+import com.dpw.runner.shipment.services.dto.response.CarrierDetailResponse;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import com.dpw.runner.shipment.services.service.impl.ConsolidationService;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationService;
 import com.dpw.runner.shipment.services.syncing.Entity.CustomConsolidationRequest;
 import com.dpw.runner.shipment.services.syncing.interfaces.IConsolidationReverseSync;
 import com.dpw.runner.shipment.services.syncing.interfaces.IConsolidationSync;
+import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
 import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
@@ -104,6 +107,20 @@ public class ConsolidationController {
         CommonGetRequest request = CommonGetRequest.builder().id(id).build();
         return (ResponseEntity<RunnerResponse<ConsolidationDetailsResponse>>) consolidationService.completeRetrieveById(CommonRequestModel.buildRequest(request));
     }
+// couldnt check this as no data was there in the db
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ConsolidationConstants.RETRIEVE_BY_ID_SUCCESSFUL)})
+    @GetMapping(ApiConstants.API_RETRIEVE_BY_ID_PARTIAL)
+    public ResponseEntity<?> retrieveByIdPartial(@RequestParam(name = "includeColumns", required = false) List<String> includeColumns, @RequestParam Long id) {
+        CommonGetRequest request = CommonGetRequest.builder().id(id).build();
+        try {
+            ResponseEntity<RunnerResponse<ConsolidationDetailsResponse>> consolidation = (ResponseEntity<RunnerResponse<ConsolidationDetailsResponse>>) consolidationService.completeRetrieveById(CommonRequestModel.buildRequest(request));
+            return PartialFetchUtils.fetchPartialData(consolidation,includeColumns);
+        } catch (Exception ex) {
+            System.out.println(ex.toString());
+        }
+        return ResponseEntity.ok(null);
+    }
+
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = ConsolidationConstants.UPDATE_SUCCESSFUL, response = RunnerResponse.class)})
     @PutMapping(ApiConstants.API_UPDATE_CONSOLIDATION)

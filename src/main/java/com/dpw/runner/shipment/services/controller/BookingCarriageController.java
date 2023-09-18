@@ -14,6 +14,7 @@ import com.dpw.runner.shipment.services.dto.request.BookingCarriageRequest;
 import com.dpw.runner.shipment.services.dto.response.BookingCarriageResponse;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IBookingCarriageService;
+import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.bohnman.squiggly.Squiggly;
 import com.github.bohnman.squiggly.context.provider.SquigglyContextProvider;
@@ -31,8 +32,7 @@ import org.springframework.web.bind.annotation.*;
 
 
 import javax.validation.Valid;
-
-
+import java.util.List;
 
 
 @SuppressWarnings("ALL")
@@ -87,16 +87,11 @@ public class BookingCarriageController {
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = BookingCarriageConstants.BOOKING_CARRIAGE_RETRIEVE_BY_ID_SUCCESSFUL)})
     @GetMapping(ApiConstants.API_RETRIEVE_BY_ID_PARTIAL)
-    public ResponseEntity<Object> retrieveByIdPartial(@RequestParam(name = "includeColumns", required = false) String includeColumns, @RequestParam Long id) {
+    public ResponseEntity<?> retrieveByIdPartial(@RequestParam(name = "includeColumns", required = false) List<String> includeColumns, @RequestParam Long id) {
         CommonGetRequest request = CommonGetRequest.builder().id(id).build();
         try {
             ResponseEntity<RunnerResponse<BookingCarriageResponse>> booking = (ResponseEntity<RunnerResponse<BookingCarriageResponse>>) bookingCarriageService.retrieveById(CommonRequestModel.buildRequest(request));
-            ObjectMapper objectMapper = Squiggly.init(new ObjectMapper(), includeColumns);
-
-            String s = SquigglyUtils.stringify(objectMapper, booking.getBody().getData());
-            System.out.println(s);
-            Object o = s;
-            return ResponseEntity.ok(o);
+            return PartialFetchUtils.fetchPartialData(booking,includeColumns);
         } catch (Exception ex) {
             System.out.println(ex.toString());
         }
