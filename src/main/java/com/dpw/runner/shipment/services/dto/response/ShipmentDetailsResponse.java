@@ -1,6 +1,8 @@
 package com.dpw.runner.shipment.services.dto.response;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.config.CustomLocalDateTimeSerializer;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -74,8 +76,10 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     private Integer prevShipmentStatus;
     private boolean isShipmentReadOnly;
     private String shipmentCompletedBy;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime shipmentCompletedOn;
     private String financeClosedBy;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime financeClosedOn;
     private PartiesResponse client;
     private PartiesResponse consigner;
@@ -110,5 +114,6 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     public String goodsValueCurrency;
     public BigDecimal insuranceValue;
     public String InsuranceValueCurrency;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime shipmentCreatedOn;
 }
