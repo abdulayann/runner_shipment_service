@@ -5,8 +5,6 @@ import com.dpw.runner.shipment.services.exception.exceptions.FileNotFoundExcepti
 import com.dpw.runner.shipment.services.exception.exceptions.InvalidAccessTokenException;
 import com.dpw.runner.shipment.services.exception.exceptions.InvalidAuthenticationException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
-import com.dpw.runner.shipment.services.exception.response.ApiError;
-import com.dpw.runner.shipment.services.exception.response.RunnerResponse;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.support.DefaultMessageSourceResolvable;
@@ -32,30 +30,28 @@ public class CustomExceptionHandler extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler(InvalidAccessTokenException.class)
     public final ResponseEntity<Object> handleInvalidAccessTokenException(InvalidAccessTokenException ex) {
-        RunnerResponse runnerResponse =
-                new RunnerResponse(false, new ApiError(HttpStatus.INTERNAL_SERVER_ERROR, ex.getLocalizedMessage()));
-        return new ResponseEntity(runnerResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+        return (ResponseEntity<Object>) ResponseHelper.buildFailedResponse(ex.getLocalizedMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
     @ExceptionHandler(FileNotFoundException.class)
     public final ResponseEntity<Object> handleFileNotFoundException(FileNotFoundException ex) {
-        RunnerResponse runnerResponse =
-                new RunnerResponse(false, new ApiError(HttpStatus.NOT_FOUND, ex.getLocalizedMessage()));
-        return new ResponseEntity(runnerResponse, HttpStatus.NOT_FOUND);
+//        RunnerResponse runnerResponse =
+//                new RunnerResponse(false, new ApiError(HttpStatus.NOT_FOUND, ex.getLocalizedMessage()));
+        return (ResponseEntity<Object>) ResponseHelper.buildFailedResponse(ex.getLocalizedMessage(), HttpStatus.NOT_FOUND);
     }
 
     @ExceptionHandler(RunnerException.class)
     public final ResponseEntity<Object> handleRunnerException(RunnerException ex) {
-        RunnerResponse runnerResponse =
-                new RunnerResponse(false, new ApiError(HttpStatus.INTERNAL_SERVER_ERROR, ex.getLocalizedMessage()));
-        return new ResponseEntity(runnerResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+//        RunnerResponse runnerResponse =
+//                new RunnerResponse(false, new ApiError(HttpStatus.INTERNAL_SERVER_ERROR, ex.getLocalizedMessage()));
+        return (ResponseEntity<Object>) ResponseHelper.buildFailedResponse(ex.getLocalizedMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
     @ExceptionHandler(InvalidAuthenticationException.class)
     public final ResponseEntity<Object> handleAuthenticationException(RunnerException ex) {
-        RunnerResponse runnerResponse =
-                new RunnerResponse(false, new ApiError(HttpStatus.FORBIDDEN, ex.getLocalizedMessage()));
-        return new ResponseEntity(runnerResponse, HttpStatus.FORBIDDEN);
+//        RunnerResponse runnerResponse =
+//                new RunnerResponse(false, new ApiError(HttpStatus.FORBIDDEN, ex.getLocalizedMessage()));
+        return (ResponseEntity<Object>) ResponseHelper.buildFailedResponse(ex.getLocalizedMessage(), HttpStatus.FORBIDDEN);
     }
 
     @Override
@@ -81,8 +77,8 @@ public class CustomExceptionHandler extends ResponseEntityExceptionHandler {
     @Override
     public final ResponseEntity<Object> handleHttpMessageNotReadable(HttpMessageNotReadableException ex, HttpHeaders headers,
                                                                      HttpStatus status, WebRequest request) {
-        RunnerResponse runnerResponse =
-                new RunnerResponse(false, new ApiError(HttpStatus.BAD_REQUEST, ex.getLocalizedMessage()));
-        return new ResponseEntity(runnerResponse, HttpStatus.BAD_REQUEST);
+//        RunnerResponse runnerResponse =
+//                new RunnerResponse(false, new ApiError(HttpStatus.BAD_REQUEST, ex.getLocalizedMessage()));
+        return(ResponseEntity<Object>) ResponseHelper.buildFailedResponse(ex.getLocalizedMessage(), HttpStatus.BAD_REQUEST);
     }
 }
