@@ -846,7 +846,7 @@ public class CustomerBookingService implements ICustomerBookingService {
                             loadInfoRequestList.add(containerLoadConstruct(cont, CustomerBookingConstants.REMOVE, cont.getContainerCount()));
                             loadInfoRequestList.add(containerLoadConstruct(idVsContainerMap.get(cont.getId()), CustomerBookingConstants.ADD, idVsContainerMap.get(cont.getId()).getContainerCount()));
 
-                        } else if (!cont.getCommodityCode().equals(idVsContainerMap.get(cont.getId()).getCommodityCode())) {
+                        } else if (!cont.getCommodityGroup().equals(idVsContainerMap.get(cont.getId()).getCommodityGroup())) {
                             loadInfoRequestList.add(containerLoadConstruct(cont, CustomerBookingConstants.REMOVE, cont.getContainerCount()));
                             loadInfoRequestList.add(containerLoadConstruct(idVsContainerMap.get(cont.getId()), CustomerBookingConstants.ADD, idVsContainerMap.get(cont.getId()).getContainerCount()));
                         } else if (cont.getContainerCount() > idVsContainerMap.get(cont.getId()).getContainerCount()) {
