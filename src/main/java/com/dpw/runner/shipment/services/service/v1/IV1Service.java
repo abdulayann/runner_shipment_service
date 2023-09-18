@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.dto.v1.request.CreateShipmentTaskRequest
 import com.dpw.runner.shipment.services.dto.v1.response.SendEntityResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.TenantIdResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1RetrieveResponse;
 import com.dpw.runner.shipment.services.entity.CustomerBooking;
 import org.springframework.http.ResponseEntity;
 
@@ -121,5 +122,6 @@ public interface IV1Service {
 
     V1DataResponse tenantNameByTenantId(Object request);
     V1DataResponse fetchChargeCodeData(Object request);
+    V1RetrieveResponse retrieveTenantSettings();
 
 }
