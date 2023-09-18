@@ -20,6 +20,7 @@ import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
 import com.dpw.runner.shipment.services.syncing.Entity.CustomShipmentSyncRequest;
 import com.dpw.runner.shipment.services.syncing.impl.ShipmentReverseSync;
 import com.dpw.runner.shipment.services.syncing.impl.ShipmentSync;
+import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.github.bohnman.squiggly.Squiggly;
@@ -41,6 +42,8 @@ import java.util.concurrent.ExecutionException;
 
 import static com.dpw.runner.shipment.services.commons.constants.Constants.ALL;
 
+
+
 @SuppressWarnings(ALL)
 @RestController
 @RequestMapping(ShipmentConstants.SHIPMENT_API_HANDLE)
@@ -59,6 +62,8 @@ public class ShipmentController {
     ModelMapper modelMapper;
     @Autowired
     ObjectMapper objectMapper;
+
+
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = "Successful Shipment Details Data List Retrieval", responseContainer = "List")})
     @PostMapping(value = "/list-shipment")
@@ -130,18 +135,7 @@ public class ShipmentController {
         try {
             CommonGetRequest request = CommonGetRequest.builder().id(id).build();
             ResponseEntity<RunnerResponse<ShipmentDetailsResponse>> shipment = (ResponseEntity<RunnerResponse<ShipmentDetailsResponse>>)shipmentService.completeRetrieveById(CommonRequestModel.buildRequest(request));
-            if(includeColumns==null||includeColumns.size()==0){
-                return shipment;
-            }
-            ObjectMapper objectMapper = new ObjectMapper();
-            objectMapper.registerModule(new JavaTimeModule());
-               ObjectMapper modified = Squiggly.init(objectMapper, String.join(",", includeColumns));
-
-               String s = SquigglyUtils.stringify(modified, shipment.getBody().getData());
-               System.out.println(s);
-               Object o = s;
-               return ResponseEntity.ok(o);
-
+            return PartialFetchUtils.fetchPartialData(shipment,includeColumns);
 
         } catch (Exception ex) {
             System.out.println(ex.toString());
