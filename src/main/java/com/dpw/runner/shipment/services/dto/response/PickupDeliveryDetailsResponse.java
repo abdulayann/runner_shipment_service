@@ -1,6 +1,8 @@
 package com.dpw.runner.shipment.services.dto.response;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.config.CustomLocalDateTimeSerializer;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.*;
 
 import java.math.BigDecimal;
@@ -13,10 +15,15 @@ public class PickupDeliveryDetailsResponse implements IRunnerResponse {
 
     private Long id;
     private UUID guid;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime estimatedPickupOrDelivery;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime requiredBy;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime portTransportAdvised;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime actualPickupOrDelivery;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime pickupOrDelivery;
     private PartiesResponse transporterDetail;
     private PartiesResponse brokerDetail;
@@ -31,7 +38,9 @@ public class PickupDeliveryDetailsResponse implements IRunnerResponse {
     private LocalTime labourDuration;
     private String shipperRef;
     private String interimReceipt;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime fclAvailableDate;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime storageDate;
     private BigDecimal truckWaitTimeCharge;
     private String truckWaitTimeChargeUnit;
@@ -40,6 +49,8 @@ public class PickupDeliveryDetailsResponse implements IRunnerResponse {
     private String storageChargeUnit;
     private LocalTime storageChargeDuration;
     private String ucrReference;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime emptyTruckInDate;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime loadedTruckGateOutDate;
 }

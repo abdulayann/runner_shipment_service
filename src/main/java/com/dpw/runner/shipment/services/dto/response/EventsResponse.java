@@ -1,6 +1,8 @@
 package com.dpw.runner.shipment.services.dto.response;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.config.CustomLocalDateTimeSerializer;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.Data;
 
 import java.time.LocalDateTime;
@@ -12,7 +14,9 @@ public class EventsResponse implements IRunnerResponse {
     private String eventCode;
     private Long shipmentId;
     private String description;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime estimated;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime actual;
     private Boolean isPublicTrackingEvent;
     private String tenantId;
