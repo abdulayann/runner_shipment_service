@@ -1,0 +1,11 @@
+package com.dpw.runner.shipment.services.dto.GeneralAPIRequests;
+
+import lombok.Getter;
+import lombok.Setter;
+
+@Getter
+@Setter
+public class CarrierListObject {
+    private String type;
+    private Object listObject;
+}
