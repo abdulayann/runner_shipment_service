@@ -105,6 +105,9 @@ public class Constants {
     public static final String CUSTOM_CITY = "customCity";
 
     public static final String DEFAULT_DATE_FORMAT = "MM/dd/yyyy";
+    public static final String CONSOLIDATION_TYPE_CLD = "CLD";
+
+    public static final String CONSOLIDATION_TYPE_AGT = "AGT";
 
 
 }
