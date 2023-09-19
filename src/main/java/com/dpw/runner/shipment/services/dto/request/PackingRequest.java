@@ -70,4 +70,5 @@ public class PackingRequest extends CommonRequest implements IRunnerRequest {
     private Long innerPacksId;
     private Long innerPacksCount;
     private String commodityGroup;
+    private Boolean isDimension;
 }

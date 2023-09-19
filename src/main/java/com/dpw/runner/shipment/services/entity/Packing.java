@@ -197,5 +197,8 @@ public class Packing extends MultiTenancy {
     @Column(name = "commodity_group")
     @MasterData(type = MasterDataType.COMMODITY_GROUP)
     private String commodityGroup;
+
+    @Column(name = "is_dimension")
+    private Boolean isDimension;
 }
 

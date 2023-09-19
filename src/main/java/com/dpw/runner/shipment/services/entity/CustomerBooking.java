@@ -174,4 +174,7 @@ public class CustomerBooking extends MultiTenancy {
 
     @Column(name = "fmc_tlc_id")
     private String fmcTlcId;
+
+    @Column(name = "is_package_manual")
+    private Boolean isPackageManual;
 }
