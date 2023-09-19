@@ -13,6 +13,7 @@ import com.dpw.runner.shipment.services.service.interfaces.IDenialPartyScreening
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.map.MultiValueMap;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
@@ -30,8 +31,14 @@ public class DenialPartyScreeningService implements IDenialPartyScreeningService
     private RestTemplate restTemplate;
     @Autowired
     private IDescartsService descartsService;
-    private static final String EXTERNAL_API_URL = "https://rpstest.visualcompliance.com/RPS/RPSService.svc/SearchEntity";
-
+    @Value("${descarts.service.searchentity.url}")
+    private String EXTERNAL_API_URL;
+    @Value("${descarts.service.searchtype}")
+    private String DescartSearchType;
+    @Value("${descarts.service.ssecno}")
+    private String DescartSsecNo;
+    @Value("${descarts.service.password}")
+    private String Descartpassword;
     @Override
     public ResponseEntity<?> createRequestAndSearchEntity(DenialPartySearchEntityRequest commonRequestModel) {
 
@@ -48,14 +55,11 @@ public class DenialPartyScreeningService implements IDenialPartyScreeningService
 
         List<SearchEntity> queryList = new ArrayList<>();
         queryList.add(searchQuery);
-
         SearchEntityRequest finalSearchQuery = new SearchEntityRequest();
-        finalSearchQuery.set__type("searchrequest:http://eim.visualcompliance.com/RPSService/2016/11");
-        finalSearchQuery.setSsecno("HSPQL");
-        finalSearchQuery.setSpassword("545UJQ748");
+        finalSearchQuery.set__type(DescartSearchType);
+        finalSearchQuery.setSsecno(DescartSsecNo);
+        finalSearchQuery.setSpassword(Descartpassword);
         finalSearchQuery.setSearches(queryList);
-
-
         return descartsService.searchEntity(finalSearchQuery);
 
     }
