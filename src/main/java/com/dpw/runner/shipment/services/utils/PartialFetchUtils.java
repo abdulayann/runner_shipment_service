@@ -19,7 +19,7 @@ public class PartialFetchUtils {
     public static <T> Object fetchPartialData(ResponseEntity<RunnerResponse<T>> object, List<String> includeColumns) {
 
          if (includeColumns == null || includeColumns.size() == 0) {
-            return object;
+            return object.getBody();
         }
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.registerModule(new JavaTimeModule());
