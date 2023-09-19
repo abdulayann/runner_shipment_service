@@ -91,7 +91,7 @@ public class BookingCarriageController {
         CommonGetRequest request = CommonGetRequest.builder().id(id).build();
         try {
             ResponseEntity<RunnerResponse<BookingCarriageResponse>> booking = (ResponseEntity<RunnerResponse<BookingCarriageResponse>>) bookingCarriageService.retrieveById(CommonRequestModel.buildRequest(request));
-            return PartialFetchUtils.fetchPartialData(booking,includeColumns);
+            return ResponseEntity.ok(PartialFetchUtils.fetchPartialData(booking, includeColumns));
         } catch (Exception ex) {
             System.out.println(ex.toString());
         }

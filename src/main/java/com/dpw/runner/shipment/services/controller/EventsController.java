@@ -74,7 +74,7 @@ public class EventsController {
         CommonGetRequest request = CommonGetRequest.builder().id(id).build();
         try {
             ResponseEntity<RunnerResponse<EventsResponse>> event = (ResponseEntity<RunnerResponse<EventsResponse>>) eventService.retrieveById(CommonRequestModel.buildRequest(request));
-            return PartialFetchUtils.fetchPartialData(event,includeColumns);
+            return  ResponseEntity.ok(PartialFetchUtils.fetchPartialData(event,includeColumns));
         } catch (Exception ex) {
             System.out.println(ex.toString());
         }

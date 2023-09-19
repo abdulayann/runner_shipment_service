@@ -74,7 +74,7 @@ public class ViewsController {
         CommonGetRequest request = CommonGetRequest.builder().id(id).build();
         try {
             ResponseEntity<RunnerResponse<ViewsResponse>> views = (ResponseEntity<RunnerResponse<ViewsResponse>>) viewsService.retrieveById(CommonRequestModel.buildRequest(request));
-            return PartialFetchUtils.fetchPartialData(views,includeColumns);
+            return ResponseEntity.ok(PartialFetchUtils.fetchPartialData(views, includeColumns));
         } catch (Exception ex) {
             System.out.println(ex.toString());
         }

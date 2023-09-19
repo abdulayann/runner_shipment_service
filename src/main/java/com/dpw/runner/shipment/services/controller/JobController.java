@@ -71,7 +71,7 @@ public class JobController {
         CommonGetRequest request = CommonGetRequest.builder().id(id).build();
         try {
             ResponseEntity<RunnerResponse<JobResponse>> job = (ResponseEntity<RunnerResponse<JobResponse>>) jobService.retrieveById(CommonRequestModel.buildRequest(request));
-            return PartialFetchUtils.fetchPartialData(job,includeColumns);
+            return ResponseEntity.ok(PartialFetchUtils.fetchPartialData(job, includeColumns));
         } catch (Exception ex) {
             System.out.println(ex.toString());
         }

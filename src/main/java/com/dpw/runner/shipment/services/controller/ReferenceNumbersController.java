@@ -67,13 +67,14 @@ public class ReferenceNumbersController {
         CommonGetRequest request = CommonGetRequest.builder().id(id).build();
         return (ResponseEntity<RunnerResponse<ReferenceNumbersResponse>>) referenceNumbersService.retrieveById(CommonRequestModel.buildRequest(request));
     }
+
     @ApiResponses(value = {@ApiResponse(code = 200, message = ReferenceNumbersConstants.REFERENCE_NUMBERS_RETRIEVE_BY_ID_SUCCESSFUL)})
     @GetMapping(ApiConstants.API_RETRIEVE_BY_ID_PARTIAL)
     public ResponseEntity<?> retrieveByIdPartial(@RequestParam(name = "includeColumns", required = false) List<String> includeColumns, @RequestParam Long id) {
         CommonGetRequest request = CommonGetRequest.builder().id(id).build();
         try {
             ResponseEntity<RunnerResponse<ReferenceNumbersResponse>> ref_number = (ResponseEntity<RunnerResponse<ReferenceNumbersResponse>>) referenceNumbersService.retrieveById(CommonRequestModel.buildRequest(request));
-            return PartialFetchUtils.fetchPartialData(ref_number,includeColumns);
+            return ResponseEntity.ok(PartialFetchUtils.fetchPartialData(ref_number, includeColumns));
         } catch (Exception ex) {
             System.out.println(ex.toString());
         }

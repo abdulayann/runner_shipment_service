@@ -134,8 +134,8 @@ public class ShipmentController {
 
         try {
             CommonGetRequest request = CommonGetRequest.builder().id(id).build();
-            ResponseEntity<RunnerResponse<ShipmentDetailsResponse>> shipment = (ResponseEntity<RunnerResponse<ShipmentDetailsResponse>>)shipmentService.completeRetrieveById(CommonRequestModel.buildRequest(request));
-            return PartialFetchUtils.fetchPartialData(shipment,includeColumns);
+            ResponseEntity<RunnerResponse<ShipmentDetailsResponse>> shipment = (ResponseEntity<RunnerResponse<ShipmentDetailsResponse>>) shipmentService.completeRetrieveById(CommonRequestModel.buildRequest(request));
+            return ResponseEntity.ok(PartialFetchUtils.fetchPartialData(shipment, includeColumns));
 
         } catch (Exception ex) {
             System.out.println(ex.toString());

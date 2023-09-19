@@ -108,18 +108,18 @@ public class ConsolidationController {
         return (ResponseEntity<RunnerResponse<ConsolidationDetailsResponse>>) consolidationService.completeRetrieveById(CommonRequestModel.buildRequest(request));
     }
 // couldnt check this as no data was there in the db
-    @ApiResponses(value = {@ApiResponse(code = 200, message = ConsolidationConstants.RETRIEVE_BY_ID_SUCCESSFUL)})
-    @GetMapping(ApiConstants.API_RETRIEVE_BY_ID_PARTIAL)
-    public ResponseEntity<?> retrieveByIdPartial(@RequestParam(name = "includeColumns", required = false) List<String> includeColumns, @RequestParam Long id) {
-        CommonGetRequest request = CommonGetRequest.builder().id(id).build();
-        try {
-            ResponseEntity<RunnerResponse<ConsolidationDetailsResponse>> consolidation = (ResponseEntity<RunnerResponse<ConsolidationDetailsResponse>>) consolidationService.completeRetrieveById(CommonRequestModel.buildRequest(request));
-            return PartialFetchUtils.fetchPartialData(consolidation,includeColumns);
-        } catch (Exception ex) {
-            System.out.println(ex.toString());
-        }
-        return ResponseEntity.ok(null);
+@ApiResponses(value = {@ApiResponse(code = 200, message = ConsolidationConstants.RETRIEVE_BY_ID_SUCCESSFUL)})
+@GetMapping(ApiConstants.API_RETRIEVE_BY_ID_PARTIAL)
+public ResponseEntity<?> retrieveByIdPartial(@RequestParam(name = "includeColumns", required = false) List<String> includeColumns, @RequestParam Long id) {
+    CommonGetRequest request = CommonGetRequest.builder().id(id).build();
+    try {
+        ResponseEntity<RunnerResponse<ConsolidationDetailsResponse>> consolidation = (ResponseEntity<RunnerResponse<ConsolidationDetailsResponse>>) consolidationService.completeRetrieveById(CommonRequestModel.buildRequest(request));
+        return ResponseEntity.ok(PartialFetchUtils.fetchPartialData(consolidation, includeColumns));
+    } catch (Exception ex) {
+        System.out.println(ex.toString());
     }
+    return ResponseEntity.ok(null);
+}
 
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = ConsolidationConstants.UPDATE_SUCCESSFUL, response = RunnerResponse.class)})

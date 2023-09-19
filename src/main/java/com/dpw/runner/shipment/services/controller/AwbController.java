@@ -85,7 +85,7 @@ public class AwbController {
         CommonGetRequest request = CommonGetRequest.builder().id(id).build();
         try {
             ResponseEntity<RunnerResponse<AwbResponse>> awb = (ResponseEntity<RunnerResponse<AwbResponse>>) awbervice.retrieveById(CommonRequestModel.buildRequest(request));
-            return PartialFetchUtils.fetchPartialData(awb,includeColumns);
+            return ResponseEntity.ok(PartialFetchUtils.fetchPartialData(awb, includeColumns));
         } catch (Exception ex) {
             System.out.println(ex.toString());
         }

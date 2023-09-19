@@ -80,7 +80,7 @@ public class HblController {
         CommonGetRequest request = CommonGetRequest.builder().id(id).build();
         try {
             ResponseEntity<RunnerResponse<HblResponse>> hbl = (ResponseEntity<RunnerResponse<HblResponse>>) hblService.retrieveById(CommonRequestModel.buildRequest(request));
-            return PartialFetchUtils.fetchPartialData(hbl,includeColumns);
+            return ResponseEntity.ok(PartialFetchUtils.fetchPartialData(hbl, includeColumns));
         } catch (Exception ex) {
             System.out.println(ex.toString());
         }

@@ -87,7 +87,7 @@ public class MawbStocksController {
         CommonGetRequest request = CommonGetRequest.builder().id(id).build();
         try {
             ResponseEntity<RunnerResponse<MawbStocksResponse>> mawb = (ResponseEntity<RunnerResponse<MawbStocksResponse>>) mawbStocksService.retrieveById(CommonRequestModel.buildRequest(request));
-            return PartialFetchUtils.fetchPartialData(mawb,includeColumns);
+            return ResponseEntity.ok(PartialFetchUtils.fetchPartialData(mawb, includeColumns));
         } catch (Exception ex) {
             System.out.println(ex.toString());
         }

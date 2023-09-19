@@ -83,7 +83,7 @@ public class NotesController {
         CommonGetRequest request = CommonGetRequest.builder().id(id).build();
         try {
             ResponseEntity<RunnerResponse<NotesResponse>> notes = (ResponseEntity<RunnerResponse<NotesResponse>>) notesService.retrieveById(CommonRequestModel.buildRequest(request));
-            return PartialFetchUtils.fetchPartialData(notes,includeColumns);
+            return ResponseEntity.ok(PartialFetchUtils.fetchPartialData(notes, includeColumns));
         } catch (Exception ex) {
             System.out.println(ex.toString());
         }
