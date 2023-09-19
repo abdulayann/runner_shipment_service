@@ -84,7 +84,7 @@ public class AwbController {
     public ResponseEntity<?> retrieveByIdPartial(@RequestParam(name = "includeColumns", required = false) List<String> includeColumns, @RequestParam Long id) {
         CommonGetRequest request = CommonGetRequest.builder().id(id).build();
         try {
-            ResponseEntity<RunnerResponse<AwbResponse>> awb = (ResponseEntity<RunnerResponse<AwbResponse>>) awbervice.retrieveById(CommonRequestModel.buildRequest(request));
+            ResponseEntity<RunnerResponse<AwbResponse>> awb = (ResponseEntity<RunnerResponse<AwbResponse>>) awbService.retrieveById(CommonRequestModel.buildRequest(request));
             return ResponseEntity.ok(PartialFetchUtils.fetchPartialData(awb, includeColumns));
         } catch (Exception ex) {
             System.out.println(ex.toString());
