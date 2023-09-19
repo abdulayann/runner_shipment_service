@@ -85,7 +85,7 @@ public class ELDetailsController {
         CommonGetRequest request = CommonGetRequest.builder().id(id).build();
         try {
             ResponseEntity<RunnerResponse<ELDetailsResponse>> elsDetails = (ResponseEntity<RunnerResponse<ELDetailsResponse>>) elDetailsService.retrieveById(CommonRequestModel.buildRequest(request));
-            return PartialFetchUtils.fetchPartialData(elsDetails,includeColumns);
+            return ResponseEntity.ok(PartialFetchUtils.fetchPartialData(elsDetails, includeColumns));
         } catch (Exception ex) {
             System.out.println(ex.toString());
         }

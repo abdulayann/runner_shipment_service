@@ -89,13 +89,14 @@ public class RoutingsController {
         CommonGetRequest request = CommonGetRequest.builder().id(id).build();
         return (ResponseEntity<RunnerResponse<RoutingsResponse>>) routingsService.retrieveById(CommonRequestModel.buildRequest(request));
     }
+
     @ApiResponses(value = {@ApiResponse(code = 200, message = RoutingsConstants.ROUTINGS_RETRIEVE_BY_ID_SUCCESSFUL)})
     @GetMapping(ApiConstants.API_RETRIEVE_BY_ID_PARTIAL)
     public ResponseEntity<?> retrieveByIdPartial(@RequestParam(name = "includeColumns", required = false) List<String> includeColumns, @RequestParam Long id) {
         CommonGetRequest request = CommonGetRequest.builder().id(id).build();
         try {
             ResponseEntity<RunnerResponse<RoutingsResponse>> route = (ResponseEntity<RunnerResponse<RoutingsResponse>>) routingsService.retrieveById(CommonRequestModel.buildRequest(request));
-            return PartialFetchUtils.fetchPartialData(route,includeColumns);
+            return ResponseEntity.ok(PartialFetchUtils.fetchPartialData(route, includeColumns));
         } catch (Exception ex) {
             System.out.println(ex.toString());
         }

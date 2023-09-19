@@ -89,8 +89,8 @@ public class PartiesDetailsController {
     public ResponseEntity<?> retrieveByIdPartial(@RequestParam(name = "includeColumns", required = false) List<String> includeColumns, @RequestParam Long id) {
         CommonGetRequest request = CommonGetRequest.builder().id(id).build();
         try {
-            ResponseEntity<RunnerResponse<PartiesResponse>> job = (ResponseEntity<RunnerResponse<PartiesResponse>>) partiesService.retrieveById(CommonRequestModel.buildRequest(request));
-            return PartialFetchUtils.fetchPartialData(job,includeColumns);
+            ResponseEntity<RunnerResponse<PartiesResponse>> parties = (ResponseEntity<RunnerResponse<PartiesResponse>>) partiesService.retrieveById(CommonRequestModel.buildRequest(request));
+            return ResponseEntity.ok(PartialFetchUtils.fetchPartialData(parties, includeColumns));
         } catch (Exception ex) {
             System.out.println(ex.toString());
         }

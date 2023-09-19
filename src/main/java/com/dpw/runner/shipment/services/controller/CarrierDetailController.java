@@ -86,7 +86,7 @@ public class CarrierDetailController {
         CommonGetRequest request = CommonGetRequest.builder().id(id).build();
         try {
             ResponseEntity<RunnerResponse<CarrierDetailResponse>> carriage = (ResponseEntity<RunnerResponse<CarrierDetailResponse>>) carrierDetailService.retrieveById(CommonRequestModel.buildRequest(request));
-            return PartialFetchUtils.fetchPartialData(carriage,includeColumns);
+            return ResponseEntity.ok(PartialFetchUtils.fetchPartialData(carriage, includeColumns));
         } catch (Exception ex) {
             System.out.println(ex.toString());
         }

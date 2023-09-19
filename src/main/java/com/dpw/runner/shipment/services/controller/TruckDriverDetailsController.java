@@ -90,7 +90,7 @@ public class TruckDriverDetailsController {
         CommonGetRequest request = CommonGetRequest.builder().id(id).build();
         try {
             ResponseEntity<RunnerResponse<TruckDriverDetailsResponse>> driver_details = (ResponseEntity<RunnerResponse<TruckDriverDetailsResponse>>) truckDriverDetailsService.retrieveById(CommonRequestModel.buildRequest(request));
-            return PartialFetchUtils.fetchPartialData(driver_details,includeColumns);
+            return ResponseEntity.ok(PartialFetchUtils.fetchPartialData(driver_details, includeColumns));
         } catch (Exception ex) {
             System.out.println(ex.toString());
         }

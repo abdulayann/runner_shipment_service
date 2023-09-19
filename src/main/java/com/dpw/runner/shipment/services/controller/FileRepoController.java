@@ -53,7 +53,7 @@ public class FileRepoController {
         return (ResponseEntity<RunnerResponse<FileRepoResponse>>) ResponseHelper.buildFailedResponse(responseMsg);
     }
 
-    @ApiResponses(value = { @ApiResponse(code = 200, message = FileRepoConstants.FILE_REPO_UPDATE_SUCCESSFUL, response = RunnerResponse.class) })
+    @ApiResponses(value = {@ApiResponse(code = 200, message = FileRepoConstants.FILE_REPO_UPDATE_SUCCESSFUL, response = RunnerResponse.class)})
     @PutMapping(ApiConstants.API_UPDATE)
     public ResponseEntity<RunnerResponse> update(@RequestBody @Valid FileRepoRequest request) {
         String responseMsg;
@@ -67,14 +67,14 @@ public class FileRepoController {
         return (ResponseEntity<RunnerResponse>) ResponseHelper.buildFailedResponse(responseMsg);
     }
 
-    @ApiResponses(value = { @ApiResponse(code = 200, message = FileRepoConstants.FILE_REPO_DELETE_SUCCESSFUL) })
+    @ApiResponses(value = {@ApiResponse(code = 200, message = FileRepoConstants.FILE_REPO_DELETE_SUCCESSFUL)})
     @DeleteMapping(ApiConstants.API_DELETE)
     public ResponseEntity<RunnerResponse> delete(@RequestParam @Valid Long id) {
         CommonGetRequest request = CommonGetRequest.builder().id(id).build();
         return (ResponseEntity<RunnerResponse>) fileRepoService.delete(CommonRequestModel.buildRequest(request));
     }
 
-    @ApiResponses(value = { @ApiResponse(code = 200, message = FileRepoConstants.FILE_REPO_RETRIEVE_BY_ID_SUCCESSFUL) })
+    @ApiResponses(value = {@ApiResponse(code = 200, message = FileRepoConstants.FILE_REPO_RETRIEVE_BY_ID_SUCCESSFUL)})
     @GetMapping(ApiConstants.API_RETRIEVE_BY_ID)
     public ResponseEntity<RunnerResponse<FileRepoResponse>> retrieveById(@ApiParam(value = FileRepoConstants.FILE_REPO_ID, required = true) @RequestParam Long id) {
         CommonGetRequest request = CommonGetRequest.builder().id(id).build();
@@ -87,7 +87,7 @@ public class FileRepoController {
         CommonGetRequest request = CommonGetRequest.builder().id(id).build();
         try {
             ResponseEntity<RunnerResponse<FileRepoResponse>> fileRepo = (ResponseEntity<RunnerResponse<FileRepoResponse>>) fileRepoService.retrieveById(CommonRequestModel.buildRequest(request));
-            return PartialFetchUtils.fetchPartialData(fileRepo,includeColumns);
+            return ResponseEntity.ok(PartialFetchUtils.fetchPartialData(fileRepo, includeColumns));
         } catch (Exception ex) {
             System.out.println(ex.toString());
         }
@@ -96,24 +96,24 @@ public class FileRepoController {
 
 
     @PostMapping(FileRepoConstants.FILE_REPO_LIST_ENTITYID_ENTITYTYPE)
-    public ResponseEntity<RunnerListResponse<FileRepoResponse>> retrieveByIdAndType(@RequestBody @Valid EntityIdAndTypeRequest entityIdAndTypeRequest){
+    public ResponseEntity<RunnerListResponse<FileRepoResponse>> retrieveByIdAndType(@RequestBody @Valid EntityIdAndTypeRequest entityIdAndTypeRequest) {
         return (ResponseEntity<RunnerListResponse<FileRepoResponse>>) fileRepoService.retrieveByEntityIdAndEntityType(CommonRequestModel.buildRequest(entityIdAndTypeRequest));
     }
 
-    @ApiResponses(value = { @ApiResponse(code = 200, message = FileRepoConstants.FILE_REPO_LIST_SUCCESSFUL, responseContainer = FileRepoConstants.RESPONSE_CONTAINER_LIST) })
+    @ApiResponses(value = {@ApiResponse(code = 200, message = FileRepoConstants.FILE_REPO_LIST_SUCCESSFUL, responseContainer = FileRepoConstants.RESPONSE_CONTAINER_LIST)})
     @PostMapping(ApiConstants.API_LIST)
     public ResponseEntity<RunnerListResponse<FileRepoResponse>> list(@RequestBody @Valid ListCommonRequest listCommonRequest) {
         return (ResponseEntity<RunnerListResponse<FileRepoResponse>>) fileRepoService.list(CommonRequestModel.buildRequest(listCommonRequest));
     }
 
-    @ApiResponses(value = { @ApiResponse(code = 200, message = FileRepoConstants.UPLOAD_DOCUMENT_SUCCESSFUL) })
+    @ApiResponses(value = {@ApiResponse(code = 200, message = FileRepoConstants.UPLOAD_DOCUMENT_SUCCESSFUL)})
     @PostMapping(FileRepoConstants.UPLOAD_DOCUMENT)
     public ResponseEntity<RunnerListResponse<FileRepoResponse>> uploadDocument(@RequestParam List<MultipartFile> files, @RequestParam Long entityId, @RequestParam String entityType, @RequestParam String docType, @RequestParam Boolean clientEnabled, @RequestParam String eventCode) {
         UploadDocumentRequest uploadDocumentRequest = UploadDocumentRequest.builder().files(files).entityId(entityId).entityType(entityType).docType(docType).clientEnabled(clientEnabled).eventCode(eventCode).build();
         return (ResponseEntity<RunnerListResponse<FileRepoResponse>>) fileRepoService.uploadDocument(CommonRequestModel.buildRequest(uploadDocumentRequest));
     }
 
-    @ApiResponses(value = { @ApiResponse(code = 200, message = FileRepoConstants.DOWNLOAD_DOCUMENT_SUCCESSFUL) })
+    @ApiResponses(value = {@ApiResponse(code = 200, message = FileRepoConstants.DOWNLOAD_DOCUMENT_SUCCESSFUL)})
     @GetMapping(FileRepoConstants.DOWNLOAD_DOCUMENT)
     public ResponseEntity<?> downloadDocument(@RequestParam Long id) {
         CommonGetRequest request = CommonGetRequest.builder().id(id).build();

@@ -15,26 +15,17 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.List;
 
-public class PartialFetchUtils  {
-    public static <T> ResponseEntity<?> fetchPartialData( ResponseEntity<RunnerResponse<T>> object, List<String>includeColumns) {
+public class PartialFetchUtils {
+    public static <T> Object fetchPartialData(ResponseEntity<RunnerResponse<T>> object, List<String> includeColumns) {
 
-
-
-
-            if(includeColumns==null||includeColumns.size()==0){
-                return object;
-            }
-            ObjectMapper objectMapper = new ObjectMapper();
-            objectMapper.registerModule(new JavaTimeModule());
-            ObjectMapper modified = Squiggly.init(objectMapper, String.join(",", includeColumns));
-
-            String jsonString = SquigglyUtils.stringify(modified, object.getBody().getData());
-
-            Object res = jsonString;
-            return ResponseEntity.ok(res);
-
-
-
+         if (includeColumns == null || includeColumns.size() == 0) {
+            return object;
+        }
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.registerModule(new JavaTimeModule());
+        ObjectMapper modified = Squiggly.init(objectMapper, String.join(",", includeColumns));
+        String jsonString = SquigglyUtils.stringify(modified, object.getBody().getData());
+        return (Object) jsonString;
     }
 
 }

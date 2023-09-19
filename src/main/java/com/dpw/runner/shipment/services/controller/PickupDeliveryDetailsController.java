@@ -68,13 +68,14 @@ public class PickupDeliveryDetailsController {
         CommonGetRequest request = CommonGetRequest.builder().id(id).build();
         return (ResponseEntity<RunnerResponse<PickupDeliveryDetailsResponse>>) pickupDeliveryDetailsService.retrieveById(CommonRequestModel.buildRequest(request));
     }
+
     @ApiResponses(value = {@ApiResponse(code = 200, message = PickupDeliveryDetailsConstants.PICKUP_DELIVERY_DETAILS_RETRIEVE_BY_ID_SUCCESSFUL)})
     @GetMapping(ApiConstants.API_RETRIEVE_BY_ID_PARTIAL)
     public ResponseEntity<?> retrieveByIdPartial(@RequestParam(name = "includeColumns", required = false) List<String> includeColumns, @RequestParam Long id) {
         CommonGetRequest request = CommonGetRequest.builder().id(id).build();
         try {
             ResponseEntity<RunnerResponse<PickupDeliveryDetailsResponse>> pickup = (ResponseEntity<RunnerResponse<PickupDeliveryDetailsResponse>>) pickupDeliveryDetailsService.retrieveById(CommonRequestModel.buildRequest(request));
-            return PartialFetchUtils.fetchPartialData(pickup,includeColumns);
+            return ResponseEntity.ok(PartialFetchUtils.fetchPartialData(pickup, includeColumns));
         } catch (Exception ex) {
             System.out.println(ex.toString());
         }

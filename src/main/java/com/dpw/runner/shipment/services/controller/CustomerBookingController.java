@@ -141,7 +141,7 @@ public class CustomerBookingController {
         CommonGetRequest request = CommonGetRequest.builder().id(id).build();
         try {
             ResponseEntity<RunnerResponse<CustomerBookingResponse>> customer_booking = (ResponseEntity<RunnerResponse<CustomerBookingResponse>>) customerBookingService.retrieveById(CommonRequestModel.buildRequest(request));
-            return PartialFetchUtils.fetchPartialData(customer_booking,includeColumns);
+            return ResponseEntity.ok(PartialFetchUtils.fetchPartialData(customer_booking, includeColumns));
         } catch (Exception ex) {
             System.out.println(ex.toString());
         }

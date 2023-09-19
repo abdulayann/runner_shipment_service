@@ -74,7 +74,7 @@ public class ServiceDetailsController {
         CommonGetRequest request = CommonGetRequest.builder().id(id).build();
         try {
             ResponseEntity<RunnerResponse<ServiceDetailsResponse>> serviceDetails = (ResponseEntity<RunnerResponse<ServiceDetailsResponse>>) serviceDetailsService.retrieveById(CommonRequestModel.buildRequest(request));
-            return PartialFetchUtils.fetchPartialData(serviceDetails,includeColumns);
+            return ResponseEntity.ok(PartialFetchUtils.fetchPartialData(serviceDetails, includeColumns));
         } catch (Exception ex) {
             System.out.println(ex.toString());
         }
