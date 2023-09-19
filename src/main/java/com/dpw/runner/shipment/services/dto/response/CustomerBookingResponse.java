@@ -65,4 +65,5 @@ public class CustomerBookingResponse implements IRunnerResponse {
     private Boolean isAutoWeightVolumeUpdate;
     private String fmcTlcId;
     private BigDecimal totalRevenue;
+    private Boolean isPackageManual;
 }
