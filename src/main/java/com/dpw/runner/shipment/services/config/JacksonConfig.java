@@ -20,20 +20,12 @@ public class JacksonConfig {
     Jackson2ObjectMapperBuilder builder = new Jackson2ObjectMapperBuilder();
     builder.serializationInclusion(JsonInclude.Include.ALWAYS)
             .featuresToDisable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
+            .deserializerByType(LocalDateTime.class,  new CustomLocalDateTimeDeserializer())
             .modulesToInstall(new JsonNullableModule());
     return builder;
   }
 
 
-  @Bean
-  Jackson2ObjectMapperBuilder objectMapperBuilder() {
-      Jackson2ObjectMapperBuilder builder = new Jackson2ObjectMapperBuilder();
-      builder.serializationInclusion(JsonInclude.Include.ALWAYS)
-              .featuresToDisable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
-              .deserializerByType(LocalDateTime.class, new CustomLocalDateTimeDeserializer())
-              .modulesToInstall(new JsonNullableModule());
-      return builder;
-  }
 
   @Bean
   public ObjectMapper objectMapper() {
