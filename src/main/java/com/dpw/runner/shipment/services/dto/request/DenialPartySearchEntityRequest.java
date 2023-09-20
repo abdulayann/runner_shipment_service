@@ -1,0 +1,22 @@
+package com.dpw.runner.shipment.services.dto.request;
+
+import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
+import lombok.Getter;
+import lombok.Setter;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.UUID;
+@Getter
+@Setter
+public class DenialPartySearchEntityRequest implements IRunnerRequest {
+    private String name;
+    private String company;
+    private String address1;
+    private String address2;
+    private String address3;
+    private String city;
+    private String state;
+    private String zip;
+    private String country;
+}

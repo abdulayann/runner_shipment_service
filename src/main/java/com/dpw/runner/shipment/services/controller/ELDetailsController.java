@@ -8,9 +8,11 @@ import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.ELDetailsRequest;
 import com.dpw.runner.shipment.services.dto.request.ElNumbersRequest;
+import com.dpw.runner.shipment.services.dto.response.CustomerBookingResponse;
 import com.dpw.runner.shipment.services.dto.response.ELDetailsResponse;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.impl.ELDetailsService;
+import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import lombok.extern.slf4j.Slf4j;
@@ -20,6 +22,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import javax.validation.Valid;
+import java.util.List;
 
 @RestController
 @RequestMapping(ELDetailsConstants.ELDETAILS_API_HANDLE)
@@ -74,6 +77,19 @@ public class ELDetailsController {
     public ResponseEntity retrieve(@RequestParam @NonNull Long id) {
         CommonGetRequest request = CommonGetRequest.builder().id(id).build();
         return (ResponseEntity<RunnerResponse<ELDetailsResponse>>) elDetailsService.retrieveById(CommonRequestModel.buildRequest(request));
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ELDetailsConstants.ELDETAILS_RETRIEVE_BY_ID_SUCCESSFUL)})
+    @GetMapping(ApiConstants.API_RETRIEVE_BY_ID_PARTIAL)
+    public ResponseEntity<?> retrieveByIdPartial(@RequestParam(name = "includeColumns", required = false) List<String> includeColumns, @RequestParam Long id) {
+        CommonGetRequest request = CommonGetRequest.builder().id(id).build();
+        try {
+            ResponseEntity<RunnerResponse<ELDetailsResponse>> elsDetails = (ResponseEntity<RunnerResponse<ELDetailsResponse>>) elDetailsService.retrieveById(CommonRequestModel.buildRequest(request));
+            return ResponseEntity.ok(PartialFetchUtils.fetchPartialData(elsDetails, includeColumns));
+        } catch (Exception ex) {
+            System.out.println(ex.toString());
+        }
+        return ResponseEntity.ok(null);
     }
 
     @ApiResponses(value = {

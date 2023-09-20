@@ -7,9 +7,11 @@ import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.HblGenerateRequest;
 import com.dpw.runner.shipment.services.dto.request.HblRequest;
 import com.dpw.runner.shipment.services.dto.request.HblResetRequest;
+import com.dpw.runner.shipment.services.dto.response.ELDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.HblResponse;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IHblService;
+import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
 import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
@@ -19,6 +21,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
+import java.util.List;
 
 @SuppressWarnings("ALL")
 @RestController
@@ -69,6 +72,19 @@ public class HblController {
     public ResponseEntity<RunnerResponse<HblResponse>> retrieveById(@ApiParam(value = HblConstants.HBL_ID, required = true) @RequestParam Long id) {
         CommonGetRequest request = CommonGetRequest.builder().id(id).build();
         return (ResponseEntity<RunnerResponse<HblResponse>>) hblService.retrieveById(CommonRequestModel.buildRequest(request));
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = HblConstants.HBLS_RETRIEVE_BY_ID_SUCCESSFUL)})
+    @GetMapping(ApiConstants.API_RETRIEVE_BY_ID_PARTIAL)
+    public ResponseEntity<?> retrieveByIdPartial(@RequestParam(name = "includeColumns", required = false) List<String> includeColumns, @RequestParam Long id) {
+        CommonGetRequest request = CommonGetRequest.builder().id(id).build();
+        try {
+            ResponseEntity<RunnerResponse<HblResponse>> hbl = (ResponseEntity<RunnerResponse<HblResponse>>) hblService.retrieveById(CommonRequestModel.buildRequest(request));
+            return ResponseEntity.ok(PartialFetchUtils.fetchPartialData(hbl, includeColumns));
+        } catch (Exception ex) {
+            System.out.println(ex.toString());
+        }
+        return ResponseEntity.ok(null);
     }
 
 

@@ -20,6 +20,11 @@ import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
 import com.dpw.runner.shipment.services.syncing.Entity.CustomShipmentSyncRequest;
 import com.dpw.runner.shipment.services.syncing.impl.ShipmentReverseSync;
 import com.dpw.runner.shipment.services.syncing.impl.ShipmentSync;
+import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.github.bohnman.squiggly.Squiggly;
+import com.github.bohnman.squiggly.util.SquigglyUtils;
 import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
@@ -37,6 +42,8 @@ import java.util.concurrent.ExecutionException;
 
 import static com.dpw.runner.shipment.services.commons.constants.Constants.ALL;
 
+
+
 @SuppressWarnings(ALL)
 @RestController
 @RequestMapping(ShipmentConstants.SHIPMENT_API_HANDLE)
@@ -53,6 +60,10 @@ public class ShipmentController {
     JsonHelper jsonHelper;
     @Autowired
     ModelMapper modelMapper;
+    @Autowired
+    ObjectMapper objectMapper;
+
+
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = "Successful Shipment Details Data List Retrieval", responseContainer = "List")})
     @PostMapping(value = "/list-shipment")
@@ -113,6 +124,23 @@ public class ShipmentController {
     public ResponseEntity<RunnerResponse<ShipmentDetailsResponse>> completeRetrieveById(@ApiParam(value = ShipmentConstants.SHIPMENT_ID, required = true) @RequestParam Long id) throws ExecutionException, InterruptedException {
         CommonGetRequest request = CommonGetRequest.builder().id(id).build();
         return (ResponseEntity<RunnerResponse<ShipmentDetailsResponse>>) shipmentService.completeRetrieveById(CommonRequestModel.buildRequest(request));
+    }
+
+    // selective columns retrieval
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.RETRIEVE_BY_ID_SUCCESSFUL)})
+    @GetMapping(ApiConstants.API_RETRIEVE_BY_ID_PARTIAL)
+    public ResponseEntity<?> retrieveByIdPartial(@RequestParam(name = "includeColumns", required = false) List<String> includeColumns, @RequestParam Long id) {
+
+
+        try {
+            CommonGetRequest request = CommonGetRequest.builder().id(id).build();
+            ResponseEntity<RunnerResponse<ShipmentDetailsResponse>> shipment = (ResponseEntity<RunnerResponse<ShipmentDetailsResponse>>) shipmentService.completeRetrieveById(CommonRequestModel.buildRequest(request));
+            return ResponseEntity.ok(PartialFetchUtils.fetchPartialData(shipment, includeColumns));
+
+        } catch (Exception ex) {
+            System.out.println(ex.toString());
+        }
+        return ResponseEntity.ok(null);
     }
 
     // @PreAuthorize("hasAuthority('"+ Permissions.AdministrationGeneral+"')") //TODO-Authorization

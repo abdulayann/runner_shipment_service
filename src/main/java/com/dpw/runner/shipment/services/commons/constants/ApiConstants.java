@@ -13,6 +13,7 @@ public class ApiConstants {
 
     public static final String API_RETRIEVE_BY_ID = "/retrieve/id";
 
+    public static final String API_RETRIEVE_BY_ID_PARTIAL="/retrieve/partial/id";
     public static final String API_COMPLETE_RETRIEVE_BY_ID = "/retrieve/complete/id";
 
     public static final String API_UPDATE_SHIPMENT = "/update/shipment";
