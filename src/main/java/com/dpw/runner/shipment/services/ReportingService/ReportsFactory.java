@@ -19,6 +19,8 @@ public class ReportsFactory {
     private HawbReport hawbReport;
     @Autowired
     private MawbReport mawbReport;
+    @Autowired
+    private CargoManifestReport cargoManifestReport;
 
     public IReport getReport(String key)
     {
@@ -36,6 +38,8 @@ public class ReportsFactory {
                 return hawbReport;
             case ReportConstants.MAWB:
                 return mawbReport;
+            case ReportConstants.CARGO_MANIFEST:
+                return cargoManifestReport;
         }
         return null;
     }

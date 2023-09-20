@@ -10,6 +10,11 @@ public class ReportConstants
     public static final String HOUSE_BILL = "HouseBill";
     public static final String VESSEL_NAME = "VesselName";
     public static final String VOYAGE = "Voyage";
+    public static final String POR = "POR";
+    public static final String POL = "POL";
+    public static final String POD = "POD";
+    public static final String FPOD = "FPOD";
+    public static final String ITEMS = "Items";
     public static final String POD_COUNTRY = "PODCountry";
     public static final String POL_COUNTRY = "POLCountry";
     public static final String POL_PORTNAME = "POLPortName";
@@ -39,7 +44,9 @@ public class ReportConstants
     public static final String ORIGIN_NAME = "OriginName";
     public static final String ORIGIN_COUNTRY = "OriginCountry";
     public static final String ETA = "Eta";
+    public static final String ETA_CAPS = "ETA";
     public static final String ETD = "Etd";
+    public static final String ETD_CAPS = "ETD";
     public static final String ATA = "Ata";
     public static final String ATD = "Atd";
     public static final String INCO_TERM = "IncoTerm";
@@ -49,6 +56,7 @@ public class ReportConstants
     public static final String TRANSPORT_MODE_DESCRIPTION = "TransportModeDescription";
     public static final String SHIPMENT_TYPE_DESCRIPTION = "ShipmentTypeDescription";
     public static final String SHIPMENT_NUMBER ="ShipmentNumber";
+    public static final String SHIPMENT_NO = "ShipmentNo";
     public static final String PACKS = "Packs";
     public static final String PACKS_UNIT = "PacksUnit";
     public static final String GROSS_WEIGHT = "GrossWeight";
@@ -78,6 +86,7 @@ public class ReportConstants
     public static final String PAID_PLACE_COUNTRY = "PaidPlaceCountry";
     public static final String PAID_PLACE_COUNTRY_NAME = "PaidPlaceCountryName";
     public static final String DATE_OF_ISSUE = "DateOfIssue";
+    public static final String DATE_TIME = "DateTime";
     public static final String HSN_NUMBER = "HsnNumber";
     public static final String ESTIMATED_READY_FOR_PICKUP = "EstimatedReadyForPickup";
     public static final String DATE_OF_RECEIPT = "DateofReceipt";
@@ -87,6 +96,7 @@ public class ReportConstants
     public static final String CONTAINER_COUNT_BY_CODE = "ContainerCountByCode";
     public static final String VESSEL_NAME_AND_VOYAGE = "VesselNameAndVoyage";
     public static final String CONSIGNER = "Consigner";
+    public static final String CONSIGNOR = "Consigner";
     public static final String CONSIGNEE = "Consignee";
     public static final String CONSIGNER_FREETEXT = "ConsignerAddressFreeText";
     public static final String CONSIGNEE_FREETEXT = "ConsigneeAddressFreeText";
@@ -107,11 +117,14 @@ public class ReportConstants
     public static final String NOTIFY_PARTY = "NotifyParty";
     public static final String OPEN_DATE = "OpenDate";
     public static final String DUE_DATE = "DueDate";
+    public static final String PP_CC = "PP_CC";
     public static final String PPCC = "PPCC";
+    public static final String FLIGHT_NAME = "FlightName";
     public static final String FLIGHT_NUMBER = "FlightNo";
     public static final String DATE_OF_DEPARTURE = "DateOfDeparture";
     public static final String DELIVERY_ADDRESS = "DeliveryAddress";
     public static final String SYSTEM_DATE = "SysDate";
+    public static final String CURRENT_DATE = "CurrentDate";
     public static final String ONBOARD_DATE = "OnBoardDate";
     public static final String PLACE_OF_RECEIPT = "PlaceOfReceipt";
     public static final String DESCRIPTION = "Description";
@@ -143,6 +156,7 @@ public class ReportConstants
         /*
             Consolidation Fields
         */
+    public static final String BOOKING_NO = "BookingNo";
     public static final String BOOKING_NUMBER = "BookingNumber";
     public static final String CARGO_CLOSING_TIME = "CargoClosingTime";
     public static final String DOCS_CLOSING_TIME = "DocsClosingTime";
@@ -181,6 +195,7 @@ public class ReportConstants
         /*
             Tenant fields
         */
+    public static final String TENANT = "Tenant";
     public static final String TENANT_NAME = "TenantName";
     public static final String TENANT_ADDRESS_1 = "TenantAddress1";
     public static final String TENANT_ADDRESS_2 = "TenantAddress2";
