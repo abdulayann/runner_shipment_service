@@ -351,8 +351,11 @@ public class CustomShipmentSyncRequest implements IRunnerRequest {
     @JsonProperty("IsShipmentReadOnly")
     private Boolean IsShipmentReadOnly;
 
-    @JsonProperty("LockedBy")
-    private Integer LockedBy;
+    // LockedBy is username in v2 and user id in v1 ,
+    // keeping lockedByUser to sync this info and fetching info from repos in v1
+//    @JsonProperty("LockedBy")
+//    private Integer LockedBy;
+
     @JsonProperty("MarksnNums")
     private String MarksnNums;
     @JsonProperty("NetWeight")
