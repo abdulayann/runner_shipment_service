@@ -485,8 +485,8 @@ public class CustomerBookingService implements ICustomerBookingService {
         double overDueAmount = checkCreditBalanceFusionResponse.getData().getCreditDetails().get(0).getOverDue();
         double totalCreditAvailableBalance = (totalCreditLimit - outstandingAmount);
 
-        double creditLimitUtilizedPer = (outstandingAmount*100)/totalCreditLimit;
-        double overDuePer = (overDueAmount*100)/totalCreditLimit;
+        double creditLimitUtilizedPer = totalCreditLimit != 0? (outstandingAmount*100)/totalCreditLimit: 0;
+        double overDuePer = totalCreditLimit != 0? (overDueAmount*100)/totalCreditLimit: 0;
         var num = CommonUtils.roundOffToTwoDecimalPlace(checkCreditBalanceFusionResponse.getData().getCreditDetails().get(0).getTotalCreditLimit());
         return CheckCreditLimitResponse.builder()
                 .totalCreditLimit(CommonUtils.roundOffToTwoDecimalPlace(totalCreditLimit))
@@ -780,13 +780,20 @@ public class CustomerBookingService implements ICustomerBookingService {
             if (!crpAddressDetailsList.isEmpty())
                 crpAddressDetails = crpAddressDetailsList.get(0);
         }
+        String customerIdentifier = null;
+        if(response.getCompanyAttributesDetails() != null) {
+            List<CRPRetrieveResponse.CompanyAttributesDetail> companyAttributesDetailList = response.getCompanyAttributesDetails().stream().filter(x -> x.getAttributeNameAttributeValuePair() != null && Objects.equals(x.getAttributeNameAttributeValuePair().getKey(), PartiesConstants.ACCOUNT_ID)).toList();
+            if(!companyAttributesDetailList.isEmpty()) {
+                customerIdentifier = companyAttributesDetailList.get(0).getAttributeNameAttributeValuePair().getValue();
+            }
+        }
 
         String fusionSiteIdentifier = null;
         String billableFlag = "";
         if(response.getCompanyCodeIssuerDetails() != null) {
             List<CRPRetrieveResponse.CompanyCodeIssuerDetails> companyCodeIssuerDetailsList = response.getCompanyCodeIssuerDetails().stream().filter(x -> Objects.equals(x.getIdentifierValue(), addressCode)).collect(Collectors.toList());
             if (!companyCodeIssuerDetailsList.isEmpty()) {
-                var fusionSiteIdList = companyCodeIssuerDetailsList.stream().filter(x -> Objects.equals(x.getIdentifierCodeType(), PartiesConstants.FUSION_SITE_ID)).collect(Collectors.toList());
+                var fusionSiteIdList = companyCodeIssuerDetailsList.stream().filter(x -> Objects.equals(x.getIdentifierCodeType(), PartiesConstants.FUSION_BILL_TO_SITE_NUMBER) && Objects.equals(x.getIdentifierIssuedBy(), PartiesConstants.FUSION)).collect(Collectors.toList());
                 var billableFlagList = companyCodeIssuerDetailsList.stream().filter(x -> Objects.equals(x.getIdentifierCodeType(), PartiesConstants.BILLABLE_FLAG)).collect(Collectors.toList());
                 if (!fusionSiteIdList.isEmpty())
                     fusionSiteIdentifier = fusionSiteIdList.get(0).getIdentifierCode();
@@ -807,7 +814,8 @@ public class CustomerBookingService implements ICustomerBookingService {
         orgData.put(PartiesConstants.EMAIL, response.getCompanyEmail());
         orgData.put(PartiesConstants.ACTIVE_CLIENT, true);
         orgData.put(PartiesConstants.DEFAULT_ADDRESS_SITE_IDENTIFIER, fusionSiteIdentifier);
-        orgData.put(PartiesConstants.RECEIVABLES, billableFlag.equals(CustomerBookingConstants.YES));
+        orgData.put(PartiesConstants.RECEIVABLES, true);     // This is hardcoded to true in case of CRP as asked by product
+        orgData.put(PartiesConstants.CUSTOMER_IDENTIFIER, customerIdentifier);
 
         request.setOrgData(orgData);
 
