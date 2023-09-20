@@ -98,6 +98,7 @@ public class ReportConstants
     public static final String CONSIGNER = "Consigner";
     public static final String CONSIGNOR = "Consigner";
     public static final String CONSIGNEE = "Consignee";
+    public static final String EXPORTER = "Exporter";
     public static final String CONSIGNER_FREETEXT = "ConsignerAddressFreeText";
     public static final String CONSIGNEE_FREETEXT = "ConsigneeAddressFreeText";
     public static final String NOTIFY_PARTY_FREETEXT = "NotifyPartyAddressFreeText";
@@ -136,6 +137,17 @@ public class ReportConstants
     public static final String CMS_REMARKS = "Remarks";
     public static final String CMS_PICK_CY = "PickUpCy";
     public static final String PRE_CARRIAGE = "PreCarriage";
+    public static final String INVNO = "INVNO";
+    public static final String EXPORTER_TAX_ID = "ExporterTaxID";
+    public static final String CONSIGNEE_TAX_ID = "ConsigneeTaxID";
+    public static final String AIRWAY_BILL_NUMBER = "AirwaybillNumber";
+    public static final String SHIP_DATE = "ShipDate";
+    public static final String WEIGHT = "Weight";
+    public static final String WEIGHT_UNIT = "WeightUnit";
+    public static final String TOTAL_PACKS = "TotalPacks";
+    public static final String UOTW = "UOTW";
+    public static final String PACKAGE_TYPE = "PackageType";
+    public static final String SPECIAL_INSTRUCTION = "SpecialInstructions";
 
 
         /*
@@ -475,6 +487,7 @@ public class ReportConstants
     public static final String COPY = "COPY";
     public static final String DISABLE_ORIGINAL = "DisableOriginal";
     public static final String ID = "Id";
+    public static final String PURCHASE_ORDER_NUMBER = "PurchaseOrderNumber";
 
     // APis
     public static final String REPORT_API_HANDLE = "/api/v2/report";

@@ -9,17 +9,24 @@ import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
+import javax.json.Json;
+import java.text.DecimalFormat;
 import java.time.LocalDateTime;
 import java.util.*;
 
+@Component
 public class ReportHelper {
 
-    @Autowired
     private static IV1Service v1Service;
+    private static JsonHelper jsonHelper;
 
     @Autowired
-    private static JsonHelper jsonHelper;
+    public ReportHelper(IV1Service v1Service, JsonHelper jsonHelper){
+        ReportHelper.v1Service = v1Service;
+        ReportHelper.jsonHelper = jsonHelper;
+    }
     public static String getCityCountry(String city, String country)
     {
         if (city == null)
@@ -93,7 +100,7 @@ public class ReportHelper {
             list.add(city_country);
         if(city_zipcode != null)
             list.add(city_zipcode);
-        if(state_country != null);
+        if(state_country != null)
             list.add(state_country);
         return list;
 
@@ -186,4 +193,13 @@ public class ReportHelper {
             }
         }
     }
+
+    public static String twoDecimalPlacesFormat(String value){
+        if(value.isEmpty() || value.isBlank())
+            return value;
+
+        DecimalFormat df = new DecimalFormat("#.00");
+        return df.format(value);
+    }
+
 }
