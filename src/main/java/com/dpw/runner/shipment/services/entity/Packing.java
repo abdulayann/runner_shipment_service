@@ -200,5 +200,8 @@ public class Packing extends MultiTenancy {
 
     @Column(name = "is_dimension")
     private Boolean isDimension;
+
+    @Column(name = "is_contract_enforced")
+    private Boolean isContractEnforced;
 }
 
