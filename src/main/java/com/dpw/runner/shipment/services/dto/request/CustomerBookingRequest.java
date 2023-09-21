@@ -59,4 +59,8 @@ public class CustomerBookingRequest extends CommonRequest implements IRunnerRequ
     private Boolean isAutoWeightVolumeUpdate;
     private String fmcTlcId;
     private Boolean isPackageManual;
+    private Boolean isConsignorAddressFreeText;
+    private Boolean isConsigneeAddressFreeText;
+    private Boolean isCustomerAddressFreeText;
+    private Boolean isNotifyPartyAddressFreeText;
 }

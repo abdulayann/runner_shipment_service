@@ -177,4 +177,16 @@ public class CustomerBooking extends MultiTenancy {
 
     @Column(name = "is_package_manual")
     private Boolean isPackageManual;
+
+    @Column(name = "is_consignor_address_free_text")
+    private Boolean isConsignorAddressFreeText;
+
+    @Column(name = "is_consignee_address_free_text")
+    private Boolean isConsigneeAddressFreeText;
+
+    @Column(name = "is_customer_address_free_text")
+    private Boolean isCustomerAddressFreeText;
+
+    @Column(name = "is_notify_party_address_free_text")
+    private Boolean isNotifyPartyAddressFreeText;
 }
