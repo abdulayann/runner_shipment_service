@@ -34,6 +34,8 @@ import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.combineStringsWithComma;
+
 public abstract class IReport {
 
     @Autowired
@@ -767,6 +769,30 @@ public abstract class IReport {
             return null;
         }
         return value.toString();
+    }
+
+    public String getPortDetails(String UNLocCode) {
+        UnlocationsResponse unlocationsResponse = getUNLocRow(UNLocCode);
+        if(unlocationsResponse != null) {
+            return combineStringsWithComma(unlocationsResponse.getName(), unlocationsResponse.getCountry());
+        }
+        return "";
+    }
+
+    public UnlocationsResponse getUNLocRow(String UNLocCode) {
+        if(UNLocCode == null || UNLocCode.isEmpty())
+            return null;
+        List <Object> criteria = Arrays.asList(
+                Arrays.asList("LocCode"),
+                "=",
+                UNLocCode
+        );
+        CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(criteria).build();
+        V1DataResponse v1DataResponse = v1Service.fetchUnlocation(commonV1ListRequest);
+        List<UnlocationsResponse> unlocationsResponse = jsonHelper.convertValueToList(v1DataResponse.entities, UnlocationsResponse.class);
+        if(unlocationsResponse.size() > 0)
+            return unlocationsResponse.get(0);
+        return null;
     }
 
 }

@@ -2,24 +2,16 @@ package com.dpw.runner.shipment.services.ReportingService.CommonUtils;
 
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.ReportingService.Reports.IReport;
-import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.Parties;
-import com.dpw.runner.shipment.services.helpers.JsonHelper;
-import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
-import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
-import com.dpw.runner.shipment.services.service.v1.IV1Service;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 public class ReportHelper {
 
-    @Autowired
-    private static IV1Service v1Service;
-
-    @Autowired
-    private static JsonHelper jsonHelper;
     public static String getCityCountry(String city, String country)
     {
         if (city == null)
@@ -136,22 +128,6 @@ public class ReportHelper {
         return stringList;
     }
 
-    public static UnlocationsResponse getUNLocRow(String UNLocCode) {
-        if(UNLocCode == null || UNLocCode.isEmpty())
-            return null;
-        List <Object> criteria = Arrays.asList(
-                Arrays.asList("LocCode"),
-                "=",
-                UNLocCode
-        );
-        CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(criteria).build();
-        V1DataResponse v1DataResponse = v1Service.fetchUnlocation(commonV1ListRequest);
-        List<UnlocationsResponse> unlocationsResponse = jsonHelper.convertValueToList(v1DataResponse.entities, UnlocationsResponse.class);
-        if(unlocationsResponse.size() > 0)
-            return unlocationsResponse.get(0);
-        return null;
-    }
-
     public static String combineStringsWithComma(String str1, String str2)
     {
         if (str1 == null)
@@ -164,14 +140,6 @@ public class ReportHelper {
             if (str2 == null) return str1;
             else return str1 + ", " + str2;
         }
-    }
-
-    public static String getPortDetails(String UNLocCode) {
-        UnlocationsResponse unlocationsResponse = getUNLocRow(UNLocCode);
-        if(unlocationsResponse != null) {
-            return combineStringsWithComma(unlocationsResponse.getName(), unlocationsResponse.getCountry());
-        }
-        return "";
     }
 
     public static void JsonDateFormat(Map<String, Object> dictionary) {
