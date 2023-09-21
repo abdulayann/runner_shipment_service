@@ -33,6 +33,8 @@ public class CheckCreditBalanceFusionResponse implements IRunnerResponse {
         private String accountNumber;
         @JsonProperty("CreditDetails")
         private List<CreditDetails> creditDetails;
+        @JsonProperty("Message")
+        private String message;
 
     }
 
