@@ -104,6 +104,8 @@ public class V1ServiceUtil {
                         .CostTaxPercentage(bc.getCostTaxPercentage())
                         .CurrentCostRate(bc.getCurrentCostRate())
                         .CurrentSellRate(bc.getCurrentSellRate())
+                        .SellRateCurrency(bc.getSellRateCurrency())
+                        .CostRateCurrency(bc.getCostRateCurrency())
                         .LocalTax(bc.getLocalTax())
                         .DebtorCode(bc.getDebtor() != null ? bc.getDebtor().getOrgCode() : null)
                         .CreditorCode(bc.getCreditor() != null ? bc.getCreditor().getOrgCode() : null)

@@ -107,6 +107,8 @@ public class CreateBookingModuleInV1 {
             private String EstimatedRevenueCurrency;
             private BigDecimal CurrentCostRate;
             private BigDecimal CurrentSellRate;
+            private String SellRateCurrency;
+            private String CostRateCurrency;
             private BigDecimal LocalTax;
             private String DebtorCode;
             private String CreditorCode;
