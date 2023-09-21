@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.service.v1.util;
 
 import com.dpw.runner.shipment.services.commons.constants.CustomerBookingConstants;
+import com.dpw.runner.shipment.services.commons.constants.NPMConstants;
 import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.dto.request.CreateBookingModuleInV1;
 import com.dpw.runner.shipment.services.entity.*;
@@ -122,10 +123,10 @@ public class V1ServiceUtil {
         if (customerBooking == null)
             return null;
         List<CreateBookingModuleInV1.BookingEntity.OrgDetail> list = new ArrayList<>();
-        var consignee = convertParty(customerBooking.getConsignee(), customerBooking.getIsConsigneeFreeText());
-        var consignor = convertParty(customerBooking.getConsignor(), customerBooking.getIsConsignorFreeText());
-        var notify = convertParty(customerBooking.getNotifyParty(), customerBooking.getIsNotifyPartyFreeText());
-        var customer = convertParty(customerBooking.getCustomer(), customerBooking.getIsCustomerFreeText());
+        var consignee = convertParty(customerBooking.getConsignee(), customerBooking.getIsConsigneeFreeText() | customerBooking.getIsConsigneeAddressFreeText());
+        var consignor = convertParty(customerBooking.getConsignor(), customerBooking.getIsConsignorFreeText() | customerBooking.getIsConsignorAddressFreeText());
+        var notify = convertParty(customerBooking.getNotifyParty(), customerBooking.getIsNotifyPartyFreeText() | customerBooking.getIsNotifyPartyAddressFreeText());
+        var customer = convertParty(customerBooking.getCustomer(), customerBooking.getIsCustomerFreeText() | customerBooking.getIsCustomerAddressFreeText());
         Set<CreateBookingModuleInV1.BookingEntity.OrgDetail> hs = new HashSet<>();
         if (customerBooking.getBookingCharges() != null) {
             for (var bc : customerBooking.getBookingCharges()) {

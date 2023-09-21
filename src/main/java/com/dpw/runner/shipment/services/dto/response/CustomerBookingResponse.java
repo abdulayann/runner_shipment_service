@@ -66,4 +66,8 @@ public class CustomerBookingResponse implements IRunnerResponse {
     private String fmcTlcId;
     private BigDecimal totalRevenue;
     private Boolean isPackageManual;
+    private Boolean isConsignorAddressFreeText;
+    private Boolean isConsigneeAddressFreeText;
+    private Boolean isCustomerAddressFreeText;
+    private Boolean isNotifyPartyAddressFreeText;
 }
