@@ -55,8 +55,7 @@ public class V1ServiceUtil {
                 .Incoterm(customerBooking.getIncoTerms())
                 .ServiceMode(customerBooking.getServiceMode())
                 .IsShipmentCreateEnabled(Boolean.TRUE)
-                .IsConsolidationCreateEnabled(customerBooking.getTransportType().equals(NPMConstants.SEA) &&
-                        (customerBooking.getCargoType().equals(CustomerBookingConstants.FCL) || customerBooking.getCargoType().equals(NPMConstants.LCL)))
+                .IsConsolidationCreateEnabled(customerBooking.getCargoType().equals(CustomerBookingConstants.FCL))
                 .BookingType(CustomerBookingConstants.ONLINE)
                 .Status(CustomerBookingConstants.ONE)
                 .FmcTlcId(customerBooking.getFmcTlcId())
