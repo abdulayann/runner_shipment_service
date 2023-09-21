@@ -460,15 +460,27 @@ public class CustomerBookingService implements ICustomerBookingService {
         }
         CheckCreditBalanceFusionRequest request = CheckCreditBalanceFusionRequest.builder().req_Params(new CheckCreditBalanceFusionRequest.ReqParams()).build();
         if(v1TenantSettingsResponse.getCreditLimitOn() == 0){
+            if(creditLimitRequest == null || creditLimitRequest.getCustomerIdentifierId() == null){
+                log.error("CustomerIdentifierId is Required with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+                throw new ValidationException("CustomerIdentifierId is Required for credit check");
+            }
             request.getReq_Params().setAccount_number(creditLimitRequest.getCustomerIdentifierId());
         }
         else if(v1TenantSettingsResponse.getCreditLimitOn() == 1) {
+            if(creditLimitRequest == null || creditLimitRequest.getSiteIdentifierId() == null){
+                log.error("SiteIdentifierId is Required with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+                throw new ValidationException("SiteIdentifierId is Required for credit check");
+            }
             request.getReq_Params().setSite_number(creditLimitRequest.getSiteIdentifierId());
         }
         if(v1TenantSettingsResponse.getIsGlobalFusionIntegrationEnabled()){
             request.getReq_Params().setCalling_System(CustomerBookingConstants.GCR_FUSION);
             request.getReq_Params().setBu_id(v1TenantSettingsResponse.getBusinessUnitName());
             ResponseEntity<DependentServiceResponse> response = (ResponseEntity<DependentServiceResponse>) fusionServiceAdapter.checkCreditLimitP100(CommonRequestModel.buildRequest(request));
+            if(response.getBody() == null || response.getBody().getData() == null){
+                log.error("No Data found on Fusion with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+                throw new ValidationException("No Data found on Fusion");
+            }
             CheckCreditBalanceFusionResponse checkCreditBalanceFusionResponse = modelMapper.map(response.getBody().getData(), CheckCreditBalanceFusionResponse.class);
             CheckCreditLimitResponse checkCreditLimitResponse = createCheckCreditLimitPayload(checkCreditBalanceFusionResponse);
             return ResponseHelper.buildSuccessResponse(checkCreditLimitResponse);
@@ -480,6 +492,10 @@ public class CustomerBookingService implements ICustomerBookingService {
     }
 
     private CheckCreditLimitResponse createCheckCreditLimitPayload(CheckCreditBalanceFusionResponse checkCreditBalanceFusionResponse){
+        if(checkCreditBalanceFusionResponse.getData().getCreditDetails() == null || checkCreditBalanceFusionResponse.getData().getCreditDetails().isEmpty()){
+            log.error("No Data found on Fusion with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            throw new ValidationException("No Data found on Fusion: "+ checkCreditBalanceFusionResponse.getData().getMessage());
+        }
         double totalCreditLimit = checkCreditBalanceFusionResponse.getData().getCreditDetails().get(0).getTotalCreditLimit();
         double outstandingAmount = checkCreditBalanceFusionResponse.getData().getCreditDetails().get(0).getOutstandingAmount();
         double overDueAmount = checkCreditBalanceFusionResponse.getData().getCreditDetails().get(0).getOverDue();
