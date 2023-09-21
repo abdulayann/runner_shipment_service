@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.DocumentService.DocumentService;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.Models.DocPages;
 import com.dpw.runner.shipment.services.ReportingService.Models.DocUploadRequest;
+import com.dpw.runner.shipment.services.ReportingService.Models.DocumentRequest;
 import com.dpw.runner.shipment.services.ReportingService.Reports.HblReport;
 import com.dpw.runner.shipment.services.ReportingService.ReportsFactory;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
@@ -12,7 +13,6 @@ import com.dpw.runner.shipment.services.commons.constants.EventConstants;
 import com.dpw.runner.shipment.services.commons.enums.MawbPrintFor;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
-import com.dpw.runner.shipment.services.dao.impl.HblDao;
 import com.dpw.runner.shipment.services.dao.impl.ShipmentSettingsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.request.CustomAutoEventRequest;
@@ -32,13 +32,13 @@ import com.itextpdf.text.Image;
 import com.itextpdf.text.Rectangle;
 import com.itextpdf.text.pdf.*;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.io.IOUtils;
-import org.apache.tomcat.util.http.fileupload.FileItem;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.ByteArrayResource;
 import org.springframework.stereotype.Service;
 
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -338,19 +338,22 @@ public class ReportService implements IReportService {
         boolean waterMarkRequired = true;
         try
         {
-            HblTermsConditionTemplate frontTemplate = hblTermsConditionTemplateDao.getTemplateCode(reportRequest.getFrontTemplateCode(), 1, reportRequest.getPrintType());
-            HblTermsConditionTemplate backTemplate = hblTermsConditionTemplateDao.getTemplateCode(reportRequest.getBackTemplateCode(), 0, reportRequest.getPrintType());
             boolean fWaterMark = false;
             boolean bWaterMark = false;
-            if (frontTemplate != null)
-            {
-                fWaterMark = frontTemplate.getIsWaterMarkRequired();
+            if(reportRequest.getFrontTemplateCode() != null) {
+                HblTermsConditionTemplate frontTemplate = hblTermsConditionTemplateDao.getTemplateCode(reportRequest.getFrontTemplateCode(), 1, reportRequest.getPrintType());
+                if (frontTemplate != null)
+                {
+                    fWaterMark = frontTemplate.getIsWaterMarkRequired();
+                }
             }
-            if (backTemplate != null)
-            {
-                bWaterMark = backTemplate.getIsWaterMarkRequired();
+            if(reportRequest.getBackTemplateCode() != null) {
+                HblTermsConditionTemplate backTemplate = hblTermsConditionTemplateDao.getTemplateCode(reportRequest.getBackTemplateCode(), 0, reportRequest.getPrintType());
+                if (backTemplate != null)
+                {
+                    bWaterMark = backTemplate.getIsWaterMarkRequired();
+                }
             }
-
             waterMarkRequired = fWaterMark && bWaterMark;
         }
         catch (ValidationException ex)
@@ -505,9 +508,9 @@ public class ReportService implements IReportService {
 
     public byte[] GetFromDocumentService(Object json, String templateId) {
         try {
-            Map<String, Object> jsonMap = new HashMap<>();
-            jsonMap.put("data", json);
-            return (byte[]) documentService.DownloadDocumentTemplate(jsonHelper.convertToJson(jsonMap), templateId).getBody();
+            DocumentRequest documentRequest = new DocumentRequest();
+            documentRequest.setData(json);
+            return (byte[]) documentService.DownloadDocumentTemplate(jsonHelper.convertToJson(documentRequest), templateId).getBody();
         } catch (Exception e) {
             log.error(e.getMessage());
             return null;
@@ -839,10 +842,10 @@ public class ReportService implements IReportService {
             logopath = null;
         }
 
-        int originalCount = Integer.parseInt((String) json.getOrDefault(ReportConstants.ORIGINALS, -1));
-        int copyCount = Integer.parseInt((String) json.getOrDefault(ReportConstants.COPY_BILLS, -1));
+        int originalCount = Integer.parseInt((String) json.getOrDefault(ReportConstants.ORIGINALS, -1).toString());
+        int copyCount = Integer.parseInt((String) json.getOrDefault(ReportConstants.COPY_BILLS, -1).toString());
 
-        if (ReportInfo.equalsIgnoreCase(ReportConstants.SHIPMENT_HOUSE_BILL))
+        if (!ReportInfo.equalsIgnoreCase(ReportConstants.SHIPMENT_HOUSE_BILL))
         {
             originalCount = -1;
             copyCount = -1;
