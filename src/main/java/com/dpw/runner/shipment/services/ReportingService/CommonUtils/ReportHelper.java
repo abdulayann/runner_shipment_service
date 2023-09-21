@@ -3,17 +3,19 @@ package com.dpw.runner.shipment.services.ReportingService.CommonUtils;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.ReportingService.Reports.IReport;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
+import com.dpw.runner.shipment.services.entity.Hbl;
 import com.dpw.runner.shipment.services.entity.Parties;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
+import com.dpw.runner.shipment.services.repository.interfaces.IHblRepository;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import javax.json.Json;
 import java.text.DecimalFormat;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 @Component
@@ -21,11 +23,13 @@ public class ReportHelper {
 
     private static IV1Service v1Service;
     private static JsonHelper jsonHelper;
+    private static IHblRepository hblRepository;
 
     @Autowired
-    public ReportHelper(IV1Service v1Service, JsonHelper jsonHelper){
+    public ReportHelper(IV1Service v1Service, JsonHelper jsonHelper, IHblRepository hblRepository){
         ReportHelper.v1Service = v1Service;
         ReportHelper.jsonHelper = jsonHelper;
+        ReportHelper.hblRepository = hblRepository;
     }
     public static String getCityCountry(String city, String country)
     {
@@ -200,6 +204,23 @@ public class ReportHelper {
 
         DecimalFormat df = new DecimalFormat("#.00");
         return df.format(value);
+    }
+
+    public static String GenerateFormattedDate(LocalDateTime localDateTime, String pattern){
+        if(localDateTime == null || pattern == null)
+            return null;
+        DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern(pattern);
+        return dateTimeFormatter.format(localDateTime);
+    }
+
+    public static void AddBlDetails(Map<String, Object> dictionary, Long shipmentId) {
+        List<Hbl> hbl = hblRepository.findByShipmentId(shipmentId);
+        if(hbl != null && hbl.size() > 0){
+            dictionary.put(ReportConstants.BL_CARGO_TERMS_DESCRIPTION,
+                    hbl.get(0).getHblData().getCargoTermsDescription());
+            dictionary.put(ReportConstants.BL_REMARKS_DESCRIPTION,
+                    hbl.get(0).getHblData().getBlRemarksDescription());
+        }
     }
 
 }

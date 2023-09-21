@@ -13,6 +13,7 @@ public class ReportConstants
     public static final String POR = "POR";
     public static final String POL = "POL";
     public static final String POD = "POD";
+    public static final String POFD = "POFD";
     public static final String FPOD = "FPOD";
     public static final String ITEMS = "Items";
     public static final String POD_COUNTRY = "PODCountry";
@@ -144,10 +145,21 @@ public class ReportConstants
     public static final String SHIP_DATE = "ShipDate";
     public static final String WEIGHT = "Weight";
     public static final String WEIGHT_UNIT = "WeightUnit";
+    public static final String VOLUME = "Volume";
+    public static final String VOLUME_UNIT = "VolumeUnit";
+    public static final String NET_WEIGHT = "NetWeight";
+    public static final String VOLUME_WEIGHT = "VolumeWeight";
     public static final String TOTAL_PACKS = "TotalPacks";
     public static final String UOTW = "UOTW";
+    public static final String UOTV = "UOTV";
     public static final String PACKAGE_TYPE = "PackageType";
     public static final String SPECIAL_INSTRUCTION = "SpecialInstructions";
+    public static final String MBL_NUMBER = "MBLNumber";
+    public static final String HBL_NUMBER = "HBLNumber";
+    public static final String PO_DELIVERY = "PODelivery";
+    public static final String SERVICE_TYPE = "ServiceType";
+    public static final String SUMMARY = "Summary";
+    public static final String FULL_NAME = "FullName";
 
 
         /*
@@ -318,6 +330,7 @@ public class ReportConstants
     public static final String AGENT = "Agent";
     public static final String SHIPPER_ADDRESS = "ShipperAddress";
     public static final String CONSIGNEE_ADDRESS = "ConsigneeAddress";
+    public static final String NOTIFY_ADDRESS = "NotifyAddress";
     public static final String ISSUING_CARRIER_AGENT_NAME = "IssuingCarrierAgentName";
     public static final String ISSUiNG_CARRIER_CITY = "IssuingCarrierCity";
     public static final String AGENT_IATA_CODE = "AgentIATACode";
