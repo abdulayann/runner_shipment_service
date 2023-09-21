@@ -851,6 +851,10 @@ public class CustomerBookingService implements ICustomerBookingService {
             log.error("Request is null for Customer Booking Create with Request Id {}", LoggerHelper.getRequestIdFromMDC());
         }
         CustomerBooking customerBooking = jsonHelper.convertValue(request, CustomerBooking.class);
+        customerBooking.setIsConsigneeAddressFreeText(customerBooking.getIsConsigneeFreeText() != null && customerBooking.getIsConsigneeFreeText());
+        customerBooking.setIsConsignorAddressFreeText(customerBooking.getIsConsignorFreeText() != null && customerBooking.getIsConsignorFreeText());
+        customerBooking.setIsCustomerAddressFreeText(false);
+        customerBooking.setIsNotifyPartyAddressFreeText(customerBooking.getIsNotifyPartyFreeText() != null || customerBooking.getIsNotifyPartyFreeText());
         customerBooking.setSource(BookingSource.Platform);
         customerBooking.setIsPlatformBookingCreated(Boolean.TRUE);
         try {
