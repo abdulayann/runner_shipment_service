@@ -44,6 +44,7 @@ public class Constants {
     public static final String Validation_Exception = "Validation errors occurred.";
     public static final String MASS = "Mass";
     public static final String VOLUME = "Volume";
+    public static final String LENGTH = "Length";
     public static final String VOLUME_UNIT_M3 = "M3";
     public static final String VOLUME_UNIT_LITRE = "L";
     public static final String WEIGHT_UNIT_KG = "KG";
@@ -64,22 +65,26 @@ public class Constants {
 
     public static final String INVNO = "INVNO";
     public static final String CON = "CON";
-    
-    /** Statuses */
+
+    /**
+     * Statuses
+     */
     public static final String PENDING = "Pending";
     public static final String V1_MASTER_DATA = "v1";
 
 
     public static final String TOKEN = "Authorization";
 
-    public static final String DMAWB ="DMAWB";
+    public static final String DMAWB = "DMAWB";
 
-    public static final String FORWARDING_AGENT= "Forwarding Agent";
+    public static final String FORWARDING_AGENT = "Forwarding Agent";
 
     public static final String DEFAULT_NATURE_AND_QUANTITY_GOODS_TEXT_MAWB = "CONSOLIDATED CARGO AS PER MANIFEST ATTACHED";
     public static final double FACTOR_VOL_WT = 166.667;
 
-    /** Enum Constants **/
+    /**
+     * Enum Constants
+     **/
 
     public static final String SHIPMENT_STATUS = "ShipmentStatus";
     public static final String BOOKING_STATUS = "BookingStatus";
@@ -89,7 +94,9 @@ public class Constants {
 
     public static final String SERVICE = "Service";
 
-    /** Events **/
+    /**
+     * Events
+     **/
 
     public static final String INVGNTD = "INVGNTD";
     public static final String TAXSG = "TAXSG";
@@ -110,4 +117,9 @@ public class Constants {
     public static final String CONSOLIDATION_TYPE_AGT = "AGT";
 
 
+    public static final String METRIC_TON = "MT";
+    public static final String METRE = "M";
+    public static final String CENTI = "CM";
+    public static final String DECI = "DM";
+    public static final String INCH = "IN";
 }

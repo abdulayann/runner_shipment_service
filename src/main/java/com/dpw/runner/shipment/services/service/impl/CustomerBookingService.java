@@ -32,10 +32,7 @@ import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.service.interfaces.ICustomerBookingService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
-import com.dpw.runner.shipment.services.utils.BookingIntegrationsUtility;
-import com.dpw.runner.shipment.services.utils.CommonUtils;
-import com.dpw.runner.shipment.services.utils.MasterDataUtils;
-import com.dpw.runner.shipment.services.utils.StringUtility;
+import com.dpw.runner.shipment.services.utils.*;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
@@ -122,7 +119,6 @@ public class CustomerBookingService implements ICustomerBookingService {
             Map.entry("bookingStatus", RunnerEntityMapping.builder().tableName("CustomerBooking").dataType(BookingStatus.class).fieldName("bookingStatus").build()),
             Map.entry("createdBy", RunnerEntityMapping.builder().tableName("CustomerBooking").dataType(String.class).fieldName("createdBy").build())
     );
-
 
 
     @Override
@@ -253,7 +249,7 @@ public class CustomerBookingService implements ICustomerBookingService {
         }
         customerBooking = this.updateEntities(customerBooking, request, jsonHelper.convertToJson(oldEntity.get()));
         if (!Objects.isNull(customerBooking.getBusinessCode()) && Objects.equals(customerBooking.getBookingStatus(), BookingStatus.PENDING_FOR_CREDIT_LIMIT)
-                && !customerBooking.getBookingCharges().isEmpty() && !isCreatedInPlatform ) {
+                && !customerBooking.getBookingCharges().isEmpty() && !isCreatedInPlatform) {
             bookingIntegrationsUtility.createBookingInPlatform(customerBooking);
         } else if (isCreatedInPlatform) {
             bookingIntegrationsUtility.updateBookingInPlatform(customerBooking);
@@ -435,7 +431,7 @@ public class CustomerBookingService implements ICustomerBookingService {
     }
 
     @Override
-    public ResponseEntity<?> checkCreditLimitFromFusion(CommonRequestModel commonRequestModel) throws Exception{
+    public ResponseEntity<?> checkCreditLimitFromFusion(CommonRequestModel commonRequestModel) throws Exception {
         CreditLimitRequest creditLimitRequest = (CreditLimitRequest) commonRequestModel.getData();
         V1RetrieveResponse v1RetrieveResponse = v1Service.retrieveTenantSettings();
 
@@ -449,12 +445,12 @@ public class CustomerBookingService implements ICustomerBookingService {
 
         V1TenantResponse v1TenantResponse = modelMapper.map(((ArrayList) tenantName.entities).get(0), V1TenantResponse.class);
 
-        if(!v1TenantSettingsResponse.getEnableCreditLimitManagement() || !v1TenantSettingsResponse.getIsCreditLimitWithFusionEnabled()){
+        if (!v1TenantSettingsResponse.getEnableCreditLimitManagement() || !v1TenantSettingsResponse.getIsCreditLimitWithFusionEnabled()) {
             log.error("EnableCreditLimitManagement Or EnableCreditLimitIntegrationWithFusion is False in Branch settings with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             throw new ValidationException("EnableCreditLimitManagement Or EnableCreditLimitIntegrationWithFusion is False in Branch settings");
         }
-        boolean isCustomerBookingRestricted = v1TenantSettingsResponse.getRestrictedItemsForCreditLimit().stream().anyMatch(p->p.equals("CUS_BK"));
-        if(!isCustomerBookingRestricted){
+        boolean isCustomerBookingRestricted = v1TenantSettingsResponse.getRestrictedItemsForCreditLimit().stream().anyMatch(p -> p.equals("CUS_BK"));
+        if (!isCustomerBookingRestricted) {
             log.error("'Restrict the transaction when Credit Limit is enabled' does not include CustomerBooking with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             throw new ValidationException("'Restrict the transaction when Credit Limit is enabled' does not include CustomerBooking");
         }
@@ -473,7 +469,7 @@ public class CustomerBookingService implements ICustomerBookingService {
             }
             request.getReq_Params().setSite_number(creditLimitRequest.getSiteIdentifierId());
         }
-        if(v1TenantSettingsResponse.getIsGlobalFusionIntegrationEnabled()){
+        if (v1TenantSettingsResponse.getIsGlobalFusionIntegrationEnabled()) {
             request.getReq_Params().setCalling_System(CustomerBookingConstants.GCR_FUSION);
             request.getReq_Params().setBu_id(v1TenantSettingsResponse.getBusinessUnitName());
             ResponseEntity<DependentServiceResponse> response = (ResponseEntity<DependentServiceResponse>) fusionServiceAdapter.checkCreditLimitP100(CommonRequestModel.buildRequest(request));
@@ -484,8 +480,7 @@ public class CustomerBookingService implements ICustomerBookingService {
             CheckCreditBalanceFusionResponse checkCreditBalanceFusionResponse = modelMapper.map(response.getBody().getData(), CheckCreditBalanceFusionResponse.class);
             CheckCreditLimitResponse checkCreditLimitResponse = createCheckCreditLimitPayload(checkCreditBalanceFusionResponse);
             return ResponseHelper.buildSuccessResponse(checkCreditLimitResponse);
-        }
-        else {
+        } else {
             log.error("'Enable Global Fusion Integration' is false for this Tenant this is required for Customer Booking with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             throw new ValidationException("'Enable Global Fusion Integration' is false for this Tenant this is required for Customer Booking");
         }
@@ -501,8 +496,8 @@ public class CustomerBookingService implements ICustomerBookingService {
         double overDueAmount = checkCreditBalanceFusionResponse.getData().getCreditDetails().get(0).getOverDue();
         double totalCreditAvailableBalance = (totalCreditLimit - outstandingAmount);
 
-        double creditLimitUtilizedPer = totalCreditLimit != 0? (outstandingAmount*100)/totalCreditLimit: 0;
-        double overDuePer = totalCreditLimit != 0? (overDueAmount*100)/totalCreditLimit: 0;
+        double creditLimitUtilizedPer = totalCreditLimit != 0 ? (outstandingAmount * 100) / totalCreditLimit : 0;
+        double overDuePer = totalCreditLimit != 0 ? (overDueAmount * 100) / totalCreditLimit : 0;
         var num = CommonUtils.roundOffToTwoDecimalPlace(checkCreditBalanceFusionResponse.getData().getCreditDetails().get(0).getTotalCreditLimit());
         return CheckCreditLimitResponse.builder()
                 .totalCreditLimit(CommonUtils.roundOffToTwoDecimalPlace(totalCreditLimit))
@@ -520,7 +515,7 @@ public class CustomerBookingService implements ICustomerBookingService {
     @Transactional
     public ResponseEntity<?> platformCreateBooking(CommonRequestModel commonRequestModel) throws Exception {
         PlatformToRunnerCustomerBookingRequest request = (PlatformToRunnerCustomerBookingRequest) commonRequestModel.getData();
-        if(request.getIsSingleUsageContract() != null)
+        if (request.getIsSingleUsageContract() != null)
             request.setContractStatus(request.getIsSingleUsageContract() ? "SINGLE_USAGE" : "MULTI_USAGE");
         String bookingNumber = request.getBookingNumber();
         if (bookingNumber == null) {
@@ -554,6 +549,29 @@ public class CustomerBookingService implements ICustomerBookingService {
                 pack.setLengthUnit(pack.getDimensionUnit());
                 pack.setWidthUnit(pack.getDimensionUnit());
                 pack.setHeightUnit(pack.getDimensionUnit());
+                try {
+                    if (pack.getDimensionUnit() != null && !pack.getDimensionUnit().equals(Constants.METRE)) {
+                        pack.setLength(BigDecimal.valueOf(
+                                UnitConversionUtility.convertUnit(Constants.LENGTH, pack.getLength(), pack.getDimensionUnit(), Constants.METRE)
+                                        .doubleValue()));
+                        pack.setWidth(BigDecimal.valueOf(
+                                UnitConversionUtility.convertUnit(Constants.LENGTH, pack.getWidth(), pack.getDimensionUnit(), Constants.METRE)
+                                        .doubleValue()));
+                        pack.setHeight(BigDecimal.valueOf(
+                                UnitConversionUtility.convertUnit(Constants.LENGTH, pack.getHeight(), pack.getDimensionUnit(), Constants.METRE)
+                                        .doubleValue()));
+                        pack.setDimensionUnit(Constants.METRE);
+                    }
+                    if (pack.getWeightUnit() != null && !pack.getWeightUnit().equals(Constants.WEIGHT_UNIT_KG)) {
+                        pack.setWeight(BigDecimal.valueOf(
+                                UnitConversionUtility.convertUnit(Constants.MASS, pack.getWeight(), pack.getWeightUnit(), Constants.WEIGHT_UNIT_KG)
+                                        .doubleValue()));
+                        pack.setWeightUnit(Constants.WEIGHT_UNIT_KG);
+                    }
+                } catch (Exception ex) {
+                    String message = "ERROR Exception thrown while converting units";
+                    log.error("ERROR Converting units");
+                }
                 if (pack.getGuid() == null)
                     pack.setGuid(UUID.randomUUID());
                 referenceNumbersGuidMapResponses.add(PlatformToRunnerCustomerBookingResponse.ReferenceNumbersGuidMapResponse.builder()
@@ -704,10 +722,10 @@ public class CustomerBookingService implements ICustomerBookingService {
             String addressCode = request.getCustomer().getAddressCode();
             transformOrgAndAddressPayload(request.getCustomer(), addressCode, orgCode);
         }
-        if ( (Objects.isNull(request.getIsConsignorFreeText()) || request.getIsConsignorFreeText()) && request.getConsignor() != null) {
+        if ((Objects.isNull(request.getIsConsignorFreeText()) || request.getIsConsignorFreeText()) && request.getConsignor() != null) {
             transformOrgAndAddressToRawData(request.getConsignor());
         }
-        if ( (Objects.isNull(request.getIsConsigneeFreeText()) || request.getIsConsigneeFreeText()) && request.getConsignee() != null) {
+        if ((Objects.isNull(request.getIsConsigneeFreeText()) || request.getIsConsigneeFreeText()) && request.getConsignee() != null) {
             transformOrgAndAddressToRawData(request.getConsignee());
         }
         if ((Objects.isNull(request.getIsNotifyPartyFreeText()) || request.getIsNotifyPartyFreeText()) && request.getNotifyParty() != null) {
@@ -791,22 +809,22 @@ public class CustomerBookingService implements ICustomerBookingService {
         Map<String, Object> orgData = new HashMap<>();
         Map<String, Object> addressData = new HashMap<>();
         CRPRetrieveResponse.CRPAddressDetails crpAddressDetails = new CRPRetrieveResponse.CRPAddressDetails();
-        if(response.getCompanyOfficeDetails() != null) {
+        if (response.getCompanyOfficeDetails() != null) {
             List<CRPRetrieveResponse.CRPAddressDetails> crpAddressDetailsList = response.getCompanyOfficeDetails().stream().filter(x -> Objects.equals(x.getOfficeReference(), addressCode)).collect(Collectors.toList());
             if (!crpAddressDetailsList.isEmpty())
                 crpAddressDetails = crpAddressDetailsList.get(0);
         }
         String customerIdentifier = null;
-        if(response.getCompanyAttributesDetails() != null) {
+        if (response.getCompanyAttributesDetails() != null) {
             List<CRPRetrieveResponse.CompanyAttributesDetail> companyAttributesDetailList = response.getCompanyAttributesDetails().stream().filter(x -> x.getAttributeNameAttributeValuePair() != null && Objects.equals(x.getAttributeNameAttributeValuePair().getKey(), PartiesConstants.ACCOUNT_ID)).toList();
-            if(!companyAttributesDetailList.isEmpty()) {
+            if (!companyAttributesDetailList.isEmpty()) {
                 customerIdentifier = companyAttributesDetailList.get(0).getAttributeNameAttributeValuePair().getValue();
             }
         }
 
         String fusionSiteIdentifier = null;
         String billableFlag = "";
-        if(response.getCompanyCodeIssuerDetails() != null) {
+        if (response.getCompanyCodeIssuerDetails() != null) {
             List<CRPRetrieveResponse.CompanyCodeIssuerDetails> companyCodeIssuerDetailsList = response.getCompanyCodeIssuerDetails().stream().filter(x -> Objects.equals(x.getIdentifierValue(), addressCode)).collect(Collectors.toList());
             if (!companyCodeIssuerDetailsList.isEmpty()) {
                 var fusionSiteIdList = companyCodeIssuerDetailsList.stream().filter(x -> Objects.equals(x.getIdentifierCodeType(), PartiesConstants.FUSION_BILL_TO_SITE_NUMBER) && Objects.equals(x.getIdentifierIssuedBy(), PartiesConstants.FUSION)).collect(Collectors.toList());
@@ -1001,9 +1019,9 @@ public class CustomerBookingService implements ICustomerBookingService {
 
     private String generateBookingNumber(String cargoType) {
         String prefix = "DBAR";
-        if(Objects.equals(cargoType, "FCL"))
+        if (Objects.equals(cargoType, "FCL"))
             prefix = "DBFC";
-        else if(Objects.equals(cargoType, "LCL"))
+        else if (Objects.equals(cargoType, "LCL"))
             prefix = "DBLC";
         return prefix + "-" + getRandomNumberString(7) + "-" + getRandomNumberString(6);
     }
@@ -1032,13 +1050,13 @@ public class CustomerBookingService implements ICustomerBookingService {
         this.addDedicatedMasterData(customerBooking, customerBookingResponse);
     }
 
-    private void populateTotalRevenueDetails(CustomerBooking customerBooking,CustomerBookingResponse customerBookingResponse){
+    private void populateTotalRevenueDetails(CustomerBooking customerBooking, CustomerBookingResponse customerBookingResponse) {
         BigDecimal totalRevenue = BigDecimal.ZERO;
-        if(customerBooking != null && customerBooking.getBookingCharges() != null){
+        if (customerBooking != null && customerBooking.getBookingCharges() != null) {
             totalRevenue = customerBooking.getBookingCharges().stream()
                     .filter(Objects::nonNull)
                     .map(c -> c.getLocalSellAmount() != null ? c.getLocalSellAmount() : BigDecimal.ZERO)
-                    .reduce(BigDecimal.ZERO,BigDecimal::add);
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
         }
         customerBookingResponse.setTotalRevenue(totalRevenue);
     }
