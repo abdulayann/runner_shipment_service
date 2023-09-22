@@ -53,6 +53,8 @@ public class UnitConversionUtility {
                 return MetricPrefix.CENTI(Units.METRE);
             case Constants.DECI:
                 return MetricPrefix.DECI(Units.METRE);
+            case Constants.INCH:
+                return Units.METRE.multiply(0.0254);
             default:
                 throw new IllegalArgumentException(DaoConstants.DAO_UNKNOWN_UNIT + unitSymbol);
         }
