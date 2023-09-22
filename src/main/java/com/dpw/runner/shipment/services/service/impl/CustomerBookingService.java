@@ -550,7 +550,7 @@ public class CustomerBookingService implements ICustomerBookingService {
                 pack.setWidthUnit(pack.getDimensionUnit());
                 pack.setHeightUnit(pack.getDimensionUnit());
                 try {
-                    if (!pack.getDimensionUnit().equals(Constants.METRE)) {
+                    if (pack.getDimensionUnit() != null && !pack.getDimensionUnit().equals(Constants.METRE)) {
                         pack.setLength(BigDecimal.valueOf(
                                 UnitConversionUtility.convertUnit(Constants.LENGTH, pack.getLength(), pack.getDimensionUnit(), Constants.METRE)
                                         .doubleValue()));
@@ -562,13 +562,7 @@ public class CustomerBookingService implements ICustomerBookingService {
                                         .doubleValue()));
                         pack.setDimensionUnit(Constants.METRE);
                     }
-                    if (!pack.getVolumeUnit().equals(Constants.VOLUME_UNIT_M3)) {
-                        pack.setVolume(BigDecimal.valueOf(
-                                UnitConversionUtility.convertUnit(Constants.VOLUME, pack.getVolume(), pack.getVolumeUnit(), Constants.VOLUME_UNIT_M3)
-                                        .doubleValue()));
-                        pack.setVolumeUnit(Constants.VOLUME_UNIT_M3);
-                    }
-                    if (!pack.getWeightUnit().equals(Constants.WEIGHT_UNIT_KG)) {
+                    if (pack.getWeightUnit() != null && !pack.getWeightUnit().equals(Constants.WEIGHT_UNIT_KG)) {
                         pack.setWeight(BigDecimal.valueOf(
                                 UnitConversionUtility.convertUnit(Constants.MASS, pack.getWeight(), pack.getWeightUnit(), Constants.WEIGHT_UNIT_KG)
                                         .doubleValue()));
