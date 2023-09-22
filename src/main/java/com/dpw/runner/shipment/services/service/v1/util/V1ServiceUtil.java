@@ -6,6 +6,8 @@ import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.dto.request.CreateBookingModuleInV1;
 import com.dpw.runner.shipment.services.entity.*;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -85,7 +87,7 @@ public class V1ServiceUtil {
                         .OverseasCostCurrency(bc.getOverseasCostCurrency())
                         .OverseasCostAmount(bc.getOverseasCostAmount())
                         .OverseasSellAmount(bc.getOverseasSellAmount())
-                        .SellExchange(bc.getSellExchange())
+                        .SellExchange(bc.getSellExchange() != null && !bc.getSellExchange().equals(BigDecimal.ZERO)? BigDecimal.ONE.divide(bc.getSellExchange(),10, RoundingMode.HALF_UP) : bc.getSellExchange())
                         .TaxPercentage(bc.getTaxPercentage())
                         .ContainersGuid(createContainersGuid(bc))
                         .RevenueLineTotal(bc.getRevenueLineTotal())
