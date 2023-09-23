@@ -69,5 +69,7 @@ public class PackingResponse implements IRunnerResponse {
     public Map<String, String> unlocationData;
     public Map<String, String> masterData;
     public Map<String, String> commodityTypeData;
+    private Boolean isDimension;
+    private Boolean isContractEnforced;
 }
 

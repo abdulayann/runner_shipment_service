@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.controller;
 import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
+import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IMasterDataService;
 import io.swagger.annotations.ApiResponse;
@@ -115,7 +116,7 @@ public class MasterDataController {
             @ApiResponse(code = 404, message = Constants.NO_DATA, response = DependentServiceResponse.class)
     })
     @PostMapping(MasterDataConstants.CARRIER + ApiConstants.API_LIST)
-    public ResponseEntity<DependentServiceResponse> carrierList(@RequestBody @Valid Object request) {
+    public ResponseEntity<DependentServiceResponse> carrierList(@RequestBody @Valid CarrierListObject request) {
         String responseMsg;
         try {
             return (ResponseEntity<DependentServiceResponse>) masterDataService.listCarrier(CommonRequestModel.buildDependentDataRequest(request));
@@ -887,6 +888,23 @@ public class MasterDataController {
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+        }
+        return (ResponseEntity<DependentServiceResponse>) ResponseHelper.buildFailedResponse(responseMsg);
+    }
+
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = ShipmentConstants.LIST_SUCCESSFUL),
+            @ApiResponse(code = 404, message = Constants.NO_DATA, response = DependentServiceResponse.class)
+    })
+    @PostMapping(MasterDataConstants.TENANT_SETTINGS + MasterDataConstants.RETRIEVE_TENANT_SETTINGS)
+    public ResponseEntity<DependentServiceResponse> tenantSettings() {
+        String responseMsg;
+        try {
+            return (ResponseEntity<DependentServiceResponse>) masterDataService.retrieveTenantSettings();
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;
             log.error(responseMsg, e);
         }
         return (ResponseEntity<DependentServiceResponse>) ResponseHelper.buildFailedResponse(responseMsg);

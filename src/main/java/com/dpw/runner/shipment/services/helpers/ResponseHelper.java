@@ -59,6 +59,13 @@ public class ResponseHelper {
         return new ResponseEntity<>(runnerResponse, HttpStatus.OK);
     }
 
+    public static ResponseEntity<?> buildFailedResponse(String msg, HttpStatus httpStatus) {
+        httpStatus = httpStatus == null  ? HttpStatus.BAD_REQUEST : httpStatus;
+        log.debug("Return Response with error {}", msg);
+        RunnerResponse runnerResponse = buildFailResponse(new ApiError(httpStatus, msg));
+        return new ResponseEntity<>(runnerResponse, httpStatus);
+    }
+
     public static ResponseEntity<?> buildFailedResponse(String msg) {
         log.debug("Return Response with error {}", msg);
         RunnerResponse runnerResponse = buildFailResponse(new ApiError(HttpStatus.BAD_REQUEST, msg));

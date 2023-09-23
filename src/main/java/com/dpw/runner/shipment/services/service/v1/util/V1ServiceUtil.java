@@ -1,10 +1,13 @@
 package com.dpw.runner.shipment.services.service.v1.util;
 
 import com.dpw.runner.shipment.services.commons.constants.CustomerBookingConstants;
+import com.dpw.runner.shipment.services.commons.constants.NPMConstants;
 import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.dto.request.CreateBookingModuleInV1;
 import com.dpw.runner.shipment.services.entity.*;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -21,6 +24,7 @@ public class V1ServiceUtil {
     private static CreateBookingModuleInV1.BookingEntity createEntity(CustomerBooking customerBooking) {
         var carrierDetails = Optional.ofNullable(customerBooking.getCarrierDetails());
         return CreateBookingModuleInV1.BookingEntity.builder()
+                .Voyage(customerBooking.getCarrierDetails() != null ? customerBooking.getCarrierDetails().getVoyage() : null)
                 .ContractId(customerBooking.getContractId())
                 .NotifyPartyCode(Objects.isNull(customerBooking.getNotifyParty()) ? null : customerBooking.getNotifyParty().getOrgCode())
                 .NotifyPartyAddressCode(Objects.isNull(customerBooking.getNotifyParty()) ? null : customerBooking.getNotifyParty().getAddressCode())
@@ -83,7 +87,7 @@ public class V1ServiceUtil {
                         .OverseasCostCurrency(bc.getOverseasCostCurrency())
                         .OverseasCostAmount(bc.getOverseasCostAmount())
                         .OverseasSellAmount(bc.getOverseasSellAmount())
-                        .SellExchange(bc.getSellExchange())
+                        .SellExchange(bc.getSellExchange() != null && !bc.getSellExchange().equals(BigDecimal.ZERO)? BigDecimal.ONE.divide(bc.getSellExchange(),10, RoundingMode.HALF_UP) : bc.getSellExchange())
                         .TaxPercentage(bc.getTaxPercentage())
                         .ContainersGuid(createContainersGuid(bc))
                         .RevenueLineTotal(bc.getRevenueLineTotal())
@@ -102,6 +106,8 @@ public class V1ServiceUtil {
                         .CostTaxPercentage(bc.getCostTaxPercentage())
                         .CurrentCostRate(bc.getCurrentCostRate())
                         .CurrentSellRate(bc.getCurrentSellRate())
+                        .SellRateCurrency(bc.getSellRateCurrency())
+                        .CostRateCurrency(bc.getCostRateCurrency())
                         .LocalTax(bc.getLocalTax())
                         .DebtorCode(bc.getDebtor() != null ? bc.getDebtor().getOrgCode() : null)
                         .CreditorCode(bc.getCreditor() != null ? bc.getCreditor().getOrgCode() : null)
@@ -121,10 +127,10 @@ public class V1ServiceUtil {
         if (customerBooking == null)
             return null;
         List<CreateBookingModuleInV1.BookingEntity.OrgDetail> list = new ArrayList<>();
-        var consignee = convertParty(customerBooking.getConsignee(), customerBooking.getIsConsigneeFreeText());
-        var consignor = convertParty(customerBooking.getConsignor(), customerBooking.getIsConsignorFreeText());
-        var notify = convertParty(customerBooking.getNotifyParty(), customerBooking.getIsNotifyPartyFreeText());
-        var customer = convertParty(customerBooking.getCustomer(), customerBooking.getIsCustomerFreeText());
+        var consignee = convertParty(customerBooking.getConsignee(), customerBooking.getIsConsigneeFreeText() | customerBooking.getIsConsigneeAddressFreeText());
+        var consignor = convertParty(customerBooking.getConsignor(), customerBooking.getIsConsignorFreeText() | customerBooking.getIsConsignorAddressFreeText());
+        var notify = convertParty(customerBooking.getNotifyParty(), customerBooking.getIsNotifyPartyFreeText() | customerBooking.getIsNotifyPartyAddressFreeText());
+        var customer = convertParty(customerBooking.getCustomer(), customerBooking.getIsCustomerFreeText() | customerBooking.getIsCustomerAddressFreeText());
         Set<CreateBookingModuleInV1.BookingEntity.OrgDetail> hs = new HashSet<>();
         if (customerBooking.getBookingCharges() != null) {
             for (var bc : customerBooking.getBookingCharges()) {

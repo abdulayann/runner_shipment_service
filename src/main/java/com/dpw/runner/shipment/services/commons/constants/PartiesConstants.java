@@ -35,8 +35,12 @@ public class PartiesConstants {
     public static final String DEFAULT_ADDRESS_SITE_IDENTIFIER = "DefaultAddressSiteIdentifier";
     public static final String RECEIVABLES = "Receivables";
     public static final String SITE_IDENTIFIER = "SiteIdentifier";
+    public static final String CUSTOMER_IDENTIFIER = "CustomerIdentifier";
     public static final String ADDRESS_SHORT_CODE = "AddressShortCode";
     public static final String FUSION_SITE_ID = "FUSION_SITE_ID";
+    public static final String FUSION_BILL_TO_SITE_NUMBER = "FUSION_BILL_TO_SITE_NUMBER";
+    public static final String ACCOUNT_ID = "ACCOUNT_ID";
+    public static final String FUSION = "FUSION";
     public static final String BILLABLE_FLAG = "BILLABLE_FLAG";
     public static final String RAW_DATA = "RawData";
 
