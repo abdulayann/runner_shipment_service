@@ -88,6 +88,7 @@ public class ContainerResponse implements IRunnerResponse {
     private String weightUtilization;
     private String volumeUtilization;
     private String commodityGroup;
+    private Boolean isContractEnforced;
     private PartiesResponse pickupAddress;
     private PartiesResponse deliveryAddress;
     public Map<String, String> unlocationData;

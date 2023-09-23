@@ -93,6 +93,7 @@ public class ContainerRequest extends CommonRequest implements IRunnerRequest {
     private String weightUtilization;
     private String volumeUtilization;
     private String commodityGroup;
+    private Boolean isContractEnforced;
     private PartiesRequest pickupAddress;
     private PartiesRequest deliveryAddress;
     private List<EventsRequest> eventsList;
