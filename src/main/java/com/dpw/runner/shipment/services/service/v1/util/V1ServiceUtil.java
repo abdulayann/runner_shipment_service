@@ -87,7 +87,7 @@ public class V1ServiceUtil {
                         .OverseasCostCurrency(bc.getOverseasCostCurrency())
                         .OverseasCostAmount(bc.getOverseasCostAmount())
                         .OverseasSellAmount(bc.getOverseasSellAmount())
-                        .SellExchange(bc.getSellExchange() != null && !bc.getSellExchange().equals(BigDecimal.ZERO)? BigDecimal.ONE.divide(bc.getSellExchange(),10, RoundingMode.HALF_UP) : bc.getSellExchange())
+                        .SellExchange(bc.getSellExchange() != null && !bc.getSellExchange().equals(BigDecimal.ZERO)? BigDecimal.ONE.divide(bc.getSellExchange(),15, RoundingMode.HALF_UP) : bc.getSellExchange())
                         .TaxPercentage(bc.getTaxPercentage())
                         .ContainersGuid(createContainersGuid(bc))
                         .RevenueLineTotal(bc.getRevenueLineTotal())
