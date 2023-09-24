@@ -39,7 +39,7 @@ public class V1ServiceUtil {
                 .Volume(customerBooking.getVolume())
                 .VolumeUnit(customerBooking.getVolumeUnit())
                 .ReferenceNo(customerBooking.getBookingNumber())
-                .CreatedDate(customerBooking.getCreatedAt() != null ? DateTimeFormatter.ofPattern(CustomerBookingConstants.DATE_FORMAT).format(customerBooking.getCreatedAt()) : null)
+                .CreatedDate(customerBooking.getBookingDate() != null ? DateTimeFormatter.ofPattern(CustomerBookingConstants.DATE_FORMAT).format(customerBooking.getBookingDate()) : null)
                 .ClientCode(customerBooking.getCustomer() != null ? customerBooking.getCustomer().getOrgCode() : null)
                 .ClientAddressShortCode(customerBooking.getCustomer() != null ? customerBooking.getCustomer().getAddressCode() : null)
                 .ConsignerCode(customerBooking.getConsignor() != null ? customerBooking.getConsignor().getOrgCode() : null)
