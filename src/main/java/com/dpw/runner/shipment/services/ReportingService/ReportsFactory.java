@@ -22,6 +22,9 @@ public class ReportsFactory {
     @Autowired
     private CargoManifestReport cargoManifestReport;
 
+    @Autowired
+    private FreightCertificationReport freightCertificationReport;
+
     public IReport getReport(String key)
     {
         switch(key)
@@ -40,6 +43,8 @@ public class ReportsFactory {
                 return mawbReport;
             case ReportConstants.CARGO_MANIFEST:
                 return cargoManifestReport;
+            case ReportConstants.FREIGHT_CERTIFICATION:
+                return freightCertificationReport;
         }
         return null;
     }

@@ -3,9 +3,9 @@ package com.dpw.runner.shipment.services.ReportingService.Reports;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.Models.CargoManifestModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PackingModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
-import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,6 +14,7 @@ import org.springframework.stereotype.Component;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -43,13 +44,12 @@ public class CargoManifestReport extends IReport{
     @Override
     public Map<String, Object> populateDictionary(IDocumentModel documentModel) {
         CargoManifestModel cargoManifestModel = (CargoManifestModel) documentModel;
-        String json = jsonHelper.convertToJson(cargoManifestModel.shipmentDetails);
-        Map<String, Object> dictionary = jsonHelper.convertJsonToMap(json);
+        Map<String, Object> dictionary = new HashMap<>();
         addTenantDetails(dictionary, cargoManifestModel.tenantDetails);
 
         List<String> consigner = null;
         if(cargoManifestModel.shipmentDetails.getConsigner() != null) {
-            getOrgAddressWithPhoneEmail(cargoManifestModel.shipmentDetails.getConsigner());
+            consigner = getOrgAddressWithPhoneEmail(cargoManifestModel.shipmentDetails.getConsigner());
             if(cargoManifestModel.shipmentDetails.getConsigner().getOrgData() != null) {
                 Map<String, Object> partyOrg = cargoManifestModel.shipmentDetails.getConsigner().getOrgData();
                 if(getValueFromMap(partyOrg, "FullName") != null) {
@@ -60,7 +60,7 @@ public class CargoManifestReport extends IReport{
 
         List<String> consignee = null;
         if(cargoManifestModel.shipmentDetails.getConsignee() != null) {
-            getOrgAddressWithPhoneEmail(cargoManifestModel.shipmentDetails.getConsignee());
+            consignee = getOrgAddressWithPhoneEmail(cargoManifestModel.shipmentDetails.getConsignee());
             if(cargoManifestModel.shipmentDetails.getConsignee().getOrgData() != null) {
                 Map<String, Object> partyOrg = cargoManifestModel.shipmentDetails.getConsignee().getOrgData();
                 if(getValueFromMap(partyOrg, "FullName") != null) {
@@ -71,7 +71,7 @@ public class CargoManifestReport extends IReport{
 
         List<String> notify = null;
         if(cargoManifestModel.shipmentDetails.getAdditionalDetails().getNotifyParty() != null) {
-            getOrgAddressWithPhoneEmail(cargoManifestModel.shipmentDetails.getAdditionalDetails().getNotifyParty());
+            notify = getOrgAddressWithPhoneEmail(cargoManifestModel.shipmentDetails.getAdditionalDetails().getNotifyParty());
             if(cargoManifestModel.shipmentDetails.getAdditionalDetails().getNotifyParty().getOrgData() != null) {
                 Map<String, Object> partyOrg = cargoManifestModel.shipmentDetails.getAdditionalDetails().getNotifyParty().getOrgData();
                 if(getValueFromMap(partyOrg, "FullName") != null) {
@@ -115,7 +115,7 @@ public class CargoManifestReport extends IReport{
         dictionary.put(ReportConstants.BOOKING_NO, cargoManifestModel.shipmentDetails.getBookingNumber());
         if(cargoManifestModel.shipmentDetails.getPackingList() != null && cargoManifestModel.shipmentDetails.getPackingList().size() > 0) {
             List<Map<String, Object>> packDictionary = new ArrayList<>();
-            for (Packing pack : cargoManifestModel.shipmentDetails.getPackingList()) {
+            for (PackingModel pack : cargoManifestModel.shipmentDetails.getPackingList()) {
                 String packJson = jsonHelper.convertToJson(pack);
                 packDictionary.add(jsonHelper.convertJsonToMap(packJson));
             }
@@ -124,7 +124,7 @@ public class CargoManifestReport extends IReport{
         }
         dictionary.put(ReportConstants.CMS_REMARKS, cargoManifestModel.shipmentDetails.getAdditionalTerms());
         dictionary.put(ReportConstants.USER_EMAIL, cargoManifestModel.usersDto.Email);
-        dictionary.put(ReportConstants.DATE_TIME, LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MMM/y hh:mm tt")));
+        dictionary.put(ReportConstants.DATE_TIME, LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MMM/y hh:mm a")));
         return dictionary;
     }
 

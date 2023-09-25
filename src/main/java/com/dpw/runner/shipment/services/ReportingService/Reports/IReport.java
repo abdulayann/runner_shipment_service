@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelpe
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ContainerCountByCode;
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentContainers;
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.*;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IHblDao;
@@ -24,6 +25,7 @@ import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.repository.interfaces.IAwbRepository;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.StringUtility;
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.math.BigDecimal;
@@ -33,6 +35,8 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.combineStringsWithComma;
 
 public abstract class IReport {
 
@@ -54,11 +58,14 @@ public abstract class IReport {
     @Autowired
     private IAwbRepository awbRepository;
 
+    @Autowired
+    private ModelMapper modelMapper;
+
     public abstract Map<String, Object> getData(Long id);
     abstract IDocumentModel getDocumentModel(Long id);
     abstract Map<String, Object> populateDictionary(IDocumentModel documentModel);
 
-    public ShipmentContainers getShipmentContainer(Containers row)
+    public ShipmentContainers getShipmentContainer(ContainerModel row)
     {
         ShipmentContainers ship = new ShipmentContainers();
         ship.ContainerNumber = row.getContainerNumber();
@@ -104,19 +111,19 @@ public abstract class IReport {
         shipmentContainer.BL_PackageUnit = blObjectContainer.getPackageUnit();
     }
 
-    public void populateShipmentFields(ShipmentDetails shipment, Boolean isHBL, Map<String, Object> dictionary)
+    public void populateShipmentFields(ShipmentModel shipment, Boolean isHBL, Map<String, Object> dictionary)
     {
         if (shipment == null) {
             return;
         }
 
-        PickupDeliveryDetails pickup = shipment.getPickupDetails();
-        PickupDeliveryDetails delivery = shipment.getDeliveryDetails();
+        PickupDeliveryDetailsModel pickup = shipment.getPickupDetails();
+        PickupDeliveryDetailsModel delivery = shipment.getDeliveryDetails();
 
-        Parties shipmentClient = shipment.getClient();
-        Parties shipmentConsignee = shipment.getConsignee();
-        Parties shipmentConsigner = shipment.getConsigner();
-        Parties shipmentNotify = shipment.getAdditionalDetails().getNotifyParty();
+        PartiesModel shipmentClient = shipment.getClient();
+        PartiesModel shipmentConsignee = shipment.getConsignee();
+        PartiesModel shipmentConsigner = shipment.getConsigner();
+        PartiesModel shipmentNotify = shipment.getAdditionalDetails().getNotifyParty();
 
         UnlocationsResponse pol = null, pod = null, origin = null, destination = null, paidPlace = null, placeOfIssue = null, placeOfSupply = null;
 
@@ -220,7 +227,7 @@ public abstract class IReport {
         Long containerCount = 0L;
         if(shipment.getContainersList().size() > 0)
         {
-            for (Containers container : shipment.getContainersList())
+            for (ContainerModel container : shipment.getContainersList())
             {
                 if (container.getContainerCount() != null && container.getContainerCount() != 0)
                 {
@@ -378,9 +385,10 @@ public abstract class IReport {
         }
     }
 
-    public ShipmentDetails getShipment(Long Id)
+    public ShipmentModel getShipment(Long Id)
     {
-        return shipmentDao.findById(Id).get();
+        ShipmentDetails shipmentDetails = shipmentDao.findById(Id).get();
+        return modelMapper.map(shipmentDetails, ShipmentModel.class);
     }
 
     public TenantModel getTenant(Integer Id)
@@ -400,15 +408,15 @@ public abstract class IReport {
         return null;
     }
 
-    public void populateConsolidationFields(ConsolidationDetails consolidation, Map<String, Object> dictionary) {
+    public void populateConsolidationFields(ConsolidationModel consolidation, Map<String, Object> dictionary) {
         if (consolidation == null) {
             return;
         }
 
-        Parties sendingAgent = consolidation.getSendingAgent();
-        Parties receivingAgent = consolidation.getReceivingAgent();
-        Parties creditor = consolidation.getCreditor();
-        ArrivalDepartureDetails arrivalDetails = consolidation.getArrivalDetails();
+        PartiesModel sendingAgent = consolidation.getSendingAgent();
+        PartiesModel receivingAgent = consolidation.getReceivingAgent();
+        PartiesModel creditor = consolidation.getCreditor();
+        ArrivalDepartureDetailsModel arrivalDetails = consolidation.getArrivalDetails();
 
         UnlocationsResponse lastForeignPort = null;
         List<Object> criteria = Arrays.asList(
@@ -536,9 +544,9 @@ public abstract class IReport {
         dictionary.put(ReportConstants.CONSOL_ADDITIONAL_TERMS, consolidation.getAdditionalTerms());
         dictionary.put(ReportConstants.CONSOL_FLIGHT_NUMBER, consolidation.getCarrierDetails().getFlightNumber());
 
-        Parties notifyParty = null;
-        List<Parties> consolidationAddresses = consolidation.getConsolidationAddresses();
-        for (Parties consolidationAddress : consolidationAddresses) {
+        PartiesModel notifyParty = null;
+        List<PartiesModel> consolidationAddresses = consolidation.getConsolidationAddresses();
+        for (PartiesModel consolidationAddress : consolidationAddresses) {
             if(Objects.equals(consolidationAddress.getType(), "Notify Party 1"))
             {
                 notifyParty = consolidationAddress;
@@ -767,6 +775,30 @@ public abstract class IReport {
             return null;
         }
         return value.toString();
+    }
+
+    public String getPortDetails(String UNLocCode) {
+        UnlocationsResponse unlocationsResponse = getUNLocRow(UNLocCode);
+        if(unlocationsResponse != null) {
+            return combineStringsWithComma(unlocationsResponse.getName(), unlocationsResponse.getCountry());
+        }
+        return "";
+    }
+
+    public UnlocationsResponse getUNLocRow(String UNLocCode) {
+        if(UNLocCode == null || UNLocCode.isEmpty())
+            return null;
+        List <Object> criteria = Arrays.asList(
+                Arrays.asList("LocCode"),
+                "=",
+                UNLocCode
+        );
+        CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(criteria).build();
+        V1DataResponse v1DataResponse = v1Service.fetchUnlocation(commonV1ListRequest);
+        List<UnlocationsResponse> unlocationsResponse = jsonHelper.convertValueToList(v1DataResponse.entities, UnlocationsResponse.class);
+        if(unlocationsResponse.size() > 0)
+            return unlocationsResponse.get(0);
+        return null;
     }
 
 }
