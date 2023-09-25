@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.adapters.impl;
 
 import com.dpw.runner.shipment.services.adapters.interfaces.INPMServiceAdapter;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.NPMConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.dao.interfaces.ICustomerBookingDao;
@@ -136,16 +137,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
     }
 
     private String getCurrencyCode(String countryCode)  {
-        ExchangeRatesRequest exchangeRatesRequest = ExchangeRatesRequest.builder().country_code(Arrays.asList(countryCode)).build();
-        try {
-            var exchangeRatesResponse = restTemp.exchange(RequestEntity.post(URI.create(exchangeRateUrl)).body(jsonHelper.convertToJson(exchangeRatesRequest)), ExchangeRatesResponse.class);
-            if(exchangeRatesResponse.getBody() != null && exchangeRatesResponse.getBody().getData() != null && !exchangeRatesResponse.getBody().getData().isEmpty())
-                return exchangeRatesResponse.getBody().getData().get(0).getCurrency_code();
-
-        } catch(Exception e)  {
-            log.error("Exchange Rates API failed due to: " + e.getMessage());
-        }
-        return null;
+        return UserContext.getUser().CompanyCurrency;
     }
 
     private NPMFetchOffersRequest createNPMOffersRequest(NPMFetchOffersRequestFromUI request) {
