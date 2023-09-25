@@ -310,9 +310,10 @@ public class AwbService implements IAwbService {
                 .awbShipmentInfo(generateMawbShipmentInfo(consolidationDetails, request))
                 .awbNotifyPartyInfo(generateMawbNotifyPartyinfo(consolidationDetails, request))
                 .awbRoutingInfo(generateMawbRoutingInfo(consolidationDetails, request))
+                .awbGoodsDescriptionInfo(generateMawbGoodsDescriptionInfo(consolidationDetails, request, awbPackingInfo))
                 .awbCargoInfo(generateMawbCargoInfo(consolidationDetails, request, awbPackingInfo))
                 .awbOtherInfo(generateMawbOtherInfo(consolidationDetails, request))
-                .awbGoodsDescriptionInfo(generateMawbGoodsDescriptionInfo(consolidationDetails, request))
+
                 .awbPackingInfo(awbPackingInfo)
                 .consolidationId(consolidationDetails.getId())
                 .build();
@@ -403,11 +404,16 @@ public class AwbService implements IAwbService {
         return awbCargoInfo;
     }
 
-    private List<AwbGoodsDescriptionInfo> generateMawbGoodsDescriptionInfo(ConsolidationDetails consolidationDetails, CreateAwbRequest request) {
+    private List<AwbGoodsDescriptionInfo> generateMawbGoodsDescriptionInfo(ConsolidationDetails consolidationDetails, CreateAwbRequest request, List<AwbPackingInfo> awbPackingList) {
         AwbGoodsDescriptionInfo awbGoodsDescriptionInfo = new AwbGoodsDescriptionInfo();
         awbGoodsDescriptionInfo.setEntityId(consolidationDetails.getId());
         awbGoodsDescriptionInfo.setEntityType(request.getAwbType());
         awbGoodsDescriptionInfo.setGrossWtUnit("KG");
+        awbGoodsDescriptionInfo.setGuid(UUID.randomUUID());
+        for (var awbPacking:awbPackingList) {
+            awbPacking.setAwbGoodsDescriptionInfoGuid(awbGoodsDescriptionInfo.getGuid());
+        }
+        awbGoodsDescriptionInfo.setAwbPackingInfo(awbPackingList);
         return Arrays.asList(awbGoodsDescriptionInfo);
     }
 
@@ -492,9 +498,9 @@ public class AwbService implements IAwbService {
                 .awbShipmentInfo(generateAwbShipmentInfo(shipmentDetails, request))
                 .awbNotifyPartyInfo(generateAwbNotifyPartyinfo(shipmentDetails, request))
                 .awbRoutingInfo(generateAwbRoutingInfo(shipmentDetails, request))
+                .awbGoodsDescriptionInfo(generateAwbGoodsDescriptionInfo(shipmentDetails, request, awbPackingInfo))
                 .awbCargoInfo(generateAwbCargoInfo(shipmentDetails, request, awbPackingInfo))
                 .awbOtherInfo(generateAwbOtherInfo(shipmentDetails, request))
-                .awbGoodsDescriptionInfo(generateAwbGoodsDescriptionInfo(shipmentDetails, request))
                 .awbPackingInfo(awbPackingInfo)
                 .shipmentId(shipmentDetails.getId())
                 .build();
@@ -609,7 +615,7 @@ public class AwbService implements IAwbService {
         return awbOtherInfo;
     }
 
-    private List<AwbGoodsDescriptionInfo> generateAwbGoodsDescriptionInfo(ShipmentDetails shipmentDetails, CreateAwbRequest request) {
+    private List<AwbGoodsDescriptionInfo> generateAwbGoodsDescriptionInfo(ShipmentDetails shipmentDetails, CreateAwbRequest request, List<AwbPackingInfo> awbPackingList) {
         AwbGoodsDescriptionInfo awbGoodsDescriptionInfo = new AwbGoodsDescriptionInfo();
         awbGoodsDescriptionInfo.setEntityId(shipmentDetails.getId());
         awbGoodsDescriptionInfo.setEntityType(request.getAwbType());
@@ -618,6 +624,11 @@ public class AwbService implements IAwbService {
         awbGoodsDescriptionInfo.setPiecesNo(totalPacks);
         awbGoodsDescriptionInfo.setChargeableWt(shipmentDetails.getChargable() != null ?
                 AwbUtility.roundOffAirShipment((double) shipmentDetails.getChargable().doubleValue()) : null);
+        awbGoodsDescriptionInfo.setGuid(UUID.randomUUID());
+        for (var awbPacking: awbPackingList ) {
+            awbPacking.setAwbGoodsDescriptionInfoGuid(awbGoodsDescriptionInfo.getGuid());
+        }
+        awbGoodsDescriptionInfo.setAwbPackingInfo(awbPackingList);
         return Arrays.asList(awbGoodsDescriptionInfo);
     }
 
