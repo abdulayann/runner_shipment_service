@@ -4,11 +4,11 @@ import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConst
 import com.dpw.runner.shipment.services.ReportingService.Models.BookingConfirmationModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentContainers;
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.BookingCarriageModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ContainerModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ReferenceNumbersModel;
 import com.dpw.runner.shipment.services.commons.constants.ReferenceNumbersConstants;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
-import com.dpw.runner.shipment.services.entity.BookingCarriage;
-import com.dpw.runner.shipment.services.entity.Containers;
-import com.dpw.runner.shipment.services.entity.ReferenceNumbers;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.MasterData;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
@@ -51,7 +51,7 @@ public class BookingConfirmationReport extends IReport{
         bookingConfirmationModel.commonContainers = new ArrayList<>();
         if(bookingConfirmationModel.shipment.getContainersList() != null)
         {
-            for(Containers container : bookingConfirmationModel.shipment.getContainersList())
+            for(ContainerModel container : bookingConfirmationModel.shipment.getContainersList())
             {
                 ShipmentContainers shipmentContainer = getShipmentContainer(container);
                 shipmentContainer.BL_SealNumber = container.getCustomsSealNumber();
@@ -99,11 +99,11 @@ public class BookingConfirmationReport extends IReport{
             masterData = getMasterListData(MasterDataType.COUNTRIES, paidPlace.getCountry());
         }
         bookingConfirmationModel.paidPlaceCountry = (masterData != null ? masterData.getItemDescription() : null);
-        List<BookingCarriage> bookingCarriages = bookingConfirmationModel.shipment.getBookingCarriagesList();
-        BookingCarriage bookingCarriage = null;
+        List<BookingCarriageModel> bookingCarriages = bookingConfirmationModel.shipment.getBookingCarriagesList();
+        BookingCarriageModel bookingCarriage = null;
         if(bookingCarriages != null)
         {
-            for (BookingCarriage carriage : bookingCarriages) {
+            for (BookingCarriageModel carriage : bookingCarriages) {
                 if (Objects.equals(carriage.getCarriageType(), "PreCarriage")) {
                     bookingCarriage = carriage;
                     break;
@@ -144,14 +144,14 @@ public class BookingConfirmationReport extends IReport{
 
         dictionary.put(ReportConstants.MOVEMENT_TYPE, bookingConfirmationModel.shipment.getTransportMode());
 
-        List<ReferenceNumbers> referenceNumbers = bookingConfirmationModel.referenceNumbersList;
+        List<ReferenceNumbersModel> referenceNumbers = bookingConfirmationModel.referenceNumbersList;
 
         if(referenceNumbers != null && referenceNumbers.size() > 0)
         {
-            List<ReferenceNumbers> conditionBasedReferenceNo = new ArrayList<>();
-            List<ReferenceNumbers> motherReferenceNo = new ArrayList<>();
-            List<ReferenceNumbers> feederReferenceNo = new ArrayList<>();
-            for(ReferenceNumbers refNo : referenceNumbers)
+            List<ReferenceNumbersModel> conditionBasedReferenceNo = new ArrayList<>();
+            List<ReferenceNumbersModel> motherReferenceNo = new ArrayList<>();
+            List<ReferenceNumbersModel> feederReferenceNo = new ArrayList<>();
+            for(ReferenceNumbersModel refNo : referenceNumbers)
             {
                 if(refNo!=null && refNo.getType().equalsIgnoreCase("BKG"))
                 {
@@ -159,7 +159,7 @@ public class BookingConfirmationReport extends IReport{
                     break;
                 }
             }
-            for(ReferenceNumbers refNo : referenceNumbers)
+            for(ReferenceNumbersModel refNo : referenceNumbers)
             {
                 if(refNo.getType().equalsIgnoreCase(ReferenceNumbersConstants.FEEDER_VESSEL) || refNo.getType().equalsIgnoreCase(ReferenceNumbersConstants.MOTHER_VESSEL)){
                     if(refNo.getType().equalsIgnoreCase(ReferenceNumbersConstants.MOTHER_VESSEL)){

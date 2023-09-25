@@ -116,5 +116,6 @@ public class Constants {
     public static final String CONSOLIDATION_TYPE_CLD = "CLD";
 
     public static final String CONSOLIDATION_TYPE_AGT = "AGT";
+    public static final String IMP = "IMP";
 
 }
