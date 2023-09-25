@@ -5,11 +5,11 @@ import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelpe
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentContainers;
 import com.dpw.runner.shipment.services.ReportingService.Models.HblModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.BookingCarriageModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ContainerModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PickupDeliveryDetailsModel;
 import com.dpw.runner.shipment.services.dto.request.hbl.HblContainerDto;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
-import com.dpw.runner.shipment.services.entity.BookingCarriage;
-import com.dpw.runner.shipment.services.entity.Containers;
-import com.dpw.runner.shipment.services.entity.PickupDeliveryDetails;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.MasterData;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
@@ -57,7 +57,7 @@ public class HblReport extends IReport{
         }
         if(hblModel.shipment.getContainersList() != null)
         {
-            for(Containers container : hblModel.shipment.getContainersList())
+            for(ContainerModel container : hblModel.shipment.getContainersList())
             {
                 ShipmentContainers shipmentContainer = getShipmentContainer(container);
                 if(hblContainerDtoMap.containsKey(container.getContainerNumber()))
@@ -85,8 +85,8 @@ public class HblReport extends IReport{
             paidPlace = unlocationsResponse.get(0);
         masterData = getMasterListData(MasterDataType.COUNTRIES, paidPlace.getCountry());
         hblModel.paidPlaceCountry = (masterData != null ? masterData.getItemDescription() : null);
-        List<BookingCarriage> bookingCarriages = hblModel.shipment.getBookingCarriagesList();
-        BookingCarriage bookingCarriage = null;
+        List<BookingCarriageModel> bookingCarriages = hblModel.shipment.getBookingCarriagesList();
+        BookingCarriageModel bookingCarriage = null;
         if(bookingCarriages != null)
         {
             for(int i=0; i<bookingCarriages.size(); i++)
@@ -129,7 +129,7 @@ public class HblReport extends IReport{
         dictionary.put(ReportConstants.CONTAINER_COUNT_BY_CODE, getCountByContainerTypeCode(hblModel.commonContainers));
         dictionary.put(ReportConstants.SHIPMENT_CONTAINERS, hblModel.commonContainers);
         dictionary.put(ReportConstants.PRE_CARRIAGE, hblModel.preCarriageVessel != null ? hblModel.preCarriageVessel.getName() : null);
-        PickupDeliveryDetails pickup = hblModel.shipment.getPickupDetails();
+        PickupDeliveryDetailsModel pickup = hblModel.shipment.getPickupDetails();
         if(pickup != null && pickup.getTransporterDetail() != null)
         {
             Map<String, Object> address = pickup.getTransporterDetail().getAddressData();
@@ -139,7 +139,7 @@ public class HblReport extends IReport{
                             null
             ));
         }
-        PickupDeliveryDetails delivery = hblModel.shipment.getDeliveryDetails();
+        PickupDeliveryDetailsModel delivery = hblModel.shipment.getDeliveryDetails();
         if(delivery != null && delivery.getAgentDetail() != null)
         {
             Map<String, Object> address = delivery.getAgentDetail().getAddressData();

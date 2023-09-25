@@ -4,6 +4,8 @@ import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConst
 import com.dpw.runner.shipment.services.ReportingService.Models.HawbModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.OtherChargesResponse;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ConsolidationModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ShipmentModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.AwbConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
@@ -11,8 +13,6 @@ import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstant
 import com.dpw.runner.shipment.services.dto.request.awb.*;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.Awb;
-import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.enums.ChargesDue;
 import com.dpw.runner.shipment.services.entity.enums.RateClass;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCarrier;
@@ -111,7 +111,7 @@ public class HawbReport extends IReport{
             Set<String> masterDataQuery = new HashSet<>();
             String AwbNumber = "";
             EntityTransferMasterLists paymentTerms = null;
-            ConsolidationDetails consolRow = hawbModel.getConsolidationDetails();
+            ConsolidationModel consolRow = hawbModel.getConsolidationDetails();
 
             if (hawbModel.getEntityType().equalsIgnoreCase(AwbConstants.MAWB))
             {
@@ -128,7 +128,7 @@ public class HawbReport extends IReport{
             }
             else
             {
-                ShipmentDetails shipmentRow = hawbModel.shipmentDetails;
+                ShipmentModel shipmentRow = hawbModel.shipmentDetails;
                 dictionary.put(ReportConstants.TRANSPORT_MODE,  shipmentRow.getTransportMode());
                 dictionary.put(ReportConstants.JOB_NUMBER, shipmentRow.getShipmentId());
                 if(hawbModel.getEntityType().equalsIgnoreCase(AwbConstants.DMAWB))

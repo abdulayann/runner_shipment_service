@@ -1,8 +1,8 @@
 package com.dpw.runner.shipment.services.ReportingService.CommonUtils;
 
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PartiesModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.ReportingService.Reports.IReport;
-import com.dpw.runner.shipment.services.entity.Parties;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -50,9 +50,9 @@ public class ReportHelper {
         return list;
     }
 
-    public static List<String> getOrgAddressWithPhoneEmail(Parties party) {
+    public static List<String> getOrgAddressWithPhoneEmail(PartiesModel party) {
         if(party == null || party.getAddressData() == null)
-            return null;
+            return new ArrayList<>();
         Map<String, Object> partyAddress = party.getAddressData();
         List<String> list = new ArrayList<String>();
         if(getValueFromMap(partyAddress,"CompanyName") != null)
@@ -89,6 +89,26 @@ public class ReportHelper {
             list.add(state_country);
         return list;
 
+    }
+
+    public static List<String> getOrgAddress(PartiesModel party) {
+        if(party == null || party.getAddressData() == null)
+            return new ArrayList<>();
+        Map<String, Object> partyAddress = party.getAddressData();
+        List<String> list = new ArrayList<String>();
+        if(getValueFromMap(partyAddress,"CompanyName") != null)
+            list.add(getValueFromMap(partyAddress,"CompanyName"));
+        if(getValueFromMap(partyAddress,"Address1") != null)
+            list.add(getValueFromMap(partyAddress,"Address1"));
+        if(getValueFromMap(partyAddress,"Address2") != null)
+            list.add(getValueFromMap(partyAddress,"Address2"));
+        if(getCityCountry(getValueFromMap(partyAddress,"City"), getValueFromMap(partyAddress,"Country")) != null)
+            list.add(getCityCountry(getValueFromMap(partyAddress,"City"), getValueFromMap(partyAddress,"Country")));
+        if(getValueFromMap(partyAddress,"Email") != null)
+            list.add(getValueFromMap(partyAddress,"Email"));
+        if(getValueFromMap(partyAddress,"ContactPhone") != null)
+            list.add(getValueFromMap(partyAddress,"ContactPhone"));
+        return list;
     }
 
     public static List<String> getAddressList(String address)
@@ -154,4 +174,47 @@ public class ReportHelper {
             }
         }
     }
+
+    public static String numberToWords(Integer numb) {
+        if (numb == null)
+            return "";
+        int number = numb;
+        if (number == 0)
+            return "zero";
+        if (number < 0)
+            return "minus " + numberToWords(Math.abs(number));
+        String words = "";
+        if ((number / 1000000) > 0) {
+            words += numberToWords(number / 1000000) + " million ";
+            number %= 1000000;
+        }
+        if ((number / 1000) > 0) {
+            words += numberToWords(number / 1000) + " thousand ";
+            number %= 1000;
+        }
+        if ((number / 100) > 0) {
+            words += numberToWords(number / 100) + " hundred ";
+            number %= 100;
+        }
+        if (number > 0) {
+            if (!words.isEmpty())
+                words += "and ";
+            String[] unitsMap = {
+                    "zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine",
+                    "ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen", "nineteen"
+            };
+            String[] tensMap = {
+                    "zero", "ten", "twenty", "thirty", "forty", "fifty", "sixty", "seventy", "eighty", "ninety"
+            };
+            if (number < 20)
+                words += unitsMap[number];
+            else {
+                words += tensMap[number / 10];
+                if ((number % 10) > 0)
+                    words += "-" + unitsMap[number % 10];
+            }
+        }
+        return words;
+    }
+
 }

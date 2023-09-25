@@ -80,6 +80,17 @@ public class ReportConstants
     public static final String ORIGINAL_WORDS = "OriginalsInWords";
     public static final String COPY_BILLS = "CopyBills";
     public static final String NO_OF_PACKAGES = "NoofPackages";
+    public static final String NO_OF_PACKAGES_WORD = "noofpackages_word";
+    public static final String IGM_FILE_DATE = "IGMFileDate";
+    public static final String IGM_FILE_NO = "IGMFileNo";
+    public static final String IGM_INWARD_DATE = "IGMInwardDate";
+    public static final String INWARD_DATE_TIME = "InwardDateandTime";
+    public static final String LINE_NUMBER = "LineNumber";
+    public static final String SUB_LINE_NUMBER = "SubLineNumber";
+    public static final String IS_INLAND = "IsInland";
+    public static final String SMTPIGM_DATE = "SMTPIGMDate";
+    public static final String SMTPIGM_NUMBER = "SMTPIGMNumber";
+    public static final String LOCAL_LINE_NUMBER = "LocalLineNumber";
     public static final String ISSUE_PLACE_NAME = "IssuePlaceName";
     public static final String ISSUE_PLACE_COUNTRY = "IssuePlaceCountry";
     public static final String PAID_PLACE_NAME = "PaidPlaceName";
@@ -217,6 +228,7 @@ public class ReportConstants
     public static final String USER_FULLNAME = "UserFullName";
     public static final String USER_NAME = "UserName";
     public static final String USER_EMAIL = "UserEmail";
+    public static final String USER_DISPLAY_NAME = "UserDisplayName";
 
 
     public static final String CURRENCY_SUMMARY = "CurrencySummary";
@@ -348,6 +360,10 @@ public class ReportConstants
     public static final String WTVALC = "WTVALC";
     public static final String FREIGHT_AMOUNT_TEXT_P = "FreightAmountText_P";
     public static final String TOTAL_FREIGHT_P = "TotalFreight_P";
+    public static final String FREIGHT_LOCAL = "FreightLocal";
+    public static final String FREIGHT_LOCAL_CURRENCY = "FreightLocalCurrency";
+    public static final String FREIGHT_OVERSEAS = "FreightOverseas";
+    public static final String FREIGHT_OVERSEAS_CURRENCY = "FreightOverseasCurrency";
     public static final String TAX_P = "Tax_P";
     public static final String VALUATION_CHARGES_P = "ValuationCharges_P";
     public static final String WT_CHARGE_P = "WtChargeP";

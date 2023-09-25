@@ -3,9 +3,9 @@ package com.dpw.runner.shipment.services.ReportingService.Reports;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.Models.CargoManifestModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PackingModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
-import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -115,7 +115,7 @@ public class CargoManifestReport extends IReport{
         dictionary.put(ReportConstants.BOOKING_NO, cargoManifestModel.shipmentDetails.getBookingNumber());
         if(cargoManifestModel.shipmentDetails.getPackingList() != null && cargoManifestModel.shipmentDetails.getPackingList().size() > 0) {
             List<Map<String, Object>> packDictionary = new ArrayList<>();
-            for (Packing pack : cargoManifestModel.shipmentDetails.getPackingList()) {
+            for (PackingModel pack : cargoManifestModel.shipmentDetails.getPackingList()) {
                 String packJson = jsonHelper.convertToJson(pack);
                 packDictionary.add(jsonHelper.convertJsonToMap(packJson));
             }

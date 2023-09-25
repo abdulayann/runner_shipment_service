@@ -3,9 +3,9 @@ package com.dpw.runner.shipment.services.ReportingService.Reports;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.Models.DeliveryOrderModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ContainerModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
-import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.MasterData;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
@@ -66,7 +66,7 @@ public class DeliveryOrderReport extends IReport{
         deliveryOrderModel.containers = new ArrayList<>();
         if(deliveryOrderModel.shipmentDetails.getContainersList() != null)
         {
-            for(Containers container : deliveryOrderModel.shipmentDetails.getContainersList())
+            for(ContainerModel container : deliveryOrderModel.shipmentDetails.getContainersList())
                 deliveryOrderModel.containers.add(getShipmentContainer(container));
         }
         MasterData masterData = getMasterListData(MasterDataType.PAYMENT, deliveryOrderModel.shipmentDetails.getPaymentTerms());
