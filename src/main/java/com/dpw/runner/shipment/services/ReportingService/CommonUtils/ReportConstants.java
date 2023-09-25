@@ -112,10 +112,14 @@ public class ReportConstants
     public static final String NOTIFY_PARTY_NAME = "NotifyPartyName";
     public static final String NOTIFY_PARTY_LOCAL_NAME = "NotifyPartyLocalName";
     public static final String COMPANY_NAME = "CompanyName";
+    public static final String LOCAL_NAME = "LocalName";
     public static final String ADDRESS1 = "Address1";
+    public static final String ADDRESS2 = "Address2";
     public static final String STATE = "State";
+    public static final String CITY = "City";
     public static final String COUNTRY = "Country";
     public static final String ZIPCODE = "Zip";
+    public static final String ZIP_POST_CODE = "ZipPostCode";
     public static final String NOTIFY_PARTY = "NotifyParty";
     public static final String OPEN_DATE = "OpenDate";
     public static final String DUE_DATE = "DueDate";
@@ -150,6 +154,7 @@ public class ReportConstants
     public static final String NET_WEIGHT = "NetWeight";
     public static final String VOLUME_WEIGHT = "VolumeWeight";
     public static final String TOTAL_PACKS = "TotalPacks";
+    public static final String TOTAL_PACKS_TYPE = "TotalPacksType";
     public static final String UOTW = "UOTW";
     public static final String UOTV = "UOTV";
     public static final String PACKAGE_TYPE = "PackageType";
