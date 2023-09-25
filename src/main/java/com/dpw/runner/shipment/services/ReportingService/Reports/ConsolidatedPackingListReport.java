@@ -2,6 +2,9 @@ package com.dpw.runner.shipment.services.ReportingService.Reports;
 
 import com.dpw.runner.shipment.services.ReportingService.Models.ConsolidatedPackingListModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PackingModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PartiesModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ShipmentModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
@@ -61,13 +64,17 @@ public class ConsolidatedPackingListReport extends IReport {
         Map<String, Object> dictionary = jsonHelper.convertJsonToMap(json);
 
 
-        List<String> exporter = getOrgAddressWithPhoneEmail(cplData.getConsolidationDetails().getSendingAgent());;
+        List<String> exporter = getOrgAddressWithPhoneEmail(jsonHelper.convertValue(
+                cplData.getConsolidationDetails().getSendingAgent(), PartiesModel.class
+        ));
         if(cplData.getConsolidationDetails().getSendingAgent() != null){
             //sending agent full name ?
 //            exporter.add(0, cplData.getConsolidationDetails().getSendingAgent());
         }
 
-        List<String> consignee = getOrgAddressWithPhoneEmail(cplData.getConsolidationDetails().getReceivingAgent());
+        List<String> consignee = getOrgAddressWithPhoneEmail(jsonHelper.convertValue(
+                cplData.getConsolidationDetails().getReceivingAgent(), PartiesModel.class
+        ));
         if(cplData.getConsolidationDetails().getReceivingAgent() != null){
             //receiving agent full name ?
 //            exporter.add(0, cplData.getConsolidationDetails().getReceivingAgent());
@@ -125,12 +132,12 @@ public class ConsolidatedPackingListReport extends IReport {
         dictionary.put(PURCHASE_ORDER_NUMBER, cplData.getConsolidationDetails().getReferenceNumber());
         dictionary.put(PAYMENT_TERMS, cplData.getConsolidationDetails().getPayment());
 
-        List<Packing> packingList = cplData.getConsolidationDetails().getPackingList();
+        List<PackingModel> packingList = cplData.getConsolidationDetails().getPackingList();
         long totalPacks = 0L;
         BigDecimal totalWeight = BigDecimal.ZERO;
         String unitOfTotalWeight = null;
         boolean breakFlagForWeight = false;
-        List<ShipmentDetails> shipments = cplData.getConsolidationDetails().getShipmentsList();
+        List<ShipmentModel> shipments = cplData.getConsolidationDetails().getShipmentsList();
 
         for (var shipment : shipments){
             packingList.addAll(shipment.getPackingList());

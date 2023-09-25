@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.ReportingService.Models;
 
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ConsolidationModel;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -13,5 +14,5 @@ import lombok.NoArgsConstructor;
 public class ConsolidatedPackingListModel extends DocumentDataModel implements IDocumentModel {
     //TODO TenantRow alternative in service.
     private TenantModel tenant;
-    private ConsolidationDetails consolidationDetails;
+    private ConsolidationModel consolidationDetails;
 }

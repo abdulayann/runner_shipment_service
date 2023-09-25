@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.ReportingService.CommonUtils;
 
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PartiesModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.ReportingService.Reports.IReport;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;

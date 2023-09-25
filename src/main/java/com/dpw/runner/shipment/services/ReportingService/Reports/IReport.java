@@ -401,9 +401,10 @@ public abstract class IReport {
         return new TenantModel(); // TODO- fetch from tenants
     }
 
-    public ConsolidationDetails getConsolidation(Long Id)
+    public ConsolidationModel getConsolidation(Long Id)
     {
-        return consolidationDetailsDao.findById(Id).get();
+        ConsolidationDetails consolidationDetails = consolidationDetailsDao.findById(Id).get();
+        return modelMapper.map(consolidationDetails, ConsolidationModel.class);
     }
 
     public Hbl getHbl(Long Id) {
@@ -806,8 +807,8 @@ public abstract class IReport {
         return null;
     }
 
-    public List<Packing> GetAllShipmentsPacks(List<ShipmentDetails> shipmentDetails){
-        List<Packing> packingList = new ArrayList<>();
+    public List<PackingModel> GetAllShipmentsPacks(List<ShipmentModel> shipmentDetails){
+        List<PackingModel> packingList = new ArrayList<>();
         if(shipmentDetails != null) {
             for(var shipment : shipmentDetails) {
                 packingList.addAll(shipment.getPackingList());
@@ -815,7 +816,7 @@ public abstract class IReport {
         }
         return packingList;
     }
-    public Pair<BigDecimal, String> GetTotalWeight(List<Packing> packingList) {
+    public Pair<BigDecimal, String> GetTotalWeight(List<PackingModel> packingList) {
         Pair<BigDecimal, String> res = Pair.of(BigDecimal.ZERO, null);
         if(packingList != null ) {
             String weightUnit = null;
@@ -836,7 +837,7 @@ public abstract class IReport {
         return res;
     }
 
-    public Pair<BigDecimal, String> GetTotalVolume(List<Packing> packingList) {
+    public Pair<BigDecimal, String> GetTotalVolume(List<PackingModel> packingList) {
         Pair<BigDecimal, String> res = Pair.of(BigDecimal.ZERO, null);
         if(packingList != null ) {
             String volumeUnit = null;
@@ -857,7 +858,7 @@ public abstract class IReport {
         return res;
     }
 
-    public List<ShipmentAndContainerResponse> getShipmentAndContainerResponse(List<ShipmentDetails> shipments) {
+    public List<ShipmentAndContainerResponse> getShipmentAndContainerResponse(List<ShipmentModel> shipments) {
         List<ShipmentAndContainerResponse> shipmentContainers = new ArrayList<>();
         if(shipments == null)
             return shipmentContainers;
@@ -869,7 +870,7 @@ public abstract class IReport {
             shipmentContainer.houseBill = shipment.getHouseBill();
             shipmentContainer.masterBill = shipment.getMasterBill();
 
-            Parties consigner = shipment.getConsigner();
+            PartiesModel consigner = shipment.getConsigner();
             if(consigner != null && consigner.getAddressData() != null) {
                 shipmentContainer.consignerCompanyName = consigner.getAddressData().get(COMPANY_NAME).toString();
                 shipmentContainer.consignerAddress1 = consigner.getAddressData().get(ADDRESS1).toString();
@@ -878,7 +879,7 @@ public abstract class IReport {
                 shipmentContainer.consignerZip = consigner.getAddressData().get(ZIP_POST_CODE).toString();
             }
 
-            Parties consignee = shipment.getConsignee();
+            PartiesModel consignee = shipment.getConsignee();
             if(consignee != null && consignee.getAddressData() != null) {
                 shipmentContainer.consigneeCompanyName = consignee.getAddressData().get(COMPANY_NAME).toString();
                 shipmentContainer.consigneeAddress1 = consignee.getAddressData().get(ADDRESS1).toString();
@@ -887,7 +888,7 @@ public abstract class IReport {
                 shipmentContainer.consigneeZip = consignee.getAddressData().get(ZIP_POST_CODE).toString();
             }
 
-            Parties notify = shipment.getAdditionalDetails().getNotifyParty();
+            PartiesModel notify = shipment.getAdditionalDetails().getNotifyParty();
             if(notify != null && notify.getAddressData() != null) {
                 shipmentContainer.notifyCompanyName = notify.getAddressData().get(COMPANY_NAME).toString();
                 shipmentContainer.notifyAddress1 = notify.getAddressData().get(ADDRESS1).toString();
@@ -910,7 +911,7 @@ public abstract class IReport {
         return shipmentContainers;
     }
 
-    public List<ShipmentResponse> getShipmentResponse(List<ShipmentDetails> shipments) {
+    public List<ShipmentResponse> getShipmentResponse(List<ShipmentModel> shipments) {
         List<ShipmentResponse> shipmentResponses = new ArrayList<>();
         if (shipments == null) {
             return shipmentResponses;
@@ -918,8 +919,8 @@ public abstract class IReport {
 
         for(var shipment : shipments) {
             ShipmentResponse response = new ShipmentResponse();
-            Parties consigner = shipment.getConsigner();
-            Parties consignee = shipment.getConsignee();
+            PartiesModel consigner = shipment.getConsigner();
+            PartiesModel consignee = shipment.getConsignee();
 
             response.HouseBill = shipment.getHouseBill();
             response.MasterBill = shipment.getMasterBill();
@@ -944,7 +945,7 @@ public abstract class IReport {
         return shipmentResponses;
     }
 
-    public static Long getTotalPacks(ShipmentDetails shipmentDetails){
+    public static Long getTotalPacks(ShipmentModel shipmentDetails){
         long sum = 0L;
         for(var packs : shipmentDetails.getPackingList()) {
             sum += Long.parseLong(packs.getPacks());
@@ -953,7 +954,7 @@ public abstract class IReport {
     }
 
 
-    private static List<String> getPartyAddress(Parties party) {
+    private static List<String> getPartyAddress(PartiesModel party) {
         if(party != null && party.getAddressData() != null) {
             return ReportHelper.getOrgAddress(
                     party.getAddressData().get(COMPANY_NAME).toString(),

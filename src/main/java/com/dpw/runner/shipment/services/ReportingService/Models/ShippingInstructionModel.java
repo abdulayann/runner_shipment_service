@@ -1,5 +1,7 @@
 package com.dpw.runner.shipment.services.ReportingService.Models;
 
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ContainerModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ShipmentModel;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import lombok.Builder;
@@ -11,6 +13,6 @@ import java.util.List;
 @Builder
 public class ShippingInstructionModel implements IDocumentModel {
     private TenantModel tenant;
-    private ShipmentDetails shipment;
-    private List<Containers> containersList;
+    private ShipmentModel shipment;
+    private List<ContainerModel> containersList;
 }
