@@ -2,6 +2,8 @@ package com.dpw.runner.shipment.services.ReportingService.Reports;
 
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper;
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PartiesModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ShipmentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShippingInstructionModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.entity.Parties;
@@ -45,9 +47,9 @@ public class ShippingInstructionReport extends IReport{
         ShippingInstructionModel model = (ShippingInstructionModel) documentModel;
         Map<String, Object> dictionary = new HashMap<>();
 
-        Parties consignerParty = model.getShipment().getConsigner();
-        Parties consigneeParty = model.getShipment().getConsignee();
-        Parties notifyParty = model.getShipment().getAdditionalDetails().getNotifyParty();
+        PartiesModel consignerParty = model.getShipment().getConsigner();
+        PartiesModel consigneeParty = model.getShipment().getConsignee();
+        PartiesModel notifyParty = model.getShipment().getAdditionalDetails().getNotifyParty();
 
         List<String> consigner = getOrgAddressWithPhoneEmail(consignerParty);
         if(consignerParty.getOrgData().get(FULL_NAME) != null) {

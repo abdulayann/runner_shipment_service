@@ -3,6 +3,9 @@ package com.dpw.runner.shipment.services.ReportingService.Reports;
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentContainers;
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ManifestConsolModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ConsolidationModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ContainerModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PackingModel;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.Packing;
@@ -36,8 +39,8 @@ public class ManifestConsolReport extends IReport {
 
     @Override
     IDocumentModel getDocumentModel(Long id) {
-        ConsolidationDetails consolidationDetails = getConsolidation(id);
-        List<Containers> containersList = new ArrayList<>();
+        ConsolidationModel consolidationDetails = getConsolidation(id);
+        List<ContainerModel> containersList = new ArrayList<>();
         if(consolidationDetails.getShipmentsList() != null) {
             for (var shipment : consolidationDetails.getShipmentsList()) {
                 containersList.addAll(shipment.getContainersList());
@@ -59,8 +62,9 @@ public class ManifestConsolReport extends IReport {
         ManifestConsolModel model = (ManifestConsolModel) documentModel;
         Map<String, Object> dictionary = new HashMap<>();
 
-        populateConsolidationFields(model.getConsolidation(), dictionary);
-        List<Packing> packingList = GetAllShipmentsPacks(model.getShipmentDetailsList());
+        populateConsolidationFields(jsonHelper.convertValue(model.getConsolidation(), ConsolidationModel.class)
+                , dictionary);
+        List<PackingModel> packingList = GetAllShipmentsPacks(model.getShipmentDetailsList());
         Pair<BigDecimal, String> weightAndUnit = GetTotalWeight(packingList);
         Pair<BigDecimal, String> volumeAndUnit = GetTotalVolume(packingList);
 
