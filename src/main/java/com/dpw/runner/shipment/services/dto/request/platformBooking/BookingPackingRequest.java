@@ -43,4 +43,6 @@ public class BookingPackingRequest extends CommonRequest implements IRunnerReque
     private String lengthUnit;
     private String widthUnit;
     private String heightUnit;
+    @JsonProperty("isDimension")
+    private Boolean isDimension;
 }

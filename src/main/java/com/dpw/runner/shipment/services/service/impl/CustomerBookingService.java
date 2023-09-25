@@ -549,6 +549,7 @@ public class CustomerBookingService implements ICustomerBookingService {
                 pack.setLengthUnit(Constants.METRE);
                 pack.setWidthUnit(Constants.METRE);
                 pack.setHeightUnit(Constants.METRE);
+                pack.setIsDimension(true);
                 try {
                     if (pack.getDimensionUnit() != null && !pack.getDimensionUnit().equals(Constants.METRE)) {
                         pack.setLength(BigDecimal.valueOf(
