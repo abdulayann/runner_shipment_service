@@ -21,9 +21,10 @@ public class ReportsFactory {
     private MawbReport mawbReport;
     @Autowired
     private CargoManifestReport cargoManifestReport;
-
     @Autowired
     private FreightCertificationReport freightCertificationReport;
+    @Autowired
+    private ShippingInstructionReport shippingInstructionReport;
 
     public IReport getReport(String key)
     {
@@ -45,6 +46,8 @@ public class ReportsFactory {
                 return cargoManifestReport;
             case ReportConstants.FREIGHT_CERTIFICATION:
                 return freightCertificationReport;
+            case ReportConstants.SHIPPING_INSTRUCTION:
+                return shippingInstructionReport;
         }
         return null;
     }

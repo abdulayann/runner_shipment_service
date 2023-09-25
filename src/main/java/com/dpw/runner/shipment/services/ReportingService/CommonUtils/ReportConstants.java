@@ -6,14 +6,20 @@ import java.util.Set;
 
 public class ReportConstants
 {
+    public static final String MBL_NUMBER = "MBLNumber";
+    public static final String HBL_NUMBER = "HBLNumber";
     public static final String MASTER_BILL = "MasterBill";
     public static final String HOUSE_BILL = "HouseBill";
     public static final String VESSEL_NAME = "VesselName";
+    public static final String VESSEL = "Vessel";
     public static final String VOYAGE = "Voyage";
     public static final String POR = "POR";
     public static final String POL = "POL";
     public static final String POD = "POD";
     public static final String FPOD = "FPOD";
+    public static final String POFD = "POFD";
+    public static final String PO_DELIVERY = "PODelivery";
+    public static final String SERVICE_TYPE = "ServiceType";
     public static final String ITEMS = "Items";
     public static final String POD_COUNTRY = "PODCountry";
     public static final String POL_COUNTRY = "POLCountry";
@@ -126,12 +132,15 @@ public class ReportConstants
     public static final String COUNTRY = "Country";
     public static final String ZIPCODE = "Zip";
     public static final String NOTIFY_PARTY = "NotifyParty";
+    public static final String NOTIFY_ADDRESS = "NotifyAddress";
     public static final String OPEN_DATE = "OpenDate";
     public static final String DUE_DATE = "DueDate";
     public static final String PP_CC = "PP_CC";
     public static final String PPCC = "PPCC";
     public static final String FLIGHT_NAME = "FlightName";
     public static final String FLIGHT_NUMBER = "FlightNo";
+    public static final String Flight_Number = "FlightNumber";
+    public static final String SUMMARY = "Summary";
     public static final String DATE_OF_DEPARTURE = "DateOfDeparture";
     public static final String DELIVERY_ADDRESS = "DeliveryAddress";
     public static final String SYSTEM_DATE = "SysDate";
@@ -254,10 +263,15 @@ public class ReportConstants
     public static final String BL_VESSEL_NAME = "BL_VesselName";
     public static final String BL_VOYAGE = "BL_Voyage";
     public static final String BL_NOTIFY_PARTY = "BL_NotifyParty";
-    public static final String TOTAL_WEIGHT = "TotalPacksWeight";
-    public static final String TOTAL_VOLUME = "TotalPacksVolume";
+    public static final String TOTAL_PACKS_WEIGHT = "TotalPacksWeight";
+    public static final String TOTAL_PACKS_VOLUME = "TotalPacksVolume";
     public static final String TOTAL_WEIGHT_UNIT = "TotalPacksWeightUnit";
     public static final String TOTAL_VOLUME_UNIT = "TotalPacksVolumeUnit";
+    public static final String TOTAL_PACKS = "TotalPacks";
+    public static final String TOTAL_WEIGHT = "TotalWeight";
+    public static final String TOTAL_VOLUME = "TotalVolume";
+    public static final String UOTV = "UOTV";
+    public static final String UOTW = "UOTW";
     public static final String AS_AGREED = "asAgreed";
     public static final String COPY_AS_AGREED = "copyAsAgreed";
     public static final String HAS_CHARGES = "hasCharges";

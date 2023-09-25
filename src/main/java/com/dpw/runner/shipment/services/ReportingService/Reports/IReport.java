@@ -801,4 +801,15 @@ public abstract class IReport {
         return null;
     }
 
+    public void addBLDetails(Map<String, Object> dictionary, long shipmentId) {
+        List<Hbl> hblList = hblDao.findByShipmentId(shipmentId);
+        if(hblList.size() == 0)
+            return;
+        Hbl hbl = hblList.get(0);
+        if(hbl == null)
+            return;
+        dictionary.put(ReportConstants.BL_CARGO_TERMS_DESCRIPTION, hbl.getHblData().getCargoTermsDescription());
+        dictionary.put(ReportConstants.BL_REMARKS_DESCRIPTION, hbl.getHblData().getBlRemarksDescription());
+    }
+
 }
