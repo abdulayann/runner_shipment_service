@@ -546,9 +546,9 @@ public class CustomerBookingService implements ICustomerBookingService {
         if (request.getPackingList() != null) {
             List<PlatformToRunnerCustomerBookingResponse.ReferenceNumbersGuidMapResponse> referenceNumbersGuidMapResponses = new ArrayList<>();
             request.getPackingList().forEach(pack -> {
-                pack.setLengthUnit(pack.getDimensionUnit());
-                pack.setWidthUnit(pack.getDimensionUnit());
-                pack.setHeightUnit(pack.getDimensionUnit());
+                pack.setLengthUnit(Constants.METRE);
+                pack.setWidthUnit(Constants.METRE);
+                pack.setHeightUnit(Constants.METRE);
                 try {
                     if (pack.getDimensionUnit() != null && !pack.getDimensionUnit().equals(Constants.METRE)) {
                         pack.setLength(BigDecimal.valueOf(
