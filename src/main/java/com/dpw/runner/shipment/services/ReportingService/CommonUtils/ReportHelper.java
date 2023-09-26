@@ -3,15 +3,39 @@ package com.dpw.runner.shipment.services.ReportingService.CommonUtils;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PartiesModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.ReportingService.Reports.IReport;
+import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
+import com.dpw.runner.shipment.services.entity.Hbl;
+import com.dpw.runner.shipment.services.entity.Parties;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
+import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
+import com.dpw.runner.shipment.services.repository.interfaces.IHblRepository;
+import com.dpw.runner.shipment.services.service.v1.IV1Service;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
+import java.text.DecimalFormat;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+@Component
 public class ReportHelper {
 
+    private static IV1Service v1Service;
+    private static JsonHelper jsonHelper;
+    private static IHblRepository hblRepository;
+
+    @Autowired
+    public ReportHelper(IV1Service v1Service, JsonHelper jsonHelper, IHblRepository hblRepository){
+        ReportHelper.v1Service = v1Service;
+        ReportHelper.jsonHelper = jsonHelper;
+        ReportHelper.hblRepository = hblRepository;
+    }
     public static String getCityCountry(String city, String country)
     {
         if (city == null)
@@ -85,7 +109,7 @@ public class ReportHelper {
             list.add(city_country);
         if(city_zipcode != null)
             list.add(city_zipcode);
-        if(state_country != null);
+        if(state_country != null)
             list.add(state_country);
         return list;
 
@@ -148,6 +172,22 @@ public class ReportHelper {
         return stringList;
     }
 
+    public static UnlocationsResponse getUNLocRow(String UNLocCode) {
+        if(UNLocCode == null || UNLocCode.isEmpty())
+            return null;
+        List <Object> criteria = Arrays.asList(
+                Arrays.asList("LocCode"),
+                "=",
+                UNLocCode
+        );
+        CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(criteria).build();
+        V1DataResponse v1DataResponse = v1Service.fetchUnlocation(commonV1ListRequest);
+        List<UnlocationsResponse> unlocationsResponse = jsonHelper.convertValueToList(v1DataResponse.entities, UnlocationsResponse.class);
+        if(unlocationsResponse.size() > 0)
+            return unlocationsResponse.get(0);
+        return null;
+    }
+
     public static String combineStringsWithComma(String str1, String str2)
     {
         if (str1 == null)
@@ -162,6 +202,14 @@ public class ReportHelper {
         }
     }
 
+    public static String getPortDetails(String UNLocCode) {
+        UnlocationsResponse unlocationsResponse = getUNLocRow(UNLocCode);
+        if(unlocationsResponse != null) {
+            return combineStringsWithComma(unlocationsResponse.getName(), unlocationsResponse.getCountry());
+        }
+        return "";
+    }
+
     public static void JsonDateFormat(Map<String, Object> dictionary) {
         if (dictionary != null) {
             Map<String, Object> dictionaryCopy = new LinkedHashMap<>(dictionary);
@@ -174,6 +222,32 @@ public class ReportHelper {
             }
         }
     }
+
+    public static String twoDecimalPlacesFormat(String value){
+        if(value.isEmpty() || value.isBlank())
+            return value;
+
+        DecimalFormat df = new DecimalFormat("#.00");
+        return df.format(value);
+    }
+
+    public static String GenerateFormattedDate(LocalDateTime localDateTime, String pattern){
+        if(localDateTime == null || pattern == null)
+            return null;
+        DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern(pattern);
+        return dateTimeFormatter.format(localDateTime);
+    }
+
+    public static void AddBlDetails(Map<String, Object> dictionary, Long shipmentId) {
+        List<Hbl> hbl = hblRepository.findByShipmentId(shipmentId);
+        if(hbl != null && hbl.size() > 0){
+            dictionary.put(ReportConstants.BL_CARGO_TERMS_DESCRIPTION,
+                    hbl.get(0).getHblData().getCargoTermsDescription());
+            dictionary.put(ReportConstants.BL_REMARKS_DESCRIPTION,
+                    hbl.get(0).getHblData().getBlRemarksDescription());
+        }
+    }
+
 
     public static String numberToWords(Integer numb) {
         if (numb == null)
