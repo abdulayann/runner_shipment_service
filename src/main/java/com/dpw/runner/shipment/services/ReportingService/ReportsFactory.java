@@ -25,9 +25,10 @@ public class ReportsFactory {
     private CommercialInvoiceReport commercialInvoiceReport;
     @Autowired
     private ConsolidatedPackingListReport consolidatedPackingListReport;
-
     @Autowired
     private FreightCertificationReport freightCertificationReport;
+    @Autowired
+    private ManifestConsolReport manifestConsolReport;
 
     public IReport getReport(String key)
     {
@@ -53,6 +54,9 @@ public class ReportsFactory {
                 return consolidatedPackingListReport;
             case ReportConstants.FREIGHT_CERTIFICATION:
                 return freightCertificationReport;
+            case ReportConstants.EXPORT_CONSOL_MANIFEST:
+                return manifestConsolReport;
+
         }
         return null;
     }
