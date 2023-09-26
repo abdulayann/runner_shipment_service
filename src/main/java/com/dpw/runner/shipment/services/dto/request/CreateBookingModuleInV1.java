@@ -27,6 +27,7 @@ public class CreateBookingModuleInV1 {
         private String NotifyPartyCode;
         private String NotifyPartyAddressCode;
         private String Carrier;
+        private String FlightNumber;
         private String VesselName;
         private String Voyage;
         private Long Packs;
