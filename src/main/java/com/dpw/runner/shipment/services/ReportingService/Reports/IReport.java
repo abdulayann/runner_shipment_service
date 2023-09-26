@@ -19,6 +19,7 @@ import com.dpw.runner.shipment.services.dto.request.hbl.HblDataDto;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.masterdata.dto.CarrierMasterData;
 import com.dpw.runner.shipment.services.masterdata.dto.MasterData;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
@@ -644,6 +645,20 @@ public abstract class IReport {
         if(masterData == null || masterData.isEmpty())
             return null;
         return masterData.get(0);
+    }
+    public CarrierMasterData getCarrier(String carrier) {
+        if(StringUtility.isEmpty(carrier)) return null;
+        List<Object> carrierCriteria = Arrays.asList(
+                List.of("ItemValue"),
+                "=",
+                carrier
+        );
+        CommonV1ListRequest carrierRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(carrierCriteria).build();
+        V1DataResponse carrierResponse = v1Service.fetchCarrierMasterData(carrierRequest);
+        List<CarrierMasterData> carrierMasterData = jsonHelper.convertValueToList(carrierResponse.entities, CarrierMasterData.class);
+        if(carrierMasterData == null || carrierMasterData.isEmpty())
+            return null;
+        return carrierMasterData.get(0);
     }
 
     public List<ContainerCountByCode> getCountByContainerTypeCode(List<ShipmentContainers> commonContainers) {
