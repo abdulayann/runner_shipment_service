@@ -6,18 +6,21 @@ metadata:
   annotations:
     kubernetes.io/ingress.class: nginx
     nginx.ingress.kubernetes.io/ssl-redirect: 'false'
-    nginx.ingress.kubernetes.io/proxy-body-size: '40m'
-    nginx.org/client-max-body-size: '40m'
+    nginx.ingress.kubernetes.io/proxy-body-size: 40m
+    nginx.org/client-max-body-size: 40m
     nginx.ingress.kubernetes.io/use-regex: 'true'
+    nginx.ingress.kubernetes.io/proxy-buffer-size: 10m
+    nginx.ingress.kubernetes.io/server-snippet: client_header_buffer_size 10m; large_client_header_buffers
+      4 10m;
 spec:
   rules:
-    - host: 'HOST_URL'
-      http:
-        paths:
-          - path: /shipment-service
-            pathType: ImplementationSpecific
-            backend:
-              service:
-                name: runner-shipment-service
-                port:
-                  number: 80
+  - host: HOST_URL
+    http:
+      paths:
+      - path: /shipment-service
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: runner-shipment-service
+            port:
+              number: 80
