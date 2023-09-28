@@ -12,6 +12,7 @@ import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IHblDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
+import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
 import com.dpw.runner.shipment.services.dto.request.HblPartyDto;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.request.hbl.HblContainerDto;
@@ -34,6 +35,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.text.DecimalFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -77,7 +79,8 @@ public abstract class IReport {
         ship.ContainerNumber = row.getContainerNumber();
         ship.SealNumber = row.getSealNumber();
         ship.NoofPackages = row.getNoOfPackages();
-        ship.ShipmentPacks = Long.valueOf(row.getPacks());
+        if(row.getPacks() != null && !row.getPacks().isEmpty())
+            ship.ShipmentPacks = Long.valueOf(row.getPacks());
         ship.ShipmentPacksUnit = row.getPacksType();
         ship.GrossWeight = getRoundedBigDecimal(row.getGrossWeight(),2, RoundingMode.HALF_UP);
         ship.GrossWeightUnit = row.getGrossWeightUnit();
@@ -129,7 +132,12 @@ public abstract class IReport {
         PartiesModel shipmentClient = shipment.getClient();
         PartiesModel shipmentConsignee = shipment.getConsignee();
         PartiesModel shipmentConsigner = shipment.getConsigner();
-        PartiesModel shipmentNotify = shipment.getAdditionalDetails().getNotifyParty();
+        AdditionalDetailModel additionalDetails = new AdditionalDetailModel();
+        if(shipment.getAdditionalDetails() != null) {
+            additionalDetails = shipment.getAdditionalDetails();
+        }
+
+        PartiesModel shipmentNotify = additionalDetails.getNotifyParty();
 
         UnlocationsResponse pol = null, pod = null, origin = null, destination = null, paidPlace = null, placeOfIssue = null, placeOfSupply = null;
 
@@ -180,7 +188,7 @@ public abstract class IReport {
         criteria = Arrays.asList(
                 Arrays.asList("LocCode"),
                 "=",
-                shipment.getAdditionalDetails().getPaidPlace()
+                additionalDetails.getPaidPlace()
         );
         commonV1ListRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(criteria).build();
         v1DataResponse = v1Service.fetchUnlocation(commonV1ListRequest);
@@ -191,7 +199,7 @@ public abstract class IReport {
         criteria = Arrays.asList(
                 Arrays.asList("LocCode"),
                 "=",
-                shipment.getAdditionalDetails().getPlaceOfIssue()
+                additionalDetails.getPlaceOfIssue()
         );
         commonV1ListRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(criteria).build();
         v1DataResponse = v1Service.fetchUnlocation(commonV1ListRequest);
@@ -202,7 +210,7 @@ public abstract class IReport {
         criteria = Arrays.asList(
                 Arrays.asList("LocCode"),
                 "=",
-                shipment.getAdditionalDetails().getPlaceOfSupply()
+                additionalDetails.getPlaceOfSupply()
         );
         commonV1ListRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(criteria).build();
         v1DataResponse = v1Service.fetchUnlocation(commonV1ListRequest);
@@ -249,10 +257,10 @@ public abstract class IReport {
         dictionary.put(ReportConstants.ATD,shipment.getCarrierDetails() != null ? shipment.getCarrierDetails().getAtd() : null);
         dictionary.put(ReportConstants.DATE_OF_DEPARTURE, dictionary.get(ReportConstants.ATD) == null ? dictionary.get(ReportConstants.ETD) : dictionary.get(ReportConstants.ATD));
         dictionary.put(ReportConstants.SYSTEM_DATE, LocalDateTime.now());
-        dictionary.put(ReportConstants.ONBOARD_DATE, shipment.getAdditionalDetails().getOnBoardDate());
+        dictionary.put(ReportConstants.ONBOARD_DATE, additionalDetails.getOnBoardDate());
         dictionary.put(ReportConstants.ESTIMATED_READY_FOR_PICKUP, pickup != null ? pickup.getEstimatedPickupOrDelivery() : null);
-        dictionary.put(ReportConstants.DATE_OF_ISSUE, shipment.getAdditionalDetails().getDateOfIssue());
-        dictionary.put(ReportConstants.DATE_OF_RECEIPT, shipment.getAdditionalDetails().getDateOfReceipt());
+        dictionary.put(ReportConstants.DATE_OF_ISSUE, additionalDetails.getDateOfIssue());
+        dictionary.put(ReportConstants.DATE_OF_RECEIPT, additionalDetails.getDateOfReceipt());
 
         dictionary.put(ReportConstants.INCO_TERM, shipment.getIncoterms());
         dictionary.put(ReportConstants.CHARGEABLE, shipment.getChargable());
@@ -278,16 +286,16 @@ public abstract class IReport {
         dictionary.put(ReportConstants.DELIVERY_CFS, delivery != null && delivery.getSourceDetail() != null ? delivery.getSourceDetail().getOrgData().get("FullName") : null);
         dictionary.put(ReportConstants.PICKUP_CFS, pickup != null && pickup.getDestinationDetail() != null ? pickup.getDestinationDetail().getOrgData().get("FullName") : null);
         dictionary.put(ReportConstants.MARKS_N_NUMS,shipment.getMarksNum());
-        dictionary.put(ReportConstants.ORIGINALS,shipment.getAdditionalDetails().getOriginal() == null ? 1 : shipment.getAdditionalDetails().getOriginal());
+        dictionary.put(ReportConstants.ORIGINALS,additionalDetails.getOriginal() == null ? 1 : additionalDetails.getOriginal());
         dictionary.put(ReportConstants.ORIGINAL_WORDS, "");
-        dictionary.put(ReportConstants.COPY_BILLS,shipment.getAdditionalDetails().getCopy() == null ? 0 : shipment.getAdditionalDetails().getCopy());
+        dictionary.put(ReportConstants.COPY_BILLS,additionalDetails.getCopy() == null ? 0 : additionalDetails.getCopy());
 
         dictionary.put(ReportConstants.ISSUE_PLACE_NAME, placeOfIssue !=  null ? placeOfIssue.getName() : null);
         dictionary.put(ReportConstants.ISSUE_PLACE_COUNTRY, placeOfIssue != null ? placeOfIssue.getCountry() : null);
         dictionary.put(ReportConstants.PAID_PLACE_NAME, paidPlace != null ? paidPlace.getName() : null);
         dictionary.put(ReportConstants.PAID_PLACE_COUNTRY, paidPlace != null ? paidPlace.getCountry() : null);
 
-        dictionary.put(ReportConstants.HSN_NUMBER, shipment.getAdditionalDetails().getHsnNumber());
+        dictionary.put(ReportConstants.HSN_NUMBER, additionalDetails.getHsnNumber());
         dictionary.put(ReportConstants.SHIPMENT_BOOKING_NUMBER, shipment.getBookingNumber());
 
         dictionary.put(ReportConstants.DESTINATION_NAME_, destination != null ? destination.getName() : null);
@@ -302,7 +310,7 @@ public abstract class IReport {
         var array = new String[] {"" + dictionary.get("VesselName"), shipment.getCarrierDetails().getVoyage()};
         dictionary.put(ReportConstants.VESSEL_NAME_AND_VOYAGE, array[0] + " & " + array[1]);
 
-        dictionary.put(ReportConstants.WAREHOUSE_NAME, shipment.getAdditionalDetails().getWarehouseId());
+        dictionary.put(ReportConstants.WAREHOUSE_NAME, additionalDetails.getWarehouseId());
         masterData = null;
         if(placeOfIssue != null)
         {
@@ -654,7 +662,9 @@ public abstract class IReport {
                 carrier
         );
         CommonV1ListRequest carrierRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(carrierCriteria).build();
-        V1DataResponse carrierResponse = v1Service.fetchCarrierMasterData(carrierRequest);
+        CarrierListObject carrierListObject = new CarrierListObject();
+        carrierListObject.setListObject(carrierRequest);
+        V1DataResponse carrierResponse = v1Service.fetchCarrierMasterData(carrierListObject);
         List<CarrierMasterData> carrierMasterData = jsonHelper.convertValueToList(carrierResponse.entities, CarrierMasterData.class);
         if(carrierMasterData == null || carrierMasterData.isEmpty())
             return null;
@@ -719,7 +729,8 @@ public abstract class IReport {
     public static String addCommas(BigDecimal amount)
     {
         if (amount == null) return null;
-        return String.format("{0:n2}", amount);
+        DecimalFormat decimalFormat = new DecimalFormat("#,##0.00");
+        return decimalFormat.format(amount);
     }
 
     public static String addCommas(String amount)
@@ -729,7 +740,7 @@ public abstract class IReport {
             return null;
         }
         try{
-            return String.format("{0:n2}", new BigDecimal(amount));
+            return addCommas(new BigDecimal(amount));
         }
         catch (Exception ex)
         {
@@ -881,7 +892,8 @@ public abstract class IReport {
         for(var shipment : shipments) {
             ShipmentAndContainerResponse shipmentContainer = new ShipmentAndContainerResponse();
 
-            shipmentContainer.hsnNumber = shipment.getAdditionalDetails().getHsnNumber().toString();
+            shipmentContainer.hsnNumber = shipment.getAdditionalDetails().getHsnNumber() != null ?
+                    shipment.getAdditionalDetails().getHsnNumber().toString(): null;
             shipmentContainer.houseBill = shipment.getHouseBill();
             shipmentContainer.masterBill = shipment.getMasterBill();
 

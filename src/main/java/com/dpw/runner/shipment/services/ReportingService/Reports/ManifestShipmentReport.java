@@ -11,6 +11,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.nimbusds.jose.util.Pair;
 import org.apache.poi.hpsf.Decimal;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -18,6 +19,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+@Component
 public class ManifestShipmentReport extends IReport{
     @Autowired
     private JsonHelper jsonHelper;
@@ -66,8 +68,7 @@ public class ManifestShipmentReport extends IReport{
 
         dictionary.put(ReportConstants.SHIPMENT_AND_CONTAINER, getShipmentAndContainerResponse(List.of(manifestShipmentModel.shipmentDetails)));
         dictionary.put(ReportConstants.SHIPMENTS, getShipmentResponse(List.of(manifestShipmentModel.shipmentDetails)));
-        var json= jsonHelper.convertToJson(dictionary.get(ReportConstants.SHIPMENTS));
-        List<Map<String, Object>> values = jsonHelper.convertValue(json, new TypeReference<List<Map<String, Object>>>() {});
+        List<Map<String, Object>> values = jsonHelper.convertValue(dictionary.get(ReportConstants.SHIPMENTS), new TypeReference<List<Map<String, Object>>>() {});
         values.forEach(v-> {
             if(v.containsKey(ReportConstants.WEIGHT))
                 v.put(ReportConstants.WEIGHT,addCommas(v.get(ReportConstants.WEIGHT).toString()));
@@ -77,8 +78,10 @@ public class ManifestShipmentReport extends IReport{
         dictionary.put(ReportConstants.SHIPMENTS, values);
 
         dictionary.put(ReportConstants.CONTAINER_COUNT,manifestShipmentModel.shipmentDetails.getContainersList().size());
-        dictionary.put(ReportConstants.CARRIER_NAME, manifestShipmentModel.carrier.getItemDescription());
-        dictionary.put(ReportConstants.FLIGHT_CARRIER, manifestShipmentModel.carrier.getItemDescription());
+        if(manifestShipmentModel.carrier != null) {
+            dictionary.put(ReportConstants.CARRIER_NAME, manifestShipmentModel.carrier.getItemDescription());
+            dictionary.put(ReportConstants.FLIGHT_CARRIER, manifestShipmentModel.carrier.getItemDescription());
+        }
         dictionary.put(ReportConstants.TOTAL_WEIGHT, addCommas(weightAndUnit.getLeft()));
         dictionary.put(ReportConstants.TOTAL_WEIGHT_UNIT, weightAndUnit.getRight());
         dictionary.put(ReportConstants.TOTAL_VOLUME, addCommas(volumeAndUnit.getLeft()));
