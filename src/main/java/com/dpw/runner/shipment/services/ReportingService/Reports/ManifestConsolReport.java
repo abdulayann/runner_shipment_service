@@ -47,14 +47,18 @@ public class ManifestConsolReport extends IReport {
             }
         }
 
-        return ManifestConsolModel.builder()
+        ManifestConsolModel model =  ManifestConsolModel.builder()
             .consolidation(consolidationDetails)
             .containersList(jsonHelper.convertValueToList(containersList, ShipmentContainers.class))
             .containerCount(containersList.size())
             .shipmentDetailsList(consolidationDetails.getShipmentsList())
             .shipmentCount(consolidationDetails.getShipmentsList().size())
-            .carrierMasterData(carrierMasterData.fetchCarrierData().get(0)) // ?
             .build();
+        if(model.getConsolidation() != null && model.getConsolidation().getCarrierDetails() != null) {
+            model.setCarrierMasterData(getCarrier(model.getConsolidation().getCarrierDetails().getShippingLine()));
+        }
+
+        return model;
     }
 
     @Override
@@ -75,7 +79,7 @@ public class ManifestConsolReport extends IReport {
         dictionary.put(SHIPMENTS, getShipmentResponse(model.getShipmentDetailsList()));
         dictionary.put(CONTAINER_COUNT_BY_CODE, getCountByContainerTypeCode(model.getContainersList()));
 
-        if (model.getShipmentDetailsList() != null) {
+        if (model.getShipmentDetailsList() != null && model.getShipmentDetailsList().size() > 0) {
             dictionary.put(OBJECT_TYPE, model.getShipmentDetailsList().get(0).getTransportMode());
         }
 

@@ -45,6 +45,7 @@ import java.util.stream.Collectors;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.combineStringsWithComma;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.stringValueOf;
 
 public abstract class IReport {
 
@@ -455,11 +456,11 @@ public abstract class IReport {
             Map<String, Object> addressData = sendingAgent.getAddressData();
             if(addressData != null)
             {
-                exportAgentAddress = ReportHelper.getOrgAddressWithPhoneEmail(addressData.get("CompanyName").toString(), addressData.get("Address1").toString(),
-                        addressData.get("Address2").toString(),
-                        ReportHelper.getCityCountry(addressData.get("City").toString(), addressData.get("Country").toString()),
-                        null, addressData.get("ContactPhone").toString(),
-                        addressData.get("Zip_PostCode").toString()
+                exportAgentAddress = ReportHelper.getOrgAddressWithPhoneEmail(stringValueOf(addressData.get("CompanyName")), stringValueOf(addressData.get("Address1")),
+                        stringValueOf(addressData.get("Address2")),
+                        ReportHelper.getCityCountry(stringValueOf(addressData.get("City")), stringValueOf(addressData.get("Country"))),
+                        null, stringValueOf(addressData.get("ContactPhone")),
+                        stringValueOf(addressData.get("Zip_PostCode"))
                 );
                 dictionary.put(ReportConstants.SENDING_AGENT_NAME, addressData.get("CompanyName"));
             }
@@ -474,11 +475,11 @@ public abstract class IReport {
             Map<String, Object> addressData = receivingAgent.getAddressData();
             if(addressData != null)
             {
-                importAgentAddress = ReportHelper.getOrgAddressWithPhoneEmail(addressData.get("CompanyName").toString(), addressData.get("Address1").toString(),
-                        addressData.get("Address2").toString(),
-                        ReportHelper.getCityCountry(addressData.get("City").toString(), addressData.get("Country").toString()),
-                        null, addressData.get("ContactPhone").toString(),
-                        addressData.get("Zip_PostCode").toString()
+                importAgentAddress = ReportHelper.getOrgAddressWithPhoneEmail(stringValueOf(addressData.get("CompanyName")), stringValueOf(addressData.get("Address1")),
+                        stringValueOf(addressData.get("Address2")),
+                        ReportHelper.getCityCountry(stringValueOf(addressData.get("City")), stringValueOf(addressData.get("Country"))),
+                        null, stringValueOf(addressData.get("ContactPhone")),
+                        stringValueOf(addressData.get("Zip_PostCode"))
                 );
                 dictionary.put(ReportConstants.RECEIVING_AGENT_NAME, addressData.get("CompanyName"));
             }
@@ -491,7 +492,7 @@ public abstract class IReport {
 
         List<String> exportAgentFreeTextAddress;
         List<String> importAgentFreeTextAddress;
-        if (consolidation.getIsSendingAgentFreeTextAddress())
+        if (consolidation.getIsSendingAgentFreeTextAddress() != null && consolidation.getIsSendingAgentFreeTextAddress())
         {
             exportAgentFreeTextAddress = ReportHelper.getAddressList(consolidation.getSendingAgentFreeTextAddress());
         }
@@ -500,7 +501,7 @@ public abstract class IReport {
             exportAgentFreeTextAddress = exportAgentAddress;
         }
 
-        if (consolidation.getIsReceivingAgentFreeTextAddress())
+        if (consolidation.getIsReceivingAgentFreeTextAddress() != null && consolidation.getIsReceivingAgentFreeTextAddress())
         {
             importAgentFreeTextAddress = ReportHelper.getAddressList(consolidation.getReceivingAgentFreeTextAddress());
         }
@@ -569,11 +570,11 @@ public abstract class IReport {
         }
         if(notifyParty != null){
             Map<String, Object> addressData = notifyParty.getAddressData();
-            List<String> consolNotifyPartyAddress = ReportHelper.getOrgAddressWithPhoneEmail(addressData.get("CompanyName").toString(), addressData.get("Address1").toString(),
-                    addressData.get("Address2").toString(),
-                    ReportHelper.getCityCountry(addressData.get("City").toString(), addressData.get("Country").toString()),
-                    null, addressData.get("ContactPhone").toString(),
-                    addressData.get("Zip_PostCode").toString()
+            List<String> consolNotifyPartyAddress = ReportHelper.getOrgAddressWithPhoneEmail(stringValueOf(addressData.get("CompanyName")), stringValueOf(addressData.get("Address1")),
+                    stringValueOf(addressData.get("Address2")),
+                    ReportHelper.getCityCountry(stringValueOf(addressData.get("City")), stringValueOf(addressData.get("Country"))),
+                    null, stringValueOf(addressData.get("ContactPhone")),
+                    stringValueOf(addressData.get("Zip_PostCode"))
             );
             dictionary.put(ReportConstants.CONSOL_NOTIFY_ADDRESS, consolNotifyPartyAddress);
         }
