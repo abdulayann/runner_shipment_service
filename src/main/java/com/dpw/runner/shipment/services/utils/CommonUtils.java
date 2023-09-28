@@ -258,4 +258,10 @@ public class CommonUtils {
         DecimalFormat decimalFormat = new DecimalFormat("#.##");
         return Double.parseDouble(decimalFormat.format(number));
     }
+
+    public static String stringValueOf(Object o) {
+        if(o == null)
+            return null;
+        return o.toString();
+    }
 }

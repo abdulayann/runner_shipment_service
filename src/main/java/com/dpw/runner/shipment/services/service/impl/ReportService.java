@@ -530,7 +530,7 @@ public class ReportService implements IReportService {
                 if(shipmentSettingsDetails.getTenantId() == 1) {
                     admin = shipmentSettingsDetails;
                 } else {
-                    admin = shipmentSettingsDetails;
+                    tenant = shipmentSettingsDetails;
                 }
             }
             return GetTemplateId(tenant, admin, key, hblType, objectType,

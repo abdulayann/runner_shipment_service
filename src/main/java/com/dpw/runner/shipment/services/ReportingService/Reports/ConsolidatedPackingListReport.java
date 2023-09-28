@@ -1,13 +1,12 @@
 package com.dpw.runner.shipment.services.ReportingService.Reports;
 
+import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.Models.ConsolidatedPackingListModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PackingModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PartiesModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ShipmentModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
-import com.dpw.runner.shipment.services.entity.Packing;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.fasterxml.jackson.core.type.TypeReference;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,7 +30,7 @@ public class ConsolidatedPackingListReport extends IReport {
 /**
 *
    * @param id
-   * @return
+   * @return dictionary
 */
     @Override
     public Map<String, Object> getData(Long id){
@@ -42,7 +41,7 @@ public class ConsolidatedPackingListReport extends IReport {
 /**
 *
    * @param id
-   * @return
+   * @return ConsolidatedPackingList model with populated fields
 */
     @Override
     IDocumentModel getDocumentModel(Long id) {
@@ -55,7 +54,7 @@ public class ConsolidatedPackingListReport extends IReport {
 /**
 *
    * @param documentModel
-   * @return
+   * @return dictionary generated from consolidation details
 */
     @Override
     Map<String, Object> populateDictionary(IDocumentModel documentModel) {
@@ -68,20 +67,27 @@ public class ConsolidatedPackingListReport extends IReport {
                 cplData.getConsolidationDetails().getSendingAgent(), PartiesModel.class
         ));
         if(cplData.getConsolidationDetails().getSendingAgent() != null){
-            //sending agent full name ?
-//            exporter.add(0, cplData.getConsolidationDetails().getSendingAgent());
+            Map<String, Object> orgData = cplData.getConsolidationDetails().getSendingAgent().getOrgData();
+            if(getValueFromMap(orgData, ReportConstants.FULL_NAME) != null)
+                exporter.add(0, getValueFromMap(orgData, ReportConstants.FULL_NAME));
         }
 
         List<String> consignee = getOrgAddressWithPhoneEmail(jsonHelper.convertValue(
                 cplData.getConsolidationDetails().getReceivingAgent(), PartiesModel.class
         ));
         if(cplData.getConsolidationDetails().getReceivingAgent() != null){
-            //receiving agent full name ?
-//            exporter.add(0, cplData.getConsolidationDetails().getReceivingAgent());
+            Map<String, Object> orgData = cplData.getConsolidationDetails().getReceivingAgent().getOrgData();
+            if(getValueFromMap(orgData, ReportConstants.FULL_NAME) != null)
+                consignee.add(0, getValueFromMap(orgData, ReportConstants.FULL_NAME));
         }
 
         addTenantDetails(dictionary, cplData.getTenant());
-//        dictionary["Tenant"] = ReportHelper.getListOfStrings(cplData?.tenant?.TenantName, cplData?.tenant?.Address1, cplData?.tenant?.Address2, cplData?.tenant?.City, cplData?.tenant?.State, cplData?.tenant?.ZipPostCode, cplData?.tenant?.Country, cplData?.tenant?.Email, cplData?.tenant?.WebsiteUrl, cplData?.tenant?.Phone);
+        List<String> tenantsDataList = getListOfStrings(cplData.getTenant().tenantName, cplData.getTenant().address1,
+                cplData.getTenant().address2, cplData.getTenant().city, cplData.getTenant().state,
+                cplData.getTenant().zipPostCode, cplData.getTenant().country, cplData.getTenant().email,
+                cplData.getTenant().websiteUrl, cplData.getTenant().phone);
+        if(!tenantsDataList.isEmpty())
+            dictionary.put(ReportConstants.TENANT, tenantsDataList);
         dictionary.put(EXPORTER, exporter);
         dictionary.put(CONSIGNEE, consignee);
 
@@ -97,7 +103,6 @@ public class ConsolidatedPackingListReport extends IReport {
             dictionary.put(IMPORT_AGENT_FREETEXT, consignee);
         }
 
-        // line 99 - 144
         var exportOrgData = cplData.getConsolidationDetails().getSendingAgent().getOrgData();
         if(exportOrgData != null){
             dictionary.put(EXPORTER_TAX_ID, exportOrgData.get(TENANT_VATREGNUMBER));

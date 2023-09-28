@@ -197,9 +197,8 @@ public class ShippingInstructionReport extends IReport{
                 tenant.country, tenant.zipPostCode, tenant.state);
         dictionary.put(AGENT, tenantDetails);
         ReportHelper.addTenantDetails(dictionary, model.getTenant());
-        //TODO tenant.country missing
         dictionary.put(TENANT, ReportHelper.getListOfStrings(tenant.tenantName, tenant.address1, tenant.address2,
-                        tenant.city, tenant.state, tenant.zipPostCode, tenant.email, tenant.websiteUrl, tenant.phone));
+                        tenant.city, tenant.state, tenant.zipPostCode, tenant.country,tenant.email, tenant.websiteUrl, tenant.phone));
 
 
         //Add Bl-details
