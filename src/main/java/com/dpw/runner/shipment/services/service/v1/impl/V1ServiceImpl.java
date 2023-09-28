@@ -227,6 +227,7 @@ public class V1ServiceImpl implements IV1Service {
 
     @Autowired
     private JsonHelper jsonHelper;
+
     @Override
     public ResponseEntity<?> createBooking(CustomerBooking customerBooking) {
         try {
@@ -235,7 +236,7 @@ public class V1ServiceImpl implements IV1Service {
             HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
             log.info("Payload sent for event: {} with request payload: {}", IntegrationType.V1_SHIPMENT_CREATION, jsonHelper.convertToJson(request));
             return this.restTemplate.postForEntity(this.CUSTOMER_BOOKING_URL, entity, V1ShipmentCreationResponse.class, new Object[0]);
-        }catch (HttpClientErrorException | HttpServerErrorException ex) {
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
             throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
         } catch (Exception exception) {
             throw new V1ServiceException(exception.getMessage());
@@ -306,7 +307,7 @@ public class V1ServiceImpl implements IV1Service {
     }
 
     @Override
-    public V1DataResponse fetchCarrierMasterData(Object request_) {
+    public V1DataResponse fetchCarrierMasterData(Object request) {
         ResponseEntity masterDataResponse = null;
 
         try {
@@ -314,10 +315,9 @@ public class V1ServiceImpl implements IV1Service {
             CarrierListObject req = jsonHelper.convertValue(request, CarrierListObject.class);
             Object requestCriteria = req.getListObject();
             HttpEntity<V1DataResponse> entity = new HttpEntity(requestCriteria, V1AuthHelper.getHeaders());
-            if(req.getListObject() != null && req.getType() != null && (req.getType().equals(Constants.CONSOLIDATION_TYPE_AGT) || req.getType().equals(Constants.CONSOLIDATION_TYPE_CLD))) {
+            if (req.getListObject() != null && req.getType() != null && (req.getType().equals(Constants.CONSOLIDATION_TYPE_AGT) || req.getType().equals(Constants.CONSOLIDATION_TYPE_CLD))) {
                 masterDataResponse = this.restTemplate.postForEntity(this.CARRIER_MASTER_DATA_URL, entity, V1DataResponse.class, new Object[0]);
-            }
-            else {
+            } else {
                 masterDataResponse = this.restTemplate.postForEntity(this.CARRIER_MASTER_DATA_ORG_REF_FILTER_URL, entity, V1DataResponse.class, new Object[0]);
             }
             log.info("Token time taken in getCarrierMasterData() function " + (System.currentTimeMillis() - time));
