@@ -9,9 +9,9 @@ import com.dpw.runner.shipment.services.ReportingService.Models.Commons.Shipment
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.*;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
-import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IHblDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.request.HblPartyDto;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.request.hbl.HblContainerDto;
@@ -40,7 +40,6 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
-
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.combineStringsWithComma;
 
 public abstract class IReport {
@@ -65,6 +64,15 @@ public abstract class IReport {
 
     @Autowired
     private ModelMapper modelMapper;
+
+    @Autowired
+    private IConsoleShipmentMappingDao consoleShipmentMappingDao;
+
+    @Autowired
+    private IShipmentSettingsDao shipmentSettingsDao;
+
+    @Autowired
+    private  IAwbDao awbDao;
 
     public abstract Map<String, Object> getData(Long id);
     abstract IDocumentModel getDocumentModel(Long id);
@@ -396,9 +404,28 @@ public abstract class IReport {
         return modelMapper.map(shipmentDetails, ShipmentModel.class);
     }
 
+    public ConsolidationModel getFirstConsolidationFromShipmentId(Long shipmentId)
+    {
+        List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByShipmentId(shipmentId);
+        if(consoleShipmentMappings != null && consoleShipmentMappings.size() > 0) {
+            Long id = consoleShipmentMappings.stream().map(ConsoleShipmentMapping::getConsolidationId).max(Comparator.naturalOrder()).get();
+            return getConsolidation(id);
+        }
+        return null;
+    }
+
     public TenantModel getTenant(Integer Id)
     {
         return new TenantModel(); // TODO- fetch from tenants
+    }
+
+    public ShipmentSettingsDetails getShipmentSettings(Integer tenantId) {
+        ShipmentSettingsDetails tenantSettingsRow = new ShipmentSettingsDetails();
+        List<ShipmentSettingsDetails> shipmentSettingsDetailsList = shipmentSettingsDao.getSettingsByTenantIds(Arrays.asList(UserContext.getUser().TenantId));
+        if (shipmentSettingsDetailsList != null && shipmentSettingsDetailsList.size() >= 1) {
+            tenantSettingsRow = shipmentSettingsDetailsList.get(0);
+        }
+        return tenantSettingsRow;
     }
 
     public ConsolidationModel getConsolidation(Long Id)
@@ -406,6 +433,8 @@ public abstract class IReport {
         ConsolidationDetails consolidationDetails = consolidationDetailsDao.findById(Id).get();
         return modelMapper.map(consolidationDetails, ConsolidationModel.class);
     }
+
+
 
     public Hbl getHbl(Long Id) {
         List<Hbl> hbls = hblDao.findByShipmentId(Id);
@@ -973,5 +1002,19 @@ public abstract class IReport {
     }
     private boolean IsStringNullOrEmpty(String s){
         return s == null || s.isEmpty();
+    }
+
+    public Boolean getIsHbl(ShipmentModel shipmentModel) {
+        if(shipmentModel.getTransportMode().equalsIgnoreCase(Constants.TRANSPORT_MODE_AIR)) {
+            if(shipmentModel.getDirection().equalsIgnoreCase(EXP)) {
+                Long entityId = shipmentModel.getId();
+                String entityType = (shipmentModel.getDirection() == Constants.SHIPMENT_TYPE_DRT) ? Constants.DMAWB : Constants.HAWB;
+                awbDao.findByShipmentId(entityId);
+            }
+            return false;
+        } else if (shipmentModel.getDirection().equalsIgnoreCase(EXP)) {
+            return true;
+        }
+        return false;
     }
 }

@@ -157,9 +157,6 @@ public class FreightCertificationReport extends IReport{
                     if(freightCertificationModel.shipmentDetails.getAdditionalDetails().getSMTPIGMDate() != null) {
                         dictionary.put(ReportConstants.SMTPIGM_DATE, freightCertificationModel.shipmentDetails.getAdditionalDetails().getSMTPIGMDate());
                     }
-                    if(freightCertificationModel.shipmentDetails.getAdditionalDetails().getSMTPIGMDate() != null) {
-                        dictionary.put(ReportConstants.SMTPIGM_DATE, freightCertificationModel.shipmentDetails.getAdditionalDetails().getSMTPIGMDate());
-                    }
                     if(freightCertificationModel.shipmentDetails.getAdditionalDetails().getSMTPIGMNumber() != null) {
                         dictionary.put(ReportConstants.SMTPIGM_NUMBER, freightCertificationModel.shipmentDetails.getAdditionalDetails().getSMTPIGMNumber());
                     }
