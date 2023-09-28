@@ -1,0 +1,91 @@
+package com.dpw.runner.shipment.services.ReportingService.Reports;
+
+import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
+import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ManifestShipmentModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ContainerModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PackingModel;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.nimbusds.jose.util.Pair;
+import org.apache.poi.hpsf.Decimal;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+@Component
+public class ManifestShipmentReport extends IReport{
+    @Autowired
+    private JsonHelper jsonHelper;
+    @Override
+    public Map<String, Object> getData(Long id) {
+        ManifestShipmentModel manifestShipmentModel = (ManifestShipmentModel) getDocumentModel(id);
+        return populateDictionary(manifestShipmentModel);
+    }
+
+    @Override
+    IDocumentModel getDocumentModel(Long id) {
+
+        ManifestShipmentModel manifestShipmentModel = new ManifestShipmentModel();
+        manifestShipmentModel.shipmentDetails = getShipment(id);
+        if(manifestShipmentModel.shipmentDetails != null && manifestShipmentModel.shipmentDetails.getConsolidationList() != null && !manifestShipmentModel.shipmentDetails.getConsolidationList().isEmpty())
+        {
+            manifestShipmentModel.consolidationDetails = manifestShipmentModel.shipmentDetails.getConsolidationList().get(0);
+        }
+        manifestShipmentModel.containers = new ArrayList<>();
+        if(manifestShipmentModel.shipmentDetails != null && manifestShipmentModel.shipmentDetails.getContainersList() != null)
+        {
+            for(ContainerModel container : manifestShipmentModel.shipmentDetails.getContainersList())
+                manifestShipmentModel.containers.add(getShipmentContainer(container));
+        }
+        if(manifestShipmentModel.shipmentDetails != null && manifestShipmentModel.shipmentDetails.getCarrierDetails() != null) {
+            manifestShipmentModel.carrier = getCarrier(manifestShipmentModel.shipmentDetails.getCarrierDetails().getShippingLine());
+        }
+        return manifestShipmentModel;
+    }
+
+    @Override
+    Map<String, Object> populateDictionary(IDocumentModel documentModel) {
+        ManifestShipmentModel manifestShipmentModel = (ManifestShipmentModel) documentModel;
+        Map<String, Object> dictionary = new HashMap<>();
+        populateShipmentFields(manifestShipmentModel.shipmentDetails, false, dictionary);
+        populateConsolidationFields(manifestShipmentModel.consolidationDetails, dictionary);
+
+        List<PackingModel> packings = GetAllShipmentsPacks(List.of(manifestShipmentModel.shipmentDetails));
+        Pair<BigDecimal, String> weightAndUnit = GetTotalWeight(packings);
+        Pair<BigDecimal, String> volumeAndUnit = GetTotalVolume(packings);
+
+        if(manifestShipmentModel.shipmentDetails != null){
+            dictionary.put(ReportConstants.OBJECT_TYPE,manifestShipmentModel.shipmentDetails.getTransportMode());
+        }
+        dictionary.put(ReportConstants.CONTAINER_COUNT_BY_CODE,getCountByContainerTypeCode(manifestShipmentModel.containers));
+
+        dictionary.put(ReportConstants.SHIPMENT_AND_CONTAINER, getShipmentAndContainerResponse(List.of(manifestShipmentModel.shipmentDetails)));
+        dictionary.put(ReportConstants.SHIPMENTS, getShipmentResponse(List.of(manifestShipmentModel.shipmentDetails)));
+        List<Map<String, Object>> values = jsonHelper.convertValue(dictionary.get(ReportConstants.SHIPMENTS), new TypeReference<List<Map<String, Object>>>() {});
+        values.forEach(v-> {
+            if(v.containsKey(ReportConstants.WEIGHT))
+                v.put(ReportConstants.WEIGHT,addCommas(v.get(ReportConstants.WEIGHT).toString()));
+            if(v.containsKey(ReportConstants.TOTAL_PACKS))
+                v.put(ReportConstants.TOTAL_PACKS,addCommas(v.get(ReportConstants.TOTAL_PACKS).toString()));
+        });
+        dictionary.put(ReportConstants.SHIPMENTS, values);
+
+        dictionary.put(ReportConstants.CONTAINER_COUNT,manifestShipmentModel.shipmentDetails.getContainersList().size());
+        if(manifestShipmentModel.carrier != null) {
+            dictionary.put(ReportConstants.CARRIER_NAME, manifestShipmentModel.carrier.getItemDescription());
+            dictionary.put(ReportConstants.FLIGHT_CARRIER, manifestShipmentModel.carrier.getItemDescription());
+        }
+        dictionary.put(ReportConstants.TOTAL_WEIGHT, addCommas(weightAndUnit.getLeft()));
+        dictionary.put(ReportConstants.TOTAL_WEIGHT_UNIT, weightAndUnit.getRight());
+        dictionary.put(ReportConstants.TOTAL_VOLUME, addCommas(volumeAndUnit.getLeft()));
+        dictionary.put(ReportConstants.TOTAL_VOLUME_UNIT, volumeAndUnit.getRight());
+        return dictionary;
+    }
+}
