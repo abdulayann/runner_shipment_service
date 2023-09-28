@@ -1,10 +1,13 @@
 package com.dpw.runner.shipment.services.service.v1.util;
 
 import com.dpw.runner.shipment.services.commons.constants.CustomerBookingConstants;
+import com.dpw.runner.shipment.services.commons.constants.NPMConstants;
 import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.dto.request.CreateBookingModuleInV1;
 import com.dpw.runner.shipment.services.entity.*;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -21,12 +24,14 @@ public class V1ServiceUtil {
     private static CreateBookingModuleInV1.BookingEntity createEntity(CustomerBooking customerBooking) {
         var carrierDetails = Optional.ofNullable(customerBooking.getCarrierDetails());
         return CreateBookingModuleInV1.BookingEntity.builder()
+                .Voyage(customerBooking.getCarrierDetails() != null ? customerBooking.getCarrierDetails().getVoyage() : null)
                 .ContractId(customerBooking.getContractId())
                 .NotifyPartyCode(Objects.isNull(customerBooking.getNotifyParty()) ? null : customerBooking.getNotifyParty().getOrgCode())
                 .NotifyPartyAddressCode(Objects.isNull(customerBooking.getNotifyParty()) ? null : customerBooking.getNotifyParty().getAddressCode())
                 .Carrier(customerBooking.getCarrierDetails() != null ? customerBooking.getCarrierDetails().getShippingLine() : null)
+                .FlightNumber(customerBooking.getCarrierDetails() != null ? customerBooking.getCarrierDetails().getFlightNumber() : null)
                 .VesselName(customerBooking.getCarrierDetails() != null ? customerBooking.getCarrierDetails().getVessel() : null)
-                .Packs(Long.valueOf(!Objects.isNull(customerBooking.getQuantity()) ? customerBooking.getQuantity() : 0))
+                .Packs(Objects.isNull(customerBooking.getQuantity()) ? null : Long.valueOf(customerBooking.getQuantity()))
                 .PacksUnit(customerBooking.getQuantityUnit())
                 .Weight(customerBooking.getGrossWeight())
                 .WeightUnit(customerBooking.getGrossWeightUnit())
@@ -35,7 +40,7 @@ public class V1ServiceUtil {
                 .Volume(customerBooking.getVolume())
                 .VolumeUnit(customerBooking.getVolumeUnit())
                 .ReferenceNo(customerBooking.getBookingNumber())
-                .CreatedDate(customerBooking.getCreatedAt() != null ? DateTimeFormatter.ofPattern(CustomerBookingConstants.DATE_FORMAT).format(customerBooking.getCreatedAt()) : null)
+                .CreatedDate(customerBooking.getBookingDate() != null ? DateTimeFormatter.ofPattern(CustomerBookingConstants.DATE_FORMAT).format(customerBooking.getBookingDate()) : null)
                 .ClientCode(customerBooking.getCustomer() != null ? customerBooking.getCustomer().getOrgCode() : null)
                 .ClientAddressShortCode(customerBooking.getCustomer() != null ? customerBooking.getCustomer().getAddressCode() : null)
                 .ConsignerCode(customerBooking.getConsignor() != null ? customerBooking.getConsignor().getOrgCode() : null)
@@ -83,7 +88,7 @@ public class V1ServiceUtil {
                         .OverseasCostCurrency(bc.getOverseasCostCurrency())
                         .OverseasCostAmount(bc.getOverseasCostAmount())
                         .OverseasSellAmount(bc.getOverseasSellAmount())
-                        .SellExchange(bc.getSellExchange())
+                        .SellExchange(bc.getSellExchange() != null && !bc.getSellExchange().equals(BigDecimal.ZERO)? BigDecimal.ONE.divide(bc.getSellExchange(),15, RoundingMode.HALF_UP) : bc.getSellExchange())
                         .TaxPercentage(bc.getTaxPercentage())
                         .ContainersGuid(createContainersGuid(bc))
                         .RevenueLineTotal(bc.getRevenueLineTotal())
@@ -102,6 +107,8 @@ public class V1ServiceUtil {
                         .CostTaxPercentage(bc.getCostTaxPercentage())
                         .CurrentCostRate(bc.getCurrentCostRate())
                         .CurrentSellRate(bc.getCurrentSellRate())
+                        .SellRateCurrency(bc.getSellRateCurrency())
+                        .CostRateCurrency(bc.getCostRateCurrency())
                         .LocalTax(bc.getLocalTax())
                         .DebtorCode(bc.getDebtor() != null ? bc.getDebtor().getOrgCode() : null)
                         .CreditorCode(bc.getCreditor() != null ? bc.getCreditor().getOrgCode() : null)
@@ -121,22 +128,21 @@ public class V1ServiceUtil {
         if (customerBooking == null)
             return null;
         List<CreateBookingModuleInV1.BookingEntity.OrgDetail> list = new ArrayList<>();
-        var consignee = convertParty(customerBooking.getConsignee(), customerBooking.getIsConsigneeFreeText());
-        var consignor = convertParty(customerBooking.getConsignor(), customerBooking.getIsConsignorFreeText());
-        var notify = convertParty(customerBooking.getNotifyParty(), customerBooking.getIsNotifyPartyFreeText());
-        var customer = convertParty(customerBooking.getCustomer(), customerBooking.getIsCustomerFreeText());
+        var consignee = convertParty(customerBooking.getConsignee(), customerBooking.getIsConsigneeFreeText() | customerBooking.getIsConsigneeAddressFreeText());
+        var consignor = convertParty(customerBooking.getConsignor(), customerBooking.getIsConsignorFreeText() | customerBooking.getIsConsignorAddressFreeText());
+        var notify = convertParty(customerBooking.getNotifyParty(), customerBooking.getIsNotifyPartyFreeText() | customerBooking.getIsNotifyPartyAddressFreeText());
+        var customer = convertParty(customerBooking.getCustomer(), customerBooking.getIsCustomerFreeText() | customerBooking.getIsCustomerAddressFreeText());
         Set<CreateBookingModuleInV1.BookingEntity.OrgDetail> hs = new HashSet<>();
         if (customerBooking.getBookingCharges() != null) {
             for (var bc : customerBooking.getBookingCharges()) {
                 var creditor = convertParty(bc.getCreditor(), false);
-                var debtor = convertParty(bc.getDebtor(), false);
+                var debtor = convertParty(bc.getDebtor(), true);
                 if (creditor != null)
-                    hs.add(creditor);
+                    list.add(creditor);
                 if (debtor != null)
-                    hs.add(debtor);
+                    list.add(debtor);
             }
         }
-        list.addAll(hs);
         if (consignee != null)
             list.add(consignee);
         if (consignor != null)
@@ -204,6 +210,7 @@ public class V1ServiceUtil {
                         .ChargeableUnit(packing.getChargeableUnit())
                         .GoodsDescription(packing.getGoodsDescription())
                         .CommodityCode(packing.getCommodity())
+                        .CommodityGroup(packing.getCommodityGroup())
                         .HazardousCheckBox(packing.getHazardous())
                         .HsCode(packing.getHSCode())
                         .build()).collect(Collectors.toList());
@@ -243,6 +250,7 @@ public class V1ServiceUtil {
                         .ContainerTypeCode(container.getContainerCode())
                         .Count(container.getContainerCount())
                         .CommodityCode(container.getCommodityCode())
+                        .CommodityGroup(container.getCommodityGroup())
                         .Weight(container.getGrossWeight())
                         .WeightUnit(container.getGrossWeightUnit())
                         .ReferenceGuid(container.getGuid())

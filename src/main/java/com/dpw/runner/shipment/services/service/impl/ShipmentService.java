@@ -11,6 +11,7 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
+import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
 import com.dpw.runner.shipment.services.dto.patchRequest.ShipmentPatchRequest;
 import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.response.*;
@@ -1294,7 +1295,9 @@ public class ShipmentService implements IShipmentService {
         List<Object> criteria = new ArrayList<>();
         criteria.addAll(List.of(List.of("AirlineCode"), "=", mawbAirlineCode));
         request.setCriteriaRequests(criteria);
-        V1DataResponse response = v1Service.fetchCarrierMasterData(request);
+        CarrierListObject carrierListObject = new CarrierListObject();
+        carrierListObject.setListObject(request);
+        V1DataResponse response = v1Service.fetchCarrierMasterData(carrierListObject);
         return response;
     }
 

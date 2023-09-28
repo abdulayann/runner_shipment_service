@@ -4,8 +4,10 @@ import com.dpw.runner.shipment.services.adapters.interfaces.IPlatformServiceAdap
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.dto.request.platform.PlatformCreateRequest;
 import com.dpw.runner.shipment.services.dto.request.platform.PlatformUpdateRequest;
+import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -17,6 +19,7 @@ import org.springframework.web.client.RestTemplate;
 import java.net.URI;
 
 @Service
+@Slf4j
 public class PlatformServiceAdapter implements IPlatformServiceAdapter {
     private final RestTemplate restTemplate;
     private final String baseUrl;
@@ -35,6 +38,7 @@ public class PlatformServiceAdapter implements IPlatformServiceAdapter {
     public ResponseEntity<?> createAtPlatform(CommonRequestModel requestModel) throws Exception {
         PlatformCreateRequest request = (PlatformCreateRequest) requestModel.getData();
         String url = baseUrl + "/booking/external";
+        log.info("Payload sent for event: {} with request payload: {}", IntegrationType.PLATFORM_CREATE_BOOKING, jsonHelper.convertToJson(request));
         ResponseEntity<?> responseEntity = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJson(request)), Object.class);
         return ResponseHelper.buildDependentServiceResponse(responseEntity.getBody(),0,0);
     }
@@ -43,6 +47,7 @@ public class PlatformServiceAdapter implements IPlatformServiceAdapter {
     public ResponseEntity<?> updateAtPlaform(CommonRequestModel requestModel) throws Exception {
         PlatformUpdateRequest request = (PlatformUpdateRequest) requestModel.getData();
         String url = baseUrl + "/notifications/booking/" + request.getBooking_reference_code();
+        log.info("Payload sent for event: {} with request payload: {}", IntegrationType.PLATFORM_UPDATE_BOOKING, jsonHelper.convertToJson(request));
         ResponseEntity<?> responseEntity = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJson(request)), Object.class);
         return ResponseHelper.buildDependentServiceResponse(responseEntity.getBody(),0,0);
     }

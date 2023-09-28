@@ -3,5 +3,11 @@ package com.dpw.runner.shipment.services.entity.enums;
 public enum IntegrationType {
     PLATFORM_CREATE_BOOKING,
     PLATFORM_UPDATE_BOOKING,
-    V1_SHIPMENT_CREATION;
+    V1_SHIPMENT_CREATION,
+    NPM_OFFER_FETCH_V2,
+    NPM_OFFER_FETCH_V8,
+    NPM_CONTRACT_FETCH,
+    NPM_UPDATE_UTILISATION,
+    CRP_LIST_CUSTOMER,
+    CRP_RETRIEVE_CUSTOMER;
 }

@@ -2,11 +2,14 @@ package com.dpw.runner.shipment.services.utils;
 
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import io.micrometer.core.instrument.Metrics;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import tec.units.ri.quantity.Quantities;
 import tec.units.ri.unit.MetricPrefix;
 import tec.units.ri.unit.Units;
 
+import javax.measure.Quantity;
 import javax.measure.Unit;
 import javax.measure.UnitConverter;
 import java.math.BigDecimal;
@@ -35,8 +38,25 @@ public class UnitConversionUtility {
                 return getWeightUnitForSymbol(unitSymbol);
             case Constants.VOLUME:
                 return getVolumeUnitForSymbol(unitSymbol);
+            case Constants.LENGTH:
+                return getLengthUnitForSymbol(unitSymbol);
             default:
                 throw new IllegalArgumentException(DaoConstants.DAO_UNKNOWN_UNIT + type);
+        }
+    }
+
+    private static Unit<?> getLengthUnitForSymbol(String unitSymbol) {
+        switch (unitSymbol) {
+            case Constants.METRE:
+                return Units.METRE;
+            case Constants.CENTI:
+                return MetricPrefix.CENTI(Units.METRE);
+            case Constants.DECI:
+                return MetricPrefix.DECI(Units.METRE);
+            case Constants.INCH:
+                return Units.METRE.multiply(0.0254);
+            default:
+                throw new IllegalArgumentException(DaoConstants.DAO_UNKNOWN_UNIT + unitSymbol);
         }
     }
 
@@ -46,6 +66,8 @@ public class UnitConversionUtility {
                 return MetricPrefix.KILO(Units.GRAM);
             case Constants.WEIGHT_UNIT_GRAM:
                 return Units.GRAM;
+            case Constants.METRIC_TON:
+                return MetricPrefix.MEGA(Units.GRAM);
             default:
                 throw new IllegalArgumentException(DaoConstants.DAO_UNKNOWN_UNIT + unitSymbol);
         }
