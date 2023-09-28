@@ -19,7 +19,7 @@ public class BookingContainerRequest extends CommonRequest implements IRunnerReq
     @JsonProperty("containerType")
     private String containerCode;
     @JsonProperty("commodity")
-    private String commodityCode;
+    private String commodityGroup;
     private BigDecimal grossWeight;
     private String grossWeightUnit;
     @JsonProperty("count")

@@ -87,11 +87,11 @@ public class BookingIntegrationsUtility {
             this.saveErrorResponse(customerBooking.getId(), Constants.BOOKING, IntegrationType.V1_SHIPMENT_CREATION, Status.SUCCESS, "SAVED SUCESSFULLY");
             return response;
         } catch (Exception ex) {
-//            this.saveErrorResponse(customerBooking.getId(), Constants.BOOKING, IntegrationType.V1_SHIPMENT_CREATION, Status.FAILED, ex.getLocalizedMessage());
             log.error("Booking Creation error from Platform for booking number: {} with error message: {}", customerBooking.getBookingNumber(), ex.getMessage());
             throw ex;
         }
     }
+
     private void saveErrorResponse(Long entityId, String entityType, IntegrationType integrationType, Status status, String message) {
         IntegrationResponse response = IntegrationResponse.builder()
                 .entityId(entityId).entityType(entityType).integrationType(integrationType).status(status)
@@ -111,6 +111,7 @@ public class BookingIntegrationsUtility {
                 .contract_id(customerBooking.getContractId())
                 .created_at(customerBooking.getCreatedAt())
                 .customer_org_id(customerBooking.getCustomer().getOrgCode())
+                .customer_email(customerBooking.getCustomerEmail())
                 .load(createLoad(customerBooking))
                 .route(createRoute(customerBooking))
                 .charges(createCharges(customerBooking))
@@ -130,7 +131,7 @@ public class BookingIntegrationsUtility {
                         .load_uuid(container.getGuid())
                         .load_type(customerBooking.getCargoType())
                         .container_type_code(container.getContainerCode())
-                        .product_category_code(container.getCommodityCode())
+                        .product_category_code(container.getCommodityGroup())
                         .pkg_type(null)
                         .is_package(false)
                         .weight(container.getGrossWeight())
@@ -151,7 +152,7 @@ public class BookingIntegrationsUtility {
                         .load_uuid(packing.getGuid())
                         .load_type(customerBooking.getCargoType())
                         .container_type_code(null)
-                        .product_category_code(packing.getCommodity())
+                        .product_category_code(packing.getCommodityGroup())
                         .pkg_type(packing.getPacksType())
                         .is_package(true)
                         .weight(packing.getWeight())
@@ -235,6 +236,9 @@ public class BookingIntegrationsUtility {
                 .destination_code(carrierDetails.map(c -> c.getDestination()).orElse(null))
                 .load(createLoad(customerBooking))
                 .charges(createCharges(customerBooking))
+                .customer_email(customerBooking.getCustomerEmail())
+                .pol(carrierDetails.map(c -> c.getOriginPort()).orElse(null))
+                .pod(carrierDetails.map(c -> c.getDestinationPort()).orElse(null))
                 .carrier_code(carrierDetails.map(c -> c.getJourneyNumber()).orElse(null))
                 .air_carrier_details(null)
                 .status(platformStatusMap.get(customerBooking.getBookingStatus()))

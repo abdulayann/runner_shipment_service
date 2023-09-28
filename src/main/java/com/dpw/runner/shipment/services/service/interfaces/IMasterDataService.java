@@ -96,4 +96,5 @@ public interface IMasterDataService extends ICommonService{
     ResponseEntity<?> fetchUnlocationOriginAndDestinationList(CommonRequestModel commonRequestModel);
     ResponseEntity<?> fetchListUnlocationTransportModeBased(CommonRequestModel commonRequestModel);
     ResponseEntity<?> fetchActivityMaster(CommonRequestModel commonRequestModel);
+    ResponseEntity<?> retrieveTenantSettings();
 }

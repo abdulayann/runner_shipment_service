@@ -32,8 +32,16 @@ public class DbAccessHelper {
         Pageable pages;
         globalSearchCriteria(request, tableName);
         if (request.getSortRequest() != null && request.getFilterCriteria() != null && request.getFilterCriteria().size() == 0) {
-            Sort sortRequest = Sort.by(tableNames.get(request.getSortRequest().getFieldName()).getTableName() + "." + getFieldName(request.getSortRequest().getFieldName()));
-            sortRequest = sortRequest.descending();
+            String _tableName = tableNames.get(request.getSortRequest().getFieldName()).getTableName();
+            Sort sortRequest = null;
+            if (Objects.equals(_tableName, className.getSimpleName()))
+                sortRequest = Sort.by(getFieldName(request.getSortRequest().getFieldName()));
+            else
+                sortRequest = Sort.by( _tableName + "." + getFieldName(request.getSortRequest().getFieldName()));
+            sortRequest = sortRequest.ascending();
+            if (Objects.equals(request.getSortRequest().getOrder(), "DESC"))
+                sortRequest = sortRequest.descending();
+
             pages = PageRequest.of(request.getPageNo() - 1, request.getPageSize(), sortRequest);
         } else {
             pages = PageRequest.of(request.getPageNo() - 1, request.getPageSize());

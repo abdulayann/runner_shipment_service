@@ -8,6 +8,7 @@ import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentsContainersMappingDao;
+import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
 import com.dpw.runner.shipment.services.dto.request.ConsolidationDetailsRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
@@ -382,7 +383,9 @@ public class EntityTransferService implements IEntityTransferService {
             String operator = Operators.IN.getValue();
             criteria.addAll(List.of(field, operator, List.of(itemValueList)));
             request.setCriteriaRequests(criteria);
-            V1DataResponse response = v1Service.fetchCarrierMasterData(request);
+            CarrierListObject carrierListObject = new CarrierListObject();
+            carrierListObject.setListObject(request);
+            V1DataResponse response = v1Service.fetchCarrierMasterData(carrierListObject);
 
             List<EntityTransferCarrier> carrierList = jsonHelper.convertValueToList(response.entities, EntityTransferCarrier.class);
             carrierList.forEach(carrier -> {
@@ -1000,7 +1003,9 @@ public class EntityTransferService implements IEntityTransferService {
             String operator = Operators.IN.getValue();
             criteria.addAll(List.of(field, operator, List.of(itemValueList)));
             request.setCriteriaRequests(criteria);
-            V1DataResponse response = v1Service.fetchCarrierMasterData(request);
+            CarrierListObject carrierListObject = new CarrierListObject();
+            carrierListObject.setListObject(request);
+            V1DataResponse response = v1Service.fetchCarrierMasterData(carrierListObject);
             List<EntityTransferCarrier> carrierDataList = jsonHelper.convertValueToList(response.entities, EntityTransferCarrier.class);
             itemValueList.removeAll(carrierDataList.stream().map(x->x.getItemValue()).collect(Collectors.toSet()));
         }

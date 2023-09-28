@@ -50,7 +50,6 @@ public class CustomerBookingRequest extends CommonRequest implements IRunnerRequ
     private String chargeableUnit;
     private String contractId;
     private String contractStatus;
-    private BookingSource source;
     private String businessCode;
     private List<ContainerRequest> containersList;
     private List<PackingRequest> packingList;
@@ -59,4 +58,9 @@ public class CustomerBookingRequest extends CommonRequest implements IRunnerRequ
     private List<FileRepoRequest> fileRepoList;
     private Boolean isAutoWeightVolumeUpdate;
     private String fmcTlcId;
+    private Boolean isPackageManual;
+    private Boolean isConsignorAddressFreeText;
+    private Boolean isConsigneeAddressFreeText;
+    private Boolean isCustomerAddressFreeText;
+    private Boolean isNotifyPartyAddressFreeText;
 }

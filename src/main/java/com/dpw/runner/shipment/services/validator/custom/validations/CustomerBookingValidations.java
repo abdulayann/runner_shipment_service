@@ -24,7 +24,9 @@ public class CustomerBookingValidations {
         switch (newEntity.getBookingStatus()) {
             case PENDING_FOR_KYC:
                 if (Objects.isNull(newEntity.getCustomer()) || (newEntity.getIsCustomerFreeText() && Objects.isNull(newEntity.getCustomer().getOrgData()))
-                         || (! newEntity.getIsCustomerFreeText() && Objects.isNull(newEntity.getCustomer().getOrgCode())) )
+                        || (!newEntity.getIsCustomerFreeText() && Objects.isNull(newEntity.getCustomer().getOrgCode()))
+                        || (newEntity.getIsCustomerAddressFreeText() && Objects.isNull(newEntity.getCustomer().getAddressData()))
+                        || (!newEntity.getIsCustomerAddressFreeText() && Objects.isNull(newEntity.getCustomer().getAddressCode())))
                     throw new MandatoryFieldException(String.format(CustomerBookingConstants.MANDATORY_FIELD, "Customer detail"));
                 break;
 
@@ -56,7 +58,7 @@ public class CustomerBookingValidations {
 
     private void validateOnPendingForCreditCheck(CustomerBooking entity) {
 
-        if(entity.getCustomer() == null || entity.getCustomer().getOrgCode() == null || entity.getCustomer().getAddressCode() == null)
+        if (entity.getCustomer() == null || entity.getCustomer().getOrgCode() == null || entity.getCustomer().getAddressCode() == null)
             throw new MandatoryFieldException(String.format(CustomerBookingConstants.MANDATORY_FIELD, "Customer detail"));
 
         if (Objects.isNull(entity.getIncoTerms()))
@@ -82,7 +84,6 @@ public class CustomerBookingValidations {
 
         if (Objects.isNull(entity.getCargoType()))
             throw new MandatoryFieldException(String.format(CustomerBookingConstants.MANDATORY_FIELD, "Cargo Type"));
-
 
 
     }

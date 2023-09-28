@@ -37,7 +37,7 @@ public class CRPServiceAdapter implements com.dpw.runner.shipment.services.adapt
 
     public ResponseEntity<?> retrieveCRPService(CommonRequestModel requestModel) throws Exception {
         CRPRetrieveRequest request = (CRPRetrieveRequest) requestModel.getData();
-        String url = crpServiceRetrieveUrl + request.getSearchString();
+        String url = crpServiceRetrieveUrl + (Objects.isNull(request.getSearchString()) ? StringUtility.getEmptyString() : request.getSearchString().replaceAll(" ", ""));
         log.info("Retrieve CRP: with request: {}", request.toString());
         ResponseEntity<?> responseEntity;
         try {

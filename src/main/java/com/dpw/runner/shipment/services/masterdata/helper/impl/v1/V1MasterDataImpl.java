@@ -6,6 +6,7 @@ import com.dpw.runner.shipment.services.dto.v1.request.CreateShipmentTaskRequest
 import com.dpw.runner.shipment.services.dto.v1.response.SendEntityResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.TenantIdResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1RetrieveResponse;
 import com.dpw.runner.shipment.services.masterdata.dto.MasterData;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.masterdata.helper.IMasterDataService;
@@ -394,5 +395,12 @@ public class V1MasterDataImpl implements IMasterDataService {
         V1DataResponse v1DataResponse = v1Service.fetchActivityMaster(request);
         return DependentServiceResponse.builder().success(true)
                 .data(v1DataResponse.entities).pageSize(v1DataResponse.take).numberOfRecords(v1DataResponse.totalCount).pageNo(v1DataResponse.skip).build();
+    }
+
+    @Override
+    public DependentServiceResponse retrieveTenantSettings() {
+        V1RetrieveResponse v1RetrieveResponse = v1Service.retrieveTenantSettings();
+        return DependentServiceResponse.builder().success(true)
+                .data(v1RetrieveResponse.getEntity()).build();
     }
 }
