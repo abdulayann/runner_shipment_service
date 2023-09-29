@@ -1,0 +1,2 @@
+ALTER TABLE IF EXISTS customer_booking
+  ADD COLUMN IF NOT EXISTS total_revenue DECIMAL;
