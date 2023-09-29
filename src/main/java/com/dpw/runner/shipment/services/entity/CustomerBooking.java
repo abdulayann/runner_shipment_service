@@ -189,7 +189,4 @@ public class CustomerBooking extends MultiTenancy {
 
     @Column(name = "is_notify_party_address_free_text")
     private Boolean isNotifyPartyAddressFreeText;
-
-    @Column(name = "total_revenue")
-    private BigDecimal totalRevenue;
 }
