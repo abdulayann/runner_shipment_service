@@ -522,6 +522,11 @@ public class ReportConstants
     public static final String DISABLE_ORIGINAL = "DisableOriginal";
     public static final String ID = "Id";
     public static final String PURCHASE_ORDER_NUMBER = "PurchaseOrderNumber";
+    public static final String MAWB811 = "MAWB811";
+    public static final String MAWB47 = "MAWB47";
+    public static final String MAWB13 = "MAWB13";
+    public static final String INNERS = "Inners";
+    public static final String HDEST = "HDest";
 
     // APis
     public static final String REPORT_API_HANDLE = "/api/v2/report";
