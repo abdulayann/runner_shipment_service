@@ -527,6 +527,13 @@ public class ReportConstants
     public static final String MAWB13 = "MAWB13";
     public static final String INNERS = "Inners";
     public static final String HDEST = "HDest";
+    public static final String LENGTH = "Length";
+    public static final String WIDTH = "Width";
+    public static final String HEIGHT = "Height";
+    public static final String PACK_COUNT = "PackCount";
+    public static final String LIST_OF_PACKINGS = "ListOfPackings";
+    public static final String COMMODITIES = "Commodities";
+    public static final String PRINT_DATE= "PrintDate";
 
     // APis
     public static final String REPORT_API_HANDLE = "/api/v2/report";
