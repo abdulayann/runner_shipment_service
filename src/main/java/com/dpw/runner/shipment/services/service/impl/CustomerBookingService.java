@@ -24,16 +24,11 @@ import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.BookingSource;
 import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferChargeType;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferContainerType;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
 import com.dpw.runner.shipment.services.exception.exceptions.CRPException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
-import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.service.interfaces.ICustomerBookingService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
@@ -163,7 +158,6 @@ public class CustomerBookingService implements ICustomerBookingService {
         if (customerBooking.getBookingNumber() == null) {
             customerBooking.setBookingNumber(generateBookingNumber(customerBooking.getCargoType()));
         }
-        populateTotalRevenueDetails(customerBooking, request);
         customerBooking = customerBookingDao.save(customerBooking);
         Long bookingId = customerBooking.getId();
 
@@ -265,7 +259,6 @@ public class CustomerBookingService implements ICustomerBookingService {
     }
 
     private CustomerBooking updateEntities(CustomerBooking customerBooking, CustomerBookingRequest request, String oldEntity) throws Exception {
-        populateTotalRevenueDetails(customerBooking, request);
         customerBooking = customerBookingDao.save(customerBooking);
         Long bookingId = customerBooking.getId();
 
@@ -426,6 +419,7 @@ public class CustomerBookingService implements ICustomerBookingService {
             }
             log.info("Booking details fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
             CustomerBookingResponse customerBookingResponse = jsonHelper.convertValue(customerBooking.get(), CustomerBookingResponse.class);
+            populateTotalRevenueDetails(customerBooking.get(), customerBookingResponse);
             createCustomerBookingResponse(customerBooking.get(), customerBookingResponse);
             return ResponseHelper.buildSuccessResponse(customerBookingResponse);
         } catch (Exception e) {
@@ -1054,100 +1048,56 @@ public class CustomerBookingService implements ICustomerBookingService {
      * @param customerBookingResponse
      */
     private void createCustomerBookingResponse(CustomerBooking customerBooking, CustomerBookingResponse customerBookingResponse) {
-        try {
-            this.addAllMasterDataInSingleCall(customerBooking, customerBookingResponse);
-            this.addAllLocationDataInSingleCall(customerBooking, customerBookingResponse);
-            this.addDedicatedMasterDataInSingleCall(customerBooking, customerBookingResponse);
-        } catch (Exception ex) {
-            log.error("Exception during fetching master data in retrieve API for booking number: {} with exception: {}", customerBooking.getBookingNumber(), ex.getMessage());
-        }
+        this.addAllMasterDatas(customerBooking, customerBookingResponse);
+        this.addAllUnlocationDatas(customerBooking, customerBookingResponse);
+        this.addDedicatedMasterData(customerBooking, customerBookingResponse);
     }
 
-    private void populateTotalRevenueDetails(CustomerBooking customerBooking, CustomerBookingRequest request) {
+    private void populateTotalRevenueDetails(CustomerBooking customerBooking, CustomerBookingResponse customerBookingResponse) {
         BigDecimal totalRevenue = BigDecimal.ZERO;
-        if (request != null && request.getBookingCharges() != null) {
-            totalRevenue = request.getBookingCharges().stream()
+        if (customerBooking != null && customerBooking.getBookingCharges() != null) {
+            totalRevenue = customerBooking.getBookingCharges().stream()
                     .filter(Objects::nonNull)
                     .map(c -> c.getLocalSellAmount() != null ? c.getLocalSellAmount() : BigDecimal.ZERO)
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
         }
-        customerBooking.setTotalRevenue(totalRevenue);
+        customerBookingResponse.setTotalRevenue(totalRevenue);
     }
 
-
-    private void addAllMasterDataInSingleCall(CustomerBooking customerBooking, CustomerBookingResponse customerBookingResponse) {
-        // Preprocessing
-        Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
-        List<MasterListRequest> listRequests = new ArrayList<>(masterDataUtils.createInBulkMasterListRequest(customerBookingResponse, CustomerBooking.class, fieldNameKeyMap, String.valueOf(customerBookingResponse.hashCode())));
-        if (!Objects.isNull(customerBookingResponse.getRoutingList()))
-            customerBookingResponse.getRoutingList().forEach(r -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(r, Routings.class, fieldNameKeyMap, String.valueOf(r.hashCode()))));
-        if (!Objects.isNull(customerBookingResponse.getContainersList()))
-            customerBookingResponse.getContainersList().forEach(c -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(c, Containers.class, fieldNameKeyMap, String.valueOf(c.hashCode()))));
-        if (!Objects.isNull(customerBookingResponse.getPackingList()))
-            customerBookingResponse.getPackingList().forEach(c -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(c, Packing.class, fieldNameKeyMap, String.valueOf(c.hashCode()))));
-
-        // fetching from V1 in single call
-        Map<String, EntityTransferMasterLists> keyMasterDataMap = masterDataUtils.fetchInBulkMasterList(listRequests);
-
-        // Postprocessing
-        customerBookingResponse.setMasterData(masterDataUtils.setInBulkMasterList(fieldNameKeyMap.get(String.valueOf(customerBookingResponse.hashCode())), keyMasterDataMap));
-        if (!Objects.isNull(customerBookingResponse.getRoutingList()))
-            customerBookingResponse.getRoutingList().forEach(r -> r.setMasterData(masterDataUtils.setInBulkMasterList(fieldNameKeyMap.get(String.valueOf(r.hashCode())), keyMasterDataMap)));
-        if (!Objects.isNull(customerBookingResponse.getContainersList()))
-            customerBookingResponse.getContainersList().forEach(c -> c.setMasterData(masterDataUtils.setInBulkMasterList(fieldNameKeyMap.get(String.valueOf(c.hashCode())), keyMasterDataMap)));
-        if (!Objects.isNull(customerBookingResponse.getPackingList()))
-            customerBookingResponse.getPackingList().forEach(c -> c.setMasterData(masterDataUtils.setInBulkMasterList(fieldNameKeyMap.get(String.valueOf(c.hashCode())), keyMasterDataMap)));
-    }
-
-    private void addAllLocationDataInSingleCall(CustomerBooking customerBooking, CustomerBookingResponse customerBookingResponse) {
-        // Preprocessing
-        Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
-        List<String> locationCodes = new ArrayList<>();
+    private void addAllMasterDatas(CustomerBooking customerBooking, CustomerBookingResponse customerBookingResponse) {
+        customerBookingResponse.setMasterData(masterDataUtils.addMasterData(customerBookingResponse, CustomerBooking.class));
         if (!Objects.isNull(customerBookingResponse.getCarrierDetails()))
-            locationCodes.addAll((masterDataUtils.createInBulkUnLocationsRequest(customerBookingResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, String.valueOf(customerBookingResponse.getCarrierDetails().hashCode()))));
+            customerBookingResponse.getCarrierDetails().setMasterData(masterDataUtils.addMasterData(customerBookingResponse.getCarrierDetails(), CarrierDetails.class));
         if (!Objects.isNull(customerBookingResponse.getRoutingList()))
-            customerBookingResponse.getRoutingList().forEach(r -> locationCodes.addAll(masterDataUtils.createInBulkUnLocationsRequest(r, Routings.class, fieldNameKeyMap, String.valueOf(r.hashCode()))));
-        // fetching from V1 in single call
-        Map<String, EntityTransferUnLocations> keyMasterDataMap = masterDataUtils.fetchInBulkUnlocations(locationCodes, EntityTransferConstants.LOCATION_SERVICE_GUID);
-        // Postprocessing
-        if (!Objects.isNull(customerBookingResponse.getCarrierDetails()))
-            customerBookingResponse.getCarrierDetails().setUnlocationData(masterDataUtils.setInBulkUnlocations(fieldNameKeyMap.get(String.valueOf(customerBookingResponse.getCarrierDetails().hashCode())), keyMasterDataMap));
-        if (!Objects.isNull(customerBookingResponse.getRoutingList()))
-            customerBookingResponse.getRoutingList().forEach(r -> r.setUnlocationData(masterDataUtils.setInBulkUnlocations(fieldNameKeyMap.get(String.valueOf(r.hashCode())), keyMasterDataMap)));
+            customerBookingResponse.getRoutingList().forEach(r -> r.setMasterData(masterDataUtils.addMasterData(r, Routings.class)));
+        if (!Objects.isNull(customerBookingResponse.getContainersList()))
+            customerBookingResponse.getContainersList().forEach(c -> c.setMasterData(masterDataUtils.addMasterData(c, Containers.class)));
+        if (!Objects.isNull(customerBookingResponse.getPackingList()))
+            customerBookingResponse.getPackingList().forEach(c -> c.setMasterData(masterDataUtils.addMasterData(c, Packing.class)));
     }
 
-    private void addDedicatedMasterDataInSingleCall(CustomerBooking customerBooking, CustomerBookingResponse customerBookingResponse) {
-        // TODO - Both carrier & vessel is fetched only once, hence not changing this to bulk
+    private void addAllUnlocationDatas(CustomerBooking customerBooking, CustomerBookingResponse customerBookingResponse) {
+        if (!Objects.isNull(customerBookingResponse.getCarrierDetails()))
+            customerBookingResponse.getCarrierDetails().setUnlocationData(masterDataUtils.addUnlocationData(customerBookingResponse.getCarrierDetails(), CarrierDetails.class, EntityTransferConstants.LOCATION_SERVICE_GUID));
+        if (!Objects.isNull(customerBookingResponse.getRoutingList()))
+            customerBookingResponse.getRoutingList().forEach(r -> r.setUnlocationData(masterDataUtils.addUnlocationData(r, Routings.class, EntityTransferConstants.LOCATION_SERVICE_GUID)));
+    }
+
+    private void addDedicatedMasterData(CustomerBooking customerBooking, CustomerBookingResponse customerBookingResponse) {
         if (!Objects.isNull(customerBookingResponse.getCarrierDetails())) {
             customerBookingResponse.getCarrierDetails().setCarrierMasterData(masterDataUtils.carrierMasterData(customerBookingResponse.getCarrierDetails(), CarrierDetails.class));
             customerBookingResponse.getCarrierDetails().setVesselsMasterData(masterDataUtils.vesselsMasterData(customerBookingResponse.getCarrierDetails(), CarrierDetails.class));
         }
-        this.addAllContainerTypesInSingleCall(customerBooking, customerBookingResponse);
-        this.addAllChargeTypesInSingleCall(customerBooking, customerBookingResponse);
-    }
-
-    private void addAllChargeTypesInSingleCall(CustomerBooking customerBooking, CustomerBookingResponse customerBookingResponse) {
-        Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
-        List<String> chargeTypes = new ArrayList<>();
-
+        if (!Objects.isNull(customerBookingResponse.getContainersList())) {
+            customerBookingResponse.getContainersList().forEach(r -> r.setCommodityTypeData(masterDataUtils.commodityMasterData(r, Containers.class)));
+            customerBookingResponse.getContainersList().forEach(r -> r.setContainerCodeData(masterDataUtils.containerCodeMasterData(r, Containers.class)));
+        }
+        if (!Objects.isNull(customerBookingResponse.getRoutingList()))
+            customerBookingResponse.getRoutingList().forEach(r -> r.setCarrierMasterData(masterDataUtils.carrierMasterData(r, Routings.class)));
+        if (!Objects.isNull(customerBookingResponse.getPackingList()))
+            customerBookingResponse.getPackingList().forEach(r -> r.setCommodityTypeData(masterDataUtils.commodityMasterData(r, Packing.class)));
         if (!Objects.isNull(customerBookingResponse.getBookingCharges()))
-            customerBookingResponse.getBookingCharges().forEach(r -> chargeTypes.addAll(masterDataUtils.createInBulkChargeTypeRequest(r, BookingCharges.class, fieldNameKeyMap, String.valueOf(r.hashCode()))));
-        Map<String, EntityTransferChargeType> v1Data = masterDataUtils.fetchInBulkChargeTypes(chargeTypes);
-
-        if (!Objects.isNull(customerBookingResponse.getBookingCharges()))
-            customerBookingResponse.getBookingCharges().forEach(r -> r.setChargeTypeMasterData(masterDataUtils.setInBulkChargeTypes(fieldNameKeyMap.get(String.valueOf(r.hashCode())), v1Data)));
-    }
-
-    private void addAllContainerTypesInSingleCall(CustomerBooking customerBooking, CustomerBookingResponse customerBookingResponse) {
-        Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
-        List<String> containerTypes = new ArrayList<>();
-        if (!Objects.isNull(customerBookingResponse.getContainersList()))
-            customerBookingResponse.getContainersList().forEach(r -> containerTypes.addAll(masterDataUtils.createInBulkContainerTypeRequest(r, Containers.class, fieldNameKeyMap, String.valueOf(r.hashCode()))));
-
-        Map<String, EntityTransferContainerType> v1Data = masterDataUtils.fetchInBulkContainerTypes(containerTypes);
-
-        if (!Objects.isNull(customerBookingResponse.getContainersList()))
-            customerBookingResponse.getContainersList().forEach(r -> r.setContainerCodeData(masterDataUtils.setInBulkContainerTypes(fieldNameKeyMap.get(String.valueOf(r.hashCode())), v1Data)));
+            customerBookingResponse.getBookingCharges().forEach(c -> c.setChargeTypeMasterData(masterDataUtils.chargeTypeMasterData(c, BookingCharges.class)));
     }
 
 }
