@@ -323,4 +323,10 @@ public class MapperMasterDataImpl implements IMasterDataService {
     @Override
     public DependentServiceResponse retrieveTenantSettings() {return null; }
 
+    @Override
+    public DependentServiceResponse retrieveTenant() {return null; }
+
+    @Override
+    public DependentServiceResponse fetchMultipleMasterData(Object request) {return null; }
+
 }

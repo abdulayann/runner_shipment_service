@@ -134,8 +134,8 @@ public class HblReport extends IReport{
         {
             Map<String, Object> address = pickup.getTransporterDetail().getAddressData();
             dictionary.put(ReportConstants.PICKUP_TRANSPORT, ReportHelper.getOrgAddressWithPhoneEmail(
-                    address.get("OrgFullName").toString(), address.get("Address1").toString(), address.get("Address2").toString(),
-                    address.get("Country").toString(), address.get("Email").toString(), address.get("ContactPhone").toString(),
+                    address.get("OrgFullName").toString(), address.get(ReportConstants.ADDRESS1).toString(), address.get(ReportConstants.ADDRESS2).toString(),
+                    address.get(ReportConstants.COUNTRY).toString(), address.get(ReportConstants.EMAIL).toString(), address.get(ReportConstants.CONTACT_PHONE).toString(),
                             null
             ));
         }
@@ -144,8 +144,8 @@ public class HblReport extends IReport{
         {
             Map<String, Object> address = delivery.getAgentDetail().getAddressData();
             dictionary.put(ReportConstants.DELIVERY_AGENT, ReportHelper.getOrgAddressWithPhoneEmail(
-                    address.get("OrgFullName").toString(), address.get("Address1").toString(), address.get("Address2").toString(),
-                    address.get("Country").toString(), address.get("Email").toString(), address.get("ContactPhone").toString(),
+                    address.get("OrgFullName").toString(), address.get(ReportConstants.ADDRESS1).toString(), address.get(ReportConstants.ADDRESS2).toString(),
+                    address.get(ReportConstants.COUNTRY).toString(), address.get(ReportConstants.EMAIL).toString(), address.get(ReportConstants.CONTACT_PHONE).toString(),
                     null
             ));
         }

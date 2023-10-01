@@ -5,11 +5,11 @@ import com.dpw.runner.shipment.services.ReportingService.Models.Commons.Shipment
 import com.dpw.runner.shipment.services.ReportingService.Models.FreightCertificationModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ContainerModel;
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PartiesModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dao.impl.ShipmentSettingsDao;
-import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,10 +17,10 @@ import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.*;
 
 @Component
@@ -45,7 +45,7 @@ public class FreightCertificationReport extends IReport{
     public IDocumentModel getDocumentModel(Long id) {
         FreightCertificationModel freightCertificationModel = new FreightCertificationModel();
         freightCertificationModel.shipmentDetails = getShipment(id);
-        freightCertificationModel.tenantDetails = getTenant(TenantContext.getCurrentTenant());
+        freightCertificationModel.tenantDetails = getTenant();
         freightCertificationModel.allContainersList = new ArrayList<>();
         if(freightCertificationModel.shipmentDetails.getContainersList() != null && freightCertificationModel.shipmentDetails.getContainersList().size() > 0) {
             for (ContainerModel containers: freightCertificationModel.shipmentDetails.getContainersList()) {
@@ -124,14 +124,16 @@ public class FreightCertificationReport extends IReport{
             dictionary.put(ReportConstants.FREIGHT_OVERSEAS, freightCertificationModel.shipmentDetails.getFreightOverseas());
         if(freightCertificationModel.shipmentDetails != null && freightCertificationModel.shipmentDetails.getFreightOverseasCurrency() != null && !freightCertificationModel.shipmentDetails.getFreightOverseasCurrency().isEmpty())
             dictionary.put(ReportConstants.FREIGHT_OVERSEAS_CURRENCY, freightCertificationModel.shipmentDetails.getFreightOverseasCurrency());
-        // TODO- Where is ConsolidationAddress table in v2?
-        ShipmentSettingsDetails tenantSettingsRow = new ShipmentSettingsDetails();
-
-        List<ShipmentSettingsDetails> shipmentSettingsDetailsList = shipmentSettingsDao.getSettingsByTenantIds(Arrays.asList(UserContext.getUser().TenantId));
-        if (shipmentSettingsDetailsList != null && shipmentSettingsDetailsList.size() >= 1) {
-            tenantSettingsRow = shipmentSettingsDetailsList.get(0);
+        if(freightCertificationModel.shipmentDetails.getShipmentAddresses() != null && freightCertificationModel.shipmentDetails.getShipmentAddresses().size() > 0) {
+            for (PartiesModel shipmentAddress: freightCertificationModel.shipmentDetails.getShipmentAddresses()) {
+                if(shipmentAddress.getType() == CUSTOM_HOUSE_AGENT && shipmentAddress.getOrgData() != null && getValueFromMap(shipmentAddress.getOrgData(), FULL_NAME) != null) {
+                    dictionary.put(CHAPartyDescription, getValueFromMap(shipmentAddress.getOrgData(), FULL_NAME));
+                }
+            }
         }
-        if(tenantSettingsRow != null && true) // TODO- enableIGMDetails variable in tenant settings
+        V1TenantSettingsResponse tenantSettingsRow = getTenantSettings();
+
+        if(tenantSettingsRow != null && tenantSettingsRow.isEnableIGMDetails())
         {
             if(freightCertificationModel.shipmentDetails != null && freightCertificationModel.shipmentDetails.getDirection() != null && freightCertificationModel.shipmentDetails.getDirection().toUpperCase() == Constants.IMP) {
                 if(freightCertificationModel.shipmentDetails.getAdditionalDetails().getIGMFileDate() != null) {
@@ -154,9 +156,6 @@ public class FreightCertificationReport extends IReport{
                 }
                 if(freightCertificationModel.shipmentDetails.getAdditionalDetails().getIsInland()) {
                     dictionary.put(ReportConstants.IS_INLAND, freightCertificationModel.shipmentDetails.getAdditionalDetails().getIsInland()?"Yes":"No");
-                    if(freightCertificationModel.shipmentDetails.getAdditionalDetails().getSMTPIGMDate() != null) {
-                        dictionary.put(ReportConstants.SMTPIGM_DATE, freightCertificationModel.shipmentDetails.getAdditionalDetails().getSMTPIGMDate());
-                    }
                     if(freightCertificationModel.shipmentDetails.getAdditionalDetails().getSMTPIGMDate() != null) {
                         dictionary.put(ReportConstants.SMTPIGM_DATE, freightCertificationModel.shipmentDetails.getAdditionalDetails().getSMTPIGMDate());
                     }
