@@ -3,10 +3,7 @@ package com.dpw.runner.shipment.services.ReportingService.Reports;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper;
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PartiesModel;
-import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ShipmentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShippingInstructionModel;
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
-import com.dpw.runner.shipment.services.entity.Parties;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.fasterxml.jackson.core.type.TypeReference;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,7 +33,7 @@ public class ShippingInstructionReport extends IReport{
     @Override
     IDocumentModel getDocumentModel(Long id) {
         return ShippingInstructionModel.builder()
-                .tenant(getTenant(TenantContext.getCurrentTenant()))
+                .tenant(getTenant())
                 .shipment(getShipment(id))
                 .containersList(getShipment(id).getContainersList())
                 .build();

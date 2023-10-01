@@ -5,9 +5,6 @@ import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PackingModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PartiesModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ShipmentModel;
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
-import com.dpw.runner.shipment.services.entity.Packing;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.fasterxml.jackson.core.type.TypeReference;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,7 +45,7 @@ public class ConsolidatedPackingListReport extends IReport {
     IDocumentModel getDocumentModel(Long id) {
         ConsolidatedPackingListModel cplData = new ConsolidatedPackingListModel();
         cplData.setConsolidationDetails(getConsolidation(id));
-        cplData.setTenant(getTenant(TenantContext.getCurrentTenant()));
+        cplData.setTenant(getTenant());
         return cplData;
     }
 

@@ -29,6 +29,12 @@ public class ReportsFactory {
     private FreightCertificationReport freightCertificationReport;
     @Autowired
     private ManifestConsolReport manifestConsolReport;
+    @Autowired
+    private ShipmentCANReport shipmentCANReport;
+    @Autowired
+    private CustomsInstructionsReport customsInstructionsReport;
+    @Autowired
+    private PreAlertReport preAlertReport;
 
     public IReport getReport(String key)
     {
@@ -56,6 +62,12 @@ public class ReportsFactory {
                 return freightCertificationReport;
             case ReportConstants.EXPORT_CONSOL_MANIFEST:
                 return manifestConsolReport;
+            case ReportConstants.SHIPMENT_CAN_DOCUMENT:
+                return shipmentCANReport;
+            case ReportConstants.CUSTOMS_INSTRUCTIONS:
+                return customsInstructionsReport;
+            case ReportConstants.PRE_ALERT:
+                return preAlertReport;
 
         }
         return null;

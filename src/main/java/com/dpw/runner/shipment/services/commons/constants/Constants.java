@@ -73,6 +73,7 @@ public class Constants {
     public static final String TOKEN = "Authorization";
 
     public static final String DMAWB ="DMAWB";
+    public static final String HAWB = "HAWB";
 
     public static final String FORWARDING_AGENT= "Forwarding Agent";
 
@@ -117,5 +118,6 @@ public class Constants {
 
     public static final String CONSOLIDATION_TYPE_AGT = "AGT";
     public static final String IMP = "IMP";
+    public static final String SHIPMENT_TYPE_DRT = "DRT";
 
 }

@@ -9,23 +9,25 @@ import com.dpw.runner.shipment.services.ReportingService.Models.Commons.Shipment
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.*;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
-import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IHblDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
+import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.request.HblPartyDto;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.request.hbl.HblContainerDto;
 import com.dpw.runner.shipment.services.dto.request.hbl.HblDataDto;
-import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.MasterData;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
+import com.dpw.runner.shipment.services.masterdata.factory.MasterDataFactory;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
+import com.dpw.runner.shipment.services.masterdata.response.CommodityResponse;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.repository.interfaces.IAwbRepository;
-import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.nimbusds.jose.util.Pair;
 import org.modelmapper.ModelMapper;
@@ -40,7 +42,6 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
-
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.combineStringsWithComma;
 
 public abstract class IReport {
@@ -54,8 +55,8 @@ public abstract class IReport {
     @Autowired
     private IHblDao hblDao;
 
-    @Autowired
-    private IV1Service v1Service;
+//    @Autowired
+//    private IV1Service v1Service;
 
     @Autowired
     private JsonHelper jsonHelper;
@@ -65,6 +66,18 @@ public abstract class IReport {
 
     @Autowired
     private ModelMapper modelMapper;
+
+    @Autowired
+    private IConsoleShipmentMappingDao consoleShipmentMappingDao;
+
+    @Autowired
+    private IShipmentSettingsDao shipmentSettingsDao;
+
+    @Autowired
+    private  IAwbDao awbDao;
+
+    @Autowired
+    MasterDataFactory masterDataFactory;
 
     public abstract Map<String, Object> getData(Long id);
     abstract IDocumentModel getDocumentModel(Long id);
@@ -98,6 +111,8 @@ public abstract class IReport {
         ship.CarrierSealNumber = row.getCarrierSealNumber();
         ship.CustomsSealNumber = row.getCustomsSealNumber();
         ship.ShipperSealNumber = row.getShipperSealNumber();
+        CommodityResponse commodityResponse = getCommodity(row.getCommodityCode());
+        ship.CommodityDescription = commodityResponse.getDescription();
         return ship;
     }
 
@@ -138,8 +153,8 @@ public abstract class IReport {
                 shipment.getCarrierDetails().getOriginPort()
         );
         CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(criteria).build();
-        V1DataResponse v1DataResponse = v1Service.fetchUnlocation(commonV1ListRequest);
-        List<UnlocationsResponse> unlocationsResponse = jsonHelper.convertValueToList(v1DataResponse.entities, UnlocationsResponse.class);
+        Object unlocations = masterDataFactory.getMasterDataService().fetchUnlocationData(commonV1ListRequest).getData();
+        List<UnlocationsResponse> unlocationsResponse = jsonHelper.convertValueToList(unlocations, UnlocationsResponse.class);
         if(unlocationsResponse.size() > 0)
             pol = unlocationsResponse.get(0);
 
@@ -149,8 +164,8 @@ public abstract class IReport {
                 shipment.getCarrierDetails().getDestinationPort()
         );
         commonV1ListRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(criteria).build();
-        v1DataResponse = v1Service.fetchUnlocation(commonV1ListRequest);
-        unlocationsResponse = jsonHelper.convertValueToList(v1DataResponse.entities, UnlocationsResponse.class);
+        unlocations = masterDataFactory.getMasterDataService().fetchUnlocationData(commonV1ListRequest).getData();
+        unlocationsResponse = jsonHelper.convertValueToList(unlocations, UnlocationsResponse.class);
         if(unlocationsResponse.size() > 0)
             pod = unlocationsResponse.get(0);
 
@@ -160,8 +175,8 @@ public abstract class IReport {
                 shipment.getCarrierDetails().getOrigin()
         );
         commonV1ListRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(criteria).build();
-        v1DataResponse = v1Service.fetchUnlocation(commonV1ListRequest);
-        unlocationsResponse = jsonHelper.convertValueToList(v1DataResponse.entities, UnlocationsResponse.class);
+        unlocations = masterDataFactory.getMasterDataService().fetchUnlocationData(commonV1ListRequest).getData();
+        unlocationsResponse = jsonHelper.convertValueToList(unlocations, UnlocationsResponse.class);
         if(unlocationsResponse.size() > 0)
             origin = unlocationsResponse.get(0);
 
@@ -171,8 +186,8 @@ public abstract class IReport {
                 shipment.getCarrierDetails().getDestination()
         );
         commonV1ListRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(criteria).build();
-        v1DataResponse = v1Service.fetchUnlocation(commonV1ListRequest);
-        unlocationsResponse = jsonHelper.convertValueToList(v1DataResponse.entities, UnlocationsResponse.class);
+        unlocations = masterDataFactory.getMasterDataService().fetchUnlocationData(commonV1ListRequest).getData();
+        unlocationsResponse = jsonHelper.convertValueToList(unlocations, UnlocationsResponse.class);
         if(unlocationsResponse.size() > 0)
             destination = unlocationsResponse.get(0);
 
@@ -182,8 +197,8 @@ public abstract class IReport {
                 shipment.getAdditionalDetails().getPaidPlace()
         );
         commonV1ListRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(criteria).build();
-        v1DataResponse = v1Service.fetchUnlocation(commonV1ListRequest);
-        unlocationsResponse = jsonHelper.convertValueToList(v1DataResponse.entities, UnlocationsResponse.class);
+        unlocations = masterDataFactory.getMasterDataService().fetchUnlocationData(commonV1ListRequest).getData();
+        unlocationsResponse = jsonHelper.convertValueToList(unlocations, UnlocationsResponse.class);
         if(unlocationsResponse.size() > 0)
             paidPlace = unlocationsResponse.get(0);
 
@@ -193,8 +208,8 @@ public abstract class IReport {
                 shipment.getAdditionalDetails().getPlaceOfIssue()
         );
         commonV1ListRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(criteria).build();
-        v1DataResponse = v1Service.fetchUnlocation(commonV1ListRequest);
-        unlocationsResponse = jsonHelper.convertValueToList(v1DataResponse.entities, UnlocationsResponse.class);
+        unlocations = masterDataFactory.getMasterDataService().fetchUnlocationData(commonV1ListRequest).getData();
+        unlocationsResponse = jsonHelper.convertValueToList(unlocations, UnlocationsResponse.class);
         if(unlocationsResponse.size() > 0)
             placeOfIssue = unlocationsResponse.get(0);
 
@@ -204,8 +219,8 @@ public abstract class IReport {
                 shipment.getAdditionalDetails().getPlaceOfSupply()
         );
         commonV1ListRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(criteria).build();
-        v1DataResponse = v1Service.fetchUnlocation(commonV1ListRequest);
-        unlocationsResponse = jsonHelper.convertValueToList(v1DataResponse.entities, UnlocationsResponse.class);
+        unlocations = masterDataFactory.getMasterDataService().fetchUnlocationData(commonV1ListRequest).getData();
+        unlocationsResponse = jsonHelper.convertValueToList(unlocations, UnlocationsResponse.class);
         if(unlocationsResponse.size() > 0)
             placeOfSupply = unlocationsResponse.get(0);
 
@@ -274,8 +289,8 @@ public abstract class IReport {
         dictionary.put(ReportConstants.GROSS_VOLUME,shipment.getVolume());
         dictionary.put(ReportConstants.GROSS_VOLUME_UNIT,shipment.getVolumeUnit());
 
-        dictionary.put(ReportConstants.DELIVERY_CFS, delivery != null && delivery.getSourceDetail() != null ? delivery.getSourceDetail().getOrgData().get("FullName") : null);
-        dictionary.put(ReportConstants.PICKUP_CFS, pickup != null && pickup.getDestinationDetail() != null ? pickup.getDestinationDetail().getOrgData().get("FullName") : null);
+        dictionary.put(ReportConstants.DELIVERY_CFS, delivery != null && delivery.getSourceDetail() != null ? delivery.getSourceDetail().getOrgData().get(FULL_NAME) : null);
+        dictionary.put(ReportConstants.PICKUP_CFS, pickup != null && pickup.getDestinationDetail() != null ? pickup.getDestinationDetail().getOrgData().get(FULL_NAME) : null);
         dictionary.put(ReportConstants.MARKS_N_NUMS,shipment.getMarksNum());
         dictionary.put(ReportConstants.ORIGINALS,shipment.getAdditionalDetails().getOriginal() == null ? 1 : shipment.getAdditionalDetails().getOriginal());
         dictionary.put(ReportConstants.ORIGINAL_WORDS, "");
@@ -316,11 +331,11 @@ public abstract class IReport {
                 Map<String, Object> consignerAddress = shipmentConsigner.getAddressData();
                 if(consignerAddress != null)
                 {
-                    consigner = ReportHelper.getOrgAddressWithPhoneEmail(getValueFromMap(consignerAddress,"CompanyName"), getValueFromMap(consignerAddress,"Address1"),
-                            getValueFromMap(consignerAddress,"Address2"), ReportHelper.getCityCountry(getValueFromMap(consignerAddress,"City"), getValueFromMap(consignerAddress,"Country")),
-                            getValueFromMap(consignerAddress,"Email"), getValueFromMap(consignerAddress,"ContactPhone"),
+                    consigner = ReportHelper.getOrgAddressWithPhoneEmail(getValueFromMap(consignerAddress, COMPANY_NAME), getValueFromMap(consignerAddress, ADDRESS1),
+                            getValueFromMap(consignerAddress, ADDRESS2), ReportHelper.getCityCountry(getValueFromMap(consignerAddress, CITY), getValueFromMap(consignerAddress, COUNTRY)),
+                            getValueFromMap(consignerAddress,"Email"), getValueFromMap(consignerAddress, CONTACT_PHONE),
                             getValueFromMap(consignerAddress,"Zip_PostCode"));
-                    dictionary.put(ReportConstants.CONSIGNER_NAME, consignerAddress.get("CompanyName"));
+                    dictionary.put(ReportConstants.CONSIGNER_NAME, consignerAddress.get(COMPANY_NAME));
                     dictionary.put(ReportConstants.CONSIGNER_CONTACT_PERSON, consignerAddress.get("ContactPerson"));
                 }
                 if(shipmentConsigner.getOrgData() != null)
@@ -332,12 +347,12 @@ public abstract class IReport {
                 Map<String, Object> consigneeAddress = shipmentConsignee.getAddressData();
                 if(consigneeAddress != null)
                 {
-                    consignee = ReportHelper.getOrgAddressWithPhoneEmail(getValueFromMap(consigneeAddress,"CompanyName"), getValueFromMap(consigneeAddress,"Address1"),
-                            getValueFromMap(consigneeAddress,"Address2"),
-                            ReportHelper.getCityCountry(getValueFromMap(consigneeAddress,"City"), getValueFromMap(consigneeAddress,"Country")),
-                            getValueFromMap(consigneeAddress,"Email"), getValueFromMap(consigneeAddress,"ContactPhone"),
+                    consignee = ReportHelper.getOrgAddressWithPhoneEmail(getValueFromMap(consigneeAddress, COMPANY_NAME), getValueFromMap(consigneeAddress, ADDRESS1),
+                            getValueFromMap(consigneeAddress, ADDRESS2),
+                            ReportHelper.getCityCountry(getValueFromMap(consigneeAddress, CITY), getValueFromMap(consigneeAddress, COUNTRY)),
+                            getValueFromMap(consigneeAddress,"Email"), getValueFromMap(consigneeAddress, CONTACT_PHONE),
                             getValueFromMap(consigneeAddress,"Zip_PostCode"));
-                    dictionary.put(ReportConstants.CONSIGNEE_NAME, getValueFromMap(consigneeAddress,"CompanyName"));
+                    dictionary.put(ReportConstants.CONSIGNEE_NAME, getValueFromMap(consigneeAddress, COMPANY_NAME));
                     dictionary.put(ReportConstants.CONSIGNEE_CONTACT_PERSON,getValueFromMap(consigneeAddress,"ContactPerson"));
                 }
                 if(shipmentConsignee.getOrgData() != null)
@@ -349,13 +364,13 @@ public abstract class IReport {
                 Map<String, Object> notifyAddress = shipmentNotify.getAddressData();
                 if(notifyAddress != null)
                 {
-                    notify = ReportHelper.getOrgAddressWithPhoneEmail(getValueFromMap(notifyAddress,"CompanyName"), getValueFromMap(notifyAddress,"Address1"),
-                            getValueFromMap(notifyAddress,"Address2"),
-                            ReportHelper.getCityCountry(getValueFromMap(notifyAddress,"City"), getValueFromMap(notifyAddress,"Country")),
-                            getValueFromMap(notifyAddress,"Email"), getValueFromMap(notifyAddress,"ContactPhone"),
+                    notify = ReportHelper.getOrgAddressWithPhoneEmail(getValueFromMap(notifyAddress, COMPANY_NAME), getValueFromMap(notifyAddress, ADDRESS1),
+                            getValueFromMap(notifyAddress, ADDRESS2),
+                            ReportHelper.getCityCountry(getValueFromMap(notifyAddress, CITY), getValueFromMap(notifyAddress, COUNTRY)),
+                            getValueFromMap(notifyAddress,"Email"), getValueFromMap(notifyAddress, CONTACT_PHONE),
                             getValueFromMap(notifyAddress,"Zip_PostCode")
                                                                      );
-                    dictionary.put(ReportConstants.NOTIFY_PARTY_NAME,getValueFromMap(notifyAddress,"CompanyName"));
+                    dictionary.put(ReportConstants.NOTIFY_PARTY_NAME,getValueFromMap(notifyAddress, COMPANY_NAME));
                     dictionary.put(ReportConstants.NOTIFY_PARTY_CONTACT_PERSON,getValueFromMap(notifyAddress,"ContactPerson"));
                 }
                 if(shipmentNotify.getOrgData() != null)
@@ -367,14 +382,14 @@ public abstract class IReport {
                 Map<String, Object> clientAddress = shipmentClient.getAddressData();
                 if(clientAddress != null)
                 {
-                    client = ReportHelper.getOrgAddressWithPhoneEmail(getValueFromMap(clientAddress,"CompanyName"), getValueFromMap(clientAddress,"Address1"),
-                            getValueFromMap(clientAddress,"Address2"),
-                            ReportHelper.getCityCountry(getValueFromMap(clientAddress,"City"), getValueFromMap(clientAddress,"Country")),
-                            getValueFromMap(clientAddress,"Email"),  getValueFromMap(clientAddress,"ContactPhone"),
+                    client = ReportHelper.getOrgAddressWithPhoneEmail(getValueFromMap(clientAddress, COMPANY_NAME), getValueFromMap(clientAddress, ADDRESS1),
+                            getValueFromMap(clientAddress, ADDRESS2),
+                            ReportHelper.getCityCountry(getValueFromMap(clientAddress, CITY), getValueFromMap(clientAddress, COUNTRY)),
+                            getValueFromMap(clientAddress,"Email"),  getValueFromMap(clientAddress, CONTACT_PHONE),
                             getValueFromMap(clientAddress,"Zip_PostCode"));
-                    dictionary.put(ReportConstants.CLIENT_NAME, getValueFromMap(clientAddress,"CompanyName"));
-                    dictionary.put(ReportConstants.CLIENT_ADDRESS_1,getValueFromMap(clientAddress,"Address1"));
-                    dictionary.put(ReportConstants.CLIENT_ADDRESS_PHONE,getValueFromMap(clientAddress,"ContactPhone"));
+                    dictionary.put(ReportConstants.CLIENT_NAME, getValueFromMap(clientAddress, COMPANY_NAME));
+                    dictionary.put(ReportConstants.CLIENT_ADDRESS_1,getValueFromMap(clientAddress, ADDRESS1));
+                    dictionary.put(ReportConstants.CLIENT_ADDRESS_PHONE,getValueFromMap(clientAddress, CONTACT_PHONE));
                     dictionary.put(ReportConstants.CLIENT_ADDRESS_MOBILE,getValueFromMap(clientAddress,"Mobile"));
                     dictionary.put(ReportConstants.CLIENT_ADDRESS_CONTACT_PERSON, getValueFromMap(clientAddress,"ContactPerson"));
                 }
@@ -396,9 +411,29 @@ public abstract class IReport {
         return modelMapper.map(shipmentDetails, ShipmentModel.class);
     }
 
-    public TenantModel getTenant(Integer Id)
+    public ConsolidationModel getFirstConsolidationFromShipmentId(Long shipmentId)
     {
-        return new TenantModel(); // TODO- fetch from tenants
+        List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByShipmentId(shipmentId);
+        if(consoleShipmentMappings != null && consoleShipmentMappings.size() > 0) {
+            Long id = consoleShipmentMappings.stream().map(ConsoleShipmentMapping::getConsolidationId).max(Comparator.naturalOrder()).get();
+            return getConsolidation(id);
+        }
+        return null;
+    }
+
+    public TenantModel getTenant()
+    {
+        DependentServiceResponse dependentServiceResponse = masterDataFactory.getMasterDataService().retrieveTenant();
+        return modelMapper.map(dependentServiceResponse.getData(), TenantModel.class);
+    }
+
+    public ShipmentSettingsDetails getShipmentSettings(Integer tenantId) {
+        ShipmentSettingsDetails tenantSettingsRow = new ShipmentSettingsDetails();
+        List<ShipmentSettingsDetails> shipmentSettingsDetailsList = shipmentSettingsDao.getSettingsByTenantIds(Arrays.asList(UserContext.getUser().TenantId));
+        if (shipmentSettingsDetailsList != null && shipmentSettingsDetailsList.size() >= 1) {
+            tenantSettingsRow = shipmentSettingsDetailsList.get(0);
+        }
+        return tenantSettingsRow;
     }
 
     public ConsolidationModel getConsolidation(Long Id)
@@ -431,8 +466,8 @@ public abstract class IReport {
                 arrivalDetails.getLastForeignPort()
         );
         CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(criteria).build();
-        V1DataResponse v1DataResponse = v1Service.fetchUnlocation(commonV1ListRequest);
-        List<UnlocationsResponse> unlocationsResponse = jsonHelper.convertValueToList(v1DataResponse.entities, UnlocationsResponse.class);
+        Object unlocations = masterDataFactory.getMasterDataService().fetchUnlocationData(commonV1ListRequest).getData();
+        List<UnlocationsResponse> unlocationsResponse = jsonHelper.convertValueToList(unlocations, UnlocationsResponse.class);
         if(unlocationsResponse.size() > 0)
             lastForeignPort = unlocationsResponse.get(0);
 
@@ -446,13 +481,13 @@ public abstract class IReport {
             Map<String, Object> addressData = sendingAgent.getAddressData();
             if(addressData != null)
             {
-                exportAgentAddress = ReportHelper.getOrgAddressWithPhoneEmail(addressData.get("CompanyName").toString(), addressData.get("Address1").toString(),
-                        addressData.get("Address2").toString(),
-                        ReportHelper.getCityCountry(addressData.get("City").toString(), addressData.get("Country").toString()),
-                        null, addressData.get("ContactPhone").toString(),
+                exportAgentAddress = ReportHelper.getOrgAddressWithPhoneEmail(addressData.get(COMPANY_NAME).toString(), addressData.get(ADDRESS1).toString(),
+                        addressData.get(ADDRESS2).toString(),
+                        ReportHelper.getCityCountry(addressData.get(CITY).toString(), addressData.get(COUNTRY).toString()),
+                        null, addressData.get(CONTACT_PHONE).toString(),
                         addressData.get("Zip_PostCode").toString()
                 );
-                dictionary.put(ReportConstants.SENDING_AGENT_NAME, addressData.get("CompanyName"));
+                dictionary.put(ReportConstants.SENDING_AGENT_NAME, addressData.get(COMPANY_NAME));
             }
             Map<String, Object> orgData = sendingAgent.getOrgData();
             if(orgData != null)
@@ -465,13 +500,13 @@ public abstract class IReport {
             Map<String, Object> addressData = receivingAgent.getAddressData();
             if(addressData != null)
             {
-                importAgentAddress = ReportHelper.getOrgAddressWithPhoneEmail(addressData.get("CompanyName").toString(), addressData.get("Address1").toString(),
-                        addressData.get("Address2").toString(),
-                        ReportHelper.getCityCountry(addressData.get("City").toString(), addressData.get("Country").toString()),
-                        null, addressData.get("ContactPhone").toString(),
+                importAgentAddress = ReportHelper.getOrgAddressWithPhoneEmail(addressData.get(COMPANY_NAME).toString(), addressData.get(ADDRESS1).toString(),
+                        addressData.get(ADDRESS2).toString(),
+                        ReportHelper.getCityCountry(addressData.get(CITY).toString(), addressData.get(COUNTRY).toString()),
+                        null, addressData.get(CONTACT_PHONE).toString(),
                         addressData.get("Zip_PostCode").toString()
                 );
-                dictionary.put(ReportConstants.RECEIVING_AGENT_NAME, addressData.get("CompanyName"));
+                dictionary.put(ReportConstants.RECEIVING_AGENT_NAME, addressData.get(COMPANY_NAME));
             }
             Map<String, Object> orgData = receivingAgent.getOrgData();
             if(orgData != null)
@@ -525,7 +560,7 @@ public abstract class IReport {
             Map<String, Object> orgData = creditor.getOrgData();
             if(orgData != null)
             {
-                dictionary.put(ReportConstants.CREDITOR, Arrays.asList(orgData.get("FullName"), creditor.getAddressData() != null ? creditor.getAddressData().get("Address1") : null));
+                dictionary.put(ReportConstants.CREDITOR, Arrays.asList(orgData.get(FULL_NAME), creditor.getAddressData() != null ? creditor.getAddressData().get(ADDRESS1) : null));
                 dictionary.put(ReportConstants.CREDITOR_LOCAL_NAME, orgData.get("LocalName"));
             }
         }
@@ -560,10 +595,10 @@ public abstract class IReport {
         }
         if(notifyParty != null){
             Map<String, Object> addressData = notifyParty.getAddressData();
-            List<String> consolNotifyPartyAddress = ReportHelper.getOrgAddressWithPhoneEmail(addressData.get("CompanyName").toString(), addressData.get("Address1").toString(),
-                    addressData.get("Address2").toString(),
-                    ReportHelper.getCityCountry(addressData.get("City").toString(), addressData.get("Country").toString()),
-                    null, addressData.get("ContactPhone").toString(),
+            List<String> consolNotifyPartyAddress = ReportHelper.getOrgAddressWithPhoneEmail(addressData.get(COMPANY_NAME).toString(), addressData.get(ADDRESS1).toString(),
+                    addressData.get(ADDRESS2).toString(),
+                    ReportHelper.getCityCountry(addressData.get(CITY).toString(), addressData.get(COUNTRY).toString()),
+                    null, addressData.get(CONTACT_PHONE).toString(),
                     addressData.get("Zip_PostCode").toString()
             );
             dictionary.put(ReportConstants.CONSOL_NOTIFY_ADDRESS, consolNotifyPartyAddress);
@@ -639,8 +674,8 @@ public abstract class IReport {
         MasterListRequest masterListRequest = MasterListRequest.builder().ItemType(type.getDescription()).ItemValue(ItemValue).build();
         List<MasterListRequest> masterListRequests = new ArrayList<>();
         masterListRequests.add(masterListRequest);
-        V1DataResponse v1DataResponse = v1Service.fetchMultipleMasterData(masterListRequests);
-        List<MasterData> masterData = jsonHelper.convertValueToList(v1DataResponse.entities, MasterData.class);
+        Object masterDataList = masterDataFactory.getMasterDataService().fetchMultipleMasterData(masterListRequests).getData();
+        List<MasterData> masterData = jsonHelper.convertValueToList(masterDataList, MasterData.class);
         if(masterData == null || masterData.isEmpty())
             return null;
         return masterData.get(0);
@@ -791,6 +826,22 @@ public abstract class IReport {
         return "";
     }
 
+    public CommodityResponse getCommodity(String commodityCode) {
+        if(commodityCode == null || commodityCode.isEmpty())
+            return null;
+        List <Object> criteria = Arrays.asList(
+                Arrays.asList("Code"),
+                "=",
+                commodityCode
+        );
+        CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(criteria).build();
+        Object commodity = masterDataFactory.getMasterDataService().fetchCommodityData(commonV1ListRequest).getData();
+        List<CommodityResponse> commodityResponses = jsonHelper.convertValueToList(commodity, CommodityResponse.class);
+        if(commodityResponses.size() > 0)
+            return commodityResponses.get(0);
+        return null;
+    }
+
     public UnlocationsResponse getUNLocRow(String UNLocCode) {
         if(UNLocCode == null || UNLocCode.isEmpty())
             return null;
@@ -800,11 +851,16 @@ public abstract class IReport {
                 UNLocCode
         );
         CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(criteria).build();
-        V1DataResponse v1DataResponse = v1Service.fetchUnlocation(commonV1ListRequest);
-        List<UnlocationsResponse> unlocationsResponse = jsonHelper.convertValueToList(v1DataResponse.entities, UnlocationsResponse.class);
+        Object unlocations = masterDataFactory.getMasterDataService().fetchUnlocationData(commonV1ListRequest).getData();
+        List<UnlocationsResponse> unlocationsResponse = jsonHelper.convertValueToList(unlocations, UnlocationsResponse.class);
         if(unlocationsResponse.size() > 0)
             return unlocationsResponse.get(0);
         return null;
+    }
+
+    public V1TenantSettingsResponse getTenantSettings() {
+        DependentServiceResponse dependentServiceResponse = masterDataFactory.getMasterDataService().retrieveTenantSettings();
+        return modelMapper.map(dependentServiceResponse.getData(), V1TenantSettingsResponse.class);
     }
 
     public List<PackingModel> GetAllShipmentsPacks(List<ShipmentModel> shipmentDetails){
@@ -973,5 +1029,19 @@ public abstract class IReport {
     }
     private boolean IsStringNullOrEmpty(String s){
         return s == null || s.isEmpty();
+    }
+
+    public Boolean getIsHbl(ShipmentModel shipmentModel) {
+        if(shipmentModel.getTransportMode().equalsIgnoreCase(Constants.TRANSPORT_MODE_AIR)) {
+            if(shipmentModel.getDirection().equalsIgnoreCase(EXP)) {
+                Long entityId = shipmentModel.getId();
+                String entityType = (shipmentModel.getDirection() == Constants.SHIPMENT_TYPE_DRT) ? Constants.DMAWB : Constants.HAWB;
+                awbDao.findByShipmentId(entityId);
+            }
+            return false;
+        } else if (shipmentModel.getDirection().equalsIgnoreCase(EXP)) {
+            return true;
+        }
+        return false;
     }
 }
