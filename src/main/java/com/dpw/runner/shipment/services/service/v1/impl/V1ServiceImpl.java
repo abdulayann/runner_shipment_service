@@ -21,6 +21,7 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
@@ -220,9 +221,6 @@ public class V1ServiceImpl implements IV1Service {
 
     @Value("${v1service.url.base}${v1service.url.activityMaster}")
     private String ACTIVITY_MASTER_URL;
-
-    @Value("${v1service.url.base}${v1service.url.retrieveTenantSettings}")
-    private String RETRIEVE_TENANT_SETTINGS;
 
     @Value("${v1service.url.base}${v1service.url.retrieveTenant}")
     private String RETRIEVE_TENANT;

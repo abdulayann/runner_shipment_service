@@ -13,6 +13,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
+import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
 import com.dpw.runner.shipment.services.dto.request.HblPartyDto;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.request.hbl.HblContainerDto;
@@ -45,7 +46,6 @@ import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.combineStringsWithComma;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.stringValueOf;
 
 public abstract class IReport {
 
@@ -57,9 +57,6 @@ public abstract class IReport {
 
     @Autowired
     private IHblDao hblDao;
-
-//    @Autowired
-//    private IV1Service v1Service;
 
     @Autowired
     private JsonHelper jsonHelper;
@@ -699,8 +696,8 @@ public abstract class IReport {
         CommonV1ListRequest carrierRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(carrierCriteria).build();
         CarrierListObject carrierListObject = new CarrierListObject();
         carrierListObject.setListObject(carrierRequest);
-        V1DataResponse carrierResponse = v1Service.fetchCarrierMasterData(carrierListObject);
-        List<CarrierMasterData> carrierMasterData = jsonHelper.convertValueToList(carrierResponse.entities, CarrierMasterData.class);
+        Object carrierResponse = masterDataFactory.getMasterDataService().fetchCarrierMasterData(carrierListObject).getData();
+        List<CarrierMasterData> carrierMasterData = jsonHelper.convertValueToList(carrierResponse, CarrierMasterData.class);
         if(carrierMasterData == null || carrierMasterData.isEmpty())
             return null;
         return carrierMasterData.get(0);
