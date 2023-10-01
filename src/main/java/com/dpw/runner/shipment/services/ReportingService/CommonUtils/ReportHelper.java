@@ -5,7 +5,6 @@ import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.ReportingService.Reports.IReport;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.Hbl;
-import com.dpw.runner.shipment.services.entity.Parties;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
@@ -18,10 +17,6 @@ import java.text.DecimalFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
 
 @Component
 public class ReportHelper {
@@ -79,18 +74,18 @@ public class ReportHelper {
             return new ArrayList<>();
         Map<String, Object> partyAddress = party.getAddressData();
         List<String> list = new ArrayList<String>();
-        if(getValueFromMap(partyAddress,"CompanyName") != null)
-            list.add(getValueFromMap(partyAddress,"CompanyName"));
-        if(getValueFromMap(partyAddress,"Address1") != null)
-            list.add(getValueFromMap(partyAddress,"Address1"));
-        if(getValueFromMap(partyAddress,"Address2") != null)
-            list.add(getValueFromMap(partyAddress,"Address2"));
-        if(getCityCountry(getValueFromMap(partyAddress,"City"), getValueFromMap(partyAddress,"Country")) != null)
-            list.add(getCityCountry(getValueFromMap(partyAddress,"City"), getValueFromMap(partyAddress,"Country")));
-        if(getValueFromMap(partyAddress,"Email") != null)
-            list.add(getValueFromMap(partyAddress,"Email"));
-        if(getValueFromMap(partyAddress,"ContactPhone") != null)
-            list.add(getValueFromMap(partyAddress,"ContactPhone"));
+        if(getValueFromMap(partyAddress,ReportConstants.COMPANY_NAME) != null)
+            list.add(getValueFromMap(partyAddress,ReportConstants.COMPANY_NAME));
+        if(getValueFromMap(partyAddress,ReportConstants.ADDRESS1) != null)
+            list.add(getValueFromMap(partyAddress,ReportConstants.ADDRESS1));
+        if(getValueFromMap(partyAddress,ReportConstants.ADDRESS2) != null)
+            list.add(getValueFromMap(partyAddress,ReportConstants.ADDRESS2));
+        if(getCityCountry(getValueFromMap(partyAddress,ReportConstants.CITY), getValueFromMap(partyAddress,ReportConstants.COUNTRY)) != null)
+            list.add(getCityCountry(getValueFromMap(partyAddress,ReportConstants.CITY), getValueFromMap(partyAddress,ReportConstants.COUNTRY)));
+        if(getValueFromMap(partyAddress,ReportConstants.EMAIL) != null)
+            list.add(getValueFromMap(partyAddress,ReportConstants.EMAIL));
+        if(getValueFromMap(partyAddress,ReportConstants.CONTACT_PHONE) != null)
+            list.add(getValueFromMap(partyAddress,ReportConstants.CONTACT_PHONE));
         if(getValueFromMap(partyAddress,"Zip_PostCode") != null)
             list.add(getValueFromMap(partyAddress,"Zip_PostCode"));
         return list;
@@ -120,18 +115,18 @@ public class ReportHelper {
             return new ArrayList<>();
         Map<String, Object> partyAddress = party.getAddressData();
         List<String> list = new ArrayList<String>();
-        if(getValueFromMap(partyAddress,"CompanyName") != null)
-            list.add(getValueFromMap(partyAddress,"CompanyName"));
-        if(getValueFromMap(partyAddress,"Address1") != null)
-            list.add(getValueFromMap(partyAddress,"Address1"));
-        if(getValueFromMap(partyAddress,"Address2") != null)
-            list.add(getValueFromMap(partyAddress,"Address2"));
-        if(getCityCountry(getValueFromMap(partyAddress,"City"), getValueFromMap(partyAddress,"Country")) != null)
-            list.add(getCityCountry(getValueFromMap(partyAddress,"City"), getValueFromMap(partyAddress,"Country")));
-        if(getValueFromMap(partyAddress,"Email") != null)
-            list.add(getValueFromMap(partyAddress,"Email"));
-        if(getValueFromMap(partyAddress,"ContactPhone") != null)
-            list.add(getValueFromMap(partyAddress,"ContactPhone"));
+        if(getValueFromMap(partyAddress,ReportConstants.COMPANY_NAME) != null)
+            list.add(getValueFromMap(partyAddress,ReportConstants.COMPANY_NAME));
+        if(getValueFromMap(partyAddress,ReportConstants.ADDRESS1) != null)
+            list.add(getValueFromMap(partyAddress,ReportConstants.ADDRESS1));
+        if(getValueFromMap(partyAddress,ReportConstants.ADDRESS2) != null)
+            list.add(getValueFromMap(partyAddress,ReportConstants.ADDRESS2));
+        if(getCityCountry(getValueFromMap(partyAddress,ReportConstants.CITY), getValueFromMap(partyAddress,ReportConstants.COUNTRY)) != null)
+            list.add(getCityCountry(getValueFromMap(partyAddress,ReportConstants.CITY), getValueFromMap(partyAddress,ReportConstants.COUNTRY)));
+        if(getValueFromMap(partyAddress,ReportConstants.EMAIL) != null)
+            list.add(getValueFromMap(partyAddress,ReportConstants.EMAIL));
+        if(getValueFromMap(partyAddress,ReportConstants.CONTACT_PHONE) != null)
+            list.add(getValueFromMap(partyAddress,ReportConstants.CONTACT_PHONE));
         return list;
     }
 
@@ -162,6 +157,12 @@ public class ReportHelper {
             return null;
         }
         return value.toString();
+    }
+
+    public static List<String> getCompleteNameAndAddress(String name, List<String> list) {
+        List<String> res = getListOfStrings(name);
+        res.addAll(list);
+        return res;
     }
 
     public static List<String> getListOfStrings(String... strings) {

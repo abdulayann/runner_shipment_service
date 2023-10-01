@@ -33,6 +33,12 @@ public class ReportsFactory {
     private ManifestShipmentReport manifestShipmentReport;
     @Autowired
     private AWBLabelReport awbLabelReport;
+    @Autowired
+    private ShipmentCANReport shipmentCANReport;
+    @Autowired
+    private CustomsInstructionsReport customsInstructionsReport;
+    @Autowired
+    private PreAlertReport preAlertReport;
 
     public IReport getReport(String key)
     {
@@ -65,6 +71,12 @@ public class ReportsFactory {
                 return manifestShipmentReport;
             case ReportConstants.AWB_LABLE:
                 return awbLabelReport;
+            case ReportConstants.SHIPMENT_CAN_DOCUMENT:
+                return shipmentCANReport;
+            case ReportConstants.CUSTOMS_INSTRUCTIONS:
+                return customsInstructionsReport;
+            case ReportConstants.PRE_ALERT:
+                return preAlertReport;
 
         }
         return null;

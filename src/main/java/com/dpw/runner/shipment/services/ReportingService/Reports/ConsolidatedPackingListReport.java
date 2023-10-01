@@ -47,7 +47,7 @@ public class ConsolidatedPackingListReport extends IReport {
     IDocumentModel getDocumentModel(Long id) {
         ConsolidatedPackingListModel cplData = new ConsolidatedPackingListModel();
         cplData.setConsolidationDetails(getConsolidation(id));
-        cplData.setTenant(getTenant(TenantContext.getCurrentTenant()));
+        cplData.setTenant(getTenant());
         return cplData;
     }
 
