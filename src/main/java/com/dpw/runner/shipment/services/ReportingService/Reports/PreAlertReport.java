@@ -111,7 +111,7 @@ public class PreAlertReport extends IReport {
         dictionary.put(ReportConstants.CONSIGNEE_FREETEXT, consignee);
         dictionary.put(ReportConstants.CONSIGNER_FREETEXT, consigner);
         List<String> deliveryAgent = new ArrayList<>();
-        if(preAlertModel.shipmentDetails.getDeliveryDetails().getAgentDetail() != null) {
+        if(preAlertModel.shipmentDetails.getDeliveryDetails() != null && preAlertModel.shipmentDetails.getDeliveryDetails().getAgentDetail() != null) {
             deliveryAgent = getOrgAddressWithPhoneEmail(preAlertModel.shipmentDetails.getDeliveryDetails().getAgentDetail());
             if(preAlertModel.shipmentDetails.getDeliveryDetails().getAgentDetail().getOrgData() != null) {
                 Map<String, Object> partyOrg = preAlertModel.shipmentDetails.getDeliveryDetails().getAgentDetail().getOrgData();
@@ -154,15 +154,15 @@ public class PreAlertReport extends IReport {
         dictionary.put(ReportConstants.MARKS_NO, preAlertModel.shipmentDetails.getMarksNum());
 //        dictionary.put(ReportConstants.CMS_REMARKS, preAlertModel.shipmentDetails.) TODO- Where is Remarks Field in Shipment?
         if(preAlertModel.shipmentDetails.getVolumetricWeight() != null)
-            dictionary.put(ReportConstants.V_WEIGHT_AND_UNIT, String.format("%.2f %s", twoDecimalPlacesFormatDecimal(preAlertModel.shipmentDetails.getVolumetricWeight()), preAlertModel.shipmentDetails.getVolumetricWeightUnit()));
+            dictionary.put(ReportConstants.V_WEIGHT_AND_UNIT, String.format("%s %s", twoDecimalPlacesFormatDecimal(preAlertModel.shipmentDetails.getVolumetricWeight()), preAlertModel.shipmentDetails.getVolumetricWeightUnit()));
         if(preAlertModel.shipmentDetails.getWeight() != null)
-            dictionary.put(ReportConstants.WEIGHT_AND_UNIT, String.format("%.2f %s", twoDecimalPlacesFormatDecimal(preAlertModel.shipmentDetails.getWeight()), preAlertModel.shipmentDetails.getWeightUnit()));
+            dictionary.put(ReportConstants.WEIGHT_AND_UNIT, String.format("%s %s", twoDecimalPlacesFormatDecimal(preAlertModel.shipmentDetails.getWeight()), preAlertModel.shipmentDetails.getWeightUnit()));
         if(preAlertModel.shipmentDetails.getVolume() != null)
-            dictionary.put(ReportConstants.VOLUME_AND_UNIT, String.format("%.2f %s", twoDecimalPlacesFormatDecimal(preAlertModel.shipmentDetails.getVolume()), preAlertModel.shipmentDetails.getVolumeUnit()));
+            dictionary.put(ReportConstants.VOLUME_AND_UNIT, String.format("%s %s", twoDecimalPlacesFormatDecimal(preAlertModel.shipmentDetails.getVolume()), preAlertModel.shipmentDetails.getVolumeUnit()));
         if(preAlertModel.shipmentDetails.getVolume() != null)
-            dictionary.put(ReportConstants.TOTAL_VOLUME_, String.format("%.2f %s", twoDecimalPlacesFormatDecimal(preAlertModel.shipmentDetails.getVolume()), preAlertModel.shipmentDetails.getVolumeUnit()));
+            dictionary.put(ReportConstants.TOTAL_VOLUME_, String.format("%s %s", twoDecimalPlacesFormatDecimal(preAlertModel.shipmentDetails.getVolume()), preAlertModel.shipmentDetails.getVolumeUnit()));
         if(preAlertModel.shipmentDetails.getWeight() != null)
-            dictionary.put(ReportConstants.TOTAL_WEIGHT_, String.format("%.2f %s", twoDecimalPlacesFormatDecimal(preAlertModel.shipmentDetails.getWeight()), preAlertModel.shipmentDetails.getWeightUnit()));
+            dictionary.put(ReportConstants.TOTAL_WEIGHT_, String.format("%s %s", twoDecimalPlacesFormatDecimal(preAlertModel.shipmentDetails.getWeight()), preAlertModel.shipmentDetails.getWeightUnit()));
         dictionary.put(ReportConstants.TOTAL_PCS, preAlertModel.noofpackages_word);
         if(preAlertModel.shipmentDetails.getCarrierDetails().getOriginPort() != null) {
             UnlocationsResponse pol = getUNLocRow(preAlertModel.shipmentDetails.getCarrierDetails().getOriginPort());
@@ -176,11 +176,13 @@ public class PreAlertReport extends IReport {
         }
         if(preAlertModel.shipmentDetails.getCarrierDetails().getOrigin() != null) {
             UnlocationsResponse origin = getUNLocRow(preAlertModel.shipmentDetails.getCarrierDetails().getOrigin());
-            dictionary.put(ReportConstants.PLACE_oF_RECEIPT, origin.getName());
+            if(origin != null)
+                dictionary.put(ReportConstants.PLACE_oF_RECEIPT, origin.getName());
         }
         if(preAlertModel.shipmentDetails.getCarrierDetails().getDestination() != null) {
             UnlocationsResponse destination = getUNLocRow(preAlertModel.shipmentDetails.getCarrierDetails().getDestination());
-            dictionary.put(ReportConstants.PLACE_oF_DELIVERY, destination.getName());
+            if(destination != null)
+                dictionary.put(ReportConstants.PLACE_oF_DELIVERY, destination.getName());
         }
         if(preAlertModel.consolidationDetails != null && preAlertModel.consolidationDetails.getPayment() != null)
             dictionary.put(ReportConstants.PPCC, preAlertModel.consolidationDetails.getPayment());
@@ -197,7 +199,8 @@ public class PreAlertReport extends IReport {
                     JsonDateFormat(v);
                     if(v.containsKey("Commodity") && v.get("Commodity") != null) {
                         CommodityResponse commodityResponse = getCommodity(v.get("Commodity").toString());
-                        dictionary.put(ReportConstants.COMMODITY_DESC, commodityResponse.getDescription());
+                        if(commodityResponse != null)
+                            dictionary.put(ReportConstants.COMMODITY_DESC, commodityResponse.getDescription());
                     }
                 }
             }

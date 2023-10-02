@@ -113,7 +113,8 @@ public abstract class IReport {
         ship.CustomsSealNumber = row.getCustomsSealNumber();
         ship.ShipperSealNumber = row.getShipperSealNumber();
         CommodityResponse commodityResponse = getCommodity(row.getCommodityCode());
-        ship.CommodityDescription = commodityResponse.getDescription();
+        if(commodityResponse != null)
+            ship.CommodityDescription = commodityResponse.getDescription();
         return ship;
     }
 

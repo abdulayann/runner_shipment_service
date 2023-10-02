@@ -172,11 +172,11 @@ public class ShipmentCANReport extends IReport {
         dictionary.put(AIRLINE, shipmentCANModel.shipmentDetails.getCarrierDetails().getShippingLine());
         dictionary.put(CMS_REMARKS, shipmentCANModel.shipmentDetails.getGoodsDescription());
         if(shipmentCANModel.shipmentDetails.getVolumetricWeight() != null)
-            dictionary.put(ReportConstants.V_WEIGHT_AND_UNIT, String.format("%.2f %s", twoDecimalPlacesFormatDecimal(shipmentCANModel.shipmentDetails.getVolumetricWeight()), shipmentCANModel.shipmentDetails.getVolumetricWeightUnit()));
+            dictionary.put(ReportConstants.V_WEIGHT_AND_UNIT, String.format("%s %s", twoDecimalPlacesFormatDecimal(shipmentCANModel.shipmentDetails.getVolumetricWeight()), shipmentCANModel.shipmentDetails.getVolumetricWeightUnit()));
         if(shipmentCANModel.shipmentDetails.getWeight() != null)
-            dictionary.put(ReportConstants.WEIGHT_AND_UNIT, String.format("%.2f %s", twoDecimalPlacesFormatDecimal(shipmentCANModel.shipmentDetails.getWeight()), shipmentCANModel.shipmentDetails.getWeightUnit()));
+            dictionary.put(ReportConstants.WEIGHT_AND_UNIT, String.format("%s %s", twoDecimalPlacesFormatDecimal(shipmentCANModel.shipmentDetails.getWeight()), shipmentCANModel.shipmentDetails.getWeightUnit()));
         if(shipmentCANModel.shipmentDetails.getVolume() != null)
-            dictionary.put(ReportConstants.VOLUME_AND_UNIT, String.format("%.2f %s", twoDecimalPlacesFormatDecimal(shipmentCANModel.shipmentDetails.getVolume()), shipmentCANModel.shipmentDetails.getVolumeUnit()));
+            dictionary.put(ReportConstants.VOLUME_AND_UNIT, String.format("%s %s", twoDecimalPlacesFormatDecimal(shipmentCANModel.shipmentDetails.getVolume()), shipmentCANModel.shipmentDetails.getVolumeUnit()));
         dictionary.put(ReportConstants.MARKS_AND_NUMBER, shipmentCANModel.shipmentDetails.getMarksNum());
         dictionary.put(ReportConstants.NO_OF_PACKAGES, shipmentCANModel.shipmentDetails.getNoOfPacks());
         if(shipmentCANModel.consolidationModel != null && shipmentCANModel.consolidationModel.getPayment() != null) {
