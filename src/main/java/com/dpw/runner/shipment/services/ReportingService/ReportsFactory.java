@@ -33,6 +33,8 @@ public class ReportsFactory {
     private ManifestShipmentReport manifestShipmentReport;
     @Autowired
     private AWBLabelReport awbLabelReport;
+    @Autowired
+    private ShippingRequestAirReport shippingRequestAirReport;
 
     public IReport getReport(String key)
     {
@@ -65,6 +67,8 @@ public class ReportsFactory {
                 return manifestShipmentReport;
             case ReportConstants.AWB_LABLE:
                 return awbLabelReport;
+            case ReportConstants.SHIPPING_REQUEST_AIR:
+                return shippingRequestAirReport;
 
         }
         return null;
