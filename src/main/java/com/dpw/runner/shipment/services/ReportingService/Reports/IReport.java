@@ -1060,8 +1060,13 @@ public abstract class IReport {
         if(shipmentModel.getTransportMode().equalsIgnoreCase(Constants.TRANSPORT_MODE_AIR)) {
             if(shipmentModel.getDirection().equalsIgnoreCase(EXP)) {
                 Long entityId = shipmentModel.getId();
+                List<Awb> awbList = awbDao.findByShipmentId(entityId);
                 String entityType = (shipmentModel.getDirection() == Constants.SHIPMENT_TYPE_DRT) ? Constants.DMAWB : Constants.HAWB;
-                awbDao.findByShipmentId(entityId);
+                if (awbList != null && awbList.size() > 0) {
+                    if(awbList.get(0).getAwbShipmentInfo().getEntityType().equalsIgnoreCase(entityType))
+                        return false;
+                }
+                // TODO- Throw Exception that AWB is not generated
             }
             return false;
         } else if (shipmentModel.getDirection().equalsIgnoreCase(EXP)) {

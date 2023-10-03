@@ -2,12 +2,15 @@ package com.dpw.runner.shipment.services.ReportingService.Reports;
 
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper;
+import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentContainers;
 import com.dpw.runner.shipment.services.ReportingService.Models.CustomsInstructionsModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ContainerModel;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -29,6 +32,16 @@ public class CustomsInstructionsReport extends IReport{
     public IDocumentModel getDocumentModel(Long id) {
         CustomsInstructionsModel customsInstructionsModel = new CustomsInstructionsModel();
         customsInstructionsModel.shipmentDetails = getShipment(id);
+        if(customsInstructionsModel.shipmentDetails.getContainersList() != null && customsInstructionsModel.shipmentDetails.getContainersList().size() > 0) {
+            List<ShipmentContainers> shipmentContainersList = new ArrayList<>();
+            for (ContainerModel containerModel: customsInstructionsModel.shipmentDetails.getContainersList()) {
+                ShipmentContainers shipmentContainers = getShipmentContainer(containerModel);
+                shipmentContainersList.add(shipmentContainers);
+            }
+            if(shipmentContainersList.size() > 0)
+                customsInstructionsModel.shipmentContainers = shipmentContainersList;
+        }
+        customsInstructionsModel.shipmentDetails.setShipmentContainersList(customsInstructionsModel.shipmentContainers);
         return customsInstructionsModel;
     }
 
@@ -37,7 +50,6 @@ public class CustomsInstructionsReport extends IReport{
         CustomsInstructionsModel customsInstructionsModel = (CustomsInstructionsModel) documentModel;
         String json = jsonHelper.convertToJson(customsInstructionsModel.shipmentDetails);
         Map<String, Object> dictionary = jsonHelper.convertJsonToMap(json);
-        // TODO- what is ShipmentContainers
         JsonDateFormat(dictionary);
         List<String> consigner = getOrgAddress(customsInstructionsModel.shipmentDetails.getConsigner());
         List<String> consignee = getOrgAddress(customsInstructionsModel.shipmentDetails.getConsignee());
