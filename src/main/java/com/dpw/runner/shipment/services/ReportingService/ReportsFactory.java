@@ -35,6 +35,12 @@ public class ReportsFactory {
     private AWBLabelReport awbLabelReport;
     @Autowired
     private ShippingRequestAirReport shippingRequestAirReport;
+    @Autowired
+    PickupOrderReport pickupOrderReport;
+    @Autowired
+    ProofOfDeliveryReport proofOfDeliveryReport;
+    @Autowired
+    PackingListReport packingListReport;
 
     public IReport getReport(String key)
     {
@@ -69,6 +75,12 @@ public class ReportsFactory {
                 return awbLabelReport;
             case ReportConstants.SHIPPING_REQUEST_AIR:
                 return shippingRequestAirReport;
+            case ReportConstants.PICKUP_ORDER:
+                return pickupOrderReport;
+            case ReportConstants.PROOF_OF_DELIVERY:
+                return proofOfDeliveryReport;
+            case ReportConstants.PACKING_LIST:
+                return packingListReport;
 
         }
         return null;
