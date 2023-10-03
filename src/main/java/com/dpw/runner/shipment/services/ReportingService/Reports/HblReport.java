@@ -22,6 +22,8 @@ import org.springframework.stereotype.Component;
 
 import java.util.*;
 
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.JsonDateFormat;
+
 @Component
 public class HblReport extends IReport{
 
@@ -112,6 +114,21 @@ public class HblReport extends IReport{
             if(vesselsResponse != null && vesselsResponse.size() > 0)
                 hblModel.preCarriageVessel = vesselsResponse.get(0);
         }
+        hblModel.noofPackages = 0;
+        if(hblModel.shipment.getContainersList() != null && hblModel.shipment.getContainersList().size() > 0) {
+            for (ContainerModel shipmentContainers: hblModel.shipment.getContainersList()) {
+                hblModel.noofPackages = shipmentContainers.getNoOfPackages() + hblModel.noofPackages;
+                hblModel.containerCountGrouped = new HashMap<>();
+                if(hblModel.containerCountGrouped.containsKey(shipmentContainers.getContainerCode()))
+                    hblModel.containerCountGrouped.put(shipmentContainers.getContainerCode(), hblModel.containerCountGrouped.get(shipmentContainers.getContainerCode()) + shipmentContainers.getContainerCount());
+                else
+                    hblModel.containerCountGrouped.put(shipmentContainers.getContainerCode(), shipmentContainers.getContainerCount());
+                if(hblModel.containerCountGrouped.containsKey(shipmentContainers.getPacksType()))
+                    hblModel.containerCountGrouped.put(shipmentContainers.getPacksType(), hblModel.containerCountGrouped.get(shipmentContainers.getPacksType()) + Long.valueOf(shipmentContainers.getPacks()));
+                else
+                    hblModel.containerCountGrouped.put(shipmentContainers.getPacksType(), Long.valueOf(shipmentContainers.getPacks()));
+            }
+        }
         return hblModel;
     }
 
@@ -120,6 +137,22 @@ public class HblReport extends IReport{
         HblModel hblModel = (HblModel) documentModel;
         String json = jsonHelper.convertToJson(hblModel.shipment);
         Map<String, Object> dictionary = jsonHelper.convertJsonToMap(json);
+        JsonDateFormat(dictionary);
+        if(hblModel.blObject != null) {
+            String blObjectJson = jsonHelper.convertToJson(hblModel.blObject);
+            Map<String, Object> blObjectDictionary = jsonHelper.convertJsonToMap(blObjectJson);
+            JsonDateFormat(blObjectDictionary);
+            for (Map.Entry<String, Object> entry : blObjectDictionary.entrySet()) {
+                String key = entry.getKey();
+                Object value = entry.getValue();
+                if(dictionary.containsKey(key))
+                    dictionary.remove(key);
+                dictionary.put(key, value);
+            }
+        }
+        dictionary.put(ReportConstants.NoOfPackages, hblModel.noofPackages);
+        dictionary.put(ReportConstants.CONTAINER_COUNT_GROUPED, hblModel.containerCountGrouped);
+        dictionary.put(ReportConstants.CONTAINER_PACKS_GROUPED, hblModel.containerPacksGrouped);
         populateShipmentFields(hblModel.shipment, false, dictionary);
         populateConsolidationFields(hblModel.consolidation, dictionary);
         populateBlFields(hblModel.blObject, dictionary);

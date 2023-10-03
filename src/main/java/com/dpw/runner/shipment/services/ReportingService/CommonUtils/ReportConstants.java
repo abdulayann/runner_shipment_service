@@ -93,6 +93,7 @@ public class ReportConstants
     public static final String COPY_BILLS = "CopyBills";
     public static final String NO_OF_PACKAGES = "NoofPackages";
     public static final String no_OF_PACKAGES = "noofpackages";
+    public static final String NoOfPackages = "NoOfPackages";
     public static final String NO_OF_PACKAGES_WORD = "noofpackages_word";
     public static final String IGM_FILE_DATE = "IGMFileDate";
     public static final String IGM_FILE_NO = "IGMFileNo";
@@ -302,6 +303,8 @@ public class ReportConstants
     public static final String SERVICE_MODE_DESCRIPTION = "ServiceModeDesc";
     public static final String SHIPMENTS = "Shipments";
     public static final String CONTAINER_COUNT = "ContainerCount";
+    public static final String CONTAINER_COUNT_GROUPED = "ContainerCountGrouped";
+    public static final String CONTAINER_PACKS_GROUPED = "ContainerPacksGrouped";
     public static final String CONTAINER_AGGREGATION_STRING = "ContainerAggregation";
     public static final String SHIPMENT_COUNT = "ShipmentCount";
     public static final String PICKUP_TRANSPORT_COMPANY = "PickUpTransportCompany";

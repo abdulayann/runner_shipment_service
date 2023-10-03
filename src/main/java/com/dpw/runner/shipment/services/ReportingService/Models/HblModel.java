@@ -7,6 +7,7 @@ import com.dpw.runner.shipment.services.entity.Hbl;
 import com.dpw.runner.shipment.services.masterdata.response.VesselsResponse;
 
 import java.util.List;
+import java.util.Map;
 
 public class HblModel implements IDocumentModel{
     //public List<BillChargesRow> billCharges;
@@ -20,4 +21,7 @@ public class HblModel implements IDocumentModel{
     public String serviceMode;
     public VesselsResponse preCarriageVessel;
     public String paidPlaceCountry;
+    public long noofPackages = 0;
+    public Map<String, Long> containerCountGrouped;
+    public Map<String, Long> containerPacksGrouped;
 }
