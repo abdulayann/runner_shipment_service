@@ -568,6 +568,33 @@ public abstract class IReport {
             );
             dictionary.put(ReportConstants.CONSOL_NOTIFY_ADDRESS, consolNotifyPartyAddress);
         }
+
+
+//        if(receivingAgent.Count>0)
+//            dictionary["DeliveryAgent"] = receivingAgent;
+//        dictionary["SendingAgentName"] = qc_data.consolidation.SendingAgentName;
+//        var sendingAgent = getOrgAddress(null, qc_data.consolidation.SendingAgentAddress1, qc_data.consolidation.SendingAgentAddress2, getCityCountry(qc_data.consolidation.SendingAgentCity, qc_data.consolidation.SendingAgentCountry), qc_data.consolidation.SendingAgentEmail, qc_data.consolidation.SendingAgentContactPhone);
+//        dictionary["SendingAgentAddress"] = sendingAgent;
+//        dictionary["AgentReference"]=  qc_data.consolidation.AgentReference;
+//        dictionary["ConsolNumber"] = qc_data.consolidation.ConsolidationNumber;
+//
+//        if (qc_data.consolidation.IsSendingAgentFreeTextAddress.Value)
+//        {
+//            dictionary["SendingAgentAddressFreeText"] = ReportHelper.getAddressList(qc_data.consolidation.SendingAgentFreeTextAddress);
+//        }
+//        else
+//        {
+//            dictionary["SendingAgentAddressFreeText"] = dictionary["SendingAgentAddress"];
+//        }
+//
+//        if (qc_data.consolidation.IsReceivingAgentFreeTextAddress.Value)
+//        {
+//            dictionary["ReceivingAgentAddressFreeText"] = ReportHelper.getAddressList(qc_data.consolidation.ReceivingAgentFreeTextAddress);
+//        }
+//        else
+//        {
+//            dictionary["ReceivingAgentAddressFreeText"] = dictionary["ReceivingAgentAddress"];
+//        }
     }
 
     public void populateBlFields(Hbl hbl, Map<String, Object> dictionary)

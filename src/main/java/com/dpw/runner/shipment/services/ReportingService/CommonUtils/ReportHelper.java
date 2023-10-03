@@ -291,4 +291,29 @@ public class ReportHelper {
         return words;
     }
 
+    public static String concatGroupedContainerCount(Map<String, Integer> containerCountGrouped)
+    {
+        StringBuilder containerCount = new StringBuilder();
+        for (String key: containerCountGrouped.keySet()) {
+            if (!containerCount.toString().equals(""))
+                containerCount.append(" & ");
+            containerCount.append(containerCountGrouped.get(key)).append(" X ").append(key);
+        }
+        return containerCount.toString().equals("") ? "0" : containerCount.toString();
+    }
+
+    public static String concatGroupedFieldValues(Map<String, Double> fieldValuesGrouped, Integer decimalPlaces)
+    {
+        StringBuilder fieldValue = new StringBuilder();
+        decimalPlaces = decimalPlaces == null ? 2: decimalPlaces;
+        for(String entry : fieldValuesGrouped.keySet())
+        {
+            Double value = Math.round(fieldValuesGrouped.get(entry) * Math.pow(10, decimalPlaces)) / Math.pow(10, decimalPlaces);
+            if (!fieldValue.toString().equals(""))
+                fieldValue.append(" & ");
+            fieldValue.append(value).append(" X ").append(entry);
+        }
+        return fieldValue.toString() == "" ? "0" : fieldValue.toString();
+    }
+
 }
