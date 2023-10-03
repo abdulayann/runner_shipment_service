@@ -292,4 +292,39 @@ public class ReportHelper {
         return words;
     }
 
+    public static String concatGroupedContainerCount(Map<String, Long> containerCountGrouped) {
+        String containerCount = "";
+        for (Map.Entry<String, Long> entry : containerCountGrouped.entrySet()) {
+            if (!containerCount.isEmpty()) {
+                containerCount += " & ";
+            }
+            containerCount += entry.getValue() + " X " + entry.getKey();
+        }
+        return containerCount.isEmpty() ? "0" : containerCount;
+    }
+
+    public static String concatGroupedFieldValues(Map<String, Double> fieldValuesGrouped, int decimalPlaces) {
+        String fieldValue = "";
+        for (Map.Entry<String, Double> entry : fieldValuesGrouped.entrySet()) {
+            double value = Math.round(entry.getValue() * Math.pow(10, decimalPlaces)) / Math.pow(10, decimalPlaces);
+            if (!fieldValue.isEmpty()) {
+                fieldValue += " & ";
+            }
+            fieldValue += value + " X " + entry.getKey();
+        }
+        return fieldValue.isEmpty() ? "0" : fieldValue;
+    }
+
+    public static String concatGroupedFields(Map<String, Double> fieldMap, int decimalPlaces) {
+        String fieldValue = "";
+        for (Map.Entry<String, Double> entry : fieldMap.entrySet()) {
+            double value = Math.round(entry.getValue() * Math.pow(10, decimalPlaces)) / Math.pow(10, decimalPlaces);
+            if (!fieldValue.isEmpty()) {
+                fieldValue += " & ";
+            }
+            fieldValue += value + " " + entry.getKey();
+        }
+        return fieldValue.isEmpty() ? "0" : fieldValue;
+    }
+
 }
