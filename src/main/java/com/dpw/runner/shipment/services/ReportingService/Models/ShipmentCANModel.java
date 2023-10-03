@@ -12,4 +12,5 @@ public class ShipmentCANModel implements IDocumentModel{
     public ConsolidationModel consolidationModel;
     public ShipmentSettingsDetails shipmentSettingsDetails;
     public V1TenantSettingsResponse tenantSettingsResponse;
+    public boolean isHBL = true;
 }

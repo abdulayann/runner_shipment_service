@@ -14,7 +14,6 @@ import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -26,6 +25,9 @@ public class ShipmentCANReport extends IReport {
     @Autowired
     private JsonHelper jsonHelper;
 
+    @Autowired
+    private HblReport hblReport;
+
     @Override
     public Map<String, Object> getData(Long id) {
         ShipmentCANModel shipmentCANModel = (ShipmentCANModel) getDocumentModel(id);
@@ -35,20 +37,19 @@ public class ShipmentCANReport extends IReport {
     @Override
     public IDocumentModel getDocumentModel(Long id) {
         ShipmentCANModel shipmentCANModel = new ShipmentCANModel();
-        shipmentCANModel.shipmentDetails = getShipment(id);
-        shipmentCANModel.tenantDetails = getTenant();
-        shipmentCANModel.consolidationModel = getFirstConsolidationFromShipmentId(id);
-        shipmentCANModel.shipmentSettingsDetails = getShipmentSettings(TenantContext.getCurrentTenant());
-        shipmentCANModel.tenantSettingsResponse = getTenantSettings();
-        return shipmentCANModel;
+            shipmentCANModel.shipmentDetails = getShipment(id);
+            shipmentCANModel.tenantDetails = getTenant();
+            shipmentCANModel.consolidationModel = getFirstConsolidationFromShipmentId(id);
+            shipmentCANModel.shipmentSettingsDetails = getShipmentSettings(TenantContext.getCurrentTenant());
+            shipmentCANModel.tenantSettingsResponse = getTenantSettings();
+            shipmentCANModel.isHBL = getIsHbl(shipmentCANModel.shipmentDetails);
+            return shipmentCANModel;
     }
 
     @Override
     public Map<String, Object> populateDictionary(IDocumentModel documentModel) {
         ShipmentCANModel shipmentCANModel = (ShipmentCANModel) documentModel;
-        Map<String, Object> dictionary = new HashMap<>();
-        // TODO- ShipmentHouseBL.isHBL = getIsHBL(shipmentId);
-        // TODO- dictionary = ShipmentHouseBL.GetData();
+        Map<String, Object> dictionary = hblReport.getData(shipmentCANModel.shipmentDetails.getId());
         // List<BillCharges> billChargesList = new ArrayList<>();
         TaxPair<String, String> tax1 = new TaxPair<>("TaxType1", "0");
         TaxPair<String, String> tax2 = new TaxPair<>("TaxType2", "0");
