@@ -7,7 +7,10 @@ import com.dpw.runner.shipment.services.ReportingService.Models.HblModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.BookingCarriageModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ContainerModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PartiesModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PickupDeliveryDetailsModel;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dto.request.hbl.HblContainerDto;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -21,6 +24,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
+
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.*;
 
 @Component
 public class HblReport extends IReport{
@@ -41,6 +47,8 @@ public class HblReport extends IReport{
     public IDocumentModel getDocumentModel(Long id) {
         HblModel hblModel = new HblModel();
         hblModel.shipment = getShipment(id);
+        hblModel.shipmentSettingsDetails = getShipmentSettings(TenantContext.getCurrentTenant());
+        hblModel.tenantSettingsResponse = getTenantSettings();
         if(hblModel.shipment != null && hblModel.shipment.getConsolidationList() != null && !hblModel.shipment.getConsolidationList().isEmpty())
         {
             hblModel.consolidation = hblModel.shipment.getConsolidationList().get(0);
@@ -112,6 +120,31 @@ public class HblReport extends IReport{
             if(vesselsResponse != null && vesselsResponse.size() > 0)
                 hblModel.preCarriageVessel = vesselsResponse.get(0);
         }
+        hblModel.noofPackages = 0;
+        if(hblModel.shipment.getContainersList() != null && hblModel.shipment.getContainersList().size() > 0) {
+            for (ContainerModel container: hblModel.shipment.getContainersList()) {
+                hblModel.noofPackages = container.getNoOfPackages() + hblModel.noofPackages;
+                hblModel.containerCountGrouped = new HashMap<>();
+                if(container.getContainerCode() != null) {
+                    if(hblModel.containerCountGrouped.containsKey(container.getContainerCode()))
+                        hblModel.containerCountGrouped.put(container.getContainerCode(), hblModel.containerCountGrouped.get(container.getContainerCode()) + container.getContainerCount());
+                    else
+                        hblModel.containerCountGrouped.put(container.getContainerCode(), container.getContainerCount());
+                }
+                if(container.getPacksType() != null) {
+                    if(hblModel.containerCountGrouped.containsKey(container.getPacksType()))
+                        hblModel.containerCountGrouped.put(container.getPacksType(), hblModel.containerCountGrouped.get(container.getPacksType()) + Long.valueOf(container.getPacks()));
+                    else
+                        hblModel.containerCountGrouped.put(container.getPacksType(), Long.valueOf(container.getPacks()));
+                }
+                if(container.getGrossWeightUnit() != null) {
+                    hblModel.containerWeightGrouped.put(container.getGrossWeightUnit(), hblModel.containerWeightGrouped.containsKey(container.getGrossWeightUnit()) ? hblModel.containerWeightGrouped.get(container.getGrossWeightUnit()) + container.getGrossWeight().longValue() : container.getGrossWeight().longValue());
+                }
+                if(container.getGrossVolumeUnit() != null) {
+                    hblModel.containerVolumeGrouped.put(container.getGrossVolumeUnit(), hblModel.containerWeightGrouped.containsKey(container.getGrossVolumeUnit()) ? hblModel.containerWeightGrouped.get(container.getGrossVolumeUnit()) + container.getGrossVolume().longValue() : container.getGrossVolume().longValue());
+                }
+            }
+        }
         return hblModel;
     }
 
@@ -120,6 +153,79 @@ public class HblReport extends IReport{
         HblModel hblModel = (HblModel) documentModel;
         String json = jsonHelper.convertToJson(hblModel.shipment);
         Map<String, Object> dictionary = jsonHelper.convertJsonToMap(json);
+        JsonDateFormat(dictionary);
+        if(hblModel.blObject != null) {
+            String blObjectJson = jsonHelper.convertToJson(hblModel.blObject);
+            Map<String, Object> blObjectDictionary = jsonHelper.convertJsonToMap(blObjectJson);
+            JsonDateFormat(blObjectDictionary);
+            for (Map.Entry<String, Object> entry : blObjectDictionary.entrySet()) {
+                String key = entry.getKey();
+                Object value = entry.getValue();
+                if(dictionary.containsKey(key))
+                    dictionary.remove(key);
+                dictionary.put(key, value);
+            }
+        }
+        dictionary.put(ReportConstants.NoOfPackages, hblModel.noofPackages);
+        dictionary.put(ReportConstants.CONTAINER_COUNT_GROUPED, concatGroupedContainerCount(hblModel.containerCountGrouped));
+        dictionary.put(ReportConstants.CONTAINER_PACKS_GROUPED, concatGroupedContainerCount(hblModel.containerPacksGrouped));
+        Integer decimalPlaces = hblModel.shipmentSettingsDetails.getDecimalPlaces() == null ? 2 : hblModel.shipmentSettingsDetails.getDecimalPlaces();
+        dictionary.put(ReportConstants.ContainerWeightWithXSeparated, concatGroupedFieldValues(hblModel.containerWeightGrouped, decimalPlaces));
+        dictionary.put(ReportConstants.ContainerVolumeWithXSeparated, concatGroupedFieldValues(hblModel.containerVolumeGrouped, decimalPlaces));
+        dictionary.put(ReportConstants.ContainerWeightGrouped, concatGroupedFields(hblModel.containerWeightGrouped, decimalPlaces));
+        dictionary.put(ReportConstants.ContainerVolumeGrouped, concatGroupedFields(hblModel.containerVolumeGrouped, decimalPlaces));
+        dictionary.put(ReportConstants.DELIVERY_AGENT, null);
+        dictionary.put(ReportConstants.CONTAINER_COUNT_BY_CODE, getCountByContainerTypeCode(hblModel.commonContainers));
+        if(hblModel.shipment != null && hblModel.shipment.getFreightLocal() != null)
+            dictionary.put(ReportConstants.FREIGHT_LOCAL, hblModel.shipment.getFreightLocal());
+        if(hblModel.shipment != null && hblModel.shipment.getFreightLocalCurrency() != null && !hblModel.shipment.getFreightLocalCurrency().isEmpty())
+            dictionary.put(ReportConstants.FREIGHT_LOCAL_CURRENCY, hblModel.shipment.getFreightLocalCurrency());
+        if(hblModel.shipment != null && hblModel.shipment.getFreightOverseas() != null)
+            dictionary.put(ReportConstants.FREIGHT_OVERSEAS, hblModel.shipment.getFreightOverseas());
+        if(hblModel.shipment != null && hblModel.shipment.getFreightOverseasCurrency() != null && !hblModel.shipment.getFreightOverseasCurrency().isEmpty())
+            dictionary.put(ReportConstants.FREIGHT_OVERSEAS_CURRENCY, hblModel.shipment.getFreightOverseasCurrency());
+        if(hblModel.shipment.getShipmentAddresses() != null && hblModel.shipment.getShipmentAddresses().size() > 0) {
+            for (PartiesModel shipmentAddress: hblModel.shipment.getShipmentAddresses()) {
+                if(shipmentAddress.getType() == CUSTOM_HOUSE_AGENT && shipmentAddress.getOrgData() != null && getValueFromMap(shipmentAddress.getOrgData(), FULL_NAME) != null) {
+                    dictionary.put(CHAPartyDescription, getValueFromMap(shipmentAddress.getOrgData(), FULL_NAME));
+                }
+            }
+        }
+        if(hblModel.tenantSettingsResponse != null && hblModel.tenantSettingsResponse.isEnableIGMDetails())
+        {
+            if(hblModel.shipment.getDirection() != null && hblModel.shipment.getDirection() == Constants.IMP) {
+                if(hblModel.shipment.getAdditionalDetails().getIGMFileDate() != null) {
+                    dictionary.put(ReportConstants.IGM_FILE_DATE, hblModel.shipment.getAdditionalDetails().getIGMFileDate());
+                }
+                if(hblModel.shipment.getAdditionalDetails().getIGMFileNo() != null) {
+                    dictionary.put(ReportConstants.IGM_FILE_NO, hblModel.shipment.getAdditionalDetails().getIGMFileNo());
+                }
+                if(hblModel.shipment.getAdditionalDetails().getIGMInwardDate() != null) {
+                    dictionary.put(ReportConstants.IGM_INWARD_DATE, hblModel.shipment.getAdditionalDetails().getIGMInwardDate());
+                }
+                if(hblModel.shipment.getAdditionalDetails().getInwardDateAndTime() != null) {
+                    dictionary.put(ReportConstants.INWARD_DATE_TIME, hblModel.shipment.getAdditionalDetails().getInwardDateAndTime());
+                }
+                if(hblModel.shipment.getAdditionalDetails().getLineNumber() != null) {
+                    dictionary.put(ReportConstants.LINE_NUMBER, hblModel.shipment.getAdditionalDetails().getLineNumber());
+                }
+                if(hblModel.shipment.getAdditionalDetails().getSubLineNumber() != null) {
+                    dictionary.put(ReportConstants.SUB_LINE_NUMBER, hblModel.shipment.getAdditionalDetails().getSubLineNumber());
+                }
+                if(hblModel.shipment.getAdditionalDetails().getIsInland()) {
+                    dictionary.put(ReportConstants.IS_INLAND, hblModel.shipment.getAdditionalDetails().getIsInland()?"Yes":"No");
+                    if(hblModel.shipment.getAdditionalDetails().getSMTPIGMDate() != null) {
+                        dictionary.put(ReportConstants.SMTPIGM_DATE, hblModel.shipment.getAdditionalDetails().getSMTPIGMDate());
+                    }
+                    if(hblModel.shipment.getAdditionalDetails().getSMTPIGMNumber() != null) {
+                        dictionary.put(ReportConstants.SMTPIGM_NUMBER, hblModel.shipment.getAdditionalDetails().getSMTPIGMNumber());
+                    }
+                    if(hblModel.shipment.getAdditionalDetails().getLocalLineNumber() != null) {
+                        dictionary.put(ReportConstants.LOCAL_LINE_NUMBER, hblModel.shipment.getAdditionalDetails().getLocalLineNumber());
+                    }
+                }
+            }
+        }
         populateShipmentFields(hblModel.shipment, false, dictionary);
         populateConsolidationFields(hblModel.consolidation, dictionary);
         populateBlFields(hblModel.blObject, dictionary);
