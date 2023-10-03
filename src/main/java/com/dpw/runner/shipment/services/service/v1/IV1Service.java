@@ -18,7 +18,7 @@ public interface IV1Service {
 
     V1DataResponse updateMasterData(Object request);
 
-    V1DataResponse fetchCarrierMasterData(Object request);
+    V1DataResponse fetchCarrierMasterData(Object request, boolean isListOnly);
 
     V1DataResponse createCarrierMasterData(Object request);
 

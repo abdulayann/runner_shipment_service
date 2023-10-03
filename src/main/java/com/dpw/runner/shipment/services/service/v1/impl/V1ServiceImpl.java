@@ -293,7 +293,7 @@ public class V1ServiceImpl implements IV1Service {
     }
 
     @Override
-    public V1DataResponse fetchCarrierMasterData(Object request) {
+    public V1DataResponse fetchCarrierMasterData(Object request, boolean isListOnly) {
         ResponseEntity masterDataResponse = null;
 
         try {
@@ -301,7 +301,7 @@ public class V1ServiceImpl implements IV1Service {
             CarrierListObject req = jsonHelper.convertValue(request, CarrierListObject.class);
             Object requestCriteria = req.getListObject();
             HttpEntity<V1DataResponse> entity = new HttpEntity(requestCriteria, V1AuthHelper.getHeaders());
-            if(req.getListObject() != null && req.getType() != null && (req.getType().equals(Constants.CONSOLIDATION_TYPE_AGT) || req.getType().equals(Constants.CONSOLIDATION_TYPE_CLD))) {
+            if(isListOnly || (req.getListObject() != null && req.getType() != null && (req.getType().equals(Constants.CONSOLIDATION_TYPE_AGT) || req.getType().equals(Constants.CONSOLIDATION_TYPE_CLD))) ) {
                 masterDataResponse = this.restTemplate.postForEntity(this.CARRIER_MASTER_DATA_URL, entity, V1DataResponse.class, new Object[0]);
             }
             else {
@@ -1021,7 +1021,7 @@ public class V1ServiceImpl implements IV1Service {
             long time = System.currentTimeMillis();
             HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
             locationResponse = this.restTemplate.postForEntity(this.UNLOCATION_URL, entity, V1DataResponse.class, new Object[0]);
-            log.info("Token time taken in getMasterData() function " + (System.currentTimeMillis() - time));
+            log.info("Token time taken in fetchUnlocation() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) locationResponse.getBody();
         } catch (HttpStatusCodeException var6) {
             if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
