@@ -113,4 +113,6 @@ public interface IMasterDataService {
     DependentServiceResponse fetchUnlocationOriginAndDestinationList(Object request);
     DependentServiceResponse fetchListUnlocationTransportModeBased(Object request);
     DependentServiceResponse fetchActivityMaster(Object request);
+    DependentServiceResponse retrieveTenant();
+    DependentServiceResponse fetchMultipleMasterData(Object request);
 }

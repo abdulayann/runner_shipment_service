@@ -403,4 +403,18 @@ public class V1MasterDataImpl implements IMasterDataService {
         return DependentServiceResponse.builder().success(true)
                 .data(v1RetrieveResponse.getEntity()).build();
     }
+
+    @Override
+    public DependentServiceResponse retrieveTenant() {
+        V1RetrieveResponse v1RetrieveResponse = v1Service.retrieveTenant();
+        return DependentServiceResponse.builder().success(true)
+                .data(v1RetrieveResponse.getEntity()).build();
+    }
+
+    @Override
+    public DependentServiceResponse fetchMultipleMasterData(Object request) {
+        V1DataResponse v1DataResponse = v1Service.fetchMultipleMasterData(request);
+        return DependentServiceResponse.builder().success(true)
+                .data(v1DataResponse.entities).pageSize(v1DataResponse.take).numberOfRecords(v1DataResponse.totalCount).pageNo(v1DataResponse.skip).build();
+    }
 }

@@ -41,6 +41,12 @@ public class ReportsFactory {
     ProofOfDeliveryReport proofOfDeliveryReport;
     @Autowired
     PackingListReport packingListReport;
+    @Autowired
+    private ShipmentCANReport shipmentCANReport;
+    @Autowired
+    private CustomsInstructionsReport customsInstructionsReport;
+    @Autowired
+    private PreAlertReport preAlertReport;
 
     public IReport getReport(String key)
     {
@@ -81,6 +87,12 @@ public class ReportsFactory {
                 return proofOfDeliveryReport;
             case ReportConstants.PACKING_LIST:
                 return packingListReport;
+            case ReportConstants.SHIPMENT_CAN_DOCUMENT:
+                return shipmentCANReport;
+            case ReportConstants.CUSTOMS_INSTRUCTIONS:
+                return customsInstructionsReport;
+            case ReportConstants.PRE_ALERT:
+                return preAlertReport;
 
         }
         return null;
