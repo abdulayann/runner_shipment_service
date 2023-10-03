@@ -1268,7 +1268,7 @@ public class ShipmentService implements IShipmentService {
         request.setCriteriaRequests(criteria);
         CarrierListObject carrierListObject = new CarrierListObject();
         carrierListObject.setListObject(request);
-        V1DataResponse response = v1Service.fetchCarrierMasterData(carrierListObject);
+        V1DataResponse response = v1Service.fetchCarrierMasterData(carrierListObject, true);
         return response;
     }
 
