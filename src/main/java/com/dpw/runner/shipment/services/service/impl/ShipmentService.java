@@ -11,6 +11,7 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
+import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
 import com.dpw.runner.shipment.services.dto.patchRequest.ShipmentPatchRequest;
 import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.response.*;
@@ -1294,7 +1295,9 @@ public class ShipmentService implements IShipmentService {
         List<Object> criteria = new ArrayList<>();
         criteria.addAll(List.of(List.of("AirlineCode"), "=", mawbAirlineCode));
         request.setCriteriaRequests(criteria);
-        V1DataResponse response = v1Service.fetchCarrierMasterData(request);
+        CarrierListObject carrierListObject = new CarrierListObject();
+        carrierListObject.setListObject(request);
+        V1DataResponse response = v1Service.fetchCarrierMasterData(carrierListObject);
         return response;
     }
 
@@ -1554,21 +1557,31 @@ public class ShipmentService implements IShipmentService {
     }
     private void addAllMasterDatas (ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse) {
         shipmentDetailsResponse.setMasterData(masterDataUtils.addMasterData(shipmentDetailsResponse, ShipmentDetails.class));
-        shipmentDetailsResponse.getAdditionalDetails().setMasterData(masterDataUtils.addMasterData(shipmentDetailsResponse.getAdditionalDetails(), AdditionalDetails.class));
-        shipmentDetailsResponse.getCarrierDetails().setMasterData(masterDataUtils.addMasterData(shipmentDetailsResponse.getCarrierDetails(), CarrierDetails.class));
+        if(shipmentDetailsResponse.getAdditionalDetails() != null) {
+            shipmentDetailsResponse.getAdditionalDetails().setMasterData(masterDataUtils.addMasterData(shipmentDetailsResponse.getAdditionalDetails(), AdditionalDetails.class));
+        }
+        if(shipmentDetailsResponse.getCarrierDetails() != null) {
+            shipmentDetailsResponse.getCarrierDetails().setMasterData(masterDataUtils.addMasterData(shipmentDetailsResponse.getCarrierDetails(), CarrierDetails.class));
+        }
     }
 
 
 
     private void addAllUnlocationDatas (ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse) {
-        shipmentDetailsResponse.getAdditionalDetails().setUnlocationData(masterDataUtils.addUnlocationData(shipmentDetailsResponse.getAdditionalDetails(), AdditionalDetails.class, EntityTransferConstants.UNLOCATION_CODE));
-        shipmentDetailsResponse.getCarrierDetails().setUnlocationData(masterDataUtils.addUnlocationData(shipmentDetailsResponse.getCarrierDetails(), CarrierDetails.class, EntityTransferConstants.UNLOCATION_CODE));
+        if(shipmentDetailsResponse.getAdditionalDetails() != null) {
+            shipmentDetailsResponse.getAdditionalDetails().setUnlocationData(masterDataUtils.addUnlocationData(shipmentDetailsResponse.getAdditionalDetails(), AdditionalDetails.class, EntityTransferConstants.UNLOCATION_CODE));
+        }
+        if(shipmentDetailsResponse.getCarrierDetails() != null) {
+            shipmentDetailsResponse.getCarrierDetails().setUnlocationData(masterDataUtils.addUnlocationData(shipmentDetailsResponse.getCarrierDetails(), CarrierDetails.class, EntityTransferConstants.UNLOCATION_CODE));
+        }
     }
 
 
 
     private void addDedicatedMasterData (ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse) {
-        shipmentDetailsResponse.getCarrierDetails().setCarrierMasterData(masterDataUtils.carrierMasterData(shipmentDetailsResponse.getCarrierDetails(), CarrierDetails.class));
+        if(shipmentDetailsResponse.getCarrierDetails() != null) {
+            shipmentDetailsResponse.getCarrierDetails().setCarrierMasterData(masterDataUtils.carrierMasterData(shipmentDetailsResponse.getCarrierDetails(), CarrierDetails.class));
+        }
         shipmentDetailsResponse.setCurrenciesMasterData(masterDataUtils.currencyMasterData(shipmentDetails, ShipmentDetails.class));
     }
 

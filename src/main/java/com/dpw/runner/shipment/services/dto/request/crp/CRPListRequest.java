@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.dto.request.crp;
 
 import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
 
 import java.util.List;
@@ -15,6 +16,7 @@ import java.util.List;
 @Data
 public class CRPListRequest  implements IRunnerRequest {
     private String searchString;
+    @JsonProperty("isBillable")
     private boolean isBillable;
     private Pageable pageable;
 

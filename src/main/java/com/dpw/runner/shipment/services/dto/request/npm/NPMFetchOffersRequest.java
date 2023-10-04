@@ -19,7 +19,9 @@ import java.util.Map;
 public class NPMFetchOffersRequest extends CommonRequest implements IRunnerRequest {
     private String origin;
     private String destination;
+    @JsonProperty("POL")
     private String POL;
+    @JsonProperty("POD")
     private String POD;
     private String currency;
     private ExchangeRates exchange_rates;

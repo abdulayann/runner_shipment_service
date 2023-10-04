@@ -107,7 +107,12 @@ public interface IMasterDataService {
     DependentServiceResponse sendShipmentTask(CreateShipmentTaskRequest request);
     DependentServiceResponse addressList(Object request);
     DependentServiceResponse tenantNameByTenantId(Object request);
+    DependentServiceResponse retrieveTenantSettings();
+
+
     DependentServiceResponse fetchUnlocationOriginAndDestinationList(Object request);
     DependentServiceResponse fetchListUnlocationTransportModeBased(Object request);
     DependentServiceResponse fetchActivityMaster(Object request);
+    DependentServiceResponse retrieveTenant();
+    DependentServiceResponse fetchMultipleMasterData(Object request);
 }

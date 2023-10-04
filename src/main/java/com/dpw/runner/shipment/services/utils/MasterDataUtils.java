@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.utils;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
 import com.dpw.runner.shipment.services.dto.response.CustomerBookingResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
@@ -67,7 +68,9 @@ public class MasterDataUtils{
             String operator = Operators.IN.getValue();
             criteria.addAll(List.of(field, operator, List.of(itemValueList)));
             request.setCriteriaRequests(criteria);
-            V1DataResponse response = v1Service.fetchCarrierMasterData(request);
+            CarrierListObject carrierListObject = new CarrierListObject();
+            carrierListObject.setListObject(request);
+            V1DataResponse response = v1Service.fetchCarrierMasterData(carrierListObject);
 
             List<EntityTransferCarrier> carrierList = jsonHelper.convertValueToList(response.entities, EntityTransferCarrier.class);
             carrierList.forEach(carrier -> {
@@ -443,7 +446,7 @@ public class MasterDataUtils{
         criteria.addAll(List.of(field, operator, List.of(chargeCode)));
         V1DataResponse v1DataResponse = v1Service.fetchChargeCodeData(CommonV1ListRequest.builder().criteriaRequests(criteria).build());
         List<EntityTransferChargeType> list = jsonHelper.convertValueToList(v1DataResponse.entities, EntityTransferChargeType.class);
-        return list.stream().collect(Collectors.toMap(EntityTransferChargeType::getChargeCode, Function.identity()));
+        return list.stream().collect(Collectors.toMap(EntityTransferChargeType::getChargeCode, Function.identity(), (oldValue, newValue) -> newValue));
 
     }
 

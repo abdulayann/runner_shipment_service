@@ -27,6 +27,7 @@ public class CreateBookingModuleInV1 {
         private String NotifyPartyCode;
         private String NotifyPartyAddressCode;
         private String Carrier;
+        private String FlightNumber;
         private String VesselName;
         private String Voyage;
         private Long Packs;
@@ -107,11 +108,15 @@ public class CreateBookingModuleInV1 {
             private String EstimatedRevenueCurrency;
             private BigDecimal CurrentCostRate;
             private BigDecimal CurrentSellRate;
+            private String SellRateCurrency;
+            private String CostRateCurrency;
             private BigDecimal LocalTax;
             private String DebtorCode;
             private String CreditorCode;
             private String DebitorAddressCode;
             private String CreditorAddressCode;
+
+
         }
 
         @Data
@@ -125,6 +130,7 @@ public class CreateBookingModuleInV1 {
             private BigDecimal Weight;
             private String WeightUnit;
             private UUID ReferenceGuid;
+            private String CommodityGroup;
         }
 
         @Data
@@ -173,6 +179,7 @@ public class CreateBookingModuleInV1 {
             private String CommodityCode;
             private Boolean HazardousCheckBox;
             private String HsCode;
+            private String CommodityGroup;
         }
 
         @Data

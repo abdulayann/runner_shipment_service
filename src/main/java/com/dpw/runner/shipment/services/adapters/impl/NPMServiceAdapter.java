@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.adapters.impl;
 
 import com.dpw.runner.shipment.services.adapters.interfaces.INPMServiceAdapter;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.NPMConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.dao.interfaces.ICustomerBookingDao;
@@ -13,19 +14,17 @@ import com.dpw.runner.shipment.services.dto.response.ExchangeRates.ExchangeRates
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.CustomerBooking;
 import com.dpw.runner.shipment.services.entity.Packing;
+import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.exception.exceptions.NPMException;
 import com.dpw.runner.shipment.services.exception.response.NpmErrorResponse;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 
@@ -79,12 +78,13 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
         try {
             ListContractRequest listContractRequest = (ListContractRequest) commonRequestModel.getData();
             String url = npmBaseUrl + npmContracts;
+            log.info("Payload sent for event: {} with request payload: {}", IntegrationType.NPM_CONTRACT_FETCH, jsonHelper.convertToJson(listContractRequest));
             ResponseEntity<?> response = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJson(listContractRequest)), Object.class);
             return ResponseHelper.buildDependentServiceResponse(response.getBody(),0,0);
         } catch (HttpStatusCodeException ex) {
             NpmErrorResponse npmErrorResponse = jsonHelper.readFromJson(ex.getResponseBodyAsString(), NpmErrorResponse.class);
             log.error("NPM Fetch contract failed due to: {}", jsonHelper.convertToJson(npmErrorResponse));
-            throw new NPMException(npmErrorResponse.getErrorMessage());
+            throw new NPMException("Error from NPM while fetching contracts: " + npmErrorResponse.getErrorMessage());
         }
     }
 
@@ -93,12 +93,13 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
         try {
             UpdateContractRequest updateContractRequest = (UpdateContractRequest) commonRequestModel.getData();
             String url = npmBaseUrl + npmUpdateUrl;
+            log.info("Payload sent for event: {} with request payload: {}", IntegrationType.NPM_UPDATE_UTILISATION, jsonHelper.convertToJson(updateContractRequest));
             ResponseEntity<?> response = restTemplate.exchange(RequestEntity.patch(URI.create(url)).body(jsonHelper.convertToJson(updateContractRequest)), Object.class);
             return ResponseHelper.buildDependentServiceResponse(response.getBody(),0,0);
         } catch (HttpStatusCodeException ex) {
             NpmErrorResponse npmErrorResponse = jsonHelper.readFromJson(ex.getResponseBodyAsString(), NpmErrorResponse.class);
             log.error("NPM Update contract failed due to: {}", jsonHelper.convertToJson(npmErrorResponse));
-            throw new NPMException(npmErrorResponse.getErrorMessage());
+            throw new NPMException("Error from NPM while updating utilisation: " + npmErrorResponse.getErrorMessage());
         }
     }
 
@@ -106,13 +107,15 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
     public ResponseEntity<?> fetchOffers(CommonRequestModel req) throws Exception {
         String url = npmBaseUrl + npmOffersUrl;
         NPMFetchOffersRequestFromUI fetchOffersRequest = (NPMFetchOffersRequestFromUI) req.getData();
+        var request = createNPMOffersRequest(fetchOffersRequest);
         try {
-            ResponseEntity<?> response = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJson(createNPMOffersRequest(fetchOffersRequest))), Object.class);
+            log.info("Payload sent for event: {} with request payload: {}", IntegrationType.NPM_OFFER_FETCH_V2, jsonHelper.convertToJson(request));
+            ResponseEntity<?> response = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJson(request)), Object.class);
             return ResponseHelper.buildDependentServiceResponse(response.getBody(),0,0);
         } catch (HttpStatusCodeException ex) {
             NpmErrorResponse npmErrorResponse = jsonHelper.readFromJson(ex.getResponseBodyAsString(), NpmErrorResponse.class);
             log.error("NPM fetch offer failed due to: {}", jsonHelper.convertToJson(npmErrorResponse));
-            throw new NPMException(npmErrorResponse.getErrorMessage());
+            throw new NPMException("Error from NPM while fetching offers: " + npmErrorResponse.getErrorMessage());
         }
     }
 
@@ -121,27 +124,20 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
         try {
             String url = npmBaseUrl + npmOffersV8Url;
             NPMFetchOffersRequestFromUI fetchOffersRequest = (NPMFetchOffersRequestFromUI) req.getData();
-            ResponseEntity<?> response = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJson(createNPMOffersV8Request(fetchOffersRequest))), Object.class);
+            var request = createNPMOffersV8Request(fetchOffersRequest);
+            log.info("Payload sent for event: {} with request payload: {}", IntegrationType.NPM_OFFER_FETCH_V8, jsonHelper.convertToJson(request));
+            ResponseEntity<?> response = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJson(request)), Object.class);
             return ResponseHelper.buildDependentServiceResponse(response.getBody(),0,0);
         } catch (HttpStatusCodeException ex) {
             NpmErrorResponse npmErrorResponse = jsonHelper.readFromJson(ex.getResponseBodyAsString(), NpmErrorResponse.class);
             log.error("NPM fetch offers v8/offers failed due to: {}", jsonHelper.convertToJson(npmErrorResponse));
-            throw new NPMException(npmErrorResponse.getErrorMessage());
+            throw new NPMException("Error from NPM while fetching offers: " + npmErrorResponse.getErrorMessage());
         }
 
     }
 
     private String getCurrencyCode(String countryCode)  {
-        ExchangeRatesRequest exchangeRatesRequest = ExchangeRatesRequest.builder().country_code(Arrays.asList(countryCode)).build();
-        try {
-            var exchangeRatesResponse = restTemp.exchange(RequestEntity.post(URI.create(exchangeRateUrl)).body(jsonHelper.convertToJson(exchangeRatesRequest)), ExchangeRatesResponse.class);
-            if(exchangeRatesResponse.getBody() != null && exchangeRatesResponse.getBody().getData() != null && !exchangeRatesResponse.getBody().getData().isEmpty())
-                return exchangeRatesResponse.getBody().getData().get(0).getCurrency_code();
-
-        } catch(Exception e)  {
-            log.error("Exchange Rates API failed due to: " + e.getMessage());
-        }
-        return null;
+        return UserContext.getUser().CompanyCurrency;
     }
 
     private NPMFetchOffersRequest createNPMOffersRequest(NPMFetchOffersRequestFromUI request) {
@@ -209,8 +205,8 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
     private NPMFetchOffersRequest.ContractDetails createContractDetails(NPMFetchOffersRequestFromUI request) {
         if(request.getContractsInfo() == null) return null;
         return NPMFetchOffersRequest.ContractDetails.builder()
-                .contracts(Collections.singletonList(request.getContractsInfo() == null? null:request.getContractsInfo().getContractId()))
-                .company_code(null)
+                .contracts(Objects.isNull(request.getContractsInfo().getContractId()) ? Arrays.asList() : Arrays.asList(request.getContractsInfo().getContractId()))
+                .company_code(request.getContractsInfo().getCustomerOrgId())
                 .build();
     }
 
@@ -237,6 +233,12 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
                     c -> createLoadInfoFromContainers(request, c, offerType)).collect(Collectors.toList()));
             result.addAll(packs.stream().filter(Objects::nonNull).map(
                     p -> createLoadInfoFromPacks(request, p, offerType)).collect(Collectors.toList()));
+
+            if((request.getPacks() == null || request.getPacks().size() == 0)
+                    && (NPMConstants.AIR.equals(request.getModeOfTransport())  || NPMConstants.LCL.equals(request.getCargoType())))
+            {
+                 result.add(createLoadInfoForEmptyPacksList(request));
+            }
             return result;
         }
 
@@ -278,6 +280,22 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
         }
 
         return result;
+    }
+
+    private NPMFetchOffersRequest.LoadInformation createLoadInfoForEmptyPacksList(NPMFetchOffersRequestFromUI request) {
+        return NPMFetchOffersRequest.LoadInformation.builder()
+                .load_detail(NPMFetchOffersRequest.LoadDetail.builder()
+                        .load_type(request.getCargoType())
+                        .cargo_type(NPMConstants.ANY)
+                        .product_category_code(NPMConstants.ANY)
+                        .build())
+                .load_attributes(NPMFetchOffersRequest.LoadAttributes.builder()
+                        .volume(request.getVolume())
+                        .volume_uom(request.getVolume_uom())
+                        .weight(request.getWeight())
+                        .weight_uom(request.getWeight_uom())
+                        .build())
+                .build();
     }
 
     private NPMFetchOffersRequest.LoadInformation createLoadInfoFromPacks(NPMFetchOffersRequestFromUI request, NPMFetchOffersRequestFromUI.Pack p,

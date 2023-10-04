@@ -300,4 +300,14 @@ public class MasterDataImpl implements IMasterDataService {
     public ResponseEntity<?> retrieveById(CommonRequestModel commonRequestModel) {
         return null;
     }
+
+    @Override
+    public ResponseEntity<?> retrieveTenantSettings() {
+        return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().retrieveTenantSettings());
+    }
+
+    @Override
+    public ResponseEntity<?> retrieveTenant() {
+        return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().retrieveTenant());
+    }
 }

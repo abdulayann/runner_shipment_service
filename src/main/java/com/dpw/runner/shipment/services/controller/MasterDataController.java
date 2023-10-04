@@ -943,4 +943,21 @@ public class MasterDataController {
         }
         return (ResponseEntity<DependentServiceResponse>) ResponseHelper.buildFailedResponse(responseMsg);
     }
+
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = ShipmentConstants.LIST_SUCCESSFUL),
+            @ApiResponse(code = 404, message = Constants.NO_DATA, response = DependentServiceResponse.class)
+    })
+    @PostMapping(MasterDataConstants.TENANT_SETTINGS + MasterDataConstants.RETRIEVE_TENANT_SETTINGS)
+    public ResponseEntity<DependentServiceResponse> tenantSettings() {
+        String responseMsg;
+        try {
+            return (ResponseEntity<DependentServiceResponse>) masterDataService.retrieveTenantSettings();
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+        }
+        return (ResponseEntity<DependentServiceResponse>) ResponseHelper.buildFailedResponse(responseMsg);
+    }
 }

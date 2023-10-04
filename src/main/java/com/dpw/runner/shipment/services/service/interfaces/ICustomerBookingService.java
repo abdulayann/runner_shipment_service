@@ -18,4 +18,5 @@ public interface ICustomerBookingService {
     ResponseEntity<?> delete(CommonRequestModel commonRequestModel);
 
     ResponseEntity<?> retrieveById(CommonRequestModel commonRequestModel);
+    ResponseEntity<?> checkCreditLimitFromFusion(CommonRequestModel commonRequestModel) throws Exception;
 }

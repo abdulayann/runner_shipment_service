@@ -17,6 +17,7 @@ public class MultiFormatLocalDateTimeConverter implements Converter<String, Loca
         formatters.add(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
         formatters.add(DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss"));
         formatters.add(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss"));
+        formatters.add(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS"));
         // Add more formats as needed
     }
 

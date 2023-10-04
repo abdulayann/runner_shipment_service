@@ -61,6 +61,8 @@ public class PlatformToRunnerCustomerBookingRequest implements IRunnerRequest {
     private BigDecimal chargeable;
     private String chargeableUnit;
     private String contractId;
+    private String contractStatus;
+    private Boolean isSingleUsageContract;
     @JsonProperty("containers")
     private List<BookingContainerRequest> containersList;
     @JsonProperty("packs")
@@ -69,4 +71,5 @@ public class PlatformToRunnerCustomerBookingRequest implements IRunnerRequest {
     private List<BookingRoutingsRequest> routingList;
     @JsonProperty("charges")
     private List<PlatformBookingChargesRequest> bookingCharges;
+    private String serviceMode;
 }

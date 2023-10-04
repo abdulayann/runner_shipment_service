@@ -11,8 +11,11 @@ public class CustomerBookingConstants {
     public static final String CREATE_SUCCESSFUL = "Successful Customer Booking Data Creation";
     public static final String CRP_LIST = "/external/crp-list";
     public static final String CRP_RETRIEVE = "/external/crp-retrieve";
+    public static final String FUSION_CHECK_CREDIT_LIMIT = "/external/fusion-credit-limit";
     public static final String LIST_SUCCESSFUL = "Successful CRP List";
     public static final String RETRIEVE_SUCCESSFUL = "Successfully retrieved data";
+    public static final String CREDIT_LIMIT_RETRIEVE_SUCCESSFUL = "Successfully retrieved credit limit";
+    public static final String CREDIT_LIMIT_RETRIEVE_ERROR = "Error occurred while trying to fetch credit limit from fusion.";
     public static final String UPDATE_SUCCESSFUL = "Successful Customer Booking Data Update";
     public static final String DELETE_SUCCESSFUL = "Successful Customer Booking Delete";
     public static final String RETRIEVE_BY_ID_SUCCESSFUL = "Successful Customer Booking Data Retrieval By Id";
@@ -30,4 +33,8 @@ public class CustomerBookingConstants {
     public static final String DISABLED = "DISABLED";
     public static final String UNIT = "unit";
     public static final String YES = "YES";
+    public static final String TENANT_ID = "TenantId";
+    public static final String RUNNER_FUSION = "Runner";
+    public static final String GCR_FUSION = "GCR";
+
 }

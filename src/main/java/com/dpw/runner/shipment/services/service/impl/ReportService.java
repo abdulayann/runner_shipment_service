@@ -306,7 +306,7 @@ public class ReportService implements IReportService {
             return pdfByte_Content;
         }
 
-        Long id = (Long) dataRetrived.getOrDefault(ReportConstants.ID, null);
+//        Long id = (Long) dataRetrived.getOrDefault(ReportConstants.ID, null); TODO- Removed this code for now, not in use
 
 
         if (reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.PACKING_LIST) || reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.FREIGHT_CERTIFICATION) || reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.PRE_ALERT) ||
@@ -530,7 +530,7 @@ public class ReportService implements IReportService {
                 if(shipmentSettingsDetails.getTenantId() == 1) {
                     admin = shipmentSettingsDetails;
                 } else {
-                    admin = shipmentSettingsDetails;
+                    tenant = shipmentSettingsDetails;
                 }
             }
             return GetTemplateId(tenant, admin, key, hblType, objectType,

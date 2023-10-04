@@ -15,7 +15,7 @@ import java.util.List;
 @Builder
 public class UpdateContractRequest implements IRunnerRequest {
     private String contract_id;
-    private String contract_status;
+    private String contract_state;
     private String source;
     private String source_type;
     private Boolean is_alteration;

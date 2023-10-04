@@ -21,6 +21,9 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+
+import java.math.BigDecimal;
+import java.text.DecimalFormat;
 import java.util.*;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -249,5 +252,16 @@ public class CommonUtils {
                 return fileName;
             }
         };
+    }
+
+    public static double roundOffToTwoDecimalPlace(double number) {
+        DecimalFormat decimalFormat = new DecimalFormat("#.##");
+        return Double.parseDouble(decimalFormat.format(number));
+    }
+
+    public static String stringValueOf(Object o) {
+        if(o == null)
+            return null;
+        return o.toString();
     }
 }
