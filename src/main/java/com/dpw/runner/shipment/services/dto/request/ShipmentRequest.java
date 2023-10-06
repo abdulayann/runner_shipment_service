@@ -102,4 +102,5 @@ public class ShipmentRequest extends CommonRequest implements IRunnerRequest {
     public String goodsValueCurrency;
     public BigDecimal insuranceValue;
     public String InsuranceValueCurrency;
+    public String entryRefNo;
 }

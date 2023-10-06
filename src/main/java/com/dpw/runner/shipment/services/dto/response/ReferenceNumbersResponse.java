@@ -14,4 +14,5 @@ public class ReferenceNumbersResponse implements IRunnerResponse {
     private String type;
     private String referenceNumber;
     private Long shipmentId;
+    private Boolean isPortalEnable;
 }

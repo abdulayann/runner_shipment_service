@@ -13,6 +13,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
@@ -116,4 +117,5 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     public String InsuranceValueCurrency;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime shipmentCreatedOn;
+    private String entryRefNo;
 }
