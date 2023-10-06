@@ -339,4 +339,7 @@ public class ShipmentDetails extends MultiTenancy {
 
     @Column(name = "job_status")
     private String jobStatus;
+
+    @Column(name = "entry_ref_no")
+    private String entryRefNo;
 }

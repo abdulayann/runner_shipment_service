@@ -88,4 +88,7 @@ public class CarrierDetails extends MultiTenancy {
 
     @Column(name = "atd")
     private LocalDateTime atd;
+
+    @Column(name = "vessel_berthing_date")
+    private LocalDateTime vesselBerthingDate;
 }
