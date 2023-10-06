@@ -575,8 +575,7 @@ public class CustomerBookingService implements ICustomerBookingService {
                                         .doubleValue()));
                         pack.setWeightUnit(Constants.WEIGHT_UNIT_KG);
                     }
-                    if(pack.getPacks() != null)
-                        pack.setVolume(pack.getLength().multiply(pack.getWidth()).multiply(pack.getHeight()).multiply(BigDecimal.valueOf(pack.getPacks())));
+                    pack.setVolume(pack.getLength().multiply(pack.getWidth()).multiply(pack.getHeight()));
                     pack.setVolumeUnit(Constants.VOLUME_UNIT_M3);
                 } catch (Exception ex) {
                     String message = "ERROR Exception thrown while converting units";
