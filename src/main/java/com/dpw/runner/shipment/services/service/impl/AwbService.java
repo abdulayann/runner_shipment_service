@@ -28,6 +28,7 @@ import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.dpw.runner.shipment.services.utils.V1AuthHelper;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataRetrievalFailureException;
@@ -42,7 +43,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import java.math.BigDecimal;
+import java.sql.Timestamp;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
@@ -237,7 +240,6 @@ public class AwbService implements IAwbService {
         try {
             // fetch consolidation info
             ConsolidationDetails consolidationDetails = consolidationDetailsDao.findById(request.getConsolidationId()).get();
-
             // save awb details
             awb = awbDao.save(generateMawb(request, consolidationDetails));
             callV1Sync(awb);
@@ -310,9 +312,9 @@ public class AwbService implements IAwbService {
                 .awbShipmentInfo(generateMawbShipmentInfo(consolidationDetails, request))
                 .awbNotifyPartyInfo(generateMawbNotifyPartyinfo(consolidationDetails, request))
                 .awbRoutingInfo(generateMawbRoutingInfo(consolidationDetails, request))
+                .awbGoodsDescriptionInfo(generateMawbGoodsDescriptionInfo(consolidationDetails, request, awbPackingInfo))
                 .awbCargoInfo(generateMawbCargoInfo(consolidationDetails, request, awbPackingInfo))
                 .awbOtherInfo(generateMawbOtherInfo(consolidationDetails, request))
-                .awbGoodsDescriptionInfo(generateMawbGoodsDescriptionInfo(consolidationDetails, request))
                 .awbPackingInfo(awbPackingInfo)
                 .consolidationId(consolidationDetails.getId())
                 .build();
@@ -403,11 +405,16 @@ public class AwbService implements IAwbService {
         return awbCargoInfo;
     }
 
-    private List<AwbGoodsDescriptionInfo> generateMawbGoodsDescriptionInfo(ConsolidationDetails consolidationDetails, CreateAwbRequest request) {
+    private List<AwbGoodsDescriptionInfo> generateMawbGoodsDescriptionInfo(ConsolidationDetails consolidationDetails, CreateAwbRequest request, List<AwbPackingInfo> awbPackingList) {
         AwbGoodsDescriptionInfo awbGoodsDescriptionInfo = new AwbGoodsDescriptionInfo();
         awbGoodsDescriptionInfo.setEntityId(consolidationDetails.getId());
         awbGoodsDescriptionInfo.setEntityType(request.getAwbType());
         awbGoodsDescriptionInfo.setGrossWtUnit("KG");
+        awbGoodsDescriptionInfo.setGuid(UUID.randomUUID());
+        for (var awbPacking:awbPackingList) {
+            awbPacking.setAwbGoodsDescriptionInfoGuid(awbGoodsDescriptionInfo.getGuid());
+        }
+        awbGoodsDescriptionInfo.setAwbPackingInfo(awbPackingList);
         return Arrays.asList(awbGoodsDescriptionInfo);
     }
 
@@ -416,7 +423,7 @@ public class AwbService implements IAwbService {
         awbOtherInfo.setEntityId(consolidationDetails.getId());
         awbOtherInfo.setEntityType(request.getAwbType());
         // awbOtherInfo.setShipper(consolidationDetails.getSendingAgentName()); //missing
-        awbOtherInfo.setExecutedOn(LocalDateTime.now());
+        awbOtherInfo.setExecutedOn(jsonHelper.convertValue(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss").format(LocalDateTime.now()), LocalDateTime.class));
         return awbOtherInfo;
     }
 
@@ -430,7 +437,7 @@ public class AwbService implements IAwbService {
 
                 MawbHawbLink mawbHawblink = new MawbHawbLink();
                 mawbHawblink.setHawbId(awb.getId());
-                mawbHawblink.setHawbId(mawbId);
+                mawbHawblink.setMawbId(mawbId);
                 mawbHawbLinkDao.save(mawbHawblink);
             }
         }
@@ -475,10 +482,7 @@ public class AwbService implements IAwbService {
         ShipmentDetails shipmentDetails = shipmentDao.findById(request.getShipmentId()).get();
 
         // fetch all packings
-        ListCommonRequest listCommonRequest = constructListCommonRequest("shipmentId", request.getShipmentId(), "=");
-        Pair<Specification<Packing>, Pageable> pair = fetchData(listCommonRequest, Packing.class);
-        Page<Packing> packingPage = packingDao.findAll(pair.getLeft(), pair.getRight());
-        List<Packing> packings = packingPage.getContent();
+        List<Packing> packings = shipmentDetails.getPackingList();
 
         // Generate HAWB Number if restrictHBlGeneration && numberSequencing
         // shipmentDetails.setHouseBill(generateCustomizedBLNumber(shipmentDetails)); //TODO - implement logic to generate house bill
@@ -492,9 +496,9 @@ public class AwbService implements IAwbService {
                 .awbShipmentInfo(generateAwbShipmentInfo(shipmentDetails, request))
                 .awbNotifyPartyInfo(generateAwbNotifyPartyinfo(shipmentDetails, request))
                 .awbRoutingInfo(generateAwbRoutingInfo(shipmentDetails, request))
+                .awbGoodsDescriptionInfo(generateAwbGoodsDescriptionInfo(shipmentDetails, request, awbPackingInfo))
                 .awbCargoInfo(generateAwbCargoInfo(shipmentDetails, request, awbPackingInfo))
                 .awbOtherInfo(generateAwbOtherInfo(shipmentDetails, request))
-                .awbGoodsDescriptionInfo(generateAwbGoodsDescriptionInfo(shipmentDetails, request))
                 .awbPackingInfo(awbPackingInfo)
                 .shipmentId(shipmentDetails.getId())
                 .build();
@@ -605,11 +609,11 @@ public class AwbService implements IAwbService {
         awbOtherInfo.setEntityType(request.getAwbType());
         var shipperName = StringUtility.convertToString(shipmentDetails.getConsigner().getOrgData().get(PartiesConstants.FULLNAME));
         awbOtherInfo.setShipper(shipperName == null ? null : shipperName.toUpperCase());
-        awbOtherInfo.setExecutedOn(LocalDateTime.now());
+        awbOtherInfo.setExecutedOn(jsonHelper.convertValue(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss").format(LocalDateTime.now()), LocalDateTime.class));
         return awbOtherInfo;
     }
 
-    private List<AwbGoodsDescriptionInfo> generateAwbGoodsDescriptionInfo(ShipmentDetails shipmentDetails, CreateAwbRequest request) {
+    private List<AwbGoodsDescriptionInfo> generateAwbGoodsDescriptionInfo(ShipmentDetails shipmentDetails, CreateAwbRequest request, List<AwbPackingInfo> awbPackingList) {
         AwbGoodsDescriptionInfo awbGoodsDescriptionInfo = new AwbGoodsDescriptionInfo();
         awbGoodsDescriptionInfo.setEntityId(shipmentDetails.getId());
         awbGoodsDescriptionInfo.setEntityType(request.getAwbType());
@@ -618,6 +622,11 @@ public class AwbService implements IAwbService {
         awbGoodsDescriptionInfo.setPiecesNo(totalPacks);
         awbGoodsDescriptionInfo.setChargeableWt(shipmentDetails.getChargable() != null ?
                 AwbUtility.roundOffAirShipment((double) shipmentDetails.getChargable().doubleValue()) : null);
+        awbGoodsDescriptionInfo.setGuid(UUID.randomUUID());
+        for (var awbPacking: awbPackingList ) {
+            awbPacking.setAwbGoodsDescriptionInfoGuid(awbGoodsDescriptionInfo.getGuid());
+        }
+        awbGoodsDescriptionInfo.setAwbPackingInfo(awbPackingList);
         return Arrays.asList(awbGoodsDescriptionInfo);
     }
 
