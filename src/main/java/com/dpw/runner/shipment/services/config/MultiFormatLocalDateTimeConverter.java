@@ -18,6 +18,7 @@ public class MultiFormatLocalDateTimeConverter implements Converter<String, Loca
         formatters.add(DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss"));
         formatters.add(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss"));
         formatters.add(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS"));
+        formatters.add(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSz"));
         // Add more formats as needed
     }
 
@@ -36,6 +37,16 @@ public class MultiFormatLocalDateTimeConverter implements Converter<String, Loca
                 // Try the next format
             }
         }
+        // try with default
+        try {
+            LocalDateTime dateTime = LocalDateTime.parse(source);
+            // Assuming you want to convert to a fixed format
+            DateTimeFormatter fixedFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+            return LocalDateTime.parse(dateTime.format(fixedFormatter), fixedFormatter);
+        } catch (Exception ignored) {
+            // Try the next format
+        }
+
         throw new IllegalArgumentException("Invalid date-time format");
     }
 
