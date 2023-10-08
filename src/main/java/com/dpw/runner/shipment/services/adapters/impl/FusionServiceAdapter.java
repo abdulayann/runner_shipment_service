@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.adapters.impl;
 import com.dpw.runner.shipment.services.adapters.interfaces.IFusionServiceAdapter;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.dto.request.CheckCreditBalanceFusionRequest;
+import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import lombok.extern.slf4j.Slf4j;
@@ -36,10 +37,12 @@ public class FusionServiceAdapter implements IFusionServiceAdapter {
         CheckCreditBalanceFusionRequest request = (CheckCreditBalanceFusionRequest) requestModel.getData();
         String url = baseUrl + creditCheckUrlP100;
         try {
+            log.info("Payload sent for event: {} with request payload: {}", IntegrationType.FUSION_CREDIT_CHECK, jsonHelper.convertToJson(request));
             ResponseEntity<?> response = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJson(request)), Object.class);
+            log.info("Response received for event: {} with request payload: {}", IntegrationType.FUSION_CREDIT_CHECK, jsonHelper.convertToJson(response.getBody()));
             return ResponseHelper.buildDependentServiceResponse(response.getBody(), 0, 0);
         } catch (Exception ex) {
-            log.error("Fusion credit check failed due to: {}", jsonHelper.convertToJson(ex.getMessage()));
+            log.info("Error occurred for event: {} with error message: {}", IntegrationType.FUSION_CREDIT_CHECK, jsonHelper.convertToJson(ex.getMessage()));
             throw new RuntimeException("Error from Fusion while fetching credit limit: " + ex.getMessage());
         }
     }
