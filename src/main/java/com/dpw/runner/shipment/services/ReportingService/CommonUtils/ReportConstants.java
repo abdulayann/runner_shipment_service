@@ -32,6 +32,7 @@ public class ReportConstants
     public static final String PORT_OF_FINAL_DESTINATION_COUNTRY = "PortofFinalDestinationCountry";
     public static final String PLACE_OF_DELIVERY = "PlaceOfDelivery";
     public static final String PLACE_oF_DELIVERY = "PlaceofDelivery";
+    public static final String BL_PLACE_OF_DELIVERY = "BL_PlaceOfDelivery";
     public static final String FINAL_DESTINATION = "FinalDestination";
     public static final String CARGO_GROSS_VOLUME = "CargoGrossVolume";
     public static final String CARGO_GROSS_VOLUME_UNIT = "CargoGrossVolumeUnit";
@@ -47,6 +48,7 @@ public class ReportConstants
 
     public static final String ALL_CONTAINERS = "All_Containers";
     public static final String REFERENCE_NUMBER = "ReferenceNumber";
+    public static final String REFERENCE_NO = "ReferenceNo";
     public static final String ORIGIN = "Origin";
     public static final String ORIGIN_NAME = "OriginName";
     public static final String ORIGIN_COUNTRY = "OriginCountry";
@@ -56,9 +58,13 @@ public class ReportConstants
     public static final String ETD_CAPS = "ETD";
     public static final String ATA = "Ata";
     public static final String ATD = "Atd";
+    public static final String ATD_MDY = "AtdMDY";
+    public static final String ATD_DMY = "AtdDMY";
+    public static final String ATD_DMMY = "AtdDMMY";
     public static final String INCO_TERM = "IncoTerm";
     public static final String CHARGEABLE = "Chargeable";
     public static final String CHARGEABLE_UNIT = "ChargableUnit";
+    public static final String CHARGEABLE_AND_UNIT = "ChargableAndUnit";
     public static final String TRANSPORT_MODE = "TransportMode";
     public static final String TRANSPORT_MODE_DESCRIPTION = "TransportModeDescription";
     public static final String SHIPMENT_TYPE_DESCRIPTION = "ShipmentTypeDescription";
@@ -74,6 +80,7 @@ public class ReportConstants
     public static final String GROSS_VOLUME = "GrossVolume";
     public static final String GROSS_VOLUME_UNIT = "GrossVolumeUnit";
     public static final String CLIENT_CONTACT_PERSON = "ClientContactPerson";
+    public static final String CLIENT_ADRS = "ClientAdrs";
     public static final String CLIENT_ADDRESS_1 = "ClientAddress1";
     public static final String CLIENT_ADDRESS_PHONE = "ClientAddressPhone";
     public static final String CLIENT_ADDRESS_MOBILE = "ClientAddressMobile";
@@ -112,6 +119,9 @@ public class ReportConstants
     public static final String PAID_PLACE_COUNTRY = "PaidPlaceCountry";
     public static final String PAID_PLACE_COUNTRY_NAME = "PaidPlaceCountryName";
     public static final String DATE_OF_ISSUE = "DateOfIssue";
+    public static final String DATE_OF_ISSUE_MDY = "DateofIssueMDY";
+    public static final String DATE_OF_ISSUE_DMY = "DateofIssueDMY";
+    public static final String DATE_OF_ISSUE_DMMY = "DateofIssueDMMY";
     public static final String DATE_TIME = "DateTime";
     public static final String HSN_NUMBER = "HsnNumber";
     public static final String ESTIMATED_READY_FOR_PICKUP = "EstimatedReadyForPickup";
@@ -136,6 +146,7 @@ public class ReportConstants
     public static final String CLIENT = "Client";
     public static final String CLIENT_NAME = "ClientName";
     public static final String EXPORT_BROKER = "ExportBroker";
+    public static final String EXPORT_REFERENCE_NUMBER = "ExportReferenceNumber";
     public static final String IMPORT_BROKER = "ImportBroker";
     public static final String CONSIGNEE_LOCAL_NAME = "ConsigneeLocalName";
     public static final String CONSIGNER_LOCAL_NAME = "ConsignerLocalName";
@@ -153,6 +164,7 @@ public class ReportConstants
     public static final String ZIPCODE = "Zip";
     public static final String ZIP_POST_CODE = "ZipPostCode";
     public static final String NOTIFY_PARTY = "NotifyParty";
+    public static final String NOTIFY_PARTY_CAPS = "NotifyPartyInCaps";
     public static final String NOTIFY_PARTY_AIR = "NotifyPartyAir";
     public static final String NOTIFY_PARTY_ADDRESS = "NotifyPartyAddress";
     public static final String OPEN_DATE = "OpenDate";
@@ -163,9 +175,15 @@ public class ReportConstants
     public static final String FLIGHT_NUMBER = "FlightNo";
     public static final String DATE_OF_DEPARTURE = "DateOfDeparture";
     public static final String DELIVERY_ADDRESS = "DeliveryAddress";
+    public static final String DELIVERY_TO_EMAIL_ADDRESS = "DeliveryToEmailAddress";
+    public static final String DELIVERY_PARTY = "DeliveryParty";
+    public static final String DELIVERY_PHONE = "DeliveryPhone";
+    public static final String DELIVERY_FAX = "DeliveryFax";
     public static final String SYSTEM_DATE = "SysDate";
     public static final String CURRENT_DATE = "CurrentDate";
     public static final String ONBOARD_DATE = "OnBoardDate";
+    public static final String ONBOARD_TYPE = "OnBoardType";
+    public static final String ONBOARD_TYPE_DATE = "OnBoardTypeDate";
     public static final String PLACE_OF_RECEIPT = "PlaceOfReceipt";
     public static final String PLACE_oF_RECEIPT = "PlaceofReceipt";
     public static final String DESCRIPTION = "Description";
@@ -190,12 +208,21 @@ public class ReportConstants
     public static final String NET_WEIGHT = "NetWeight";
     public static final String VOLUME_WEIGHT = "VolumeWeight";
     public static final String V_WEIGHT_AND_UNIT = "VWeightAndUnit";
+    public static final String V_WEIGHT_AND_UNIT_PACKS = "VWeightAndUnitPacks";
     public static final String WEIGHT_AND_UNIT = "WeightAndUnit";
+    public static final String WEIGHT_AND_UNIT_PACKS = "WeightAndUnitPacks";
     public static final String VOLUME_AND_UNIT = "VolumeAndUnit";
+    public static final String VOLUME_AND_UNIT_PACKS = "VolumeAndUnitPacks";
     public static final String TOTAL_PACKS = "TotalPacks";
     public static final String TOTAL_PACKS_TYPE = "TotalPacksType";
     public static final String TOTAL_VOLUME_ = "TotalVolume";
     public static final String TOTAL_WEIGHT_ = "TotalWeight";
+    public static final String BL_WEIGHT = "BL_Weight";
+    public static final String BL_WEIGHT_UNIT = "BL_WeightUnit";
+    public static final String BL_NETWEIGHT = "BL_NetWeight";
+    public static final String BL_NETWEIGHT_UNIT = "BL_NetWeightUnit";
+    public static final String BL_DELIVERYAGENT = "BL_DeliveryAgent";
+    public static final String BL_DELIVERYAGENT_ADDRESS = "BL_DeliveryAgentAddress";
     public static final String TOTAL_PCS = "ToatalPcs";
     public static final String UOTW = "UOTW";
     public static final String UOTV = "UOTV";
@@ -236,8 +263,12 @@ public class ReportConstants
     public static final String EXPORT_AGENT = "ExportAgent";
     public static final String IMPORT_AGENT = "ImportAgent";
     public static final String RECEIVING_AGENT_NAME = "ReceivingAgentName";
+    public static final String RECEIVING_AGENT_ADDRESS = "ReceivingAgentAddress";
+    public static final String RECEIVING_AGENT_ADDRESS_FREE_TEXT = "ReceivingAgentAddressFreeText";
     public static final String RECEIVING_AGENT_LOCAL_NAME = "ReceivingAgentLocalName";
     public static final String SENDING_AGENT_NAME = "SendingAgentName";
+    public static final String SENDING_AGENT_ADDRESS = "SendingAgentAddress";
+    public static final String SENDING_AGENT_ADDRESS_FREE_TEXT = "SendingAgentAddressFreeText";
     public static final String SENDING_AGENT_LOCAL_NAME = "SendingAgentLocalName";
     public static final String CONSOL_VESSEL_NAME = "ConsolVesselName";
     public static final String CONSOL_VOYAGE = "ConsolVoyage";
@@ -252,6 +283,7 @@ public class ReportConstants
     public static final String CONSOL_ATD = "ConsolAtd";
     public static final String CONSOL_DATE_OF_DEPARTURE = "ConsolDateOfDeparture";
     public static final String CONSOL_REFERENCE_NUMBER = "ConsolReferenceNumber";
+    public static final String CONSOL_NUMBER = "ConsolNumber";
     public static final String LAST_FOREIGN_PORT = "LastForeignPort";
     public static final String LAST_FORGEIN_PORT_COUNTRY = "LastForeignPortCountry";
     public static final String DEST_PORT_NAME = "DestPortName";
@@ -276,6 +308,9 @@ public class ReportConstants
     public static final String TENANT_CITY = "TenantCity";
     public static final String TENANT_STATE = "TenantState";
     public static final String TENANT_FAX = "TenantFax";
+    public static final String TENANT_GSTIN = "TenantGSTIN";
+    public static final String TENANT_PAN_NUMBER = "TenantPanNumber";
+    public static final String TENANT_COMPANY_REG_NUMBER = "TenantCompanyRegNumber";
     public static final String TENANT_COUNTRY = "TenantCountry";
     public static final String TENANT_COUNTRY_PHONE = "TenantContactPhone";
     public static final String TENANT_MOBILE = "TenantMobile";
@@ -376,6 +411,7 @@ public class ReportConstants
     public static final String PACKS_UNIT_DESC = "PacksUnitDescription";
 
     public static final String DESCRIPTION_CAPS = "DescriptionInCaps";
+    public static final String DESCRIPTION_ORIGINAL = "DescriptionOriginal";
     public static final String POL_CODE = "POLCode";
     public static final String POD_CODE = "PODCode";
     public static final String BL_DELIVERY_AGENT_ADDRESS = "BL_DeliveryAgentAddress";
@@ -384,6 +420,7 @@ public class ReportConstants
 
     //HAWB
     public static final String AGENT = "Agent";
+    public static final String AGENT_REFERENCE = "AgentReference";
     public static final String SHIPPER_ADDRESS = "ShipperAddress";
     public static final String CONSIGNEE_ADDRESS = "ConsigneeAddress";
     public static final String NOTIFY_ADDRESS = "NotifyAddress";
@@ -522,6 +559,7 @@ public class ReportConstants
     public static final String SHIP_TRUCK_DRIVER_PROOF = "ShipTruckDriverProof";
     public static final String CONS_TRUCK_DRIVER_PROOF = "ConsTruckDriverProof";
     public static final String SHIPMENT_CAN_DOCUMENT = "CAN";
+    public static final String CAN_NUMBER = "CANNumber";
     public static final String CUSTOMS_INSTRUCTIONS = "CustomsInstructions";
     public static final String CUSTOM_HOUSE_AGENT = "Customs House Agent";
     public static final String AIRWAY_BILL = "AirwayBill";
@@ -531,6 +569,7 @@ public class ReportConstants
     public static final String PROOF_OF_DELIVERY = "ProofOfDelivery";
     public static final String PICKUP_ORDER = "PickupOrder";
     public static final String CSR = "CSR";
+    public static final String ERN = "ERN";
     public static final String SHIPPING_REQUEST = "ShippingRequest";
     public static final String SHIPPING_REQUEST_AIR = "ShippingRequestAir";
     public static final String IMPORT_SHIPMENT_MANIFEST = "ImportShipmentManifest";
@@ -578,7 +617,44 @@ public class ReportConstants
     public static final String PACK_COUNT = "PackCount";
     public static final String LIST_OF_PACKINGS = "ListOfPackings";
     public static final String COMMODITIES = "Commodities";
+    public static final String COMMODITY_NAME = "CommodityName";
     public static final String PRINT_DATE= "PrintDate";
+
+    public static final String IS_IMPORT = "IsImport";
+    public static final String SHIPPED_ON_BOARD = "ShippedOnBoard";
+    public static final String  ENTRY_REF_NUMBER = "EntryReferenceNumber";
+    public static final String  MOBILE = "Mobile";
+    public static final String  FAX = "Fax";
+    public static final String IMP = "IMP";
+    public static final String RELEASE_TYPE = "ReleaseType";
+    public static final String IS_ORIGINAL = "IsOriginal";
+    public static final String DO_NO = "DONo";
+    public static final String MESSERS = "Messers";
+    public static final String ATTENTION = "Attention";
+    public static final String V_WEIGHT_AND_UNIT_AIR = "VWeightAndUnitAir";
+    public static final String WEIGHT_AND_UNIT_AIR = "WeightAndUnitAir";
+    public static final String VOLUME_AND_UNIT_AIR = "VolumeAndUnitAir";
+
+    public static final String STATUS = "Status";
+    public static final String PLANNED = "Planned";
+    public static final String CONFIRMED = "Confirmed";
+    public static final String CLI = "ClientAdrs";
+    public static final String CONTAINER_SUMMARY = "ContainerSummary";
+    public static final String SHIPPER_REF_NO = "ShipperRefNo";
+    public static final String PICKUP_ORDER_CONTACT_PERSON = "PickUpOrderContactPerson";
+    public static final String EMPTY_STRING = "";
+    public static final String VESSEL_BERTHING_DATE = "VesselBerthingDate";
+    public static final String UCR_REFERENCE = "UCRReference";
+    public static final String EMPTY_TRUCK_IN_DATE = "EmptyTruckInDate";
+    public static final String LOADED_TRUCK_GATE_OUT_DATE = "LoadedTruckGateOutDate";
+    public static final String PICKUP_PORT_TRANSPORT_ADVISED = "PickupPortTransportAdvised";
+    public static final String LOADED_DATE = "LoadedDate";
+    public static final String ACTUAL_DELIVERY = "ActualDelivery";
+    public static final String ORG_FULL_NAME = "OrgFullName";
+    public static final String CONTACT_PERSON = "ContactPerson";
+    public static final String PRE_CARRIAGE_MODE = "Precarriagemode";
+    public static final String PRE_CARRIAGE_VESSEL_VOYAGE = "Precarriagevesselvoyage";
+
 
     // APis
     public static final String REPORT_API_HANDLE = "/api/v2/report";

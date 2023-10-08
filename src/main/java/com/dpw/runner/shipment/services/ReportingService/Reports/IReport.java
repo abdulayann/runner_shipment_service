@@ -1035,18 +1035,18 @@ public abstract class IReport {
     }
 
 
-    private static List<String> getPartyAddress(PartiesModel party) {
+    private List<String> getPartyAddress(PartiesModel party) {
         if(party != null && party.getAddressData() != null) {
             return ReportHelper.getOrgAddress(
-                    party.getAddressData().get(COMPANY_NAME).toString(),
-                    party.getAddressData().get(ADDRESS1).toString(),
-                    party.getAddressData().get(ADDRESS2).toString(),
+                    getValueFromMap(party.getAddressData(),COMPANY_NAME),
+                    getValueFromMap(party.getAddressData(),ADDRESS1),
+                    getValueFromMap(party.getAddressData(),ADDRESS2),
                     ReportHelper.getCityCountry(
-                            party.getAddressData().get(CITY).toString(),
-                            party.getAddressData().get(COUNTRY).toString()
+                            getValueFromMap(party.getAddressData(),CITY),
+                            getValueFromMap(party.getAddressData(),COUNTRY)
                     ),
-                    party.getAddressData().get(ZIP_POST_CODE).toString(),
-                    party.getAddressData().get(STATE).toString()
+                    getValueFromMap(party.getAddressData(),ZIP_POST_CODE),
+                    getValueFromMap(party.getAddressData(),STATE)
             );
         }
 
