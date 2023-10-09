@@ -1,13 +1,16 @@
 package com.dpw.runner.shipment.services.syncing.Entity;
 
+import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
 import java.math.BigDecimal;
+import java.util.UUID;
 
 @Data
-public class PackingRequestV2 {
-
+public class PackingRequestV2 implements IRunnerRequest {
+    @JsonProperty("Guid")
+    private UUID Guid;
     @JsonProperty("OriginName")
     private String OriginName;
     @JsonProperty("Chargeable")
@@ -110,4 +113,8 @@ public class PackingRequestV2 {
     private BigDecimal Width;
     @JsonProperty("WidthUnit")
     private String WidthUnit;
+    @JsonProperty("ShipmentGuid")
+    private UUID ShipmentGuid;
+    @JsonProperty("ConsolidationGuid")
+    private UUID ConsolidationGuid;
 }

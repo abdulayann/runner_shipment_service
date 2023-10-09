@@ -11,6 +11,8 @@ import com.dpw.runner.shipment.services.dto.response.ELDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.EventsResponse;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.impl.EventService;
+import com.dpw.runner.shipment.services.syncing.Entity.ElDetailsRequestV2;
+import com.dpw.runner.shipment.services.syncing.Entity.EventsRequestV2;
 import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
 import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
@@ -74,7 +76,7 @@ public class EventsController {
         CommonGetRequest request = CommonGetRequest.builder().id(id).build();
         try {
             ResponseEntity<RunnerResponse<EventsResponse>> event = (ResponseEntity<RunnerResponse<EventsResponse>>) eventService.retrieveById(CommonRequestModel.buildRequest(request));
-            return  ResponseEntity.ok(PartialFetchUtils.fetchPartialData(event,includeColumns));
+            return ResponseEntity.ok(PartialFetchUtils.fetchPartialData(event, includeColumns));
         } catch (Exception ex) {
             System.out.println(ex.toString());
         }
@@ -94,5 +96,22 @@ public class EventsController {
             log.error(responseMsg, e);
         }
         return (ResponseEntity<RunnerResponse>) ResponseHelper.buildFailedResponse(responseMsg);
+    }
+
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = ShipmentConstants.SHIPMENT_SYNC_SUCCESSFUL),
+            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
+    })
+    @PostMapping(ApiConstants.SYNC)
+    public ResponseEntity<?> syncEventsToService(@RequestBody @Valid EventsRequestV2 request) {
+        String responseMsg = "failure executing :(";
+        try {
+            return eventService.V1EventsCreateAndUpdate(CommonRequestModel.buildRequest(request));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : "Error syncing provided Events";
+            log.error(responseMsg, e);
+        }
+        return ResponseHelper.buildFailedResponse(responseMsg);
     }
 }

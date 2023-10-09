@@ -1,12 +1,16 @@
 package com.dpw.runner.shipment.services.syncing.Entity;
 
+import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
 import java.math.BigDecimal;
+import java.util.UUID;
 
 @Data
-public class ElDetailsRequestV2 {
+public class ElDetailsRequestV2 implements IRunnerRequest {
+    @JsonProperty("Guid")
+    private UUID Guid;
     @JsonProperty("ShipmentId")
     private Long ShipmentId; //int64
     @JsonProperty("ElNumber")
@@ -29,4 +33,6 @@ public class ElDetailsRequestV2 {
     private Boolean Partition;
     @JsonProperty("PartitionSeqNumber")
     private Integer PartitionSeqNumber; // int32
+    @JsonProperty("ShipmentGuid")
+    private UUID ShipmentGuid;
 }
