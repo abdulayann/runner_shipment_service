@@ -17,6 +17,7 @@ import com.dpw.runner.shipment.services.utils.V1AuthHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
@@ -34,7 +35,6 @@ public class V1ServiceImpl implements IV1Service {
 
     private static final Logger log = LoggerFactory.getLogger(V1ServiceImpl.class);
 
-    @Autowired
     private RestTemplate restTemplate;
 
     @Value("${v1service.url.base}${v1service.url.customerBooking}")
@@ -218,6 +218,11 @@ public class V1ServiceImpl implements IV1Service {
 
     @Autowired
     private JsonHelper jsonHelper;
+
+    @Autowired
+    public V1ServiceImpl(@Qualifier("restTemplateForV1") RestTemplate restTemplate) {
+        this.restTemplate = restTemplate;
+    }
     @Override
     public ResponseEntity<?> createBooking(CustomerBooking customerBooking) {
         try {
