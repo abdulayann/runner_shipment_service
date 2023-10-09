@@ -16,6 +16,7 @@ import com.dpw.runner.shipment.services.utils.V1AuthHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpStatus;
@@ -33,9 +34,11 @@ import static com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil.cre
 public class V1ServiceImpl implements IV1Service {
 
     private static final Logger log = LoggerFactory.getLogger(V1ServiceImpl.class);
-
-    @Autowired
     private RestTemplate restTemplate;
+
+    public V1ServiceImpl(@Qualifier("restTemplateForV1Service") RestTemplate restTemplate) {
+        this.restTemplate = restTemplate;
+    }
 
     @Value("${v1service.url.base}${v1service.url.customerBooking}")
     private String CUSTOMER_BOOKING_URL;
@@ -227,6 +230,7 @@ public class V1ServiceImpl implements IV1Service {
 
     @Autowired
     private JsonHelper jsonHelper;
+
     @Override
     public ResponseEntity<?> createBooking(CustomerBooking customerBooking) {
         try {
@@ -235,7 +239,7 @@ public class V1ServiceImpl implements IV1Service {
             HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
             log.info("Payload sent for event: {} with request payload: {}", IntegrationType.V1_SHIPMENT_CREATION, jsonHelper.convertToJson(request));
             return this.restTemplate.postForEntity(this.CUSTOMER_BOOKING_URL, entity, V1ShipmentCreationResponse.class, new Object[0]);
-        }catch (HttpClientErrorException | HttpServerErrorException ex) {
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
             throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
         } catch (Exception exception) {
             throw new V1ServiceException(exception.getMessage());
@@ -314,10 +318,9 @@ public class V1ServiceImpl implements IV1Service {
             CarrierListObject req = jsonHelper.convertValue(request, CarrierListObject.class);
             Object requestCriteria = req.getListObject();
             HttpEntity<V1DataResponse> entity = new HttpEntity(requestCriteria, V1AuthHelper.getHeaders());
-            if(req.getListObject() != null && req.getType() != null && (req.getType().equals(Constants.CONSOLIDATION_TYPE_AGT) || req.getType().equals(Constants.CONSOLIDATION_TYPE_CLD))) {
+            if (req.getListObject() != null && req.getType() != null && (req.getType().equals(Constants.CONSOLIDATION_TYPE_AGT) || req.getType().equals(Constants.CONSOLIDATION_TYPE_CLD))) {
                 masterDataResponse = this.restTemplate.postForEntity(this.CARRIER_MASTER_DATA_URL, entity, V1DataResponse.class, new Object[0]);
-            }
-            else {
+            } else {
                 masterDataResponse = this.restTemplate.postForEntity(this.CARRIER_MASTER_DATA_ORG_REF_FILTER_URL, entity, V1DataResponse.class, new Object[0]);
             }
             log.info("Token time taken in getCarrierMasterData() function " + (System.currentTimeMillis() - time));

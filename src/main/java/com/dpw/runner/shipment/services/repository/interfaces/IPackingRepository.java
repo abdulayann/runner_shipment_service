@@ -8,14 +8,23 @@ import org.springframework.data.jpa.domain.Specification;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 public interface IPackingRepository extends MultiTenancyRepository<Packing> {
 
     List<Packing> findByShipmentId(Long shipmentId);
+
     default Optional<Packing> findById(Long id) {
         Specification<Packing> spec = (root, criteriaQuery, criteriaBuilder) -> criteriaBuilder.equal(root.get("id"), id);
         return findOne(spec);
     }
+
     List<Packing> findAll();
+
     Page<Packing> findAll(Specification<Packing> spec, Pageable pageable);
+
+    default Optional<Packing> findByGuid(UUID id) {
+        Specification<Packing> spec = (root, criteriaQuery, criteriaBuilder) -> criteriaBuilder.equal(root.get("guid"), id);
+        return findOne(spec);
+    }
 }

@@ -7,15 +7,20 @@ import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IEventDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.request.EventsRequest;
 import com.dpw.runner.shipment.services.dto.response.EventsResponse;
-import com.dpw.runner.shipment.services.entity.ELDetails;
-import com.dpw.runner.shipment.services.entity.Events;
+import com.dpw.runner.shipment.services.dto.response.EventsResponse;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IEventService;
+import com.dpw.runner.shipment.services.syncing.Entity.EventsRequestV2;
+import com.dpw.runner.shipment.services.syncing.Entity.EventsRequestV2;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
@@ -28,6 +33,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.interceptor.TransactionAspectSupport;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -52,6 +58,17 @@ public class EventService implements IEventService {
     @Autowired
     private AuditLogService auditLogService;
 
+    @Autowired
+    private ObjectMapper objectMapper;
+
+    @Autowired
+    private ModelMapper modelMapper;
+
+    @Autowired
+    private IShipmentDao shipmentDao;
+
+    @Autowired
+    private IConsolidationDetailsDao consolidationDao;
 
     @Transactional
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
@@ -263,4 +280,43 @@ public class EventService implements IEventService {
         return responseList;
     }
 
+    @Override
+    public ResponseEntity<?> V1EventsCreateAndUpdate(CommonRequestModel commonRequestModel) throws Exception {
+        EventsRequestV2 eventsRequestV2 = (EventsRequestV2) commonRequestModel.getData();
+        try {
+            Optional<Events> existingEvent = eventDao.findByGuid(eventsRequestV2.getGuid());
+            Events events = modelMapper.map(eventsRequestV2, Events.class);
+            if (existingEvent != null && existingEvent.isPresent()) {
+                events.setId(existingEvent.get().getId());
+                events.setEntityId(existingEvent.get().getEntityId());
+                events.setEntityType(existingEvent.get().getEntityType());
+            } else {
+                if (eventsRequestV2.getEntityType() != null
+                        && eventsRequestV2.getEntityType().equals("Shipment")
+                        && eventsRequestV2.getShipmentGuid() != null) {
+                    Optional<ShipmentDetails> shipmentDetails = shipmentDao.findByGuid(eventsRequestV2.getShipmentGuid());
+                    if (shipmentDetails.isPresent()) {
+                        events.setEntityId(shipmentDetails.get().getId());
+                        events.setEntityType(eventsRequestV2.getEntityType());
+                    }
+                }
+                if (eventsRequestV2.getConsolidationGuid() != null) {
+                    Optional<ConsolidationDetails> consolidationDetails = consolidationDao.findByGuid(eventsRequestV2.getConsolidationGuid());
+                    if (consolidationDetails.isPresent()) {
+                        events.setEntityId(consolidationDetails.get().getId());
+                        events.setEntityType(eventsRequestV2.getEntityType());
+                    }
+                }
+            }
+            events = eventDao.save(events);
+            EventsResponse response = objectMapper.convertValue(events, EventsResponse.class);
+            return ResponseHelper.buildSuccessResponse(response);
+        } catch (Exception e) {
+            String responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+            throw new RuntimeException(e);
+        }
+    }
 }

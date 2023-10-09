@@ -8,15 +8,19 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IELDetailsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.request.ELDetailsRequest;
 import com.dpw.runner.shipment.services.dto.request.ElNumbersRequest;
 import com.dpw.runner.shipment.services.dto.response.ELDetailsResponse;
-import com.dpw.runner.shipment.services.entity.CarrierDetails;
-import com.dpw.runner.shipment.services.entity.ELDetails;
+import com.dpw.runner.shipment.services.dto.response.PackingResponse;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IELDetailsService;
+import com.dpw.runner.shipment.services.syncing.Entity.ElDetailsRequestV2;
+import com.dpw.runner.shipment.services.syncing.Entity.PackingRequestV2;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
@@ -29,6 +33,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.interceptor.TransactionAspectSupport;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -52,11 +57,20 @@ public class ELDetailsService implements IELDetailsService {
     @Autowired
     private AuditLogService auditLogService;
 
+    @Autowired
+    private ObjectMapper objectMapper;
+
+    @Autowired
+    private ModelMapper modelMapper;
+
+    @Autowired
+    private IShipmentDao shipmentDao;
+
     @Transactional
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
         String responseMsg;
         ELDetailsRequest request = (ELDetailsRequest) commonRequestModel.getData();
-        if(request == null) {
+        if (request == null) {
             log.debug("Request is empty for EL Details create with Request Id {}", LoggerHelper.getRequestIdFromMDC());
         }
         ELDetails elDetails = convertRequestToELDetails(request);
@@ -87,11 +101,11 @@ public class ELDetailsService implements IELDetailsService {
     public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
         String responseMsg;
         ELDetailsRequest request = (ELDetailsRequest) commonRequestModel.getData();
-        if(request == null) {
+        if (request == null) {
             log.debug("Request is empty for EL details update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
         }
 
-        if(request.getId() == null) {
+        if (request.getId() == null) {
             log.debug("Request Id is null for EL details update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
         }
         long id = request.getId();
@@ -131,7 +145,7 @@ public class ELDetailsService implements IELDetailsService {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
-            if(request == null) {
+            if (request == null) {
                 log.error("Request is empty for EL details list with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
             Pair<Specification<ELDetails>, Pageable> tuple = fetchData(request, ELDetails.class);
@@ -155,13 +169,13 @@ public class ELDetailsService implements IELDetailsService {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
-            if(request == null) {
+            if (request == null) {
                 log.error("Request is empty for EL details async list with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
             Pair<Specification<ELDetails>, Pageable> tuple = fetchData(request, ELDetails.class);
             Page<ELDetails> elDetailsPage = elDetailsDao.findAll(tuple.getLeft(), tuple.getRight());
             log.info("EL details async list retrieved successfully for Request Id {} ", LoggerHelper.getRequestIdFromMDC());
-            return CompletableFuture.completedFuture( ResponseHelper.buildListSuccessResponse(
+            return CompletableFuture.completedFuture(ResponseHelper.buildListSuccessResponse(
                     convertEntityListToDtoList(elDetailsPage.getContent()),
                     elDetailsPage.getTotalPages(),
                     elDetailsPage.getTotalElements()));
@@ -179,10 +193,10 @@ public class ELDetailsService implements IELDetailsService {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
-            if(request == null) {
+            if (request == null) {
                 log.debug("Request is empty for EL details delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
-            if(request.getId() == null) {
+            if (request.getId() == null) {
                 log.debug("Request Id is null for EL details delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
             long id = request.getId();
@@ -220,10 +234,10 @@ public class ELDetailsService implements IELDetailsService {
         String responseMsg;
         try {
             ElNumbersRequest request = (ElNumbersRequest) (requestModel.getData());
-            if(request == null) {
+            if (request == null) {
                 log.debug("Request is empty for EL details validate number request with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
-            if(request.getElNumber() == null) {
+            if (request.getElNumber() == null) {
                 log.debug("EL number is empty for EL details validate number request with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
             String elNumber = request.getElNumber();
@@ -244,14 +258,42 @@ public class ELDetailsService implements IELDetailsService {
     }
 
     @Override
+    public ResponseEntity<?> V1ELDetailsCreateAndUpdate(CommonRequestModel commonRequestModel) throws Exception {
+        ElDetailsRequestV2 elDetailsRequestV2 = (ElDetailsRequestV2) commonRequestModel.getData();
+        try {
+            Optional<ELDetails> existingELDetails = elDetailsDao.findByGuid(elDetailsRequestV2.getGuid());
+            ELDetails elDetails = modelMapper.map(elDetailsRequestV2, ELDetails.class);
+            if (existingELDetails != null && existingELDetails.isPresent()) {
+                elDetails.setId(existingELDetails.get().getId());
+                elDetails.setShipmentId(existingELDetails.get().getShipmentId());
+            } else {
+                if (elDetailsRequestV2.getShipmentGuid() != null) {
+                    Optional<ShipmentDetails> shipmentDetails = shipmentDao.findByGuid(elDetailsRequestV2.getShipmentGuid());
+                    if (shipmentDetails.isPresent())
+                        elDetails.setShipmentId(shipmentDetails.get().getId());
+                }
+            }
+            elDetails = elDetailsDao.save(elDetails);
+            ELDetailsResponse response = objectMapper.convertValue(elDetails, ELDetailsResponse.class);
+            return ResponseHelper.buildSuccessResponse(response);
+        } catch (Exception ex) {
+            String responseMsg = ex.getMessage() != null ? ex.getMessage()
+                    : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
+            log.error(responseMsg, ex);
+            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+            throw new RuntimeException(ex);
+        }
+    }
+
+    @Override
     public ResponseEntity<?> retrieveById(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
-            if(request == null) {
+            if (request == null) {
                 log.error("Request is empty for EL details retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
-            if(request.getId() == null) {
+            if (request.getId() == null) {
                 log.error("Request Id is null for EL details retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
             long id = request.getId();

@@ -40,8 +40,8 @@ public class RoutingsDao implements IRoutingsDao {
 
     @Override
     public Routings save(Routings routings) {
-        Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(routings) , Constants.ROUTING, LifecycleHooks.ON_CREATE, false);
-        if (! errors.isEmpty())
+        Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(routings), Constants.ROUTING, LifecycleHooks.ON_CREATE, false);
+        if (!errors.isEmpty())
             throw new ValidationException(errors.toString());
         return routingsRepository.save(routings);
     }
@@ -54,6 +54,11 @@ public class RoutingsDao implements IRoutingsDao {
     @Override
     public Optional<Routings> findById(Long id) {
         return routingsRepository.findById(id);
+    }
+
+    @Override
+    public Optional<Routings> findByGuid(UUID id) {
+        return routingsRepository.findByGuid(id);
     }
 
     @Override
@@ -96,8 +101,8 @@ public class RoutingsDao implements IRoutingsDao {
     @Override
     public List<Routings> saveEntityFromShipment(List<Routings> routings, Long shipmentId) {
         List<Routings> res = new ArrayList<>();
-        for(Routings req : routings){
-            if(req.getId() != null){
+        for (Routings req : routings) {
+            if (req.getId() != null) {
                 long id = req.getId();
                 Optional<Routings> oldEntity = findById(id);
                 if (!oldEntity.isPresent()) {
@@ -146,8 +151,8 @@ public class RoutingsDao implements IRoutingsDao {
     @Override
     public List<Routings> saveEntityFromBooking(List<Routings> routings, Long bookingId) {
         List<Routings> res = new ArrayList<>();
-        for(Routings req : routings){
-            if(req.getId() != null){
+        for (Routings req : routings) {
+            if (req.getId() != null) {
                 long id = req.getId();
                 Optional<Routings> oldEntity = findById(id);
                 if (!oldEntity.isPresent()) {
@@ -196,8 +201,8 @@ public class RoutingsDao implements IRoutingsDao {
     @Override
     public List<Routings> saveEntityFromConsole(List<Routings> routings, Long consolidationId) {
         List<Routings> res = new ArrayList<>();
-        for(Routings req : routings){
-            if(req.getId() != null){
+        for (Routings req : routings) {
+            if (req.getId() != null) {
                 long id = req.getId();
                 Optional<Routings> oldEntity = findById(id);
                 if (!oldEntity.isPresent()) {
@@ -227,8 +232,8 @@ public class RoutingsDao implements IRoutingsDao {
     public List<Routings> updateEntityFromShipment(List<Routings> routingsList, Long shipmentId, List<Routings> oldEntityList) throws Exception {
         String responseMsg;
         Map<UUID, Routings> routingMap = new HashMap<>();
-        if(oldEntityList != null && oldEntityList.size() > 0) {
-            for (Routings entity:
+        if (oldEntityList != null && oldEntityList.size() > 0) {
+            for (Routings entity :
                     oldEntityList) {
                 routingMap.put(entity.getGuid(), entity);
             }
@@ -241,7 +246,7 @@ public class RoutingsDao implements IRoutingsDao {
             if (routingsList != null && routingsList.size() != 0) {
                 for (Routings request : routingsList) {
                     oldEntity = routingMap.get(request.getGuid());
-                    if(oldEntity != null) {
+                    if (oldEntity != null) {
                         routingMap.remove(oldEntity.getGuid());
                         request.setId(oldEntity.getId());
                     }
@@ -250,7 +255,7 @@ public class RoutingsDao implements IRoutingsDao {
                 responseRoutings = saveEntityFromShipment(routingsRequestList, shipmentId);
             }
             Map<Long, Routings> hashMap = new HashMap<>();
-            routingMap.forEach((s, routings) ->  hashMap.put(routings.getId(), routings));
+            routingMap.forEach((s, routings) -> hashMap.put(routings.getId(), routings));
             deleteRoutings(hashMap);
             return responseRoutings;
         } catch (Exception e) {

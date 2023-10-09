@@ -14,6 +14,10 @@ public class ContainerRequestV2 implements IRunnerRequest {
 
     @JsonProperty("Guid")
     private UUID Guid;
+    @JsonProperty("EntityType")
+    private String EntityType;
+    @JsonProperty("EntityID")
+    private Long EntityId;
     @JsonProperty("AchievedVolume")
     private BigDecimal AchievedVolume;
     @JsonProperty("AchievedVolumeUnit")

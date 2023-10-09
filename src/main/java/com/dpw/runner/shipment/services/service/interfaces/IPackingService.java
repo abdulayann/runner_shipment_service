@@ -14,4 +14,7 @@ public interface IPackingService extends ICommonService {
     void downloadPacking(HttpServletResponse response, BulkDownloadRequest request) throws Exception;
 
     ResponseEntity<?> calculateWeightVolumne(CommonRequestModel commonRequestModel) throws Exception;
+
+    ResponseEntity<?> V1PackingCreateAndUpdate(CommonRequestModel commonRequestModel) throws Exception;
+
 }
