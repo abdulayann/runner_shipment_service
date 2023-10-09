@@ -9,6 +9,7 @@ import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.*;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.dto.request.HblPartyDto;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.request.hbl.HblContainerDto;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
@@ -392,7 +393,7 @@ public class HblReport extends IReport{
             dictionary.put(AS_AGREED, true);
         }
 
-        if (chargesApply.equals("NON") || chargesApply == null) {
+        if (chargesApply == null || chargesApply.equals("NON")) {
             dictionary.put(HAS_CHARGES, false);
         } else {
             dictionary.put(HAS_CHARGES, true);
@@ -404,10 +405,10 @@ public class HblReport extends IReport{
 //            String json = jsonHelper.convertToJson(originalChargesRows);
 //            var values = jsonHelper.convertValue(json, new TypeReference<List<Map<String,Object>>>() {});
 //            values.ForEach(v => {
-//                if(v["OverseasSellAmount"] != null){
-//                    v["OverseasSellAmount"] = ReportHelper.addCommas(v["OverseasSellAmount"].ToString());
+//                if(v.get("OverseasSellAmount") != null){
+//                    v.put("OverseasSellAmount", ReportHelper.addCommas(v.get("OverseasSellAmount").toString());
 //                }});
-//            dictionary["charges"] = values;
+//            dictionary.put("charges", values);
 //        }
 //        dictionary.put(COPY_CHARGES, copyChargesRows);
 
@@ -446,10 +447,10 @@ public class HblReport extends IReport{
                 {
                     consigner = ReportHelper.getOrgAddressWithPhoneEmail(getValueFromMap(consignerAddress, COMPANY_NAME), getValueFromMap(consignerAddress, ADDRESS1),
                             getValueFromMap(consignerAddress, ADDRESS2), ReportHelper.getCityCountry(getValueFromMap(consignerAddress, CITY), getValueFromMap(consignerAddress, COUNTRY)),
-                            getValueFromMap(consignerAddress,"Email"), getValueFromMap(consignerAddress, CONTACT_PHONE),
+                            getValueFromMap(consignerAddress,EMAIL), getValueFromMap(consignerAddress, CONTACT_PHONE),
                             getValueFromMap(consignerAddress,"Zip_PostCode"));
                     dictionary.put(ReportConstants.CONSIGNER_NAME, consignerAddress.get(COMPANY_NAME));
-                    dictionary.put(ReportConstants.CONSIGNER_CONTACT_PERSON, consignerAddress.get("ContactPerson"));
+                    dictionary.put(ReportConstants.CONSIGNER_CONTACT_PERSON, consignerAddress.get(CONTACT_PERSON));
                 }
             }
             if(shipmentConsignee != null)
@@ -460,10 +461,10 @@ public class HblReport extends IReport{
                     consignee = ReportHelper.getOrgAddressWithPhoneEmail(getValueFromMap(consigneeAddress, COMPANY_NAME), getValueFromMap(consigneeAddress, ADDRESS1),
                             getValueFromMap(consigneeAddress, ADDRESS2),
                             ReportHelper.getCityCountry(getValueFromMap(consigneeAddress, CITY), getValueFromMap(consigneeAddress, COUNTRY)),
-                            getValueFromMap(consigneeAddress,"Email"), getValueFromMap(consigneeAddress, CONTACT_PHONE),
+                            getValueFromMap(consigneeAddress,EMAIL), getValueFromMap(consigneeAddress, CONTACT_PHONE),
                             getValueFromMap(consigneeAddress,"Zip_PostCode"));
                     dictionary.put(ReportConstants.CONSIGNEE_NAME, getValueFromMap(consigneeAddress, COMPANY_NAME));
-                    dictionary.put(ReportConstants.CONSIGNEE_CONTACT_PERSON,getValueFromMap(consigneeAddress,"ContactPerson"));
+                    dictionary.put(ReportConstants.CONSIGNEE_CONTACT_PERSON,getValueFromMap(consigneeAddress,CONTACT_PERSON));
                 }
             }
         }
@@ -472,7 +473,7 @@ public class HblReport extends IReport{
 
         List<String> deliveryParty = getOrgAddress(hblModel.shipment.getAdditionalDetails().getNotifyParty());
         dictionary.put(CONSIGNER, consigner);
-        dictionary.put(CONSIGNER_CAPS, consigner.stream().map(String::toUpperCase).toList());
+        dictionary.put(CONSIGNER_CAPS, consigner != null ? consigner.stream().map(String::toUpperCase).toList() : null);
         dictionary.put(CONSIGNER_ADDRESS, getAddressList(hblModel.blObject.getHblData().getConsignorAddress()));
         dictionary.put(NOTIFY_PARTY_ADDRESS, getAddressList(hblModel.blObject.getHblNotifyParty().get(0).getAddress()));
 
@@ -511,7 +512,7 @@ public class HblReport extends IReport{
         dictionary.put(BL_VOYAGE, hblModel.blObject.getHblData().getVoyage());
 
         // SHIPMENT FIELDS
-//        dictionary.put(ENTRY_REF_NUMBER, hblModel.shipment.getEntryRe);
+        dictionary.put(ENTRY_REF_NUMBER, hblModel.shipment.getEntryRefNo());
         dictionary.put(VESSEL_NAME, hblModel.shipment.getCarrierDetails().getVessel());
         dictionary.put(VOYAGE, hblModel.shipment.getCarrierDetails().getVoyage());
         dictionary.put(TRANSPORT_MODE, hblModel.shipment.getTransportMode());
@@ -626,8 +627,7 @@ public class HblReport extends IReport{
             dictionary.put("DeliveryAgent", deliveryAgent);
         }
 
-        //TODO source of party ?
-        PartiesModel deliveryTransportCompany =  hblModel.shipment.getPickupDetails().getDestinationDetail();
+        PartiesModel deliveryTransportCompany =  hblModel.shipment.getDeliveryDetails().getTransporterDetail();
         if (deliveryTransportCompany != null && deliveryTransportCompany.getAddressData() != null)
         {
             Map<String, Object> addressMap = deliveryTransportCompany.getAddressData();
@@ -711,7 +711,7 @@ public class HblReport extends IReport{
             dictionary.put(ONBOARD_TYPE_DATE, hblModel.shipment.getAdditionalDetails().getOnBoardDate() != null ?
                     ConvertToDPWDateFormat(hblModel.shipment.getAdditionalDetails().getOnBoardDate()) : null);
         }
-
+// TODO
 //        if(!String.IsNullOrEmpty(PrintType)) {
 //            if(PrintType.ToUpper() == "ORIGINAL") {
 //                dictionary.put(IS_ORIGINAL, true);
@@ -801,22 +801,25 @@ public class HblReport extends IReport{
         }
 
         dictionary.put(CONTAINER_SUMMARY, EMPTY_STRING);
-//        if (hblModel.shipment.getShipmentContainersList() != null) {
-////            var containerSummary = from cont in hblModel.shipment.ShipmentContainers
-////            orderby cont.ContainerTypeCode
-////            group cont by cont.ContainerTypeCode into containers
-////            select new
-////            {
-////                key = containers.Key,
-////                        ContCount = containers.Count(),
-////                        CountDesc = string.Format("{0} * {1}", containers.Count(), containers.Key)
-////            };
-////            var containerCounts = String.Join(",", containerSummary.Select(S => S.CountDesc).ToList());
-////            dictionary.put(CONTAINER_SUMMARY, containerCounts);
-////        }
+        if(hblModel.shipment.getShipmentContainersList() != null) {
+            Map<String, Long> containerSummary =  new HashMap<>();
+            for(var container : hblModel.shipment.getShipmentContainersList()) {
+                String code = container.getContainerTypeCode();
+                Long count = container.getContainerCount();
+                Long previousCount = 0L;
+                if(containerSummary.get(code)  != null)
+                    previousCount = containerSummary.get(code);
+
+                containerSummary.put(code,  previousCount + count);
+            }
+            var containerCounts = String.join(",", containerSummary.entrySet().stream()
+                    .map(i -> String.format("%s * %s", i.getValue(), i.getKey())).toList());
+            dictionary.put(CONTAINER_SUMMARY, containerCounts);
+        }
+
         dictionary.put(BOOKING_NUMBER, hblModel.shipment.getBookingNumber());
         dictionary.put(ADDITIONAL_TERMS, hblModel.shipment.getAdditionalTerms());
-//        dictionary.put(VESSEL_BERTHING_DATE, ConvertToDPWDateFormat(hblModel.shipment.getCarrierDetails().getVesselBerthingDate()));
+        dictionary.put(VESSEL_BERTHING_DATE, ConvertToDPWDateFormat(hblModel.shipment.getCarrierDetails().getVesselBerthingDate()));
 
         dictionary.put(UCR_REFERENCE, EMPTY_STRING);
         dictionary.put(EMPTY_TRUCK_IN_DATE, EMPTY_STRING);
@@ -881,12 +884,13 @@ public class HblReport extends IReport{
         return dictionary;
     }
 
-    // TODO
+    // isActive Criteria not clear from v1 impl
     private String masterListDescriptionPacksUnit(String packageType) {
         if(packageType == null || packageType.isEmpty())
             return packageType;
 
-        return "";
+        MasterData masterData = getMasterListData(MasterDataType.PAYMENT, packageType);
+        return  (masterData != null ? masterData.getItemDescription() : null);
     }
 
     private String getLogoPath(UsersDto user) {
@@ -911,21 +915,12 @@ public class HblReport extends IReport{
         dictionary.put(prefix + ZIP_POST_CODE, getValueFromMap(addressData, ZIP_POST_CODE));
     }
 
-    //TODO
     private List<String> getNotifyOrgAddress(Hbl hbl)
     {
-//        {
-//            Criteria = new Criteria("BlObjectID") == hbl.Id.ToString()
-//        };
-//        using (var connection = SqlConnections.NewFor<BlObjectNotifyPartyRow>())
-//        {
-//            ListResponse<BlObjectNotifyPartyRow> response = repo.List(connection, request);
-//            if (response.TotalCount > 0)
-//            {
-//                BlObjectNotifyPartyRow row = response.Entities[0];
-//                return getOrgAddress(row.Name, row.Address, null, null, row.Email);
-//            }
-//        }
-        return new ArrayList<>();
+        if(hbl != null && hbl.getHblNotifyParty() != null) {
+            HblPartyDto row = hbl.getHblNotifyParty().get(0);
+            getOrgAddress(row.getName(), row.getAddress(), null, null, row.getEmail(), null);
+        }
+        return null;
     }
 }
