@@ -99,4 +99,5 @@ public class ContainerRequest extends CommonRequest implements IRunnerRequest {
     private List<EventsRequest> eventsList;
     private List<PackingRequest> packsList;
     private List<ShipmentRequest> shipmentsList;
+    private Long contractEnforcedQuantityLimit;
 }
