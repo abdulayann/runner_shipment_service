@@ -33,6 +33,11 @@ public class ELDetailsDao implements IELDetailsDao {
     }
 
     @Override
+    public Optional<ELDetails> findByGuid(UUID guid) {
+        return elDetailsRepository.findByGuid(guid);
+    }
+
+    @Override
     public Page<ELDetails> findAll(Specification<ELDetails> spec, Pageable pageable) {
         return elDetailsRepository.findAll(spec, pageable);
     }
@@ -85,8 +90,8 @@ public class ELDetailsDao implements IELDetailsDao {
 
     public List<ELDetails> saveEntityFromShipment(List<ELDetails> elDetails, Long shipmentId) {
         List<ELDetails> res = new ArrayList<>();
-        for(ELDetails req : elDetails){
-            if(req.getId() != null){
+        for (ELDetails req : elDetails) {
+            if (req.getId() != null) {
                 long id = req.getId();
                 Optional<ELDetails> oldEntity = findById(id);
                 if (!oldEntity.isPresent()) {
@@ -116,8 +121,8 @@ public class ELDetailsDao implements IELDetailsDao {
         String responseMsg;
         List<ELDetails> responseELDetails = new ArrayList<>();
         Map<UUID, ELDetails> elDetailsMap = new HashMap<>();
-        if(oldEntityList != null && oldEntityList.size() > 0) {
-            for (ELDetails entity:
+        if (oldEntityList != null && oldEntityList.size() > 0) {
+            for (ELDetails entity :
                     oldEntityList) {
                 elDetailsMap.put(entity.getGuid(), entity);
             }
@@ -128,7 +133,7 @@ public class ELDetailsDao implements IELDetailsDao {
             if (elDetailsList != null && elDetailsList.size() != 0) {
                 for (ELDetails request : elDetailsList) {
                     oldEntity = elDetailsMap.get(request.getGuid());
-                    if(oldEntity != null) {
+                    if (oldEntity != null) {
                         elDetailsMap.remove(oldEntity.getGuid());
                         request.setId(oldEntity.getId());
                     }
@@ -137,7 +142,7 @@ public class ELDetailsDao implements IELDetailsDao {
                 responseELDetails = saveEntityFromShipment(elDetailsRequestList, shipmentId);
             }
             Map<Long, ELDetails> hashMap = new HashMap<>();
-            elDetailsMap.forEach((s, elDetails) ->  hashMap.put(elDetails.getId(), elDetails));
+            elDetailsMap.forEach((s, elDetails) -> hashMap.put(elDetails.getId(), elDetails));
             deleteELDetails(hashMap);
             return responseELDetails;
         } catch (Exception e) {

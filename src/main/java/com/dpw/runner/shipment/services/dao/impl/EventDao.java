@@ -45,8 +45,8 @@ public class EventDao implements IEventDao {
 
     @Override
     public Events save(Events events) {
-        Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(events) , Constants.EVENTS, LifecycleHooks.ON_CREATE, false);
-        if (! errors.isEmpty())
+        Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(events), Constants.EVENTS, LifecycleHooks.ON_CREATE, false);
+        if (!errors.isEmpty())
             throw new ValidationException(errors.toString());
         return eventRepository.save(events);
     }
@@ -59,6 +59,11 @@ public class EventDao implements IEventDao {
     @Override
     public Optional<Events> findById(Long id) {
         return eventRepository.findById(id);
+    }
+
+    @Override
+    public Optional<Events> findByGuid(UUID id) {
+        return eventRepository.findByGuid(id);
     }
 
     @Override
@@ -132,8 +137,8 @@ public class EventDao implements IEventDao {
     public List<Events> updateEntityFromOtherEntity(List<Events> eventsList, Long entityId, String entityType, List<Events> oldEntityList) throws Exception {
         String responseMsg;
         Map<UUID, Events> eventsMap = new HashMap<>();
-        if(oldEntityList != null && oldEntityList.size() > 0) {
-            for (Events entity:
+        if (oldEntityList != null && oldEntityList.size() > 0) {
+            for (Events entity :
                     oldEntityList) {
                 eventsMap.put(entity.getGuid(), entity);
             }
@@ -145,7 +150,7 @@ public class EventDao implements IEventDao {
             if (eventsList != null && eventsList.size() != 0) {
                 for (Events request : eventsList) {
                     oldEntity = eventsMap.get(request.getGuid());
-                    if(oldEntity != null) {
+                    if (oldEntity != null) {
                         eventsMap.remove(oldEntity.getGuid());
                         request.setId(oldEntity.getId());
                     }
@@ -156,7 +161,7 @@ public class EventDao implements IEventDao {
                 responseEvents = saveEntityFromOtherEntity(eventsRequestList, entityId, entityType);
             }
             Map<Long, Events> hashMap = new HashMap<>();
-            eventsMap.forEach((s, events) ->  hashMap.put(events.getId(), events));
+            eventsMap.forEach((s, events) -> hashMap.put(events.getId(), events));
             deleteEvents(hashMap);
             return responseEvents;
         } catch (Exception e) {
@@ -170,20 +175,18 @@ public class EventDao implements IEventDao {
     @Override
     public void autoGenerateEvents(CustomAutoEventRequest request) {
         try {
-            if(!checkIfEventsRowExistsForEntityTypeAndEntityId(request)) {
+            if (!checkIfEventsRowExistsForEntityTypeAndEntityId(request)) {
                 createAutomatedEventRequest(request.entityType, request.entityId, request.eventCode, request.isEstimatedRequired, request.isActualRequired);
             }
         } catch (Exception e) {
-            log.error("Error occured while trying to auto create runner event, Request recieved is = " + request + ". Exception raised is: " +  e);
-            throw new ValidationException("Error occured while trying to auto create runner event, Request recieved is = " + request , e);
+            log.error("Error occured while trying to auto create runner event, Request recieved is = " + request + ". Exception raised is: " + e);
+            throw new ValidationException("Error occured while trying to auto create runner event, Request recieved is = " + request, e);
         }
     }
 
-    public List<Events> getTheDataFromEntity(String EntityType, long EntityID, boolean publicEvent)
-    {
+    public List<Events> getTheDataFromEntity(String EntityType, long EntityID, boolean publicEvent) {
         ListCommonRequest listCommonRequest;
-        if(publicEvent)
-        {
+        if (publicEvent) {
             listCommonRequest = CommonUtils.andCriteria("entityId", EntityID, "=", null);
             CommonUtils.andCriteria("entityType", EntityType, "=", listCommonRequest);
             CommonUtils.andCriteria("publicTrackingEvent", 1, "=", listCommonRequest);
@@ -196,17 +199,17 @@ public class EventDao implements IEventDao {
 
         Pair<Specification<Events>, Pageable> pair = fetchData(listCommonRequest, Events.class);
         Page<Events> events = findAll(pair.getLeft(), pair.getRight());
-        if(events.getContent().size()>0) {
+        if (events.getContent().size() > 0) {
             return events.getContent();
         }
         return null;
     }
 
     public boolean checkIfEventsRowExistsForEntityTypeAndEntityId(CustomAutoEventRequest request) {
-        List<Events> eventsRowList =  getTheDataFromEntity(request.entityType, request.entityId, true);
-        if(eventsRowList != null && eventsRowList.size() > 0) {
-            for(Events eventsRow : eventsRowList) {
-                if(eventsRow.getEventCode().equalsIgnoreCase(request.eventCode)) {
+        List<Events> eventsRowList = getTheDataFromEntity(request.entityType, request.entityId, true);
+        if (eventsRowList != null && eventsRowList.size() > 0) {
+            for (Events eventsRow : eventsRowList) {
+                if (eventsRow.getEventCode().equalsIgnoreCase(request.eventCode)) {
                     log.info("Event already exists for given id: " + request.entityId + " and type: " + request.entityType + " and event code : " + request.eventCode);
                     return true;
                 }
@@ -215,15 +218,14 @@ public class EventDao implements IEventDao {
         return false;
     }
 
-    public void createAutomatedEventRequest(String entityType, long entityId, String eventCode, boolean isEstimatedRequired, boolean isActualRequired)
-    {
-        try{
+    public void createAutomatedEventRequest(String entityType, long entityId, String eventCode, boolean isEstimatedRequired, boolean isActualRequired) {
+        try {
             Events eventsRow = new Events();
-            if(isActualRequired) {
+            if (isActualRequired) {
                 eventsRow.setActual(LocalDate.now().atStartOfDay());
             }
 
-            if(isEstimatedRequired){
+            if (isEstimatedRequired) {
                 eventsRow.setEstimated(LocalDate.now().atStartOfDay());
             }
             eventsRow.setSource(Constants.CARGO_RUNNER);
@@ -232,8 +234,8 @@ public class EventDao implements IEventDao {
             eventsRow.setEntityId(entityId);
             eventsRow.setEventCode(eventCode);
             eventRepository.save(eventsRow);
-        } catch(Exception e){
-            log.error("Error occured while trying to create runner event, Exception raised is: " +  e);
+        } catch (Exception e) {
+            log.error("Error occured while trying to create runner event, Exception raised is: " + e);
         }
     }
 }

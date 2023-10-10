@@ -5,10 +5,7 @@ import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IEventDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IPackingDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IShipmentsContainersMappingDao;
+import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.ContainerAPIsRequest.ContainerAssignRequest;
 import com.dpw.runner.shipment.services.dto.ContainerAPIsRequest.ContainerPackAssignDetachRequest;
 import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
@@ -21,9 +18,12 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerService;
+import com.dpw.runner.shipment.services.syncing.Entity.ContainerRequestV2;
 import com.dpw.runner.shipment.services.utils.CSVParsingUtil;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
@@ -34,6 +34,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.interceptor.TransactionAspectSupport;
 import org.springframework.web.bind.annotation.ModelAttribute;
 
 import javax.servlet.http.HttpServletResponse;
@@ -61,12 +62,21 @@ public class ContainerService implements IContainerService {
     private JsonHelper jsonHelper;
     @Autowired
     IShipmentsContainersMappingDao shipmentsContainersMappingDao;
+    @Autowired
+    private ObjectMapper objectMapper;
+    @Autowired
+
+    private ModelMapper modelMapper;
     private final CSVParsingUtil<Containers> parser = new CSVParsingUtil<>(Containers.class);
 
     @Autowired
     IEventDao eventDao;
     @Autowired
     private IPackingDao packingDao;
+    @Autowired
+    private IConsolidationDetailsDao consolidationDetailsDao;
+    @Autowired
+    private IShipmentDao shipmentDao;
 
     @Autowired
     private AuditLogService auditLogService;
@@ -512,6 +522,50 @@ public class ContainerService implements IContainerService {
                     : DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
+    @Override
+    public ResponseEntity<?> V1ContainerCreateAndUpdate(CommonRequestModel commonRequestModel) throws Exception {
+        ContainerRequestV2 containerRequest = (ContainerRequestV2) commonRequestModel.getData();
+        try {
+            List<Containers> existingCont = containerDao.findByGuid(containerRequest.getGuid());
+            Containers containers = modelMapper.map(containerRequest, Containers.class);
+            List<Long> shipIds = null;
+            if(existingCont != null && existingCont.size() > 0) {
+                containers.setId(existingCont.get(0).getId());
+                containers.setConsolidationId(existingCont.get(0).getConsolidationId());
+            }
+            else
+            {
+                if(containerRequest.getConsolidationGuid() != null) {
+                    Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findByGuid(containerRequest.getConsolidationGuid());
+                    if(!consolidationDetails.isEmpty() && consolidationDetails.get() != null) {
+                        containers.setConsolidationId(consolidationDetails.get().getId());
+                    }
+                }
+                if(containerRequest.getShipmentGuids() != null && containerRequest.getShipmentGuids().size() > 0) {
+                    ListCommonRequest listCommonRequest = constructListCommonRequest("guid", containerRequest.getShipmentGuids(), "IN");
+                    Pair<Specification<ShipmentDetails>, Pageable> pair = fetchData(listCommonRequest, ShipmentDetails.class);
+                    Page<ShipmentDetails> shipmentDetails = shipmentDao.findAll(pair.getLeft(), pair.getRight());
+                    if(shipmentDetails.get() != null && shipmentDetails.get().count() > 0) {
+                        shipIds = shipmentDetails.get().map(e -> e.getId()).collect(Collectors.toList());
+                    }
+                }
+            }
+            containers = containerDao.save(containers);
+            if(shipIds != null) {
+                shipmentsContainersMappingDao.assignShipments(containers.getId(), shipIds);
+            }
+            ContainerResponse response = objectMapper.convertValue(containers, ContainerResponse.class);
+            return ResponseHelper.buildSuccessResponse(response);
+        }
+        catch (Exception e) {
+            String responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+            throw new RuntimeException(e);
         }
     }
 

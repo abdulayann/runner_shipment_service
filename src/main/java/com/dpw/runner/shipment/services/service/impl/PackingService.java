@@ -7,21 +7,22 @@ import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
+import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IPackingDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.request.PackingRequest;
 import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.PackingResponse;
-import com.dpw.runner.shipment.services.entity.Containers;
-import com.dpw.runner.shipment.services.entity.Jobs;
-import com.dpw.runner.shipment.services.entity.Notes;
-import com.dpw.runner.shipment.services.entity.Packing;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingService;
+import com.dpw.runner.shipment.services.syncing.Entity.PackingRequestV2;
 import com.dpw.runner.shipment.services.utils.CSVParsingUtil;
 import com.dpw.runner.shipment.services.utils.UnitConversionUtility;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
@@ -35,6 +36,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.interceptor.TransactionAspectSupport;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.PrintWriter;
@@ -62,6 +64,18 @@ public class PackingService implements IPackingService {
 
     @Autowired
     private AuditLogService auditLogService;
+
+    @Autowired
+    private ObjectMapper objectMapper;
+
+    @Autowired
+    private ModelMapper modelMapper;
+
+    @Autowired
+    private IShipmentDao shipmentDao;
+
+    @Autowired
+    private IConsolidationDetailsDao consolidationDao;
 
     private final CSVParsingUtil<Packing> parser = new CSVParsingUtil<>(Packing.class);
 
@@ -307,11 +321,11 @@ public class PackingService implements IPackingService {
 
         List<IRunnerResponse> finalContainers = new ArrayList<>();
 
-        if(request.getContainerId() != null) {
+        if (request.getContainerId() != null) {
 
             newContainer = containersDao.findById(request.getContainerId()).get();
 
-            if(request.getId() == null) {
+            if (request.getId() == null) {
                 addWeightVolume(request, newContainer);
                 finalContainers.add(convertEntityToDto(newContainer));
             } else {
@@ -320,10 +334,10 @@ public class PackingService implements IPackingService {
 
                 Containers container = addWeightVolume(request, newContainer);
 
-                if(oldContainer.getId() == newContainer.getId()) {
+                if (oldContainer.getId() == newContainer.getId()) {
                     subtractWeightVolume(container.getAchievedWeight(), newContainer, packing, container.getAchievedVolume(), request);
                 }
-                if(oldContainer.getId() != newContainer.getId()) {
+                if (oldContainer.getId() != newContainer.getId()) {
                     subtractWeightVolume(container.getAchievedWeight(), oldContainer, packing, container.getAchievedVolume(), request);
                     finalContainers.add(convertEntityToDto(oldContainer));
                 }
@@ -331,6 +345,40 @@ public class PackingService implements IPackingService {
             }
         }
         return ResponseHelper.buildListSuccessResponse(finalContainers);
+    }
+
+    @Override
+    public ResponseEntity<?> V1PackingCreateAndUpdate(CommonRequestModel commonRequestModel) throws Exception {
+        PackingRequestV2 packingRequestV2 = (PackingRequestV2) commonRequestModel.getData();
+        try {
+            Optional<Packing> existingPacking = packingDao.findByGuid(packingRequestV2.getGuid());
+            Packing packing = modelMapper.map(packingRequestV2, Packing.class);
+            if (existingPacking != null && existingPacking.isPresent()) {
+                packing.setId(existingPacking.get().getId());
+                packing.setConsolidationId(existingPacking.get().getConsolidationId());
+                packing.setShipmentId(existingPacking.get().getShipmentId());
+            } else {
+                if (packingRequestV2.getShipmentGuid() != null) {
+                    Optional<ShipmentDetails> shipmentDetails = shipmentDao.findByGuid(packingRequestV2.getShipmentGuid());
+                    if (shipmentDetails.isPresent())
+                        packing.setShipmentId(shipmentDetails.get().getId());
+                }
+                if (packingRequestV2.getConsolidationGuid() != null) {
+                    Optional<ConsolidationDetails> consolidationDetails = consolidationDao.findByGuid(packingRequestV2.getConsolidationGuid());
+                    if (consolidationDetails.isPresent())
+                        packing.setConsolidationId(consolidationDetails.get().getId());
+                }
+            }
+            packing = packingDao.save(packing);
+            PackingResponse response = objectMapper.convertValue(packing, PackingResponse.class);
+            return ResponseHelper.buildSuccessResponse(response);
+        } catch (Exception ex) {
+            String responseMsg = ex.getMessage() != null ? ex.getMessage()
+                    : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
+            log.error(responseMsg, ex);
+            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+            throw new RuntimeException(ex);
+        }
     }
 
     private static Containers addWeightVolume(PackingRequest request, Containers newContainer) throws Exception {

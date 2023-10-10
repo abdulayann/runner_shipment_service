@@ -16,7 +16,9 @@ import com.dpw.runner.shipment.services.utils.V1AuthHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -34,7 +36,6 @@ public class V1ServiceImpl implements IV1Service {
 
     private static final Logger log = LoggerFactory.getLogger(V1ServiceImpl.class);
 
-    @Autowired
     private RestTemplate restTemplate;
 
     @Value("${v1service.url.base}${v1service.url.customerBooking}")
@@ -227,6 +228,11 @@ public class V1ServiceImpl implements IV1Service {
 
     @Autowired
     private JsonHelper jsonHelper;
+
+    @Autowired
+    public V1ServiceImpl(@Qualifier("restTemplateForV1") RestTemplate restTemplate) {
+        this.restTemplate = restTemplate;
+    }
     @Override
     public ResponseEntity<?> createBooking(CustomerBooking customerBooking) {
         try {
@@ -306,7 +312,7 @@ public class V1ServiceImpl implements IV1Service {
     }
 
     @Override
-    public V1DataResponse fetchCarrierMasterData(Object request) {
+    public V1DataResponse fetchCarrierMasterData(Object request, boolean isListOnly) {
         ResponseEntity masterDataResponse = null;
 
         try {
@@ -314,7 +320,7 @@ public class V1ServiceImpl implements IV1Service {
             CarrierListObject req = jsonHelper.convertValue(request, CarrierListObject.class);
             Object requestCriteria = req.getListObject();
             HttpEntity<V1DataResponse> entity = new HttpEntity(requestCriteria, V1AuthHelper.getHeaders());
-            if(req.getListObject() != null && req.getType() != null && (req.getType().equals(Constants.CONSOLIDATION_TYPE_AGT) || req.getType().equals(Constants.CONSOLIDATION_TYPE_CLD))) {
+            if(isListOnly || (req.getListObject() != null && req.getType() != null && (req.getType().equals(Constants.CONSOLIDATION_TYPE_AGT) || req.getType().equals(Constants.CONSOLIDATION_TYPE_CLD))) ) {
                 masterDataResponse = this.restTemplate.postForEntity(this.CARRIER_MASTER_DATA_URL, entity, V1DataResponse.class, new Object[0]);
             }
             else {
@@ -1034,7 +1040,7 @@ public class V1ServiceImpl implements IV1Service {
             long time = System.currentTimeMillis();
             HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
             locationResponse = this.restTemplate.postForEntity(this.UNLOCATION_URL, entity, V1DataResponse.class, new Object[0]);
-            log.info("Token time taken in getMasterData() function " + (System.currentTimeMillis() - time));
+            log.info("Token time taken in fetchUnlocation() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) locationResponse.getBody();
         } catch (HttpStatusCodeException var6) {
             if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {

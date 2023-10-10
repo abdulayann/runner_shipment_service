@@ -2,9 +2,13 @@ package com.dpw.runner.shipment.services.syncing.Entity;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import java.util.UUID;
+
 public class FileRepoRequestV2 {
 //    public String EntityType;
 //    public Long EntityId;
+    @JsonProperty("Guid")
+    private UUID Guid;
     @JsonProperty("DocType")
     public String DocType;
     @JsonProperty("FileName")
