@@ -1,11 +1,16 @@
 package com.dpw.runner.shipment.services.syncing.Entity;
 
+import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.Data;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
-public class RoutingsRequestV2 {
-
+@Data
+public class RoutingsRequestV2 implements IRunnerRequest {
+    @JsonProperty("Guid")
+    private UUID Guid;
     @JsonProperty("AircraftRegistration")
     public String AircraftRegistration;
     @JsonProperty("AircraftType")
@@ -50,5 +55,9 @@ public class RoutingsRequestV2 {
     public String VesselName;
     @JsonProperty("Voyage")
     public String Voyage;
+    @JsonProperty("ShipmentGuid")
+    public UUID ShipmentGuid;
+    @JsonProperty("ConsolidationGuid")
+    public UUID ConsolidationGuid;
 //    public Long EntityId;
 }

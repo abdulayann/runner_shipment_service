@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.syncing.Entity;
 
+import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
@@ -9,10 +10,14 @@ import java.util.List;
 import java.util.UUID;
 
 @Data
-public class ContainerRequestV2 {
+public class ContainerRequestV2 implements IRunnerRequest {
 
     @JsonProperty("Guid")
     private UUID Guid;
+    @JsonProperty("EntityType")
+    private String EntityType;
+    @JsonProperty("EntityID")
+    private Long EntityId;
     @JsonProperty("AchievedVolume")
     private BigDecimal AchievedVolume;
     @JsonProperty("AchievedVolumeUnit")
@@ -159,4 +164,8 @@ public class ContainerRequestV2 {
     private String VolumeUtilization;
     @JsonProperty("WeightUtilization")
     private String WeightUtilization;
+    @JsonProperty("ShipmentGuids")
+    private List<UUID> ShipmentGuids;
+    @JsonProperty("ConsolidationGuid")
+    private UUID ConsolidationGuid;
 }

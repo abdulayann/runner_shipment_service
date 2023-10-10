@@ -7,6 +7,7 @@ import org.springframework.data.jpa.domain.Specification;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 public interface IContainerDao {
     Containers save(Containers containers);
@@ -16,6 +17,7 @@ public interface IContainerDao {
     List<Containers> getAllContainers();
 
     Optional<Containers> findById(Long id);
+    List<Containers> findByGuid(UUID guid);
 
     void delete(Containers containers);
 

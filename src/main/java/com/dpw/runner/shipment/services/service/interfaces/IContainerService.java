@@ -2,11 +2,10 @@ package com.dpw.runner.shipment.services.service.interfaces;
 
 import com.dpw.runner.shipment.services.commons.requests.BulkDownloadRequest;
 import com.dpw.runner.shipment.services.commons.requests.BulkUploadRequest;
-
-import javax.servlet.http.HttpServletResponse;
-import java.util.List;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import org.springframework.http.ResponseEntity;
+
+import javax.servlet.http.HttpServletResponse;
 
 public interface IContainerService extends ICommonService {
     ResponseEntity<?> calculateAchieved_AllocatedForSameUnit(CommonRequestModel commonRequestModel);
@@ -16,4 +15,5 @@ public interface IContainerService extends ICommonService {
     void uploadContainers(BulkUploadRequest request) throws Exception;
 
     void downloadContainers(HttpServletResponse response, BulkDownloadRequest request) throws Exception;
+    ResponseEntity<?> V1ContainerCreateAndUpdate(CommonRequestModel commonRequestModel) throws Exception;
 }

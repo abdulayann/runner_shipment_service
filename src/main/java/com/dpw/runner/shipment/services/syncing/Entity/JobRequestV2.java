@@ -5,9 +5,12 @@ import lombok.Data;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 @Data
 public class JobRequestV2 {
+    @JsonProperty("Guid")
+    private UUID Guid;
     @JsonProperty("AdditionalTerms")
     private String AdditionalTerms;
     @JsonProperty("BuyerDetail")

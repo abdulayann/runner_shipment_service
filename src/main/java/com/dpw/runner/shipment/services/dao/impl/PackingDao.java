@@ -40,8 +40,8 @@ public class PackingDao implements IPackingDao {
 
     @Override
     public Packing save(Packing packing) {
-        Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(packing) , Constants.PACKING, LifecycleHooks.ON_CREATE, false);
-        if (! errors.isEmpty())
+        Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(packing), Constants.PACKING, LifecycleHooks.ON_CREATE, false);
+        if (!errors.isEmpty())
             throw new ValidationException(errors.toString());
         return packingRepository.save(packing);
     }
@@ -54,6 +54,11 @@ public class PackingDao implements IPackingDao {
     @Override
     public Optional<Packing> findById(Long id) {
         return packingRepository.findById(id);
+    }
+
+    @Override
+    public Optional<Packing> findByGuid(UUID id) {
+        return packingRepository.findByGuid(id);
     }
 
     @Override
@@ -230,11 +235,10 @@ public class PackingDao implements IPackingDao {
         }
     }
 
-    public List<Packing> savePacks(List<Packing> packs, Long contianerId)
-    {
+    public List<Packing> savePacks(List<Packing> packs, Long contianerId) {
         List<Packing> res = new ArrayList<>();
-        for(Packing req : packs){
-            if(req.getId() != null){
+        for (Packing req : packs) {
+            if (req.getId() != null) {
                 long id = req.getId();
                 Optional<Packing> oldEntity = findById(id);
                 if (!oldEntity.isPresent()) {
@@ -270,29 +274,29 @@ public class PackingDao implements IPackingDao {
     public List<Packing> insertContainerInPacking(List<Packing> packings, Long containerId) throws Exception {
         List<Packing> res = new ArrayList<>();
         Optional<Packing> oldEntity = Optional.empty();
-        for(Packing req : packings){
-                if(req.getId() != null){
-                    long id = req.getId();
-                    oldEntity = findById(id);
-                    if (!oldEntity.isPresent()) {
-                        log.debug("Packing is null for Id {}", req.getId());
-                        throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
-                    }
-                }
-                if(oldEntity.isPresent() && oldEntity.get().getContainerId() != containerId) {
-                    req = oldEntity.get();
-                    req.setContainerId(containerId);
-                    req = save(req);
-                    res.add(req);
+        for (Packing req : packings) {
+            if (req.getId() != null) {
+                long id = req.getId();
+                oldEntity = findById(id);
+                if (!oldEntity.isPresent()) {
+                    log.debug("Packing is null for Id {}", req.getId());
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
                 }
             }
+            if (oldEntity.isPresent() && oldEntity.get().getContainerId() != containerId) {
+                req = oldEntity.get();
+                req.setContainerId(containerId);
+                req = save(req);
+                res.add(req);
+            }
+        }
         return res;
     }
 
     public List<Packing> saveEntityFromContainer(List<Packing> packings, Long containerId) {
         List<Packing> res = new ArrayList<>();
-        for(Packing req : packings){
-            if(req.getId() != null){
+        for (Packing req : packings) {
+            if (req.getId() != null) {
                 long id = req.getId();
                 Optional<Packing> oldEntity = findById(id);
                 if (!oldEntity.isPresent()) {
@@ -310,12 +314,12 @@ public class PackingDao implements IPackingDao {
     public List<Packing> removeEntityFromContainer(List<Packing> packings, Long containerId, List<Long> updatedPacksId) {
         List<Packing> res = new ArrayList<>();
         HashSet<Long> remaniningPacksId = new HashSet<>();
-        for(Long packId : updatedPacksId) {
+        for (Long packId : updatedPacksId) {
             remaniningPacksId.add(packId);
         }
-        for(Packing req : packings){
-            if(!remaniningPacksId.contains(req.getId())) {
-                if(req.getId() != null){
+        for (Packing req : packings) {
+            if (!remaniningPacksId.contains(req.getId())) {
+                if (req.getId() != null) {
                     long id = req.getId();
                     Optional<Packing> oldEntity = findById(id);
                     if (!oldEntity.isPresent()) {
@@ -342,8 +346,8 @@ public class PackingDao implements IPackingDao {
         String responseMsg;
         List<Packing> responsePackings = new ArrayList<>();
         Map<UUID, Packing> packingMap = new HashMap<>();
-        if(oldEntityList != null && oldEntityList.size() > 0) {
-            for (Packing entity:
+        if (oldEntityList != null && oldEntityList.size() > 0) {
+            for (Packing entity :
                     oldEntityList) {
                 packingMap.put(entity.getGuid(), entity);
             }
@@ -354,7 +358,7 @@ public class PackingDao implements IPackingDao {
             if (packingList != null && packingList.size() != 0) {
                 for (Packing request : packingList) {
                     oldEntity = packingMap.get(request.getGuid());
-                    if(oldEntity != null) {
+                    if (oldEntity != null) {
                         packingMap.remove(oldEntity.getGuid());
                         request.setId(oldEntity.getId());
                     }
@@ -363,7 +367,7 @@ public class PackingDao implements IPackingDao {
                 responsePackings = saveEntityFromShipment(packingRequestList, shipmentId);
             }
             Map<Long, Packing> hashMap = new HashMap<>();
-            packingMap.forEach((s, packing) ->  hashMap.put(packing.getId(), packing));
+            packingMap.forEach((s, packing) -> hashMap.put(packing.getId(), packing));
 
             deletePackings(hashMap);
             return responsePackings;

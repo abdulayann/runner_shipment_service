@@ -21,6 +21,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Component
@@ -57,6 +58,7 @@ public class ShipmentSync implements IShipmentSync {
         // Map remaining object so there's no info lost for root -> root properties
         // example Guid
         // assigning root level properties not previously mapped
+        mapConsolidationGuids(cs, sd);
         cs.setReferenceNo(sd.getBookingReference());
         cs.setCustom_ShipType(sd.getDirection());
         cs.setContainerType(sd.getShipmentType());
@@ -106,6 +108,17 @@ public class ShipmentSync implements IShipmentSync {
         });
 
         return ResponseHelper.buildSuccessResponse(modelMapper.map(cs, CustomShipmentSyncResponse.class));
+    }
+
+    private void mapConsolidationGuids(CustomShipmentSyncRequest response, ShipmentDetails request) {
+        if(request == null || request.getConsolidationList() == null)
+            return;
+        List<UUID> req = request.getConsolidationList().stream()
+                .map(item -> {
+                    return item.getGuid();
+                })
+                .collect(Collectors.toList());
+        response.setConsolidationGuids(req);
     }
 
     private PartyRequestV2 mapPartyObject(Parties sourcePartyObject) {

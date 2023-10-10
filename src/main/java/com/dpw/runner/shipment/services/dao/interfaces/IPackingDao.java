@@ -7,6 +7,7 @@ import org.springframework.data.jpa.domain.Specification;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 public interface IPackingDao {
     Packing save(Packing packing);
@@ -15,11 +16,16 @@ public interface IPackingDao {
 
     Optional<Packing> findById(Long id);
 
+    Optional<Packing> findByGuid(UUID id);
+
     void delete(Packing packing);
 
     List<Packing> updateEntityFromShipment(List<Packing> packingList, Long shipmentId) throws Exception;
+
     List<Packing> saveEntityFromShipment(List<Packing> packings, Long shipmentId);
+
     List<Packing> saveEntityFromBooking(List<Packing> packings, Long bookindId);
+
     List<Packing> updateEntityFromBooking(List<Packing> packings, Long bookingId) throws Exception;
 
     List<Packing> updateEntityFromConsole(List<Packing> packingList, Long consolidationId) throws Exception;
@@ -29,11 +35,18 @@ public interface IPackingDao {
     List<Packing> getAllPackings();
 
     List<Packing> saveAll(List<Packing> packingList);
+
     List<Packing> savePacks(List<Packing> packs, Long containerId);
+
     List<Packing> removeContainerFromPacking(List<Packing> packingList, Long containerId, List<Long> updatedPacksId) throws Exception;
+
     List<Packing> insertContainerInPacking(List<Packing> packingList, Long containerId) throws Exception;
+
     List<Packing> removeEntityFromContainer(List<Packing> packingList, Long containerId, List<Long> updatedPacksId) throws Exception;
+
     List<Packing> saveEntityFromContainer(List<Packing> packings, Long containerId);
+
     void deleteEntityFromContainer(Long id);
+
     List<Packing> updateEntityFromShipment(List<Packing> packingList, Long shipmentId, List<Packing> oldEntityList) throws Exception;
 }

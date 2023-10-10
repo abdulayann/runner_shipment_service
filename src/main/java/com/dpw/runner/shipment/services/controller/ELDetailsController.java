@@ -12,6 +12,7 @@ import com.dpw.runner.shipment.services.dto.response.CustomerBookingResponse;
 import com.dpw.runner.shipment.services.dto.response.ELDetailsResponse;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.impl.ELDetailsService;
+import com.dpw.runner.shipment.services.syncing.Entity.ElDetailsRequestV2;
 import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
@@ -104,5 +105,22 @@ public class ELDetailsController {
     @PostMapping("/validateElNumber")
     public ResponseEntity validateElNumber(@RequestBody ElNumbersRequest request) {
         return elDetailsService.validateElNumber(CommonRequestModel.buildRequest(request));
+    }
+
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = ShipmentConstants.SHIPMENT_SYNC_SUCCESSFUL),
+            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
+    })
+    @PostMapping(ApiConstants.SYNC)
+    public ResponseEntity<?> syncElDetailsToService(@RequestBody @Valid ElDetailsRequestV2 request) {
+        String responseMsg = "failure executing :(";
+        try {
+            return elDetailsService.V1ELDetailsCreateAndUpdate(CommonRequestModel.buildRequest(request));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : "Error syncing provided ELDetails";
+            log.error(responseMsg, e);
+        }
+        return ResponseHelper.buildFailedResponse(responseMsg);
     }
 }

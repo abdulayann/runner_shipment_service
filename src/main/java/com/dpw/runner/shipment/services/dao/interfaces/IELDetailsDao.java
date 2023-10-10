@@ -7,14 +7,24 @@ import org.springframework.data.jpa.domain.Specification;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 public interface IELDetailsDao {
     ELDetails save(ELDetails elDetails);
+
+    Optional<ELDetails> findByGuid(UUID guid);
+
     Page<ELDetails> findAll(Specification<ELDetails> spec, Pageable pageable);
+
     Optional<ELDetails> findById(Long id);
+
     void delete(ELDetails elDetails);
+
     Optional<ELDetails> findByElNumber(String elNumber);
+
     List<ELDetails> updateEntityFromShipment(List<ELDetails> elDetailsList, Long shipmentId) throws Exception;
+
     List<ELDetails> saveEntityFromShipment(List<ELDetails> elDetails, Long shipmentId);
+
     List<ELDetails> updateEntityFromShipment(List<ELDetails> elDetailsList, Long shipmentId, List<ELDetails> oldEntityList) throws Exception;
 }
