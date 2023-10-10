@@ -1,9 +1,11 @@
 package com.dpw.runner.shipment.services.ReportingService.Models.Commons;
 
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+
 import java.math.BigDecimal;
 import java.util.List;
 
-public class ShipmentResponse
+public class ShipmentResponse implements IRunnerResponse
 {
     public String MasterBill;
     public String HouseBill;
