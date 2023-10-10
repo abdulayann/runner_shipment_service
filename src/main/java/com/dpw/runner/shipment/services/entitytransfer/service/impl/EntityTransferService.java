@@ -385,7 +385,7 @@ public class EntityTransferService implements IEntityTransferService {
             request.setCriteriaRequests(criteria);
             CarrierListObject carrierListObject = new CarrierListObject();
             carrierListObject.setListObject(request);
-            V1DataResponse response = v1Service.fetchCarrierMasterData(carrierListObject);
+            V1DataResponse response = v1Service.fetchCarrierMasterData(carrierListObject, true);
 
             List<EntityTransferCarrier> carrierList = jsonHelper.convertValueToList(response.entities, EntityTransferCarrier.class);
             carrierList.forEach(carrier -> {
@@ -1005,7 +1005,7 @@ public class EntityTransferService implements IEntityTransferService {
             request.setCriteriaRequests(criteria);
             CarrierListObject carrierListObject = new CarrierListObject();
             carrierListObject.setListObject(request);
-            V1DataResponse response = v1Service.fetchCarrierMasterData(carrierListObject);
+            V1DataResponse response = v1Service.fetchCarrierMasterData(carrierListObject, true);
             List<EntityTransferCarrier> carrierDataList = jsonHelper.convertValueToList(response.entities, EntityTransferCarrier.class);
             itemValueList.removeAll(carrierDataList.stream().map(x->x.getItemValue()).collect(Collectors.toSet()));
         }

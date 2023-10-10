@@ -52,7 +52,7 @@ public class CRPServiceAdapter implements com.dpw.runner.shipment.services.adapt
     public ResponseEntity<?> listCRPService(CommonRequestModel requestModel) throws Exception {
         CRPListRequest request = (CRPListRequest) requestModel.getData();
         log.info("List CRP: with request: {}", request.toString());
-        String url = crpServiceListUrl + (Objects.isNull(request.getSearchString()) ? StringUtility.getEmptyString() : request.getSearchString().replaceAll(" ", "")) + (request.isBillable() ? CustomerBookingConstants.BILLABLE_IDENTIFIER : StringUtility.getEmptyString());
+        String url = crpServiceListUrl + (Objects.isNull(request.getSearchString()) ? StringUtility.getEmptyString() : request.getSearchString().replaceAll(" ", "%20")) + (request.isBillable() ? CustomerBookingConstants.BILLABLE_IDENTIFIER : StringUtility.getEmptyString());
         log.info("List CRP: To Url: {}", url);
         ResponseEntity<?> responseEntity;
         try {
