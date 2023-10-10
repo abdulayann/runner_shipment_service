@@ -485,6 +485,18 @@ public class CustomerBookingService implements ICustomerBookingService {
             }
             CheckCreditBalanceFusionResponse checkCreditBalanceFusionResponse = modelMapper.map(response.getBody().getData(), CheckCreditBalanceFusionResponse.class);
             CheckCreditLimitResponse checkCreditLimitResponse = createCheckCreditLimitPayload(checkCreditBalanceFusionResponse);
+            try{
+                UpdateOrgCreditLimitBookingResponse updateOrgCreditLimitBookingResponse = jsonHelper.convertValue(bookingIntegrationsUtility.updateOrgCreditLimitFromBooking(checkCreditLimitResponse).getBody(), UpdateOrgCreditLimitBookingResponse.class);
+                if(updateOrgCreditLimitBookingResponse.getSuccess()){
+                    log.info("Successfully Updated Org with Credit Limit in V1");
+                }else {
+                    log.error("Error in Updating Org Credit Limit in V1 with error : {}", updateOrgCreditLimitBookingResponse.getError());
+                    throw new ValidationException("Error in Updating Org Credit Limit in V1 with error : "+ updateOrgCreditLimitBookingResponse.getError());
+                }
+            } catch (Exception ex){
+                log.error("Error in Updating Org Credit Limit in V1 with error : {} with Request Id {}", ex.getMessage(), LoggerHelper.getRequestIdFromMDC());
+                throw new RuntimeException("Error in Updating Org Credit Limit in V1 with error : "+ ex.getMessage());
+            }
             return ResponseHelper.buildSuccessResponse(checkCreditLimitResponse);
         } else {
             log.error("'Enable Global Fusion Integration' is false for this Tenant this is required for Customer Booking with Request Id {}", LoggerHelper.getRequestIdFromMDC());
@@ -514,6 +526,9 @@ public class CustomerBookingService implements ICustomerBookingService {
                 .totalCreditAvailableBalance(CommonUtils.roundOffToTwoDecimalPlace(totalCreditAvailableBalance))
                 .creditLimitUtilizedPer(CommonUtils.roundOffToTwoDecimalPlace(creditLimitUtilizedPer))
                 .overduePer(CommonUtils.roundOffToTwoDecimalPlace(overDuePer))
+                .paymentTerms(checkCreditBalanceFusionResponse.getData().getCreditDetails().get(0).getPaymentTerms())
+                .accountNumber(checkCreditBalanceFusionResponse.getData().getCreditDetails().get(0).getAccountNumber())
+                .siteNumber(checkCreditBalanceFusionResponse.getData().getCreditDetails().get(0).getSiteNumber())
                 .build();
     }
 
