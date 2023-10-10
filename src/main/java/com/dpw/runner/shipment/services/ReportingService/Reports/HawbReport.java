@@ -813,7 +813,7 @@ public class HawbReport extends IReport{
         String operator = Operators.IN.getValue();
         criteria.addAll(List.of(field, operator, List.of(values)));
         request.setCriteriaRequests(criteria);
-        V1DataResponse response = v1Service.fetchCarrierMasterData(request);
+        V1DataResponse response = v1Service.fetchCarrierMasterData(request, true);
 
         List<EntityTransferCarrier> carrierList = jsonHelper.convertValueToList(response.entities, EntityTransferCarrier.class);
         Map<String, EntityTransferCarrier> keyCarrierDataMap = new HashMap<>();
