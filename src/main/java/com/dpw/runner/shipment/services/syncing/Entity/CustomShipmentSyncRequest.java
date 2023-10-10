@@ -1,9 +1,9 @@
 package com.dpw.runner.shipment.services.syncing.Entity;
 
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
-import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -14,6 +14,8 @@ public class CustomShipmentSyncRequest implements IRunnerRequest {
 
     @JsonProperty("Guid")
     private UUID Guid;
+    @JsonProperty("ConsolidationGuids")
+    public List<UUID> ConsolidationGuids;
     @JsonProperty("HouseBill")
     private String HouseBill;
     @JsonProperty("TransportMode")

@@ -6,9 +6,12 @@ import lombok.Data;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.UUID;
 
 @Data
 public class PickupDeliveryDetailsRequestV2 {
+    @JsonProperty("Guid")
+    private UUID Guid;
     @JsonProperty("ActualPickupOrDelivery")
     private LocalDateTime ActualPickupOrDelivery;
     //DECOUPLE + SHIPMENTS REPO CHANGES
