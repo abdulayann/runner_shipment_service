@@ -36,6 +36,7 @@ public class ShipmentReverseSync {
 
             mapCarrierDetailsReverse(cs, sd);
             mapAdditionalDetailsReverse(cs, sd);
+            mapReverseShipmentGuids(sd, cs);
 
 //            // Clarity required
 //            if(cs.getStatusString() != null && !cs.getStatusString().isEmpty()){
@@ -76,6 +77,19 @@ public class ShipmentReverseSync {
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(responseMsg);
         }
+    }
+
+    private void mapReverseShipmentGuids(ShipmentDetails response, CustomShipmentSyncRequest request) {
+        if(request == null || request.getConsolidationGuids() == null)
+            return;
+        List<ConsolidationDetails> req = request.getConsolidationGuids().stream()
+                .map(item -> {
+                    ConsolidationDetails p = new ConsolidationDetails();
+                    p.setGuid(item);
+                    return p;
+                })
+                .collect(Collectors.toList());
+        response.setConsolidationList(req);
     }
 
     private void mapTruckDriverDetailReverse(CustomShipmentSyncRequest cs, ShipmentDetails sd) {
