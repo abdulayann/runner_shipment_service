@@ -159,6 +159,43 @@ public class PackingDao implements IPackingDao {
         }
     }
 
+    public List<Packing> updateEntityFromConsole(List<Packing> packingList, Long consolidationId, List<Packing> oldEntityList) throws Exception {
+        String responseMsg;
+        List<Packing> responsePackings = new ArrayList<>();
+        Map<UUID, Packing> packingMap = new HashMap<>();
+        if (oldEntityList != null && oldEntityList.size() > 0) {
+            for (Packing entity :
+                    oldEntityList) {
+                packingMap.put(entity.getGuid(), entity);
+            }
+        }
+        try {
+            Packing oldEntity;
+            List<Packing> packingRequestList = new ArrayList<>();
+            if (packingList != null && packingList.size() != 0) {
+                for (Packing request : packingList) {
+                    oldEntity = packingMap.get(request.getGuid());
+                    if (oldEntity != null) {
+                        packingMap.remove(oldEntity.getGuid());
+                        request.setId(oldEntity.getId());
+                    }
+                    packingRequestList.add(request);
+                }
+                responsePackings = saveEntityFromConsole(packingRequestList, consolidationId);
+            }
+            Map<Long, Packing> hashMap = new HashMap<>();
+            packingMap.forEach((s, packing) -> hashMap.put(packing.getId(), packing));
+
+            deletePackings(hashMap);
+            return responsePackings;
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
+            log.error(responseMsg, e);
+            throw new Exception(e);
+        }
+    }
+
     @Override
     public List<Packing> getAllPackings() {
         return packingRepository.findAll();

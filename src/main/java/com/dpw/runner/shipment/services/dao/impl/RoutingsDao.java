@@ -199,6 +199,44 @@ public class RoutingsDao implements IRoutingsDao {
     }
 
     @Override
+    public List<Routings> updateEntityFromConsole(List<Routings> routingsList, Long consolidationId, List<Routings> oldEntityList) throws Exception {
+        String responseMsg;
+        Map<UUID, Routings> routingMap = new HashMap<>();
+        if (oldEntityList != null && oldEntityList.size() > 0) {
+            for (Routings entity :
+                    oldEntityList) {
+                routingMap.put(entity.getGuid(), entity);
+            }
+        }
+
+        List<Routings> responseRoutings = new ArrayList<>();
+        try {
+            Routings oldEntity;
+            List<Routings> routingsRequestList = new ArrayList<>();
+            if (routingsList != null && routingsList.size() != 0) {
+                for (Routings request : routingsList) {
+                    oldEntity = routingMap.get(request.getGuid());
+                    if (oldEntity != null) {
+                        routingMap.remove(oldEntity.getGuid());
+                        request.setId(oldEntity.getId());
+                    }
+                    routingsRequestList.add(request);
+                }
+                responseRoutings = saveEntityFromConsole(routingsRequestList, consolidationId);
+            }
+            Map<Long, Routings> hashMap = new HashMap<>();
+            routingMap.forEach((s, routings) -> hashMap.put(routings.getId(), routings));
+            deleteRoutings(hashMap);
+            return responseRoutings;
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
+            log.error(responseMsg, e);
+            throw new Exception(e);
+        }
+    }
+
+    @Override
     public List<Routings> saveEntityFromConsole(List<Routings> routings, Long consolidationId) {
         List<Routings> res = new ArrayList<>();
         for (Routings req : routings) {

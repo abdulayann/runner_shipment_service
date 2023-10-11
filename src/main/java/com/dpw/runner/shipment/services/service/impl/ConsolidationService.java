@@ -24,7 +24,6 @@ import com.dpw.runner.shipment.services.service_bus.ISBProperties;
 import com.dpw.runner.shipment.services.service_bus.SBUtilsImpl;
 import com.dpw.runner.shipment.services.syncing.interfaces.IConsolidationSync;
 import com.dpw.runner.shipment.services.utils.StringUtility;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
@@ -796,6 +795,7 @@ public class ConsolidationService implements IConsolidationService {
                     sumWeight = sumWeight.add(new BigDecimal(convertUnit(Constants.MASS, shipmentDetails.getWeight(), shipmentDetails.getWeightUnit(), weightChargeableUnit).toString()));
                     sumVolume = sumVolume.add(new BigDecimal(convertUnit(Constants.VOLUME, shipmentDetails.getVolume(), shipmentDetails.getVolumeUnit(), volumeChargeableUnit).toString()));
                 }
+                consolidationDetails.getAllocations().setShipmentsCount(consolidationDetails.getShipmentsList().size());
             }
             consolidationDetails.getAchievedQuantities().setConsolidatedWeight(sumWeight);
             consolidationDetails.getAchievedQuantities().setConsolidatedWeightUnit(weightChargeableUnit);
@@ -1190,27 +1190,45 @@ public class ConsolidationService implements IConsolidationService {
                 response.setContainersList(updatedContainers.stream().map(e -> jsonHelper.convertValue(e, ContainerResponse.class)).collect(Collectors.toList()));
 
             if (packingRequestList != null) {
-                List<Packing> updatedPackings = packingDao.updateEntityFromConsole(convertToEntityList(packingRequestList, Packing.class), id);
+                ListCommonRequest listCommonRequest = constructListCommonRequest("consolidationId", entity.getId(), "=");
+                Pair<Specification<Packing>, Pageable> packingPair = fetchData(listCommonRequest, Packing.class);
+                Page<Packing> oldPackings = packingDao.findAll(packingPair.getLeft(), packingPair.getRight());
+                List<Packing> updatedPackings = packingDao.updateEntityFromConsole(convertToEntityList(packingRequestList, Packing.class), id, oldPackings.stream().toList());
                 response.setPackingList(convertToDtoList(updatedPackings, PackingResponse.class));
             }
             if (eventsRequestList != null) {
-                List<Events> updatedEvents = eventDao.updateEntityFromOtherEntity(convertToEntityList(eventsRequestList, Events.class), id, Constants.CONSOLIDATION);
+                ListCommonRequest listCommonRequest = constructListRequestFromEntityId(entity.getId(), Constants.CONSOLIDATION);
+                Pair<Specification<Events>, Pageable> pair = fetchData(listCommonRequest, Events.class);
+                Page<Events> oldEvents = eventDao.findAll(pair.getLeft(), pair.getRight());
+                List<Events> updatedEvents = eventDao.updateEntityFromOtherEntity(convertToEntityList(eventsRequestList, Events.class), id, Constants.CONSOLIDATION, oldEvents.stream().toList());
                 response.setEventsList(convertToDtoList(updatedEvents, EventsResponse.class));
             }
             if (fileRepoRequestList != null) {
-                List<FileRepo> updatedFileRepos = fileRepoDao.updateEntityFromOtherEntity(convertToEntityList(fileRepoRequestList, FileRepo.class), id, Constants.CONSOLIDATION);
+                ListCommonRequest listCommonRequest = constructListRequestFromEntityId(entity.getId(), Constants.CONSOLIDATION);
+                Pair<Specification<FileRepo>, Pageable> pair = fetchData(listCommonRequest, FileRepo.class);
+                Page<FileRepo> oldFileRepoList = fileRepoDao.findAll(pair.getLeft(), pair.getRight());
+                List<FileRepo> updatedFileRepos = fileRepoDao.updateEntityFromOtherEntity(convertToEntityList(fileRepoRequestList, FileRepo.class), id, Constants.CONSOLIDATION, oldFileRepoList.stream().toList());
                 response.setFileRepoList(convertToDtoList(updatedFileRepos, FileRepoResponse.class));
             }
             if (jobRequestList != null) {
-                List<Jobs> updatedJobs = jobDao.updateEntityFromConsole(convertToEntityList(jobRequestList, Jobs.class), id);
+                ListCommonRequest listCommonRequest = constructListCommonRequest("consolidationId", entity.getId(), "=");
+                Pair<Specification<Jobs>, Pageable> pair = fetchData(listCommonRequest, Jobs.class);
+                Page<Jobs> oldJobs = jobDao.findAll(pair.getLeft(), pair.getRight());
+                List<Jobs> updatedJobs = jobDao.updateEntityFromConsole(convertToEntityList(jobRequestList, Jobs.class), id, oldJobs.stream().toList());
                 response.setJobsList(convertToDtoList(updatedJobs, JobResponse.class));
             }
             if (referenceNumbersRequestList != null) {
-                List<ReferenceNumbers> updatedReferenceNumbers = referenceNumbersDao.updateEntityFromConsole(convertToEntityList(referenceNumbersRequestList, ReferenceNumbers.class), id);
+                ListCommonRequest listCommonRequest = constructListCommonRequest("consolidationId", entity.getId(), "=");
+                Pair<Specification<ReferenceNumbers>, Pageable> pair = fetchData(listCommonRequest, ReferenceNumbers.class);
+                Page<ReferenceNumbers> oldReferenceNumbers = referenceNumbersDao.findAll(pair.getLeft(), pair.getRight());
+                List<ReferenceNumbers> updatedReferenceNumbers = referenceNumbersDao.updateEntityFromConsole(convertToEntityList(referenceNumbersRequestList, ReferenceNumbers.class), id, oldReferenceNumbers.stream().toList());
                 response.setReferenceNumbersList(convertToDtoList(updatedReferenceNumbers, ReferenceNumbersResponse.class));
             }
             if (routingsRequestList != null) {
-                List<Routings> updatedRoutings = routingsDao.updateEntityFromConsole(convertToEntityList(routingsRequestList, Routings.class), id);
+                ListCommonRequest listCommonRequest = constructListCommonRequest("consolidationId", entity.getId(), "=");
+                Pair<Specification<Routings>, Pageable> pair = fetchData(listCommonRequest, Routings.class);
+                Page<Routings> oldRoutings = routingsDao.findAll(pair.getLeft(), pair.getRight());
+                List<Routings> updatedRoutings = routingsDao.updateEntityFromConsole(convertToEntityList(routingsRequestList, Routings.class), id, oldRoutings.stream().toList());
                 response.setRoutingsList(convertToDtoList(updatedRoutings, RoutingsResponse.class));
             }
             return ResponseHelper.buildSuccessResponse(response);

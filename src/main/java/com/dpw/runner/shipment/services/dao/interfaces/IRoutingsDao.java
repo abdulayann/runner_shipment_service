@@ -29,6 +29,7 @@ public interface IRoutingsDao {
     List<Routings> saveEntityFromBooking(List<Routings> routings, Long bookingId);
 
     List<Routings> updateEntityFromConsole(List<Routings> routingsList, Long consolidationId) throws Exception;
+    List<Routings> updateEntityFromConsole(List<Routings> routingsList, Long consolidationId, List<Routings> oldEntityList) throws Exception;
 
     List<Routings> saveEntityFromConsole(List<Routings> routings, Long consolidationId);
 
