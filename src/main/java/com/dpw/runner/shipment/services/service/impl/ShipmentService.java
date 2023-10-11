@@ -19,6 +19,7 @@ import com.dpw.runner.shipment.services.dto.v1.response.V1ContainerTypeResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.GenerationType;
+import com.dpw.runner.shipment.services.entitytransfer.dto.*;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
@@ -1554,6 +1555,7 @@ public class ShipmentService implements IShipmentService {
         this.addAllMasterDatas(shipmentDetails, shipmentDetailsResponse);
         this.addAllUnlocationDatas(shipmentDetails, shipmentDetailsResponse);
         this.addDedicatedMasterData(shipmentDetails, shipmentDetailsResponse);
+        this.addAllContainerTypesInSingleCall(shipmentDetails,shipmentDetailsResponse);
     }
     private void addAllMasterDatas (ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse) {
         shipmentDetailsResponse.setMasterData(masterDataUtils.addMasterData(shipmentDetailsResponse, ShipmentDetails.class));
@@ -1583,6 +1585,18 @@ public class ShipmentService implements IShipmentService {
             shipmentDetailsResponse.getCarrierDetails().setCarrierMasterData(masterDataUtils.carrierMasterData(shipmentDetailsResponse.getCarrierDetails(), CarrierDetails.class));
         }
         shipmentDetailsResponse.setCurrenciesMasterData(masterDataUtils.currencyMasterData(shipmentDetails, ShipmentDetails.class));
+    }
+
+    private void addAllContainerTypesInSingleCall(ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse) {
+        Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
+        List<String> containerTypes = new ArrayList<>();
+        if (!Objects.isNull(shipmentDetailsResponse.getContainersList()))
+            shipmentDetailsResponse.getContainersList().forEach(r -> containerTypes.addAll(masterDataUtils.createInBulkCommodityTypeRequest(r, Containers.class, fieldNameKeyMap, String.valueOf(r.hashCode()))));
+
+        Map<String, EntityTransferCommodityType> v1Data = masterDataUtils.fetchInBulkCommodityTypes(containerTypes);
+
+        if (!Objects.isNull(shipmentDetailsResponse.getContainersList()))
+            shipmentDetailsResponse.getContainersList().forEach(r -> r.setCommodityTypeData(masterDataUtils.setInBulkCommodityTypes(fieldNameKeyMap.get(String.valueOf(r.hashCode())), v1Data)));
     }
 
 
