@@ -4,12 +4,15 @@ import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.AwbRequest;
 import com.dpw.runner.shipment.services.dto.request.CreateAwbRequest;
 import com.dpw.runner.shipment.services.dto.response.AwbResponse;
 import com.dpw.runner.shipment.services.dto.response.BookingCarriageResponse;
+import com.dpw.runner.shipment.services.entity.Awb;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IAwbService;
 import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
@@ -18,12 +21,15 @@ import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
+import java.util.ArrayList;
 import java.util.List;
+
 
 @SuppressWarnings("ALL")
 @RestController
@@ -35,11 +41,35 @@ public class AwbController {
     @Autowired
     ObjectMapper objectMapper;
 
+    @Autowired
+    private JsonHelper jsonHelper;
+
     @ApiResponses(value = {@ApiResponse(code = 200, message = AwbConstants.AWB_LIST_SUCCESSFUL, responseContainer = AwbConstants.RESPONSE_CONTAINER_LIST)})
     @PostMapping(ApiConstants.API_LIST)
-    public ResponseEntity<RunnerListResponse<AwbResponse>> list(@RequestBody @Valid ListCommonRequest listCommonRequest) {
-        return (ResponseEntity<RunnerListResponse<AwbResponse>>) awbService.list(CommonRequestModel.buildRequest(listCommonRequest));
+    public ResponseEntity<?> list(@RequestBody @Valid ListCommonRequest listCommonRequest) {
+
+        try {
+            List<String>includeColumns = listCommonRequest.getIncludeColumns();
+            ResponseEntity<RunnerListResponse<AwbResponse>>list = (ResponseEntity<RunnerListResponse<AwbResponse>>) awbService.list(CommonRequestModel.buildRequest(listCommonRequest));
+            if(includeColumns==null||includeColumns.size()==0)return list;
+            List<Object> filtered_list= new ArrayList<>();
+
+            for( AwbResponse curr: list.getBody().getData()){
+                //    filtered_list.add((AwbResponse)jsonHelper.readFromJson(PartialFetchUtils.fetchPartialData((ResponseEntity<RunnerResponse<AwbResponse>>)ResponseHelper.buildSuccessResponse(curr),includeColumns).toString(), AwbResponse.class));
+                filtered_list.add(jsonHelper.readFromJson(PartialFetchUtils.fetchPartialData((ResponseEntity<RunnerResponse<AwbResponse>>)ResponseHelper.buildSuccessResponse(curr),includeColumns).toString(), Object.class));
+            }
+            return ResponseEntity.ok(filtered_list);
+            // ResponseEntity<?> response = ResponseHelper.buildListSuccessResponse(filtered_list);
+            // return (ResponseEntity<RunnerListResponse<AwbResponse>>)response;
+
+        } catch (Exception ex) {
+            System.out.println(ex.toString());
+        }
+        return ResponseEntity.ok(null);
+
     }
+
+
 
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = AwbConstants.AWB_CREATE_SUCCESSFUL),
