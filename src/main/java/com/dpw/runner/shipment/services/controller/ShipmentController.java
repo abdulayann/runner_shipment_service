@@ -264,4 +264,11 @@ public class ShipmentController {
         }
         return ResponseHelper.buildFailedResponse(responseMsg);
     }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.CREATE_SUCCESSFUL)})
+    @GetMapping(ApiConstants.API_CLONE)
+    public ResponseEntity<RunnerResponse<ShipmentDetailsResponse>> cloneById(@ApiParam(value = ShipmentConstants.SHIPMENT_ID, required = true) @RequestParam Long id) {
+        CommonGetRequest request = CommonGetRequest.builder().id(id).build();
+        return (ResponseEntity<RunnerResponse<ShipmentDetailsResponse>>) shipmentService.cloneShipment(CommonRequestModel.buildRequest(request));
+    }
 }
