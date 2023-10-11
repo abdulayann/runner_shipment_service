@@ -55,6 +55,7 @@ public class CustomerBookingResponse implements IRunnerResponse {
     private BookingSource source;
     private String businessCode;
     private String shipmentId;
+    private String shipmentEntityId;
     private List<ContainerResponse> containersList;
     private List<PackingResponse> packingList;
     private List<RoutingsResponse> routingList;
