@@ -131,6 +131,44 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
     }
 
     @Override
+    public List<ReferenceNumbers> updateEntityFromConsole(List<ReferenceNumbers> referenceNumbersList, Long consolidationId, List<ReferenceNumbers> oldEntityList) throws Exception {
+        String responseMsg;
+        Map<UUID, ReferenceNumbers> referenceNumbersMap = new HashMap<>();
+        if(oldEntityList != null && oldEntityList.size() > 0) {
+            for (ReferenceNumbers entity:
+                    oldEntityList) {
+                referenceNumbersMap.put(entity.getGuid(), entity);
+            }
+        }
+
+        List<ReferenceNumbers> responseReferenceNumbers = new ArrayList<>();
+        try {
+            ReferenceNumbers oldEntity;
+            List<ReferenceNumbers> referenceNumbersRequests = new ArrayList<>();
+            if (referenceNumbersList != null && referenceNumbersList.size() != 0) {
+                for (ReferenceNumbers request : referenceNumbersList) {
+                    oldEntity = referenceNumbersMap.get(request.getGuid());
+                    if(oldEntity != null) {
+                        referenceNumbersMap.remove(oldEntity.getGuid());
+                        request.setId(oldEntity.getId());
+                    }
+                    referenceNumbersRequests.add(request);
+                }
+                responseReferenceNumbers = saveEntityFromConsole(referenceNumbersRequests, consolidationId);
+            }
+            Map<Long, ReferenceNumbers> hashMap = new HashMap<>();
+            referenceNumbersMap.forEach((s, referenceNumbers) ->  hashMap.put(referenceNumbers.getId(), referenceNumbers));
+            deleteReferenceNumbers(hashMap);
+            return responseReferenceNumbers;
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
+            log.error(responseMsg, e);
+            throw new Exception(e);
+        }
+    }
+
+    @Override
     public List<ReferenceNumbers> saveEntityFromConsole(List<ReferenceNumbers> referenceNumbersRequests, Long consolidationId) {
         List<ReferenceNumbers> res = new ArrayList<>();
         for(ReferenceNumbers req : referenceNumbersRequests){
