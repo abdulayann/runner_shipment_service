@@ -110,5 +110,4 @@ public class AdditionalDetailRequest extends CommonRequest implements IRunnerReq
     private PartiesRequest borrowedFrom;
     private PartiesRequest sendingAgent;
     private PartiesRequest receivingAgent;
-    private String customDeclType;
 }

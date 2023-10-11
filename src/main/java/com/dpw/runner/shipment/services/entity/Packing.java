@@ -203,8 +203,5 @@ public class Packing extends MultiTenancy {
 
     @Column(name = "is_contract_enforced")
     private Boolean isContractEnforced;
-
-    @Column(name = "handling_info")
-    private String handlingInfo;
 }
 
