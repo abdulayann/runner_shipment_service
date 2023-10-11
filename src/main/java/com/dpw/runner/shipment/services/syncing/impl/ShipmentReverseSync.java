@@ -117,6 +117,7 @@ public class ShipmentReverseSync {
         carrierDetails.setDestinationPort(cs.getDestinationPortName());
         carrierDetails.setOrigin(cs.getOriginName());
         carrierDetails.setOriginPort(cs.getOriginPortName());
+        carrierDetails.setGuid(null);
         sd.setCarrierDetails(carrierDetails);
     }
 
@@ -125,6 +126,7 @@ public class ShipmentReverseSync {
         additionalDetails.setReceivingForwarder(mapPartyObject(cs.getReceivingForwarderParty()));
         additionalDetails.setSendingForwarder(mapPartyObject(cs.getSendingForwarderParty()));
         additionalDetails.setTraderOrSupplier(mapPartyObject(cs.getTraderOrSupplierParty()));
+        additionalDetails.setGuid(null);
         sd.setAdditionalDetails(additionalDetails);
     }
 
