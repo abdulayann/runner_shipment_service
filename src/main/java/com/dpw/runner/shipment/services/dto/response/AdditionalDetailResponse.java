@@ -122,5 +122,5 @@ public class AdditionalDetailResponse implements IRunnerResponse {
     private PartiesResponse receivingAgent;
     Map<String, String> masterData;
     Map<String, String> unlocationData;
-
+    private String customDeclType;
 }
