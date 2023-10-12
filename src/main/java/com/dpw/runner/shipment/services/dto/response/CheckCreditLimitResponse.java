@@ -1,7 +1,6 @@
 package com.dpw.runner.shipment.services.dto.response;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import io.swagger.models.auth.In;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -20,4 +19,7 @@ public class CheckCreditLimitResponse implements IRunnerResponse {
     private double totalCreditAvailableBalance;
     private double creditLimitUtilizedPer;
     private double overduePer;
+    private String paymentTerms;
+    private String siteNumber;
+    private String accountNumber;
 }

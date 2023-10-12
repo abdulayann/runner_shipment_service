@@ -8,6 +8,7 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.dao.interfaces.ICustomerBookingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IIntegrationResponseDao;
 import com.dpw.runner.shipment.services.dto.request.platform.*;
+import com.dpw.runner.shipment.services.dto.response.CheckCreditLimitResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
 import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
@@ -88,6 +89,16 @@ public class BookingIntegrationsUtility {
             return response;
         } catch (Exception ex) {
             log.error("Booking Creation error from Platform for booking number: {} with error message: {}", customerBooking.getBookingNumber(), ex.getMessage());
+            throw ex;
+        }
+    }
+
+    public ResponseEntity<?> updateOrgCreditLimitFromBooking(CheckCreditLimitResponse request) {
+        try {
+            var response = v1Service.updateOrgCreditLimitFromBooking(request);
+            return response;
+        } catch (Exception ex) {
+            log.error("Error updating Credit Limit for Org with CustomerIdentifier: {} with error message: {}", request.getAccountNumber(), ex.getMessage());
             throw ex;
         }
     }
