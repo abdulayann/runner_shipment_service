@@ -149,9 +149,9 @@ public class ConsolidationSync implements IConsolidationSync {
         if(request == null || request.getCarrierDetails() == null)
             return;
         modelMapper.map(request.getCarrierDetails(), response);
-        response.setDestinationName(request.getCarrierDetails().getDestination());
+        response.setLastDischargeString(request.getCarrierDetails().getDestination());
         response.setDestinationPortName(request.getCarrierDetails().getDestinationPort());
-        response.setOriginName(request.getCarrierDetails().getOrigin());
+        response.setFirstLoadString(request.getCarrierDetails().getOrigin());
         response.setOriginPortName(request.getCarrierDetails().getOriginPort());
     }
 

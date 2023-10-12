@@ -137,9 +137,9 @@ public class ConsolidationReverseSync implements IConsolidationReverseSync {
             return;
         response.setCarrierDetails(new CarrierDetailRequest());
         modelMapper.map(request, response.getCarrierDetails());
-        response.getCarrierDetails().setDestination(request.getDestinationName());
+        response.getCarrierDetails().setDestination(request.getLastDischargeString());
         response.getCarrierDetails().setDestinationPort(request.getDestinationPortName());
-        response.getCarrierDetails().setOrigin(request.getOriginName());
+        response.getCarrierDetails().setOrigin(request.getFirstLoadString());
         response.getCarrierDetails().setOriginPort(request.getOriginPortName());
         response.getCarrierDetails().setGuid(null);
         response.getCarrierDetails().setId(null);
