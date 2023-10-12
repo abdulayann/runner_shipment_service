@@ -72,5 +72,4 @@ public class PackingRequest extends CommonRequest implements IRunnerRequest {
     private String commodityGroup;
     private Boolean isDimension;
     private Boolean isContractEnforced;
-    private String handlingInfo;
 }

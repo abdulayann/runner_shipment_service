@@ -344,8 +344,4 @@ public class AdditionalDetails extends MultiTenancy {
 
     @Column(name = "shipment_id")
     private Long shipmentId;
-
-    @Column(name = "custom_decl_type")
-    @MasterData(type = MasterDataType.CUSTOM_DECL_TYPE)
-    private String customDeclType;
 }
