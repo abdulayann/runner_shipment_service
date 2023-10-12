@@ -98,6 +98,7 @@ public class ShipmentSync implements IShipmentSync {
 
         cs.setBookingCarriages(convertToList(sd.getBookingCarriagesList(), BookingCarriageRequestV2.class));
         cs.setShipmentId(sd.getShipmentId());
+        cs.setGuid(sd.getGuid());
 
         String finalCs = jsonHelper.convertToJson(cs);
         retryTemplate.execute(ctx -> {
