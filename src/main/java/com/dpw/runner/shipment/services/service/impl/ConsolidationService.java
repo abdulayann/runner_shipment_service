@@ -326,7 +326,7 @@ public class ConsolidationService implements IConsolidationService {
                 createRoutingsAsync(consolidationDetails, routingsRequest);
 
             try {
-                consolidationSync.sync(request);
+                consolidationSync.sync(jsonHelper.convertValue(consolidationDetails, ConsolidationDetailsRequest.class));
             } catch (Exception e){
                 log.error("Error performing sync on consolidation entity, {}", e);
             }
@@ -505,6 +505,11 @@ public class ConsolidationService implements IConsolidationService {
         if (entity.getContainersList() == null)
             entity.setContainersList(oldEntity.get().getContainersList());
         entity = consolidationDetailsDao.update(entity);
+        try {
+            consolidationSync.sync(jsonHelper.convertValue(entity, ConsolidationDetailsRequest.class));
+        } catch (Exception e) {
+            log.error("Error performing sync on consol entity, {}", e);
+        }
         return ResponseHelper.buildSuccessResponse(jsonHelper.convertValue(entity, ConsolidationDetailsResponse.class));
 
     }
@@ -525,6 +530,8 @@ public class ConsolidationService implements IConsolidationService {
                 }
             }
         }
+        Optional<ConsolidationDetails> consol = consolidationDetailsDao.findById(consolidationId);
+        consolidationSync.sync(jsonHelper.convertValue(consol.get(), ConsolidationDetailsRequest.class));
         return new ResponseEntity<>(HttpStatus.OK);
     }
 
@@ -562,6 +569,8 @@ public class ConsolidationService implements IConsolidationService {
                 }
             }
         }
+        Optional<ConsolidationDetails> consol = consolidationDetailsDao.findById(consolidationId);
+        consolidationSync.sync(jsonHelper.convertValue(consol.get(), ConsolidationDetailsRequest.class));
 
         return new ResponseEntity<>(HttpStatus.OK);
     }

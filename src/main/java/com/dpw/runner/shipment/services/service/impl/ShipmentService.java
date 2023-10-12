@@ -934,6 +934,12 @@ public class ShipmentService implements IShipmentService {
                 response.setNotesList(convertToDtoList(updatedNotes, NotesResponse.class));
             }
 
+            try {
+                shipmentSync.sync(entity);
+            } catch (Exception e){
+                log.error("Error performing sync on shipment entity, {}", e);
+            }
+
             return ResponseHelper.buildSuccessResponse(response);
         } catch (ExecutionException e) {
             String responseMsg = e.getMessage() != null ? e.getMessage()
