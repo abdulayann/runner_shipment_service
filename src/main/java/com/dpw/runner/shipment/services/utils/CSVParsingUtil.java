@@ -4,20 +4,27 @@ import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.enums.ContainerStatus;
 import com.opencsv.CSVReader;
 import com.opencsv.exceptions.CsvException;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.input.BOMInputStream;
+import org.apache.commons.text.WordUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 
+@Slf4j
 public class CSVParsingUtil<T> {
 
     private Class<T> entityClass;
+    private final Set<String> hiddenFields = Set.of("pickupAddress",
+            "deliveryAddress", "eventsList", "packsList", "shipmentsList", "bookingCharges");
 
     public CSVParsingUtil(Class<T> entityClass) {
         this.entityClass = entityClass;
@@ -39,25 +46,23 @@ public class CSVParsingUtil<T> {
         StringBuilder lineBuilder = new StringBuilder();
         Field[] fields = Containers.class.getDeclaredFields();
         for (Field field : fields) {
+            if (hiddenFields.contains(field.getName())) continue;
             field.setAccessible(true);
             try {
                 Object value = field.get(entity);
-                if (lineBuilder.length() > 0) {
-                    lineBuilder.append(",");
-                }
                 lineBuilder.append(value != null ? value.toString() : "");
+                lineBuilder.append(",");
             } catch (IllegalAccessException e) {
                 e.printStackTrace();
             }
         }
+        lineBuilder.deleteCharAt(lineBuilder.length() - 1);
         return lineBuilder.toString();
     }
 
 
     public String getCamelCase(String name) {
-        StringBuilder sb = new StringBuilder(name);
-        sb.setCharAt(0, Character.toLowerCase(name.charAt(0)));
-        return sb.toString();
+        return WordUtils.uncapitalize(name);
     }
 
     private T createEntityInstance() throws InstantiationException, IllegalAccessException {
@@ -67,7 +72,7 @@ public class CSVParsingUtil<T> {
     public List<T> parseCSVFile(MultipartFile file) throws IOException, CsvException {
         List<T> entityList = new ArrayList<>();
         List<String> mandatoryColumns = List.of("ContainerNumber", "ContainerCount", "ContainerCode");
-        try (CSVReader csvReader = new CSVReader(new InputStreamReader(file.getInputStream()))) {
+        try (CSVReader csvReader = new CSVReader(new InputStreamReader(new BOMInputStream(file.getInputStream()), StandardCharsets.UTF_8))) {
             String[] header = csvReader.readNext();
             for (int i = 0; i < header.length; i++) {
                 header[i] = getCamelCase(header[i]);
@@ -94,7 +99,8 @@ public class CSVParsingUtil<T> {
 
         Class<?> fieldType = field.getType();
         Object parsedValue = null;
-
+        if (attributeValue.isEmpty())
+            return;
         if (fieldType == int.class || fieldType == Integer.class) {
             parsedValue = Integer.parseInt(attributeValue);
         } else if (fieldType == String.class) {
