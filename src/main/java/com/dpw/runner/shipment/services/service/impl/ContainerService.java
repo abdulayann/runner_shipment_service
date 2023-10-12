@@ -273,8 +273,7 @@ public class ContainerService implements IContainerService {
             if (request == null) {
                 log.error("Request is empty for Containers List with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
-            List<ShipmentsContainersMapping> shipmentsContainersMappings = shipmentsContainersMappingDao.findByShipmentId(request.getId());
-            ListCommonRequest listCommonRequest = constructListCommonRequest("id", shipmentsContainersMappings.stream().map(e -> e.getContainerId()).collect(Collectors.toList()), "IN");
+            ListCommonRequest listCommonRequest = constructListCommonRequest("shipmentsList", request.getId(), "CONTAINS");
             Pair<Specification<Containers>, Pageable> pair = fetchData(listCommonRequest, Containers.class);
             Page<Containers> containersPage = containerDao.findAll(pair.getLeft(), pair.getRight());
 
