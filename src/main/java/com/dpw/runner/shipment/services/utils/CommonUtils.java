@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.commons.requests.Criteria;
 import com.dpw.runner.shipment.services.commons.requests.FilterCriteria;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.itextpdf.text.*;
 import com.itextpdf.text.pdf.*;
@@ -12,6 +13,7 @@ import org.krysalis.barcode4j.impl.upcean.EAN13Bean;
 import org.krysalis.barcode4j.output.bitmap.BitmapCanvasProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.stereotype.Component;
 
@@ -32,6 +34,9 @@ import java.util.stream.Collectors;
 public class CommonUtils {
 
     private static ObjectMapper mapper;
+
+    @Autowired
+    private JsonHelper jsonHelper;
 
     private static final Logger LOG = LoggerFactory.getLogger(CommonUtils.class);
     private static final String resourcePath = String.format("%s%s", System.getProperty("user.dir"), "/src/main/resources/");
@@ -153,6 +158,16 @@ public class CommonUtils {
         return  lst.stream()
                 .map(item -> convertToClass(item, clazz))
                 .collect(Collectors.toList());
+    }
+
+    public <T,P extends MultiTenancy> List<P> convertToCreateEntityList(final List<T> lst, Class<P> clazz) {
+        return  lst.stream()
+                .map(item -> this.convertToCreateClass(item, clazz))
+                .collect(Collectors.toList());
+    }
+
+    public <T,P> P convertToCreateClass(T obj, Class<P> clazz) {
+        return jsonHelper.convertCreateValue(obj, clazz);
     }
 
     public static byte[] ImageToByte(BufferedImage img) throws IOException {

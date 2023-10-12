@@ -20,4 +20,5 @@ public interface IShipmentService extends ICommonService{
     ResponseEntity<?> partialUpdate(CommonRequestModel commonRequestModel) throws Exception;
     ResponseEntity<?> toggleLock(CommonRequestModel commonRequestModel);
     ResponseEntity<?> completeV1ShipmentCreateAndUpdate(CommonRequestModel commonRequestModel) throws Exception;
+    ResponseEntity<?> cloneShipment(CommonRequestModel commonRequestModel);
 }

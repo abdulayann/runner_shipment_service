@@ -94,4 +94,5 @@ public class AdditionalDetailsListResponse implements IRunnerResponse {
     private Boolean WBLPrinted;
     private Boolean draftPrinted;
     private Boolean surrenderPrinted;
+    private PartiesResponse notifyParty;
 }
