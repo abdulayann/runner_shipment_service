@@ -2,10 +2,8 @@ package com.dpw.runner.shipment.services.syncing.Entity;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
-import org.apache.poi.hpsf.GUID;
 
 import java.util.Map;
-import java.util.UUID;
 
 @Data
 public class PartyRequestV2 {
@@ -25,6 +23,4 @@ public class PartyRequestV2 {
     private int TenantId;
     @JsonProperty("Type")
     private String Type;
-    @JsonProperty("Guid")
-    private UUID Guid;
 }
