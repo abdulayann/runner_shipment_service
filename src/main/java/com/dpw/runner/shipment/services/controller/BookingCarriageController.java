@@ -78,28 +78,10 @@ public class BookingCarriageController {
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = BookingCarriageConstants.BOOKING_CARRIAGE_RETRIEVE_BY_ID_SUCCESSFUL)})
     @GetMapping(ApiConstants.API_RETRIEVE_BY_ID)
-    public ResponseEntity<RunnerResponse<BookingCarriageResponse>> retrieveById(@ApiParam(value = BookingCarriageConstants.BOOKING_CARRIAGE_ID, required = true) @RequestParam Long id) {
-        CommonGetRequest request = CommonGetRequest.builder().id(id).build();
+    public ResponseEntity<RunnerResponse<BookingCarriageResponse>> retrieveById(@ApiParam(value = BookingCarriageConstants.BOOKING_CARRIAGE_ID, required = true) @RequestParam Long id,@RequestParam(name = "includeColumns", required = false) List<String> includeColumns) {
+        CommonGetRequest request = CommonGetRequest.builder().id(id).includeColumns(includeColumns).build();
         return (ResponseEntity<RunnerResponse<BookingCarriageResponse>>) bookingCarriageService.retrieveById(CommonRequestModel.buildRequest(request));
     }
-
-    // Partial retrieve by id to get the selected fields
-
-    @ApiResponses(value = {@ApiResponse(code = 200, message = BookingCarriageConstants.BOOKING_CARRIAGE_RETRIEVE_BY_ID_SUCCESSFUL)})
-    @GetMapping(ApiConstants.API_RETRIEVE_BY_ID_PARTIAL)
-    public ResponseEntity<?> retrieveByIdPartial(@RequestParam(name = "includeColumns", required = false) List<String> includeColumns, @RequestParam Long id) {
-        CommonGetRequest request = CommonGetRequest.builder().id(id).build();
-        try {
-            ResponseEntity<RunnerResponse<BookingCarriageResponse>> booking = (ResponseEntity<RunnerResponse<BookingCarriageResponse>>) bookingCarriageService.retrieveById(CommonRequestModel.buildRequest(request));
-            return ResponseEntity.ok(PartialFetchUtils.fetchPartialData(booking, includeColumns));
-        } catch (Exception ex) {
-            System.out.println(ex.toString());
-        }
-        return ResponseEntity.ok(null);
-    }
-
-
-
         @ApiResponses(value = {@ApiResponse(code = 200, message = BookingCarriageConstants.BOOKING_CARRIAGE_UPDATE_SUCCESSFUL, response = RunnerResponse.class)})
     @PutMapping(ApiConstants.API_UPDATE)
     public ResponseEntity<RunnerResponse> update(@RequestBody @Valid BookingCarriageRequest request) {

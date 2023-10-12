@@ -75,23 +75,11 @@ public class CarrierDetailController {
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = CarrierDetailConstants.CARRIER_DETAIL_RETRIEVE_BY_ID_SUCCESSFUL)})
     @GetMapping(ApiConstants.API_RETRIEVE_BY_ID)
-    public ResponseEntity retrieve(@RequestParam @NonNull Long id) {
-        CommonGetRequest request = CommonGetRequest.builder().id(id).build();
+    public ResponseEntity retrieve(@RequestParam @NonNull Long id, @RequestParam(name = "includeColumns", required = false) List<String> includeColumns) {
+        CommonGetRequest request = CommonGetRequest.builder().id(id).includeColumns(includeColumns).build();
         return (ResponseEntity<RunnerResponse<CarrierDetailResponse>>) carrierDetailService.retrieveById(CommonRequestModel.buildRequest(request));
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = CarrierDetailConstants.CARRIER_DETAIL_RETRIEVE_BY_ID_SUCCESSFUL)})
-    @GetMapping(ApiConstants.API_RETRIEVE_BY_ID_PARTIAL)
-    public ResponseEntity<?> retrieveByIdPartial(@RequestParam(name = "includeColumns", required = false) List<String> includeColumns, @RequestParam Long id) {
-        CommonGetRequest request = CommonGetRequest.builder().id(id).build();
-        try {
-            ResponseEntity<RunnerResponse<CarrierDetailResponse>> carriage = (ResponseEntity<RunnerResponse<CarrierDetailResponse>>) carrierDetailService.retrieveById(CommonRequestModel.buildRequest(request));
-            return ResponseEntity.ok(PartialFetchUtils.fetchPartialData(carriage, includeColumns));
-        } catch (Exception ex) {
-            System.out.println(ex.toString());
-        }
-        return ResponseEntity.ok(null);
-    }
 
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = CarrierDetailConstants.CARRIER_DETAIL_LIST_SUCCESSFUL, responseContainer = CarrierDetailConstants.CARRIER_DETAIL_LIST_SUCCESSFUL)

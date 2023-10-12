@@ -10,6 +10,8 @@ import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.commons.responses.RunnerPartialListResponse;
+import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.request.AwbRequest;
 import com.dpw.runner.shipment.services.dto.request.CreateAwbRequest;
@@ -24,6 +26,7 @@ import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IAwbService;
 import com.dpw.runner.shipment.services.utils.AwbUtility;
+import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.dpw.runner.shipment.services.utils.V1AuthHelper;
 import com.nimbusds.jose.util.Pair;
@@ -185,10 +188,29 @@ public class AwbService implements IAwbService {
             Pair<Specification<Awb>, Pageable> tuple = fetchData(request, Awb.class);
             Page<Awb> awbPage = awbDao.findAll(tuple.getLeft(), tuple.getRight());
             log.info("AWB list retrieved successfully for Request Id {}", LoggerHelper.getRequestIdFromMDC());
-            return ResponseHelper.buildListSuccessResponse(
-                    convertEntityListToDtoList(awbPage.getContent()),
-                    awbPage.getTotalPages(),
-                    awbPage.getTotalElements());
+
+            List<String>includeColumns = request.getIncludeColumns();
+
+            if(includeColumns==null||includeColumns.size()==0){
+                return ResponseHelper.buildListSuccessResponse(
+                        convertEntityListToDtoList(awbPage.getContent()),
+                        awbPage.getTotalPages(),
+                        awbPage.getTotalElements());
+            }
+            else{
+
+                List<IRunnerResponse>filtered_list=new ArrayList<>();
+                for( var curr: convertEntityListToDtoList(awbPage.getContent())){
+                    RunnerPartialListResponse res=new RunnerPartialListResponse();
+                    res.setData(PartialFetchUtils.fetchPartialListData(curr,request.getIncludeColumns()));
+                    filtered_list.add( res);
+                }
+                return ResponseHelper.buildListSuccessResponse(
+                        filtered_list,
+                        awbPage.getTotalPages(),
+                        awbPage.getTotalElements());
+            }
+
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;
@@ -215,7 +237,11 @@ public class AwbService implements IAwbService {
             }
             log.info("AWB fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
             AwbResponse response = convertEntityToDto(awb.get());
-            return ResponseHelper.buildSuccessResponse(response);
+
+            if(request.getIncludeColumns()==null||request.getIncludeColumns().size()==0)
+                return ResponseHelper.buildSuccessResponse(response);
+            else return ResponseHelper.buildSuccessResponse(PartialFetchUtils.fetchPartialListData(response, request.getIncludeColumns()));
+
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;
