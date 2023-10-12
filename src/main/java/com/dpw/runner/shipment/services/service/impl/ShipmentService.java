@@ -627,7 +627,8 @@ public class ShipmentService implements IShipmentService {
     }
 
     void getShipment(ShipmentDetails shipmentDetails) {
-        shipmentDetails.setShipmentId(generateShipmentId());
+        if(shipmentDetails.getShipmentId() == null)
+            shipmentDetails.setShipmentId(generateShipmentId());
         shipmentDetails = shipmentDao.save(shipmentDetails);
         //shipmentDetails = shipmentDao.findById(shipmentDetails.getId()).get();
     }
@@ -804,6 +805,12 @@ public class ShipmentService implements IShipmentService {
         if (entity.getContainersList() == null)
             entity.setContainersList(oldEntity.get().getContainersList());
         entity = shipmentDao.update(entity);
+
+        try {
+            shipmentSync.sync(entity);
+        } catch (Exception e){
+            log.error("Error performing sync on shipment entity, {}", e);
+        }
         return ResponseHelper.buildSuccessResponse(objectMapper.convertValue(entity, ShipmentDetailsResponse.class));
     }
 
@@ -1299,6 +1306,8 @@ public class ShipmentService implements IShipmentService {
     }
 
     private String generateSequence(GenerationType generationType, String prefix, Integer counter) {
+        if(generationType == null)
+            return StringUtility.getRandomString(10);
         String suffix;
         switch (generationType) {
             case Random:
