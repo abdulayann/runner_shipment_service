@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.syncing.Entity;
 
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
@@ -10,7 +11,7 @@ import java.util.List;
 import java.util.UUID;
 
 @Data
-public class CustomShipmentSyncRequest implements IRunnerRequest {
+public class CustomShipmentSyncRequest implements IRunnerRequest, IRunnerResponse {
 
     @JsonProperty("Guid")
     private UUID Guid;
