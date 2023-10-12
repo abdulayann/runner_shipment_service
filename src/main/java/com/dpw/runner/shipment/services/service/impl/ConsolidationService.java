@@ -548,6 +548,25 @@ public class ConsolidationService implements IConsolidationService {
     }
 
     @Transactional
+    public ResponseEntity<?> detachShipmentsSync(Long consolidationId, List<Long> shipmentIds) {
+        if(consolidationId != null && shipmentIds!= null && shipmentIds.size() > 0) {
+            List<Long> removedShipmentIds = consoleShipmentMappingDao.detachShipments(consolidationId, shipmentIds);
+            for(Long shipId : removedShipmentIds) {
+                ShipmentDetails shipmentDetails = shipmentDao.findById(shipId).get();
+                if(shipmentDetails.getContainersList() != null) {
+                    List<Containers> containersList = shipmentDetails.getContainersList();
+                    for(Containers container : containersList) {
+                        shipmentsContainersMappingDao.detachShipments(container.getId(), List.of(shipId));
+                    }
+                    containerDao.saveAll(containersList);
+                }
+            }
+        }
+
+        return new ResponseEntity<>(HttpStatus.OK);
+    }
+
+    @Transactional
     public ResponseEntity<?> completeUpdate(CommonRequestModel commonRequestModel) throws Exception {
 
         ConsolidationDetailsRequest consolidationDetailsRequest = (ConsolidationDetailsRequest) commonRequestModel.getData();
@@ -1188,7 +1207,7 @@ public class ConsolidationService implements IConsolidationService {
                 oldContainers = oldEntity.get().getContainersList();
                 List<Long> oldShipList = oldConsolidation.getShipmentsList().stream().map(e -> e.getId()).collect(Collectors.toList());
                 oldShipList = oldShipList.stream().filter(item -> !newShipList.contains(item)).collect(Collectors.toList());
-                detachShipments(oldEntity.get().getId(), oldShipList);
+                detachShipmentsSync(oldEntity.get().getId(), oldShipList);
             }
             ConsolidationDetails entity = objectMapper.convertValue(consolidationDetailsRequest, ConsolidationDetails.class);
             entity.setShipmentsList(tempShipIds);
