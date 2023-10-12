@@ -428,7 +428,7 @@ public class CustomerBookingService implements ICustomerBookingService {
             }
             log.info("Booking details fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
             CustomerBookingResponse customerBookingResponse = jsonHelper.convertValue(customerBooking.get(), CustomerBookingResponse.class);
-//            createCustomerBookingResponse(customerBooking.get(), customerBookingResponse);
+            createCustomerBookingResponse(customerBooking.get(), customerBookingResponse);
             return ResponseHelper.buildSuccessResponse(customerBookingResponse);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
