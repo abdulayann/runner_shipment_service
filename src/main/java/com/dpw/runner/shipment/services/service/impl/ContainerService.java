@@ -269,13 +269,15 @@ public class ContainerService implements IContainerService {
     public ResponseEntity<?> list(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
-            ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
+            CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
             if (request == null) {
                 log.error("Request is empty for Containers List with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
-            // construct specifications for filter request
-            Pair<Specification<Containers>, Pageable> tuple = fetchData(request, Containers.class);
-            Page<Containers> containersPage = containerDao.findAll(tuple.getLeft(), tuple.getRight());
+            List<ShipmentsContainersMapping> shipmentsContainersMappings = shipmentsContainersMappingDao.findByShipmentId(request.getId());
+            ListCommonRequest listCommonRequest = constructListCommonRequest("id", shipmentsContainersMappings.stream().map(e -> e.getContainerId()).collect(Collectors.toList()), "IN");
+            Pair<Specification<Containers>, Pageable> pair = fetchData(listCommonRequest, Containers.class);
+            Page<Containers> containersPage = containerDao.findAll(pair.getLeft(), pair.getRight());
+
             log.info("Container detail list retrieved successfully for Request Id {} ", LoggerHelper.getRequestIdFromMDC());
             return ResponseHelper.buildListSuccessResponse(
                     convertEntityListToDtoList(containersPage.getContent()),
