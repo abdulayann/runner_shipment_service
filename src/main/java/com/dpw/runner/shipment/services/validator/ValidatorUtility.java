@@ -53,6 +53,9 @@ public class ValidatorUtility {
         for (Validations validation : validations.get()) {
 
             try {
+                log.info("Initiating Validation Layer with JSON Converted Entity Data: {}", jsonObject);
+                log.info("Initiating Validation Layer with raw data: {}", json);
+                log.info("Initiating Validation Layer with SchemaObject: {}", objectMapper.writeValueAsString(validation.getJsonSchema()));
                 JsonObject schemaObject = Json.createReader(new StringReader(objectMapper.writeValueAsString(validation.getJsonSchema()))).readObject();
                 errors.addAll(validateJson(jsonObject, schemaObject, jsonMap, failOnFirst));
             } catch (JsonProcessingException e) {
