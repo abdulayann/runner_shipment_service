@@ -68,18 +68,6 @@ public class ViewsController {
         return (ResponseEntity<RunnerResponse<ViewsResponse>>) viewsService.retrieveById(CommonRequestModel.buildRequest(request));
     }
 
-//    @ApiResponses(value = {@ApiResponse(code = 200, message = ViewsConstants.VIEW_RETRIEVE_BY_ID_SUCCESSFUL)})
-//    @GetMapping(ApiConstants.API_RETRIEVE_BY_ID_PARTIAL)
-//    public ResponseEntity<?> retrieveByIdPartial(@RequestParam(name = "includeColumns", required = false) List<String> includeColumns, @RequestParam Long id) {
-//        CommonGetRequest request = CommonGetRequest.builder().id(id).build();
-//        try {
-//            ResponseEntity<RunnerResponse<ViewsResponse>> views = (ResponseEntity<RunnerResponse<ViewsResponse>>) viewsService.retrieveById(CommonRequestModel.buildRequest(request));
-//            return ResponseEntity.ok(PartialFetchUtils.fetchPartialData(views, includeColumns));
-//        } catch (Exception ex) {
-//            System.out.println(ex.toString());
-//        }
-//        return ResponseEntity.ok(null);
-//    }
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = ViewsConstants.VIEW_UPDATE_SUCCESSFUL, response = RunnerResponse.class)})
     @PutMapping(ApiConstants.API_UPDATE)

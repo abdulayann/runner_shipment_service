@@ -969,8 +969,6 @@ public class ShipmentService implements IShipmentService {
                 filtered_list.add( res);
 
             }
-
-
                 return ResponseHelper.buildListSuccessResponse(
                         filtered_list,
                         shipmentDetailsPage.getTotalPages(),
@@ -1113,13 +1111,7 @@ public class ShipmentService implements IShipmentService {
 
     public ResponseEntity<?> completeRetrieveById(CommonRequestModel commonRequestModel) throws ExecutionException, InterruptedException {
         try {
-            // create common list request for shipment id
-
-
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
-
-
-
             if (request == null) {
                 log.error("Request is empty for Shipment complete retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }

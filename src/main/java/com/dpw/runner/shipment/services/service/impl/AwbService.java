@@ -211,10 +211,6 @@ public class AwbService implements IAwbService {
                         awbPage.getTotalElements());
             }
 
-
-
-
-
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;

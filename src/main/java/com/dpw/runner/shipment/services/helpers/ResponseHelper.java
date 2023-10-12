@@ -58,13 +58,6 @@ public class ResponseHelper {
         return new ResponseEntity<>(runnerResponse, HttpStatus.OK);
     }
 
-//    public static ResponseEntity<?> buildListSuccessResponse(List<Object> data, int pageNo, long count) {
-//        log.debug("Return Response with data {}", data);
-//        RunnerListResponse runnerResponse = RunnerListResponse.builder().success(true)
-//                .requestId(LoggerHelper.getRequestIdFromMDC())
-//                .data(data).numberOfRecords(count).totalPages(pageNo).build();
-//        return new ResponseEntity<>(runnerResponse, HttpStatus.OK);
-//    }
 
     public static ResponseEntity<?> buildListSuccessResponse(List<IRunnerResponse> data) {
         log.debug("Return Response with data {}", data);
