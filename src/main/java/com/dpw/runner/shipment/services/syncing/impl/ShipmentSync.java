@@ -7,7 +7,6 @@ import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.syncing.Entity.*;
-import com.dpw.runner.shipment.services.syncing.Entity.response.CustomShipmentSyncResponse;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
 import com.dpw.runner.shipment.services.utils.V1AuthHelper;
 import lombok.extern.slf4j.Slf4j;
@@ -107,7 +106,7 @@ public class ShipmentSync implements IShipmentSync {
             return response;
         });
 
-        return ResponseHelper.buildSuccessResponse(modelMapper.map(cs, CustomShipmentSyncResponse.class));
+        return ResponseHelper.buildSuccessResponse(modelMapper.map(cs, CustomShipmentSyncRequest.class));
     }
 
     private void mapConsolidationGuids(CustomShipmentSyncRequest response, ShipmentDetails request) {
