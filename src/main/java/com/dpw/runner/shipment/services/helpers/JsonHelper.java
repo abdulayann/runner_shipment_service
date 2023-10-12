@@ -52,6 +52,9 @@ public class JsonHelper {
         createMapper.addMixIn(ConsolidationDetails.class, ShipmentMixIn.class);
         createMapper.addMixIn(BookingCarriage.class, ShipmentMixIn.class);
         createMapper.addMixIn(Notes.class, ShipmentMixIn.class);
+        mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+        mapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
+        mapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
     }
 
     public <T> T readFromJson(String jsonString, Class<T> clazz) {
@@ -65,9 +68,6 @@ public class JsonHelper {
 
     public <T> String convertToJson(T object) {
         try {
-            mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
-            mapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
-            mapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
             return mapper.writeValueAsString(object);
         } catch (JsonProcessingException e) {
             log.error("Failed to Parse given Json");
@@ -87,7 +87,6 @@ public class JsonHelper {
     }
 
     public <T,F> F convertValue(T object, Class<F> clazz) {
-        mapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
         return mapper.convertValue(object, clazz);
     }
 

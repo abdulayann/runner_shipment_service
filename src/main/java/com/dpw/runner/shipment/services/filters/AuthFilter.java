@@ -56,7 +56,7 @@ public class AuthFilter implements Filter {
 
     @Override
     public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain) throws IOException, ServletException {
-
+        try {
         LoggerHelper.putRequestId(UUID.randomUUID().toString());
         HttpServletRequest req = (HttpServletRequest) servletRequest;
         if(shouldNotFilter(req))
@@ -106,7 +106,6 @@ public class AuthFilter implements Filter {
             }
         }
         PermissionsContext.setPermissions(grantedPermissions);
-        try {
             filterChain.doFilter(servletRequest, servletResponse);
             log.info(String.format("Request Finished , Total Time in milis:- %s", (System.currentTimeMillis() - time)));
         }finally {
