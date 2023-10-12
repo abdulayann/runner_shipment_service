@@ -63,24 +63,10 @@ public class ServiceDetailsController {
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = ServiceDetailsConstants.SERVICE_DETAILS_RETRIEVE_BY_ID_SUCCESSFUL)})
     @GetMapping(ApiConstants.API_RETRIEVE_BY_ID)
-    public ResponseEntity<RunnerResponse<ServiceDetailsResponse>> retrieveById(@ApiParam(value = ServiceDetailsConstants.SERVICE_DETAILS_ID, required = true) @RequestParam Long id) {
-        CommonGetRequest request = CommonGetRequest.builder().id(id).build();
+    public ResponseEntity<RunnerResponse<ServiceDetailsResponse>> retrieveById(@ApiParam(value = ServiceDetailsConstants.SERVICE_DETAILS_ID, required = true) @RequestParam Long id, @RequestParam(name = "includeColumns", required = false) List<String> includeColumns) {
+        CommonGetRequest request = CommonGetRequest.builder().id(id).includeColumns(includeColumns).build();
         return (ResponseEntity<RunnerResponse<ServiceDetailsResponse>>) serviceDetailsService.retrieveById(CommonRequestModel.buildRequest(request));
     }
-
-    @ApiResponses(value = {@ApiResponse(code = 200, message = ServiceDetailsConstants.SERVICE_DETAILS_RETRIEVE_BY_ID_SUCCESSFUL)})
-    @GetMapping(ApiConstants.API_RETRIEVE_BY_ID_PARTIAL)
-    public ResponseEntity<?> retrieveByIdPartial(@RequestParam(name = "includeColumns", required = false) List<String> includeColumns, @RequestParam Long id) {
-        CommonGetRequest request = CommonGetRequest.builder().id(id).build();
-        try {
-            ResponseEntity<RunnerResponse<ServiceDetailsResponse>> serviceDetails = (ResponseEntity<RunnerResponse<ServiceDetailsResponse>>) serviceDetailsService.retrieveById(CommonRequestModel.buildRequest(request));
-            return ResponseEntity.ok(PartialFetchUtils.fetchPartialData(serviceDetails, includeColumns));
-        } catch (Exception ex) {
-            System.out.println(ex.toString());
-        }
-        return ResponseEntity.ok(null);
-    }
-
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = ServiceDetailsConstants.SERVICE_DETAILS_UPDATE_SUCCESSFUL, response = RunnerResponse.class)})
     @PutMapping(ApiConstants.API_UPDATE)

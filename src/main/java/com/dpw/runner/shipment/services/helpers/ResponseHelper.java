@@ -29,6 +29,13 @@ public class ResponseHelper {
                 .data(data).build(), HttpStatus.OK);
     }
 
+    public static ResponseEntity<?> buildSuccessResponse(Object data) {
+        log.debug("Return Response with data {}", data);
+        return new ResponseEntity<>(RunnerResponse.builder().success(true)
+                .requestId(LoggerHelper.getRequestIdFromMDC())
+                .data(data).build(), HttpStatus.OK);
+    }
+
     public static ResponseEntity<?> buildCreationSuccessResponse(IRunnerResponse data) {
         return new ResponseEntity<>(RunnerResponse.builder().success(true)
                 .requestId(LoggerHelper.getRequestIdFromMDC())
@@ -50,6 +57,14 @@ public class ResponseHelper {
                 .data(data).numberOfRecords(count).totalPages(pageNo).build();
         return new ResponseEntity<>(runnerResponse, HttpStatus.OK);
     }
+
+//    public static ResponseEntity<?> buildListSuccessResponse(List<Object> data, int pageNo, long count) {
+//        log.debug("Return Response with data {}", data);
+//        RunnerListResponse runnerResponse = RunnerListResponse.builder().success(true)
+//                .requestId(LoggerHelper.getRequestIdFromMDC())
+//                .data(data).numberOfRecords(count).totalPages(pageNo).build();
+//        return new ResponseEntity<>(runnerResponse, HttpStatus.OK);
+//    }
 
     public static ResponseEntity<?> buildListSuccessResponse(List<IRunnerResponse> data) {
         log.debug("Return Response with data {}", data);

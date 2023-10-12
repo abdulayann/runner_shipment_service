@@ -43,25 +43,12 @@ public class AwbController {
 
     @Autowired
     private JsonHelper jsonHelper;
-
     @ApiResponses(value = {@ApiResponse(code = 200, message = AwbConstants.AWB_LIST_SUCCESSFUL, responseContainer = AwbConstants.RESPONSE_CONTAINER_LIST)})
     @PostMapping(ApiConstants.API_LIST)
     public ResponseEntity<?> list(@RequestBody @Valid ListCommonRequest listCommonRequest) {
 
         try {
-            List<String>includeColumns = listCommonRequest.getIncludeColumns();
-            ResponseEntity<RunnerListResponse<AwbResponse>>list = (ResponseEntity<RunnerListResponse<AwbResponse>>) awbService.list(CommonRequestModel.buildRequest(listCommonRequest));
-            if(includeColumns==null||includeColumns.size()==0)return list;
-            List<Object> filtered_list= new ArrayList<>();
-
-            for( AwbResponse curr: list.getBody().getData()){
-                //    filtered_list.add((AwbResponse)jsonHelper.readFromJson(PartialFetchUtils.fetchPartialData((ResponseEntity<RunnerResponse<AwbResponse>>)ResponseHelper.buildSuccessResponse(curr),includeColumns).toString(), AwbResponse.class));
-                filtered_list.add(jsonHelper.readFromJson(PartialFetchUtils.fetchPartialData((ResponseEntity<RunnerResponse<AwbResponse>>)ResponseHelper.buildSuccessResponse(curr),includeColumns).toString(), Object.class));
-            }
-            return ResponseEntity.ok(filtered_list);
-            // ResponseEntity<?> response = ResponseHelper.buildListSuccessResponse(filtered_list);
-            // return (ResponseEntity<RunnerListResponse<AwbResponse>>)response;
-
+            return (ResponseEntity<RunnerListResponse<AwbResponse>>) awbService.list(CommonRequestModel.buildRequest(listCommonRequest));
         } catch (Exception ex) {
             System.out.println(ex.toString());
         }
@@ -104,23 +91,11 @@ public class AwbController {
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = AwbConstants.AWB_RETRIEVE_BY_ID_SUCCESSFUL)})
     @GetMapping("/retrieve/id")
-    public ResponseEntity<RunnerResponse<AwbResponse>> retrieveById(@ApiParam(value = AwbConstants.AWB_ID, required = true) @RequestParam Long id) {
-        CommonGetRequest request = CommonGetRequest.builder().id(id).build();
+    public ResponseEntity<RunnerResponse<AwbResponse>> retrieveById(@ApiParam(value = AwbConstants.AWB_ID, required = true) @RequestParam Long id, @RequestParam(name = "includeColumns", required = false) List<String> includeColumns) {
+        CommonGetRequest request = CommonGetRequest.builder().id(id).includeColumns(includeColumns).build();
         return (ResponseEntity<RunnerResponse<AwbResponse>>) awbService.retrieveById(CommonRequestModel.buildRequest(request));
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = AwbConstants.AWB_RETRIEVE_BY_ID_SUCCESSFUL)})
-    @GetMapping(ApiConstants.API_RETRIEVE_BY_ID_PARTIAL)
-    public ResponseEntity<?> retrieveByIdPartial(@RequestParam(name = "includeColumns", required = false) List<String> includeColumns, @RequestParam Long id) {
-        CommonGetRequest request = CommonGetRequest.builder().id(id).build();
-        try {
-            ResponseEntity<RunnerResponse<AwbResponse>> awb = (ResponseEntity<RunnerResponse<AwbResponse>>) awbService.retrieveById(CommonRequestModel.buildRequest(request));
-            return ResponseEntity.ok(PartialFetchUtils.fetchPartialData(awb, includeColumns));
-        } catch (Exception ex) {
-            System.out.println(ex.toString());
-        }
-        return ResponseEntity.ok(null);
-    }
 
 
     @ApiResponses(value = {
