@@ -1439,8 +1439,9 @@ public class ShipmentService implements IShipmentService {
         List<ConsolidationDetailsRequest> consolidationDetailsRequests = shipmentRequest.getConsolidationList();
         if(consolidationDetailsRequests != null && !consolidationDetailsRequests.isEmpty()) {
             for(ConsolidationDetailsRequest consolidation : consolidationDetailsRequests) {
-                if(consolidation.getId() != null) {
-                    tempConsolIds.add(consolidation.getId());
+                Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findByGuid(consolidation.getGuid());
+                if(consolidationDetails.get() != null && consolidationDetails.get().getId() != null) {
+                    tempConsolIds.add(consolidationDetails.get().getId());
                 }
             }
         }
