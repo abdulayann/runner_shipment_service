@@ -645,6 +645,12 @@ public class ConsolidationService implements IConsolidationService {
                 response.setRoutingsList(convertToDtoList(updatedRoutings, RoutingsResponse.class));
             }
 
+            try {
+                consolidationSync.sync(jsonHelper.convertValue(entity, ConsolidationDetailsRequest.class));
+            } catch (Exception e){
+                log.error("Error performing sync on consolidation entity, {}", e);
+            }
+
             return ResponseHelper.buildSuccessResponse(response);
         } catch (ExecutionException e) {
             String responseMsg = e.getMessage() != null ? e.getMessage()
