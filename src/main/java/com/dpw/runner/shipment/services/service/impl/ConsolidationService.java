@@ -551,12 +551,14 @@ public class ConsolidationService implements IConsolidationService {
                 }
             }
         }
+        Optional<ConsolidationDetails> consol = consolidationDetailsDao.findById(consolidationId);
+        consolidationSync.sync(jsonHelper.convertValue(consol.get(), ConsolidationDetailsRequest.class));
 
         return new ResponseEntity<>(HttpStatus.OK);
     }
 
     @Transactional
-    public ResponseEntity<?> detachShipmentsSync(Long consolidationId, List<Long> shipmentIds) {
+    public ResponseEntity<?> detachShipmentsReverseSync(Long consolidationId, List<Long> shipmentIds) {
         if(consolidationId != null && shipmentIds!= null && shipmentIds.size() > 0) {
             List<Long> removedShipmentIds = consoleShipmentMappingDao.detachShipments(consolidationId, shipmentIds);
             for(Long shipId : removedShipmentIds) {
@@ -570,8 +572,6 @@ public class ConsolidationService implements IConsolidationService {
                 }
             }
         }
-        Optional<ConsolidationDetails> consol = consolidationDetailsDao.findById(consolidationId);
-        consolidationSync.sync(jsonHelper.convertValue(consol.get(), ConsolidationDetailsRequest.class));
 
         return new ResponseEntity<>(HttpStatus.OK);
     }
@@ -1226,7 +1226,7 @@ public class ConsolidationService implements IConsolidationService {
                 oldContainers = oldEntity.get().getContainersList();
                 List<Long> oldShipList = oldConsolidation.getShipmentsList().stream().map(e -> e.getId()).collect(Collectors.toList());
                 oldShipList = oldShipList.stream().filter(item -> !newShipList.contains(item)).collect(Collectors.toList());
-                detachShipmentsSync(oldEntity.get().getId(), oldShipList);
+                detachShipmentsReverseSync(oldEntity.get().getId(), oldShipList);
             }
             ConsolidationDetails entity = objectMapper.convertValue(consolidationDetailsRequest, ConsolidationDetails.class);
             entity.setShipmentsList(tempShipIds);
