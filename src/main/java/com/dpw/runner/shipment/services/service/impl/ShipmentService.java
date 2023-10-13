@@ -1629,11 +1629,11 @@ public class ShipmentService implements IShipmentService {
 
     private void addAllContainerTypesInSingleCall(ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse) {
         Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
-        List<String> containerTypes = new ArrayList<>();
+        Set<String> containerTypes = new HashSet<>();
         if (!Objects.isNull(shipmentDetailsResponse.getContainersList()))
             shipmentDetailsResponse.getContainersList().forEach(r -> containerTypes.addAll(masterDataUtils.createInBulkCommodityTypeRequest(r, Containers.class, fieldNameKeyMap, String.valueOf(r.hashCode()))));
 
-        Map<String, EntityTransferCommodityType> v1Data = masterDataUtils.fetchInBulkCommodityTypes(containerTypes);
+        Map<String, EntityTransferCommodityType> v1Data = masterDataUtils.fetchInBulkCommodityTypes(new ArrayList<>(containerTypes));
 
         if (!Objects.isNull(shipmentDetailsResponse.getContainersList()))
             shipmentDetailsResponse.getContainersList().forEach(r -> r.setCommodityTypeData(masterDataUtils.setInBulkCommodityTypes(fieldNameKeyMap.get(String.valueOf(r.hashCode())), v1Data)));
