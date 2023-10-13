@@ -21,11 +21,25 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
     @Autowired
     private AuthFilter authFilter;
 
+    private final String[] ignoredPaths = new String[]
+    {
+        "/actuator/**",
+        "/v2/api-docs",
+        "/swagger-resources",
+        "/swagger-resources/**",
+        "/configuration/ui",
+        "/configuration/security",
+        "/swagger-ui.html",
+        "/webjars/**",
+        "/api/v2/enums/**"
+    };
+
     @Override
     protected void configure(HttpSecurity httpSecurity) throws Exception {
         httpSecurity.csrf().csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse()).disable()
                 .authorizeRequests()
                 .antMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                .antMatchers(ignoredPaths).permitAll()
                 .anyRequest().authenticated();
         httpSecurity.addFilterBefore(authFilter, UsernamePasswordAuthenticationFilter.class);
     }
