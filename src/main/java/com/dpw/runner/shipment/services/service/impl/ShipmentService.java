@@ -594,6 +594,10 @@ public class ShipmentService implements IShipmentService {
             if (serviceDetailsRequest != null)
                 shipmentDetails.setServicesList(serviceDetailsDao.saveEntityFromShipment(commonUtils.convertToCreateEntityList(serviceDetailsRequest, ServiceDetails.class), shipmentId));
 
+            List<PartiesRequest> shipmentAddressRequest = request.getShipmentAddresses();
+            if (shipmentAddressRequest != null)
+                shipmentDetails.setShipmentAddresses(partiesDao.saveEntityFromOtherEntity(commonUtils.convertToCreateEntityList(shipmentAddressRequest, Parties.class), shipmentId, Constants.SHIPMENT_ADDRESSES));
+
             try {
                 shipmentSync.sync(shipmentDetails);
             } catch (Exception e){
@@ -840,6 +844,7 @@ public class ShipmentService implements IShipmentService {
         List<ReferenceNumbersRequest> referenceNumbersRequestList = shipmentRequest.getReferenceNumbersList();
         List<RoutingsRequest> routingsRequestList = shipmentRequest.getRoutingsList();
         List<ServiceDetailsRequest> serviceDetailsRequestList = shipmentRequest.getServicesList();
+        List<PartiesRequest> shipmentAddressList = shipmentRequest.getShipmentAddresses();
         CarrierDetailRequest carrierDetailRequest = shipmentRequest.getCarrierDetails();
 
         // TODO- implement Validation logic
@@ -930,6 +935,11 @@ public class ShipmentService implements IShipmentService {
             if (notesRequestList != null) {
                 List<Notes> updatedNotes = notesDao.updateEntityFromOtherEntity(convertToEntityList(notesRequestList, Notes.class), id, Constants.SHIPMENT);
                 response.setNotesList(convertToDtoList(updatedNotes, NotesResponse.class));
+            }
+
+            if (shipmentAddressList != null) {
+                List<Parties> updatedParties = partiesDao.updateEntityFromOtherEntity(convertToEntityList(shipmentAddressList, Parties.class), id, Constants.SHIPMENT_ADDRESSES);
+                response.setShipmentAddresses(convertToDtoList(updatedParties, PartiesResponse.class));
             }
 
             return ResponseHelper.buildSuccessResponse(response);
