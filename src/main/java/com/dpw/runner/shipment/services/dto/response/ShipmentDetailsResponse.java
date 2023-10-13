@@ -119,4 +119,5 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     private LocalDateTime shipmentCreatedOn;
     private String entryRefNo;
     private List<PartiesResponse> shipmentAddresses;
+    public List<AuditLogResponse> logsList;
 }
