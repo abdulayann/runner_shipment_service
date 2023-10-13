@@ -134,4 +134,5 @@ public class Constants {
     public static final String DECI = "DM";
     public static final String INCH = "IN";
     public static final String SHIPMENT_ADDRESSES = "SHIPMENT_ADDRESSES";
+    public static final String CONSOLIDATION_ADDRESSES = "CONSOLIDATION_ADDRESSES";
 }

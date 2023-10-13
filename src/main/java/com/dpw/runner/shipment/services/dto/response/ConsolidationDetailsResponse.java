@@ -108,4 +108,5 @@ public class ConsolidationDetailsResponse implements IRunnerResponse {
     private List<JobResponse> jobsList;
     private List<EventsResponse> eventsList;
     private List<FileRepoResponse> fileRepoList;
+    private List<PartiesResponse> consolidationAddresses;
 }

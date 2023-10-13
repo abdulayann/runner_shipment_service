@@ -326,6 +326,10 @@ public class ConsolidationService implements IConsolidationService {
             if (routingsRequest != null)
                 createRoutingsAsync(consolidationDetails, routingsRequest);
 
+            List<PartiesRequest> consolidationAddressRequest = request.getConsolidationAddresses();
+            if (consolidationAddressRequest != null)
+                createPartiesAsync(consolidationDetails, consolidationAddressRequest);
+
             try {
                 consolidationSync.sync(jsonHelper.convertValue(consolidationDetails, ConsolidationDetailsRequest.class));
             } catch (Exception e){
@@ -445,7 +449,7 @@ public class ConsolidationService implements IConsolidationService {
     @Transactional
     public void createParties(ConsolidationDetails consolidationDetails, PartiesRequest partiesRequest) {
         partiesRequest.setEntityId(consolidationDetails.getId());
-        partiesRequest.setEntityType(Constants.CONSOLIDATION);
+        partiesRequest.setEntityType(Constants.CONSOLIDATION_ADDRESSES);
         packingDao.save(jsonHelper.convertValue(partiesRequest, Packing.class));
     }
 
@@ -588,7 +592,7 @@ public class ConsolidationService implements IConsolidationService {
         List<JobRequest> jobRequestList = consolidationDetailsRequest.getJobsList();
         List<ReferenceNumbersRequest> referenceNumbersRequestList = consolidationDetailsRequest.getReferenceNumbersList();
         List<RoutingsRequest> routingsRequestList = consolidationDetailsRequest.getRoutingsList();
-
+        List<PartiesRequest> consolidationAddressRequest = consolidationDetailsRequest.getConsolidationAddresses();
         // TODO- implement Validation logic
         long id = consolidationDetailsRequest.getId();
         Optional<ConsolidationDetails> oldEntity = consolidationDetailsDao.findById(id);
@@ -643,6 +647,10 @@ public class ConsolidationService implements IConsolidationService {
             if (routingsRequestList != null) {
                 List<Routings> updatedRoutings = routingsDao.updateEntityFromConsole(convertToEntityList(routingsRequestList, Routings.class), id);
                 response.setRoutingsList(convertToDtoList(updatedRoutings, RoutingsResponse.class));
+            }
+            if (consolidationAddressRequest != null) {
+                List<Parties> updatedFileRepos = partiesDao.updateEntityFromOtherEntity(convertToEntityList(consolidationAddressRequest, Parties.class), id, Constants.CONSOLIDATION_ADDRESSES);
+                response.setConsolidationAddresses(convertToDtoList(updatedFileRepos, PartiesResponse.class));
             }
 
             return ResponseHelper.buildSuccessResponse(response);
