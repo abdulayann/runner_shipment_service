@@ -122,7 +122,8 @@ public class CustomerBookingService implements ICustomerBookingService {
             Map.entry("bookingNumber", RunnerEntityMapping.builder().tableName("CustomerBooking").dataType(String.class).fieldName("bookingNumber").isContainsText(true).build()),
             Map.entry("bookingDate", RunnerEntityMapping.builder().tableName("CustomerBooking").dataType(LocalDateTime.class).fieldName("bookingDate").build()),
             Map.entry("bookingStatus", RunnerEntityMapping.builder().tableName("CustomerBooking").dataType(BookingStatus.class).fieldName("bookingStatus").build()),
-            Map.entry("createdBy", RunnerEntityMapping.builder().tableName("CustomerBooking").dataType(String.class).fieldName("createdBy").build())
+            Map.entry("createdBy", RunnerEntityMapping.builder().tableName("CustomerBooking").dataType(String.class).fieldName("createdBy").build()),
+            Map.entry("contractId", RunnerEntityMapping.builder().tableName("CustomerBooking").dataType(String.class).fieldName("contractId").build())
     );
 
 
@@ -318,6 +319,7 @@ public class CustomerBookingService implements ICustomerBookingService {
             V1ShipmentCreationResponse shipmentCreationResponse = jsonHelper.convertValue(bookingIntegrationsUtility.createShipmentInV1(customerBooking).getBody(), V1ShipmentCreationResponse.class);
             if (!Objects.isNull(shipmentCreationResponse) && !Objects.isNull(shipmentCreationResponse.getShipmentId())) {
                 customerBooking.setShipmentId(shipmentCreationResponse.getShipmentId());
+                customerBooking.setShipmentEntityId(shipmentCreationResponse.getEntityId());
                 customerBooking = customerBookingDao.save(customerBooking);
             }
         }
@@ -427,7 +429,9 @@ public class CustomerBookingService implements ICustomerBookingService {
             log.info("Booking details fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
             CustomerBookingResponse customerBookingResponse = jsonHelper.convertValue(customerBooking.get(), CustomerBookingResponse.class);
             createCustomerBookingResponse(customerBooking.get(), customerBookingResponse);
+            if(request.getIncludeColumns()==null||request.getIncludeColumns().size()==0)
             return ResponseHelper.buildSuccessResponse(customerBookingResponse);
+            else return ResponseHelper.buildSuccessResponse(PartialFetchUtils.fetchPartialListData(customerBookingResponse,request.getIncludeColumns()));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;

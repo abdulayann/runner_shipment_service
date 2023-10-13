@@ -1,8 +1,11 @@
 package com.dpw.runner.shipment.services.syncing.impl;
 
+import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.request.ArrivalDepartureDetailsRequest;
 import com.dpw.runner.shipment.services.dto.request.ConsolidationDetailsRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
+import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.syncing.Entity.*;
@@ -35,6 +38,13 @@ public class ConsolidationSync implements IConsolidationSync {
 
     @Autowired
     JsonHelper jsonHelper;
+
+    @Autowired
+    IConsoleShipmentMappingDao consoleShipmentMappingDao;
+
+    @Autowired
+    IShipmentDao shipmentDao;
+
     private RetryTemplate retryTemplate = RetryTemplate.builder()
             .maxAttempts(3)
             .fixedBackoff(1000)
@@ -92,9 +102,10 @@ public class ConsolidationSync implements IConsolidationSync {
     private void mapShipmentGuids(CustomConsolidationRequest response, ConsolidationDetailsRequest request) {
         if(request == null || request.getShipmentsList() == null)
             return;
-        List<UUID> req = request.getShipmentsList().stream()
+        List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByConsolidationId(request.getId());
+        List<UUID> req = consoleShipmentMappings.stream()
                 .map(item -> {
-                    return item.getGuid();
+                    return shipmentDao.findById(item.getShipmentId()).get().getGuid();
                 })
                 .collect(Collectors.toList());
         response.setShipmentGuids(req);
@@ -149,9 +160,9 @@ public class ConsolidationSync implements IConsolidationSync {
         if(request == null || request.getCarrierDetails() == null)
             return;
         modelMapper.map(request.getCarrierDetails(), response);
-        response.setDestinationName(request.getCarrierDetails().getDestination());
+        response.setLastDischargeString(request.getCarrierDetails().getDestination());
         response.setDestinationPortName(request.getCarrierDetails().getDestinationPort());
-        response.setOriginName(request.getCarrierDetails().getOrigin());
+        response.setFirstLoadString(request.getCarrierDetails().getOrigin());
         response.setOriginPortName(request.getCarrierDetails().getOriginPort());
     }
 

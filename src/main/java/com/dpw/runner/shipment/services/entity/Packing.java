@@ -1,7 +1,5 @@
 package com.dpw.runner.shipment.services.entity;
 
-import javax.persistence.*;
-
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
@@ -11,6 +9,10 @@ import lombok.*;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Where;
 
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.JoinColumn;
+import javax.persistence.Table;
 import java.math.BigDecimal;
 
 @Entity
@@ -144,7 +146,7 @@ public class Packing extends MultiTenancy {
 
     @Column(name = "commodity_id")
     @DedicatedMasterData(type = Constants.COMMODITY_TYPE_MASTER_DATA)
-    private Long commodityId;
+    private Long commodityId; // TODO- remove this because commodity code already exists with name "commodity"
 
     @Column(name = "net_weight")
     private BigDecimal netWeight;
@@ -203,5 +205,8 @@ public class Packing extends MultiTenancy {
 
     @Column(name = "is_contract_enforced")
     private Boolean isContractEnforced;
+
+    @Column(name = "handling_info")
+    private String handlingInfo;
 }
 

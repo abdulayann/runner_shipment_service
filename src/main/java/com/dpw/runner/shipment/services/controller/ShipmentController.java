@@ -8,6 +8,7 @@ import com.dpw.runner.shipment.services.commons.constants.ShipmentConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.patchRequest.ShipmentPatchRequest;
@@ -32,6 +33,7 @@ import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.text.StringEscapeUtils;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -112,14 +114,7 @@ public class ShipmentController {
     @PostMapping(ApiConstants.API_LIST)
     public ResponseEntity<?> list(@RequestBody @Valid ListCommonRequest listCommonRequest) {
         try {
-            ResponseEntity<RunnerListResponse<ShipmentListResponse>>list = (ResponseEntity<RunnerListResponse<ShipmentListResponse>>) shipmentService.list(CommonRequestModel.buildRequest(listCommonRequest));
-            List<String>includeColumns=listCommonRequest.getIncludeColumns();
-            if(includeColumns==null|| includeColumns.size()==0)return list;
-            List<Object> filtered_list= new ArrayList<>();
-            for( ShipmentListResponse curr: list.getBody().getData()){
-                filtered_list.add(jsonHelper.readFromJson(PartialFetchUtils.fetchPartialData((ResponseEntity<RunnerResponse<ShipmentResponse>>)ResponseHelper.buildSuccessResponse(curr),includeColumns).toString(), Object.class));
-            }
-            return ResponseEntity.ok(filtered_list);
+           return (ResponseEntity<RunnerListResponse<ShipmentListResponse>>) shipmentService.list(CommonRequestModel.buildRequest(listCommonRequest));
         } catch (Exception ex) {
             System.out.println(ex.toString());
         }
@@ -136,28 +131,10 @@ public class ShipmentController {
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.RETRIEVE_BY_ID_SUCCESSFUL)})
     @GetMapping(ApiConstants.API_COMPLETE_RETRIEVE_BY_ID)
-    public ResponseEntity<RunnerResponse<ShipmentDetailsResponse>> completeRetrieveById(@ApiParam(value = ShipmentConstants.SHIPMENT_ID, required = true) @RequestParam Long id) throws ExecutionException, InterruptedException {
-        CommonGetRequest request = CommonGetRequest.builder().id(id).build();
+    public ResponseEntity<RunnerResponse<ShipmentDetailsResponse>> completeRetrieveById(@ApiParam(value = ShipmentConstants.SHIPMENT_ID, required = true) @RequestParam Long id, @RequestParam(name = "includeColumns", required = false) List<String> includeColumns) throws ExecutionException, InterruptedException {
+        CommonGetRequest request = CommonGetRequest.builder().id(id).includeColumns(includeColumns).build();
         return (ResponseEntity<RunnerResponse<ShipmentDetailsResponse>>) shipmentService.completeRetrieveById(CommonRequestModel.buildRequest(request));
     }
-
-    // selective columns retrieval
-    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.RETRIEVE_BY_ID_SUCCESSFUL)})
-    @GetMapping(ApiConstants.API_RETRIEVE_BY_ID_PARTIAL)
-    public ResponseEntity<?> retrieveByIdPartial(@RequestParam(name = "includeColumns", required = false) List<String> includeColumns, @RequestParam Long id) {
-
-
-        try {
-            CommonGetRequest request = CommonGetRequest.builder().id(id).build();
-            ResponseEntity<RunnerResponse<ShipmentDetailsResponse>> shipment = (ResponseEntity<RunnerResponse<ShipmentDetailsResponse>>) shipmentService.completeRetrieveById(CommonRequestModel.buildRequest(request));
-            return ResponseEntity.ok(PartialFetchUtils.fetchPartialData(shipment, includeColumns));
-
-        } catch (Exception ex) {
-            System.out.println(ex.toString());
-        }
-        return ResponseEntity.ok(null);
-    }
-
     // @PreAuthorize("hasAuthority('"+ Permissions.AdministrationGeneral+"')") //TODO-Authorization
     @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.UPDATE_SUCCESSFUL, response = RunnerResponse.class)})
     @PutMapping(ApiConstants.API_UPDATE_SHIPMENT)

@@ -9,6 +9,7 @@ import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
+import com.dpw.runner.shipment.services.commons.responses.RunnerPartialListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
@@ -36,6 +37,7 @@ import com.dpw.runner.shipment.services.service_bus.SBUtilsImpl;
 import com.dpw.runner.shipment.services.syncing.impl.ShipmentSync;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
+import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.util.Pair;
@@ -321,18 +323,20 @@ public class ShipmentService implements IShipmentService {
         Set<String> containerNumber = new HashSet<>();
         if (shipmentDetail.getContainersList() != null) {
             for (Containers container : shipmentDetail.getContainersList()) {
-                if (container.getContainerCode().contains(Constants.Cont20)) {
-                    ++container20Count;
-                } else if (container.getContainerCode().contains(Constants.Cont40)) {
-                    ++container40Count;
-                } else if (container.getContainerCode().equals(Constants.Cont20GP)) {
-                    ++container20GPCount;
-                } else if (container.getContainerCode().equals(Constants.Cont20RE)) {
-                    ++container20RECount;
-                } else if (container.getContainerCode().equals(Constants.Cont40GP)) {
-                    ++container40GPCount;
-                } else if (container.getContainerCode().equals(Constants.Cont40RE)) {
-                    ++container40RECount;
+                if(container.getContainerCode() != null) {
+                    if (container.getContainerCode().contains(Constants.Cont20)) {
+                        ++container20Count;
+                    } else if (container.getContainerCode().contains(Constants.Cont40)) {
+                        ++container40Count;
+                    } else if (container.getContainerCode().equals(Constants.Cont20GP)) {
+                        ++container20GPCount;
+                    } else if (container.getContainerCode().equals(Constants.Cont20RE)) {
+                        ++container20RECount;
+                    } else if (container.getContainerCode().equals(Constants.Cont40GP)) {
+                        ++container40GPCount;
+                    } else if (container.getContainerCode().equals(Constants.Cont40RE)) {
+                        ++container40RECount;
+                    }
                 }
                 if (StringUtility.isNotEmpty(container.getContainerNumber())) {
                     containerNumber.add(container.getContainerNumber());
@@ -629,7 +633,8 @@ public class ShipmentService implements IShipmentService {
     }
 
     void getShipment(ShipmentDetails shipmentDetails) {
-        shipmentDetails.setShipmentId(generateShipmentId());
+        if(shipmentDetails.getShipmentId() == null)
+            shipmentDetails.setShipmentId(generateShipmentId());
         shipmentDetails = shipmentDao.save(shipmentDetails);
         //shipmentDetails = shipmentDao.findById(shipmentDetails.getId()).get();
     }
@@ -806,6 +811,12 @@ public class ShipmentService implements IShipmentService {
         if (entity.getContainersList() == null)
             entity.setContainersList(oldEntity.get().getContainersList());
         entity = shipmentDao.update(entity);
+
+        try {
+            shipmentSync.sync(entity);
+        } catch (Exception e){
+            log.error("Error performing sync on shipment entity, {}", e);
+        }
         return ResponseHelper.buildSuccessResponse(objectMapper.convertValue(entity, ShipmentDetailsResponse.class));
     }
 
@@ -942,6 +953,12 @@ public class ShipmentService implements IShipmentService {
                 response.setShipmentAddresses(convertToDtoList(updatedParties, PartiesResponse.class));
             }
 
+            try {
+                shipmentSync.sync(entity);
+            } catch (Exception e){
+                log.error("Error performing sync on shipment entity, {}", e);
+            }
+
             return ResponseHelper.buildSuccessResponse(response);
         } catch (ExecutionException e) {
             String responseMsg = e.getMessage() != null ? e.getMessage()
@@ -964,10 +981,24 @@ public class ShipmentService implements IShipmentService {
             Pair<Specification<ShipmentDetails>, Pageable> tuple = fetchData(request, ShipmentDetails.class, tableNames);
             Page<ShipmentDetails> shipmentDetailsPage = shipmentDao.findAll(tuple.getLeft(), tuple.getRight());
             log.info("Shipment list retrieved successfully for Request Id {} ", LoggerHelper.getRequestIdFromMDC());
+            if(request.getIncludeColumns()==null||request.getIncludeColumns().size()==0)
             return ResponseHelper.buildListSuccessResponse(
                     convertEntityListToDtoList(shipmentDetailsPage.getContent()),
                     shipmentDetailsPage.getTotalPages(),
                     shipmentDetailsPage.getTotalElements());
+            else {
+               List<IRunnerResponse>filtered_list=new ArrayList<>();
+            for( var curr: convertEntityListToDtoList(shipmentDetailsPage.getContent())){
+                RunnerPartialListResponse res=new RunnerPartialListResponse();
+                res.setData(PartialFetchUtils.fetchPartialListData(curr,request.getIncludeColumns()));
+                filtered_list.add( res);
+
+            }
+                return ResponseHelper.buildListSuccessResponse(
+                        filtered_list,
+                        shipmentDetailsPage.getTotalPages(),
+                        shipmentDetailsPage.getTotalElements());
+            }
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;
@@ -1092,7 +1123,7 @@ public class ShipmentService implements IShipmentService {
             shipmentDetails.get().setFileRepoList(fileRepoDao.findByEntityIdAndEntityType(id, Constants.SHIPMENT));
             shipmentDetails.get().setNotesList(notesDao.findByEntityIdAndEntityType(id, Constants.SHIPMENT));
             log.info("Shipment details async fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
-            ShipmentDetailsResponse response = objectMapper.convertValue(shipmentDetails.get(), ShipmentDetailsResponse.class);
+            ShipmentDetailsResponse response = jsonHelper.convertValue(shipmentDetails.get(), ShipmentDetailsResponse.class);
             //containerCountUpdate(shipmentDetails.get(), response);
             return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(response));
         } catch (Exception e) {
@@ -1105,7 +1136,6 @@ public class ShipmentService implements IShipmentService {
 
     public ResponseEntity<?> completeRetrieveById(CommonRequestModel commonRequestModel) throws ExecutionException, InterruptedException {
         try {
-            // create common list request for shipment id
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
             if (request == null) {
                 log.error("Request is empty for Shipment complete retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
@@ -1114,13 +1144,16 @@ public class ShipmentService implements IShipmentService {
                 log.error("Request Id is null for Shipment complete retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
             long id = request.getId();
+
             CommonRequestModel commonListRequestModel = CommonRequestModel.buildRequest(constructListCommonRequest("shipmentId", id, "="));
             CommonRequestModel commonListRequestModelbyEntityId = CommonRequestModel.buildRequest(constructListCommonRequest("entityId", id, "="));
 
             CompletableFuture<ResponseEntity<?>> shipmentsFuture = retrieveByIdAsync(commonRequestModel);
             RunnerResponse<ShipmentDetailsResponse> res = (RunnerResponse<ShipmentDetailsResponse>) shipmentsFuture.get().getBody();
-
+            if(request.getIncludeColumns()==null||request.getIncludeColumns().size()==0)
             return ResponseHelper.buildSuccessResponse(res.getData());
+            else
+            return ResponseHelper.buildSuccessResponse(PartialFetchUtils.fetchPartialData(res, request.getIncludeColumns()));
         } catch (Exception e) {
             String responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;
@@ -1291,6 +1324,8 @@ public class ShipmentService implements IShipmentService {
     }
 
     private String generateSequence(GenerationType generationType, String prefix, Integer counter) {
+        if(generationType == null)
+            return StringUtility.getRandomString(10);
         String suffix;
         switch (generationType) {
             case Random:
@@ -1447,8 +1482,9 @@ public class ShipmentService implements IShipmentService {
         List<ConsolidationDetailsRequest> consolidationDetailsRequests = shipmentRequest.getConsolidationList();
         if(consolidationDetailsRequests != null && !consolidationDetailsRequests.isEmpty()) {
             for(ConsolidationDetailsRequest consolidation : consolidationDetailsRequests) {
-                if(consolidation.getId() != null) {
-                    tempConsolIds.add(consolidation.getId());
+                Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findByGuid(consolidation.getGuid());
+                if(consolidationDetails.get() != null && consolidationDetails.get().getId() != null) {
+                    tempConsolIds.add(consolidationDetails.get().getId());
                 }
             }
         }
@@ -1467,7 +1503,7 @@ public class ShipmentService implements IShipmentService {
             entity.setId(id);
             List<Containers> updatedContainers = null;
             if (containerRequestList != null) {
-                updatedContainers = containerDao.updateEntityFromShipmentConsole(convertToEntityList(containerRequestList, Containers.class), null, oldContainers);
+                updatedContainers = containerDao.updateEntityFromShipmentV1(convertToEntityList(containerRequestList, Containers.class), oldContainers);
             } else if(oldEntity != null && !oldEntity.isEmpty()){
                 updatedContainers = oldEntity.get().getContainersList();
             }
