@@ -129,6 +129,9 @@ public class ConsolidationService implements IConsolidationService {
     @Autowired
     private AuditLogService auditLogService;
 
+    @Autowired
+    private IShipmentsContainersMappingDao shipmentsContainersMappingDao;
+
     private List<String> TRANSPORT_MODES = Arrays.asList("SEA", "ROAD", "RAIL", "AIR");
     private List<String> SHIPMENT_TYPE = Arrays.asList("FCL", "LCL");
     private List<String> WEIGHT_UNIT = Arrays.asList("KGS", "G", "DT");
@@ -324,7 +327,7 @@ public class ConsolidationService implements IConsolidationService {
                 createRoutingsAsync(consolidationDetails, routingsRequest);
 
             try {
-                consolidationSync.sync(request);
+                consolidationSync.sync(jsonHelper.convertValue(consolidationDetails, ConsolidationDetailsRequest.class));
             } catch (Exception e){
                 log.error("Error performing sync on consolidation entity, {}", e);
             }
@@ -503,6 +506,11 @@ public class ConsolidationService implements IConsolidationService {
         if (entity.getContainersList() == null)
             entity.setContainersList(oldEntity.get().getContainersList());
         entity = consolidationDetailsDao.update(entity);
+        try {
+            consolidationSync.sync(jsonHelper.convertValue(entity, ConsolidationDetailsRequest.class));
+        } catch (Exception e) {
+            log.error("Error performing sync on consol entity, {}", e);
+        }
         return ResponseHelper.buildSuccessResponse(jsonHelper.convertValue(entity, ConsolidationDetailsResponse.class));
 
     }
@@ -523,6 +531,8 @@ public class ConsolidationService implements IConsolidationService {
                 }
             }
         }
+        Optional<ConsolidationDetails> consol = consolidationDetailsDao.findById(consolidationId);
+        consolidationSync.sync(jsonHelper.convertValue(consol.get(), ConsolidationDetailsRequest.class));
         return new ResponseEntity<>(HttpStatus.OK);
     }
 
@@ -535,12 +545,33 @@ public class ConsolidationService implements IConsolidationService {
                 if(shipmentDetails.getContainersList() != null) {
                     List<Containers> containersList = shipmentDetails.getContainersList();
                     for(Containers container : containersList) {
-                        container.setConsolidationId(null);
+                        shipmentsContainersMappingDao.detachShipments(container.getId(), List.of(shipId));
                     }
                     containerDao.saveAll(containersList);
                 }
             }
         }
+
+        return new ResponseEntity<>(HttpStatus.OK);
+    }
+
+    @Transactional
+    public ResponseEntity<?> detachShipmentsSync(Long consolidationId, List<Long> shipmentIds) {
+        if(consolidationId != null && shipmentIds!= null && shipmentIds.size() > 0) {
+            List<Long> removedShipmentIds = consoleShipmentMappingDao.detachShipments(consolidationId, shipmentIds);
+            for(Long shipId : removedShipmentIds) {
+                ShipmentDetails shipmentDetails = shipmentDao.findById(shipId).get();
+                if(shipmentDetails.getContainersList() != null) {
+                    List<Containers> containersList = shipmentDetails.getContainersList();
+                    for(Containers container : containersList) {
+                        shipmentsContainersMappingDao.detachShipments(container.getId(), List.of(shipId));
+                    }
+                    containerDao.saveAll(containersList);
+                }
+            }
+        }
+        Optional<ConsolidationDetails> consol = consolidationDetailsDao.findById(consolidationId);
+        consolidationSync.sync(jsonHelper.convertValue(consol.get(), ConsolidationDetailsRequest.class));
 
         return new ResponseEntity<>(HttpStatus.OK);
     }
@@ -1162,7 +1193,21 @@ public class ConsolidationService implements IConsolidationService {
         catch (Exception e){
         }
 
-        consolidationDetailsRequest.setShipmentsList(null);
+        List<ShipmentDetails> tempShipIds = new ArrayList<>();
+
+        List<Long> newShipList = new ArrayList<>();
+        List<ShipmentRequest> shipmentRequests = consolidationDetailsRequest.getShipmentsList();
+        if(shipmentRequests != null && !shipmentRequests.isEmpty()) {
+            for(ShipmentRequest shipmentRequest : shipmentRequests) {
+                Optional<ShipmentDetails> shipmentDetails = shipmentDao.findByGuid(shipmentRequest.getGuid());
+                if(shipmentDetails.get() != null && shipmentDetails.get().getId() != null) {
+                    ShipmentDetails shipmentDetails1 = new ShipmentDetails();
+                    shipmentDetails1.setId(shipmentDetails.get().getId());
+                    tempShipIds.add(shipmentDetails1);
+                    newShipList.add(shipmentDetails.get().getId());
+                }
+            }
+        }
 
 
         try {
@@ -1173,8 +1218,12 @@ public class ConsolidationService implements IConsolidationService {
                 oldConsolidation = oldEntity.get();
                 id = oldEntity.get().getId();
                 oldContainers = oldEntity.get().getContainersList();
+                List<Long> oldShipList = oldConsolidation.getShipmentsList().stream().map(e -> e.getId()).collect(Collectors.toList());
+                oldShipList = oldShipList.stream().filter(item -> !newShipList.contains(item)).collect(Collectors.toList());
+                detachShipmentsSync(oldEntity.get().getId(), oldShipList);
             }
             ConsolidationDetails entity = objectMapper.convertValue(consolidationDetailsRequest, ConsolidationDetails.class);
+            entity.setShipmentsList(tempShipIds);
             entity.setId(id);
             List<Containers> updatedContainers = null;
             if (containerRequestList != null) {

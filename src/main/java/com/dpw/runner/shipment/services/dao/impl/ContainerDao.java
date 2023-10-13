@@ -213,4 +213,52 @@ public class ContainerDao implements IContainerDao {
             throw new Exception(e);
         }
     }
+
+    @Override
+    public List<Containers> updateEntityFromShipmentV1(List<Containers> containersList, List<Containers> oldEntityList) throws Exception {
+        String responseMsg;
+        List<Containers> responseContainers = new ArrayList<>();
+        Map<UUID, Containers> containersMap = new HashMap<>();
+        if(oldEntityList != null && oldEntityList.size() > 0) {
+            for (Containers containers:
+                    oldEntityList) {
+                containersMap.put(containers.getGuid(), containers);
+            }
+        }
+        Containers oldContainer;
+        try {
+            // TODO- Handle Transactions here
+            if (containersList != null && containersList.size() != 0) {
+                List<Containers> containerList = new ArrayList<>(containersList);
+                for (Containers containers: containerList) {
+                    if(containersMap.containsKey(containers.getGuid())) {
+                        oldContainer = containersMap.get(containers.getGuid());
+                        containers.setId(oldContainer.getId());
+                        containers.setConsolidationId(oldContainer.getConsolidationId());
+                        containers.setShipmentsList(oldContainer.getShipmentsList());
+                    } else {
+                        List<Containers> oldConsolContainer = findByGuid(containers.getGuid());
+                        if(oldConsolContainer.size() > 0) {
+                            containers.setId(oldConsolContainer.get(0).getId());
+                            containers.setConsolidationId(oldConsolContainer.get(0).getConsolidationId());
+                            containers.setShipmentsList(oldConsolContainer.get(0).getShipmentsList());
+                        }
+                        else {
+                            containers.setId(null);
+                            containers.setConsolidationId(null);
+                            containers.setShipmentsList(null);
+                        }
+                    }
+                }
+                responseContainers = saveAll(containerList);
+            }
+            return responseContainers;
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
+            log.error(responseMsg, e);
+            throw new Exception(e);
+        }
+    }
+
 }

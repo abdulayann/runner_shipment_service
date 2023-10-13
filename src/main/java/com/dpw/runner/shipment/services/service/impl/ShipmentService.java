@@ -323,18 +323,20 @@ public class ShipmentService implements IShipmentService {
         Set<String> containerNumber = new HashSet<>();
         if (shipmentDetail.getContainersList() != null) {
             for (Containers container : shipmentDetail.getContainersList()) {
-                if (container.getContainerCode().contains(Constants.Cont20)) {
-                    ++container20Count;
-                } else if (container.getContainerCode().contains(Constants.Cont40)) {
-                    ++container40Count;
-                } else if (container.getContainerCode().equals(Constants.Cont20GP)) {
-                    ++container20GPCount;
-                } else if (container.getContainerCode().equals(Constants.Cont20RE)) {
-                    ++container20RECount;
-                } else if (container.getContainerCode().equals(Constants.Cont40GP)) {
-                    ++container40GPCount;
-                } else if (container.getContainerCode().equals(Constants.Cont40RE)) {
-                    ++container40RECount;
+                if(container.getContainerCode() != null) {
+                    if (container.getContainerCode().contains(Constants.Cont20)) {
+                        ++container20Count;
+                    } else if (container.getContainerCode().contains(Constants.Cont40)) {
+                        ++container40Count;
+                    } else if (container.getContainerCode().equals(Constants.Cont20GP)) {
+                        ++container20GPCount;
+                    } else if (container.getContainerCode().equals(Constants.Cont20RE)) {
+                        ++container20RECount;
+                    } else if (container.getContainerCode().equals(Constants.Cont40GP)) {
+                        ++container40GPCount;
+                    } else if (container.getContainerCode().equals(Constants.Cont40RE)) {
+                        ++container40RECount;
+                    }
                 }
                 if (StringUtility.isNotEmpty(container.getContainerNumber())) {
                     containerNumber.add(container.getContainerNumber());
@@ -941,6 +943,12 @@ public class ShipmentService implements IShipmentService {
                 response.setNotesList(convertToDtoList(updatedNotes, NotesResponse.class));
             }
 
+            try {
+                shipmentSync.sync(entity);
+            } catch (Exception e){
+                log.error("Error performing sync on shipment entity, {}", e);
+            }
+
             return ResponseHelper.buildSuccessResponse(response);
         } catch (ExecutionException e) {
             String responseMsg = e.getMessage() != null ? e.getMessage()
@@ -1464,8 +1472,9 @@ public class ShipmentService implements IShipmentService {
         List<ConsolidationDetailsRequest> consolidationDetailsRequests = shipmentRequest.getConsolidationList();
         if(consolidationDetailsRequests != null && !consolidationDetailsRequests.isEmpty()) {
             for(ConsolidationDetailsRequest consolidation : consolidationDetailsRequests) {
-                if(consolidation.getId() != null) {
-                    tempConsolIds.add(consolidation.getId());
+                Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findByGuid(consolidation.getGuid());
+                if(consolidationDetails.get() != null && consolidationDetails.get().getId() != null) {
+                    tempConsolIds.add(consolidationDetails.get().getId());
                 }
             }
         }
@@ -1484,7 +1493,7 @@ public class ShipmentService implements IShipmentService {
             entity.setId(id);
             List<Containers> updatedContainers = null;
             if (containerRequestList != null) {
-                updatedContainers = containerDao.updateEntityFromShipmentConsole(convertToEntityList(containerRequestList, Containers.class), null, oldContainers);
+                updatedContainers = containerDao.updateEntityFromShipmentV1(convertToEntityList(containerRequestList, Containers.class), oldContainers);
             } else if(oldEntity != null && !oldEntity.isEmpty()){
                 updatedContainers = oldEntity.get().getContainersList();
             }
