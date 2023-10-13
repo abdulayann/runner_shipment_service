@@ -429,7 +429,9 @@ public class CustomerBookingService implements ICustomerBookingService {
             log.info("Booking details fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
             CustomerBookingResponse customerBookingResponse = jsonHelper.convertValue(customerBooking.get(), CustomerBookingResponse.class);
             createCustomerBookingResponse(customerBooking.get(), customerBookingResponse);
+            if(request.getIncludeColumns()==null||request.getIncludeColumns().size()==0)
             return ResponseHelper.buildSuccessResponse(customerBookingResponse);
+            else return ResponseHelper.buildSuccessResponse(PartialFetchUtils.fetchPartialListData(customerBookingResponse,request.getIncludeColumns()));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;

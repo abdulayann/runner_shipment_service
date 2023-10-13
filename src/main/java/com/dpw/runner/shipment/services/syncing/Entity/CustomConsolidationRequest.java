@@ -67,8 +67,8 @@ public class CustomConsolidationRequest implements IRunnerResponse, IRunnerReque
 
     @JsonProperty("Guid")
     private UUID Guid;
-    @JsonProperty("Id")
-    private Long Id;
+//    @JsonProperty("Id")
+//    private Long Id;
     @JsonProperty("IntraBranch")
     private Boolean IntraBranch;
     @JsonProperty("InwardDateandTime")

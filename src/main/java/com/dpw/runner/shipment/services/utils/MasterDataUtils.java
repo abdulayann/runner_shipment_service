@@ -753,4 +753,68 @@ public class MasterDataUtils{
         });
         return fieldNameContainerCodeDataMap;
     }
+
+    // Fetch All Commodity Master in single call from V1
+    public List<String> createInBulkCommodityTypeRequest (IRunnerResponse entityPayload, Class mainClass,  Map<String, Map<String, String>> fieldNameMainKeyMap, String code) {
+        if (Objects.isNull(entityPayload))
+            return null;
+
+        Map<String, String> fieldNameContainerCodeDataMap = new HashMap<>();
+        Map<String, String> keyContainerCodeDataMap = new HashMap<>();
+        Map<String, String> fieldNameKeyMap = new HashMap<>();
+        List<String> itemValueList = new ArrayList<>();
+        log.info("commodityCodeMasterData");
+        for(Field field  : mainClass.getDeclaredFields())
+        {
+            if (field.isAnnotationPresent(DedicatedMasterData.class) && field.getDeclaredAnnotation(DedicatedMasterData.class).type().equals(Constants.COMMODITY_TYPE_MASTER_DATA))
+            {
+                try {
+                    log.info("CommodityField: "+field.getName());
+                    Field field1 = entityPayload.getClass().getDeclaredField(field.getName());
+                    field1.setAccessible(true);
+                    String itemValue = (String) field1.get(entityPayload);
+                    if(itemValue != null && !itemValue.equals("")) {
+                        itemValueList.add(itemValue);
+                        fieldNameKeyMap.put(field.getName(), itemValue);
+                    }
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }
+        fieldNameMainKeyMap.put(code, fieldNameKeyMap);
+        return itemValueList;
+    }
+
+    public Map<String, EntityTransferCommodityType> fetchInBulkCommodityTypes(List<String> requests) {
+        Map<String, EntityTransferCommodityType> keyMasterDataMap = new HashMap<>();
+        if(requests.size() > 0) {
+            log.info("Commodities: " + requests);
+            CommonV1ListRequest request = new CommonV1ListRequest();
+            List<Object> criteria = new ArrayList<>();
+            List<Object> field = new ArrayList<>(List.of(EntityTransferConstants.CODE));
+            String operator = Operators.IN.getValue();
+            criteria.addAll(List.of(field, operator, List.of(requests)));
+            request.setCriteriaRequests(criteria);
+            V1DataResponse response = v1Service.fetchCommodityData(request);
+
+            List<EntityTransferCommodityType> containerTypesList = jsonHelper.convertValueToList(response.entities, EntityTransferCommodityType.class);
+            containerTypesList.forEach(containerType -> {
+                keyMasterDataMap.put(containerType.getCode(), containerType);
+            });
+        }
+        return keyMasterDataMap;
+    }
+
+    public Map<String, String> setInBulkCommodityTypes (Map<String, String> fieldNameKeyMap, Map<String, EntityTransferCommodityType> keyCommodityCodeDataMap) {
+        Map<String, String> fieldNameContainerCodeDataMap = new HashMap<>();
+        if (Objects.isNull(fieldNameKeyMap) || fieldNameKeyMap.isEmpty())
+            return fieldNameContainerCodeDataMap;
+
+        fieldNameKeyMap.forEach((key, value) -> {
+            if(keyCommodityCodeDataMap.containsKey(value))
+                fieldNameContainerCodeDataMap.put(key, keyCommodityCodeDataMap.get(value).getDescription());
+        });
+        return fieldNameContainerCodeDataMap;
+    }
 }

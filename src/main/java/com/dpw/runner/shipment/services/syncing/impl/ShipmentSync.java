@@ -7,7 +7,6 @@ import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.syncing.Entity.*;
-import com.dpw.runner.shipment.services.syncing.Entity.response.CustomShipmentSyncResponse;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
 import com.dpw.runner.shipment.services.utils.V1AuthHelper;
 import lombok.extern.slf4j.Slf4j;
@@ -23,6 +22,8 @@ import org.springframework.web.client.RestTemplate;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
+
+import static com.dpw.runner.shipment.services.utils.CommonUtils.stringValueOf;
 
 @Component
 @Slf4j
@@ -53,8 +54,6 @@ public class ShipmentSync implements IShipmentSync {
         mapAdditionalDetails(cs, sd);
         mapCarrierDetails(cs, sd);
 
-        // setting this null for now because giving random string value in v1
-        cs.setShipmentId(null);
         // Map remaining object so there's no info lost for root -> root properties
         // example Guid
         // assigning root level properties not previously mapped
@@ -62,7 +61,7 @@ public class ShipmentSync implements IShipmentSync {
         cs.setReferenceNo(sd.getBookingReference());
         cs.setCustom_ShipType(sd.getDirection());
         cs.setContainerType(sd.getShipmentType());
-        cs.setStatusString(sd.getStatus().toString());
+        cs.setStatusString(stringValueOf(sd.getStatus()));
         cs.setSalesAgentId(sd.getSalesAgent());
         cs.setInners(sd.getInnerPacks());
         cs.setInnersUnit(sd.getInnerPackUnit());
@@ -98,6 +97,8 @@ public class ShipmentSync implements IShipmentSync {
         // PickupAddressJSON and DeliveryAddressJSON (could be renamed for easy mapping)
 
         cs.setBookingCarriages(convertToList(sd.getBookingCarriagesList(), BookingCarriageRequestV2.class));
+        cs.setShipmentId(sd.getShipmentId());
+        cs.setGuid(sd.getGuid());
 
         String finalCs = jsonHelper.convertToJson(cs);
         retryTemplate.execute(ctx -> {
@@ -107,7 +108,7 @@ public class ShipmentSync implements IShipmentSync {
             return response;
         });
 
-        return ResponseHelper.buildSuccessResponse(modelMapper.map(cs, CustomShipmentSyncResponse.class));
+        return ResponseHelper.buildSuccessResponse(modelMapper.map(cs, CustomShipmentSyncRequest.class));
     }
 
     private void mapConsolidationGuids(CustomShipmentSyncRequest response, ShipmentDetails request) {

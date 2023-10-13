@@ -76,24 +76,10 @@ public class FileRepoController {
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = FileRepoConstants.FILE_REPO_RETRIEVE_BY_ID_SUCCESSFUL)})
     @GetMapping(ApiConstants.API_RETRIEVE_BY_ID)
-    public ResponseEntity<RunnerResponse<FileRepoResponse>> retrieveById(@ApiParam(value = FileRepoConstants.FILE_REPO_ID, required = true) @RequestParam Long id) {
-        CommonGetRequest request = CommonGetRequest.builder().id(id).build();
+    public ResponseEntity<RunnerResponse<FileRepoResponse>> retrieveById(@ApiParam(value = FileRepoConstants.FILE_REPO_ID, required = true) @RequestParam Long id, @RequestParam(name = "includeColumns", required = false) List<String> includeColumns) {
+        CommonGetRequest request = CommonGetRequest.builder().id(id).includeColumns(includeColumns).build();
         return (ResponseEntity<RunnerResponse<FileRepoResponse>>) fileRepoService.retrieveById(CommonRequestModel.buildRequest(request));
     }
-
-    @ApiResponses(value = {@ApiResponse(code = 200, message = FileRepoConstants.FILE_REPO_RETRIEVE_BY_ID_SUCCESSFUL)})
-    @GetMapping(ApiConstants.API_RETRIEVE_BY_ID_PARTIAL)
-    public ResponseEntity<?> retrieveByIdPartial(@RequestParam(name = "includeColumns", required = false) List<String> includeColumns, @RequestParam Long id) {
-        CommonGetRequest request = CommonGetRequest.builder().id(id).build();
-        try {
-            ResponseEntity<RunnerResponse<FileRepoResponse>> fileRepo = (ResponseEntity<RunnerResponse<FileRepoResponse>>) fileRepoService.retrieveById(CommonRequestModel.buildRequest(request));
-            return ResponseEntity.ok(PartialFetchUtils.fetchPartialData(fileRepo, includeColumns));
-        } catch (Exception ex) {
-            System.out.println(ex.toString());
-        }
-        return ResponseEntity.ok(null);
-    }
-
 
     @PostMapping(FileRepoConstants.FILE_REPO_LIST_ENTITYID_ENTITYTYPE)
     public ResponseEntity<RunnerListResponse<FileRepoResponse>> retrieveByIdAndType(@RequestBody @Valid EntityIdAndTypeRequest entityIdAndTypeRequest) {

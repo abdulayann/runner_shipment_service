@@ -294,6 +294,11 @@ public class DbAccessHelper {
             case "IN":
                 return criteriaBuilder.in(path.get(fieldName))
                         .value(input.getValue());
+            case "CONTAINS":
+                if(dataType.isAssignableFrom(List.class))
+                    return criteriaBuilder.isMember(input.getValue(), path.get(fieldName));
+                else
+                    throw new RuntimeException("Criteria not supported yet");
             default:
                 throw new RuntimeException("Operation not supported yet");
         }

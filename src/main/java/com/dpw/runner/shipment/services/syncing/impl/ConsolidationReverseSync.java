@@ -137,10 +137,11 @@ public class ConsolidationReverseSync implements IConsolidationReverseSync {
             return;
         response.setCarrierDetails(new CarrierDetailRequest());
         modelMapper.map(request, response.getCarrierDetails());
-        response.getCarrierDetails().setDestination(request.getDestinationPortName());
-//        response.getCarrierDetails().setDestinationPort(request.getDestinationPortName());
-        response.getCarrierDetails().setOrigin(request.getOriginPortName());
-//        response.getCarrierDetails().setOriginPort(request.getOriginPortName());
+        response.getCarrierDetails().setDestination(request.getLastDischargeString());
+        response.getCarrierDetails().setDestinationPort(request.getDestinationPortName());
+        response.getCarrierDetails().setOrigin(request.getFirstLoadString());
+        response.getCarrierDetails().setOriginPort(request.getOriginPortName());
+        response.getCarrierDetails().setGuid(null);
         response.getCarrierDetails().setId(null);
     }
 
@@ -151,6 +152,7 @@ public class ConsolidationReverseSync implements IConsolidationReverseSync {
         modelMapper.map(request, response.getAchievedQuantities());
         response.getAchievedQuantities().setConsolidatedVolume(request.getConsolidatedVolume());
         response.getAchievedQuantities().setConsolidatedVolumeUnit(request.getConsolidatiedVolumeUnit());
+        response.getAchievedQuantities().setGuid(null);
         response.getAchievedQuantities().setId(null);
     }
 
@@ -161,6 +163,7 @@ public class ConsolidationReverseSync implements IConsolidationReverseSync {
         modelMapper.map(request, response.getAllocations());
         response.getAllocations().setChargable(request.getChargeable());
         response.getAllocations().setIsTemperatureControlled(request.getIsTemparatureControlled());
+        response.getAllocations().setGuid(null);
         response.getAllocations().setId(null);
     }
 

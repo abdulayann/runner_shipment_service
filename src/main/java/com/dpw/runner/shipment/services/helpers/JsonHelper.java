@@ -1,5 +1,7 @@
 package com.dpw.runner.shipment.services.helpers;
 
+import com.dpw.runner.shipment.services.commons.objectMapperMixin.ShipmentMixIn;
+import com.dpw.runner.shipment.services.entity.*;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -11,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.json.JsonParseException;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.PostConstruct;
 import java.util.List;
 import java.util.Map;
 
@@ -23,6 +26,37 @@ public class JsonHelper {
 
     private ObjectMapper mapper1 = new ObjectMapper();
 
+    private ObjectMapper createMapper = new ObjectMapper();
+
+    @PostConstruct
+    public void intializeMapper() {
+        createMapper.registerModule(new JavaTimeModule());
+        createMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+        createMapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
+        createMapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
+        createMapper.addMixIn(ShipmentDetails.class, ShipmentMixIn.class);
+        createMapper.addMixIn(Parties.class, ShipmentMixIn.class);
+        createMapper.addMixIn(AdditionalDetails.class, ShipmentMixIn.class);
+        createMapper.addMixIn(Containers.class, ShipmentMixIn.class);
+        createMapper.addMixIn(CarrierDetails.class, ShipmentMixIn.class);
+        createMapper.addMixIn(ELDetails.class, ShipmentMixIn.class);
+        createMapper.addMixIn(Events.class, ShipmentMixIn.class);
+        createMapper.addMixIn(FileRepo.class, ShipmentMixIn.class);
+        createMapper.addMixIn(Packing.class, ShipmentMixIn.class);
+        createMapper.addMixIn(ReferenceNumbers.class, ShipmentMixIn.class);
+        createMapper.addMixIn(Routings.class, ShipmentMixIn.class);
+        createMapper.addMixIn(ServiceDetails.class, ShipmentMixIn.class);
+        createMapper.addMixIn(TruckDriverDetails.class, ShipmentMixIn.class);
+        createMapper.addMixIn(PickupDeliveryDetails.class, ShipmentMixIn.class);
+        createMapper.addMixIn(Jobs.class, ShipmentMixIn.class);
+        createMapper.addMixIn(ConsolidationDetails.class, ShipmentMixIn.class);
+        createMapper.addMixIn(BookingCarriage.class, ShipmentMixIn.class);
+        createMapper.addMixIn(Notes.class, ShipmentMixIn.class);
+        mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+        mapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
+        mapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
+    }
+
     public <T> T readFromJson(String jsonString, Class<T> clazz) {
         try {
             return mapper.readValue(jsonString, clazz);
@@ -34,9 +68,6 @@ public class JsonHelper {
 
     public <T> String convertToJson(T object) {
         try {
-            mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
-            mapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
-            mapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
             return mapper.writeValueAsString(object);
         } catch (JsonProcessingException e) {
             log.error("Failed to Parse given Json");
@@ -56,7 +87,6 @@ public class JsonHelper {
     }
 
     public <T,F> F convertValue(T object, Class<F> clazz) {
-        mapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
         return mapper.convertValue(object, clazz);
     }
 
@@ -76,5 +106,9 @@ public class JsonHelper {
 
     public <T, F> F convertValue(T fromValue, TypeReference<F> toValueTypeRef) {
         return mapper.convertValue(fromValue, toValueTypeRef);
+    }
+
+    public <T,F> F convertCreateValue(T object, Class<F> clazz) {
+        return createMapper.convertValue(object, clazz);
     }
 }

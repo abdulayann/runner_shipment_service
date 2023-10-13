@@ -61,62 +61,56 @@ public class AuthFilter implements Filter {
 
     @Override
     public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain) throws IOException, ServletException {
-
-        LoggerHelper.putRequestId(UUID.randomUUID().toString());
-        HttpServletRequest req = (HttpServletRequest) servletRequest;
-        if(shouldNotFilter(req))
-        {
-            filterChain.doFilter(servletRequest, servletResponse);
-            return;
-        }
-        IUserService userService = getUserServiceFactory.returnUserService();
-        HttpServletResponse res = (HttpServletResponse) servletResponse;
-        long time = System.currentTimeMillis();
-        String authToken = req.getHeader("Authorization");
-        if(authToken == null)
-        {
-            res.setStatus(HttpStatus.UNAUTHORIZED.value());
-            return;
-        }
-        UsersDto user = null;
-        try{
-            user = userService.getUserByToken(authToken);
-        } catch (Exception e)
-        {
-            String errormessage = "Auth failed:- User is not onboarded on shipment service";
-            log.info(errormessage);
-            res.setContentType("application/json");
-            res.setStatus(HttpStatus.UNAUTHORIZED.value());
-            return;
-        }
-
-        if (user == null) {
-            String errormessage = "Auth failed:- User is not onboarded on shipment service";
-            log.info(errormessage);
-            res.setContentType("application/json");
-            res.setStatus(HttpStatus.UNAUTHORIZED.value());
-            //res.getWriter().write(filterLevelException(new UnAuthorizedException(errormessage)));
-            return;
-        }
-        log.debug("Auth Successful, username:-{},tenantId:-{}", user.getUsername(), user.getTenantId());
-        UserContext.setUser(user);
-        RequestAuthContext.setAuthToken(authToken);
-        TenantContext.setCurrentTenant(user.getTenantId());
-        List<String> grantedPermissions = new ArrayList<>();
-        for (Map.Entry<String,Boolean> entry : user.getPermissions().entrySet())
-        {
-            if(entry.getValue())
-            {
-                grantedPermissions.add(entry.getKey());
-            }
-        }
-        UsernamePasswordAuthenticationToken usernamePasswordAuthenticationToken = new UsernamePasswordAuthenticationToken(
-                user, null, getAuthorities(grantedPermissions));
-        usernamePasswordAuthenticationToken
-                .setDetails(new WebAuthenticationDetailsSource().buildDetails(req));
-        PermissionsContext.setPermissions(grantedPermissions);
-        SecurityContextHolder.getContext().setAuthentication(usernamePasswordAuthenticationToken);
         try {
+            LoggerHelper.putRequestId(UUID.randomUUID().toString());
+            HttpServletRequest req = (HttpServletRequest) servletRequest;
+            if (shouldNotFilter(req)) {
+                filterChain.doFilter(servletRequest, servletResponse);
+                return;
+            }
+            IUserService userService = getUserServiceFactory.returnUserService();
+            HttpServletResponse res = (HttpServletResponse) servletResponse;
+            long time = System.currentTimeMillis();
+            String authToken = req.getHeader("Authorization");
+            if (authToken == null) {
+                res.setStatus(HttpStatus.UNAUTHORIZED.value());
+                return;
+            }
+            UsersDto user = null;
+            try {
+                user = userService.getUserByToken(authToken);
+            } catch (Exception e) {
+                String errormessage = "Auth failed:- User is not onboarded on shipment service";
+                log.info(errormessage);
+                res.setContentType("application/json");
+                res.setStatus(HttpStatus.UNAUTHORIZED.value());
+                return;
+            }
+
+            if (user == null) {
+                String errormessage = "Auth failed:- User is not onboarded on shipment service";
+                log.info(errormessage);
+                res.setContentType("application/json");
+                res.setStatus(HttpStatus.UNAUTHORIZED.value());
+                //res.getWriter().write(filterLevelException(new UnAuthorizedException(errormessage)));
+                return;
+            }
+            log.debug("Auth Successful, username:-{},tenantId:-{}", user.getUsername(), user.getTenantId());
+            UserContext.setUser(user);
+            RequestAuthContext.setAuthToken(authToken);
+            TenantContext.setCurrentTenant(user.getTenantId());
+            List<String> grantedPermissions = new ArrayList<>();
+            for (Map.Entry<String, Boolean> entry : user.getPermissions().entrySet()) {
+                if (entry.getValue()) {
+                    grantedPermissions.add(entry.getKey());
+                }
+            }
+            UsernamePasswordAuthenticationToken usernamePasswordAuthenticationToken = new UsernamePasswordAuthenticationToken(
+                    user, null, getAuthorities(grantedPermissions));
+            usernamePasswordAuthenticationToken
+                    .setDetails(new WebAuthenticationDetailsSource().buildDetails(req));
+            PermissionsContext.setPermissions(grantedPermissions);
+            SecurityContextHolder.getContext().setAuthentication(usernamePasswordAuthenticationToken);
             filterChain.doFilter(servletRequest, servletResponse);
             log.info(String.format("Request Finished , Total Time in milis:- %s", (System.currentTimeMillis() - time)));
         }finally {

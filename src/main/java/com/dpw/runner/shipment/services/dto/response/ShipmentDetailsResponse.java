@@ -69,10 +69,10 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     private boolean cargoFinanceBooking;
     private String bookingNumber;
     private String route;
-    private long SourceTenantId;
-    private long documentationPartner;
-    private long triangulationPartner;
-    private long receivingBranch;
+    private Long SourceTenantId;
+    private Long documentationPartner;
+    private Long triangulationPartner;
+    private Long receivingBranch;
     private boolean intraBranch;
     private Integer prevShipmentStatus;
     private boolean isShipmentReadOnly;

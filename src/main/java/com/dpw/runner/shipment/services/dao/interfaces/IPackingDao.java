@@ -29,6 +29,7 @@ public interface IPackingDao {
     List<Packing> updateEntityFromBooking(List<Packing> packings, Long bookingId) throws Exception;
 
     List<Packing> updateEntityFromConsole(List<Packing> packingList, Long consolidationId) throws Exception;
+    List<Packing> updateEntityFromConsole(List<Packing> packingList, Long consolidationId, List<Packing> oldEntityList) throws Exception;
 
     List<Packing> saveEntityFromConsole(List<Packing> packings, Long consolidationId);
 

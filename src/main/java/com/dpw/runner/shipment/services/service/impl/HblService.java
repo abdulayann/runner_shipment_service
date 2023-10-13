@@ -25,6 +25,7 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IHblService;
+import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.dpw.runner.shipment.services.utils.V1AuthHelper;
 import com.nimbusds.jose.util.Pair;
@@ -195,7 +196,11 @@ public class HblService implements IHblService {
         if (hbl.isEmpty()) {
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
+       CommonGetRequest request=((CommonGetRequest)commonRequestModel.getData());
+        if(request.getIncludeColumns()==null||request.getIncludeColumns().size()==0)
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(hbl.get()));
+        else
+            return ResponseHelper.buildSuccessResponse(PartialFetchUtils.fetchPartialListData(convertEntityToDto(hbl.get()),request.getIncludeColumns()));
     }
 
     @Override
