@@ -241,6 +241,15 @@
             <groupId>org.springframework.retry</groupId>
             <artifactId>spring-retry</artifactId>
         </dependency>
+<!--        <dependency>-->
+<!--            <groupId>com.dpw.runner</groupId>-->
+<!--            <artifactId>runner-timezone-utils</artifactId>-->
+<!--            <version>0.0.2</version>-->
+<!--        </dependency>-->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
     </dependencies>
 
     <repositories>
