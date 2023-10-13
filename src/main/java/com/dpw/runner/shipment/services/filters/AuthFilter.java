@@ -18,6 +18,11 @@ import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.util.AntPathMatcher;
 
@@ -105,7 +110,12 @@ public class AuthFilter implements Filter {
                 grantedPermissions.add(entry.getKey());
             }
         }
+        UsernamePasswordAuthenticationToken usernamePasswordAuthenticationToken = new UsernamePasswordAuthenticationToken(
+                user, null, getAuthorities(grantedPermissions));
+        usernamePasswordAuthenticationToken
+                .setDetails(new WebAuthenticationDetailsSource().buildDetails(req));
         PermissionsContext.setPermissions(grantedPermissions);
+        SecurityContextHolder.getContext().setAuthentication(usernamePasswordAuthenticationToken);
         try {
             filterChain.doFilter(servletRequest, servletResponse);
             log.info(String.format("Request Finished , Total Time in milis:- %s", (System.currentTimeMillis() - time)));
@@ -116,6 +126,16 @@ public class AuthFilter implements Filter {
             UserContext.removeUser();
         }
 
+    }
+
+    public Collection<? extends GrantedAuthority> getAuthorities(List<String> permissions) {
+        List<GrantedAuthority> authorities = new ArrayList<>();
+        if(!permissions.isEmpty()) {
+            for (String privilege : permissions) {
+                authorities.add(new SimpleGrantedAuthority(privilege));
+            }
+        }
+        return authorities;
     }
 
     private static String getFullURL(HttpServletRequest request) {

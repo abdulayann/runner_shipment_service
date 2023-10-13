@@ -1,10 +1,7 @@
 package com.dpw.runner.shipment.services.controller;
 
 import com.dpw.runner.shipment.services.adapters.interfaces.ICRPServiceAdapter;
-import com.dpw.runner.shipment.services.commons.constants.ApiConstants;
-import com.dpw.runner.shipment.services.commons.constants.Constants;
-import com.dpw.runner.shipment.services.commons.constants.CustomerBookingConstants;
-import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
@@ -15,19 +12,23 @@ import com.dpw.runner.shipment.services.dto.request.CustomerBookingRequest;
 import com.dpw.runner.shipment.services.dto.request.platformBooking.PlatformToRunnerCustomerBookingRequest;
 import com.dpw.runner.shipment.services.dto.request.crp.CRPListRequest;
 import com.dpw.runner.shipment.services.dto.request.crp.CRPRetrieveRequest;
+import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.CustomerBookingResponse;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.ICustomerBookingService;
+import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
 import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
+import java.util.List;
 
 @Slf4j
 @SuppressWarnings("ALL")
@@ -104,6 +105,7 @@ public class CustomerBookingController {
             @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
     })
     @PostMapping(ApiConstants.API_CREATE)
+    @PreAuthorize("hasAuthority('" + Permissions.customerBookingCreate + "')")
     public ResponseEntity<RunnerResponse<CustomerBookingResponse>> create(@RequestBody @Valid CustomerBookingRequest request) {
         String responseMsg;
         try {
@@ -118,6 +120,7 @@ public class CustomerBookingController {
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = CustomerBookingConstants.DELETE_SUCCESSFUL)})
     @DeleteMapping(ApiConstants.API_DELETE)
+    @PreAuthorize("hasAuthority('" + Permissions.customerBookingUpdate + "')")
     public ResponseEntity<RunnerResponse> delete(@RequestParam @Valid Long id) {
         CommonGetRequest request = CommonGetRequest.builder().id(id).build();
         return (ResponseEntity<RunnerResponse>) customerBookingService.delete(CommonRequestModel.buildRequest(request));
@@ -125,19 +128,37 @@ public class CustomerBookingController {
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = CustomerBookingConstants.LIST_SUCCESSFUL, responseContainer = CustomerBookingConstants.RESPONSE_CONTAINER_LIST)})
     @PostMapping(ApiConstants.API_LIST)
+    @PreAuthorize("hasAuthority('" + Permissions.customerBookingView + "')")
     public ResponseEntity<RunnerListResponse<CustomerBookingResponse>> list(@RequestBody @Valid ListCommonRequest listCommonRequest) {
         return (ResponseEntity<RunnerListResponse<CustomerBookingResponse>>) customerBookingService.list(CommonRequestModel.buildRequest(listCommonRequest));
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = CustomerBookingConstants.RETRIEVE_BY_ID_SUCCESSFUL)})
     @GetMapping(ApiConstants.API_RETRIEVE_BY_ID)
+    @PreAuthorize("hasAuthority('" + Permissions.customerBookingView + "')")
     public ResponseEntity<RunnerResponse<CustomerBookingResponse>> retrieveById(@ApiParam(value = CustomerBookingConstants.BOOKING_ID, required = true) @RequestParam Long id) {
         CommonGetRequest request = CommonGetRequest.builder().id(id).build();
         return (ResponseEntity<RunnerResponse<CustomerBookingResponse>>) customerBookingService.retrieveById(CommonRequestModel.buildRequest(request));
     }
 
+    @ApiResponses(value = {@ApiResponse(code = 200, message = CustomerBookingConstants.RETRIEVE_BY_ID_SUCCESSFUL)})
+    @GetMapping(ApiConstants.API_RETRIEVE_BY_ID_PARTIAL)
+    @PreAuthorize("hasAuthority('" + Permissions.customerBookingView + "')")
+    public ResponseEntity<?> retrieveByIdPartial(@RequestParam(name = "includeColumns", required = false) List<String> includeColumns, @RequestParam Long id) {
+        CommonGetRequest request = CommonGetRequest.builder().id(id).build();
+        try {
+            ResponseEntity<RunnerResponse<CustomerBookingResponse>> customer_booking = (ResponseEntity<RunnerResponse<CustomerBookingResponse>>) customerBookingService.retrieveById(CommonRequestModel.buildRequest(request));
+            return ResponseEntity.ok(PartialFetchUtils.fetchPartialData(customer_booking, includeColumns));
+        } catch (Exception ex) {
+            System.out.println(ex.toString());
+        }
+        return ResponseEntity.ok(null);
+    }
+
+
     @ApiResponses(value = {@ApiResponse(code = 200, message = CustomerBookingConstants.UPDATE_SUCCESSFUL, response = RunnerResponse.class)})
     @PutMapping(ApiConstants.API_UPDATE_BOOKING)
+    @PreAuthorize("hasAuthority('" + Permissions.customerBookingUpdate + "')")
     public ResponseEntity<RunnerResponse> update(@RequestBody @Valid CustomerBookingRequest request) {
         String responseMsg;
         try {
