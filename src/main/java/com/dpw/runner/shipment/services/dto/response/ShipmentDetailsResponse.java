@@ -118,4 +118,5 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime shipmentCreatedOn;
     private String entryRefNo;
+    private List<PartiesResponse> shipmentAddresses;
 }
