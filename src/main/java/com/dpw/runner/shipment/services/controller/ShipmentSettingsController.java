@@ -11,8 +11,12 @@ import com.dpw.runner.shipment.services.dto.request.TemplateUploadRequest;
 import com.dpw.runner.shipment.services.dto.response.JobResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentSettingsDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.TemplateUploadResponse;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentSettingsService;
+import com.dpw.runner.shipment.services.syncing.Entity.CustomShipmentSyncRequest;
+import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSettingsReverseSync;
+import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSettingsSync;
 import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
 import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
@@ -34,6 +38,10 @@ public class ShipmentSettingsController {
 
     @Autowired
     private IShipmentSettingsService shipmentSettingsService;
+    @Autowired
+    private IShipmentSettingsSync shipmentSettingsSync;
+    @Autowired
+    private IShipmentSettingsReverseSync shipmentSettingsReverseSync;
 
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = ShipmentSettingsConstants.SHIPMENT_SETTINGS_SUCCESSFUL),
@@ -124,5 +132,35 @@ public class ShipmentSettingsController {
     public ResponseEntity<RunnerListResponse<TemplateUploadResponse>> uploadTemplate(@RequestParam MultipartFile file, @RequestParam String previousFileId) {
         TemplateUploadRequest templateUploadRequest = TemplateUploadRequest.builder().file(file).previousFileId(previousFileId).build();
         return (ResponseEntity<RunnerListResponse<TemplateUploadResponse>>) shipmentSettingsService.uploadTemplate(CommonRequestModel.buildRequest(templateUploadRequest));
+    }
+
+    @PostMapping(ApiConstants.API_GET_CUSTOM_REQ)
+    public ResponseEntity<RunnerResponse<CustomShipmentSyncRequest>> getCustomShipment(@RequestBody @Valid ShipmentSettingRequest request) {
+        String responseMsg;
+        try {
+            return (ResponseEntity<RunnerResponse<CustomShipmentSyncRequest>>) shipmentSettingsSync.sync(request);
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+        }
+        return (ResponseEntity<RunnerResponse<CustomShipmentSyncRequest>>) ResponseHelper.buildFailedResponse(responseMsg);
+    }
+
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = ShipmentConstants.SHIPMENT_SYNC_SUCCESSFUL),
+            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
+    })
+    @PostMapping(ApiConstants.SYNC)
+    public ResponseEntity<?> syncShipmentToService(@RequestBody @Valid CustomShipmentSyncRequest request){
+        String responseMsg = "failure executing :(";
+        try {
+            return shipmentSettingsReverseSync.reverseSync(CommonRequestModel.buildRequest(request));
+        } catch (Exception e){
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : "Error syncing provided ShipmentSetting";
+            log.error(responseMsg, e);
+        }
+        return ResponseHelper.buildFailedResponse(responseMsg);
     }
 }

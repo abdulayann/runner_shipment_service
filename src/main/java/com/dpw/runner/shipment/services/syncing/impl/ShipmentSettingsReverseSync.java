@@ -6,7 +6,7 @@ import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentSettingsService;
 import com.dpw.runner.shipment.services.syncing.Entity.ShipmentSettingsSyncRequest;
-import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentReverseSync;
+import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSettingsReverseSync;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,15 +18,16 @@ import java.util.stream.Collectors;
 
 @Service
 @Slf4j
-public class ShipmentSettingsReverseSync implements IShipmentReverseSync {
+public class ShipmentSettingsReverseSync implements IShipmentSettingsReverseSync {
     @Autowired
     IShipmentSettingsService shipmentSettingsService;
     @Autowired
     ModelMapper modelMapper;
 
     @Override
-    public ResponseEntity<?> reverseSync(ShipmentSettingsSyncRequest req) {
+    public ResponseEntity<?> reverseSync(CommonRequestModel commonRequestModel) {
         String responseMessage;
+        ShipmentSettingsSyncRequest req = (ShipmentSettingsSyncRequest) commonRequestModel.getData();
         try {
             ShipmentSettingRequest dest = modelMapper.map(req, ShipmentSettingRequest.class);
 
