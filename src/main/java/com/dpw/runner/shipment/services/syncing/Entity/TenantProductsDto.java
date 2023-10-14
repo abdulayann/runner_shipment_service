@@ -4,6 +4,9 @@ import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Data
 public class TenantProductsDto implements IRunnerRequest {
     @JsonProperty("ProductType")
@@ -16,5 +19,8 @@ public class TenantProductsDto implements IRunnerRequest {
     private Boolean Enabled;
     @JsonProperty("EnableGrouping")
     private Boolean EnableGrouping;
+
+    @JsonProperty("TransportModes")
+    private List<String> TransportModes = new ArrayList<>();
 }
 

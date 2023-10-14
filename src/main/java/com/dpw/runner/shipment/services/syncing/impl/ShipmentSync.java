@@ -1,7 +1,10 @@
 package com.dpw.runner.shipment.services.syncing.impl;
 
+import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.CarrierDetails;
+import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
 import com.dpw.runner.shipment.services.entity.Parties;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -35,6 +38,10 @@ public class ShipmentSync implements IShipmentSync {
     JsonHelper jsonHelper;
     @Autowired
     RestTemplate restTemplate;
+    @Autowired
+    IConsoleShipmentMappingDao consoleShipmentMappingDao;
+    @Autowired
+    IConsolidationDetailsDao consolidationDetailsDao;
 
     private RetryTemplate retryTemplate = RetryTemplate.builder()
             .maxAttempts(3)
@@ -114,9 +121,10 @@ public class ShipmentSync implements IShipmentSync {
     private void mapConsolidationGuids(CustomShipmentSyncRequest response, ShipmentDetails request) {
         if(request == null || request.getConsolidationList() == null)
             return;
-        List<UUID> req = request.getConsolidationList().stream()
+        List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByShipmentId(request.getId());
+        List<UUID> req = consoleShipmentMappings.stream()
                 .map(item -> {
-                    return item.getGuid();
+                    return consolidationDetailsDao.findById(item.getConsolidationId()).get().getGuid()  ;
                 })
                 .collect(Collectors.toList());
         response.setConsolidationGuids(req);
