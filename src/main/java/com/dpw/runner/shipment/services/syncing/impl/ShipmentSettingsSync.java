@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.syncing.impl;
 
+import com.dpw.runner.shipment.services.dto.request.ProductSequenceConfigRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentSettingRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -51,7 +52,10 @@ public class ShipmentSettingsSync implements IShipmentSettingsSync {
         syncRequest.setHblHawbBackPrintTemplateRow(convertToList(req.getHblHawbBackPrintTemplate(), HblTermsConditionTemplateDto.class));
         syncRequest.setHblLock(convertToList(List.of(req.getHblLockSettings()), HblLockDto.class));
         syncRequest.setTenantProducts(convertToList(req.getTenantProducts(), TenantProductsDto.class));
-        syncRequest.setProductSequenceConfig(convertToList(req.getProductSequenceConfig(), ProductSequenceConfigDto.class));
+        if(req.getProductSequenceConfig() != null) {
+            syncRequest.setProductSequenceConfig(req.getProductSequenceConfig().stream()
+                    .map(this::mapProductSequenceConfig).toList());
+        }
 
 
         String payload = jsonHelper.convertToJson(syncRequest);
@@ -63,6 +67,16 @@ public class ShipmentSettingsSync implements IShipmentSettingsSync {
         });
 
         return ResponseHelper.buildSuccessResponse(modelMapper.map(syncRequest, ShipmentSettingsSyncRequest.class));
+    }
+
+    private ProductSequenceConfigDto mapProductSequenceConfig(ProductSequenceConfigRequest req) {
+        if(req == null)
+            return null;
+
+        var res = modelMapper.map(req, ProductSequenceConfigDto.class);
+        res.setTenantProductObj(modelMapper.map(req.getTenantProducts(), TenantProductsDto.class));
+
+        return res;
     }
 
     private <T,P> List<P> convertToList(final List<T> lst, Class<P> clazz) {

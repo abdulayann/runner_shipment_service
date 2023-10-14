@@ -111,7 +111,11 @@ public class AwbService implements IAwbService {
         Awb awb = new Awb();
         try {
             awb = awbDao.save(generateAwb(request));
-            callV1Sync(awb);
+            try {
+                callV1Sync(awb);
+            } catch (Exception e) {
+                log.error("Error performing sync on AWB entity, {}", e);
+            }
 
             // audit logs
             auditLogService.addAuditLog(
@@ -155,7 +159,11 @@ public class AwbService implements IAwbService {
         try {
             String oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
             awb = awbDao.save(awb);
-            callV1Sync(awb);
+            try {
+                callV1Sync(awb);
+            } catch (Exception e) {
+                log.error("Error performing sync on AWB entity, {}", e);
+            }
 
             // audit logs
             auditLogService.addAuditLog(
@@ -268,7 +276,11 @@ public class AwbService implements IAwbService {
             ConsolidationDetails consolidationDetails = consolidationDetailsDao.findById(request.getConsolidationId()).get();
             // save awb details
             awb = awbDao.save(generateMawb(request, consolidationDetails));
-            callV1Sync(awb);
+            try {
+                callV1Sync(awb);
+            } catch (Exception e) {
+                log.error("Error performing sync on AWB entity, {}", e);
+            }
 
             // map mawb and hawb affter suuccessful save
             LinkHawbMawb(consolidationDetails, awb.getId());
@@ -649,8 +661,10 @@ public class AwbService implements IAwbService {
         awbGoodsDescriptionInfo.setChargeableWt(shipmentDetails.getChargable() != null ?
                 AwbUtility.roundOffAirShipment((double) shipmentDetails.getChargable().doubleValue()) : null);
         awbGoodsDescriptionInfo.setGuid(UUID.randomUUID());
-        for (var awbPacking: awbPackingList ) {
-            awbPacking.setAwbGoodsDescriptionInfoGuid(awbGoodsDescriptionInfo.getGuid());
+        if(awbPackingList != null) {
+            for (var awbPacking: awbPackingList ) {
+                awbPacking.setAwbGoodsDescriptionInfoGuid(awbGoodsDescriptionInfo.getGuid());
+            }
         }
         awbGoodsDescriptionInfo.setAwbPackingInfo(awbPackingList);
         return Arrays.asList(awbGoodsDescriptionInfo);
@@ -773,6 +787,7 @@ public class AwbService implements IAwbService {
         if(request.getAwbSpecialHandlingCodesMappings() != null)
             request.getAwbSpecialHandlingCodesMappings().forEach(i -> i.setEntityId(entityId) );
     }
+
 
     @Async
     private void callV1Sync(Awb entity){
