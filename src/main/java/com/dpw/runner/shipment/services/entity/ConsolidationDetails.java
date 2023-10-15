@@ -233,16 +233,16 @@ public class ConsolidationDetails extends MultiTenancy {
     private String ediTransactionId;
 
     @Column(name = "triangulation_partner")
-    private long triangulationPartner;
+    private Long triangulationPartner;
 
     @Column(name = "receiving_branch")
-    private long receivingBranch;
+    private Long receivingBranch;
 
     @Column(name = "intra_branch")
     private boolean intraBranch;
 
     @Column(name = "documentation_partner")
-    private long documentationPartner;
+    private Long documentationPartner;
 
     @Column(name = "is_receiving_agent_freetext_address")
     private Boolean isReceivingAgentFreeTextAddress;
