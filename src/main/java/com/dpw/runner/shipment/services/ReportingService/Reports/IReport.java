@@ -122,9 +122,15 @@ public abstract class IReport {
     {
         shipmentContainer.BL_ContainerType = blObjectContainer.getContainerType();
         shipmentContainer.BL_SealNumber = blObjectContainer.getSealNumber();
-        shipmentContainer.BL_GrossWeight = blObjectContainer.getContainerGrossWeight().setScale(2, RoundingMode.HALF_UP);
+        if(blObjectContainer.getContainerGrossWeight() != null)
+            shipmentContainer.BL_GrossWeight = blObjectContainer.getContainerGrossWeight().setScale(2, RoundingMode.HALF_UP);
+        else
+            shipmentContainer.BL_GrossWeight = BigDecimal.ZERO;
         shipmentContainer.BL_GrossWeightUnit = blObjectContainer.getContainerGrossWeightUnit();
-        shipmentContainer.BL_GrossVolume = blObjectContainer.getContainerGrossVolume().setScale(2, RoundingMode.HALF_UP);
+        if(blObjectContainer.getContainerGrossVolume() != null)
+            shipmentContainer.BL_GrossVolume = blObjectContainer.getContainerGrossVolume().setScale(2, RoundingMode.HALF_UP);
+        else
+            shipmentContainer.BL_GrossVolume = BigDecimal.ZERO;
         shipmentContainer.BL_GrossVolumeUnit = blObjectContainer.getContainerGrossVolumeUnit();
         shipmentContainer.BL_NoofPackages = blObjectContainer.getNoOfPackages();
         shipmentContainer.BL_CarrierSealNumber = blObjectContainer.getCarrierSealNumber();

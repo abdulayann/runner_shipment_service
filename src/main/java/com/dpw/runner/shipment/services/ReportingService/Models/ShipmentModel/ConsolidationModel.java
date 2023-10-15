@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -199,6 +200,7 @@ public class ConsolidationModel {
     @JsonProperty("FileRepoList")
     private List<FileRepoModel> fileRepoList;
     @JsonProperty("ShipmentsList")
+    @JsonIgnoreProperties("ConsolidationList")
     private List<ShipmentModel> shipmentsList;
     @JsonProperty("ShipmentIds")
     private List<Long> shipmentIds;

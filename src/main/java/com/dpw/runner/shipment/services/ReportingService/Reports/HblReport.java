@@ -82,8 +82,10 @@ public class HblReport extends IReport{
         V1DataResponse v1DataResponse = v1Service.fetchUnlocation(commonV1ListRequest);
         List<UnlocationsResponse> unlocationsResponse = jsonHelper.convertValueToList(v1DataResponse.entities, UnlocationsResponse.class);
         if(unlocationsResponse != null && unlocationsResponse.size() > 0)
+        {
             paidPlace = unlocationsResponse.get(0);
-        masterData = getMasterListData(MasterDataType.COUNTRIES, paidPlace.getCountry());
+            masterData = getMasterListData(MasterDataType.COUNTRIES, paidPlace.getCountry());
+        }
         hblModel.paidPlaceCountry = (masterData != null ? masterData.getItemDescription() : null);
         List<BookingCarriageModel> bookingCarriages = hblModel.shipment.getBookingCarriagesList();
         BookingCarriageModel bookingCarriage = null;
