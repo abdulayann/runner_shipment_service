@@ -5,7 +5,6 @@ import com.dpw.runner.shipment.services.dto.request.ShipmentSettingRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
-import com.dpw.runner.shipment.services.service.interfaces.IShipmentSettingsService;
 import com.dpw.runner.shipment.services.syncing.Entity.*;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSettingsSync;
 import com.dpw.runner.shipment.services.utils.V1AuthHelper;
@@ -26,8 +25,6 @@ import java.util.stream.Collectors;
 @Slf4j
 public class ShipmentSettingsSync implements IShipmentSettingsSync {
 
-    @Autowired
-    IShipmentSettingsService shipmentSettingsService;
     @Autowired
     ModelMapper modelMapper;
     @Autowired
