@@ -34,7 +34,7 @@ public class EntityTransferShipmentDetails implements IEntityTranferBaseEntity {
     public String incoterms;
     public String shipmentId;
     public Boolean isDomestic;
-    public Integer assignedTo;
+    public String assignedTo;
     public String additionalTerms;
     public String goodsDescription;
     public List<EntityTransferBookingCarriage> bookingCarriagesList;
