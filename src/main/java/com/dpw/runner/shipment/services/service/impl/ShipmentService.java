@@ -893,16 +893,20 @@ public class ShipmentService implements IShipmentService {
 
             String oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
             entity = shipmentDao.update(entity);
-
-            // audit logs
-            auditLogService.addAuditLog(
-                    AuditLogMetaData.builder()
-                            .newData(entity)
-                            .prevData(jsonHelper.readFromJson(oldEntityJsonString, ShipmentDetails.class))
-                            .parent(ShipmentDetails.class.getSimpleName())
-                            .parentId(entity.getId())
-                            .operation(DBOperationType.UPDATE.name()).build()
-            );
+            try {
+                // audit logs
+                auditLogService.addAuditLog(
+                        AuditLogMetaData.builder()
+                                .newData(entity)
+                                .prevData(jsonHelper.readFromJson(oldEntityJsonString, ShipmentDetails.class))
+                                .parent(ShipmentDetails.class.getSimpleName())
+                                .parentId(entity.getId())
+                                .operation(DBOperationType.UPDATE.name()).build()
+                );
+            }
+            catch (Exception e) {
+                log.error("Error creating audit service log", e);
+            }
 
             attachConsolidations(entity.getId(), tempConsolIds);
 
@@ -955,7 +959,9 @@ public class ShipmentService implements IShipmentService {
             }
 
             try {
-                shipmentSync.sync(entity);
+                ShipmentDetails syncEntity = modelMapper.map(response, ShipmentDetails.class);
+                syncEntity.setIsShipmentReadOnly(response.isShipmentReadOnly());
+                shipmentSync.sync(syncEntity);
             } catch (Exception e){
                 log.error("Error performing sync on shipment entity, {}", e);
             }

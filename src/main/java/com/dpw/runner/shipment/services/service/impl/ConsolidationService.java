@@ -327,7 +327,8 @@ public class ConsolidationService implements IConsolidationService {
                 createRoutingsAsync(consolidationDetails, routingsRequest);
 
             try {
-                consolidationSync.sync(jsonHelper.convertValue(consolidationDetails, ConsolidationDetailsRequest.class));
+                Optional<ConsolidationDetails> consol = consolidationDetailsDao.findById(consolidationDetails.getId());
+                consolidationSync.sync(jsonHelper.convertValue(consol.get(), ConsolidationDetailsRequest.class));
             } catch (Exception e){
                 log.error("Error performing sync on consolidation entity, {}", e);
             }
@@ -604,16 +605,20 @@ public class ConsolidationService implements IConsolidationService {
             ConsolidationDetails entity = jsonHelper.convertValue(consolidationDetailsRequest, ConsolidationDetails.class);
             String oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
             entity = consolidationDetailsDao.update(entity);
-
-            // audit logs
-            auditLogService.addAuditLog(
-                    AuditLogMetaData.builder()
-                            .newData(entity)
-                            .prevData(jsonHelper.readFromJson(oldEntityJsonString, ConsolidationDetails.class))
-                            .parent(ConsolidationDetails.class.getSimpleName())
-                            .parentId(entity.getId())
-                            .operation(DBOperationType.UPDATE.name()).build()
-            );
+            try {
+                // audit logs
+                auditLogService.addAuditLog(
+                        AuditLogMetaData.builder()
+                                .newData(entity)
+                                .prevData(jsonHelper.readFromJson(oldEntityJsonString, ConsolidationDetails.class))
+                                .parent(ConsolidationDetails.class.getSimpleName())
+                                .parentId(entity.getId())
+                                .operation(DBOperationType.UPDATE.name()).build()
+                );
+            }
+            catch (Exception e) {
+                log.error("Error writing audit service log", e);
+            }
 
             ConsolidationDetailsResponse response = jsonHelper.convertValue(entity, ConsolidationDetailsResponse.class);
             if(containerRequestList != null) {
@@ -646,7 +651,7 @@ public class ConsolidationService implements IConsolidationService {
             }
 
             try {
-                consolidationSync.sync(jsonHelper.convertValue(entity, ConsolidationDetailsRequest.class));
+                consolidationSync.sync(jsonHelper.convertValue(response, ConsolidationDetailsRequest.class));
             } catch (Exception e){
                 log.error("Error performing sync on consolidation entity, {}", e);
             }
