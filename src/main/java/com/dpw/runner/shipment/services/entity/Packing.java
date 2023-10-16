@@ -208,5 +208,8 @@ public class Packing extends MultiTenancy {
 
     @Column(name = "handling_info")
     private String handlingInfo;
+
+    @Column(name = "contract_enforced_quantity_limit")
+    private Long contractEnforcedQuantityLimit;
 }
 
