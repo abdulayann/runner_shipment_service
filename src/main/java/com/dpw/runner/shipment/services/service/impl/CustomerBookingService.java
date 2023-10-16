@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.service.impl;
 import com.dpw.runner.shipment.services.adapters.interfaces.ICRPServiceAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.IFusionServiceAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.INPMServiceAdapter;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.RequestAuthContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
@@ -55,6 +56,8 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
@@ -249,7 +252,7 @@ public class CustomerBookingService implements ICustomerBookingService {
         customerBooking.setIsPlatformBookingCreated(isCreatedInPlatform);
 
         // NPM update contract
-        if (oldEntity.get().getBookingCharges() != null) {
+        if (oldEntity.get().getBookingCharges() != null ) {
             npmContractUpdate(customerBooking, true, oldEntity.get());
         } else {
             npmContractUpdate(customerBooking, false, oldEntity.get());
@@ -1065,18 +1068,27 @@ public class CustomerBookingService implements ICustomerBookingService {
     }
 
     /**
-     * To be used to fetch dependent masterdata*
+     * To be used to fetch dependent master-data*
      *
      * @param customerBooking
      * @param customerBookingResponse
      */
     private void createCustomerBookingResponse(CustomerBooking customerBooking, CustomerBookingResponse customerBookingResponse) {
+        ExecutorService executorService = Executors.newFixedThreadPool(10);
         try {
-            this.addAllMasterDataInSingleCall(customerBooking, customerBookingResponse);
-            this.addAllLocationDataInSingleCall(customerBooking, customerBookingResponse);
-            this.addDedicatedMasterDataInSingleCall(customerBooking, customerBookingResponse);
+            double _start = System.currentTimeMillis();
+            var masterListFuture = CompletableFuture.runAsync(() -> this.addAllMasterDataInSingleCall(customerBooking, customerBookingResponse), executorService);
+            var unLocationsFuture = CompletableFuture.runAsync(() -> this.addAllLocationDataInSingleCall(customerBooking, customerBookingResponse), executorService);
+            var vesselsFuture = CompletableFuture.runAsync(() -> this.addAllVesselDataInSingleCall(customerBooking, customerBookingResponse), executorService);
+            var carrierFuture = CompletableFuture.runAsync(() -> this.addAllCarrierDataInSingleCall(customerBooking, customerBookingResponse), executorService);
+            var containerTypeFuture = CompletableFuture.runAsync(() -> this.addAllContainerTypesInSingleCall(customerBooking, customerBookingResponse), executorService);
+            var chargeTypeFuture = CompletableFuture.runAsync(() -> this.addAllChargeTypesInSingleCall(customerBooking, customerBookingResponse), executorService);
+            CompletableFuture.allOf(masterListFuture, unLocationsFuture, vesselsFuture, carrierFuture, containerTypeFuture, chargeTypeFuture).join();
+            log.info("Time taken to fetch Master-data from V1: {} ms.", (System.currentTimeMillis() - _start));
         } catch (Exception ex) {
             log.error("Exception during fetching master data in retrieve API for booking number: {} with exception: {}", customerBooking.getBookingNumber(), ex.getMessage());
+        } finally {
+            executorService.shutdown();
         }
     }
 
@@ -1091,8 +1103,8 @@ public class CustomerBookingService implements ICustomerBookingService {
         customerBooking.setTotalRevenue(totalRevenue);
     }
 
-
-    private void addAllMasterDataInSingleCall(CustomerBooking customerBooking, CustomerBookingResponse customerBookingResponse) {
+    @Async
+    private CompletableFuture<ResponseEntity<?>> addAllMasterDataInSingleCall(CustomerBooking customerBooking, CustomerBookingResponse customerBookingResponse) {
         // Preprocessing
         Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
         List<MasterListRequest> listRequests = new ArrayList<>(masterDataUtils.createInBulkMasterListRequest(customerBookingResponse, CustomerBooking.class, fieldNameKeyMap, String.valueOf(customerBookingResponse.hashCode())));
@@ -1114,9 +1126,12 @@ public class CustomerBookingService implements ICustomerBookingService {
             customerBookingResponse.getContainersList().forEach(c -> c.setMasterData(masterDataUtils.setInBulkMasterList(fieldNameKeyMap.get(String.valueOf(c.hashCode())), keyMasterDataMap)));
         if (!Objects.isNull(customerBookingResponse.getPackingList()))
             customerBookingResponse.getPackingList().forEach(c -> c.setMasterData(masterDataUtils.setInBulkMasterList(fieldNameKeyMap.get(String.valueOf(c.hashCode())), keyMasterDataMap)));
+
+        return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(keyMasterDataMap));
     }
 
-    private void addAllLocationDataInSingleCall(CustomerBooking customerBooking, CustomerBookingResponse customerBookingResponse) {
+    @Async
+    private CompletableFuture<ResponseEntity<?>> addAllLocationDataInSingleCall(CustomerBooking customerBooking, CustomerBookingResponse customerBookingResponse) {
         // Preprocessing
         Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
         List<String> locationCodes = new ArrayList<>();
@@ -1131,6 +1146,8 @@ public class CustomerBookingService implements ICustomerBookingService {
             customerBookingResponse.getCarrierDetails().setUnlocationData(masterDataUtils.setInBulkUnlocations(fieldNameKeyMap.get(String.valueOf(customerBookingResponse.getCarrierDetails().hashCode())), keyMasterDataMap));
         if (!Objects.isNull(customerBookingResponse.getRoutingList()))
             customerBookingResponse.getRoutingList().forEach(r -> r.setUnlocationData(masterDataUtils.setInBulkUnlocations(fieldNameKeyMap.get(String.valueOf(r.hashCode())), keyMasterDataMap)));
+
+        return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(keyMasterDataMap));
     }
 
     private void addDedicatedMasterDataInSingleCall(CustomerBooking customerBooking, CustomerBookingResponse customerBookingResponse) {
@@ -1142,8 +1159,8 @@ public class CustomerBookingService implements ICustomerBookingService {
         this.addAllContainerTypesInSingleCall(customerBooking, customerBookingResponse);
         this.addAllChargeTypesInSingleCall(customerBooking, customerBookingResponse);
     }
-
-    private void addAllChargeTypesInSingleCall(CustomerBooking customerBooking, CustomerBookingResponse customerBookingResponse) {
+    @Async
+    private CompletableFuture<ResponseEntity<?>> addAllChargeTypesInSingleCall(CustomerBooking customerBooking, CustomerBookingResponse customerBookingResponse) {
         Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
         List<String> chargeTypes = new ArrayList<>();
 
@@ -1153,9 +1170,11 @@ public class CustomerBookingService implements ICustomerBookingService {
 
         if (!Objects.isNull(customerBookingResponse.getBookingCharges()))
             customerBookingResponse.getBookingCharges().forEach(r -> r.setChargeTypeMasterData(masterDataUtils.setInBulkChargeTypes(fieldNameKeyMap.get(String.valueOf(r.hashCode())), v1Data)));
-    }
 
-    private void addAllContainerTypesInSingleCall(CustomerBooking customerBooking, CustomerBookingResponse customerBookingResponse) {
+        return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(v1Data));
+    }
+    @Async
+    private CompletableFuture<ResponseEntity<?>> addAllContainerTypesInSingleCall(CustomerBooking customerBooking, CustomerBookingResponse customerBookingResponse) {
         Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
         List<String> containerTypes = new ArrayList<>();
         if (!Objects.isNull(customerBookingResponse.getContainersList()))
@@ -1165,6 +1184,24 @@ public class CustomerBookingService implements ICustomerBookingService {
 
         if (!Objects.isNull(customerBookingResponse.getContainersList()))
             customerBookingResponse.getContainersList().forEach(r -> r.setContainerCodeData(masterDataUtils.setInBulkContainerTypes(fieldNameKeyMap.get(String.valueOf(r.hashCode())), v1Data)));
+
+        return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(v1Data));
+    }
+
+    @Async
+    private CompletableFuture<ResponseEntity<?>> addAllVesselDataInSingleCall(CustomerBooking customerBooking, CustomerBookingResponse customerBookingResponse) {
+        if (!Objects.isNull(customerBookingResponse.getCarrierDetails())) {
+            customerBookingResponse.getCarrierDetails().setVesselsMasterData(masterDataUtils.vesselsMasterData(customerBookingResponse.getCarrierDetails(), CarrierDetails.class));
+        }
+        return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(Arrays.asList()));
+    }
+
+    @Async
+    private CompletableFuture<ResponseEntity<?>> addAllCarrierDataInSingleCall(CustomerBooking customerBooking, CustomerBookingResponse customerBookingResponse) {
+        if (!Objects.isNull(customerBookingResponse.getCarrierDetails())) {
+            customerBookingResponse.getCarrierDetails().setCarrierMasterData(masterDataUtils.carrierMasterData(customerBookingResponse.getCarrierDetails(), CarrierDetails.class));
+        }
+        return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(Arrays.asList()));
     }
 
 }
