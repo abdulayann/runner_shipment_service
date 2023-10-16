@@ -141,8 +141,8 @@ public class CustomerBookingService implements ICustomerBookingService {
 
         CustomerBooking customerBooking = jsonHelper.convertValue(request, CustomerBooking.class);
         customerBooking.setSource(BookingSource.Runner);
-
-        npmContractUpdate(customerBooking, false, null);  // NPM update contract
+        // Update NPM for contract utilization
+        _npmContractUpdate(customerBooking, null, false, CustomerBookingConstants.REMOVE, false);
         try {
             createEntities(customerBooking, request);
             /**
@@ -252,11 +252,7 @@ public class CustomerBookingService implements ICustomerBookingService {
         customerBooking.setIsPlatformBookingCreated(isCreatedInPlatform);
 
         // NPM update contract
-        if (oldEntity.get().getBookingCharges() != null ) {
-            npmContractUpdate(customerBooking, true, oldEntity.get());
-        } else {
-            npmContractUpdate(customerBooking, false, oldEntity.get());
-        }
+        contractUtilisationForUpdate(customerBooking, oldEntity.get());
         customerBooking = this.updateEntities(customerBooking, request, jsonHelper.convertToJson(oldEntity.get()));
         if (!Objects.isNull(customerBooking.getBusinessCode()) && Objects.equals(customerBooking.getBookingStatus(), BookingStatus.PENDING_FOR_CREDIT_LIMIT)
                 && !customerBooking.getBookingCharges().isEmpty() && !isCreatedInPlatform) {
@@ -954,57 +950,86 @@ public class CustomerBookingService implements ICustomerBookingService {
         return responseList;
     }
 
-    private void npmContractUpdate(CustomerBooking customerBooking, Boolean isAlteration, CustomerBooking oldEntity) throws Exception {
-        if (customerBooking.getTransportType() != null && customerBooking.getTransportType().equals(Constants.TRANSPORT_MODE_SEA) && customerBooking.getCargoType() != null && customerBooking.getCargoType().equals(Constants.CARGO_TYPE_FCL) &&
-                StringUtility.isNotEmpty(customerBooking.getContractId()) && customerBooking.getBookingCharges() != null && !customerBooking.getBookingCharges().isEmpty()) {
+    private void contractUtilisationForUpdate(CustomerBooking customerBooking, CustomerBooking old) throws Exception {
+        if (!Objects.isNull(customerBooking.getContractId()) && Objects.equals(old.getContractId(), customerBooking.getContractId())) {
+            // Alteration on same contract
+            _npmContractUpdate(customerBooking,  old, true, CustomerBookingConstants.REMOVE, false);
+        }  else if (!Objects.isNull(customerBooking.getContractId()) && !Objects.isNull(old.getContractId())) {
+            // Lock current contract with current containers
+            _npmContractUpdate(customerBooking, null, false, CustomerBookingConstants.REMOVE, false);
+            // Release existing booking with old containers
+            _npmContractUpdate(old, null, false, CustomerBookingConstants.ADD, false);
+        } else if (!Objects.isNull(customerBooking.getContractId()) && Objects.isNull(old.getContractId())) {
+            // Lock current contract with current containers
+            _npmContractUpdate(customerBooking, null, false, CustomerBookingConstants.REMOVE, false);
+        }  else if (Objects.isNull(customerBooking.getContractId()) && !Objects.isNull(old.getContractId())) {
+            // Release existing booking with old containers
+            _npmContractUpdate(old, null, false, CustomerBookingConstants.ADD, false);
+        }
 
-            List<LoadInfoRequest> loadInfoRequestList = containersListForLoad(customerBooking, oldEntity, customerBooking.getBookingStatus() == BookingStatus.CANCELLED);
-            if (!loadInfoRequestList.isEmpty())
-                npmContractUpdatePaylaod(customerBooking, isAlteration, loadInfoRequestList);
+        if (!Objects.isNull(customerBooking.getContractId()) && Objects.equals(customerBooking.getBookingStatus(), BookingStatus.CANCELLED)) {
+            _npmContractUpdate(customerBooking, null, false, CustomerBookingConstants.ADD, true);
         }
     }
 
-    private List<LoadInfoRequest> containersListForLoad(CustomerBooking customerBooking, CustomerBooking oldEntity, Boolean isCancelled) {
-        Map<Long, Containers> idVsContainerMap;
-        if (oldEntity != null && oldEntity.getContainersList() != null) {
-            idVsContainerMap = oldEntity.getContainersList().stream().collect(Collectors.toMap(Containers::getId, c -> c));
-        } else {
-            idVsContainerMap = new HashMap<>();
-        }
-        List<LoadInfoRequest> loadInfoRequestList = new ArrayList<>();
-        if (!isCancelled && customerBooking.getContainersList() != null) {
-            customerBooking.getContainersList().forEach(cont -> {
-                if (cont.getId() == null) {
-                    loadInfoRequestList.add(containerLoadConstruct(cont, CustomerBookingConstants.REMOVE, cont.getContainerCount()));
-                } else {
-                    if (idVsContainerMap.containsKey(cont.getId())) {
-                        if (!cont.getContainerCode().equals(idVsContainerMap.get(cont.getId()).getContainerCode())) {
-                            loadInfoRequestList.add(containerLoadConstruct(cont, CustomerBookingConstants.REMOVE, cont.getContainerCount()));
-                            loadInfoRequestList.add(containerLoadConstruct(idVsContainerMap.get(cont.getId()), CustomerBookingConstants.ADD, idVsContainerMap.get(cont.getId()).getContainerCount()));
+    private void _npmContractUpdate(CustomerBooking current, CustomerBooking old, Boolean isAlteration, String operation, boolean isCancelled) throws Exception {
+        if (Objects.equals(current.getTransportType(),Constants.TRANSPORT_MODE_SEA) ) {
+            List<LoadInfoRequest> loadInfoRequestList = containersListForLoad(current, old, operation);
 
-                        } else if (!cont.getCommodityGroup().equals(idVsContainerMap.get(cont.getId()).getCommodityGroup())) {
-                            loadInfoRequestList.add(containerLoadConstruct(cont, CustomerBookingConstants.REMOVE, cont.getContainerCount()));
-                            loadInfoRequestList.add(containerLoadConstruct(idVsContainerMap.get(cont.getId()), CustomerBookingConstants.ADD, idVsContainerMap.get(cont.getId()).getContainerCount()));
-                        } else if (cont.getContainerCount() > idVsContainerMap.get(cont.getId()).getContainerCount()) {
-                            Long containerCount = cont.getContainerCount() - idVsContainerMap.get(cont.getId()).getContainerCount();
-                            loadInfoRequestList.add(containerLoadConstruct(cont, CustomerBookingConstants.REMOVE, containerCount));
-                        } else if (cont.getContainerCount() < idVsContainerMap.get(cont.getId()).getContainerCount()) {
-                            Long containerCount = idVsContainerMap.get(cont.getId()).getContainerCount() - cont.getContainerCount();
-                            loadInfoRequestList.add(containerLoadConstruct(cont, CustomerBookingConstants.ADD, containerCount));
-                        }
-                        idVsContainerMap.remove(cont.getId());
+            if (!loadInfoRequestList.isEmpty() || !isAlteration) {
+                String contractStatus = null;
+                if (Objects.equals(current.getContractStatus(), CustomerBookingConstants.SINGLE_USAGE) && isCancelled)
+                    contractStatus = CustomerBookingConstants.ENABLED;
+                else if (Objects.equals(current.getContractStatus(), CustomerBookingConstants.SINGLE_USAGE) )
+                    contractStatus = CustomerBookingConstants.DISABLED;
+
+                UpdateContractRequest updateContractRequest = UpdateContractRequest.builder()
+                        .contract_id(current.getContractId())
+                        .contract_state(contractStatus)
+                        .source(CustomerBookingConstants.RUNNER)
+                        .source_type(CustomerBookingConstants.RUNNER)
+                        .business_info(UpdateContractRequest.BusinessInfo.builder().product_name("FCL").build())
+                        .loads_info(loadInfoRequestList)
+                        .is_alteration(isAlteration)
+                        .build();
+
+                npmService.updateContracts(CommonRequestModel.buildRequest(updateContractRequest));
+            }
+        }
+    }
+
+    private List<LoadInfoRequest> containersListForLoad(CustomerBooking current, CustomerBooking old, String operation) {
+        Map<String, Containers> idVsContainerMap = new HashMap<>();
+        List<LoadInfoRequest> loadInfoRequestList = Arrays.asList();
+
+        if (!Objects.isNull(old) && !Objects.isNull(old.getContainersList()))
+            idVsContainerMap = old.getContainersList().stream().collect(Collectors.toMap(x -> x.getId() + "-" + x.getContainerCode() + "-" + x.getCommodityGroup(), x -> x));
+
+        if (idVsContainerMap.isEmpty()) {
+            // Only current operation, no comparison
+            current.getContainersList().forEach(cont -> {
+                loadInfoRequestList.add(containerLoadConstruct(cont, operation, cont.getContainerCount()));
+            });
+        }  else {
+            // Find delta
+            Map<String, Containers> finalIdVsContainerMap = idVsContainerMap;
+            current.getContainersList().forEach(cont -> {
+                String key = cont.getId() + "-" + cont.getContainerCode() + "-" + cont.getCommodityGroup();
+                if (finalIdVsContainerMap.containsKey(key)) {
+                    // existing container with probably quantity change
+                    if (finalIdVsContainerMap.get(key).getContainerCount() != cont.getContainerCount()) {
+                        Long _diff = cont.getContainerCount() - finalIdVsContainerMap.get(key).getContainerCount();
+                        loadInfoRequestList.add(containerLoadConstruct(cont, _diff > 0 ? CustomerBookingConstants.REMOVE : CustomerBookingConstants.ADD, Math.abs(_diff)));
                     }
+                    finalIdVsContainerMap.remove(key);
+                }
+                else {
+                    // New Container
+                    loadInfoRequestList.add(containerLoadConstruct(cont, CustomerBookingConstants.REMOVE, cont.getContainerCount()));
                 }
             });
-            if (!idVsContainerMap.isEmpty() && StringUtility.isNotEmpty(oldEntity.getContractId()) && oldEntity.getContractId().equals(customerBooking.getContractId())) {
-                idVsContainerMap.values().forEach(cont -> {
-                    loadInfoRequestList.add(containerLoadConstruct(cont, CustomerBookingConstants.ADD, cont.getContainerCount()));
-                });
-            }
-        } else if (isCancelled && oldEntity != null && oldEntity.getContainersList() != null && StringUtility.isNotEmpty(oldEntity.getContractId()) && oldEntity.getContractId().equals(customerBooking.getContractId())) {
-            oldEntity.getContainersList().forEach(cont -> {
-                loadInfoRequestList.add(containerLoadConstruct(cont, CustomerBookingConstants.ADD, cont.getContainerCount()));
-            });
+            // Release all the remaining loads
+            finalIdVsContainerMap.forEach((k,v) -> loadInfoRequestList.add(containerLoadConstruct(v, CustomerBookingConstants.ADD, v.getContainerCount())));
         }
         return loadInfoRequestList;
     }
@@ -1025,26 +1050,6 @@ public class CustomerBookingService implements ICustomerBookingService {
         return loadInfoRequest;
     }
 
-    private void npmContractUpdatePaylaod(CustomerBooking customerBooking, Boolean isAlteration, List<LoadInfoRequest> loadInfoRequestList) throws Exception {
-        String contractStatus = null;
-        if (customerBooking.getContractStatus() != null && customerBooking.getContractStatus().equals(CustomerBookingConstants.SINGLE_USAGE) && customerBooking.getBookingStatus() == BookingStatus.CANCELLED) {
-            contractStatus = CustomerBookingConstants.ENABLED;
-        } else if (customerBooking.getContractStatus() != null && customerBooking.getContractStatus().equals(CustomerBookingConstants.SINGLE_USAGE)) {
-            contractStatus = CustomerBookingConstants.DISABLED;
-        }
-
-        UpdateContractRequest updateContractRequest = UpdateContractRequest.builder()
-                .contract_id(customerBooking.getContractId())
-                .contract_state(contractStatus)
-                .source(CustomerBookingConstants.RUNNER)
-                .source_type(CustomerBookingConstants.RUNNER)
-                .business_info(UpdateContractRequest.BusinessInfo.builder().product_name("FCL").build())
-                .loads_info(loadInfoRequestList)
-                .is_alteration(isAlteration)
-                .build();
-
-        npmService.updateContracts(CommonRequestModel.buildRequest(updateContractRequest));
-    }
 
     private String generateBookingNumber(String cargoType) {
         String prefix = "DBAR";
