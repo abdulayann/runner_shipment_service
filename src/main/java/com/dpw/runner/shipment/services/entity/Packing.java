@@ -203,5 +203,8 @@ public class Packing extends MultiTenancy {
 
     @Column(name = "is_contract_enforced")
     private Boolean isContractEnforced;
+
+    @Column(name = "contract_enforced_quantity_limit")
+    private Long contractEnforcedQuantityLimit;
 }
 
