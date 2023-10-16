@@ -1243,6 +1243,8 @@ public class ConsolidationService implements IConsolidationService {
             } else {
                 entity = consolidationDetailsDao.update(entity);
             }
+            // Set id for linking child entitites
+            id = entity.getId();
 
             ConsolidationDetailsResponse response = jsonHelper.convertValue(entity, ConsolidationDetailsResponse.class);
             if(updatedContainers != null)
