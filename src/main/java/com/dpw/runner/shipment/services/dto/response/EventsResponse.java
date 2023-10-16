@@ -6,11 +6,12 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.Data;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Data
 public class EventsResponse implements IRunnerResponse {
     private Long id;
-    private String guid;
+    private UUID guid;
     private String eventCode;
     private Long shipmentId;
     private String description;
