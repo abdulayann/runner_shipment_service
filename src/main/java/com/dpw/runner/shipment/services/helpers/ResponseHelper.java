@@ -102,5 +102,12 @@ public class ResponseHelper {
         runnerResponse.setRequestId(LoggerHelper.getRequestIdFromMDC());
         return new ResponseEntity<>(runnerResponse, HttpStatus.OK);
     }
+
+    public static ResponseEntity<?> buildSuccessResponse(Object data) {
+        log.debug("Return Response with data {}", data);
+        return new ResponseEntity<>(RunnerResponse.builder().success(true)
+                .requestId(LoggerHelper.getRequestIdFromMDC())
+                .data(data).build(), HttpStatus.OK);
+    }
 }
 
