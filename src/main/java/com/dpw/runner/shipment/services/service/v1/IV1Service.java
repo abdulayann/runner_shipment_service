@@ -128,4 +128,7 @@ public interface IV1Service {
     V1RetrieveResponse retrieveTenantSettings();
     V1RetrieveResponse retrieveTenant();
 
+    V1DataResponse fetchOwnType(Object request);
+
+    V1DataResponse fetchCarrierFilterList(Object request);
 }

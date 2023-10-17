@@ -342,4 +342,16 @@ public class ShipmentDetails extends MultiTenancy {
 
     @Column(name = "entry_ref_no")
     private String entryRefNo;
+
+    @Column(name = "flight_status")
+    private String flightStatus;
+
+    @Column(name = "contains_hazardous")
+    private Boolean containsHazardous;
+
+    @Column(name = "fmcTlcId")
+    private String fmcTlcId;
+
+    @Column(name = "commodity")
+    private String commodity;
 }

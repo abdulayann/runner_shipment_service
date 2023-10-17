@@ -282,4 +282,7 @@ public class Containers extends MultiTenancy {
 
     @Column(name = "contract_enforced_quantity_limit")
     private Long contractEnforcedQuantityLimit;
+
+    @Column(name = "own_type")
+    private String ownType;
 }

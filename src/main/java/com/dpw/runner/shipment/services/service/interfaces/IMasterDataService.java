@@ -88,14 +88,28 @@ public interface IMasterDataService extends ICommonService{
     ResponseEntity<?> listCousinBranchesWithoutCurrent(CommonRequestModel commonRequestModel);
 
     ResponseEntity<?> importFlightSchedules(CommonRequestModel commonRequestModel);
+
     ResponseEntity<?> fetchFlightStatus(CommonRequestModel commonRequestModel);
+
     ResponseEntity<?> importSailingSchedules(CommonRequestModel commonRequestModel);
+
     ResponseEntity<?> listSailingSchedule(CommonRequestModel commonRequestModel);
+
     ResponseEntity<?> addressList(CommonRequestModel commonRequestModel);
+
     ResponseEntity<?> tenantNameByTenantId(CommonRequestModel commonRequestModel);
+
     ResponseEntity<?> fetchUnlocationOriginAndDestinationList(CommonRequestModel commonRequestModel);
+
     ResponseEntity<?> fetchListUnlocationTransportModeBased(CommonRequestModel commonRequestModel);
+
     ResponseEntity<?> fetchActivityMaster(CommonRequestModel commonRequestModel);
+
     ResponseEntity<?> retrieveTenantSettings();
+
     ResponseEntity<?> retrieveTenant();
+
+    ResponseEntity<?> listOwnType(CommonRequestModel commonRequestModel);
+
+    ResponseEntity<?> listCarrierFilter(CommonRequestModel commonRequestModel);
 }
