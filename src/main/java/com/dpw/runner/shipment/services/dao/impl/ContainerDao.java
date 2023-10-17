@@ -2,15 +2,20 @@ package com.dpw.runner.shipment.services.dao.impl;
 
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
+import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
 import com.dpw.runner.shipment.services.entity.Containers;
+import com.dpw.runner.shipment.services.entity.CustomerBooking;
 import com.dpw.runner.shipment.services.entity.enums.LifecycleHooks;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.IContainerRepository;
+import com.dpw.runner.shipment.services.service.impl.AuditLogService;
 import com.dpw.runner.shipment.services.validator.ValidatorUtility;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,6 +44,9 @@ public class ContainerDao implements IContainerDao {
 
     @Autowired
     private JsonHelper jsonHelper;
+
+    @Autowired
+    private AuditLogService auditLogService;
 
     @Override
     public Containers save(Containers containers) {
@@ -104,7 +112,7 @@ public class ContainerDao implements IContainerDao {
                 }
                 responseContainers = saveEntityFromBooking(containersRequestList, bookingId);
             }
-            deleteContainers(hashMap);
+            deleteContainers(hashMap, "CustomerBooking", bookingId);
             return responseContainers;
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -116,26 +124,64 @@ public class ContainerDao implements IContainerDao {
 
     public List<Containers> saveEntityFromBooking(List<Containers> containers, Long bookingId) {
         List<Containers> res = new ArrayList<>();
+        ListCommonRequest listCommonRequest = constructListCommonRequest("id", containers.stream().map(Containers::getId).collect(Collectors.toList()), "IN");
+        Pair<Specification<Containers>, Pageable> pair = fetchData(listCommonRequest, Containers.class);
+        Page<Containers> containersPage = findAll(pair.getLeft(), pair.getRight());
+        Map<Long, Containers> hashMap = containersPage.stream()
+                .collect(Collectors.toMap(Containers::getId, Function.identity()));
         for (Containers req : containers) {
+            String oldEntityJsonString = null;
+            String operation = DBOperationType.CREATE.name();
             if (req.getId() != null) {
                 long id = req.getId();
-                Optional<Containers> oldEntity = findById(id);
-                if (!oldEntity.isPresent()) {
+                if (hashMap.get(id) == null) {
                     log.debug("Containers is null for Id {}", req.getId());
                     throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
                 }
+                oldEntityJsonString = jsonHelper.convertToJson(hashMap.get(id));
+                operation = DBOperationType.UPDATE.name();
             }
             req.setBookingId(bookingId);
             req = save(req);
+            try {
+                auditLogService.addAuditLog(
+                        AuditLogMetaData.builder()
+                                .newData(req)
+                                .prevData(oldEntityJsonString != null ? jsonHelper.readFromJson(oldEntityJsonString, Containers.class) : null)
+                                .parent(CustomerBooking.class.getSimpleName())
+                                .parentId(bookingId)
+                                .operation(operation).build()
+                );
+            } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException e) {
+                log.error(e.getMessage());
+            }
             res.add(req);
         }
         return res;
     }
 
-    private void deleteContainers(Map<Long, Containers> hashMap) {
+    private void deleteContainers(Map<Long, Containers> hashMap, String entity, Long entityId) {
         String responseMsg;
         try {
-            hashMap.values().forEach(this::delete);
+            hashMap.values().forEach(container -> {
+                String json = jsonHelper.convertToJson(container);
+                delete(container);
+                if(entity != null)
+                {
+                    try {
+                        auditLogService.addAuditLog(
+                                AuditLogMetaData.builder()
+                                        .newData(null)
+                                        .prevData(jsonHelper.readFromJson(json, Containers.class))
+                                        .parent(entity)
+                                        .parentId(entityId)
+                                        .operation(DBOperationType.DELETE.name()).build()
+                        );
+                    } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException e) {
+                        log.error(e.getMessage());
+                    }
+                }
+            });
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_DELETE_EXCEPTION_MSG;

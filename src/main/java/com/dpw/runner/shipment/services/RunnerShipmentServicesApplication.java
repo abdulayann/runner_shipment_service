@@ -10,6 +10,8 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.filter.CommonsRequestLoggingFilter;
 import springfox.documentation.swagger2.annotations.EnableSwagger2;
 
+import java.util.TimeZone;
+
 
 @SpringBootApplication(scanBasePackages = "com.dpw.runner.shipment.services")
 @Slf4j
@@ -17,6 +19,7 @@ import springfox.documentation.swagger2.annotations.EnableSwagger2;
 public class RunnerShipmentServicesApplication {
 
     public static void main(String[] args) {
+        TimeZone.setDefault(TimeZone.getTimeZone("UTC"));
         SpringApplication.run(RunnerShipmentServicesApplication.class, args);
         log.info("Shipment Service Started........");
 
