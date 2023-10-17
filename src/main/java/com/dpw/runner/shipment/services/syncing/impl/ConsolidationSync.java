@@ -100,8 +100,6 @@ public class ConsolidationSync implements IConsolidationSync {
     }
 
     private void mapShipmentGuids(CustomConsolidationRequest response, ConsolidationDetailsRequest request) {
-        if(request == null || request.getShipmentsList() == null)
-            return;
         List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByConsolidationId(request.getId());
         List<UUID> req = consoleShipmentMappings.stream()
                 .map(item -> {

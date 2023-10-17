@@ -272,11 +272,26 @@ public class V1MasterDataImpl implements IMasterDataService {
     public DependentServiceResponse fetchUserData(Object request) {
         V1DataResponse v1DataResponse = v1Service.fetchUsersData(request);
         return DependentServiceResponse.builder().success(true)
-                .data(v1DataResponse.entities).pageSize(v1DataResponse.take).numberOfRecords(v1DataResponse.totalCount).pageNo(v1DataResponse.skip).build();    }
+                .data(v1DataResponse.entities).pageSize(v1DataResponse.take).numberOfRecords(v1DataResponse.totalCount).pageNo(v1DataResponse.skip).build();
+    }
 
     @Override
     public DependentServiceResponse fetchGridColorCodeData(Object request) {
         V1DataResponse v1DataResponse = v1Service.fetchGridColorCodeData(request);
+        return DependentServiceResponse.builder().success(true)
+                .data(v1DataResponse.entities).pageSize(v1DataResponse.take).numberOfRecords(v1DataResponse.totalCount).pageNo(v1DataResponse.skip).build();
+    }
+
+    @Override
+    public DependentServiceResponse fetchOwnType(Object request) {
+        V1DataResponse v1DataResponse = v1Service.fetchOwnType(request);
+        return DependentServiceResponse.builder().success(true)
+                .data(v1DataResponse.entities).pageSize(v1DataResponse.take).numberOfRecords(v1DataResponse.totalCount).pageNo(v1DataResponse.skip).build();
+    }
+
+    @Override
+    public DependentServiceResponse fetchCarrierFilterList(Object request) {
+        V1DataResponse v1DataResponse = v1Service.fetchCarrierFilterList(request);
         return DependentServiceResponse.builder().success(true)
                 .data(v1DataResponse.entities).pageSize(v1DataResponse.take).numberOfRecords(v1DataResponse.totalCount).pageNo(v1DataResponse.skip).build();
     }

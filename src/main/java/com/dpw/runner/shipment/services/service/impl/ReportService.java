@@ -607,7 +607,9 @@ public class ReportService implements IReportService {
                             row.getHouseMainPage() == null ? adminRow.getHouseMainPage() : row.getHouseMainPage(),
                             row.getHblFooter() == null ? adminRow.getHblFooter() : row.getHblFooter(), row.getHouseMainPage() != null, null, null, row);
                 }
-                return null;
+                return setDocPages(null,
+                        row.getHouseMainPage() == null ? adminRow.getHouseMainPage() : row.getHouseMainPage(),
+                        row.getHblFooter() == null ? adminRow.getHblFooter() : row.getHblFooter(), row.getHouseMainPage() != null, null, null, row);
             case ReportConstants.ARRIVAL_NOTICE:
                 if (objectType.equalsIgnoreCase(ReportConstants.AIR)){
                     return setDocPages(null,
@@ -843,6 +845,7 @@ public class ReportService implements IReportService {
         }
 
         int originalCount = Integer.parseInt((String) json.getOrDefault(ReportConstants.ORIGINALS, -1).toString());
+        originalCount = 1; // TODO- for testing purpose only - To be removed
         int copyCount = Integer.parseInt((String) json.getOrDefault(ReportConstants.COPY_BILLS, -1).toString());
 
         if (!ReportInfo.equalsIgnoreCase(ReportConstants.SHIPMENT_HOUSE_BILL))

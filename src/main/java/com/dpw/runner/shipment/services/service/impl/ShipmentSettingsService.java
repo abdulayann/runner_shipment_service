@@ -12,20 +12,21 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.response.*;
-import com.dpw.runner.shipment.services.entity.HblTermsConditionTemplate;
-import com.dpw.runner.shipment.services.entity.ProductSequenceConfig;
-import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
-import com.dpw.runner.shipment.services.entity.TenantProducts;
+import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.helpers.DbAccessHelper;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import com.dpw.runner.shipment.services.repository.interfaces.IShipmentSettingsRepository;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentSettingsService;
 import com.dpw.runner.shipment.services.service_bus.AzureServiceBusTopic;
 import com.dpw.runner.shipment.services.service_bus.ISBProperties;
 import com.dpw.runner.shipment.services.service_bus.SBUtilsImpl;
 import com.dpw.runner.shipment.services.service_bus.model.EventMessage;
+import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSettingsSync;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
@@ -80,6 +81,12 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
     private ISBProperties isbProperties;
     @Autowired
     private AzureServiceBusTopic azureServiceBusTopic;
+    @Autowired
+    IShipmentSettingsSync shipmentSettingsSync;
+    @Autowired
+    IShipmentSettingsRepository shipmentSettingsRepository;
+    @Autowired
+    ModelMapper modelMapper;
     private Boolean fromV1 = false;
 
     @Transactional
@@ -116,8 +123,11 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
             }
 
             if(!fromV1) {
-                EventMessage eventMessage = EventMessage.builder().messageType(Constants.SERVICE).entity(Constants.TENANT_SETTINGS).request(shipmentSettingsDetails).build();
-                sbUtils.sendMessagesToTopic(isbProperties, azureServiceBusTopic.getTopic(), Arrays.asList(new ServiceBusMessage(jsonHelper.convertToJsonIncludeNulls(eventMessage))));
+                try{
+                    shipmentSettingsSync.sync(modelMapper.map(shipmentSettingsDetails, ShipmentSettingRequest.class));
+                } catch (Exception e) {
+                    log.error("Error Syncing Tenant Settings");
+                }
             }
             else
                 fromV1 = false;
@@ -258,10 +268,14 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
             if(productSequenceConfigList != null) {
                 if(productSequenceConfigList.size() > 0) {
                     for (ProductSequenceConfigRequest productSequenceConfig: productSequenceConfigList) {
-                        ListCommonRequest listCommonRequest = constructListCommonRequest("productType", productSequenceConfig.getTenantProducts().getProductType(), "=");
-                        Pair<Specification<TenantProducts>, Pageable> pair = fetchData(listCommonRequest, TenantProducts.class);
-                        Page<TenantProducts> tenantProducts = tenantProductsDao.findAll(pair.getLeft(), pair.getRight());
-                        productSequenceConfig.setTenantProducts(convertToClass(tenantProducts.getContent().get(0), TenantProductsRequest.class));
+                        if(productSequenceConfig.getTenantProducts() != null && productSequenceConfig.getTenantProducts().getProductType() != null) {
+                            ListCommonRequest listCommonRequest = constructListCommonRequest("productType", stringValueOf(productSequenceConfig.getTenantProducts().getProductType()), "=");
+                            Pair<Specification<TenantProducts>, Pageable> pair = fetchData(listCommonRequest, TenantProducts.class);
+                            Page<TenantProducts> tenantProducts = tenantProductsDao.findAll(pair.getLeft(), pair.getRight());
+                            productSequenceConfig.setTenantProducts(convertToClass(tenantProducts.getContent().get(0), TenantProductsRequest.class));
+                        }
+                        else
+                            productSequenceConfig.setTenantProducts(null);
                     }
                 }
                 List<ProductSequenceConfig> productSequenceConfigs = productSequenceConfigDao.updateEntityFromSettings(convertToEntityList(productSequenceConfigList, ProductSequenceConfig.class), shipmentSettingsDetails.getId());
@@ -269,8 +283,11 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
             }
 
             if(!fromV1) {
-                EventMessage eventMessage = EventMessage.builder().messageType(Constants.SERVICE).entity(Constants.TENANT_SETTINGS).request(response).build();
-                sbUtils.sendMessagesToTopic(isbProperties, azureServiceBusTopic.getTopic(), Arrays.asList(new ServiceBusMessage(jsonHelper.convertToJsonIncludeNulls(eventMessage))));
+                try{
+                    shipmentSettingsSync.sync(modelMapper.map(shipmentSettingsDetails, ShipmentSettingRequest.class));
+                } catch (Exception e) {
+                    log.error("Error Syncing Tenant Settings");
+                }
             }
             else
                 fromV1 = false;
@@ -298,6 +315,22 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
             log.error("Request Id and Tenant Id is null for Shipment Settings update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
+
+//        Optional<ShipmentSettingsDetails> tenantSetting = shipmentSettingsRepository.findByTenantId(request.getTenantId());
+//
+//        // Case when v1 tenant setting not present in service , create that first
+//        if(tenantSetting.isEmpty()) {
+//            try{
+//                fromV1 = true;
+//                return create(commonRequestModel);
+//            } catch (Exception e) {
+//                responseMsg = e.getMessage() != null ? e.getMessage()
+//                        : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
+//                log.error(responseMsg, e);
+//                TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+//                throw new RuntimeException(e);
+//            }
+//        }
         if(request.getTenantId() != null) {
             try{
                 fromV1 = true;

@@ -232,6 +232,16 @@ public class MasterDataImpl implements IMasterDataService {
     }
 
     @Override
+    public ResponseEntity<?> listOwnType(CommonRequestModel commonRequestModel) {
+        return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().fetchOwnType(commonRequestModel.getDependentData()));
+    }
+
+    @Override
+    public ResponseEntity<?> listCarrierFilter(CommonRequestModel commonRequestModel) {
+        return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().fetchCarrierFilterList(commonRequestModel.getDependentData()));
+    }
+
+    @Override
     public ResponseEntity<?> listCousinBranches(CommonRequestModel commonRequestModel) {
         return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().listCousinBranches(commonRequestModel.getDependentData()));
     }

@@ -121,7 +121,14 @@ public class CustomShipmentSyncRequest implements IRunnerRequest, IRunnerRespons
     @JsonProperty("OnBoardDate")
     private LocalDateTime OnBoardDate;
 
-
+    @JsonProperty("GoodsValue")
+    private BigDecimal goodsValue;
+    @JsonProperty("GoodsValueCurrency")
+    private String goodsValueCurrency;
+    @JsonProperty("InsuranceValue")
+    private BigDecimal insuranceValue;
+    @JsonProperty("InsuranceValueCurrency")
+    private String InsuranceValueCurrency;
 
     // %%%%%%%%%%%%%% Custom shipment properties from here %%%%%%%%%%%%%%%%
 

@@ -221,9 +221,23 @@ public class ConsolidationService implements IConsolidationService {
     private List<IRunnerResponse> convertEntityListToDtoList(List<ConsolidationDetails> lst) {
         List<IRunnerResponse> responseList = new ArrayList<>();
         lst.forEach(consolidationDetails -> {
-            responseList.add(jsonHelper.convertValue(consolidationDetails, ConsolidationDetailsResponse.class));
+            var res = (jsonHelper.convertValue(consolidationDetails, ConsolidationDetailsResponse.class));
+            updateHouseBillsShippingIds(consolidationDetails, res);
+            responseList.add(res);
         });
         return responseList;
+    }
+
+    private void updateHouseBillsShippingIds(ConsolidationDetails consol, ConsolidationDetailsResponse consolidationRes) {
+        var shipments = consol.getShipmentsList();
+        List<String> shipmentIds = null;
+        List<String> houseBills = null;
+        if (shipments != null)
+            shipmentIds = shipments.stream().map(shipment -> shipment.getShipmentId()).collect(Collectors.toList());
+        if (shipmentIds != null)
+            houseBills = shipments.stream().map(shipment -> shipment.getHouseBill()).collect(Collectors.toList());
+        consolidationRes.setHouseBills(houseBills);
+        consolidationRes.setShipmentIds(shipmentIds);
     }
 
     private List<Parties> createParties(ConsolidationDetails consolidationDetails) {
@@ -331,7 +345,8 @@ public class ConsolidationService implements IConsolidationService {
                 createPartiesAsync(consolidationDetails, consolidationAddressRequest);
 
             try {
-                consolidationSync.sync(jsonHelper.convertValue(consolidationDetails, ConsolidationDetailsRequest.class));
+                Optional<ConsolidationDetails> consol = consolidationDetailsDao.findById(consolidationDetails.getId());
+                consolidationSync.sync(jsonHelper.convertValue(consol.get(), ConsolidationDetailsRequest.class));
             } catch (Exception e){
                 log.error("Error performing sync on consolidation entity, {}", e);
             }
@@ -555,12 +570,14 @@ public class ConsolidationService implements IConsolidationService {
                 }
             }
         }
+        Optional<ConsolidationDetails> consol = consolidationDetailsDao.findById(consolidationId);
+        consolidationSync.sync(jsonHelper.convertValue(consol.get(), ConsolidationDetailsRequest.class));
 
         return new ResponseEntity<>(HttpStatus.OK);
     }
 
     @Transactional
-    public ResponseEntity<?> detachShipmentsSync(Long consolidationId, List<Long> shipmentIds) {
+    public ResponseEntity<?> detachShipmentsReverseSync(Long consolidationId, List<Long> shipmentIds) {
         if(consolidationId != null && shipmentIds!= null && shipmentIds.size() > 0) {
             List<Long> removedShipmentIds = consoleShipmentMappingDao.detachShipments(consolidationId, shipmentIds);
             for(Long shipId : removedShipmentIds) {
@@ -574,8 +591,6 @@ public class ConsolidationService implements IConsolidationService {
                 }
             }
         }
-        Optional<ConsolidationDetails> consol = consolidationDetailsDao.findById(consolidationId);
-        consolidationSync.sync(jsonHelper.convertValue(consol.get(), ConsolidationDetailsRequest.class));
 
         return new ResponseEntity<>(HttpStatus.OK);
     }
@@ -608,16 +623,20 @@ public class ConsolidationService implements IConsolidationService {
             ConsolidationDetails entity = jsonHelper.convertValue(consolidationDetailsRequest, ConsolidationDetails.class);
             String oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
             entity = consolidationDetailsDao.update(entity);
-
-            // audit logs
-            auditLogService.addAuditLog(
-                    AuditLogMetaData.builder()
-                            .newData(entity)
-                            .prevData(jsonHelper.readFromJson(oldEntityJsonString, ConsolidationDetails.class))
-                            .parent(ConsolidationDetails.class.getSimpleName())
-                            .parentId(entity.getId())
-                            .operation(DBOperationType.UPDATE.name()).build()
-            );
+            try {
+                // audit logs
+                auditLogService.addAuditLog(
+                        AuditLogMetaData.builder()
+                                .newData(entity)
+                                .prevData(jsonHelper.readFromJson(oldEntityJsonString, ConsolidationDetails.class))
+                                .parent(ConsolidationDetails.class.getSimpleName())
+                                .parentId(entity.getId())
+                                .operation(DBOperationType.UPDATE.name()).build()
+                );
+            }
+            catch (Exception e) {
+                log.error("Error writing audit service log", e);
+            }
 
             ConsolidationDetailsResponse response = jsonHelper.convertValue(entity, ConsolidationDetailsResponse.class);
             if(containerRequestList != null) {
@@ -651,6 +670,12 @@ public class ConsolidationService implements IConsolidationService {
             if (consolidationAddressRequest != null) {
                 List<Parties> updatedFileRepos = partiesDao.updateEntityFromOtherEntity(convertToEntityList(consolidationAddressRequest, Parties.class), id, Constants.CONSOLIDATION_ADDRESSES);
                 response.setConsolidationAddresses(convertToDtoList(updatedFileRepos, PartiesResponse.class));
+            }
+            updateHouseBillsShippingIds(entity, response);
+            try {
+                consolidationSync.sync(jsonHelper.convertValue(response, ConsolidationDetailsRequest.class));
+            } catch (Exception e){
+                log.error("Error performing sync on consolidation entity, {}", e);
             }
 
             return ResponseHelper.buildSuccessResponse(response);
@@ -1004,6 +1029,7 @@ public class ConsolidationService implements IConsolidationService {
             }
             log.info("Consolidation details fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
             ConsolidationDetailsResponse response = jsonHelper.convertValue(consolidationDetails.get(), ConsolidationDetailsResponse.class);
+            updateHouseBillsShippingIds(consolidationDetails.get(), response);
             return ResponseHelper.buildSuccessResponse(response);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -1228,7 +1254,7 @@ public class ConsolidationService implements IConsolidationService {
                 oldContainers = oldEntity.get().getContainersList();
                 List<Long> oldShipList = oldConsolidation.getShipmentsList().stream().map(e -> e.getId()).collect(Collectors.toList());
                 oldShipList = oldShipList.stream().filter(item -> !newShipList.contains(item)).collect(Collectors.toList());
-                detachShipmentsSync(oldEntity.get().getId(), oldShipList);
+                detachShipmentsReverseSync(oldEntity.get().getId(), oldShipList);
             }
             ConsolidationDetails entity = objectMapper.convertValue(consolidationDetailsRequest, ConsolidationDetails.class);
             entity.setShipmentsList(tempShipIds);
@@ -1245,6 +1271,8 @@ public class ConsolidationService implements IConsolidationService {
             } else {
                 entity = consolidationDetailsDao.update(entity);
             }
+            // Set id for linking child entitites
+            id = entity.getId();
 
             ConsolidationDetailsResponse response = jsonHelper.convertValue(entity, ConsolidationDetailsResponse.class);
             if(updatedContainers != null)

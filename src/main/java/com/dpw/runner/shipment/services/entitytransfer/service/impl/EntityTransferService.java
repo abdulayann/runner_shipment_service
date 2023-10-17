@@ -233,9 +233,11 @@ public class EntityTransferService implements IEntityTransferService {
         Map<String, String> fieldNameKeyMap = new HashMap<>();
         Map<String, EntityTransferMasterLists> keyMasterDataMap = new HashMap<>();
         Map<String, EntityTransferMasterLists> fieldNameMasterDataMap = new HashMap<>();
+
+        Set<String> allFields = Arrays.stream(entityPayload.getClass().getDeclaredFields()).map(Field::getName).collect(Collectors.toSet());
         for(Field field : mainClass.getDeclaredFields())
         {
-            if (field.isAnnotationPresent(MasterData.class))
+            if (field.isAnnotationPresent(MasterData.class) && allFields.contains(field.getName()))
             {
                 try {
                     Field field1 = entityPayload.getClass().getDeclaredField(field.getName());
@@ -290,9 +292,11 @@ public class EntityTransferService implements IEntityTransferService {
         Map<String, EntityTransferUnLocations> keyUnlocationDataMap = new HashMap<>();
         Map<String, String> fieldNameKeyMap = new HashMap<>();
         List<String> locCodesList = new ArrayList<>();
+
+        Set<String> allFields = Arrays.stream(entityPayload.getClass().getDeclaredFields()).map(Field::getName).collect(Collectors.toSet());
         for(Field field  : baseClass.getDeclaredFields())
         {
-            if (field.isAnnotationPresent(UnlocationData.class))
+            if (field.isAnnotationPresent(UnlocationData.class) && allFields.contains(field.getName()))
             {
                 try {
                     Field field1 = entityPayload.getClass().getDeclaredField(field.getName());
@@ -357,9 +361,10 @@ public class EntityTransferService implements IEntityTransferService {
         Map<String, String> fieldNameKeyMap = new HashMap<>();
         List<String> itemValueList = new ArrayList<>();
         log.info("CarrierMasterData");
+        Set<String> allFields = Arrays.stream(entityPayload.getClass().getDeclaredFields()).map(Field::getName).collect(Collectors.toSet());
         for(Field field  : baseClass.getDeclaredFields())
         {
-            if (field.isAnnotationPresent(DedicatedMasterData.class) && field.getDeclaredAnnotation(DedicatedMasterData.class).type().equals(Constants.CARRIER_MASTER_DATA))
+            if (field.isAnnotationPresent(DedicatedMasterData.class) && field.getDeclaredAnnotation(DedicatedMasterData.class).type().equals(Constants.CARRIER_MASTER_DATA) && allFields.contains(field.getName()))
             {
                 try {
                     log.info("CarrierField: "+field.getName());
@@ -405,9 +410,10 @@ public class EntityTransferService implements IEntityTransferService {
         Map<String, String> fieldNameKeyMap = new HashMap<>();
         List<String> MMSIList = new ArrayList<>();
         log.info("VesselMasterData");
+        Set<String> allFields = Arrays.stream(entityPayload.getClass().getDeclaredFields()).map(Field::getName).collect(Collectors.toSet());
         for(Field field  : baseClass.getDeclaredFields())
         {
-            if (field.isAnnotationPresent(DedicatedMasterData.class) && field.getDeclaredAnnotation(DedicatedMasterData.class).type().equals(Constants.VESSEL_MASTER_DATA))
+            if (field.isAnnotationPresent(DedicatedMasterData.class) && field.getDeclaredAnnotation(DedicatedMasterData.class).type().equals(Constants.VESSEL_MASTER_DATA) && allFields.contains(field.getName()))
             {
                 try {
                     log.info("VesselField: "+field.getName());
@@ -451,9 +457,10 @@ public class EntityTransferService implements IEntityTransferService {
         Map<String, String> fieldNameKeyMap = new HashMap<>();
         List<String> containerCodeList = new ArrayList<>();
         log.info("ContainerTypeMasterData");
+        Set<String> allFields = Arrays.stream(entityPayload.getClass().getDeclaredFields()).map(Field::getName).collect(Collectors.toSet());
         for(Field field  : baseClass.getDeclaredFields())
         {
-            if (field.isAnnotationPresent(DedicatedMasterData.class) && field.getDeclaredAnnotation(DedicatedMasterData.class).type().equals(Constants.CONTAINER_TYPE_MASTER_DATA))
+            if (field.isAnnotationPresent(DedicatedMasterData.class) && field.getDeclaredAnnotation(DedicatedMasterData.class).type().equals(Constants.CONTAINER_TYPE_MASTER_DATA) && allFields.contains(field.getName()))
             {
                 try {
                     log.info("ContainerTypeField: "+field.getName());
@@ -497,9 +504,10 @@ public class EntityTransferService implements IEntityTransferService {
         Map<String, String> fieldNameKeyMap = new HashMap<>();
         List<String> currencyCodeList = new ArrayList<>();
         log.info("CurrencyMasterData");
+        Set<String> allFields = Arrays.stream(entityPayload.getClass().getDeclaredFields()).map(Field::getName).collect(Collectors.toSet());
         for(Field field  : baseClass.getDeclaredFields())
         {
-            if (field.isAnnotationPresent(DedicatedMasterData.class) && field.getDeclaredAnnotation(DedicatedMasterData.class).type().equals(Constants.CURRENCY_MASTER_DATA))
+            if (field.isAnnotationPresent(DedicatedMasterData.class) && field.getDeclaredAnnotation(DedicatedMasterData.class).type().equals(Constants.CURRENCY_MASTER_DATA) && allFields.contains(field.getName()))
             {
                 try {
                     log.info("CurrencyField: "+field.getName());
@@ -543,9 +551,10 @@ public class EntityTransferService implements IEntityTransferService {
         Map<String, String> fieldNameKeyMap = new HashMap<>();
         List<String> commodityCodeList = new ArrayList<>();
         log.info("CommodityTypeMasterData");
+        Set<String> allFields = Arrays.stream(entityPayload.getClass().getDeclaredFields()).map(Field::getName).collect(Collectors.toSet());
         for(Field field  : baseClass.getDeclaredFields())
         {
-            if (field.isAnnotationPresent(DedicatedMasterData.class) && field.getDeclaredAnnotation(DedicatedMasterData.class).type().equals(Constants.COMMODITY_TYPE_MASTER_DATA))
+            if (field.isAnnotationPresent(DedicatedMasterData.class) && field.getDeclaredAnnotation(DedicatedMasterData.class).type().equals(Constants.COMMODITY_TYPE_MASTER_DATA) && allFields.contains(field.getName()))
             {
                 try {
                     log.info("commodityTypeField: "+field.getName());

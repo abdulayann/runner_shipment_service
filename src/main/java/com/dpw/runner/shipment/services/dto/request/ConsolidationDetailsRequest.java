@@ -81,10 +81,10 @@ public class ConsolidationDetailsRequest extends CommonRequest implements IRunne
     private Long warehouseId;
     private long sourceTenantId;
     private String ediTransactionId;
-    private long triangulationPartner;
-    private long receivingBranch;
+    private Long triangulationPartner;
+    private Long receivingBranch;
     private boolean intraBranch;
-    private long documentationPartner;
+    private Long documentationPartner;
     private Boolean isReceivingAgentFreeTextAddress;
     private String receivingAgentFreeTextAddress;
     private Boolean isSendingAgentFreeTextAddress;

@@ -122,9 +122,15 @@ public abstract class IReport {
     {
         shipmentContainer.BL_ContainerType = blObjectContainer.getContainerType();
         shipmentContainer.BL_SealNumber = blObjectContainer.getSealNumber();
-        shipmentContainer.BL_GrossWeight = blObjectContainer.getContainerGrossWeight().setScale(2, RoundingMode.HALF_UP);
+        if(blObjectContainer.getContainerGrossWeight() != null)
+            shipmentContainer.BL_GrossWeight = blObjectContainer.getContainerGrossWeight().setScale(2, RoundingMode.HALF_UP);
+        else
+            shipmentContainer.BL_GrossWeight = BigDecimal.ZERO;
         shipmentContainer.BL_GrossWeightUnit = blObjectContainer.getContainerGrossWeightUnit();
-        shipmentContainer.BL_GrossVolume = blObjectContainer.getContainerGrossVolume().setScale(2, RoundingMode.HALF_UP);
+        if(blObjectContainer.getContainerGrossVolume() != null)
+            shipmentContainer.BL_GrossVolume = blObjectContainer.getContainerGrossVolume().setScale(2, RoundingMode.HALF_UP);
+        else
+            shipmentContainer.BL_GrossVolume = BigDecimal.ZERO;
         shipmentContainer.BL_GrossVolumeUnit = blObjectContainer.getContainerGrossVolumeUnit();
         shipmentContainer.BL_NoofPackages = blObjectContainer.getNoOfPackages();
         shipmentContainer.BL_CarrierSealNumber = blObjectContainer.getCarrierSealNumber();
@@ -341,7 +347,7 @@ public abstract class IReport {
                     consigner = ReportHelper.getOrgAddressWithPhoneEmail(getValueFromMap(consignerAddress, COMPANY_NAME), getValueFromMap(consignerAddress, ADDRESS1),
                             getValueFromMap(consignerAddress, ADDRESS2), ReportHelper.getCityCountry(getValueFromMap(consignerAddress, CITY), getValueFromMap(consignerAddress, COUNTRY)),
                             getValueFromMap(consignerAddress,"Email"), getValueFromMap(consignerAddress, CONTACT_PHONE),
-                            getValueFromMap(consignerAddress,"Zip_PostCode"));
+                            getValueFromMap(consignerAddress,ZIP_POST_CODE));
                     dictionary.put(ReportConstants.CONSIGNER_NAME, consignerAddress.get(COMPANY_NAME));
                     dictionary.put(ReportConstants.CONSIGNER_CONTACT_PERSON, consignerAddress.get("ContactPerson"));
                 }
@@ -358,7 +364,7 @@ public abstract class IReport {
                             getValueFromMap(consigneeAddress, ADDRESS2),
                             ReportHelper.getCityCountry(getValueFromMap(consigneeAddress, CITY), getValueFromMap(consigneeAddress, COUNTRY)),
                             getValueFromMap(consigneeAddress,"Email"), getValueFromMap(consigneeAddress, CONTACT_PHONE),
-                            getValueFromMap(consigneeAddress,"Zip_PostCode"));
+                            getValueFromMap(consigneeAddress,ZIP_POST_CODE));
                     dictionary.put(ReportConstants.CONSIGNEE_NAME, getValueFromMap(consigneeAddress, COMPANY_NAME));
                     dictionary.put(ReportConstants.CONSIGNEE_CONTACT_PERSON,getValueFromMap(consigneeAddress,"ContactPerson"));
                 }
@@ -375,7 +381,7 @@ public abstract class IReport {
                             getValueFromMap(notifyAddress, ADDRESS2),
                             ReportHelper.getCityCountry(getValueFromMap(notifyAddress, CITY), getValueFromMap(notifyAddress, COUNTRY)),
                             getValueFromMap(notifyAddress,"Email"), getValueFromMap(notifyAddress, CONTACT_PHONE),
-                            getValueFromMap(notifyAddress,"Zip_PostCode")
+                            getValueFromMap(notifyAddress,ZIP_POST_CODE)
                                                                      );
                     dictionary.put(ReportConstants.NOTIFY_PARTY_NAME,getValueFromMap(notifyAddress, COMPANY_NAME));
                     dictionary.put(ReportConstants.NOTIFY_PARTY_CONTACT_PERSON,getValueFromMap(notifyAddress,"ContactPerson"));
@@ -393,7 +399,7 @@ public abstract class IReport {
                             getValueFromMap(clientAddress, ADDRESS2),
                             ReportHelper.getCityCountry(getValueFromMap(clientAddress, CITY), getValueFromMap(clientAddress, COUNTRY)),
                             getValueFromMap(clientAddress,"Email"),  getValueFromMap(clientAddress, CONTACT_PHONE),
-                            getValueFromMap(clientAddress,"Zip_PostCode"));
+                            getValueFromMap(clientAddress,ZIP_POST_CODE));
                     dictionary.put(ReportConstants.CLIENT_NAME, getValueFromMap(clientAddress, COMPANY_NAME));
                     dictionary.put(ReportConstants.CLIENT_ADDRESS_1,getValueFromMap(clientAddress, ADDRESS1));
                     dictionary.put(ReportConstants.CLIENT_ADDRESS_PHONE,getValueFromMap(clientAddress, CONTACT_PHONE));
@@ -492,7 +498,7 @@ public abstract class IReport {
                         addressData.get(ADDRESS2).toString(),
                         ReportHelper.getCityCountry(addressData.get(CITY).toString(), addressData.get(COUNTRY).toString()),
                         null, addressData.get(CONTACT_PHONE).toString(),
-                        addressData.get("Zip_PostCode").toString()
+                        addressData.get(ZIP_POST_CODE).toString()
                 );
                 dictionary.put(ReportConstants.SENDING_AGENT_NAME, addressData.get(COMPANY_NAME));
             }
@@ -511,7 +517,7 @@ public abstract class IReport {
                         addressData.get(ADDRESS2).toString(),
                         ReportHelper.getCityCountry(addressData.get(CITY).toString(), addressData.get(COUNTRY).toString()),
                         null, addressData.get(CONTACT_PHONE).toString(),
-                        addressData.get("Zip_PostCode").toString()
+                        addressData.get(ZIP_POST_CODE).toString()
                 );
                 dictionary.put(ReportConstants.RECEIVING_AGENT_NAME, addressData.get(COMPANY_NAME));
             }
@@ -606,7 +612,7 @@ public abstract class IReport {
                     addressData.get(ADDRESS2).toString(),
                     ReportHelper.getCityCountry(addressData.get(CITY).toString(), addressData.get(COUNTRY).toString()),
                     null, addressData.get(CONTACT_PHONE).toString(),
-                    addressData.get("Zip_PostCode").toString()
+                    addressData.get(ZIP_POST_CODE).toString()
             );
             dictionary.put(ReportConstants.CONSOL_NOTIFY_ADDRESS, consolNotifyPartyAddress);
         }

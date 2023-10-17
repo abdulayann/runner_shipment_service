@@ -34,5 +34,6 @@ public class MasterDataConstants {
     public static final String ACTIVITY_MASTER = "/activity-master";
     public static final String TENANT_SETTINGS = "/tenantSettings";
     public static final String RETRIEVE_TENANT_SETTINGS = "/retrieve";
-
+    public static final String OWN_TYPE = "/own_type";
+    public static final String CARRIER_FILTER_LIST = "/carrierFilterList";
 }

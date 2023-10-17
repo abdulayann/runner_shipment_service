@@ -5,9 +5,7 @@ import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IEventDao;
 import com.dpw.runner.shipment.services.dto.request.CustomAutoEventRequest;
-import com.dpw.runner.shipment.services.entity.ELDetails;
 import com.dpw.runner.shipment.services.entity.Events;
-import com.dpw.runner.shipment.services.entity.HblTermsConditionTemplate;
 import com.dpw.runner.shipment.services.entity.enums.LifecycleHooks;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -189,11 +187,11 @@ public class EventDao implements IEventDao {
         if (publicEvent) {
             listCommonRequest = CommonUtils.andCriteria("entityId", EntityID, "=", null);
             CommonUtils.andCriteria("entityType", EntityType, "=", listCommonRequest);
-            CommonUtils.andCriteria("publicTrackingEvent", 1, "=", listCommonRequest);
+            CommonUtils.andCriteria("isPublicTrackingEvent", true, "=", listCommonRequest);
         } else {
             listCommonRequest = CommonUtils.andCriteria("entityId", EntityID, "=", null);
             CommonUtils.andCriteria("entityType", EntityType, "=", listCommonRequest);
-            CommonUtils.andCriteria("publicTrackingEvent", 0, "=", listCommonRequest);
+            CommonUtils.andCriteria("isPublicTrackingEvent", false, "=", listCommonRequest);
         }
 
 

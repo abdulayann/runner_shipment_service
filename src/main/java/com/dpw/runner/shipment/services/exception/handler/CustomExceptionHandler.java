@@ -12,6 +12,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -27,6 +28,11 @@ import java.util.stream.Collectors;
 @ControllerAdvice
 @Slf4j
 public class CustomExceptionHandler extends ResponseEntityExceptionHandler {
+
+    @ExceptionHandler(AccessDeniedException.class)
+    protected ResponseEntity<Object> handleAccessDeniedException(AccessDeniedException ex) {
+        return (ResponseEntity<Object>) ResponseHelper.buildFailedResponse("Authorization has been denied for this request.", HttpStatus.FORBIDDEN);
+    }
 
     @ExceptionHandler(InvalidAccessTokenException.class)
     public final ResponseEntity<Object> handleInvalidAccessTokenException(InvalidAccessTokenException ex) {
