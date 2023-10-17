@@ -122,4 +122,8 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     private String entryRefNo;
     private List<PartiesResponse> shipmentAddresses;
     public List<AuditLogResponse> logsList;
+    private String flightStatus;
+    private Boolean containsHazardous;
+    private String fmcTlcId;
+    private String commodity;
 }

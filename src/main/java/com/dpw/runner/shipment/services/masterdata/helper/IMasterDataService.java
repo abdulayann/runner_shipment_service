@@ -115,4 +115,6 @@ public interface IMasterDataService {
     DependentServiceResponse fetchActivityMaster(Object request);
     DependentServiceResponse retrieveTenant();
     DependentServiceResponse fetchMultipleMasterData(Object request);
+
+    DependentServiceResponse fetchOwnType(Object request);
 }

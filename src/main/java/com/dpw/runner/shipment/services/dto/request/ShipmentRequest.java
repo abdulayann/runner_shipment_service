@@ -104,4 +104,8 @@ public class ShipmentRequest extends CommonRequest implements IRunnerRequest {
     public String InsuranceValueCurrency;
     public String entryRefNo;
     private List<PartiesRequest> shipmentAddresses;
+    private String flightStatus;
+    private Boolean containsHazardous;
+    private String fmcTlcId;
+    private String commodity;
 }

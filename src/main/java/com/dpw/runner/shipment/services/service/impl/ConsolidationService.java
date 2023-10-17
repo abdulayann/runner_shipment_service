@@ -221,9 +221,23 @@ public class ConsolidationService implements IConsolidationService {
     private List<IRunnerResponse> convertEntityListToDtoList(List<ConsolidationDetails> lst) {
         List<IRunnerResponse> responseList = new ArrayList<>();
         lst.forEach(consolidationDetails -> {
-            responseList.add(jsonHelper.convertValue(consolidationDetails, ConsolidationDetailsResponse.class));
+            var res = (jsonHelper.convertValue(consolidationDetails, ConsolidationDetailsResponse.class));
+            updateHouseBillsShippingIds(consolidationDetails, res);
+            responseList.add(res);
         });
         return responseList;
+    }
+
+    private void updateHouseBillsShippingIds(ConsolidationDetails consol, ConsolidationDetailsResponse consolidationRes) {
+        var shipments = consol.getShipmentsList();
+        List<String> shipmentIds = null;
+        List<String> houseBills = null;
+        if (shipments != null)
+            shipmentIds = shipments.stream().map(shipment -> shipment.getShipmentId()).collect(Collectors.toList());
+        if (shipmentIds != null)
+            houseBills = shipments.stream().map(shipment -> shipment.getHouseBill()).collect(Collectors.toList());
+        consolidationRes.setHouseBills(houseBills);
+        consolidationRes.setShipmentIds(shipmentIds);
     }
 
     private List<Parties> createParties(ConsolidationDetails consolidationDetails) {
@@ -649,7 +663,7 @@ public class ConsolidationService implements IConsolidationService {
                 List<Routings> updatedRoutings = routingsDao.updateEntityFromConsole(convertToEntityList(routingsRequestList, Routings.class), id);
                 response.setRoutingsList(convertToDtoList(updatedRoutings, RoutingsResponse.class));
             }
-
+            updateHouseBillsShippingIds(entity, response);
             try {
                 consolidationSync.sync(jsonHelper.convertValue(response, ConsolidationDetailsRequest.class));
             } catch (Exception e){
@@ -1007,6 +1021,7 @@ public class ConsolidationService implements IConsolidationService {
             }
             log.info("Consolidation details fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
             ConsolidationDetailsResponse response = jsonHelper.convertValue(consolidationDetails.get(), ConsolidationDetailsResponse.class);
+            updateHouseBillsShippingIds(consolidationDetails.get(), response);
             return ResponseHelper.buildSuccessResponse(response);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()

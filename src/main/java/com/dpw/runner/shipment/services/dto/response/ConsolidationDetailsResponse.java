@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -108,4 +109,8 @@ public class ConsolidationDetailsResponse implements IRunnerResponse {
     private List<JobResponse> jobsList;
     private List<EventsResponse> eventsList;
     private List<FileRepoResponse> fileRepoList;
+    private String createdBy;
+    private List<String> houseBills;
+    private List<String> shipmentIds;
+    private String bookingId;
 }
