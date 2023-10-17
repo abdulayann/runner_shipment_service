@@ -2,14 +2,19 @@ package com.dpw.runner.shipment.services.dao.impl;
 
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
+import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IRoutingsDao;
+import com.dpw.runner.shipment.services.entity.CustomerBooking;
 import com.dpw.runner.shipment.services.entity.Routings;
 import com.dpw.runner.shipment.services.entity.enums.LifecycleHooks;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.IRoutingsRepository;
+import com.dpw.runner.shipment.services.service.impl.AuditLogService;
 import com.dpw.runner.shipment.services.validator.ValidatorUtility;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,6 +42,9 @@ public class RoutingsDao implements IRoutingsDao {
 
     @Autowired
     private JsonHelper jsonHelper;
+
+    @Autowired
+    private AuditLogService auditLogService;
 
     @Override
     public Routings save(Routings routings) {
@@ -83,7 +91,7 @@ public class RoutingsDao implements IRoutingsDao {
                 }
                 responseRoutings = saveEntityFromShipment(routingsRequestList, shipmentId);
             }
-            deleteRoutings(hashMap);
+            deleteRoutings(hashMap, "Shipment", shipmentId);
             return responseRoutings;
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -133,7 +141,7 @@ public class RoutingsDao implements IRoutingsDao {
                 }
                 responseRoutings = saveEntityFromBooking(routingsRequestList, bookingId);
             }
-            deleteRoutings(hashMap);
+            deleteRoutings(hashMap, "CustomerBooking", bookingId);
             return responseRoutings;
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -146,17 +154,37 @@ public class RoutingsDao implements IRoutingsDao {
     @Override
     public List<Routings> saveEntityFromBooking(List<Routings> routings, Long bookingId) {
         List<Routings> res = new ArrayList<>();
-        for(Routings req : routings){
-            if(req.getId() != null){
+        ListCommonRequest listCommonRequest = constructListCommonRequest("id", routings.stream().map(Routings::getId).collect(Collectors.toList()), "IN");
+        Pair<Specification<Routings>, Pageable> pair = fetchData(listCommonRequest, Routings.class);
+        Page<Routings> routingsPage = findAll(pair.getLeft(), pair.getRight());
+        Map<Long, Routings> hashMap = routingsPage.stream()
+                .collect(Collectors.toMap(Routings::getId, Function.identity()));
+        for (Routings req : routings) {
+            String oldEntityJsonString = null;
+            String operation = DBOperationType.CREATE.name();
+            if (req.getId() != null) {
                 long id = req.getId();
-                Optional<Routings> oldEntity = findById(id);
-                if (!oldEntity.isPresent()) {
+                if (hashMap.get(id) == null) {
                     log.debug("Routing is null for Id {}", req.getId());
                     throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
                 }
+                oldEntityJsonString = jsonHelper.convertToJson(hashMap.get(id));
+                operation = DBOperationType.UPDATE.name();
             }
             req.setBookingId(bookingId);
             req = save(req);
+            try {
+                auditLogService.addAuditLog(
+                        AuditLogMetaData.builder()
+                                .newData(req)
+                                .prevData(oldEntityJsonString != null ? jsonHelper.readFromJson(oldEntityJsonString, Routings.class) : null)
+                                .parent(CustomerBooking.class.getSimpleName())
+                                .parentId(bookingId)
+                                .operation(operation).build()
+                );
+            } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException e) {
+                log.error(e.getMessage());
+            }
             res.add(req);
         }
         return res;
@@ -183,7 +211,7 @@ public class RoutingsDao implements IRoutingsDao {
                 }
                 responseRoutings = saveEntityFromConsole(routingsRequestList, consolidationId);
             }
-            deleteRoutings(hashMap);
+            deleteRoutings(hashMap, "Consolidation", consolidationId);
             return responseRoutings;
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -212,10 +240,28 @@ public class RoutingsDao implements IRoutingsDao {
         return res;
     }
 
-    private void deleteRoutings(Map<Long, Routings> hashMap) {
+    private void deleteRoutings(Map<Long, Routings> hashMap, String entity, Long entityId) {
         String responseMsg;
         try {
-            hashMap.values().forEach(this::delete);
+            hashMap.values().forEach(routing -> {
+                String json = jsonHelper.convertToJson(routing);
+                delete(routing);
+                if(entity != null)
+                {
+                    try {
+                        auditLogService.addAuditLog(
+                                AuditLogMetaData.builder()
+                                        .newData(null)
+                                        .prevData(jsonHelper.readFromJson(json, Routings.class))
+                                        .parent(entity)
+                                        .parentId(entityId)
+                                        .operation(DBOperationType.DELETE.name()).build()
+                        );
+                    } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException e) {
+                        log.error(e.getMessage());
+                    }
+                }
+            });
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_DELETE_EXCEPTION_MSG;
@@ -250,8 +296,8 @@ public class RoutingsDao implements IRoutingsDao {
                 responseRoutings = saveEntityFromShipment(routingsRequestList, shipmentId);
             }
             Map<Long, Routings> hashMap = new HashMap<>();
-            routingMap.forEach((s, routings) ->  hashMap.put(routings.getId(), routings));
-            deleteRoutings(hashMap);
+            routingMap.forEach((s, routings) -> hashMap.put(routings.getId(), routings));
+            deleteRoutings(hashMap, null, null);
             return responseRoutings;
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()

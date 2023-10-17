@@ -75,7 +75,7 @@ public class CustomerBooking extends MultiTenancy {
     @MasterData(type = MasterDataType.INCOTERMS)
     private String incoTerms;
 
-    @OneToOne(fetch = FetchType.LAZY, targetEntity = CarrierDetails.class, cascade = CascadeType.ALL)
+    @OneToOne(targetEntity = CarrierDetails.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "carrier_detail_id", referencedColumnName = "id")
     private CarrierDetails carrierDetails;
 
