@@ -79,6 +79,7 @@ public class AuthFilter implements Filter {
         } catch (Exception e)
         {
             log.info("Error while validating token with exception: {}", e.getMessage());
+            e.printStackTrace();
             res.setContentType("application/json");
             res.setStatus(HttpStatus.UNAUTHORIZED.value());
             return;
