@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.commons.constants.ShipmentConstants;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.dto.response.EnumResponse;
 import com.dpw.runner.shipment.services.service.interfaces.IEnumConstantService;
+import com.dpw.runner.shipment.services.utils.ExcludeTimeZone;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import lombok.extern.slf4j.Slf4j;
@@ -25,6 +26,7 @@ public class EnumConstantController {
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.LIST_SUCCESSFUL, responseContainer = ShipmentConstants.RESPONSE_CONTAINER_LIST)})
     @PostMapping(ApiConstants.API_LIST)
+    @ExcludeTimeZone
     public ResponseEntity<RunnerListResponse<EnumResponse>> list() {
         return (ResponseEntity<RunnerListResponse<EnumResponse>>) enumConstantService.list();
     }
