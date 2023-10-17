@@ -49,7 +49,8 @@ public class TenantTimeZoneAspect {
 
         //for handling request
         for (Object arg : args) {
-            transformTimeZoneRecursively(arg, browserTimeZone, tenantTimeZone, enableTimeZoneFlag, true);
+            if(arg != null)
+                transformTimeZoneRecursively(arg, browserTimeZone, tenantTimeZone, enableTimeZoneFlag, true);
         }
 
         //Sending request and catching response
