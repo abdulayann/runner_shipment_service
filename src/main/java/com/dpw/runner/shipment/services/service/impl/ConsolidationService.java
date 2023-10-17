@@ -150,7 +150,15 @@ public class ConsolidationService implements IConsolidationService {
     );
     private Map<String, RunnerEntityMapping> tableNames = Map.ofEntries(
             Map.entry("type", RunnerEntityMapping.builder().tableName("parties").dataType(String.class).build()),
+            Map.entry("createdBy", RunnerEntityMapping.builder().tableName("ConsolidationDetails").dataType(String.class).build()),
+            Map.entry("shippingLine", RunnerEntityMapping.builder().tableName("CarrierDetails").dataType(String.class).build()),
+//            Map.entry("bookingId", RunnerEntityMapping.builder().tableName("BookingCharges").dataType(Long.class).build()),
+            Map.entry("orderNumber", RunnerEntityMapping.builder().tableName("Jobs").dataType(String.class).build()),
+//            Map.entry("bookingStatus", RunnerEntityMapping.builder().tableName("CustomerBooking").dataType(BookingStatus.class).build()),
             Map.entry("orgCode", RunnerEntityMapping.builder().tableName("parties").dataType(Integer.class).build()),
+            Map.entry("referenceNumber", RunnerEntityMapping.builder().tableName("ConsolidationDetails").dataType(String.class).build()),
+            Map.entry("shipmentId", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).build()),
+            Map.entry("containerCategory", RunnerEntityMapping.builder().tableName("ConsolidationDetails").dataType(String.class).build()),
             Map.entry("consolidationNumber", RunnerEntityMapping.builder().tableName("ConsolidationDetails").dataType(String.class).build()),
             Map.entry("consolidationType", RunnerEntityMapping.builder().tableName("ConsolidationDetails").dataType(String.class).build()),
             Map.entry("transportMode", RunnerEntityMapping.builder().tableName("ConsolidationDetails").dataType(String.class).build()),
