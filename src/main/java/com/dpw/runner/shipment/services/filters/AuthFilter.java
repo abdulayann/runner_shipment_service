@@ -78,8 +78,7 @@ public class AuthFilter implements Filter {
             user = userService.getUserByToken(authToken);
         } catch (Exception e)
         {
-            String errormessage = "Auth failed:- User is not onboarded on shipment service";
-            log.info(errormessage);
+            log.info("Error while validating token with exception: {}", e.getMessage());
             res.setContentType("application/json");
             res.setStatus(HttpStatus.UNAUTHORIZED.value());
             return;
