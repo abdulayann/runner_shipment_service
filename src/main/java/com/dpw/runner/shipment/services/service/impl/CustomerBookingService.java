@@ -973,7 +973,7 @@ public class CustomerBookingService implements ICustomerBookingService {
     }
 
     private void _npmContractUpdate(CustomerBooking current, CustomerBooking old, Boolean isAlteration, String operation, boolean isCancelled) throws Exception {
-        if (Objects.equals(current.getTransportType(),Constants.TRANSPORT_MODE_SEA) ) {
+        if (Objects.equals(current.getTransportType(),Constants.TRANSPORT_MODE_SEA) && !Objects.isNull(current.getContractId()) ) {
             List<LoadInfoRequest> loadInfoRequestList = containersListForLoad(current, old, operation);
 
             if (!loadInfoRequestList.isEmpty() || !isAlteration) {
@@ -1000,7 +1000,7 @@ public class CustomerBookingService implements ICustomerBookingService {
 
     private List<LoadInfoRequest> containersListForLoad(CustomerBooking current, CustomerBooking old, String operation) {
         Map<String, Containers> idVsContainerMap = new HashMap<>();
-        List<LoadInfoRequest> loadInfoRequestList = Arrays.asList();
+        List<LoadInfoRequest> loadInfoRequestList = new ArrayList<>();
 
         if (!Objects.isNull(old) && !Objects.isNull(old.getContainersList()))
             idVsContainerMap = old.getContainersList().stream().collect(Collectors.toMap(x -> x.getId() + "-" + x.getContainerCode() + "-" + x.getCommodityGroup(), x -> x));
