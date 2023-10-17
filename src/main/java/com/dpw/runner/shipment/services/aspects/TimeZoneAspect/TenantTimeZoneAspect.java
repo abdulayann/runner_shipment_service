@@ -31,7 +31,7 @@ import java.util.Objects;
 @Slf4j
 public class TenantTimeZoneAspect {
 
-    @Pointcut("execution(* com.dpw.runner.shipment.services.controller.*.*(..))")
+    @Pointcut("execution(* com.dpw.runner.shipment.services.controller.*.*(..))" + "&& !@annotation(com.dpw.runner.shipment.services.utils.ExcludeTimeZone)")
     public void controllerMethods() {
     }
 
