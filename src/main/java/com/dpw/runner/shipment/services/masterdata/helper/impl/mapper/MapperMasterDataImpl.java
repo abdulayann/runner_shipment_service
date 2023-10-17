@@ -340,4 +340,9 @@ public class MapperMasterDataImpl implements IMasterDataService {
         return null;
     }
 
+    @Override
+    public DependentServiceResponse fetchCarrierFilterList(Object request) {
+        return null;
+    }
+
 }

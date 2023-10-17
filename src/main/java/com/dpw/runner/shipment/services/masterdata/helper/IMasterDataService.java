@@ -117,4 +117,6 @@ public interface IMasterDataService {
     DependentServiceResponse fetchMultipleMasterData(Object request);
 
     DependentServiceResponse fetchOwnType(Object request);
+
+    DependentServiceResponse fetchCarrierFilterList(Object request);
 }

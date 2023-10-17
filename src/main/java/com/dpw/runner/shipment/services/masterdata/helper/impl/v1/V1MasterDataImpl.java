@@ -290,6 +290,13 @@ public class V1MasterDataImpl implements IMasterDataService {
     }
 
     @Override
+    public DependentServiceResponse fetchCarrierFilterList(Object request) {
+        V1DataResponse v1DataResponse = v1Service.fetchCarrierFilterList(request);
+        return DependentServiceResponse.builder().success(true)
+                .data(v1DataResponse.entities).pageSize(v1DataResponse.take).numberOfRecords(v1DataResponse.totalCount).pageNo(v1DataResponse.skip).build();
+    }
+
+    @Override
     public DependentServiceResponse createGridColorCodeData(Object request) {
         V1DataResponse v1DataResponse = v1Service.createGridColorCodeData(request);
         return DependentServiceResponse.builder().success(true)

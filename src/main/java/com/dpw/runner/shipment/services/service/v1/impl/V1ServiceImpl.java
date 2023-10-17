@@ -18,7 +18,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -228,6 +227,9 @@ public class V1ServiceImpl implements IV1Service {
 
     @Value("${v1service.url.base}${v1service.url.ownType}")
     private String OWN_TYPE;
+
+    @Value("${v1service.url.base}${v1service.url.carrierFilterList}")
+    private String CARRIER_FILTER_LIST;
 
     @Autowired
     private JsonHelper jsonHelper;
@@ -1549,6 +1551,27 @@ public class V1ServiceImpl implements IV1Service {
             HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
             masterDataResponse = this.restTemplate.postForEntity(this.OWN_TYPE, entity, V1RetrieveResponse.class, new Object[0]);
             log.info("Token time taken in fetchOwnType() function " + (System.currentTimeMillis() - time));
+            return (V1DataResponse) masterDataResponse.getBody();
+        } catch (HttpStatusCodeException var6) {
+            if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
+                throw new UnAuthorizedException("UnAuthorizedException");
+            } else {
+                throw new V1ServiceException(var6.getMessage());
+            }
+        } catch (Exception var7) {
+            throw new V1ServiceException(var7.getMessage());
+        }
+    }
+
+    @Override
+    public V1DataResponse fetchCarrierFilterList(Object request) {
+        ResponseEntity masterDataResponse = null;
+
+        try {
+            long time = System.currentTimeMillis();
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            masterDataResponse = this.restTemplate.postForEntity(this.CARRIER_FILTER_LIST, entity, V1RetrieveResponse.class, new Object[0]);
+            log.info("Token time taken in fetchCarrierFilterList() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) masterDataResponse.getBody();
         } catch (HttpStatusCodeException var6) {
             if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {

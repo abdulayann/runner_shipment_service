@@ -110,4 +110,6 @@ public interface IMasterDataService extends ICommonService{
     ResponseEntity<?> retrieveTenant();
 
     ResponseEntity<?> listOwnType(CommonRequestModel commonRequestModel);
+
+    ResponseEntity<?> listCarrierFilter(CommonRequestModel commonRequestModel);
 }
