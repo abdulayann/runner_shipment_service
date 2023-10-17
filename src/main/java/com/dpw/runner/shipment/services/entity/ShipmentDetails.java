@@ -3,11 +3,11 @@ package com.dpw.runner.shipment.services.entity;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.utils.DedicatedMasterData;
 import com.dpw.runner.shipment.services.utils.MasterData;
 import com.dpw.runner.shipment.services.utils.OrganizationData;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
 import lombok.*;
 import lombok.experimental.Accessors;
@@ -17,7 +17,6 @@ import org.hibernate.annotations.TypeDef;
 import org.hibernate.annotations.Where;
 
 import javax.persistence.*;
-import javax.persistence.Table;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -349,7 +348,7 @@ public class ShipmentDetails extends MultiTenancy {
     @Column(name = "contains_hazardous")
     private Boolean containsHazardous;
 
-    @Column(name = "fmcTlcId")
+    @Column(name = "fmc_tlc_id")
     private String fmcTlcId;
 
     @Column(name = "commodity")
