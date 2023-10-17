@@ -25,6 +25,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.util.AntPathMatcher;
+import org.springframework.web.filter.OncePerRequestFilter;
 
 import javax.servlet.*;
 import javax.servlet.http.HttpServletRequest;
@@ -34,9 +35,9 @@ import java.text.ParseException;
 import java.util.*;
 
 @Component
-@Order(1)
+//@Order(1)
 @Slf4j
-public class AuthFilter implements Filter {
+public class AuthFilter extends OncePerRequestFilter {
 
     @Autowired
     private GetUserServiceFactory getUserServiceFactory;
@@ -60,8 +61,8 @@ public class AuthFilter implements Filter {
     }
 
     @Override
-    public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain) throws IOException, ServletException {
-
+    public void doFilterInternal(HttpServletRequest servletRequest, HttpServletResponse servletResponse, FilterChain filterChain) throws IOException, ServletException {
+        try {
         LoggerHelper.putRequestId(UUID.randomUUID().toString());
         HttpServletRequest req = (HttpServletRequest) servletRequest;
         if(shouldNotFilter(req))
@@ -116,8 +117,7 @@ public class AuthFilter implements Filter {
                 .setDetails(new WebAuthenticationDetailsSource().buildDetails(req));
         PermissionsContext.setPermissions(grantedPermissions);
         SecurityContextHolder.getContext().setAuthentication(usernamePasswordAuthenticationToken);
-        try {
-            filterChain.doFilter(servletRequest, servletResponse);
+        filterChain.doFilter(servletRequest, servletResponse);
             log.info(String.format("Request Finished , Total Time in milis:- %s", (System.currentTimeMillis() - time)));
         }finally {
             MDC.remove(LoggingConstants.REQUEST_ID);
