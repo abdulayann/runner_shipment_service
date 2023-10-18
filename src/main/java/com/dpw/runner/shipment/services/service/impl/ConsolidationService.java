@@ -219,25 +219,35 @@ public class ConsolidationService implements IConsolidationService {
     }
 
     private List<IRunnerResponse> convertEntityListToDtoList(List<ConsolidationDetails> lst) {
-        List<IRunnerResponse> responseList = new ArrayList<>();
-        lst.forEach(consolidationDetails -> {
-            var res = (jsonHelper.convertValue(consolidationDetails, ConsolidationDetailsResponse.class));
-            updateHouseBillsShippingIds(consolidationDetails, res);
-            responseList.add(res);
-        });
-        return responseList;
+        return lst.parallelStream()
+                .map(this::convertToDtoAndUpdateShippingIds)
+                .collect(Collectors.toList());
+    }
+
+    private IRunnerResponse convertToDtoAndUpdateShippingIds(ConsolidationDetails consolidationDetails) {
+        var res = jsonHelper.convertValue(consolidationDetails, ConsolidationDetailsResponse.class);
+        updateHouseBillsShippingIds(consolidationDetails, res);
+        return res;
     }
 
     private void updateHouseBillsShippingIds(ConsolidationDetails consol, ConsolidationDetailsResponse consolidationRes) {
         var shipments = consol.getShipmentsList();
-        List<String> shipmentIds = null;
-        List<String> houseBills = null;
-        if (shipments != null)
-            shipmentIds = shipments.stream().map(shipment -> shipment.getShipmentId()).collect(Collectors.toList());
-        if (shipmentIds != null)
-            houseBills = shipments.stream().map(shipment -> shipment.getHouseBill()).filter(houseBill -> Objects.nonNull(houseBill)).collect(Collectors.toList());
-        consolidationRes.setHouseBills(houseBills);
-        consolidationRes.setShipmentIds(shipmentIds);
+        if (shipments != null && !shipments.isEmpty()) {
+            CompletableFuture<List<String>> shipmentIdsFuture = CompletableFuture.supplyAsync(() ->
+                    shipments.parallelStream()
+                            .map(ShipmentDetails::getShipmentId)
+                            .collect(Collectors.toList()));
+
+            CompletableFuture<List<String>> houseBillsFuture = CompletableFuture.supplyAsync(() ->
+                    shipments.parallelStream()
+                            .map(ShipmentDetails::getHouseBill)
+                            .collect(Collectors.toList()));
+
+            CompletableFuture.allOf(shipmentIdsFuture, houseBillsFuture).join();
+
+            consolidationRes.setHouseBills(houseBillsFuture.join());
+            consolidationRes.setShipmentIds(shipmentIdsFuture.join());
+        }
     }
 
     private List<Parties> createParties(ConsolidationDetails consolidationDetails) {
