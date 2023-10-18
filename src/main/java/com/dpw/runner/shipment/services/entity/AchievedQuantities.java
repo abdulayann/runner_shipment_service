@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.entity;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import lombok.*;
 import lombok.experimental.Accessors;
+import org.hibernate.annotations.BatchSize;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -18,6 +19,7 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 @Builder
 @Accessors(chain = true)
+@BatchSize(size = 50)
 public class AchievedQuantities extends MultiTenancy {
 
     @Column(name = "weight_volume")

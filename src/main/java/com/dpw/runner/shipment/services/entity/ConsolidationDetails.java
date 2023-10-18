@@ -9,6 +9,7 @@ import com.dpw.runner.shipment.services.utils.UnlocationData;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.*;
 import lombok.experimental.Accessors;
+import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Where;
 
@@ -306,40 +307,50 @@ public class ConsolidationDetails extends MultiTenancy {
     private Parties coLoadWith;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "consolidationId")
+    @BatchSize(size = 50)
     private List<Packing> packingList;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "consolidationId")
+    @BatchSize(size = 50)
     private List<ReferenceNumbers> referenceNumbersList;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "consolidationId")
+    @BatchSize(size = 50)
     private List<Routings> routingsList;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy =  "consolidationId")
     @JsonIgnoreProperties("shipmentsList")
+    @BatchSize(size = 50)
     private List<Containers> containersList;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "consolidationId")
+    @BatchSize(size = 50)
     private List<TruckDriverDetails> truckDriverDetails;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "consolidationId")
+    @BatchSize(size = 50)
     private List<Jobs> jobsList;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "entityId")
     @Where(clause = "entity_type = 'CONSOLIDATION'")
+    @BatchSize(size = 50)
     private List<Events> eventsList;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "entityId")
     @Where(clause = "entity_type = 'CONSOLIDATION'")
+    @BatchSize(size = 50)
     private List<FileRepo> fileRepoList;
 
-    @ManyToMany
+    @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(name = "console_shipment_mapping",
             joinColumns = @JoinColumn(name = "consolidation_id"),
             inverseJoinColumns = @JoinColumn(name = "shipment_id"))
     @JsonIgnoreProperties("consolidationList")
+    @BatchSize(size = 50)
     private List<ShipmentDetails> shipmentsList;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "entityId")
     @Where(clause = "entity_type = 'CONSOLIDATION_ADDRESSES'")
+    @BatchSize(size = 50)
     private List<Parties> consolidationAddresses;
 }

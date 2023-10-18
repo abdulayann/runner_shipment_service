@@ -27,6 +27,7 @@ import java.util.UUID;
 @AllArgsConstructor
 @Builder
 @Accessors(chain = true)
+@BatchSize(size = 50)
 public class ArrivalDepartureDetails extends MultiTenancy {
 
     @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL)

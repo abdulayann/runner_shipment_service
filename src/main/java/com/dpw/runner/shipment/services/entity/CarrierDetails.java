@@ -8,6 +8,7 @@ import com.dpw.runner.shipment.services.utils.MasterData;
 import com.dpw.runner.shipment.services.utils.UnlocationData;
 import lombok.*;
 import lombok.experimental.Accessors;
+import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.GenerationTime;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Where;
@@ -27,6 +28,7 @@ import java.util.UUID;
 @Builder
 @SQLDelete(sql = "UPDATE carrier_details SET is_deleted = true WHERE id=?")
 @Where(clause = "is_deleted = false")
+@BatchSize(size = 50)
 public class CarrierDetails extends MultiTenancy {
 
     private static final long serialVersionUID = 190794279984274725L;
