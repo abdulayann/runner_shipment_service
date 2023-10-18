@@ -621,10 +621,14 @@ public abstract class IReport {
     public void populateBlFields(Hbl hbl, Map<String, Object> dictionary)
     {
         if (hbl == null) return;
-        HblPartyDto hblNotify = hbl.getHblNotifyParty().get(0);
-        List<String> notify = ReportHelper.getOrgAddress(hblNotify.getName(), hblNotify.getAddress(), null, null, hblNotify.getEmail(), null);
+        List<String> notify = null;
+        if(hbl.getHblNotifyParty() != null && hbl.getHblNotifyParty().size() > 0) {
+            HblPartyDto hblNotify = hbl.getHblNotifyParty().get(0);
+            notify = ReportHelper.getOrgAddress(hblNotify.getName(), hblNotify.getAddress(), null, null, hblNotify.getEmail(), null);
+        }
         dictionary.put(ReportConstants.BL_NOTIFY_PARTY, notify);
-        dictionary.put(ReportConstants.BL_NOTIFY_PARTY_CAPS, notify.stream().map(String::toUpperCase).collect(Collectors.toList()));
+        if(notify != null)
+            dictionary.put(ReportConstants.BL_NOTIFY_PARTY_CAPS, notify.stream().map(String::toUpperCase).collect(Collectors.toList()));
         HblDataDto hblDataDto = hbl.getHblData();
         List<String> consignor = ReportHelper.getOrgAddress(hblDataDto != null ? hblDataDto.getConsignorName() : null, hblDataDto != null ? hblDataDto.getConsignorAddress() : null, null, null, null, null);
         List<String> consignee = ReportHelper.getOrgAddress(hblDataDto != null ? hblDataDto.getConsigneeName() : null, hblDataDto != null ? hblDataDto.getConsigneeAddress() : null, null, null, null, null);

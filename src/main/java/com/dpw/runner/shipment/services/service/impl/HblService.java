@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.HblConstants;
@@ -8,8 +9,10 @@ import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IHblDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
 import com.dpw.runner.shipment.services.dto.request.HblGenerateRequest;
 import com.dpw.runner.shipment.services.dto.request.HblPartyDto;
 import com.dpw.runner.shipment.services.dto.request.HblRequest;
@@ -40,7 +43,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.interceptor.TransactionAspectSupport;
-import org.springframework.web.client.RestTemplate;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -63,9 +65,10 @@ public class HblService implements IHblService {
     private IShipmentDao shipmentDao;
     @Autowired
     private JsonHelper jsonHelper;
-
     @Autowired
-    RestTemplate restTemplate;
+    IContainerDao containerDao;
+    @Autowired
+    IShipmentSettingsDao shipmentSettingsDao;
 
     private RetryTemplate retryTemplate = RetryTemplate.builder()
             .maxAttempts(3)
@@ -184,6 +187,50 @@ public class HblService implements IHblService {
             return ResponseHelper.buildSuccessResponse(PartialFetchUtils.fetchPartialListData(convertEntityToDto(hbl.get()),request.getIncludeColumns()));
     }
 
+    public void checkAllContainerAssigned(Long shipmentId, List<Containers> containersList, List<Packing> packings) {
+        boolean allContainerAssigned = true;
+        for(Containers container: containersList) {
+            if(container.getContainerNumber() == null || container.getContainerNumber().isEmpty()) {
+                allContainerAssigned = false;
+                break;
+            }
+        }
+        if(allContainerAssigned) {
+            List<Hbl> hbls = hblDao.findByShipmentId(shipmentId);
+            if(hbls.size() > 0) {
+                Hbl hbl = hbls.get(0);
+                boolean isContainerWithoutNumberOrNoContainer = false;
+                if(hbl.getHblContainer() != null && hbl.getHblContainer().size() > 0) {
+                    for(HblContainerDto hblContainerDto: hbl.getHblContainer()) {
+                        if(hblContainerDto.getContainerNumber() == null || hblContainerDto.getContainerNumber().isEmpty()) {
+                            isContainerWithoutNumberOrNoContainer = true;
+                            break;
+                        }
+                    }
+                }
+                else
+                    isContainerWithoutNumberOrNoContainer = true;
+                if (isContainerWithoutNumberOrNoContainer) {
+                    hbl.setHblContainer(mapShipmentContainersToHBL(containersList));
+                    hbl.setHblCargo(mapShipmentCargoToHBL(packings));
+                    hbl = hblDao.save(hbl);
+                    try {
+                        hblSync.sync(hbl);
+                    }
+                    catch (Exception e) {
+                        log.error("Error performing sync on hbl entity, {}", e);
+                    }
+                }
+            }
+            else {
+                List<ShipmentSettingsDetails> shipmentSettingsDetails = shipmentSettingsDao.getSettingsByTenantIds(List.of(TenantContext.getCurrentTenant()));
+                if(shipmentSettingsDetails.size() > 0 && (shipmentSettingsDetails.get(0).getRestrictHblGen() == null || !shipmentSettingsDetails.get(0).getRestrictHblGen())) {
+                    generateHBL(CommonRequestModel.buildRequest(HblGenerateRequest.builder().shipmentId(shipmentId).build()));
+                }
+            }
+        }
+    }
+
     @Override
     public ResponseEntity<?> generateHBL(CommonRequestModel commonRequestModel) {
         HblGenerateRequest request = (HblGenerateRequest) commonRequestModel.getData();
@@ -300,10 +347,14 @@ public class HblService implements IHblService {
     private HblDataDto mapShipmentToHBL(ShipmentDetails shipmentDetail) {
         HblDataDto hblData = HblDataDto.builder().build();
         hblData.setShipmentId(shipmentDetail.getId());
-        hblData.setConsignorName(StringUtility.convertToString(shipmentDetail.getConsigner().getOrgData().get(PartiesConstants.FULLNAME)) );
-        hblData.setConsignorAddress(constructAddress(shipmentDetail.getConsigner().getAddressData()));
-        hblData.setConsigneeName(StringUtility.convertToString(shipmentDetail.getConsignee().getOrgData().get(PartiesConstants.FULLNAME)));
-        hblData.setConsigneeAddress(constructAddress(shipmentDetail.getConsignee().getAddressData()));
+        if(shipmentDetail.getConsigner() != null) {
+            hblData.setConsignorName(StringUtility.convertToString(shipmentDetail.getConsigner().getOrgData().get(PartiesConstants.FULLNAME)) );
+            hblData.setConsignorAddress(constructAddress(shipmentDetail.getConsigner().getAddressData()));
+        }
+        if(shipmentDetail.getConsignee() != null) {
+            hblData.setConsigneeName(StringUtility.convertToString(shipmentDetail.getConsignee().getOrgData().get(PartiesConstants.FULLNAME)));
+            hblData.setConsigneeAddress(constructAddress(shipmentDetail.getConsignee().getAddressData()));
+        }
 //        hblData.setOriginOfGoods(shipmentDetail.goo); : Missing in shipments
         hblData.setPlaceOfReceipt(StringUtility.convertToString(shipmentDetail.getAdditionalDetails().getPlaceOfSupply()));
         hblData.setPortOfLoad(shipmentDetail.getCarrierDetails().getOrigin());

@@ -56,6 +56,12 @@ public class HblSync implements IHblSync {
         Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(hbl.getShipmentId());
         hblRequest = convertEntityToDto(hbl);
         hblRequest.setShipmentGuid(shipmentDetails.get().getGuid());
+        if(hblRequest.getContainers() != null && hblRequest.getContainers().size() > 0) {
+            for (HblContainerRequestV2 hblContainerRequestV2: hblRequest.getContainers()) {
+                if(hblContainerRequestV2.getHazardous() == null)
+                    hblContainerRequestV2.setHazardous(0);
+            }
+        }
         String finalHbl = jsonHelper.convertToJson(hblRequest);
         retryTemplate.execute(ctx -> {
             log.info("Current retry : {}", ctx.getRetryCount());
