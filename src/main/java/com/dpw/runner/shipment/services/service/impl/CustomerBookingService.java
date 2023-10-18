@@ -211,9 +211,9 @@ public class CustomerBookingService implements ICustomerBookingService {
                 }
                 bookingCharge.setContainersList(containerList);
                 bookingCharge.setBookingId(customerBooking.getId());
-                bookingCharge = bookingChargesDao.save(bookingCharge);
                 bookingCharges.add(bookingCharge);
             }
+            bookingCharges = bookingChargesDao.updateEntityFromBooking(bookingCharges, customerBooking.getId());
             customerBooking.setBookingCharges(bookingCharges);
         }
         auditLogService.addAuditLog(
@@ -250,6 +250,7 @@ public class CustomerBookingService implements ICustomerBookingService {
         customerBooking.setCreatedAt(oldEntity.get().getCreatedAt());
         customerBooking.setCreatedBy(oldEntity.get().getCreatedBy());
         customerBooking.setIsPlatformBookingCreated(isCreatedInPlatform);
+        customerBooking.setSource(oldEntity.get().getSource());
 
         // NPM update contract
         contractUtilisationForUpdate(customerBooking, oldEntity.get());

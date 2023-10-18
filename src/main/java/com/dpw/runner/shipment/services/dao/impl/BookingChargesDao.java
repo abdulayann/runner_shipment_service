@@ -2,15 +2,19 @@ package com.dpw.runner.shipment.services.dao.impl;
 
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
+import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IBookingChargesDao;
 import com.dpw.runner.shipment.services.entity.BookingCharges;
-import com.dpw.runner.shipment.services.entity.Packing;
+import com.dpw.runner.shipment.services.entity.CustomerBooking;
 import com.dpw.runner.shipment.services.entity.enums.LifecycleHooks;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.IBookingChargesRepository;
+import com.dpw.runner.shipment.services.service.impl.AuditLogService;
 import com.dpw.runner.shipment.services.validator.ValidatorUtility;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,6 +42,9 @@ public class BookingChargesDao implements IBookingChargesDao {
 
     @Autowired
     private JsonHelper jsonHelper;
+
+    @Autowired
+    private AuditLogService auditLogService;
 
     @Override
     public BookingCharges save(BookingCharges bookingCharges) {
@@ -83,10 +90,28 @@ public class BookingChargesDao implements IBookingChargesDao {
         }
     }
 
-    private void deleteBookingCharges(Map<Long, BookingCharges> hashMap) {
+    private void deleteBookingCharges(Map<Long, BookingCharges> hashMap, String entity, Long entityId) {
         String responseMsg;
         try {
-            hashMap.values().forEach(this::delete);
+            hashMap.values().forEach(bookingCharge -> {
+                String json = jsonHelper.convertToJson(bookingCharge);
+                delete(bookingCharge);
+                if(entity != null)
+                {
+                    try {
+                        auditLogService.addAuditLog(
+                                AuditLogMetaData.builder()
+                                        .newData(null)
+                                        .prevData(jsonHelper.readFromJson(json, BookingCharges.class))
+                                        .parent(entity)
+                                        .parentId(entityId)
+                                        .operation(DBOperationType.DELETE.name()).build()
+                        );
+                    } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException e) {
+                        log.error(e.getMessage());
+                    }
+                }
+            });
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_DELETE_EXCEPTION_MSG;
@@ -96,17 +121,37 @@ public class BookingChargesDao implements IBookingChargesDao {
 
     public List<BookingCharges> saveEntityFromBooking(List<BookingCharges> bookingCharges, Long bookingId) {
         List<BookingCharges> res = new ArrayList<>();
+        ListCommonRequest listCommonRequest = constructListCommonRequest("id", bookingCharges.stream().map(BookingCharges::getId).collect(Collectors.toList()), "IN");
+        Pair<Specification<BookingCharges>, Pageable> pair = fetchData(listCommonRequest, BookingCharges.class);
+        Page<BookingCharges> bookingChargesPage = findAll(pair.getLeft(), pair.getRight());
+        Map<Long, BookingCharges> hashMap = bookingChargesPage.stream()
+                .collect(Collectors.toMap(BookingCharges::getId, Function.identity()));
         for (BookingCharges req : bookingCharges) {
+            String oldEntityJsonString = null;
+            String operation = DBOperationType.CREATE.name();
             if (req.getId() != null) {
                 long id = req.getId();
-                Optional<BookingCharges> oldEntity = findById(id);
-                if (!oldEntity.isPresent()) {
+                if (hashMap.get(id) == null) {
                     log.debug("Booking Charges is null for Id {}", req.getId());
                     throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
                 }
+                oldEntityJsonString = jsonHelper.convertToJson(hashMap.get(id));
+                operation = DBOperationType.UPDATE.name();
             }
             req.setBookingId(bookingId);
             req = save(req);
+            try {
+                auditLogService.addAuditLog(
+                        AuditLogMetaData.builder()
+                                .newData(req)
+                                .prevData(oldEntityJsonString != null ? jsonHelper.readFromJson(oldEntityJsonString, BookingCharges.class) : null)
+                                .parent(CustomerBooking.class.getSimpleName())
+                                .parentId(bookingId)
+                                .operation(operation).build()
+                );
+            } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException e) {
+                log.error(e.getMessage());
+            }
             res.add(req);
         }
         return res;
@@ -133,7 +178,7 @@ public class BookingChargesDao implements IBookingChargesDao {
                 }
                 responseBookingCharges = saveEntityFromBooking(bookingChargesRequestList, bookingId);
             }
-            deleteBookingCharges(hashMap);
+            deleteBookingCharges(hashMap, "CustomerBooking", bookingId);
             return responseBookingCharges;
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()

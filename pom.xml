@@ -236,11 +236,11 @@
             <groupId>org.springframework.retry</groupId>
             <artifactId>spring-retry</artifactId>
         </dependency>
-<!--        <dependency>-->
-<!--            <groupId>com.dpw.runner</groupId>-->
-<!--            <artifactId>runner-timezone-utils</artifactId>-->
-<!--            <version>0.0.2</version>-->
-<!--        </dependency>-->
+        <dependency>
+            <groupId>com.dpw.runner</groupId>
+            <artifactId>runner-timezone-utils</artifactId>
+            <version>0.0.2</version>
+        </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-security</artifactId>
@@ -272,6 +272,16 @@
             <id>spring-milestone</id>
             <name>Spring Maven MILESTONE Repository</name>
             <url>https://repo.spring.io/milestone</url>
+        </repository>
+        <repository>
+            <id>runner-artifactory</id>
+            <url>https://dpwhotfsonline.pkgs.visualstudio.com/DTLP/_packaging/runner-artifactory/maven/v1</url>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
         </repository>
     </repositories>
     <pluginRepositories>

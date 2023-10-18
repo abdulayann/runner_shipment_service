@@ -32,6 +32,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import javax.persistence.*;
@@ -50,7 +51,7 @@ import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 @Slf4j
 @Service
 public class AuditLogService implements IAuditLogService {
-    private static final Set<Class<?>> annotationClassList = new HashSet<>(Arrays.asList(Id.class, OneToOne.class, OneToMany.class, ManyToOne.class, ManyToMany.class));
+    private static final Set<Class<?>> annotationClassList = new HashSet<>(Arrays.asList(Id.class, OneToMany.class, ManyToOne.class, ManyToMany.class));
 
     public static Map<String, String> COLUMN_HEADERS_TO_FIELD_NAME = null;
 
@@ -139,7 +140,8 @@ public class AuditLogService implements IAuditLogService {
         } else {
             throw new RunnerException("Not a valid operation performed");
         }
-
+        if(ops.equals(DBOperationType.UPDATE.name()) && (auditLog.getChanges() == null || auditLog.getChanges().size() == 0))
+            return;
         auditLogDao.save(auditLog);
     }
 
@@ -208,6 +210,8 @@ public class AuditLogService implements IAuditLogService {
 
     private Map<String, AuditLogChanges> getChanges(BaseEntity newEntity, BaseEntity prevEntity, String operation) throws JsonProcessingException, IllegalAccessException {
         List<Field> fields = null;
+        if(newEntity == null && prevEntity == null)
+            return new HashMap<>();
         if (operation.equals(DBOperationType.CREATE.name())) {
             fields = getListOfAllFields(newEntity);
         } else {
@@ -230,11 +234,20 @@ public class AuditLogService implements IAuditLogService {
                 } else {
                     newValue = temp;
                 }
-                auditLogChanges = createAuditLogChangesObject(fieldName, newValue, null);
+                if(Arrays.stream(field.getDeclaredAnnotations()).anyMatch(annotation -> annotation.annotationType() == OneToOne.class))
+                {
+                    fieldValueMap.putAll(getChanges((BaseEntity) temp, null, DBOperationType.CREATE.name()));
+                }
+                else if(newValue != null)
+                    auditLogChanges = createAuditLogChangesObject(fieldName, newValue, null);
 
             } else if (operation.equals(DBOperationType.UPDATE.name())) {
                 Object temp = field.get(newEntity);
                 Object prevTemp = field.get(prevEntity);
+                if(Arrays.stream(field.getDeclaredAnnotations()).anyMatch(annotation -> annotation.annotationType() == OneToOne.class))
+                {
+                    fieldValueMap.putAll(getChanges((BaseEntity) temp, (BaseEntity) prevTemp, DBOperationType.UPDATE.name()));
+                }
                 if (field.getType() == LocalDateTime.class && !ObjectUtils.isEmpty(temp)) {
                     newValue = temp.toString();
                 } else {
@@ -267,10 +280,15 @@ public class AuditLogService implements IAuditLogService {
                 } else {
                     prevValue = prevTemp;
                 }
-                auditLogChanges = createAuditLogChangesObject(fieldName, null, prevValue);
+                if(Arrays.stream(field.getDeclaredAnnotations()).anyMatch(annotation -> annotation.annotationType() == OneToOne.class))
+                {
+                    fieldValueMap.putAll(getChanges(null, (BaseEntity) prevTemp, DBOperationType.DELETE.name()));
+                }
+                else if(prevValue != null)
+                    auditLogChanges = createAuditLogChangesObject(fieldName, null, prevValue);
             }
-
-            fieldValueMap.put(fieldName, auditLogChanges);
+            if(auditLogChanges != null)
+                fieldValueMap.put(fieldName, auditLogChanges);
         }
 
         ObjectMapper objectMapper = new ObjectMapper();
