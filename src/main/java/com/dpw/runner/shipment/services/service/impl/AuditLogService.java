@@ -246,7 +246,12 @@ public class AuditLogService implements IAuditLogService {
                 Object prevTemp = field.get(prevEntity);
                 if(Arrays.stream(field.getDeclaredAnnotations()).anyMatch(annotation -> annotation.annotationType() == OneToOne.class))
                 {
-                    fieldValueMap.putAll(getChanges((BaseEntity) temp, (BaseEntity) prevTemp, DBOperationType.UPDATE.name()));
+                    if(temp == null)
+                        fieldValueMap.putAll(getChanges((BaseEntity) temp, (BaseEntity) prevTemp, DBOperationType.DELETE.name()));
+                    else if(prevTemp == null)
+                        fieldValueMap.putAll(getChanges((BaseEntity) temp, (BaseEntity) prevTemp, DBOperationType.CREATE.name()));
+                    else
+                        fieldValueMap.putAll(getChanges((BaseEntity) temp, (BaseEntity) prevTemp, DBOperationType.UPDATE.name()));
                 }
                 if (field.getType() == LocalDateTime.class && !ObjectUtils.isEmpty(temp)) {
                     newValue = temp.toString();

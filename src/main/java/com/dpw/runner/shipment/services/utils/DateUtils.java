@@ -25,7 +25,10 @@ public class DateUtils {
                 && StringUtils.isNotBlank(tenantTZ)) {
             convertedUserDate = RunnerTimeZoneConvertor.convertToUTC(date, tenantTZ);
         } else {
-            convertedUserDate = RunnerTimeZoneConvertor.convertToUTC(date, browserTZ);
+            if(StringUtils.isNotBlank(browserTZ))
+                convertedUserDate = RunnerTimeZoneConvertor.convertToUTC(date, browserTZ);
+            else
+                convertedUserDate = date;
         }
         return convertedUserDate;
     }
@@ -38,7 +41,10 @@ public class DateUtils {
                 && StringUtils.isNotBlank(tenantTZ)) {
             convertedUserDate = RunnerTimeZoneConvertor.convertFromUTC(date, tenantTZ);
         } else {
-            convertedUserDate = RunnerTimeZoneConvertor.convertFromUTC(date, browserTZ);
+            if(StringUtils.isNotBlank(browserTZ))
+                convertedUserDate = RunnerTimeZoneConvertor.convertFromUTC(date, browserTZ);
+            else
+                convertedUserDate = date;
         }
         return convertedUserDate;
     }
