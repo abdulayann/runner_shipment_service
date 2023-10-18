@@ -628,16 +628,18 @@ public class ShipmentService implements IShipmentService {
             List<PartiesRequest> shipmentAddressRequest = request.getShipmentAddresses();
             if (shipmentAddressRequest != null)
                 shipmentDetails.setShipmentAddresses(partiesDao.saveEntityFromOtherEntity(commonUtils.convertToCreateEntityList(shipmentAddressRequest, Parties.class), shipmentId, Constants.SHIPMENT_ADDRESSES));
-           if(updatedContainers.size() > 0) {
-               hblService.checkAllContainerAssigned(shipmentId, updatedContainers, updatedPackings);
-               if(tempConsolIds == null || tempConsolIds.size() == 0) {
-                   createConsolidation(shipmentDetails, updatedContainers);
-               }
-           }
+
             try {
                 shipmentSync.sync(shipmentDetails);
             } catch (Exception e){
                 log.error("Error performing sync on shipment entity, {}", e);
+            }
+
+            if(updatedContainers.size() > 0) {
+                hblService.checkAllContainerAssigned(shipmentId, updatedContainers, updatedPackings);
+                if(tempConsolIds == null || tempConsolIds.size() == 0) {
+                    createConsolidation(shipmentDetails, updatedContainers);
+                }
             }
 //            EventMessage eventMessage = EventMessage.builder().messageType(Constants.SERVICE).entity(Constants.SHIPMENT).request(shipmentDetails).build();
 //            sbUtils.sendMessagesToTopic(isbProperties, azureServiceBusTopic.getTopic(), Arrays.asList(new ServiceBusMessage(jsonHelper.convertToJsonIncludeNulls(eventMessage))));
@@ -1043,6 +1045,10 @@ public class ShipmentService implements IShipmentService {
             consolidationDetails.setLastDischarge(shipmentDetails.getCarrierDetails().getDestination());
             consolidationDetails.setShipmentType(shipmentDetails.getDirection());
             consolidationDetails.setContainerCategory(shipmentDetails.getShipmentType());
+            consolidationDetails.setIsReceivingAgentFreeTextAddress(false);
+            consolidationDetails.setIsSendingAgentFreeTextAddress(false);
+            consolidationDetails.setIsInland(false);
+            consolidationDetails.setSourceTenantId(TenantContext.getCurrentTenant());
             // TODO- which one is CarrierBookingRef
             // TODO- default organizations Row -- setAgentOrganizationAndAddress() function in v1
 //            if(consolidationDetails.getShipmentType() != null && !consolidationDetails.getShipmentType().isEmpty()

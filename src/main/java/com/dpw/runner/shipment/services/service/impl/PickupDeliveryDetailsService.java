@@ -22,6 +22,7 @@ import com.dpw.runner.shipment.services.syncing.Entity.PickupDeliveryDetailsRequ
 import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
@@ -55,6 +56,9 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
 
     @Autowired
     private IShipmentDao shipmentDao;
+
+    @Autowired
+    private ModelMapper modelMapper;
 
     @Transactional
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
@@ -260,7 +264,7 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
                 log.debug("Shipment Details is null for Guid {} with Request Id {}", pickupDeliveryDetailsRequestV2.getShipmentGuid(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
-            PickupDeliveryDetails pickupDeliveryDetails = jsonHelper.convertValue(pickupDeliveryDetailsRequestV2, PickupDeliveryDetails.class);
+            PickupDeliveryDetails pickupDeliveryDetails = modelMapper.map(pickupDeliveryDetailsRequestV2, PickupDeliveryDetails.class);
             ShipmentDetails oldShipment = existingShipment.get();
 
             if(pickupDeliveryDetailsRequestV2.getType().equals(Constants.PICK_UP))
