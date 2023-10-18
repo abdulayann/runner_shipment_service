@@ -17,6 +17,6 @@ import javax.persistence.Table;
 @Builder
 @Accessors(chain = true)
 public class OrderNumber extends MultiTenancy {
-    @Column(name = "order_no")
+    @Column(name = "order_number")
     private Long orderNumber;
 }
