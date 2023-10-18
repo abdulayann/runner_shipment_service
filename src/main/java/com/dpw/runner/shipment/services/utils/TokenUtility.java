@@ -16,6 +16,8 @@ import java.text.ParseException;
 public class TokenUtility {
     private static final String BEARER = "Bearer";
     public static final String NAME_FIELD = "nameid";
+    public static final String USER_ID_FIELD = "userId";
+    public static final String BRANCH_ID_FIELD = "branchId";
 
     public String getUserNameFromToken(String token, HttpServletResponse res) throws ParseException, BadJWTException {
         String[] tokenSplits = token.split(" ");
@@ -32,4 +34,15 @@ public class TokenUtility {
         defaultJWTClaimsVerifier.verify(claimsSet,null);
     }
 
+    public String getUserIdAndBranchId(String token) {
+        try {
+            JWT parse = JWTParser.parse(token);
+            JWTClaimsSet claimsSet = parse.getJWTClaimsSet();
+            validateValidity(claimsSet);
+            return claimsSet.getClaim(USER_ID_FIELD) + "*" + claimsSet.getClaim(BRANCH_ID_FIELD);
+        } catch (Exception ex) {
+            log.error("Error occurred during decrypting token: {} || Exception message: {}", token, ex.getMessage());
+        }
+        return null;
+    }
 }
