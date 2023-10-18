@@ -25,9 +25,9 @@ public class UsersDto {
     public String TenantDisplayName;
 //    public String Code;
 //    public String TenantLogo;
-//    public String TenantPrintLogo;
+    public String TenantPrintLogo;
 //    public String TenantCountryCode;
-//    public String HouseBillLogo;
+    public String HouseBillLogo;
 //    public Integer CompanyId;
     public String CompanyCurrency;
 //    public Boolean AddhocCharges;
