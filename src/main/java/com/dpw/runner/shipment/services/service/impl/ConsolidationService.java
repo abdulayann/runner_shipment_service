@@ -28,6 +28,7 @@ import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
@@ -132,6 +133,9 @@ public class ConsolidationService implements IConsolidationService {
     @Autowired
     private IShipmentsContainersMappingDao shipmentsContainersMappingDao;
 
+    @Autowired
+    private ModelMapper modelMapper;
+
     private List<String> TRANSPORT_MODES = Arrays.asList("SEA", "ROAD", "RAIL", "AIR");
     private List<String> SHIPMENT_TYPE = Arrays.asList("FCL", "LCL");
     private List<String> WEIGHT_UNIT = Arrays.asList("KGS", "G", "DT");
@@ -221,14 +225,14 @@ public class ConsolidationService implements IConsolidationService {
     private List<IRunnerResponse> convertEntityListToDtoList(List<ConsolidationDetails> lst) {
         List<IRunnerResponse> responseList = new ArrayList<>();
         lst.forEach(consolidationDetails -> {
-            var res = (jsonHelper.convertValue(consolidationDetails, ConsolidationDetailsResponse.class));
+            var res = (modelMapper.map(consolidationDetails, ConsolidationListResponse.class));
             updateHouseBillsShippingIds(consolidationDetails, res);
             responseList.add(res);
         });
         return responseList;
     }
 
-    private void updateHouseBillsShippingIds(ConsolidationDetails consol, ConsolidationDetailsResponse consolidationRes) {
+    private void updateHouseBillsShippingIds(ConsolidationDetails consol, ConsolidationListResponse consolidationRes) {
         var shipments = consol.getShipmentsList();
         List<String> shipmentIds = null;
         List<String> houseBills = null;
@@ -339,6 +343,10 @@ public class ConsolidationService implements IConsolidationService {
             List<RoutingsRequest> routingsRequest = request.getRoutingsList();
             if (routingsRequest != null)
                 createRoutingsAsync(consolidationDetails, routingsRequest);
+
+            List<PartiesRequest> consolidationAddressRequest = request.getConsolidationAddresses();
+            if (consolidationAddressRequest != null)
+                createPartiesAsync(consolidationDetails, consolidationAddressRequest);
 
             try {
                 Optional<ConsolidationDetails> consol = consolidationDetailsDao.findById(consolidationDetails.getId());
@@ -460,7 +468,7 @@ public class ConsolidationService implements IConsolidationService {
     @Transactional
     public void createParties(ConsolidationDetails consolidationDetails, PartiesRequest partiesRequest) {
         partiesRequest.setEntityId(consolidationDetails.getId());
-        partiesRequest.setEntityType(Constants.CONSOLIDATION);
+        partiesRequest.setEntityType(Constants.CONSOLIDATION_ADDRESSES);
         packingDao.save(jsonHelper.convertValue(partiesRequest, Packing.class));
     }
 
@@ -603,7 +611,7 @@ public class ConsolidationService implements IConsolidationService {
         List<JobRequest> jobRequestList = consolidationDetailsRequest.getJobsList();
         List<ReferenceNumbersRequest> referenceNumbersRequestList = consolidationDetailsRequest.getReferenceNumbersList();
         List<RoutingsRequest> routingsRequestList = consolidationDetailsRequest.getRoutingsList();
-
+        List<PartiesRequest> consolidationAddressRequest = consolidationDetailsRequest.getConsolidationAddresses();
         // TODO- implement Validation logic
         long id = consolidationDetailsRequest.getId();
         Optional<ConsolidationDetails> oldEntity = consolidationDetailsDao.findById(id);
@@ -663,7 +671,10 @@ public class ConsolidationService implements IConsolidationService {
                 List<Routings> updatedRoutings = routingsDao.updateEntityFromConsole(convertToEntityList(routingsRequestList, Routings.class), id);
                 response.setRoutingsList(convertToDtoList(updatedRoutings, RoutingsResponse.class));
             }
-            updateHouseBillsShippingIds(entity, response);
+            if (consolidationAddressRequest != null) {
+                List<Parties> updatedFileRepos = partiesDao.updateEntityFromOtherEntity(convertToEntityList(consolidationAddressRequest, Parties.class), id, Constants.CONSOLIDATION_ADDRESSES);
+                response.setConsolidationAddresses(convertToDtoList(updatedFileRepos, PartiesResponse.class));
+            }
             try {
                 consolidationSync.sync(jsonHelper.convertValue(response, ConsolidationDetailsRequest.class));
             } catch (Exception e){
@@ -1021,7 +1032,6 @@ public class ConsolidationService implements IConsolidationService {
             }
             log.info("Consolidation details fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
             ConsolidationDetailsResponse response = jsonHelper.convertValue(consolidationDetails.get(), ConsolidationDetailsResponse.class);
-            updateHouseBillsShippingIds(consolidationDetails.get(), response);
             return ResponseHelper.buildSuccessResponse(response);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()

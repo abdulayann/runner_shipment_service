@@ -14,7 +14,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
-public class ConsolidationDetailsResponse implements IRunnerResponse {
+public class ConsolidationListResponse implements IRunnerResponse {
     private Long id;
     private UUID guid;
     private String consolidationNumber;
@@ -101,17 +101,8 @@ public class ConsolidationDetailsResponse implements IRunnerResponse {
     private PartiesResponse borrowedFrom;
     private PartiesResponse creditor;
     private PartiesResponse coLoadWith;
-    private List<PackingResponse> packingList;
-    private List<ReferenceNumbersResponse> referenceNumbersList;
-    private List<RoutingsResponse> routingsList;
-    private List<ContainerResponse> containersList;
-    private List<TruckDriverDetailsResponse> truckDriverDetails;
-    private List<JobResponse> jobsList;
-    private List<EventsResponse> eventsList;
-    private List<FileRepoResponse> fileRepoList;
     private String createdBy;
     private List<String> houseBills;
     private List<String> shipmentIds;
     private String bookingId;
-    private List<PartiesResponse> consolidationAddresses;
 }
