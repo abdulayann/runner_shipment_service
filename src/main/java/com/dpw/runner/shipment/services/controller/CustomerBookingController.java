@@ -14,6 +14,7 @@ import com.dpw.runner.shipment.services.dto.request.crp.CRPListRequest;
 import com.dpw.runner.shipment.services.dto.request.crp.CRPRetrieveRequest;
 import com.dpw.runner.shipment.services.dto.response.CustomerBookingResponse;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.ICustomerBookingService;
 import io.swagger.annotations.ApiParam;
@@ -134,8 +135,13 @@ public class CustomerBookingController {
     @GetMapping(ApiConstants.API_RETRIEVE_BY_ID)
     @PreAuthorize("hasAuthority('" + Permissions.customerBookingView + "')")
     public ResponseEntity<RunnerResponse<CustomerBookingResponse>> retrieveById(@ApiParam(value = CustomerBookingConstants.BOOKING_ID, required = true) @RequestParam Long id) {
+        double _start = System.currentTimeMillis();
         CommonGetRequest request = CommonGetRequest.builder().id(id).build();
-        return (ResponseEntity<RunnerResponse<CustomerBookingResponse>>) customerBookingService.retrieveById(CommonRequestModel.buildRequest(request));
+        ResponseEntity<RunnerResponse<CustomerBookingResponse>> response = (ResponseEntity<RunnerResponse<CustomerBookingResponse>>) customerBookingService.retrieveById(CommonRequestModel.buildRequest(request));
+        double _timeTaken = System.currentTimeMillis() - _start;
+        if (_timeTaken > 700)
+            log.info("Time taken by API_RETRIEVE_BY_ID : {} ms. || RequestId: {}", _timeTaken, LoggerHelper.getRequestIdFromMDC());
+        return response;
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = CustomerBookingConstants.UPDATE_SUCCESSFUL, response = RunnerResponse.class)})

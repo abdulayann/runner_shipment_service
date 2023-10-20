@@ -66,6 +66,7 @@ import static com.dpw.runner.shipment.services.utils.CommonUtils.convertToEntity
 @Service
 @Slf4j
 public class CustomerBookingService implements ICustomerBookingService {
+    static ExecutorService executorService = Executors.newFixedThreadPool(10);
     @Autowired
     private ModelMapper modelMapper;
 
@@ -413,6 +414,7 @@ public class CustomerBookingService implements ICustomerBookingService {
     public ResponseEntity<?> retrieveById(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
+            double _start = System.currentTimeMillis();
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
             if (request == null) {
                 log.error("Request is empty for Booking retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
@@ -427,6 +429,7 @@ public class CustomerBookingService implements ICustomerBookingService {
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
             log.info("Booking details fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
+            log.info("Time taken to fetch details from db: {} Request Id {}", System.currentTimeMillis() - _start, LoggerHelper.getRequestIdFromMDC());
             CustomerBookingResponse customerBookingResponse = jsonHelper.convertValue(customerBooking.get(), CustomerBookingResponse.class);
             createCustomerBookingResponse(customerBooking.get(), customerBookingResponse);
             return ResponseHelper.buildSuccessResponse(customerBookingResponse);
@@ -1080,7 +1083,6 @@ public class CustomerBookingService implements ICustomerBookingService {
      * @param customerBookingResponse
      */
     private void createCustomerBookingResponse(CustomerBooking customerBooking, CustomerBookingResponse customerBookingResponse) {
-        ExecutorService executorService = Executors.newFixedThreadPool(10);
         try {
             double _start = System.currentTimeMillis();
             var masterListFuture = CompletableFuture.runAsync(() -> this.addAllMasterDataInSingleCall(customerBooking, customerBookingResponse), executorService);
@@ -1090,11 +1092,12 @@ public class CustomerBookingService implements ICustomerBookingService {
             var containerTypeFuture = CompletableFuture.runAsync(() -> this.addAllContainerTypesInSingleCall(customerBooking, customerBookingResponse), executorService);
             var chargeTypeFuture = CompletableFuture.runAsync(() -> this.addAllChargeTypesInSingleCall(customerBooking, customerBookingResponse), executorService);
             CompletableFuture.allOf(masterListFuture, unLocationsFuture, vesselsFuture, carrierFuture, containerTypeFuture, chargeTypeFuture).join();
-            log.info("Time taken to fetch Master-data from V1: {} ms.", (System.currentTimeMillis() - _start));
+            double _timeTaken = System.currentTimeMillis() - _start;
+            log.info("Time taken to fetch Master-data from V1: {} ms.", _timeTaken);
+            if (_timeTaken > 300)
+                log.info("More time taken to fetch Master-data from V1: Actual time taken {} ms.", _timeTaken);
         } catch (Exception ex) {
             log.error("Exception during fetching master data in retrieve API for booking number: {} with exception: {}", customerBooking.getBookingNumber(), ex.getMessage());
-        } finally {
-            executorService.shutdown();
         }
     }
 
