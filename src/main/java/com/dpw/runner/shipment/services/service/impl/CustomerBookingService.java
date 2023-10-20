@@ -437,7 +437,7 @@ public class CustomerBookingService implements ICustomerBookingService {
             CustomerBookingResponse customerBookingResponse = jsonHelper.convertValue(customerBooking.get(), CustomerBookingResponse.class);
             double _next = System.currentTimeMillis();
             log.info("Time taken to fetch details from db: {} Request Id {}", _next - current, LoggerHelper.getRequestIdFromMDC());
-            if (_next - current > 300)
+            if (_next - current > 200)
                 log.info(" RequestId: {} || {} for event: {} Actual time taken: {} ms",LoggerHelper.getRequestIdFromMDC(), LoggerEvent.MORE_TIME_TAKEN, LoggerEvent.BOOKING_FETCH_JSON_CONVERTER, _next - current);
             createCustomerBookingResponse(customerBooking.get(), customerBookingResponse);
             return ResponseHelper.buildSuccessResponse(customerBookingResponse);
