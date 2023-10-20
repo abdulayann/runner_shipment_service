@@ -13,6 +13,7 @@ import com.dpw.runner.shipment.services.dto.request.platformBooking.PlatformToRu
 import com.dpw.runner.shipment.services.dto.request.crp.CRPListRequest;
 import com.dpw.runner.shipment.services.dto.request.crp.CRPRetrieveRequest;
 import com.dpw.runner.shipment.services.dto.response.CustomerBookingResponse;
+import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
@@ -139,8 +140,8 @@ public class CustomerBookingController {
         CommonGetRequest request = CommonGetRequest.builder().id(id).build();
         ResponseEntity<RunnerResponse<CustomerBookingResponse>> response = (ResponseEntity<RunnerResponse<CustomerBookingResponse>>) customerBookingService.retrieveById(CommonRequestModel.buildRequest(request));
         double _timeTaken = System.currentTimeMillis() - _start;
-        if (_timeTaken > 700)
-            log.info("Time taken by API_RETRIEVE_BY_ID : {} ms. || RequestId: {}", _timeTaken, LoggerHelper.getRequestIdFromMDC());
+        if (_timeTaken > 500)
+            log.info(" RequestId: {} || {} for event: {} Actual time taken: {} ms",LoggerHelper.getRequestIdFromMDC(), LoggerEvent.MORE_TIME_TAKEN, LoggerEvent.BOOKING_RETRIEVAL, _timeTaken);
         return response;
     }
 

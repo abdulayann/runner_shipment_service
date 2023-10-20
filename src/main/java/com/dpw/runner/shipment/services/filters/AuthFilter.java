@@ -7,6 +7,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.RequestAuthCo
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.aspects.PermissionsValidationAspect.PermissionsContext;
+import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.service.impl.GetUserServiceFactory;
 import com.dpw.runner.shipment.services.service.interfaces.IUserService;
@@ -90,6 +91,7 @@ public class AuthFilter extends OncePerRequestFilter {
             res.setStatus(HttpStatus.UNAUTHORIZED.value());
             return;
         }
+        log.info("Time taken to retrieve user definition: {} for request: {}", System.currentTimeMillis() - time, LoggerHelper.getRequestIdFromMDC());
 
         if (user == null) {
             String errormessage = "Auth failed:- User is not onboarded on shipment service";
@@ -118,7 +120,10 @@ public class AuthFilter extends OncePerRequestFilter {
         PermissionsContext.setPermissions(grantedPermissions);
         SecurityContextHolder.getContext().setAuthentication(usernamePasswordAuthenticationToken);
         filterChain.doFilter(servletRequest, servletResponse);
-            log.info(String.format("Request Finished , Total Time in milis:- %s", (System.currentTimeMillis() - time)));
+        double _timeTaken = System.currentTimeMillis() - time;
+        log.info(String.format("Request Finished , Total Time in milis:- %s | Request ID: %s", (_timeTaken), LoggerHelper.getRequestIdFromMDC()));
+        if (_timeTaken > 500)
+            log.info(" RequestId: {} || {} for event: {} Actual time taken: {} ms",LoggerHelper.getRequestIdFromMDC(), LoggerEvent.MORE_TIME_TAKEN, LoggerEvent.COMPLETE_API_TIME, _timeTaken);
         }finally {
             MDC.remove(LoggingConstants.REQUEST_ID);
             TenantContext.removeTenant();
