@@ -1,0 +1,123 @@
+package com.dpw.runner.shipment.services.document.config;
+
+import com.dpw.runner.shipment.services.document.request.documentmanager.DocumentManagerBulkDownloadRequest;
+import com.dpw.runner.shipment.services.document.request.documentmanager.DocumentManagerFileAndRulesRequest;
+import com.dpw.runner.shipment.services.document.request.documentmanager.DocumentManagerSaveFileRequest;
+import com.dpw.runner.shipment.services.document.request.documentmanager.DocumentManagerTempFileUploadRequest;
+import com.dpw.runner.shipment.services.document.response.DocumentManagerBulkDownloadResponse;
+import com.dpw.runner.shipment.services.document.response.DocumentManagerDataResponse;
+import com.dpw.runner.shipment.services.document.response.DocumentManagerResponse;
+import org.jetbrains.annotations.NotNull;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.*;
+import org.springframework.stereotype.Component;
+import org.springframework.web.client.RestTemplate;
+
+@Component
+public class DocumentManagerRestClient {
+
+    @Value("${document-manager.baseUrl}")
+    private String baseUrl;
+
+
+    @Autowired
+    private RestTemplate restTemplate;
+
+    public DocumentManagerResponse<DocumentManagerDataResponse> getFileAndRules(String token, DocumentManagerFileAndRulesRequest fileAndRulesRequest) {
+        HttpHeaders headers = getHttpHeaders(token);
+
+        HttpEntity<DocumentManagerFileAndRulesRequest> requestEntity = new HttpEntity<>(fileAndRulesRequest, headers);
+
+        String url = baseUrl + "/document-rules/FilesNRules";
+
+        ResponseEntity<DocumentManagerResponse<DocumentManagerDataResponse>> responseEntity = restTemplate.exchange(
+                url,
+                HttpMethod.POST,
+                requestEntity,
+                new ParameterizedTypeReference<>() {
+                }
+        );
+
+        return responseEntity.getBody();
+    }
+
+    @NotNull
+    private HttpHeaders getHttpHeaders(String token) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.set("Authorization", token);
+        return headers;
+    }
+
+    public DocumentManagerResponse<DocumentManagerDataResponse> temporaryFileUpload(String token, DocumentManagerTempFileUploadRequest request) {
+        HttpHeaders headers = getHttpHeaders(token);
+
+        HttpEntity<DocumentManagerTempFileUploadRequest> requestEntity = new HttpEntity<>(request, headers);
+
+        String url = baseUrl + "/files-management/v2/addTemporaryFile";
+
+        ResponseEntity<DocumentManagerResponse<DocumentManagerDataResponse>> responseEntity = restTemplate.exchange(
+                url,
+                HttpMethod.POST,
+                requestEntity,
+                new ParameterizedTypeReference<>() {
+                }
+        );
+
+        return responseEntity.getBody();
+    }
+
+    public DocumentManagerResponse<DocumentManagerDataResponse> saveFile(String token, DocumentManagerSaveFileRequest request) {
+        HttpHeaders headers = getHttpHeaders(token);
+
+        HttpEntity<DocumentManagerSaveFileRequest> requestEntity = new HttpEntity<>(request, headers);
+
+        String url = baseUrl + "/files-management/v2/saveFile";
+
+        ResponseEntity<DocumentManagerResponse<DocumentManagerDataResponse>> responseEntity = restTemplate.exchange(
+                url,
+                HttpMethod.POST,
+                requestEntity,
+                new ParameterizedTypeReference<>() {
+                }
+        );
+
+        return responseEntity.getBody();
+    }
+
+    public DocumentManagerResponse<DocumentManagerDataResponse> getFileById(String token, Long id) {
+        HttpHeaders headers = getHttpHeaders(token);
+
+        String url = baseUrl + "/files-management?id=" + id;
+
+        ResponseEntity<DocumentManagerResponse<DocumentManagerDataResponse>> responseEntity = restTemplate.exchange(
+                url,
+                HttpMethod.GET,
+                new HttpEntity<>(headers),
+                new ParameterizedTypeReference<>() {
+                }
+        );
+
+        return responseEntity.getBody();
+    }
+
+    public DocumentManagerResponse<DocumentManagerBulkDownloadResponse> getBulkDownloadLink(String token, DocumentManagerBulkDownloadRequest request) {
+        HttpHeaders headers = getHttpHeaders(token);
+
+        HttpEntity<DocumentManagerBulkDownloadRequest> requestEntity = new HttpEntity<>(request, headers);
+
+        String url = baseUrl + "/files-management/bulk-download";
+
+        ResponseEntity<DocumentManagerResponse<DocumentManagerBulkDownloadResponse>> responseEntity = restTemplate.exchange(
+                url,
+                HttpMethod.POST,
+                requestEntity,
+                new ParameterizedTypeReference<>() {
+                }
+        );
+
+        return responseEntity.getBody();
+    }
+}
