@@ -429,7 +429,7 @@ public class ReportService implements IReportService {
             {
                 shipmentDetails.getAdditionalDetails().setDateOfIssue(LocalDate.now().atStartOfDay());
             }
-            shipmentDao.update(shipmentDetails);
+            shipmentDao.update(shipmentDetails, false);
 
             if (pdfByteContent != null)
             {

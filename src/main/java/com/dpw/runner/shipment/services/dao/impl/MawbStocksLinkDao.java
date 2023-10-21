@@ -11,6 +11,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
+
 @Repository
 @Slf4j
 public class MawbStocksLinkDao implements IMawbStocksLinkDao {
@@ -25,6 +27,11 @@ public class MawbStocksLinkDao implements IMawbStocksLinkDao {
     @Override
     public Page<MawbStocksLink> findAll(Specification<MawbStocksLink> spec, Pageable pageable) {
         return mawbStocksLinkRepository.findAll(spec, pageable);
+    }
+
+    @Override
+    public List<MawbStocksLink> findByMawbNumber(String mawbNumber) {
+        return mawbStocksLinkRepository.findByMawbNumber(mawbNumber);
     }
 
 }
