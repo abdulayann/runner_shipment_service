@@ -123,7 +123,7 @@ public class AuthFilter extends OncePerRequestFilter {
         double _timeTaken = System.currentTimeMillis() - time;
         log.info(String.format("Request Finished , Total Time in milis:- %s | Request ID: %s", (_timeTaken), LoggerHelper.getRequestIdFromMDC()));
         if (_timeTaken > 500)
-            log.info(" RequestId: {} || {} for event: {} Actual time taken: {} ms",LoggerHelper.getRequestIdFromMDC(), LoggerEvent.MORE_TIME_TAKEN, LoggerEvent.COMPLETE_API_TIME, _timeTaken);
+            log.info(" RequestId: {} || {} for event: {} Actual time taken: {} ms for API :{}",LoggerHelper.getRequestIdFromMDC(), LoggerEvent.MORE_TIME_TAKEN, LoggerEvent.COMPLETE_API_TIME, _timeTaken, servletRequest.getRequestURI());
         }finally {
             MDC.remove(LoggingConstants.REQUEST_ID);
             TenantContext.removeTenant();
