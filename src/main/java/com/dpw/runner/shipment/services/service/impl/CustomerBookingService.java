@@ -1093,12 +1093,12 @@ public class CustomerBookingService implements ICustomerBookingService {
     private void createCustomerBookingResponse(CustomerBooking customerBooking, CustomerBookingResponse customerBookingResponse) {
         try {
             double _start = System.currentTimeMillis();
-            var masterListFuture = CompletableFuture.runAsync(() -> this.addAllMasterDataInSingleCall(customerBooking, customerBookingResponse), executorService);
-            var unLocationsFuture = CompletableFuture.runAsync(() -> this.addAllLocationDataInSingleCall(customerBooking, customerBookingResponse), executorService);
-            var vesselsFuture = CompletableFuture.runAsync(() -> this.addAllVesselDataInSingleCall(customerBooking, customerBookingResponse), executorService);
-            var carrierFuture = CompletableFuture.runAsync(() -> this.addAllCarrierDataInSingleCall(customerBooking, customerBookingResponse), executorService);
-            var containerTypeFuture = CompletableFuture.runAsync(() -> this.addAllContainerTypesInSingleCall(customerBooking, customerBookingResponse), executorService);
-            var chargeTypeFuture = CompletableFuture.runAsync(() -> this.addAllChargeTypesInSingleCall(customerBooking, customerBookingResponse), executorService);
+            var masterListFuture = CompletableFuture.runAsync(withMdc(() -> this.addAllMasterDataInSingleCall(customerBooking, customerBookingResponse)), executorService);
+            var unLocationsFuture = CompletableFuture.runAsync(withMdc(() -> this.addAllLocationDataInSingleCall(customerBooking, customerBookingResponse)), executorService);
+            var vesselsFuture = CompletableFuture.runAsync(withMdc(() -> this.addAllVesselDataInSingleCall(customerBooking, customerBookingResponse)), executorService);
+            var carrierFuture = CompletableFuture.runAsync(withMdc(() -> this.addAllCarrierDataInSingleCall(customerBooking, customerBookingResponse)), executorService);
+            var containerTypeFuture = CompletableFuture.runAsync(withMdc(() -> this.addAllContainerTypesInSingleCall(customerBooking, customerBookingResponse)), executorService);
+            var chargeTypeFuture = CompletableFuture.runAsync(withMdc(() -> this.addAllChargeTypesInSingleCall(customerBooking, customerBookingResponse)), executorService);
             CompletableFuture.allOf(masterListFuture, unLocationsFuture, vesselsFuture, carrierFuture, containerTypeFuture, chargeTypeFuture).join();
             double _timeTaken = System.currentTimeMillis() - _start;
             log.info("Time taken to fetch Master-data from V1: {} ms. || RequestId: {}", _timeTaken, LoggerHelper.getRequestIdFromMDC());
@@ -1107,6 +1107,15 @@ public class CustomerBookingService implements ICustomerBookingService {
         } catch (Exception ex) {
             log.error("Exception during fetching master data in retrieve API for booking number: {} with exception: {}", customerBooking.getBookingNumber(), ex.getMessage());
         }
+    }
+    public Runnable withMdc(Runnable runnable) {
+        Map<String, String> mdc = MDC.getCopyOfContextMap();
+        String token = RequestAuthContext.getAuthToken();
+        return () -> {
+            MDC.setContextMap(mdc);
+            RequestAuthContext.setAuthToken(token);
+            runnable.run();
+        };
     }
 
     private void populateTotalRevenueDetails(CustomerBooking customerBooking, CustomerBookingRequest request) {
