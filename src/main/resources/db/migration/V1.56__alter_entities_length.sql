@@ -224,7 +224,6 @@ ALTER TABLE shipment_details
     ALTER COLUMN shipment_type TYPE VARCHAR(3),
     ALTER COLUMN master_bill TYPE VARCHAR(50),
     ALTER COLUMN additional_terms TYPE VARCHAR(2048),
-    ALTER TABLE shipment_details
     ALTER COLUMN shipment_id TYPE VARCHAR(50),
     ALTER COLUMN volume_unit TYPE VARCHAR(10),
     ALTER COLUMN entry_detail TYPE VARCHAR(3),

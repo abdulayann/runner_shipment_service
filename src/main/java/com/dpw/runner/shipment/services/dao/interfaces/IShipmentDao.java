@@ -11,13 +11,14 @@ import java.util.Optional;
 import java.util.UUID;
 
 public interface IShipmentDao {
-    ShipmentDetails save(ShipmentDetails shipmentDetails);
-    ShipmentDetails update(ShipmentDetails shipmentDetails);
+    ShipmentDetails save(ShipmentDetails shipmentDetails, boolean fromV1Sync);
+    ShipmentDetails update(ShipmentDetails shipmentDetails, boolean fromV1Sync);
     Page<ShipmentDetails> findAll(Specification<ShipmentDetails> spec, Pageable pageable);
     Optional<ShipmentDetails> findById(Long id);
     void delete(ShipmentDetails shipmentDetails);
     List<ShipmentDetails> saveAll(List<ShipmentDetails> shipments);
     Optional<ShipmentDetails> findByGuid(UUID id);
     Optional<ShipmentDetails> findByHouseBill(String Hbl);
+    List<ShipmentDetails> findByBookingReference(String Hbl);
     void updateDateAndStatus(long id, LocalDateTime date, Integer status);
 }

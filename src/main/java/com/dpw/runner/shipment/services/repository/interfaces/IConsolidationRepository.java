@@ -25,4 +25,5 @@ public interface IConsolidationRepository extends MultiTenancyRepository<Consoli
         return findOne(spec);
     }
     Optional<ConsolidationDetails> findByBol (String bol);
+    List<ConsolidationDetails> findByReferenceNumber(String ref);
 }
