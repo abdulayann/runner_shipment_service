@@ -53,7 +53,7 @@ public class UserServiceV1 implements IUserService {
         /** Create/Update data in memory cache **/
         if (!Objects.isNull(key)) {
             log.info("User Details Set in memory Cache for user key: {}", key);
-            responseEntity.getBody().setValidity(System.currentTimeMillis() + (30 * 60 * 1000));
+            responseEntity.getBody().setValidity(System.currentTimeMillis() + (15 * 60 * 1000));
             userDefinition.put(key, responseEntity.getBody());
         }
 //        TODO - Scheduled invalidating the memory
