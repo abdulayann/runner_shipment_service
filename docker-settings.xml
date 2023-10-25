@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0 http://maven.apache.org/xsd/settings-1.0.0.xsd">
+  <servers>
+    <server>
+      <id>runner-artifactory</id>
+      <username>dpwhotfsonline</username>
+      <password>wn34sxbcx2daojbfvklexupfe4qcu3qap3pxz4uqjj4kiwkgg24a</password>
+    </server>
+  </servers>
+</settings>

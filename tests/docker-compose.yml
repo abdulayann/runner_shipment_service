@@ -1,0 +1,44 @@
+version: '3'
+services:
+  db:
+    image: 'postgres:10-alpine'
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: shipment_service
+      POSTGRES_HOST: db
+    ports:
+      - '5556:5432'
+    volumes:
+      - ./db/seeders/0_SeedingData.sql:/docker-entrypoint-initdb.d/0_SeedingData.sql
+
+
+
+
+  # mock:
+  #   build:
+  #     context: mock/
+  #   ports:
+  #     - '5558:5433'
+
+
+  shipmentServiceApp:
+    depends_on:
+      - db
+    build: 
+      context: ..
+      dockerfile: Dockerfile-qa
+    image: test/runner-ss:latest
+    restart: always
+    # environment:
+      # MSSQL_USER: SA
+      # MSSQL_PASSWORD: Password1234
+      # MSSQL_DB: master
+      # MSSQL_PORT: 1433
+      # MSSQL_HOST: sql-server-db
+      # AUTH_URL: http://mock:5558
+    ports:
+      - "8087:8080"
+    volumes:
+      - "../coverage:/coverage"

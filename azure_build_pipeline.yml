@@ -33,6 +33,12 @@ steps:
       Contents: '$(System.DefaultWorkingDirectory)/Devops_Scripts/**'
       TargetFolder: $(Build.ArtifactStagingDirectory)/
 
+  - script: npm i --force
+    displayName: Install Dependencies
+
+  - script: docker build -t test/runner-ss:latestcl -f Dockerfile-qa .
+    displayName: Build Runner CMS Service
+
   - task: PublishBuildArtifacts@1
     displayName: 'Publish Artifacts'
     inputs:

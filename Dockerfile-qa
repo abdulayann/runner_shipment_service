@@ -1,0 +1,23 @@
+FROM maven:3.8.1-openjdk-17-slim AS build
+COPY . /home/app/src
+# RUN mvn -s /home/app/src/docker-settings.xml -f /home/app/src/pom.xml clean package
+
+FROM openjdk:17-ea-slim-buster
+COPY target/runner-shipment-services-0.0.1.jar /usr/local/lib/runner-shipment-services-0.0.1.jar
+# RUN mkdir -p /usr/local/newrelic
+
+COPY --from=build /home/app/src/**/target /usr/local/lib/target/
+
+COPY coverage.sh .
+
+RUN apt-get update 
+RUN apt-get install -y bash
+
+RUN chmod +x ./coverage.sh
+
+RUN apt-get install -y unzip
+RUN apt-get install -y curl
+
+EXPOSE 8087
+
+ENTRYPOINT ["bash","./coverage.sh"]
