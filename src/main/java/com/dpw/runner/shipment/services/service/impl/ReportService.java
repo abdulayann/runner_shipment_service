@@ -15,6 +15,9 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.impl.ShipmentSettingsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
+import com.dpw.runner.shipment.services.document.request.documentmanager.DocumentManagerSaveFileRequest;
+import com.dpw.runner.shipment.services.document.service.IDocumentManagerService;
+import com.dpw.runner.shipment.services.document.util.BASE64DecodedMultipartFile;
 import com.dpw.runner.shipment.services.dto.request.CustomAutoEventRequest;
 import com.dpw.runner.shipment.services.dto.request.ReportRequest;
 import com.dpw.runner.shipment.services.dto.request.UploadDocumentRequest;
@@ -34,6 +37,7 @@ import com.itextpdf.text.pdf.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -81,6 +85,9 @@ public class ReportService implements IReportService {
 
     @Autowired
     private IFileRepoService fileRepoService;
+
+    @Autowired
+    private IDocumentManagerService documentManagerService;
 
     @Override
     public byte[] getDocumentData(CommonRequestModel request) throws DocumentException, IOException {
@@ -429,7 +436,7 @@ public class ReportService implements IReportService {
             {
                 shipmentDetails.getAdditionalDetails().setDateOfIssue(LocalDate.now().atStartOfDay());
             }
-            shipmentDao.update(shipmentDetails);
+            shipmentDao.update(shipmentDetails, false);
 
             if (pdfByteContent != null)
             {
@@ -1048,7 +1055,7 @@ public class ReportService implements IReportService {
         CommonUtils.andCriteria("entityId", uploadRequest.getId(), "=", listCommonRequest);
         CommonUtils.andCriteria("fileName", filename, "=", listCommonRequest);
         List<FileRepo> fileRepos = fileRepoDao.findByList(listCommonRequest);
-        if(fileRepos != null && fileRepos.size() >0) {
+        if (fileRepos != null && fileRepos.size() > 0) {
             return;
         }
 
@@ -1058,13 +1065,28 @@ public class ReportService implements IReportService {
         uploadDocumentRequest.setEntityType(uploadRequest.getEntityType());
         uploadDocumentRequest.setFileResource(CommonUtils.getByteResource(new ByteArrayInputStream(document), filename));
 
+        MultipartFile file = new BASE64DecodedMultipartFile(document);
+        var uploadResponse = documentManagerService.temporaryFileUpload(file);
+        if (!uploadResponse.getSuccess())
+            throw new IOException("File Upload Failed");
+        var saveResponse = documentManagerService.saveFile(DocumentManagerSaveFileRequest.builder().fileName(filename)
+                .entityType(uploadRequest.getEntityType())
+                .secureDownloadLink(uploadResponse.getData().getSecureDownloadLink())
+                .fileSize(uploadResponse.getData().getFileSize())
+                .fileType(uploadResponse.getData().getFileType())
+                .path(uploadResponse.getData().getPath())
+                .build());
+
+        if (!saveResponse.getSuccess())
+            throw new IOException("File Save Failed");
+
         Optional<ShipmentDetails> shipmentsRow = shipmentDao.findById(uploadRequest.getId());
         ShipmentDetails shipmentDetails = null;
-        if(shipmentsRow.isPresent()) {
+        if (shipmentsRow.isPresent()) {
             shipmentDetails = shipmentsRow.get();
         }
 
-        if(shipmentDetails.getAdditionalDetails().getOriginal() >= 1) {
+        if (shipmentDetails.getAdditionalDetails().getOriginal() >= 1) {
             createAutoEvent(uploadRequest.getReportId(), EventConstants.GENERATE_BL_EVENT_EXCLUSIVE_OF_DRAFT, shipmentSettingsDetails);
         }
     }

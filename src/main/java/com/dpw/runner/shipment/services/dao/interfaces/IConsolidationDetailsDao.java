@@ -11,8 +11,8 @@ import java.util.Optional;
 import java.util.UUID;
 
 public interface IConsolidationDetailsDao {
-    ConsolidationDetails save(ConsolidationDetails consolidationDetails);
-    ConsolidationDetails update(ConsolidationDetails consolidationDetails);
+    ConsolidationDetails save(ConsolidationDetails consolidationDetails, boolean fromV1Sync);
+    ConsolidationDetails update(ConsolidationDetails consolidationDetails, boolean fromV1Sync);
     Page<ConsolidationDetails> findAll(Specification<ConsolidationDetails> spec, Pageable pageable);
     Optional<ConsolidationDetails> findById(Long id);
     void delete(ConsolidationDetails consolidationDetails);
@@ -20,4 +20,5 @@ public interface IConsolidationDetailsDao {
     Optional<ShipmentDetails> findShipmentById(Long shipmentId);
     Optional<ConsolidationDetails> findByGuid (UUID guid);
     Optional<ConsolidationDetails> findByBol (String bol);
+    List<ConsolidationDetails> findByReferenceNumber(String ref);
 }

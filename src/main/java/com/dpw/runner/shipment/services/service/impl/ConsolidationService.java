@@ -14,7 +14,6 @@ import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightCharg
 import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.entity.*;
-import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
@@ -24,7 +23,6 @@ import com.dpw.runner.shipment.services.service_bus.ISBProperties;
 import com.dpw.runner.shipment.services.service_bus.SBUtilsImpl;
 import com.dpw.runner.shipment.services.syncing.interfaces.IConsolidationSync;
 import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
-import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
@@ -110,12 +108,6 @@ public class ConsolidationService implements IConsolidationService {
     private IShipmentSettingsDao shipmentSettingsDao;
 
     @Autowired
-    private IMawbStocksLinkDao mawbStocksLinkDao;
-
-    @Autowired
-    private IMawbStocksDao mawbStocksDao;
-
-    @Autowired
     private SBUtilsImpl sbUtils;
 
     @Autowired
@@ -154,7 +146,16 @@ public class ConsolidationService implements IConsolidationService {
     );
     private Map<String, RunnerEntityMapping> tableNames = Map.ofEntries(
             Map.entry("type", RunnerEntityMapping.builder().tableName("parties").dataType(String.class).build()),
+            Map.entry("cutoffDate", RunnerEntityMapping.builder().tableName("Allocations").dataType(LocalDateTime.class).build()),
+            Map.entry("createdBy", RunnerEntityMapping.builder().tableName("ConsolidationDetails").dataType(String.class).build()),
+            Map.entry("shippingLine", RunnerEntityMapping.builder().tableName("CarrierDetails").dataType(String.class).build()),
+//            Map.entry("bookingId", RunnerEntityMapping.builder().tableName("BookingCharges").dataType(Long.class).build()),
+            Map.entry("orderNumber", RunnerEntityMapping.builder().tableName("Jobs").dataType(String.class).build()),
+//            Map.entry("bookingStatus", RunnerEntityMapping.builder().tableName("CustomerBooking").dataType(BookingStatus.class).build()),
             Map.entry("orgCode", RunnerEntityMapping.builder().tableName("parties").dataType(Integer.class).build()),
+            Map.entry("referenceNumber", RunnerEntityMapping.builder().tableName("ConsolidationDetails").dataType(String.class).build()),
+            Map.entry("shipmentId", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).build()),
+            Map.entry("containerCategory", RunnerEntityMapping.builder().tableName("ConsolidationDetails").dataType(String.class).build()),
             Map.entry("consolidationNumber", RunnerEntityMapping.builder().tableName("ConsolidationDetails").dataType(String.class).build()),
             Map.entry("consolidationType", RunnerEntityMapping.builder().tableName("ConsolidationDetails").dataType(String.class).build()),
             Map.entry("transportMode", RunnerEntityMapping.builder().tableName("ConsolidationDetails").dataType(String.class).build()),
@@ -204,7 +205,7 @@ public class ConsolidationService implements IConsolidationService {
             CarrierDetails carrierDetail = createCarrier();
             consolidationDetails.setCarrierDetails(carrierDetail);
 
-            consolidationDetails = consolidationDetailsDao.save(consolidationDetails);
+            consolidationDetails = consolidationDetailsDao.save(consolidationDetails, false);
         }
 
         return response;
@@ -300,9 +301,6 @@ public class ConsolidationService implements IConsolidationService {
             log.error("Request is null for Consolidation Create with Request Id {}", LoggerHelper.getRequestIdFromMDC());
         }
 
-        if(request.getTransportMode() == "AIR")
-            consolidationMAWBCheck(request);
-
         System.out.println(jsonHelper.convertToJson(request));
         ConsolidationDetails consolidationDetails = jsonHelper.convertValue(request, ConsolidationDetails.class);
         CarrierDetails carrierDetails = jsonHelper.convertValue(request.getCarrierDetails(), CarrierDetails.class);
@@ -365,10 +363,10 @@ public class ConsolidationService implements IConsolidationService {
         return ResponseHelper.buildSuccessResponse(jsonHelper.convertValue(consolidationDetails, ConsolidationDetailsResponse.class));
     }
 
-    void getConsolidation(ConsolidationDetails consolidationDetails) {
+    void getConsolidation(ConsolidationDetails consolidationDetails) throws Exception{
         String responseMsg;
         try {
-            consolidationDetails = consolidationDetailsDao.save(consolidationDetails);
+            consolidationDetails = consolidationDetailsDao.save(consolidationDetails, false);
 
             // audit logs
             auditLogService.addAuditLog(
@@ -385,6 +383,7 @@ public class ConsolidationService implements IConsolidationService {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
+            throw new Exception(e);
         }
     }
 
@@ -528,7 +527,7 @@ public class ConsolidationService implements IConsolidationService {
         entity.setId(oldEntity.get().getId());
         if (entity.getContainersList() == null)
             entity.setContainersList(oldEntity.get().getContainersList());
-        entity = consolidationDetailsDao.update(entity);
+        entity = consolidationDetailsDao.update(entity, false);
         try {
             consolidationSync.sync(jsonHelper.convertValue(entity, ConsolidationDetailsRequest.class));
         } catch (Exception e) {
@@ -626,7 +625,7 @@ public class ConsolidationService implements IConsolidationService {
 
             ConsolidationDetails entity = jsonHelper.convertValue(consolidationDetailsRequest, ConsolidationDetails.class);
             String oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
-            entity = consolidationDetailsDao.update(entity);
+            entity = consolidationDetailsDao.update(entity, false);
             try {
                 // audit logs
                 auditLogService.addAuditLog(
@@ -1083,7 +1082,7 @@ public class ConsolidationService implements IConsolidationService {
             consolidationDetails.setIsLocked(true);
             consolidationDetails.setLockedBy(currentUser);
         }
-        consolidationDetailsDao.save(consolidationDetails);
+        consolidationDetailsDao.save(consolidationDetails, false);
 
         return ResponseHelper.buildSuccessResponse();
     }
@@ -1107,102 +1106,6 @@ public class ConsolidationService implements IConsolidationService {
         return jsonHelper.convertValue(request, Containers.class);
     }
 
-    private void consolidationMAWBCheck(ConsolidationDetailsRequest consolidationRequest) {
-        if (StringUtility.isEmpty(consolidationRequest.getMawb())) {
-            return;
-        }
-
-        if (!isMAWBNumberValid(consolidationRequest.getMawb()))
-            throw new ValidationException("Please enter a valid MAWB number.");
-
-        String mawbAirlineCode = consolidationRequest.getMawb().substring(0, 3);
-        ListCommonRequest listCarrierRequest = constructListCommonRequest("airlineCode", mawbAirlineCode, "="); // TODO fetch from v1
-        Pair<Specification<CarrierDetails>, Pageable> pair = fetchData(listCarrierRequest, CarrierDetails.class);
-        Page<CarrierDetails> carrierDetails = carrierDao.findAll(pair.getLeft(), pair.getRight());
-
-        if (carrierDetails.getContent() == null || carrierDetails.getTotalElements() == 0)
-            throw new ValidationException("Airline for the entered MAWB Number doesn't exist in Carrier Master");
-
-        CarrierDetails correspondingCarrier = carrierDetails.getContent().get(0);
-
-        Boolean isMAWBNumberExist = false;
-        Boolean isCarrierExist = false;
-        if (consolidationRequest.getCarrierDetails() != null)
-            isCarrierExist = true;
-
-        if (isCarrierExist)
-            throw new ValidationException("MAWB Number prefix is not matching with entered Flight Carrier");
-
-        ListCommonRequest listMawbRequest = constructListCommonRequest("MAWBNumber", consolidationRequest.getMawb(), "=");
-        Pair<Specification<MawbStocksLink>, Pageable> mawbStocksLinkPair = fetchData(listCarrierRequest, MawbStocksLink.class);
-        Page<MawbStocksLink> mawbStocksLinkPage = mawbStocksLinkDao.findAll(mawbStocksLinkPair.getLeft(), mawbStocksLinkPair.getRight());
-
-        MawbStocksLink mawbStocksLink = null;
-
-        if (!isCarrierExist)
-            consolidationRequest.setCarrierDetails(jsonHelper.convertValue(correspondingCarrier, CarrierDetailRequest.class));
-
-        if (consolidationRequest.getShipmentType() == "IMP") {
-            return;
-        }
-
-        if (isMAWBNumberExist)
-            if (mawbStocksLink.getStatus() == "Consumed" && mawbStocksLink.getEntityId() != consolidationRequest.getId()) // If MasterBill number is already Consumed.
-                throw new ValidationException("The MAWB number entered is already consumed. Please enter another MAWB number.");
-
-        else
-                createNewMAWBEntry(consolidationRequest);
-    }
-
-    private void createNewMAWBEntry(ConsolidationDetailsRequest consolidationRequest) {
-        MawbStocks mawbStocks = new MawbStocks();
-        // mawbStocks.setAirLinePrefix() //TODO fetch from v1
-        mawbStocks.setCount("1");
-        mawbStocks.setStartNumber(Long.valueOf(consolidationRequest.getMawb().substring(4, 10)));
-        mawbStocks.setFrom(consolidationRequest.getMawb());
-        mawbStocks.setTo(consolidationRequest.getMawb());
-        mawbStocks.setMawbNumber(consolidationRequest.getMawb());
-        mawbStocks.setStatus("Unused");
-        // if(shipmentRequest.getBorrowedFrom()!=null) mawbStocks.setBorrowedFrom(Long.valueOf(shipmentRequest.getBorrowedFrom())); TODO fetch from v1
-        mawbStocks.setHomePort(consolidationRequest.getCarrierDetails().getOriginPort());
-        mawbStocks = mawbStocksDao.save(mawbStocks);
-
-        if (mawbStocks.getId() != null) {
-            var entryForMawbStocksLinkRow = new MawbStocksLink();
-            entryForMawbStocksLinkRow.setParentId(mawbStocks.getId());
-            entryForMawbStocksLinkRow.setSeqNumber(consolidationRequest.getMawb().substring(4, 10));
-            entryForMawbStocksLinkRow.setMawbNumber(consolidationRequest.getMawb());
-            entryForMawbStocksLinkRow.setStatus("Unused");
-            entryForMawbStocksLinkRow = mawbStocksLinkDao.save(entryForMawbStocksLinkRow);
-        }
-    }
-
-    private Boolean isMAWBNumberValid(String masterBill) {
-        Boolean MAWBNumberValidity = true;
-        if (masterBill.length() == 12) {
-            String mawbSeqNum = masterBill.substring(4, 11);
-            String checkDigit = masterBill.substring(11, 12);
-            Long imawbSeqNum = 0L;
-            Long icheckDigit = 0L;
-            if (areAllCharactersDigits(masterBill, 4, 12)) {
-                imawbSeqNum = Long.valueOf(mawbSeqNum);
-                icheckDigit = Long.valueOf(checkDigit);
-                if (imawbSeqNum % 7 != icheckDigit)
-                    MAWBNumberValidity = false;
-            } else MAWBNumberValidity = false;
-        } else MAWBNumberValidity = false;
-        return MAWBNumberValidity;
-    }
-
-    private boolean areAllCharactersDigits(String input, int startIndex, int endIndex) {
-        String substring = input.substring(startIndex, endIndex);
-        for (int i = 0; i < substring.length(); i++) {
-            if (!Character.isDigit(substring.charAt(i))) {
-                return false;
-            }
-        }
-        return true;
-    }
     @Transactional
     public ResponseEntity<?> completeV1ConsolidationCreateAndUpdate(CommonRequestModel commonRequestModel) throws Exception {
         ConsolidationDetailsRequest consolidationDetailsRequest = (ConsolidationDetailsRequest) commonRequestModel.getData();
@@ -1261,9 +1164,9 @@ public class ConsolidationService implements IConsolidationService {
             entity.setId(id);
 
             if(id == null) {
-                entity = consolidationDetailsDao.save(entity);
+                entity = consolidationDetailsDao.save(entity, true);
             } else {
-                entity = consolidationDetailsDao.update(entity);
+                entity = consolidationDetailsDao.update(entity, true);
             }
             // Set id for linking child entitites
             id = entity.getId();

@@ -23,10 +23,9 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-
-import java.math.BigDecimal;
 import java.text.DecimalFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -278,5 +277,9 @@ public class CommonUtils {
         if(o == null)
             return null;
         return o.toString();
+    }
+
+    public static boolean IsStringNullOrEmpty(String s){
+        return s == null || s.isEmpty();
     }
 }
