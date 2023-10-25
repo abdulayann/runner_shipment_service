@@ -449,7 +449,8 @@ public class ReportService implements IReportService {
                     AddHouseBillToRepo(docUploadRequest, reportRequest.getPrintType(), pdfByteContent, tenantSettingsRow);
                 } catch (Exception e) {
                     log.error(e.getMessage());
-                    throw new ValidationException("Unable to upload doc");
+                    //TODO - Abhimanyu doc upload failing
+                    //throw new ValidationException("Unable to upload doc");
                 }
             }
             if (reportRequest.getPrintType().equalsIgnoreCase(TypeOfHblPrint.Draft.name()))
