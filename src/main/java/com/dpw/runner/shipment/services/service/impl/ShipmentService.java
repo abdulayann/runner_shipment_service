@@ -646,7 +646,7 @@ public class ShipmentService implements IShipmentService {
 
         } catch (Exception e) {
             log.error(e.getMessage());
-            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+            //TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
             throw new RuntimeException(e);
         }
 
@@ -1646,7 +1646,10 @@ public class ShipmentService implements IShipmentService {
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
             ShipmentRequest cloneShipmentDetails = jsonHelper.convertValue(shipmentDetails.get(), ShipmentRequest.class);
+            cloneShipmentDetails.setHouseBill(null);
+            cloneShipmentDetails.setBookingReference(null);
             cloneShipmentDetails.setContainersList(null);
+            cloneShipmentDetails.setRoutingsList(null);
 
             CommonRequestModel requestModel = CommonRequestModel.buildRequest(cloneShipmentDetails);
             log.info("Shipment details cloning started for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
