@@ -375,7 +375,7 @@ public class ProductIdentifierUtility {
         switch (regexKey.toLowerCase()) {
           case "branchcode" -> {
             var user = UserContext.getUser();
-            String tenantCode = user.TenantCode;
+            String tenantCode = user.getCode();
             if (format.contains("L")) {
               format = format.replace("L", "");
               if (tryParse(format, numberOfCharactersToRetain) != null)

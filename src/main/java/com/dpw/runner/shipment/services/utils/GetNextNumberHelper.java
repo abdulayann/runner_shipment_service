@@ -96,7 +96,7 @@ public class GetNextNumberHelper {
         //                }
         else if (updateBranchCode && wordSplit.get(0).equalsIgnoreCase("branch")) {
           if (user != null) {
-            ValueOf.put("branch", user.TenantCode);
+            ValueOf.put("branch", user.getCode());
           }
           suffix += ValueOf.get(wordSplit.get(0).toLowerCase());
         } else suffix += ValueOf.get(wordSplit.get(0).toLowerCase());
