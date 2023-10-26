@@ -183,7 +183,7 @@ public class ShipmentDao implements IShipmentDao {
         return shipmentRepository.findByGuid(id);
     }
     @Override
-    public Optional<ShipmentDetails> findByHouseBill(String Hbl){
+    public List<ShipmentDetails> findByHouseBill(String Hbl){
         return shipmentRepository.findByHouseBill(Hbl);
     }
     @Override
@@ -295,8 +295,8 @@ public class ShipmentDao implements IShipmentDao {
 
         // BL# and Reference No can not be repeated
         if(!IsStringNullOrEmpty(request.getHouseBill())) {
-            Optional<ShipmentDetails> shipmentDetails = findByHouseBill(request.getHouseBill());
-            if(!shipmentDetails.isEmpty() && (request.getId() == null || shipmentDetails.get().getId() != request.getId())) {
+            List<ShipmentDetails> shipmentDetails = findByHouseBill(request.getHouseBill());
+            if(!shipmentDetails.isEmpty() && (request.getId() == null || shipmentDetails.get(0).getId() != request.getId())) {
                 errors.add("Shipment with BL# " + request.getHouseBill() + " already exists.");
             }
         }

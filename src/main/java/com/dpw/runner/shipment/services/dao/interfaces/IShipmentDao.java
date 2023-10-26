@@ -18,7 +18,7 @@ public interface IShipmentDao {
     void delete(ShipmentDetails shipmentDetails);
     List<ShipmentDetails> saveAll(List<ShipmentDetails> shipments);
     Optional<ShipmentDetails> findByGuid(UUID id);
-    Optional<ShipmentDetails> findByHouseBill(String Hbl);
+    List<ShipmentDetails> findByHouseBill(String Hbl);
     List<ShipmentDetails> findByBookingReference(String Hbl);
     void updateDateAndStatus(long id, LocalDateTime date, Integer status);
 }

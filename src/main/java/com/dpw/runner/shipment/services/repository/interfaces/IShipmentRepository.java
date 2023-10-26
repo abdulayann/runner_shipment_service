@@ -24,7 +24,7 @@ public interface IShipmentRepository extends MultiTenancyRepository<ShipmentDeta
         Specification<ShipmentDetails> spec = (root, criteriaQuery, criteriaBuilder) -> criteriaBuilder.equal(root.get("guid"), id);
         return findOne(spec);
     }
-    Optional<ShipmentDetails> findByHouseBill(String Hbl);
+    List<ShipmentDetails> findByHouseBill(String Hbl);
     List<ShipmentDetails> findAllByHouseBill(String Hbl);
     List<ShipmentDetails> findByBookingReference(String ref);
 }
