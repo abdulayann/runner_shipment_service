@@ -5,8 +5,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 
 
@@ -22,6 +20,7 @@ public class UsersDto {
     public String Email;
 //    public Boolean IsAdmin;;
     public Integer TenantId;
+    public String Code;
     public String TenantDisplayName;
 //    public String Code;
 //    public String TenantLogo;
