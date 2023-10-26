@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IProductSequenceConfigDao;
 import com.dpw.runner.shipment.services.entity.ProductSequenceConfig;
+import com.dpw.runner.shipment.services.entity.TenantProducts;
 import com.dpw.runner.shipment.services.repository.interfaces.IProductSequenceConfigRepository;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
@@ -64,7 +65,7 @@ public class ProductSequenceConfigDao implements IProductSequenceConfigDao {
         return res;
     }
 
-    private Page<ProductSequenceConfig> findAll(Specification<ProductSequenceConfig> spec, Pageable pageable) {
+    public Page<ProductSequenceConfig> findAll(Specification<ProductSequenceConfig> spec, Pageable pageable) {
         return productSequenceConfigRepository.findAll(spec, pageable);
     }
 

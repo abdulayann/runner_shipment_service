@@ -4,6 +4,8 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.entity.enums.ProductType;
 import lombok.Data;
 
+import java.util.List;
+
 @Data
 public class TenantProductsResponse implements IRunnerResponse {
 
@@ -14,4 +16,5 @@ public class TenantProductsResponse implements IRunnerResponse {
     private Boolean enabled;
     private Boolean enableGrouping;
     private Long shipmentSettingsId;
+    private List<String> transportModes;
 }
