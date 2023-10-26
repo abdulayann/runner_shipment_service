@@ -14,6 +14,7 @@ import com.dpw.runner.shipment.services.dto.request.PackingRequest;
 import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.JobResponse;
 import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
@@ -229,7 +230,13 @@ public class ContainerService implements IContainerService {
 
         request.setPacksList(updatedPackingRequest);
 
+
+
         Containers containers = convertRequestToEntity(request);
+
+        if(containers.getGuid() != null && !oldEntity.get().getGuid().equals(containers.getGuid())) {
+            throw new RunnerException("Provided GUID doesn't match with the existing one !");
+        }
         List<EventsRequest> eventsRequestList = request.getEventsList();
         try {
 
