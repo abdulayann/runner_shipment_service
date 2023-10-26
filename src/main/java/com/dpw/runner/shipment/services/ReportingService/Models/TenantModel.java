@@ -12,4 +12,9 @@ public class TenantModel {
     public String mobile;
     public String zipPostCode;
     public String websiteUrl;
+    public String fax;
+    public String vatRegNumber;
+    public String panNumber;
+    public String companyRegNumber;
+
 }

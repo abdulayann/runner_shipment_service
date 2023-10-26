@@ -292,4 +292,59 @@ public class ReportHelper {
         return words;
     }
 
+    public static String concatGroupedContainerCount(Map<String, Long> containerCountGrouped) {
+        String containerCount = "";
+        for (Map.Entry<String, Long> entry : containerCountGrouped.entrySet()) {
+            if (!containerCount.isEmpty()) {
+                containerCount += " & ";
+            }
+            containerCount += entry.getValue() + " X " + entry.getKey();
+        }
+        return containerCount.isEmpty() ? "0" : containerCount;
+    }
+
+    public static String concatGroupedFieldValues(Map<String, Double> fieldValuesGrouped, int decimalPlaces) {
+        String fieldValue = "";
+        for (Map.Entry<String, Double> entry : fieldValuesGrouped.entrySet()) {
+            double value = Math.round(entry.getValue() * Math.pow(10, decimalPlaces)) / Math.pow(10, decimalPlaces);
+            if (!fieldValue.isEmpty()) {
+                fieldValue += " & ";
+            }
+            fieldValue += value + " X " + entry.getKey();
+        }
+        return fieldValue.isEmpty() ? "0" : fieldValue;
+    }
+
+    public static String concatGroupedFields(Map<String, Double> fieldMap, int decimalPlaces) {
+        String fieldValue = "";
+        for (Map.Entry<String, Double> entry : fieldMap.entrySet()) {
+            double value = Math.round(entry.getValue() * Math.pow(10, decimalPlaces)) / Math.pow(10, decimalPlaces);
+            if (!fieldValue.isEmpty()) {
+                fieldValue += " & ";
+            }
+            fieldValue += value + " " + entry.getKey();
+        }
+        return fieldValue.isEmpty() ? "0" : fieldValue;
+    }
+
+    public static Map<String, UnlocationsResponse> getLocationData(Set<String> locCodes) {
+        Map<String, UnlocationsResponse> locationMap = new HashMap<>();
+        if (locCodes.size() > 0) {
+            List<Object> criteria = Arrays.asList(
+                    List.of("LocCode"),
+                    "In",
+                    List.of(locCodes)
+            );
+            CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(criteria).build();
+            V1DataResponse v1DataResponse = v1Service.fetchUnlocation(commonV1ListRequest);
+            List<UnlocationsResponse> unlocationsResponse = jsonHelper.convertValueToList(v1DataResponse.entities, UnlocationsResponse.class);
+            if (unlocationsResponse != null && unlocationsResponse.size() > 0) {
+                for (UnlocationsResponse unlocation : unlocationsResponse) {
+                    locationMap.put(unlocation.getLocCode(), unlocation);
+                }
+            }
+        }
+        return locationMap;
+    }
+
 }

@@ -21,6 +21,8 @@ import org.springframework.stereotype.Component;
 
 import java.util.*;
 
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.getLocationData;
+
 @Component
 public class BookingConfirmationReport extends IReport{
 
@@ -180,25 +182,5 @@ public class BookingConfirmationReport extends IReport{
         dictionary.put(ReportConstants.PAYMENTS, bookingConfirmationModel.shipment.getPaymentTerms());
 
         return dictionary;
-    }
-
-    private Map<String, UnlocationsResponse> getLocationData(Set<String> locCodes) {
-        Map<String, UnlocationsResponse> locationMap = new HashMap<>();
-        if (locCodes.size() > 0) {
-            List<Object> criteria = Arrays.asList(
-                    List.of("LocCode"),
-                    "In",
-                    List.of(locCodes)
-            );
-            CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(criteria).build();
-            V1DataResponse v1DataResponse = v1Service.fetchUnlocation(commonV1ListRequest);
-            List<UnlocationsResponse> unlocationsResponse = jsonHelper.convertValueToList(v1DataResponse.entities, UnlocationsResponse.class);
-            if (unlocationsResponse != null && unlocationsResponse.size() > 0) {
-                for (UnlocationsResponse unlocation : unlocationsResponse) {
-                    locationMap.put(unlocation.getLocCode(), unlocation);
-                }
-            }
-        }
-        return locationMap;
     }
 }
