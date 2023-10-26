@@ -31,7 +31,8 @@ public class DbAccessHelper {
         tableNames = tableName;
         Pageable pages;
         globalSearchCriteria(request, tableName);
-        if (request.getSortRequest() != null && request.getFilterCriteria() != null && request.getFilterCriteria().size() == 0) {
+        if (request.getSortRequest() != null && request.getFilterCriteria() != null &&
+                (request.getFilterCriteria().size() == 0  || (request.getFilterCriteria().size() == 1 && request.getFilterCriteria().get(0).getInnerFilter() != null))) {
             String _tableName = tableNames.get(request.getSortRequest().getFieldName()).getTableName();
             Sort sortRequest = null;
             if (Objects.equals(_tableName, className.getSimpleName()))
@@ -96,7 +97,7 @@ public class DbAccessHelper {
 
     public static <T> Pair<Specification<T>, Pageable> fetchData(ListCommonRequest request, Class className) {
         Pageable pages;
-        if (request.getSortRequest() != null && request.getFilterCriteria() != null && request.getFilterCriteria().size() == 0) {
+        if (request.getSortRequest() != null && request.getFilterCriteria() != null && (request.getFilterCriteria().size() == 0  || (request.getFilterCriteria().size() == 1 && request.getFilterCriteria().get(0).getInnerFilter() != null))) {
             Sort sortRequest = Sort.by(request.getSortRequest().getFieldName());
             sortRequest = sortRequest.descending();
             pages = PageRequest.of(request.getPageNo() - 1, request.getPageSize(), sortRequest);
