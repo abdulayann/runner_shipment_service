@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.commons.requests.Criteria;
 import com.dpw.runner.shipment.services.commons.requests.FilterCriteria;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.itextpdf.text.*;
@@ -16,6 +17,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.TransactionSystemException;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
@@ -27,6 +29,7 @@ import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Component
@@ -281,5 +284,17 @@ public class CommonUtils {
 
     public static boolean IsStringNullOrEmpty(String s){
         return s == null || s.isEmpty();
+    }
+
+    public static String getErrorResponseMessage(Exception e, Class<?> clazz) {
+        String responseMessage = "";
+    responseMessage =
+        switch (e.getClass().getSimpleName()) {
+          case "TransactionSystemException" -> Objects.requireNonNull(
+                  ((TransactionSystemException) e).getRootCause())
+              .getMessage();
+          default -> e.getMessage();
+        };
+        return responseMessage;
     }
 }

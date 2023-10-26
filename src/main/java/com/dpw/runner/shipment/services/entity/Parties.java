@@ -10,9 +10,8 @@ import org.hibernate.annotations.*;
 import javax.persistence.*;
 import javax.persistence.Entity;
 import javax.persistence.Table;
-import java.util.List;
+import javax.validation.constraints.AssertTrue;
 import java.util.Map;
-import java.util.UUID;
 
 
 @Entity
@@ -54,4 +53,13 @@ public class Parties extends MultiTenancy {
     @Type(type = "jsonb")
     @Column(name = "address_data", columnDefinition = "jsonb")
     private Map<String, Object> addressData;
+
+    @AssertTrue
+    private boolean isValid() {
+        boolean isValidFlag = true;
+        //Validation 1 : All of the following properties shouldn't be null
+        isValidFlag = isValidFlag && !(orgCode == null && addressCode == null && orgData == null && addressData == null);
+        return isValidFlag;
+    }
+
 }
