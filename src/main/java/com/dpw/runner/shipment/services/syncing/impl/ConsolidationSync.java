@@ -62,7 +62,7 @@ public class ConsolidationSync implements IConsolidationSync {
 
         response.setLockedByUser(request.getLockedBy());
 
-        response.setShipmentType(request.getBookingType());
+        response.setShipmentType(request.getShipmentType());
         response.setCoLoadBookingRef(request.getCoLoadBookingReference());
         response.setType(request.getConsolidationType());
         response.setContainerType(request.getContainerCategory());

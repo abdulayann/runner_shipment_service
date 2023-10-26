@@ -26,7 +26,6 @@ public class ConsolidationDetailsRequest extends CommonRequest implements IRunne
     private String payment;
     private String firstLoad;
     private String lastDischarge;
-    private String bookingType;
     private String declarationType;
     private String deliveryMode;
     private Boolean isLinked;

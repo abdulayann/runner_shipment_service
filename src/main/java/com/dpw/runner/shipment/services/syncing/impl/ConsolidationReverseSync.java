@@ -39,7 +39,7 @@ public class ConsolidationReverseSync implements IConsolidationReverseSync {
 
             response.setLockedBy(request.getLockedByUser());
 
-            response.setBookingType(request.getShipmentType());
+            response.setShipmentType(request.getShipmentType());
             response.setCoLoadBookingReference(request.getCoLoadBookingRef());
             response.setConsolidationType(request.getType());
             response.setContainerCategory(request.getContainerType());

@@ -95,13 +95,19 @@ public class ShipmentDao implements IShipmentDao {
             }
             oldShipment = oldEntity.get();
         }
+        else {
+            if(shipmentDetails.getConsolidationList() == null)
+                shipmentDetails.setConsolidationList(new ArrayList<>());
+            if(shipmentDetails.getContainersList() == null)
+                shipmentDetails.setContainersList(new ArrayList<>());
+        }
         errors.addAll(applyShipmentValidations(shipmentDetails, oldShipment));
         if (! errors.isEmpty())
             throw new ValidationException(errors.toString());
         if (!fromV1Sync && shipmentDetails.getTransportMode().equals("AIR") && shipmentDetails.getShipmentType().equals("DRT"))
             directShipmentMAWBCheck(shipmentDetails);
         shipmentDetails = shipmentRepository.save(shipmentDetails);
-        if(!fromV1Sync && shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && shipmentDetails.getJobType().equals(Constants.SHIPMENT_TYPE_DRT)) {
+        if(!fromV1Sync && shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && shipmentDetails.getJobType() != null && shipmentDetails.getJobType().equals(Constants.SHIPMENT_TYPE_DRT)) {
             if(shipmentDetails.getMasterBill() != null && !shipmentDetails.getDirection().equals(Constants.IMP)) {
                 setMawbStock(shipmentDetails);
             }

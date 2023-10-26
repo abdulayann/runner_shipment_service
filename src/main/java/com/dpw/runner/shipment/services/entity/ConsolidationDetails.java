@@ -67,10 +67,6 @@ public class ConsolidationDetails extends MultiTenancy {
     @UnlocationData
     private String lastDischarge;
 
-    @Column(name = "booking_type")
-    @MasterData(type = MasterDataType.CUSTOM_SHIPMENT_TYPE)
-    private String bookingType;
-
     @Column(name = "declaration_type")
     @MasterData(type = MasterDataType.CUSTOM_DECL_TYPE)
     private String declarationType;
