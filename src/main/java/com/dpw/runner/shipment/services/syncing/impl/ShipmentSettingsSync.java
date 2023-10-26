@@ -54,6 +54,9 @@ public class ShipmentSettingsSync implements IShipmentSettingsSync {
                     .map(this::mapProductSequenceConfig).toList());
         }
 
+        syncRequest.setShipmentImportApproverRole(req.getShipmentConsoleImportApproverRole());
+        syncRequest.setIsLowMarginApprovalRequired(req.getLowMarginApproval());
+        syncRequest.setShipmentInstruction(req.getShippingInstruction());
 
         String payload = jsonHelper.convertToJson(syncRequest);
         retryTemplate.execute(ctx -> {
