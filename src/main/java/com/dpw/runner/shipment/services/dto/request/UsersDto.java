@@ -21,6 +21,7 @@ public class UsersDto {
 //    public Boolean IsAdmin;;
     public Integer TenantId;
     public String Code;
+    public String CompanyCode;
     public String TenantDisplayName;
 //    public String Code;
 //    public String TenantLogo;

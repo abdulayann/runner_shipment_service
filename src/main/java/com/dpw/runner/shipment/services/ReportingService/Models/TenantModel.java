@@ -12,5 +12,4 @@ public class TenantModel {
     public String mobile;
     public String zipPostCode;
     public String websiteUrl;
-    public String CompanyCode;
 }
