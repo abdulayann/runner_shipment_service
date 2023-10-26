@@ -347,21 +347,21 @@ public class ReportService implements IReportService {
         {
             boolean fWaterMark = false;
             boolean bWaterMark = false;
-            if(reportRequest.getFrontTemplateCode() != null) {
-                HblTermsConditionTemplate frontTemplate = hblTermsConditionTemplateDao.getTemplateCode(reportRequest.getFrontTemplateCode(), 1, reportRequest.getPrintType());
-                if (frontTemplate != null)
-                {
-                    fWaterMark = frontTemplate.getIsWaterMarkRequired();
+            if(reportRequest.getFrontTemplateCode() != null || reportRequest.getBackTemplateCode() != null) {
+                if (reportRequest.getFrontTemplateCode() != null) {
+                    HblTermsConditionTemplate frontTemplate = hblTermsConditionTemplateDao.getTemplateCode(reportRequest.getFrontTemplateCode(), 1, reportRequest.getPrintType());
+                    if (frontTemplate != null) {
+                        fWaterMark = frontTemplate.getIsWaterMarkRequired();
+                    }
                 }
-            }
-            if(reportRequest.getBackTemplateCode() != null) {
-                HblTermsConditionTemplate backTemplate = hblTermsConditionTemplateDao.getTemplateCode(reportRequest.getBackTemplateCode(), 0, reportRequest.getPrintType());
-                if (backTemplate != null)
-                {
-                    bWaterMark = backTemplate.getIsWaterMarkRequired();
+                if (reportRequest.getBackTemplateCode() != null) {
+                    HblTermsConditionTemplate backTemplate = hblTermsConditionTemplateDao.getTemplateCode(reportRequest.getBackTemplateCode(), 0, reportRequest.getPrintType());
+                    if (backTemplate != null) {
+                        bWaterMark = backTemplate.getIsWaterMarkRequired();
+                    }
                 }
+                waterMarkRequired = fWaterMark && bWaterMark;
             }
-            waterMarkRequired = fWaterMark && bWaterMark;
         }
         catch (ValidationException ex)
         {
