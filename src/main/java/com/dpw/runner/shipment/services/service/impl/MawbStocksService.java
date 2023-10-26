@@ -54,7 +54,9 @@ public class MawbStocksService implements IMawbStocksService {
         MawbStocksRequest request = null;
         request = (MawbStocksRequest) commonRequestModel.getData();
         request.setAvailableCount(request.getCount());
-        request.setPrefix(request.getFrom().toString().split("-")[0]);
+        if(request.getFrom() != null){
+            request.setPrefix(request.getFrom().split("-")[0]);
+        }
         request.setNextMawbNumber(request.getFrom());
         if (request == null) {
             log.debug("Request is empty for MAWB stocks create with Request Id {}", LoggerHelper.getRequestIdFromMDC());
