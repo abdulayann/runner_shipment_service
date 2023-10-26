@@ -95,6 +95,12 @@ public class ShipmentDao implements IShipmentDao {
             }
             oldShipment = oldEntity.get();
         }
+        else {
+            if(shipmentDetails.getConsolidationList() == null)
+                shipmentDetails.setConsolidationList(new ArrayList<>());
+            if(shipmentDetails.getContainersList() == null)
+                shipmentDetails.setContainersList(new ArrayList<>());
+        }
         errors.addAll(applyShipmentValidations(shipmentDetails, oldShipment));
         if (! errors.isEmpty())
             throw new ValidationException(errors.toString());

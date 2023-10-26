@@ -932,8 +932,6 @@ public class ShipmentService implements IShipmentService {
                 log.error("Error creating audit service log", e);
             }
 
-            attachConsolidations(entity.getId(), tempConsolIds);
-
             ShipmentDetailsResponse response = shipmentDetailsMapper.map(entity);
 
             if (bookingCarriageRequestList != null) {
