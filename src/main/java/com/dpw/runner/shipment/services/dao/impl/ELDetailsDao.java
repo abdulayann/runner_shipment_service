@@ -98,6 +98,7 @@ public class ELDetailsDao implements IELDetailsDao {
                     log.debug("EL Detail is null for Id {}", req.getId());
                     throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
                 }
+                req.setCreatedAt(oldEntity.get().getCreatedAt());
             }
             req.setShipmentId(shipmentId);
             req = save(req);
