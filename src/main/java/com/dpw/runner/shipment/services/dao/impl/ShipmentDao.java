@@ -296,7 +296,7 @@ public class ShipmentDao implements IShipmentDao {
         // BL# and Reference No can not be repeated
         if(!IsStringNullOrEmpty(request.getHouseBill())) {
             List<ShipmentDetails> shipmentDetails = findByHouseBill(request.getHouseBill());
-            if(!shipmentDetails.isEmpty() && (request.getId() == null || shipmentDetails.get(0).getId() != request.getId())) {
+            if(shipmentDetails != null && shipmentDetails.size() > 0 && (request.getId() == null || shipmentDetails.get(0).getId() != request.getId())) {
                 errors.add("Shipment with BL# " + request.getHouseBill() + " already exists.");
             }
         }
