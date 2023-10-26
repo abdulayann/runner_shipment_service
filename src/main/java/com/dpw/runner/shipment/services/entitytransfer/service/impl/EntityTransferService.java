@@ -829,12 +829,12 @@ public class EntityTransferService implements IEntityTransferService {
         ShipmentRequest request = jsonHelper.convertValue(entityTransferShipmentDetails, ShipmentRequest.class);
 
         String Hbl = request.getHouseBill();
-        Optional<ShipmentDetails> shipmentDetails = null;
+        List<ShipmentDetails> shipmentDetails = null;
         if (Hbl != null && !Hbl.equalsIgnoreCase("")) {
             shipmentDetails = shipmentDao.findByHouseBill(Hbl);
         }
-        if(shipmentDetails != null && shipmentDetails.isPresent()){
-            request.setId(shipmentDetails.get().getId());
+        if(shipmentDetails != null && shipmentDetails.size() > 0){
+            request.setId(shipmentDetails.get(0).getId());
             try {
                 ResponseEntity<RunnerResponse<ShipmentDetailsResponse>> response = (ResponseEntity<RunnerResponse<ShipmentDetailsResponse>>) shipmentService.completeUpdate(CommonRequestModel.buildRequest(request));
                 log.info("Update payload: "+request);
