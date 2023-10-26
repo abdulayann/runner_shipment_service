@@ -20,7 +20,8 @@ public enum ProductProcessTypes {
     PAYMENT(17, "Payment"),
     TAX(18, "Tax"),
     CSR(20, "Cargo Sales Report"),
-    Receipt(21, "Receipt");
+    Receipt(21, "Receipt"),
+    Consol_Shipment_TI(21, "Consol_Shipment_TI");
     private final int value;
     private final String description;
 

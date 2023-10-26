@@ -24,6 +24,7 @@ public class UsersDto {
     public Integer TenantId;
     public String TenantDisplayName;
     public String Code;
+    public String TenantCode;
     public String TenantLogo;
     public String TenantPrintLogo;
     public String TenantCountryCode;

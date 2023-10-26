@@ -20,6 +20,7 @@ import com.dpw.runner.shipment.services.dto.v1.response.V1ContainerTypeResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.GenerationType;
+import com.dpw.runner.shipment.services.entity.enums.ProductProcessTypes;
 import com.dpw.runner.shipment.services.entitytransfer.dto.*;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -35,10 +36,7 @@ import com.dpw.runner.shipment.services.service_bus.AzureServiceBusTopic;
 import com.dpw.runner.shipment.services.service_bus.ISBProperties;
 import com.dpw.runner.shipment.services.service_bus.SBUtilsImpl;
 import com.dpw.runner.shipment.services.syncing.impl.ShipmentSync;
-import com.dpw.runner.shipment.services.utils.CommonUtils;
-import com.dpw.runner.shipment.services.utils.MasterDataUtils;
-import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
-import com.dpw.runner.shipment.services.utils.StringUtility;
+import com.dpw.runner.shipment.services.utils.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
@@ -166,6 +164,10 @@ public class ShipmentService implements IShipmentService {
 
     @Autowired
     private CommonUtils commonUtils;
+    @Autowired
+    private ISequenceIncrementorDao sequenceIncrementorDao;
+
+    private ShipmentDetails currentShipment;
 
     private List<String> TRANSPORT_MODES = Arrays.asList("SEA", "ROAD", "RAIL", "AIR");
     private List<String> SHIPMENT_TYPE = Arrays.asList("FCL", "LCL");
@@ -634,8 +636,10 @@ public class ShipmentService implements IShipmentService {
     }
 
     void getShipment(ShipmentDetails shipmentDetails) {
-        if(shipmentDetails.getShipmentId() == null)
+        if(shipmentDetails.getShipmentId() == null){
+            this.currentShipment = shipmentDetails;
             shipmentDetails.setShipmentId(generateShipmentId());
+    }
         shipmentDetails = shipmentDao.save(shipmentDetails);
         //shipmentDetails = shipmentDao.findById(shipmentDetails.getId()).get();
     }
@@ -1316,9 +1320,72 @@ public class ShipmentService implements IShipmentService {
 
     private String generateShipmentId() {
         List<ShipmentSettingsDetails> shipmentSettingsList = shipmentSettingsDao.list();
-        if (shipmentSettingsList.isEmpty())
-            return StringUtility.getRandomString(10);
-        return createShipmentSequence(shipmentSettingsList.get(0));
+        String shipmentId = "";
+        boolean flag = true;
+
+        while(flag) {
+            ListCommonRequest listRequest = constructListCommonRequest("shipmentId", shipmentId, "=");
+            Pair<Specification<ShipmentDetails>, Pageable> pair = fetchData(listRequest, ShipmentDetails.class);
+            Page<ShipmentDetails> shipments = shipmentDao.findAll(pair.getLeft(), pair.getRight());
+
+            if(!shipmentId.isEmpty() && shipments.getTotalElements() == 0)
+                flag = false;
+            else {
+                if(shipmentSettingsList.get(0) != null && shipmentSettingsList.get(0).getCustomisedSequence()) {
+                    try{
+                        shipmentId = getCustomizedShipmentProcessNumber(shipmentSettingsList.get(0), ProductProcessTypes.ShipmentNumber);
+                    } catch (Exception ignored) {
+                        //
+                    }
+                } else {
+                    shipmentId = Constants.SHIPMENT_ID_PREFIX + getShipmentsSerialNumber();
+                }
+            }
+        }
+        return shipmentId;
+//        if (shipmentSettingsList.isEmpty())
+//            return StringUtility.getRandomString(10);
+//        return createShipmentSequence(shipmentSettingsList.get(0));
+    }
+
+    private String getCustomizedShipmentProcessNumber(ShipmentSettingsDetails shipmentSettingsDetails, ProductProcessTypes productProcessType) {
+        var productEngine = new ProductIdentifierUtility();
+        productEngine.populateEnabledTenantProducts(shipmentSettingsDetails);
+        // to check the commmon sequence
+        var sequenceNumber = productEngine.GetCommonSequenceNumber(currentShipment.getTransportMode(), ProductProcessTypes.Consol_Shipment_TI);
+        if (sequenceNumber != null && !sequenceNumber.isEmpty()) {
+            return sequenceNumber;
+        }
+        var identifiedProduct = productEngine.IdentifyProduct(currentShipment);
+        if (identifiedProduct == null){
+            return "";
+        }
+        var sequenceSettings = GetNextNumberHelper.getProductSequence(identifiedProduct.getId(), productProcessType);
+        if(sequenceSettings == null){
+            sequenceSettings = productEngine.getShipmentProductWithOutContainerType(currentShipment, productProcessType);
+            if (sequenceSettings == null)
+            {
+                // get default product type for shipment
+                var defaultProduct = productEngine.getDefaultShipmentProduct();
+                if (defaultProduct == null || identifiedProduct == defaultProduct) {
+                    return "";
+                }
+                sequenceSettings = GetNextNumberHelper.getProductSequence(defaultProduct.getId(), productProcessType);
+                if (sequenceSettings == null) {
+                    return "";
+                }
+            }
+        }
+        String prefix = sequenceSettings.getPrefix() == null ? "" : sequenceSettings.getPrefix();
+        var user = UserContext.getUser();
+        return GetNextNumberHelper.generateCustomSequence(sequenceSettings, prefix, user.TenantId, true, null, false);
+    }
+
+    private String getShipmentsSerialNumber() {
+
+        SequenceIncrementor sequenceIncrementor = SequenceIncrementor.builder().entityId(1L).build();
+        sequenceIncrementorDao.save(sequenceIncrementor);
+        return sequenceIncrementor.getShipmentIncrementId().toString();
     }
 
     private String createShipmentSequence(ShipmentSettingsDetails shipmentSetting) {
