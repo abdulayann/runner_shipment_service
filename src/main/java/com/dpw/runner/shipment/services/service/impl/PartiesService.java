@@ -105,9 +105,6 @@ public class PartiesService implements IPartiesDetailsService {
 
         Parties parties = convertRequestToPartiesDetailsEntity(request);
         parties.setId(oldEntity.get().getId());
-        if(parties.getGuid() != null && !oldEntity.get().getGuid().equals(parties.getGuid())) {
-            throw new RunnerException("Provided GUID doesn't match with the existing one !");
-        }
         try {
             String oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
             parties = partiesDao.save(parties);
