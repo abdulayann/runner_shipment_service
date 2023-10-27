@@ -14,6 +14,7 @@ import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightCharg
 import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
@@ -523,6 +524,9 @@ public class ConsolidationService implements IConsolidationService {
 
         ConsolidationDetails entity = jsonHelper.convertValue(request, ConsolidationDetails.class);
         entity.setId(oldEntity.get().getId());
+        if(entity.getGuid() != null && !oldEntity.get().getGuid().equals(entity.getGuid())) {
+            throw new RunnerException("Provided GUID doesn't match with the existing one !");
+        }
         if (entity.getContainersList() == null)
             entity.setContainersList(oldEntity.get().getContainersList());
         entity = consolidationDetailsDao.update(entity, false);

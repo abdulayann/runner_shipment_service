@@ -10,8 +10,8 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IArrivalDepartureDetailsDao;
 import com.dpw.runner.shipment.services.dto.request.ArrivalDepartureDetailsRequest;
 import com.dpw.runner.shipment.services.dto.response.ArrivalDepartureDetailsResponse;
-import com.dpw.runner.shipment.services.entity.Allocations;
 import com.dpw.runner.shipment.services.entity.ArrivalDepartureDetails;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
@@ -99,6 +99,9 @@ public class ArrivalDepartureDetailsService implements IArrivalDepartureDetailsS
 
         ArrivalDepartureDetails arrivalDepartureDetails = convertRequestToArrivalDepartureDetails(request);
         arrivalDepartureDetails.setId(oldEntity.get().getId());
+        if(arrivalDepartureDetails.getGuid() != null && !oldEntity.get().getGuid().equals(arrivalDepartureDetails.getGuid())) {
+            throw new RunnerException("Provided GUID doesn't match with the existing one !");
+        }
         try {
             String oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
             arrivalDepartureDetails = arrivalDepartureDetailsDao.save(arrivalDepartureDetails);

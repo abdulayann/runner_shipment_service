@@ -16,6 +16,7 @@ import com.dpw.runner.shipment.services.dto.response.JobResponse;
 import com.dpw.runner.shipment.services.entity.BookingCarriage;
 import com.dpw.runner.shipment.services.entity.Events;
 import com.dpw.runner.shipment.services.entity.Jobs;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
@@ -23,7 +24,6 @@ import com.dpw.runner.shipment.services.service.interfaces.IJobService;
 import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
-import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
@@ -34,11 +34,13 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.*;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.convertToEntityList;
 
 
 @Slf4j
@@ -115,6 +117,9 @@ public class JobService implements IJobService {
         Jobs jobs = convertRequestToEntity(request);
         List<EventsRequest> eventsRequestList = request.getEventsList();
         jobs.setId(oldEntity.get().getId());
+        if(jobs.getGuid() != null && !oldEntity.get().getGuid().equals(jobs.getGuid())) {
+            throw new RunnerException("Provided GUID doesn't match with the existing one !");
+        }
         if(eventsRequestList != null){
             List<Events> events = eventDao.saveEntityFromOtherEntity(
                     convertToEntityList(eventsRequestList, Events.class), jobs.getId(), Constants.JOBS);

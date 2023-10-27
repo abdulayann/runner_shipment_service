@@ -19,6 +19,7 @@ import com.dpw.runner.shipment.services.dto.response.EventsResponse;
 import com.dpw.runner.shipment.services.dto.response.FileRepoResponse;
 import com.dpw.runner.shipment.services.dto.response.UploadDocumentResponse;
 import com.dpw.runner.shipment.services.entity.FileRepo;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
@@ -26,7 +27,6 @@ import com.dpw.runner.shipment.services.service.interfaces.IFileRepoService;
 import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
-import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.dao.DataRetrievalFailureException;
@@ -39,11 +39,10 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.*;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
@@ -112,6 +111,9 @@ public class FileRepoService implements IFileRepoService {
 
         FileRepo fileRepo = mapToEntityFromRequest(request);
         fileRepo.setId(oldEntity.get().getId());
+        if(fileRepo.getGuid() != null && !oldEntity.get().getGuid().equals(fileRepo.getGuid())) {
+            throw new RunnerException("Provided GUID doesn't match with the existing one !");
+        }
         try {
             String oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
             fileRepo = fileRepoDao.save(fileRepo);

@@ -31,7 +31,7 @@ public class TenantEntityListener {
                 ((MultiTenancy) object).setTenantId(tenantId);
             }
             if(!Objects.equals(TenantContext.getCurrentTenant(), tenantId)) {
-                throw new RuntimeException("Authorization has been denied for this request");
+                throw new RuntimeException("Authorization has been denied for this request, tenantId mismatch");
             }
         }
     }

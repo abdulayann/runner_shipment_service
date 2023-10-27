@@ -12,6 +12,7 @@ import com.dpw.runner.shipment.services.dto.patchRequest.BookingCarriagePatchReq
 import com.dpw.runner.shipment.services.dto.request.BookingCarriageRequest;
 import com.dpw.runner.shipment.services.dto.response.BookingCarriageResponse;
 import com.dpw.runner.shipment.services.entity.BookingCarriage;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
@@ -20,7 +21,6 @@ import com.dpw.runner.shipment.services.service.interfaces.IBookingCarriageServi
 import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
-import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
@@ -105,6 +105,11 @@ public class BookingCarriageService implements IBookingCarriageService {
         }
 
         BookingCarriage bookingCarriage = bookingCarriageMapper.map(request);
+
+        if(bookingCarriage.getGuid() != null && !oldEntity.get().getGuid().equals(bookingCarriage.getGuid())) {
+            throw new RunnerException("Provided GUID doesn't match with the existing one !");
+        }
+
         try {
             String oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
             bookingCarriage = bookingCarriageDao.save(bookingCarriage);

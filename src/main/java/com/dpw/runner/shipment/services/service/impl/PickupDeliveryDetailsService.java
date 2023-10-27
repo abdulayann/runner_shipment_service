@@ -14,6 +14,7 @@ import com.dpw.runner.shipment.services.dto.request.PickupDeliveryDetailsRequest
 import com.dpw.runner.shipment.services.dto.response.PickupDeliveryDetailsResponse;
 import com.dpw.runner.shipment.services.entity.PickupDeliveryDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
@@ -111,6 +112,9 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
 
         PickupDeliveryDetails pickupDeliveryDetails = convertRequestToEntity(request);
         pickupDeliveryDetails.setId(oldEntity.get().getId());
+        if(pickupDeliveryDetails.getGuid() != null && !oldEntity.get().getGuid().equals(pickupDeliveryDetails.getGuid())) {
+            throw new RunnerException("Provided GUID doesn't match with the existing one !");
+        }
         try {
             String oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
             pickupDeliveryDetails = pickupDeliveryDetailsDao.save(pickupDeliveryDetails);
