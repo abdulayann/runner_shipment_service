@@ -1431,6 +1431,7 @@ public class ShipmentService implements IShipmentService {
                         shipmentId = getCustomizedShipmentProcessNumber(shipmentSettingsList.get(0), ProductProcessTypes.ShipmentNumber);
                     } catch (Exception ignored) {
                         //
+                        shipmentId = Constants.SHIPMENT_ID_PREFIX + getShipmentsSerialNumber();
                     }
                 } else {
                     shipmentId = Constants.SHIPMENT_ID_PREFIX + getShipmentsSerialNumber();
