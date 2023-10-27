@@ -19,6 +19,6 @@ public interface IConsolidationDetailsDao {
     List<ConsolidationDetails> saveAll(List<ConsolidationDetails> consolidationDetails);
     Optional<ShipmentDetails> findShipmentById(Long shipmentId);
     Optional<ConsolidationDetails> findByGuid (UUID guid);
-    Optional<ConsolidationDetails> findByBol (String bol);
+    List<ConsolidationDetails> findByBol (String bol);
     List<ConsolidationDetails> findByReferenceNumber(String ref);
 }

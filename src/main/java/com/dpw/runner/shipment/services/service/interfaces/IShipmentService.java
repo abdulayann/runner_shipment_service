@@ -21,4 +21,6 @@ public interface IShipmentService extends ICommonService{
     ResponseEntity<?> toggleLock(CommonRequestModel commonRequestModel);
     ResponseEntity<?> completeV1ShipmentCreateAndUpdate(CommonRequestModel commonRequestModel) throws Exception;
     ResponseEntity<?> cloneShipment(CommonRequestModel commonRequestModel);
+    ResponseEntity<?> transportInstructionList(CommonRequestModel commonRequestModel);
+    ResponseEntity<?> containerListForTI(CommonRequestModel commonRequestModel);
 }

@@ -231,6 +231,15 @@ public class V1ServiceImpl implements IV1Service {
     @Value("${v1service.url.base}${v1service.url.carrierFilterList}")
     private String CARRIER_FILTER_LIST;
 
+    @Value("${v1service.url.base}${v1service.url.transportInstructionList}")
+    private String TRANSPORT_INSTRUCTION_LIST;
+
+    @Value("${v1service.url.base}${v1service.url.containerTransportInstructionList}")
+    private String CONTAINER_TRANSPORT_INSTRUCTION_LIST;
+
+    @Value("${v1service.url.base}${v1service.url.consolidationBookingData}")
+    private String CONSOLIDATION_BOOKING_DATA;
+
     @Autowired
     private JsonHelper jsonHelper;
 
@@ -1573,6 +1582,69 @@ public class V1ServiceImpl implements IV1Service {
             masterDataResponse = this.restTemplate.postForEntity(this.CARRIER_FILTER_LIST, entity, V1RetrieveResponse.class, new Object[0]);
             log.info("Token time taken in fetchCarrierFilterList() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) masterDataResponse.getBody();
+        } catch (HttpStatusCodeException var6) {
+            if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
+                throw new UnAuthorizedException("UnAuthorizedException");
+            } else {
+                throw new V1ServiceException(var6.getMessage());
+            }
+        } catch (Exception var7) {
+            throw new V1ServiceException(var7.getMessage());
+        }
+    }
+
+    @Override
+    public V1DataResponse fetchTransportInstructionList(Object request) {
+        ResponseEntity tiDataResponse = null;
+
+        try {
+            long time = System.currentTimeMillis();
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            tiDataResponse = this.restTemplate.postForEntity(this.TRANSPORT_INSTRUCTION_LIST, entity, V1DataResponse.class, new Object[0]);
+            log.info("Token time taken in fetchTransportInstructionList() function " + (System.currentTimeMillis() - time));
+            return (V1DataResponse) tiDataResponse.getBody();
+        } catch (HttpStatusCodeException var6) {
+            if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
+                throw new UnAuthorizedException("UnAuthorizedException");
+            } else {
+                throw new V1ServiceException(var6.getMessage());
+            }
+        } catch (Exception var7) {
+            throw new V1ServiceException(var7.getMessage());
+        }
+    }
+
+    @Override
+    public V1DataResponse fetchContainersListForTI(Object request) {
+        ResponseEntity containerResponse = null;
+
+        try {
+            long time = System.currentTimeMillis();
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            containerResponse = this.restTemplate.postForEntity(this.CONTAINER_TRANSPORT_INSTRUCTION_LIST, entity, V1DataResponse.class, new Object[0]);
+            log.info("Token time taken in fetchContainersListForTI() function " + (System.currentTimeMillis() - time));
+            return (V1DataResponse) containerResponse.getBody();
+        } catch (HttpStatusCodeException var6) {
+            if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
+                throw new UnAuthorizedException("UnAuthorizedException");
+            } else {
+                throw new V1ServiceException(var6.getMessage());
+            }
+        } catch (Exception var7) {
+            throw new V1ServiceException(var7.getMessage());
+        }
+    }
+
+    @Override
+    public ConsoleBookingListResponse fetchConsolidationBookingData(Object request) {
+        ResponseEntity<ConsoleBookingListResponse> containerResponse = null;
+
+        try {
+            long time = System.currentTimeMillis();
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            containerResponse = this.restTemplate.postForEntity(this.CONSOLIDATION_BOOKING_DATA, entity, ConsoleBookingListResponse.class, new Object[0]);
+            log.info("Token time taken in fetchConsolidationBookingData() function " + (System.currentTimeMillis() - time));
+            return (ConsoleBookingListResponse) containerResponse.getBody();
         } catch (HttpStatusCodeException var6) {
             if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
                 throw new UnAuthorizedException("UnAuthorizedException");

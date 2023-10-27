@@ -113,4 +113,6 @@ public class ConsolidationDetailsResponse implements IRunnerResponse {
     private List<String> shipmentIds;
     private String bookingId;
     private List<PartiesResponse> consolidationAddresses;
+    private String bookingStatus;
+    private String bookingNumber;
 }

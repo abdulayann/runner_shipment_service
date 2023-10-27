@@ -99,6 +99,7 @@ public class ELDetailsDao implements IELDetailsDao {
                     throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
                 }
                 req.setCreatedAt(oldEntity.get().getCreatedAt());
+                req.setCreatedBy(oldEntity.get().getCreatedBy());
             }
             req.setShipmentId(shipmentId);
             req = save(req);

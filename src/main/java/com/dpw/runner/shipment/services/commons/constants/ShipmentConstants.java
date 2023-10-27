@@ -9,6 +9,9 @@ public class ShipmentConstants {
 
     public static final String LIST_SUCCESSFUL = "Successful Shipment List Retrieval";
 
+    public static final String TI_LIST_SUCCESSFUL = "Successful Transport Instruction List Retrieval";
+    public static final String CONTAINER_LIST_SUCCESSFUL_NEW_TI = "Successful Container List Retrieval for Transport Instruction";
+
     public static final String DELETE_SUCCESSFUL = "Successful Shipment Delete";
 
     public static final String RETRIEVE_BY_ID_SUCCESSFUL = "Successful Shipment Data Retrieval By Id";

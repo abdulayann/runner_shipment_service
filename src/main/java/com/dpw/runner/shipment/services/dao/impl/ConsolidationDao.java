@@ -152,7 +152,7 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
         return consolidationRepository.findByGuid(guid);
     }
 
-    public Optional<ConsolidationDetails> findByBol (String bol) {
+    public List<ConsolidationDetails> findByBol (String bol) {
         return consolidationRepository.findByBol(bol);
     }
 
@@ -167,9 +167,9 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
 
         // MBL number must be unique
         if(!IsStringNullOrEmpty(request.getBol())) {
-            Optional<ConsolidationDetails> consolidationDetails = findByBol(request.getBol());
-            if(!consolidationDetails.isEmpty()) {
-                if(request.getId() == null || (request.getId() != consolidationDetails.get().getId())) {
+            List<ConsolidationDetails> consolidationDetails = findByBol(request.getBol());
+            if(consolidationDetails != null && consolidationDetails.size() > 0) {
+                if(request.getId() == null || (request.getId().longValue() != consolidationDetails.get(0).getId().longValue())) {
                     errors.add(String.format("The MBL Number %s is already used. Please use a different MBL Number", request.getBol()));
                 }
             }
@@ -221,8 +221,8 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
         // Reference No can not be repeated
         if(!IsStringNullOrEmpty(request.getReferenceNumber())) {
             List<ConsolidationDetails> consolidationDetails = findByReferenceNumber(request.getReferenceNumber());
-            if(!consolidationDetails.isEmpty() && (request.getId() == null || consolidationDetails.get(0).getId() != request.getId())) {
-                errors.add("Shipment with ReferenceNo " + request.getReferenceNumber() + " already exists.");
+            if(!consolidationDetails.isEmpty() && (request.getId() == null || consolidationDetails.get(0).getId().longValue() != request.getId().longValue())) {
+                errors.add("Consolidation with ReferenceNo " + request.getReferenceNumber() + " already exists.");
             }
         }
 

@@ -13,12 +13,15 @@ import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
 import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.response.*;
+import com.dpw.runner.shipment.services.dto.v1.request.ConsoleBookingListRequest;
+import com.dpw.runner.shipment.services.dto.v1.response.ConsoleBookingListResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationService;
+import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service_bus.AzureServiceBusTopic;
 import com.dpw.runner.shipment.services.service_bus.ISBProperties;
 import com.dpw.runner.shipment.services.service_bus.SBUtilsImpl;
@@ -129,6 +132,9 @@ public class ConsolidationService implements IConsolidationService {
     @Autowired
     private ModelMapper modelMapper;
 
+    @Autowired
+    private IV1Service v1Service;
+
     private List<String> TRANSPORT_MODES = Arrays.asList("SEA", "ROAD", "RAIL", "AIR");
     private List<String> SHIPMENT_TYPE = Arrays.asList("FCL", "LCL");
     private List<String> WEIGHT_UNIT = Arrays.asList("KGS", "G", "DT");
@@ -224,10 +230,33 @@ public class ConsolidationService implements IConsolidationService {
 
     private List<IRunnerResponse> convertEntityListToDtoList(List<ConsolidationDetails> lst) {
         List<IRunnerResponse> responseList = new ArrayList<>();
+        List<ConsolidationListResponse> consolidationListResponses = new ArrayList<>();
         lst.forEach(consolidationDetails -> {
             var res = (modelMapper.map(consolidationDetails, ConsolidationListResponse.class));
             updateHouseBillsShippingIds(consolidationDetails, res);
-            responseList.add(res);
+            consolidationListResponses.add(res);
+        });
+        if(consolidationListResponses != null && consolidationListResponses.size() > 0) {
+            List<UUID> guidsList = new ArrayList<>();
+            for (ConsolidationListResponse consolidationDetails: consolidationListResponses) {
+                guidsList.add(consolidationDetails.getGuid());
+            }
+            if(guidsList.size() > 0) {
+                ConsoleBookingListRequest consoleBookingListRequest = new ConsoleBookingListRequest();
+                consoleBookingListRequest.setGuidsList(guidsList);
+                ConsoleBookingListResponse consoleBookingListResponse = v1Service.fetchConsolidationBookingData(consoleBookingListRequest);
+                if(!consoleBookingListResponse.getData().isEmpty()) {
+                    for (ConsolidationListResponse consolidationDetails: consolidationListResponses) {
+                        if(consoleBookingListResponse.getData().get(consolidationDetails.getGuid()) != null) {
+                            consolidationDetails.setBookingStatus(consoleBookingListResponse.getData().get(consolidationDetails.getGuid()).getStatus());
+                            consolidationDetails.setBookingId(consoleBookingListResponse.getData().get(consolidationDetails.getGuid()).getIntraBookingId());
+                        }
+                    }
+                }
+            }
+        }
+        consolidationListResponses.forEach(consolidationDetails -> {
+            responseList.add(consolidationDetails);
         });
         return responseList;
     }
@@ -937,9 +966,10 @@ public class ConsolidationService implements IConsolidationService {
             }
             Pair<Specification<ConsolidationDetails>, Pageable> tuple = fetchData(request, ConsolidationDetails.class, tableNames);
             Page<ConsolidationDetails> consolidationDetailsPage = consolidationDetailsDao.findAll(tuple.getLeft(), tuple.getRight());
+            List<IRunnerResponse> consoleResponse = convertEntityListToDtoList(consolidationDetailsPage.getContent());
             log.info("Consolidation list retrieved successfully for Request Id {} ", LoggerHelper.getRequestIdFromMDC());
             return ResponseHelper.buildListSuccessResponse(
-                    convertEntityListToDtoList(consolidationDetailsPage.getContent()),
+                    consoleResponse,
                     consolidationDetailsPage.getTotalPages(),
                     consolidationDetailsPage.getTotalElements());
         } catch (Exception e) {
@@ -1033,6 +1063,19 @@ public class ConsolidationService implements IConsolidationService {
             }
             log.info("Consolidation details fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
             ConsolidationDetailsResponse response = jsonHelper.convertValue(consolidationDetails.get(), ConsolidationDetailsResponse.class);
+            if(response != null && response.getGuid() != null) {
+                List<UUID> guidsList = new ArrayList<>();
+                guidsList.add(response.getGuid());
+                ConsoleBookingListRequest consoleBookingListRequest = new ConsoleBookingListRequest();
+                consoleBookingListRequest.setGuidsList(guidsList);
+                ConsoleBookingListResponse consoleBookingListResponse = v1Service.fetchConsolidationBookingData(consoleBookingListRequest);
+                if(!consoleBookingListResponse.getData().isEmpty()) {
+                    if(consoleBookingListResponse.getData().get(response.getGuid()) != null) {
+                        response.setBookingStatus(consoleBookingListResponse.getData().get(response.getGuid()).getStatus());
+                        response.setBookingId(consoleBookingListResponse.getData().get(response.getGuid()).getIntraBookingId());
+                    }
+                }
+            }
             return ResponseHelper.buildSuccessResponse(response);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -1061,6 +1104,19 @@ public class ConsolidationService implements IConsolidationService {
             }
             log.info("Consolidation details async fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
             ConsolidationDetailsResponse response = jsonHelper.convertValue(consolidationDetails.get(), ConsolidationDetailsResponse.class);
+            if(response != null && response.getGuid() != null) {
+                List<UUID> guidsList = new ArrayList<>();
+                guidsList.add(response.getGuid());
+                ConsoleBookingListRequest consoleBookingListRequest = new ConsoleBookingListRequest();
+                consoleBookingListRequest.setGuidsList(guidsList);
+                ConsoleBookingListResponse consoleBookingListResponse = v1Service.fetchConsolidationBookingData(consoleBookingListRequest);
+                if(!consoleBookingListResponse.getData().isEmpty()) {
+                    if(consoleBookingListResponse.getData().get(response.getGuid()) != null) {
+                        response.setBookingStatus(consoleBookingListResponse.getData().get(response.getGuid()).getStatus());
+                        response.setBookingId(consoleBookingListResponse.getData().get(response.getGuid()).getIntraBookingId());
+                    }
+                }
+            }
             return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(response));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()

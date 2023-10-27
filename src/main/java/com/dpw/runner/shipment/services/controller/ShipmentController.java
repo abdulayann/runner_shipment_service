@@ -1,6 +1,5 @@
 package com.dpw.runner.shipment.services.controller;
 
-import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentResponse;
 import com.dpw.runner.shipment.services.commons.constants.ApiConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
@@ -8,14 +7,13 @@ import com.dpw.runner.shipment.services.commons.constants.ShipmentConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
-import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.patchRequest.ShipmentPatchRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
-import com.dpw.runner.shipment.services.dto.response.AwbResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentListResponse;
+import com.dpw.runner.shipment.services.dto.v1.request.TIListRequest;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
@@ -23,17 +21,12 @@ import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
 import com.dpw.runner.shipment.services.syncing.Entity.CustomShipmentSyncRequest;
 import com.dpw.runner.shipment.services.syncing.impl.ShipmentReverseSync;
 import com.dpw.runner.shipment.services.syncing.impl.ShipmentSync;
-import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import com.github.bohnman.squiggly.Squiggly;
-import com.github.bohnman.squiggly.util.SquigglyUtils;
 import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.text.StringEscapeUtils;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -41,7 +34,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
@@ -248,4 +240,39 @@ public class ShipmentController {
         CommonGetRequest request = CommonGetRequest.builder().id(id).build();
         return (ResponseEntity<RunnerResponse<ShipmentDetailsResponse>>) shipmentService.cloneShipment(CommonRequestModel.buildRequest(request));
     }
+
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = ShipmentConstants.TI_LIST_SUCCESSFUL),
+            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
+    })
+    @PostMapping(ApiConstants.LIST_TI)
+    public ResponseEntity<?> listTransportInstruction(@RequestBody @Valid TIListRequest request){
+        String responseMsg = "failure executing :(";
+        try {
+            return shipmentService.transportInstructionList(CommonRequestModel.buildRequest(request));
+        } catch (Exception e){
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : "Error listing transport instructions for provided shipment";
+            log.error(responseMsg, e);
+        }
+        return ResponseHelper.buildFailedResponse(responseMsg);
+    }
+
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = ShipmentConstants.CONTAINER_LIST_SUCCESSFUL_NEW_TI),
+            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
+    })
+    @PostMapping(ApiConstants.LIST_CONTAINER_FOR_TI)
+    public ResponseEntity<?> listContainersForTI(@RequestBody @Valid TIListRequest request){
+        String responseMsg = "failure executing :(";
+        try {
+            return shipmentService.containerListForTI(CommonRequestModel.buildRequest(request));
+        } catch (Exception e){
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : "Error listing containers for shipment TI";
+            log.error(responseMsg, e);
+        }
+        return ResponseHelper.buildFailedResponse(responseMsg);
+    }
+
 }

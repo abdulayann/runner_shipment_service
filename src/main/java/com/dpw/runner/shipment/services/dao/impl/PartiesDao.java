@@ -115,6 +115,8 @@ public class PartiesDao implements IPartiesDao {
                     log.debug("Parties is null for Id {}", req.getId());
                     throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
                 }
+                req.setCreatedAt(oldEntity.get().getCreatedAt());
+                req.setCreatedBy(oldEntity.get().getCreatedBy());
             }
             req.setEntityId(entityId);
             req.setEntityType(entityType);

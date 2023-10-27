@@ -105,4 +105,5 @@ public class ConsolidationListResponse implements IRunnerResponse {
     private List<String> houseBills;
     private List<String> shipmentIds;
     private String bookingId;
+    private String bookingStatus;
 }

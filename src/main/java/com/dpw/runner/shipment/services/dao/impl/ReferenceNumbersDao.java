@@ -90,6 +90,8 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
                     log.debug("Reference number is null for Id {}", req.getId());
                     throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
                 }
+                req.setCreatedAt(oldEntity.get().getCreatedAt());
+                req.setCreatedBy(oldEntity.get().getCreatedBy());
             }
             req.setShipmentId(shipmentId);
             req = save(req);
@@ -179,6 +181,8 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
                     log.debug("Reference number is null for Id {}", req.getId());
                     throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
                 }
+                req.setCreatedAt(oldEntity.get().getCreatedAt());
+                req.setCreatedBy(oldEntity.get().getCreatedBy());
             }
             req.setConsolidationId(consolidationId);
             req = save(req);
