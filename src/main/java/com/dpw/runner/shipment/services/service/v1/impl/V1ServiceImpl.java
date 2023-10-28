@@ -264,12 +264,8 @@ public class V1ServiceImpl implements IV1Service {
             masterDataResponse = this.restTemplate.postForEntity(this.MASTER_DATA_URL, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in getMasterData() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) masterDataResponse.getBody();
-        } catch (HttpStatusCodeException var6) {
-            if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
-                throw new UnAuthorizedException("UnAuthorizedException");
-            } else {
-                throw new V1ServiceException(var6.getMessage());
-            }
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
         } catch (Exception var7) {
             throw new V1ServiceException(var7.getMessage());
         }
@@ -285,12 +281,8 @@ public class V1ServiceImpl implements IV1Service {
             masterDataResponse = this.restTemplate.postForEntity(this.MASTER_DATA_CREATE_URL, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in createMasterData() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) masterDataResponse.getBody();
-        } catch (HttpStatusCodeException var6) {
-            if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
-                throw new UnAuthorizedException("UnAuthorizedException");
-            } else {
-                throw new V1ServiceException(var6.getMessage());
-            }
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
         } catch (Exception var7) {
             throw new V1ServiceException(var7.getMessage());
         }
@@ -306,12 +298,8 @@ public class V1ServiceImpl implements IV1Service {
             masterDataResponse = this.restTemplate.postForEntity(this.MASTER_DATA_UPDATE_URL, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in updateMasterData() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) masterDataResponse.getBody();
-        } catch (HttpStatusCodeException var6) {
-            if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
-                throw new UnAuthorizedException("UnAuthorizedException");
-            } else {
-                throw new V1ServiceException(var6.getMessage());
-            }
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
         } catch (Exception var7) {
             throw new V1ServiceException(var7.getMessage());
         }
@@ -333,12 +321,8 @@ public class V1ServiceImpl implements IV1Service {
             }
             log.info("Token time taken in getCarrierMasterData() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) masterDataResponse.getBody();
-        } catch (HttpStatusCodeException var6) {
-            if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
-                throw new UnAuthorizedException("UnAuthorizedException");
-            } else {
-                throw new V1ServiceException(var6.getMessage());
-            }
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
         } catch (Exception var7) {
             throw new V1ServiceException(var7.getMessage());
         }
@@ -354,12 +338,8 @@ public class V1ServiceImpl implements IV1Service {
             masterDataResponse = this.restTemplate.postForEntity(this.CARRIER_MASTER_DATA_CREATE_URL, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in createCarrierMasterData() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) masterDataResponse.getBody();
-        } catch (HttpStatusCodeException var6) {
-            if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
-                throw new UnAuthorizedException("UnAuthorizedException");
-            } else {
-                throw new V1ServiceException(var6.getMessage());
-            }
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
         } catch (Exception var7) {
             throw new V1ServiceException(var7.getMessage());
         }
@@ -375,12 +355,8 @@ public class V1ServiceImpl implements IV1Service {
             masterDataResponse = this.restTemplate.postForEntity(this.CARRIER_MASTER_DATA_URL, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in updateCarrierMasterData() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) masterDataResponse.getBody();
-        } catch (HttpStatusCodeException var6) {
-            if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
-                throw new UnAuthorizedException("UnAuthorizedException");
-            } else {
-                throw new V1ServiceException(var6.getMessage());
-            }
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
         } catch (Exception var7) {
             throw new V1ServiceException(var7.getMessage());
         }
@@ -396,12 +372,8 @@ public class V1ServiceImpl implements IV1Service {
             masterDataResponse = this.restTemplate.postForEntity(this.CONTAINER_TYPE_DATA_URL, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in getContainerTypeMasterData() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) masterDataResponse.getBody();
-        } catch (HttpStatusCodeException var6) {
-            if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
-                throw new UnAuthorizedException("UnAuthorizedException");
-            } else {
-                throw new V1ServiceException(var6.getMessage());
-            }
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
         } catch (Exception var7) {
             throw new V1ServiceException(var7.getMessage());
         }
@@ -417,12 +389,8 @@ public class V1ServiceImpl implements IV1Service {
             masterDataResponse = this.restTemplate.postForEntity(this.CONTAINER_TYPE_CREATE_URL, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in createContainerTypeData() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) masterDataResponse.getBody();
-        } catch (HttpStatusCodeException var6) {
-            if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
-                throw new UnAuthorizedException("UnAuthorizedException");
-            } else {
-                throw new V1ServiceException(var6.getMessage());
-            }
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
         } catch (Exception var7) {
             throw new V1ServiceException(var7.getMessage());
         }
@@ -438,12 +406,8 @@ public class V1ServiceImpl implements IV1Service {
             masterDataResponse = this.restTemplate.postForEntity(this.CONTAINER_TYPE_UPDATE_URL, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in updateContainerTypeData() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) masterDataResponse.getBody();
-        } catch (HttpStatusCodeException var6) {
-            if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
-                throw new UnAuthorizedException("UnAuthorizedException");
-            } else {
-                throw new V1ServiceException(var6.getMessage());
-            }
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
         } catch (Exception var7) {
             throw new V1ServiceException(var7.getMessage());
         }
@@ -459,12 +423,8 @@ public class V1ServiceImpl implements IV1Service {
             masterDataResponse = this.restTemplate.postForEntity(this.VESSEL_DATA_URL, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in getVesselData() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) masterDataResponse.getBody();
-        } catch (HttpStatusCodeException var6) {
-            if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
-                throw new UnAuthorizedException("UnAuthorizedException");
-            } else {
-                throw new V1ServiceException(var6.getMessage());
-            }
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
         } catch (Exception var7) {
             throw new V1ServiceException(var7.getMessage());
         }
@@ -480,12 +440,8 @@ public class V1ServiceImpl implements IV1Service {
             masterDataResponse = this.restTemplate.postForEntity(this.VESSEL_CREATE_URL, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in createVesselData() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) masterDataResponse.getBody();
-        } catch (HttpStatusCodeException var6) {
-            if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
-                throw new UnAuthorizedException("UnAuthorizedException");
-            } else {
-                throw new V1ServiceException(var6.getMessage());
-            }
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
         } catch (Exception var7) {
             throw new V1ServiceException(var7.getMessage());
         }
@@ -501,12 +457,8 @@ public class V1ServiceImpl implements IV1Service {
             masterDataResponse = this.restTemplate.postForEntity(this.VESSEL_UPDATE_URL, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in updateVesselData() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) masterDataResponse.getBody();
-        } catch (HttpStatusCodeException var6) {
-            if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
-                throw new UnAuthorizedException("UnAuthorizedException");
-            } else {
-                throw new V1ServiceException(var6.getMessage());
-            }
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
         } catch (Exception var7) {
             throw new V1ServiceException(var7.getMessage());
         }
@@ -522,12 +474,8 @@ public class V1ServiceImpl implements IV1Service {
             masterDataResponse = this.restTemplate.postForEntity(this.ROUTING_MASTER_DATA_URL, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in getRoutingMasterData() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) masterDataResponse.getBody();
-        } catch (HttpStatusCodeException var6) {
-            if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
-                throw new UnAuthorizedException("UnAuthorizedException");
-            } else {
-                throw new V1ServiceException(var6.getMessage());
-            }
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
         } catch (Exception var7) {
             throw new V1ServiceException(var7.getMessage());
         }
@@ -543,12 +491,8 @@ public class V1ServiceImpl implements IV1Service {
             masterDataResponse = this.restTemplate.postForEntity(this.ROUTING_MASTER_CREATE_URL, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in createRoutingMasterData() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) masterDataResponse.getBody();
-        } catch (HttpStatusCodeException var6) {
-            if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
-                throw new UnAuthorizedException("UnAuthorizedException");
-            } else {
-                throw new V1ServiceException(var6.getMessage());
-            }
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
         } catch (Exception var7) {
             throw new V1ServiceException(var7.getMessage());
         }
@@ -564,12 +508,8 @@ public class V1ServiceImpl implements IV1Service {
             masterDataResponse = this.restTemplate.postForEntity(this.ROUTING_MASTER_UPDATE_URL, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in updateRoutingMasterData() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) masterDataResponse.getBody();
-        } catch (HttpStatusCodeException var6) {
-            if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
-                throw new UnAuthorizedException("UnAuthorizedException");
-            } else {
-                throw new V1ServiceException(var6.getMessage());
-            }
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
         } catch (Exception var7) {
             throw new V1ServiceException(var7.getMessage());
         }
@@ -585,12 +525,8 @@ public class V1ServiceImpl implements IV1Service {
             masterDataResponse = this.restTemplate.postForEntity(this.CURRENCIES_DATA_URL, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in getCurrenciesData() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) masterDataResponse.getBody();
-        } catch (HttpStatusCodeException var6) {
-            if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
-                throw new UnAuthorizedException("UnAuthorizedException");
-            } else {
-                throw new V1ServiceException(var6.getMessage());
-            }
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
         } catch (Exception var7) {
             throw new V1ServiceException(var7.getMessage());
         }
@@ -606,12 +542,8 @@ public class V1ServiceImpl implements IV1Service {
             masterDataResponse = this.restTemplate.postForEntity(this.CURRENCIES_CREATE_URL, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in createCurrenciesData() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) masterDataResponse.getBody();
-        } catch (HttpStatusCodeException var6) {
-            if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
-                throw new UnAuthorizedException("UnAuthorizedException");
-            } else {
-                throw new V1ServiceException(var6.getMessage());
-            }
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
         } catch (Exception var7) {
             throw new V1ServiceException(var7.getMessage());
         }
@@ -627,12 +559,8 @@ public class V1ServiceImpl implements IV1Service {
             masterDataResponse = this.restTemplate.postForEntity(this.CURRENCIES_UPDATE_URL, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in updateCurrenciesData() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) masterDataResponse.getBody();
-        } catch (HttpStatusCodeException var6) {
-            if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
-                throw new UnAuthorizedException("UnAuthorizedException");
-            } else {
-                throw new V1ServiceException(var6.getMessage());
-            }
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
         } catch (Exception var7) {
             throw new V1ServiceException(var7.getMessage());
         }
@@ -648,12 +576,8 @@ public class V1ServiceImpl implements IV1Service {
             masterDataResponse = this.restTemplate.postForEntity(this.DANGEROUS_GOOD_DATA_URL, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in getDangerousGoodData() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) masterDataResponse.getBody();
-        } catch (HttpStatusCodeException var6) {
-            if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
-                throw new UnAuthorizedException("UnAuthorizedException");
-            } else {
-                throw new V1ServiceException(var6.getMessage());
-            }
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
         } catch (Exception var7) {
             throw new V1ServiceException(var7.getMessage());
         }
@@ -669,12 +593,8 @@ public class V1ServiceImpl implements IV1Service {
             masterDataResponse = this.restTemplate.postForEntity(this.DANGEROUS_GOOD_CREATE_URL, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in createDangerousGoodData() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) masterDataResponse.getBody();
-        } catch (HttpStatusCodeException var6) {
-            if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
-                throw new UnAuthorizedException("UnAuthorizedException");
-            } else {
-                throw new V1ServiceException(var6.getMessage());
-            }
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
         } catch (Exception var7) {
             throw new V1ServiceException(var7.getMessage());
         }
@@ -690,12 +610,8 @@ public class V1ServiceImpl implements IV1Service {
             masterDataResponse = this.restTemplate.postForEntity(this.DANGEROUS_GOOD_UPDATE_URL, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in updateDangerousGoodData() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) masterDataResponse.getBody();
-        } catch (HttpStatusCodeException var6) {
-            if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
-                throw new UnAuthorizedException("UnAuthorizedException");
-            } else {
-                throw new V1ServiceException(var6.getMessage());
-            }
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
         } catch (Exception var7) {
             throw new V1ServiceException(var7.getMessage());
         }
@@ -711,12 +627,8 @@ public class V1ServiceImpl implements IV1Service {
             masterDataResponse = this.restTemplate.postForEntity(this.WAREHOUSE_DATA_URL, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in getWarehouseData() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) masterDataResponse.getBody();
-        } catch (HttpStatusCodeException var6) {
-            if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
-                throw new UnAuthorizedException("UnAuthorizedException");
-            } else {
-                throw new V1ServiceException(var6.getMessage());
-            }
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
         } catch (Exception var7) {
             throw new V1ServiceException(var7.getMessage());
         }
@@ -732,12 +644,8 @@ public class V1ServiceImpl implements IV1Service {
             masterDataResponse = this.restTemplate.postForEntity(this.WAREHOUSE_CREATE_URL, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in createWarehouseData() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) masterDataResponse.getBody();
-        } catch (HttpStatusCodeException var6) {
-            if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
-                throw new UnAuthorizedException("UnAuthorizedException");
-            } else {
-                throw new V1ServiceException(var6.getMessage());
-            }
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
         } catch (Exception var7) {
             throw new V1ServiceException(var7.getMessage());
         }
@@ -753,12 +661,8 @@ public class V1ServiceImpl implements IV1Service {
             masterDataResponse = this.restTemplate.postForEntity(this.WAREHOUSE_UPDATE_URL, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in updateWarehouseData() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) masterDataResponse.getBody();
-        } catch (HttpStatusCodeException var6) {
-            if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
-                throw new UnAuthorizedException("UnAuthorizedException");
-            } else {
-                throw new V1ServiceException(var6.getMessage());
-            }
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
         } catch (Exception var7) {
             throw new V1ServiceException(var7.getMessage());
         }
@@ -774,12 +678,8 @@ public class V1ServiceImpl implements IV1Service {
             masterDataResponse = this.restTemplate.postForEntity(this.PORTS_DATA_URL, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in getPortsData() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) masterDataResponse.getBody();
-        } catch (HttpStatusCodeException var6) {
-            if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
-                throw new UnAuthorizedException("UnAuthorizedException");
-            } else {
-                throw new V1ServiceException(var6.getMessage());
-            }
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
         } catch (Exception var7) {
             throw new V1ServiceException(var7.getMessage());
         }
@@ -795,12 +695,8 @@ public class V1ServiceImpl implements IV1Service {
             masterDataResponse = this.restTemplate.postForEntity(this.PORTS_CREATE_URL, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in createPortsData() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) masterDataResponse.getBody();
-        } catch (HttpStatusCodeException var6) {
-            if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
-                throw new UnAuthorizedException("UnAuthorizedException");
-            } else {
-                throw new V1ServiceException(var6.getMessage());
-            }
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
         } catch (Exception var7) {
             throw new V1ServiceException(var7.getMessage());
         }
@@ -816,12 +712,8 @@ public class V1ServiceImpl implements IV1Service {
             masterDataResponse = this.restTemplate.postForEntity(this.PORTS_UPDATE_URL, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in updatePortsData() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) masterDataResponse.getBody();
-        } catch (HttpStatusCodeException var6) {
-            if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
-                throw new UnAuthorizedException("UnAuthorizedException");
-            } else {
-                throw new V1ServiceException(var6.getMessage());
-            }
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
         } catch (Exception var7) {
             throw new V1ServiceException(var7.getMessage());
         }
@@ -837,12 +729,8 @@ public class V1ServiceImpl implements IV1Service {
             masterDataResponse = this.restTemplate.postForEntity(this.COMMODITY_DATA_URL, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in getCommodityData() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) masterDataResponse.getBody();
-        } catch (HttpStatusCodeException var6) {
-            if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
-                throw new UnAuthorizedException("UnAuthorizedException");
-            } else {
-                throw new V1ServiceException(var6.getMessage());
-            }
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
         } catch (Exception var7) {
             throw new V1ServiceException(var7.getMessage());
         }
@@ -858,12 +746,8 @@ public class V1ServiceImpl implements IV1Service {
             masterDataResponse = this.restTemplate.postForEntity(this.COMMODITY_CREATE_URL, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in createCommodityData() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) masterDataResponse.getBody();
-        } catch (HttpStatusCodeException var6) {
-            if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
-                throw new UnAuthorizedException("UnAuthorizedException");
-            } else {
-                throw new V1ServiceException(var6.getMessage());
-            }
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
         } catch (Exception var7) {
             throw new V1ServiceException(var7.getMessage());
         }
@@ -879,12 +763,8 @@ public class V1ServiceImpl implements IV1Service {
             masterDataResponse = this.restTemplate.postForEntity(this.COMMODITY_UPDATE_URL, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in updateCommodityData() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) masterDataResponse.getBody();
-        } catch (HttpStatusCodeException var6) {
-            if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
-                throw new UnAuthorizedException("UnAuthorizedException");
-            } else {
-                throw new V1ServiceException(var6.getMessage());
-            }
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
         } catch (Exception var7) {
             throw new V1ServiceException(var7.getMessage());
         }
@@ -900,12 +780,8 @@ public class V1ServiceImpl implements IV1Service {
             masterDataResponse = this.restTemplate.postForEntity(this.SALES_AGENT_DATA_URL, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in getSalesAgentData() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) masterDataResponse.getBody();
-        } catch (HttpStatusCodeException var6) {
-            if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
-                throw new UnAuthorizedException("UnAuthorizedException");
-            } else {
-                throw new V1ServiceException(var6.getMessage());
-            }
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
         } catch (Exception var7) {
             throw new V1ServiceException(var7.getMessage());
         }
@@ -921,12 +797,8 @@ public class V1ServiceImpl implements IV1Service {
             masterDataResponse = this.restTemplate.postForEntity(this.SALES_AGENT_CREATE_URL, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in createSalesAgentData() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) masterDataResponse.getBody();
-        } catch (HttpStatusCodeException var6) {
-            if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
-                throw new UnAuthorizedException("UnAuthorizedException");
-            } else {
-                throw new V1ServiceException(var6.getMessage());
-            }
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
         } catch (Exception var7) {
             throw new V1ServiceException(var7.getMessage());
         }
@@ -942,12 +814,8 @@ public class V1ServiceImpl implements IV1Service {
             masterDataResponse = this.restTemplate.postForEntity(this.SALES_AGENT_UPDATE_URL, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in updateSalesAgentData() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) masterDataResponse.getBody();
-        } catch (HttpStatusCodeException var6) {
-            if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
-                throw new UnAuthorizedException("UnAuthorizedException");
-            } else {
-                throw new V1ServiceException(var6.getMessage());
-            }
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
         } catch (Exception var7) {
             throw new V1ServiceException(var7.getMessage());
         }
@@ -963,12 +831,8 @@ public class V1ServiceImpl implements IV1Service {
             orgResponse = this.restTemplate.postForEntity(this.ORGANIZATION_CREATE_URL, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in createOrganization() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) orgResponse.getBody();
-        } catch (HttpStatusCodeException var6) {
-            if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
-                throw new UnAuthorizedException("UnAuthorizedException");
-            } else {
-                throw new V1ServiceException(var6.getMessage());
-            }
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
         } catch (Exception var7) {
             throw new V1ServiceException(var7.getMessage());
         }
@@ -984,12 +848,8 @@ public class V1ServiceImpl implements IV1Service {
             orgResponse = this.restTemplate.postForEntity(this.ORGANIZATION_API, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in getOrganization() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) orgResponse.getBody();
-        } catch (HttpStatusCodeException var6) {
-            if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
-                throw new UnAuthorizedException("UnAuthorizedException");
-            } else {
-                throw new V1ServiceException(var6.getMessage());
-            }
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
         } catch (Exception var7) {
             throw new V1ServiceException(var7.getMessage());
         }
@@ -1005,12 +865,8 @@ public class V1ServiceImpl implements IV1Service {
             masterDataResponse = this.restTemplate.postForEntity(this.ORGANIZATION_UPDATE_URL, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in updateOrganizationData() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) masterDataResponse.getBody();
-        } catch (HttpStatusCodeException var6) {
-            if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
-                throw new UnAuthorizedException("UnAuthorizedException");
-            } else {
-                throw new V1ServiceException(var6.getMessage());
-            }
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
         } catch (Exception var7) {
             throw new V1ServiceException(var7.getMessage());
         }
@@ -1026,12 +882,8 @@ public class V1ServiceImpl implements IV1Service {
             orgResponse = this.restTemplate.postForEntity(this.UNLOCATION_CREATE_URL, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in createUnlocation() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) orgResponse.getBody();
-        } catch (HttpStatusCodeException var6) {
-            if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
-                throw new UnAuthorizedException("UnAuthorizedException");
-            } else {
-                throw new V1ServiceException(var6.getMessage());
-            }
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
         } catch (Exception var7) {
             throw new V1ServiceException(var7.getMessage());
         }
@@ -1047,12 +899,8 @@ public class V1ServiceImpl implements IV1Service {
             locationResponse = this.restTemplate.postForEntity(this.UNLOCATION_URL, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in fetchUnlocation() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) locationResponse.getBody();
-        } catch (HttpStatusCodeException var6) {
-            if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
-                throw new UnAuthorizedException("UnAuthorizedException");
-            } else {
-                throw new V1ServiceException(var6.getMessage());
-            }
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
         } catch (Exception var7) {
             throw new V1ServiceException(var7.getMessage());
         }
@@ -1068,12 +916,8 @@ public class V1ServiceImpl implements IV1Service {
             masterDataResponse = this.restTemplate.postForEntity(this.UNLOCATION_UPDATE_URL, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in updateUnlocationData() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) masterDataResponse.getBody();
-        } catch (HttpStatusCodeException var6) {
-            if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
-                throw new UnAuthorizedException("UnAuthorizedException");
-            } else {
-                throw new V1ServiceException(var6.getMessage());
-            }
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
         } catch (Exception var7) {
             throw new V1ServiceException(var7.getMessage());
         }
@@ -1089,12 +933,8 @@ public class V1ServiceImpl implements IV1Service {
             masterDataResponse = this.restTemplate.postForEntity(this.MULTIPLE_MASTER_DATA_URL, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in fetchMultipleMasterData() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) masterDataResponse.getBody();
-        } catch (HttpStatusCodeException var6) {
-            if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
-                throw new UnAuthorizedException("UnAuthorizedException");
-            } else {
-                throw new V1ServiceException(var6.getMessage());
-            }
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
         } catch (Exception var7) {
             throw new V1ServiceException(var7.getMessage());
         }
@@ -1110,12 +950,8 @@ public class V1ServiceImpl implements IV1Service {
             masterDataResponse = this.restTemplate.postForEntity(this.USER_DATA_URL, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in fetchUsersData() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) masterDataResponse.getBody();
-        } catch (HttpStatusCodeException var6) {
-            if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
-                throw new UnAuthorizedException("UnAuthorizedException");
-            } else {
-                throw new V1ServiceException(var6.getMessage());
-            }
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
         } catch (Exception var7) {
             throw new V1ServiceException(var7.getMessage());
         }
@@ -1131,12 +967,8 @@ public class V1ServiceImpl implements IV1Service {
             masterDataResponse = this.restTemplate.postForEntity(this.GRID_COLOR_CODE_DATA_URL, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in fetchGridColorCodeData() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) masterDataResponse.getBody();
-        } catch (HttpStatusCodeException var6) {
-            if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
-                throw new UnAuthorizedException("UnAuthorizedException");
-            } else {
-                throw new V1ServiceException(var6.getMessage());
-            }
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
         } catch (Exception var7) {
             throw new V1ServiceException(var7.getMessage());
         }
@@ -1152,12 +984,8 @@ public class V1ServiceImpl implements IV1Service {
             masterDataResponse = this.restTemplate.postForEntity(this.GRID_COLOR_CODE_CREATE_URL, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in createGridColorCodeData() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) masterDataResponse.getBody();
-        } catch (HttpStatusCodeException var6) {
-            if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
-                throw new UnAuthorizedException("UnAuthorizedException");
-            } else {
-                throw new V1ServiceException(var6.getMessage());
-            }
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
         } catch (Exception var7) {
             throw new V1ServiceException(var7.getMessage());
         }
@@ -1173,12 +1001,8 @@ public class V1ServiceImpl implements IV1Service {
             masterDataResponse = this.restTemplate.postForEntity(this.GRID_COLOR_CODE_UPDATE_URL, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in updateGridColorCodeData() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) masterDataResponse.getBody();
-        } catch (HttpStatusCodeException var6) {
-            if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
-                throw new UnAuthorizedException("UnAuthorizedException");
-            } else {
-                throw new V1ServiceException(var6.getMessage());
-            }
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
         } catch (Exception var7) {
             throw new V1ServiceException(var7.getMessage());
         }
@@ -1194,12 +1018,8 @@ public class V1ServiceImpl implements IV1Service {
             masterDataResponse = this.restTemplate.postForEntity(this.LIST_COUSIN_BRANCH_URL, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in listCousinBranches() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) masterDataResponse.getBody();
-        } catch (HttpStatusCodeException var6) {
-            if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
-                throw new UnAuthorizedException("UnAuthorizedException");
-            } else {
-                throw new V1ServiceException(var6.getMessage());
-            }
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
         } catch (Exception var7) {
             throw new V1ServiceException(var7.getMessage());
         }
@@ -1215,12 +1035,8 @@ public class V1ServiceImpl implements IV1Service {
             masterDataResponse = this.restTemplate.postForEntity(this.LIST_COUSIN_BRANCH_WITHOUT_CURRENT_URL, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in listCousinBranchesWithoutCurrent() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) masterDataResponse.getBody();
-        } catch (HttpStatusCodeException var6) {
-            if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
-                throw new UnAuthorizedException("UnAuthorizedException");
-            } else {
-                throw new V1ServiceException(var6.getMessage());
-            }
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
         } catch (Exception var7) {
             throw new V1ServiceException(var7.getMessage());
         }
@@ -1236,12 +1052,8 @@ public class V1ServiceImpl implements IV1Service {
             masterDataResponse = this.restTemplate.postForEntity(this.TENANT_BY_GUID_URL, entity, TenantIdResponse.class, new Object[0]);
             log.info("Token time taken in tenantByGuid() function " + (System.currentTimeMillis() - time));
             return (TenantIdResponse) masterDataResponse.getBody();
-        } catch (HttpStatusCodeException var6) {
-            if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
-                throw new UnAuthorizedException("UnAuthorizedException");
-            } else {
-                throw new V1ServiceException(var6.getMessage());
-            }
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
         } catch (Exception var7) {
             throw new V1ServiceException(var7.getMessage());
         }
@@ -1257,12 +1069,8 @@ public class V1ServiceImpl implements IV1Service {
             masterDataResponse = this.restTemplate.postForEntity(this.SEND_CONSOLIDATION_TASK_URL, entity, SendEntityResponse.class, new Object[0]);
             log.info("Token time taken in sendConsolidationTask() function " + (System.currentTimeMillis() - time));
             return (SendEntityResponse) masterDataResponse.getBody();
-        } catch (HttpStatusCodeException var6) {
-            if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
-                throw new UnAuthorizedException("UnAuthorizedException");
-            } else {
-                throw new V1ServiceException(var6.getMessage());
-            }
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
         } catch (Exception var7) {
             throw new V1ServiceException(var7.getMessage());
         }
@@ -1278,12 +1086,8 @@ public class V1ServiceImpl implements IV1Service {
             masterDataResponse = this.restTemplate.postForEntity(this.SEND_SHIPMENT_TASK_URL, entity, SendEntityResponse.class, new Object[0]);
             log.info("Token time taken in sendShipmentTask() function " + (System.currentTimeMillis() - time));
             return (SendEntityResponse) masterDataResponse.getBody();
-        } catch (HttpStatusCodeException var6) {
-            if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
-                throw new UnAuthorizedException("UnAuthorizedException");
-            } else {
-                throw new V1ServiceException(var6.getMessage());
-            }
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
         } catch (Exception var7) {
             throw new V1ServiceException(var7.getMessage());
         }
@@ -1299,12 +1103,8 @@ public class V1ServiceImpl implements IV1Service {
             masterDataResponse = this.restTemplate.postForEntity(this.IMPORT_FLIGHT_SCHEDULE, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in importFlightSchedules() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) masterDataResponse.getBody();
-        } catch (HttpStatusCodeException var6) {
-            if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
-                throw new UnAuthorizedException("UnAuthorizedException");
-            } else {
-                throw new V1ServiceException(var6.getMessage());
-            }
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
         } catch (Exception var7) {
             throw new V1ServiceException(var7.getMessage());
         }
@@ -1320,12 +1120,8 @@ public class V1ServiceImpl implements IV1Service {
             masterDataResponse = this.restTemplate.postForEntity(this.FETCH_FLIGHT_STATUS, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in fetchFlightStatus() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) masterDataResponse.getBody();
-        } catch (HttpStatusCodeException var6) {
-            if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
-                throw new UnAuthorizedException("UnAuthorizedException");
-            } else {
-                throw new V1ServiceException(var6.getMessage());
-            }
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
         } catch (Exception var7) {
             throw new V1ServiceException(var7.getMessage());
         }
@@ -1341,12 +1137,8 @@ public class V1ServiceImpl implements IV1Service {
             masterDataResponse = this.restTemplate.postForEntity(this.IMPORT_SAILING_SCHEDULES, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in importSailingSchedules() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) masterDataResponse.getBody();
-        } catch (HttpStatusCodeException var6) {
-            if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
-                throw new UnAuthorizedException("UnAuthorizedException");
-            } else {
-                throw new V1ServiceException(var6.getMessage());
-            }
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
         } catch (Exception var7) {
             throw new V1ServiceException(var7.getMessage());
         }
@@ -1362,12 +1154,8 @@ public class V1ServiceImpl implements IV1Service {
             masterDataResponse = this.restTemplate.postForEntity(this.LIST_SAILING_SCHEDULE, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in listSailingSchedule() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) masterDataResponse.getBody();
-        } catch (HttpStatusCodeException var6) {
-            if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
-                throw new UnAuthorizedException("UnAuthorizedException");
-            } else {
-                throw new V1ServiceException(var6.getMessage());
-            }
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
         } catch (Exception var7) {
             throw new V1ServiceException(var7.getMessage());
         }
@@ -1383,12 +1171,8 @@ public class V1ServiceImpl implements IV1Service {
             masterDataResponse = this.restTemplate.postForEntity(this.ADDRESS_LIST, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in addressList() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) masterDataResponse.getBody();
-        } catch (HttpStatusCodeException var6) {
-            if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
-                throw new UnAuthorizedException("UnAuthorizedException");
-            } else {
-                throw new V1ServiceException(var6.getMessage());
-            }
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
         } catch (Exception var7) {
             throw new V1ServiceException(var7.getMessage());
         }
@@ -1404,12 +1188,8 @@ public class V1ServiceImpl implements IV1Service {
             masterDataResponse = this.restTemplate.postForEntity(this.TENANT_NAME_BY_ID, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in tenantNameByTenantId() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) masterDataResponse.getBody();
-        } catch (HttpStatusCodeException var6) {
-            if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
-                throw new UnAuthorizedException("UnAuthorizedException");
-            } else {
-                throw new V1ServiceException(var6.getMessage());
-            }
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
         } catch (Exception var7) {
             throw new V1ServiceException(var7.getMessage());
         }
@@ -1426,12 +1206,8 @@ public class V1ServiceImpl implements IV1Service {
             masterDataResponse = this.restTemplate.postForEntity(this.CHARGE_TYPE_URL, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in fetchChargeCodeData() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) masterDataResponse.getBody();
-        } catch (HttpStatusCodeException var6) {
-            if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
-                throw new UnAuthorizedException("UnAuthorizedException");
-            } else {
-                throw new V1ServiceException(var6.getMessage());
-            }
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
         } catch (Exception var7) {
             throw new V1ServiceException(var7.getMessage());
         }
@@ -1447,12 +1223,8 @@ public class V1ServiceImpl implements IV1Service {
             masterDataResponse = this.restTemplate.postForEntity(this.UNLOCATION_ORIGIN_AND_DESTINATION_LIST_URL, entity, V1DataResponse.class);
             log.info("Token time taken in fetchUnlocationOriginAndDestinationList() function " + (System.currentTimeMillis() - time));
             return masterDataResponse.getBody();
-        } catch (HttpStatusCodeException var6) {
-            if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
-                throw new UnAuthorizedException("UnAuthorizedException");
-            } else {
-                throw new V1ServiceException(var6.getMessage());
-            }
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
         } catch (Exception var7) {
             throw new V1ServiceException(var7.getMessage());
         }
@@ -1468,12 +1240,8 @@ public class V1ServiceImpl implements IV1Service {
             masterDataResponse = this.restTemplate.postForEntity(this.LIST_UNLOCATION_TRANSPORT_MODE_BASED_URL, entity, V1DataResponse.class);
             log.info("Token time taken in fetchListUnlocationTransportModeBased() function " + (System.currentTimeMillis() - time));
             return masterDataResponse.getBody();
-        } catch (HttpStatusCodeException var6) {
-            if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
-                throw new UnAuthorizedException("UnAuthorizedException");
-            } else {
-                throw new V1ServiceException(var6.getMessage());
-            }
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
         } catch (Exception var7) {
             throw new V1ServiceException(var7.getMessage());
         }
@@ -1489,12 +1257,8 @@ public class V1ServiceImpl implements IV1Service {
             masterDataResponse = this.restTemplate.postForEntity(this.ACTIVITY_MASTER_URL, entity, V1DataResponse.class);
             log.info("Token time taken in fetchActivityMaster() function " + (System.currentTimeMillis() - time));
             return masterDataResponse.getBody();
-        } catch (HttpStatusCodeException var6) {
-            if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
-                throw new UnAuthorizedException("UnAuthorizedException");
-            } else {
-                throw new V1ServiceException(var6.getMessage());
-            }
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
         } catch (Exception var7) {
             throw new V1ServiceException(var7.getMessage());
         }
@@ -1510,12 +1274,8 @@ public class V1ServiceImpl implements IV1Service {
             masterDataResponse = this.restTemplate.postForEntity(this.RETRIEVE_TENANT_SETTINGS, entity, V1RetrieveResponse.class, new Object[0]);
             log.info("Token time taken in tenantNameByTenantId() function " + (System.currentTimeMillis() - time));
             return (V1RetrieveResponse) masterDataResponse.getBody();
-        } catch (HttpStatusCodeException var6) {
-            if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
-                throw new UnAuthorizedException("UnAuthorizedException");
-            } else {
-                throw new V1ServiceException(var6.getMessage());
-            }
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
         } catch (Exception var7) {
             throw new V1ServiceException(var7.getMessage());
         }
@@ -1531,12 +1291,8 @@ public class V1ServiceImpl implements IV1Service {
             masterDataResponse = this.restTemplate.postForEntity(this.RETRIEVE_TENANT, entity, V1RetrieveResponse.class, new Object[0]);
             log.info("Token time taken in retrieveTenant() function " + (System.currentTimeMillis() - time));
             return (V1RetrieveResponse) masterDataResponse.getBody();
-        } catch (HttpStatusCodeException var6) {
-            if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
-                throw new UnAuthorizedException("UnAuthorizedException");
-            } else {
-                throw new V1ServiceException(var6.getMessage());
-            }
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
         } catch (Exception var7) {
             throw new V1ServiceException(var7.getMessage());
         }
@@ -1552,12 +1308,8 @@ public class V1ServiceImpl implements IV1Service {
             masterDataResponse = this.restTemplate.postForEntity(this.OWN_TYPE, entity, V1RetrieveResponse.class, new Object[0]);
             log.info("Token time taken in fetchOwnType() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) masterDataResponse.getBody();
-        } catch (HttpStatusCodeException var6) {
-            if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
-                throw new UnAuthorizedException("UnAuthorizedException");
-            } else {
-                throw new V1ServiceException(var6.getMessage());
-            }
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
         } catch (Exception var7) {
             throw new V1ServiceException(var7.getMessage());
         }
@@ -1573,12 +1325,8 @@ public class V1ServiceImpl implements IV1Service {
             masterDataResponse = this.restTemplate.postForEntity(this.CARRIER_FILTER_LIST, entity, V1RetrieveResponse.class, new Object[0]);
             log.info("Token time taken in fetchCarrierFilterList() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) masterDataResponse.getBody();
-        } catch (HttpStatusCodeException var6) {
-            if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
-                throw new UnAuthorizedException("UnAuthorizedException");
-            } else {
-                throw new V1ServiceException(var6.getMessage());
-            }
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
         } catch (Exception var7) {
             throw new V1ServiceException(var7.getMessage());
         }
