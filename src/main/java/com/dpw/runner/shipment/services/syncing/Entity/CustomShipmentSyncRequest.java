@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
+import javax.servlet.http.Part;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -453,4 +454,8 @@ public class CustomShipmentSyncRequest implements IRunnerRequest, IRunnerRespons
     private List<RoutingsRequestV2> Routings;
     @JsonProperty("ServicesList")
     private List<ShipmentServiceRequestV2> ServicesList;
+
+    //Shipment Addresses
+    @JsonProperty("ShipmentAddress")
+    private List<PartyRequestV2> shipmentAddresses;
 }
