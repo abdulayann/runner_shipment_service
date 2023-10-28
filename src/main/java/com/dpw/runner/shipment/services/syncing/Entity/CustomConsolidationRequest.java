@@ -512,4 +512,8 @@ public class CustomConsolidationRequest implements IRunnerResponse, IRunnerReque
     private String CTOFaxPhone;
     @JsonProperty("IsLocked")
     private Boolean IsLocked;
+
+    //Consolidation Address
+    @JsonProperty("ConsolidationAddress")
+    private List<PartyRequestV2> consolidationAddresses;
 }
