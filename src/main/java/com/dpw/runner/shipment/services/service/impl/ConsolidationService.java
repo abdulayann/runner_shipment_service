@@ -532,6 +532,41 @@ public class ConsolidationService implements IConsolidationService {
         achievedQuantitiesDao.save(achievedQuantities);
     }
 
+    public Optional<ConsolidationDetails> retrieveByIdOrGuid(ConsolidationDetailsRequest request){
+        String responseMsg;
+
+        if (request == null) {
+            log.error("Request is empty for Consolidation update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+        }
+
+        Optional<ConsolidationDetails> oldEntity = Optional.ofNullable(null);
+
+        if(request.getId()!=null){
+            long id = request.getId();
+            oldEntity=consolidationDetailsDao.findById(id);
+            if (!oldEntity.isPresent()) {
+                log.debug("Consolidation Details is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
+                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+            }
+
+        }
+
+        else if(request.getGuid()!=null){
+            UUID guid = request.getGuid();
+            oldEntity= consolidationDetailsDao.findByGuid(guid);
+            if (!oldEntity.isPresent()) {
+                log.debug("Consolidation Details is null for GUID {} with Request GUID {}", request.getGuid(), LoggerHelper.getRequestIdFromMDC());
+                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+            }
+
+        }
+        else{
+            throw new RunnerException("Either Id or Guid is required");
+
+        }
+        return oldEntity;
+    }
+
     @Override
     @Transactional
     public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
@@ -540,12 +575,14 @@ public class ConsolidationService implements IConsolidationService {
         if (request == null) {
             log.error("Request is empty for Consolidation update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
         }
-        if (request.getId() == null) {
-            log.error("Request Id is null for Consolidation update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
-        }
+//        if (request.getId() == null) {
+//            log.error("Request Id is null for Consolidation update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+//        }
         // TODO- implement Validation logic
-        long id = request.getId();
-        Optional<ConsolidationDetails> oldEntity = consolidationDetailsDao.findById(id);
+
+        Optional<ConsolidationDetails> oldEntity = retrieveByIdOrGuid(request);
+        long id = oldEntity.get().getId();
+
         if (!oldEntity.isPresent()) {
             log.debug("Consolidation Details is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
@@ -643,8 +680,9 @@ public class ConsolidationService implements IConsolidationService {
         List<RoutingsRequest> routingsRequestList = consolidationDetailsRequest.getRoutingsList();
         List<PartiesRequest> consolidationAddressRequest = consolidationDetailsRequest.getConsolidationAddresses();
         // TODO- implement Validation logic
-        long id = consolidationDetailsRequest.getId();
-        Optional<ConsolidationDetails> oldEntity = consolidationDetailsDao.findById(id);
+
+        Optional<ConsolidationDetails> oldEntity = retrieveByIdOrGuid(consolidationDetailsRequest);
+        long id = oldEntity.get().getId();
         if (!oldEntity.isPresent()) {
             log.debug("Consolidation Details is null for Id {}", consolidationDetailsRequest.getId());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
