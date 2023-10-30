@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.utils;
 
 import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.entity.Containers;
+import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.entity.Events;
 import com.dpw.runner.shipment.services.entity.enums.ContainerStatus;
 import com.opencsv.CSVReader;
@@ -345,6 +346,24 @@ public class CSVParsingUtil<T> {
         return lineBuilder.toString();
     }
 
+    public String formatPackingAsCSVLine(T entity) {
+        StringBuilder lineBuilder = new StringBuilder();
+        Field[] fields = Packing.class.getDeclaredFields();
+        for (Field field : fields) {
+            if (hiddenFields.contains(field.getName())) continue;
+            field.setAccessible(true);
+            try {
+                Object value = field.get(entity);
+                lineBuilder.append(value != null ? value.toString() : "");
+                lineBuilder.append(",");
+            } catch (IllegalAccessException e) {
+                e.printStackTrace();
+            }
+        }
+        lineBuilder.deleteCharAt(lineBuilder.length() - 1);
+        return lineBuilder.toString();
+    }
+
     public String formatEventAsCSVLine(Events entity) {
         StringBuilder lineBuilder = new StringBuilder();
         Field[] fields = Events.class.getDeclaredFields();
@@ -419,7 +438,7 @@ public class CSVParsingUtil<T> {
     }
 
 
-    public void setField(T entity, String attributeName, String attributeValue) throws NoSuchFieldException, IllegalAccessException {
+    private void setField(T entity, String attributeName, String attributeValue) throws NoSuchFieldException, IllegalAccessException {
         Field field = entity.getClass().getDeclaredField(attributeName);
         field.setAccessible(true);
 

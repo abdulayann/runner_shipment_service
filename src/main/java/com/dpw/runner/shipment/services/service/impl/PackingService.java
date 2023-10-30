@@ -17,12 +17,18 @@ import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
+import com.dpw.runner.shipment.services.entity.Containers;
+import com.dpw.runner.shipment.services.entity.Packing;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingService;
+import com.dpw.runner.shipment.services.syncing.Entity.BulkPackingRequestV2;
 import com.dpw.runner.shipment.services.syncing.Entity.PackingRequestV2;
+import com.dpw.runner.shipment.services.syncing.impl.PackingSync;
 import com.dpw.runner.shipment.services.utils.CSVParsingUtil;
 import com.dpw.runner.shipment.services.utils.UnitConversionUtility;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -79,6 +85,9 @@ public class PackingService implements IPackingService {
     @Autowired
     private IConsolidationDetailsDao consolidationDao;
 
+    @Autowired
+    private PackingSync packingSync;
+
     private final CSVParsingUtil<Packing> parser = new CSVParsingUtil<>(Packing.class);
 
     @Transactional
@@ -120,6 +129,7 @@ public class PackingService implements IPackingService {
             packing.setConsolidationId(packing.getConsolidationId());
         });
         packingDao.saveAll(packingList);
+        packingSync.sync(packingList, request.getConsolidationId(), request.getShipmentId());
     }
 
     @Override
@@ -150,7 +160,7 @@ public class PackingService implements IPackingService {
         try (PrintWriter writer = response.getWriter()) {
             writer.println(parser.generateCSVHeaderForContainer());
             for (Packing packing : result) {
-                writer.println(parser.formatContainerAsCSVLine(packing));
+                writer.println(parser.formatPackingAsCSVLine(packing));
             }
         }
     }
@@ -391,6 +401,25 @@ public class PackingService implements IPackingService {
             log.error(responseMsg, ex);
             TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
             throw new RuntimeException(ex);
+        }
+    }
+
+    @Override
+    public ResponseEntity<?> V1BulkPackingCreateAndUpdate(CommonRequestModel commonRequestModel) {
+        BulkPackingRequestV2 bulkContainerRequest = (BulkPackingRequestV2) commonRequestModel.getData();
+        try {
+            List<ResponseEntity<?>> responses = new ArrayList<>();
+            for (PackingRequestV2 containerRequest : bulkContainerRequest.getBulkPacking())
+                responses.add(this.V1PackingCreateAndUpdate(CommonRequestModel.builder()
+                        .data(containerRequest)
+                        .build()));
+            return ResponseHelper.buildSuccessResponse(responses);
+        } catch (Exception e) {
+            String responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+            throw new RuntimeException(e);
         }
     }
 
