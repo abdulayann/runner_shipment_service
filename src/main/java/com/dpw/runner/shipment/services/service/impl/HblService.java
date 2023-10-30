@@ -390,16 +390,20 @@ public class HblService implements IHblService {
             hblData.setFinalDestination(shipmentDetail.getCarrierDetails().getDestination());
             hblData.setQuantity(shipmentDetail.getInnerPacks());
             hblData.setQuantityCode(shipmentDetail.getInnerPackUnit());
-            hblData.setElNumber(String.join(",",
-                    shipmentDetail.getElDetailsList().stream().map(c -> c.getElNumber()).collect(Collectors.toList())));
-            hblData.setElDate(String.join(",",
-                    shipmentDetail.getElDetailsList().stream().map(c -> c.getCreatedAt().toString()).collect(Collectors.toList())));
-            hblData.setInvoiceNumbers(String.join(",",
-                    shipmentDetail.getReferenceNumbersList().stream().filter(c -> c.getType() == Constants.INVNO)
-                            .map(c -> c.getReferenceNumber()).collect(Collectors.toList())));
-            hblData.setLcNumber(String.join(",",
-                    shipmentDetail.getReferenceNumbersList().stream().filter(c -> c.getType() == Constants.CON)
-                            .map(c -> c.getReferenceNumber()).collect(Collectors.toList())));
+            if(shipmentDetail.getElDetailsList() != null) {
+                hblData.setElNumber(String.join(",",
+                        shipmentDetail.getElDetailsList().stream().map(c -> c.getElNumber()).collect(Collectors.toList())));
+                hblData.setElDate(String.join(",",
+                        shipmentDetail.getElDetailsList().stream().map(c -> c.getCreatedAt().toString()).collect(Collectors.toList())));
+            }
+            if(shipmentDetail.getReferenceNumbersList() != null) {
+                hblData.setInvoiceNumbers(String.join(",",
+                        shipmentDetail.getReferenceNumbersList().stream().filter(c -> c.getType() == Constants.INVNO)
+                                .map(c -> c.getReferenceNumber()).collect(Collectors.toList())));
+                hblData.setLcNumber(String.join(",",
+                        shipmentDetail.getReferenceNumbersList().stream().filter(c -> c.getType() == Constants.CON)
+                                .map(c -> c.getReferenceNumber()).collect(Collectors.toList())));
+            }
 
         }
 
