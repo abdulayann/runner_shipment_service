@@ -91,6 +91,9 @@ public class ConsolidationSync implements IConsolidationSync {
         String consolidationRequest = jsonHelper.convertToJson(response);
         retryTemplate.execute(ctx -> {
             log.info("Current retry : {}", ctx.getRetryCount());
+            if(ctx.getLastThrowable() != null) {
+                log.error("V1 error -> {}",ctx.getLastThrowable().getMessage());
+            }
             HttpEntity<V1DataResponse> entity = new HttpEntity(consolidationRequest, V1AuthHelper.getHeaders());
             var response_ = this.restTemplate.postForEntity(this.CONSOLIDATION_V1_SYNC_URL, entity, V1DataResponse.class, new Object[0]);
             return response_;

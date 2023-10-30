@@ -63,6 +63,9 @@ public class ShipmentSettingsSync implements IShipmentSettingsSync {
         String payload = jsonHelper.convertToJson(syncRequest);
         retryTemplate.execute(ctx -> {
             log.info("Current retry : {}", ctx.getRetryCount());
+            if(ctx.getLastThrowable() != null) {
+                log.error("V1 error -> {}",ctx.getLastThrowable().getMessage());
+            }
             HttpEntity<V1DataResponse> entity = new HttpEntity(payload, V1AuthHelper.getHeaders());
             var response = this.restTemplate.postForEntity(this.SHIPMENT_SETTING_V1_SYNC_URL, entity, V1DataResponse.class, new Object[0]);
             return response;
