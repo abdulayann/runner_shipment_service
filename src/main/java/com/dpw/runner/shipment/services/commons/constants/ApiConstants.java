@@ -46,4 +46,6 @@ public class ApiConstants {
     public static final String SAVE_FROM_V1 = "save/from/v1";
     public static final String API_GET_CUSTOM_REQ = "getCustomReq";
     public static final String SYNC = "/sync";
+    public static final String LIST_TI = "/list/TI";
+    public static final String LIST_CONTAINER_FOR_TI = "/list/TI/containers";
 }

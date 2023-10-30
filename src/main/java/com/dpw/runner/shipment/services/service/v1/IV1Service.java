@@ -2,10 +2,7 @@ package com.dpw.runner.shipment.services.service.v1;
 
 import com.dpw.runner.shipment.services.dto.v1.request.CreateConsolidationTaskRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.CreateShipmentTaskRequest;
-import com.dpw.runner.shipment.services.dto.v1.response.SendEntityResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.TenantIdResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1RetrieveResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.CustomerBooking;
 import org.springframework.http.ResponseEntity;
 
@@ -131,4 +128,7 @@ public interface IV1Service {
     V1DataResponse fetchOwnType(Object request);
 
     V1DataResponse fetchCarrierFilterList(Object request);
+    V1DataResponse fetchTransportInstructionList(Object request);
+    V1DataResponse fetchContainersListForTI(Object request);
+    ConsoleBookingListResponse fetchConsolidationBookingData(Object request);
 }

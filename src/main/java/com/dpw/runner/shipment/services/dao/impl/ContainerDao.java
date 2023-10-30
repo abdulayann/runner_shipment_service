@@ -60,6 +60,8 @@ public class ContainerDao implements IContainerDao {
                 log.debug("Container is null for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
+            containers.setCreatedAt(oldEntity.get().getCreatedAt());
+            containers.setCreatedBy(oldEntity.get().getCreatedBy());
             if(containers.getShipmentsList() == null) {
                 containers.setShipmentsList(oldEntity.get().getShipmentsList());
             }

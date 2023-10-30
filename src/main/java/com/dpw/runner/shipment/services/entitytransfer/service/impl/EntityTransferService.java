@@ -1158,13 +1158,13 @@ public class EntityTransferService implements IEntityTransferService {
             });
         }
         String mbl = request.getBol();
-        Optional<ConsolidationDetails> consolidationDetails = null;
+        List<ConsolidationDetails> consolidationDetails = null;
         if(mbl != null && !mbl.equalsIgnoreCase("")) {
             consolidationDetails = consolidationDetailsDao.findByBol(mbl);
         }
         ResponseEntity<RunnerResponse<ConsolidationDetailsResponse>> response;
-        if(consolidationDetails != null && consolidationDetails.isPresent()) {
-            request.setId(consolidationDetails.get().getId());
+        if(consolidationDetails != null && consolidationDetails.size() > 0) {
+            request.setId(consolidationDetails.get(0).getId());
             try {
                 response = (ResponseEntity<RunnerResponse<ConsolidationDetailsResponse>>) consolidationService.completeUpdate(CommonRequestModel.buildRequest(request));
             } catch (Exception e) {
