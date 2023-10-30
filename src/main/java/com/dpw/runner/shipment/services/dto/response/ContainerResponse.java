@@ -95,4 +95,5 @@ public class ContainerResponse implements IRunnerResponse {
     public Map<String, String> masterData;
     public Map<String, String> commodityTypeData;
     public Map<String, String> containerCodeData;
+    private Long contractEnforcedQuantityLimit;
 }

@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.service.impl;
 import com.dpw.runner.shipment.services.adapters.interfaces.ICRPServiceAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.IFusionServiceAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.INPMServiceAdapter;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.RequestAuthContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
@@ -24,6 +25,7 @@ import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.BookingSource;
 import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
+import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferChargeType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferContainerType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
@@ -39,8 +41,10 @@ import com.dpw.runner.shipment.services.service.interfaces.ICustomerBookingServi
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.*;
 import com.nimbusds.jose.util.Pair;
+import lombok.extern.java.Log;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
+import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
@@ -55,6 +59,8 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
@@ -63,6 +69,7 @@ import static com.dpw.runner.shipment.services.utils.CommonUtils.convertToEntity
 @Service
 @Slf4j
 public class CustomerBookingService implements ICustomerBookingService {
+    ExecutorService executorService = Executors.newFixedThreadPool(10);
     @Autowired
     private ModelMapper modelMapper;
 
@@ -122,7 +129,8 @@ public class CustomerBookingService implements ICustomerBookingService {
             Map.entry("bookingNumber", RunnerEntityMapping.builder().tableName("CustomerBooking").dataType(String.class).fieldName("bookingNumber").isContainsText(true).build()),
             Map.entry("bookingDate", RunnerEntityMapping.builder().tableName("CustomerBooking").dataType(LocalDateTime.class).fieldName("bookingDate").build()),
             Map.entry("bookingStatus", RunnerEntityMapping.builder().tableName("CustomerBooking").dataType(BookingStatus.class).fieldName("bookingStatus").build()),
-            Map.entry("createdBy", RunnerEntityMapping.builder().tableName("CustomerBooking").dataType(String.class).fieldName("createdBy").build())
+            Map.entry("createdBy", RunnerEntityMapping.builder().tableName("CustomerBooking").dataType(String.class).fieldName("createdBy").build()),
+            Map.entry("contractId", RunnerEntityMapping.builder().tableName("CustomerBooking").dataType(String.class).fieldName("contractId").build())
     );
 
 
@@ -137,8 +145,8 @@ public class CustomerBookingService implements ICustomerBookingService {
 
         CustomerBooking customerBooking = jsonHelper.convertValue(request, CustomerBooking.class);
         customerBooking.setSource(BookingSource.Runner);
-
-        npmContractUpdate(customerBooking, false, null);  // NPM update contract
+        // Update NPM for contract utilization
+        _npmContractUpdate(customerBooking, null, false, CustomerBookingConstants.REMOVE, false);
         try {
             createEntities(customerBooking, request);
             /**
@@ -207,9 +215,9 @@ public class CustomerBookingService implements ICustomerBookingService {
                 }
                 bookingCharge.setContainersList(containerList);
                 bookingCharge.setBookingId(customerBooking.getId());
-                bookingCharge = bookingChargesDao.save(bookingCharge);
                 bookingCharges.add(bookingCharge);
             }
+            bookingCharges = bookingChargesDao.updateEntityFromBooking(bookingCharges, customerBooking.getId());
             customerBooking.setBookingCharges(bookingCharges);
         }
         auditLogService.addAuditLog(
@@ -246,13 +254,10 @@ public class CustomerBookingService implements ICustomerBookingService {
         customerBooking.setCreatedAt(oldEntity.get().getCreatedAt());
         customerBooking.setCreatedBy(oldEntity.get().getCreatedBy());
         customerBooking.setIsPlatformBookingCreated(isCreatedInPlatform);
+        customerBooking.setSource(oldEntity.get().getSource());
 
         // NPM update contract
-        if (oldEntity.get().getBookingCharges() != null) {
-            npmContractUpdate(customerBooking, true, oldEntity.get());
-        } else {
-            npmContractUpdate(customerBooking, false, oldEntity.get());
-        }
+        contractUtilisationForUpdate(customerBooking, oldEntity.get());
         customerBooking = this.updateEntities(customerBooking, request, jsonHelper.convertToJson(oldEntity.get()));
         if (!Objects.isNull(customerBooking.getBusinessCode()) && Objects.equals(customerBooking.getBookingStatus(), BookingStatus.PENDING_FOR_CREDIT_LIMIT)
                 && !customerBooking.getBookingCharges().isEmpty() && !isCreatedInPlatform) {
@@ -318,6 +323,7 @@ public class CustomerBookingService implements ICustomerBookingService {
             V1ShipmentCreationResponse shipmentCreationResponse = jsonHelper.convertValue(bookingIntegrationsUtility.createShipmentInV1(customerBooking).getBody(), V1ShipmentCreationResponse.class);
             if (!Objects.isNull(shipmentCreationResponse) && !Objects.isNull(shipmentCreationResponse.getShipmentId())) {
                 customerBooking.setShipmentId(shipmentCreationResponse.getShipmentId());
+                customerBooking.setShipmentEntityId(shipmentCreationResponse.getEntityId());
                 customerBooking = customerBookingDao.save(customerBooking);
             }
         }
@@ -411,6 +417,7 @@ public class CustomerBookingService implements ICustomerBookingService {
     public ResponseEntity<?> retrieveById(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
+            double _start = System.currentTimeMillis();
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
             if (request == null) {
                 log.error("Request is empty for Booking retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
@@ -424,8 +431,14 @@ public class CustomerBookingService implements ICustomerBookingService {
                 log.debug("Booking Details is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
+            double current = System.currentTimeMillis();
             log.info("Booking details fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
+            log.info("Time taken to fetch booking details from db: {} Request Id {}", current - _start, LoggerHelper.getRequestIdFromMDC());
             CustomerBookingResponse customerBookingResponse = jsonHelper.convertValue(customerBooking.get(), CustomerBookingResponse.class);
+            double _next = System.currentTimeMillis();
+            log.info("Time taken to fetch details from db: {} Request Id {}", _next - current, LoggerHelper.getRequestIdFromMDC());
+            if (_next - current > 200)
+                log.info(" RequestId: {} || {} for event: {} Actual time taken: {} ms",LoggerHelper.getRequestIdFromMDC(), LoggerEvent.MORE_TIME_TAKEN, LoggerEvent.BOOKING_FETCH_JSON_CONVERTER, _next - current);
             createCustomerBookingResponse(customerBooking.get(), customerBookingResponse);
             return ResponseHelper.buildSuccessResponse(customerBookingResponse);
         } catch (Exception e) {
@@ -485,6 +498,18 @@ public class CustomerBookingService implements ICustomerBookingService {
             }
             CheckCreditBalanceFusionResponse checkCreditBalanceFusionResponse = modelMapper.map(response.getBody().getData(), CheckCreditBalanceFusionResponse.class);
             CheckCreditLimitResponse checkCreditLimitResponse = createCheckCreditLimitPayload(checkCreditBalanceFusionResponse);
+            try{
+                UpdateOrgCreditLimitBookingResponse updateOrgCreditLimitBookingResponse = jsonHelper.convertValue(bookingIntegrationsUtility.updateOrgCreditLimitFromBooking(checkCreditLimitResponse).getBody(), UpdateOrgCreditLimitBookingResponse.class);
+                if(updateOrgCreditLimitBookingResponse.getSuccess()){
+                    log.info("Successfully Updated Org with Credit Limit in V1");
+                }else {
+                    log.error("Error in Updating Org Credit Limit in V1 with error : {}", updateOrgCreditLimitBookingResponse.getError());
+                    throw new ValidationException("Error in Updating Org Credit Limit in V1 with error : "+ updateOrgCreditLimitBookingResponse.getError());
+                }
+            } catch (Exception ex){
+                log.error("Error in Updating Org Credit Limit in V1 with error : {} with Request Id {}", ex.getMessage(), LoggerHelper.getRequestIdFromMDC());
+                throw new RuntimeException("Error in Updating Org Credit Limit in V1 with error : "+ ex.getMessage());
+            }
             return ResponseHelper.buildSuccessResponse(checkCreditLimitResponse);
         } else {
             log.error("'Enable Global Fusion Integration' is false for this Tenant this is required for Customer Booking with Request Id {}", LoggerHelper.getRequestIdFromMDC());
@@ -514,6 +539,9 @@ public class CustomerBookingService implements ICustomerBookingService {
                 .totalCreditAvailableBalance(CommonUtils.roundOffToTwoDecimalPlace(totalCreditAvailableBalance))
                 .creditLimitUtilizedPer(CommonUtils.roundOffToTwoDecimalPlace(creditLimitUtilizedPer))
                 .overduePer(CommonUtils.roundOffToTwoDecimalPlace(overDuePer))
+                .paymentTerms(checkCreditBalanceFusionResponse.getData().getCreditDetails().get(0).getPaymentTerms())
+                .accountNumber(checkCreditBalanceFusionResponse.getData().getCreditDetails().get(0).getAccountNumber())
+                .siteNumber(checkCreditBalanceFusionResponse.getData().getCreditDetails().get(0).getSiteNumber())
                 .build();
     }
 
@@ -934,57 +962,86 @@ public class CustomerBookingService implements ICustomerBookingService {
         return responseList;
     }
 
-    private void npmContractUpdate(CustomerBooking customerBooking, Boolean isAlteration, CustomerBooking oldEntity) throws Exception {
-        if (customerBooking.getTransportType() != null && customerBooking.getTransportType().equals(Constants.TRANSPORT_MODE_SEA) && customerBooking.getCargoType() != null && customerBooking.getCargoType().equals(Constants.CARGO_TYPE_FCL) &&
-                StringUtility.isNotEmpty(customerBooking.getContractId()) && customerBooking.getBookingCharges() != null && !customerBooking.getBookingCharges().isEmpty()) {
+    private void contractUtilisationForUpdate(CustomerBooking customerBooking, CustomerBooking old) throws Exception {
+        if (!Objects.isNull(customerBooking.getContractId()) && Objects.equals(old.getContractId(), customerBooking.getContractId())) {
+            // Alteration on same contract
+            _npmContractUpdate(customerBooking,  old, true, CustomerBookingConstants.REMOVE, false);
+        }  else if (!Objects.isNull(customerBooking.getContractId()) && !Objects.isNull(old.getContractId())) {
+            // Lock current contract with current containers
+            _npmContractUpdate(customerBooking, null, false, CustomerBookingConstants.REMOVE, false);
+            // Release existing booking with old containers
+            _npmContractUpdate(old, null, false, CustomerBookingConstants.ADD, false);
+        } else if (!Objects.isNull(customerBooking.getContractId()) && Objects.isNull(old.getContractId())) {
+            // Lock current contract with current containers
+            _npmContractUpdate(customerBooking, null, false, CustomerBookingConstants.REMOVE, false);
+        }  else if (Objects.isNull(customerBooking.getContractId()) && !Objects.isNull(old.getContractId())) {
+            // Release existing booking with old containers
+            _npmContractUpdate(old, null, false, CustomerBookingConstants.ADD, false);
+        }
 
-            List<LoadInfoRequest> loadInfoRequestList = containersListForLoad(customerBooking, oldEntity, customerBooking.getBookingStatus() == BookingStatus.CANCELLED);
-            if (!loadInfoRequestList.isEmpty())
-                npmContractUpdatePaylaod(customerBooking, isAlteration, loadInfoRequestList);
+        if (!Objects.isNull(customerBooking.getContractId()) && Objects.equals(customerBooking.getBookingStatus(), BookingStatus.CANCELLED)) {
+            _npmContractUpdate(customerBooking, null, false, CustomerBookingConstants.ADD, true);
         }
     }
 
-    private List<LoadInfoRequest> containersListForLoad(CustomerBooking customerBooking, CustomerBooking oldEntity, Boolean isCancelled) {
-        Map<Long, Containers> idVsContainerMap;
-        if (oldEntity != null && oldEntity.getContainersList() != null) {
-            idVsContainerMap = oldEntity.getContainersList().stream().collect(Collectors.toMap(Containers::getId, c -> c));
-        } else {
-            idVsContainerMap = new HashMap<>();
-        }
-        List<LoadInfoRequest> loadInfoRequestList = new ArrayList<>();
-        if (!isCancelled && customerBooking.getContainersList() != null) {
-            customerBooking.getContainersList().forEach(cont -> {
-                if (cont.getId() == null) {
-                    loadInfoRequestList.add(containerLoadConstruct(cont, CustomerBookingConstants.REMOVE, cont.getContainerCount()));
-                } else {
-                    if (idVsContainerMap.containsKey(cont.getId())) {
-                        if (!cont.getContainerCode().equals(idVsContainerMap.get(cont.getId()).getContainerCode())) {
-                            loadInfoRequestList.add(containerLoadConstruct(cont, CustomerBookingConstants.REMOVE, cont.getContainerCount()));
-                            loadInfoRequestList.add(containerLoadConstruct(idVsContainerMap.get(cont.getId()), CustomerBookingConstants.ADD, idVsContainerMap.get(cont.getId()).getContainerCount()));
+    private void _npmContractUpdate(CustomerBooking current, CustomerBooking old, Boolean isAlteration, String operation, boolean isCancelled) throws Exception {
+        if (Objects.equals(current.getTransportType(),Constants.TRANSPORT_MODE_SEA) && !Objects.isNull(current.getContractId()) ) {
+            List<LoadInfoRequest> loadInfoRequestList = containersListForLoad(current, old, operation);
 
-                        } else if (!cont.getCommodityGroup().equals(idVsContainerMap.get(cont.getId()).getCommodityGroup())) {
-                            loadInfoRequestList.add(containerLoadConstruct(cont, CustomerBookingConstants.REMOVE, cont.getContainerCount()));
-                            loadInfoRequestList.add(containerLoadConstruct(idVsContainerMap.get(cont.getId()), CustomerBookingConstants.ADD, idVsContainerMap.get(cont.getId()).getContainerCount()));
-                        } else if (cont.getContainerCount() > idVsContainerMap.get(cont.getId()).getContainerCount()) {
-                            Long containerCount = cont.getContainerCount() - idVsContainerMap.get(cont.getId()).getContainerCount();
-                            loadInfoRequestList.add(containerLoadConstruct(cont, CustomerBookingConstants.REMOVE, containerCount));
-                        } else if (cont.getContainerCount() < idVsContainerMap.get(cont.getId()).getContainerCount()) {
-                            Long containerCount = idVsContainerMap.get(cont.getId()).getContainerCount() - cont.getContainerCount();
-                            loadInfoRequestList.add(containerLoadConstruct(cont, CustomerBookingConstants.ADD, containerCount));
-                        }
-                        idVsContainerMap.remove(cont.getId());
+            if (!loadInfoRequestList.isEmpty() || !isAlteration) {
+                String contractStatus = null;
+                if (Objects.equals(current.getContractStatus(), CustomerBookingConstants.SINGLE_USAGE) && isCancelled)
+                    contractStatus = CustomerBookingConstants.ENABLED;
+                else if (Objects.equals(current.getContractStatus(), CustomerBookingConstants.SINGLE_USAGE) )
+                    contractStatus = CustomerBookingConstants.DISABLED;
+
+                UpdateContractRequest updateContractRequest = UpdateContractRequest.builder()
+                        .contract_id(current.getContractId())
+                        .contract_state(contractStatus)
+                        .source(CustomerBookingConstants.RUNNER)
+                        .source_type(CustomerBookingConstants.RUNNER)
+                        .business_info(UpdateContractRequest.BusinessInfo.builder().product_name("FCL").build())
+                        .loads_info(loadInfoRequestList)
+                        .is_alteration(isAlteration)
+                        .build();
+
+                npmService.updateContracts(CommonRequestModel.buildRequest(updateContractRequest));
+            }
+        }
+    }
+
+    private List<LoadInfoRequest> containersListForLoad(CustomerBooking current, CustomerBooking old, String operation) {
+        Map<String, Containers> idVsContainerMap = new HashMap<>();
+        List<LoadInfoRequest> loadInfoRequestList = new ArrayList<>();
+
+        if (!Objects.isNull(old) && !Objects.isNull(old.getContainersList()))
+            idVsContainerMap = old.getContainersList().stream().collect(Collectors.toMap(x -> x.getId() + "-" + x.getContainerCode() + "-" + x.getCommodityGroup(), x -> x));
+
+        if (idVsContainerMap.isEmpty()) {
+            // Only current operation, no comparison
+            current.getContainersList().forEach(cont -> {
+                loadInfoRequestList.add(containerLoadConstruct(cont, operation, cont.getContainerCount()));
+            });
+        }  else {
+            // Find delta
+            Map<String, Containers> finalIdVsContainerMap = idVsContainerMap;
+            current.getContainersList().forEach(cont -> {
+                String key = cont.getId() + "-" + cont.getContainerCode() + "-" + cont.getCommodityGroup();
+                if (finalIdVsContainerMap.containsKey(key)) {
+                    // existing container with probably quantity change
+                    if (finalIdVsContainerMap.get(key).getContainerCount() != cont.getContainerCount()) {
+                        Long _diff = cont.getContainerCount() - finalIdVsContainerMap.get(key).getContainerCount();
+                        loadInfoRequestList.add(containerLoadConstruct(cont, _diff > 0 ? CustomerBookingConstants.REMOVE : CustomerBookingConstants.ADD, Math.abs(_diff)));
                     }
+                    finalIdVsContainerMap.remove(key);
+                }
+                else {
+                    // New Container
+                    loadInfoRequestList.add(containerLoadConstruct(cont, CustomerBookingConstants.REMOVE, cont.getContainerCount()));
                 }
             });
-            if (!idVsContainerMap.isEmpty() && StringUtility.isNotEmpty(oldEntity.getContractId()) && oldEntity.getContractId().equals(customerBooking.getContractId())) {
-                idVsContainerMap.values().forEach(cont -> {
-                    loadInfoRequestList.add(containerLoadConstruct(cont, CustomerBookingConstants.ADD, cont.getContainerCount()));
-                });
-            }
-        } else if (isCancelled && oldEntity != null && oldEntity.getContainersList() != null && StringUtility.isNotEmpty(oldEntity.getContractId()) && oldEntity.getContractId().equals(customerBooking.getContractId())) {
-            oldEntity.getContainersList().forEach(cont -> {
-                loadInfoRequestList.add(containerLoadConstruct(cont, CustomerBookingConstants.ADD, cont.getContainerCount()));
-            });
+            // Release all the remaining loads
+            finalIdVsContainerMap.forEach((k,v) -> loadInfoRequestList.add(containerLoadConstruct(v, CustomerBookingConstants.ADD, v.getContainerCount())));
         }
         return loadInfoRequestList;
     }
@@ -1005,26 +1062,6 @@ public class CustomerBookingService implements ICustomerBookingService {
         return loadInfoRequest;
     }
 
-    private void npmContractUpdatePaylaod(CustomerBooking customerBooking, Boolean isAlteration, List<LoadInfoRequest> loadInfoRequestList) throws Exception {
-        String contractStatus = null;
-        if (customerBooking.getContractStatus() != null && customerBooking.getContractStatus().equals(CustomerBookingConstants.SINGLE_USAGE) && customerBooking.getBookingStatus() == BookingStatus.CANCELLED) {
-            contractStatus = CustomerBookingConstants.ENABLED;
-        } else if (customerBooking.getContractStatus() != null && customerBooking.getContractStatus().equals(CustomerBookingConstants.SINGLE_USAGE)) {
-            contractStatus = CustomerBookingConstants.DISABLED;
-        }
-
-        UpdateContractRequest updateContractRequest = UpdateContractRequest.builder()
-                .contract_id(customerBooking.getContractId())
-                .contract_state(contractStatus)
-                .source(CustomerBookingConstants.RUNNER)
-                .source_type(CustomerBookingConstants.RUNNER)
-                .business_info(UpdateContractRequest.BusinessInfo.builder().product_name("FCL").build())
-                .loads_info(loadInfoRequestList)
-                .is_alteration(isAlteration)
-                .build();
-
-        npmService.updateContracts(CommonRequestModel.buildRequest(updateContractRequest));
-    }
 
     private String generateBookingNumber(String cargoType) {
         String prefix = "DBAR";
@@ -1048,19 +1085,37 @@ public class CustomerBookingService implements ICustomerBookingService {
     }
 
     /**
-     * To be used to fetch dependent masterdata*
+     * To be used to fetch dependent master-data*
      *
      * @param customerBooking
      * @param customerBookingResponse
      */
     private void createCustomerBookingResponse(CustomerBooking customerBooking, CustomerBookingResponse customerBookingResponse) {
         try {
-            this.addAllMasterDataInSingleCall(customerBooking, customerBookingResponse);
-            this.addAllLocationDataInSingleCall(customerBooking, customerBookingResponse);
-            this.addDedicatedMasterDataInSingleCall(customerBooking, customerBookingResponse);
+            double _start = System.currentTimeMillis();
+            var masterListFuture = CompletableFuture.runAsync(withMdc(() -> this.addAllMasterDataInSingleCall(customerBooking, customerBookingResponse)), executorService);
+            var unLocationsFuture = CompletableFuture.runAsync(withMdc(() -> this.addAllLocationDataInSingleCall(customerBooking, customerBookingResponse)), executorService);
+            var vesselsFuture = CompletableFuture.runAsync(withMdc(() -> this.addAllVesselDataInSingleCall(customerBooking, customerBookingResponse)), executorService);
+            var carrierFuture = CompletableFuture.runAsync(withMdc(() -> this.addAllCarrierDataInSingleCall(customerBooking, customerBookingResponse)), executorService);
+            var containerTypeFuture = CompletableFuture.runAsync(withMdc(() -> this.addAllContainerTypesInSingleCall(customerBooking, customerBookingResponse)), executorService);
+            var chargeTypeFuture = CompletableFuture.runAsync(withMdc(() -> this.addAllChargeTypesInSingleCall(customerBooking, customerBookingResponse)), executorService);
+            CompletableFuture.allOf(masterListFuture, unLocationsFuture, vesselsFuture, carrierFuture, containerTypeFuture, chargeTypeFuture).join();
+            double _timeTaken = System.currentTimeMillis() - _start;
+            log.info("Time taken to fetch Master-data from V1: {} ms. || RequestId: {}", _timeTaken, LoggerHelper.getRequestIdFromMDC());
+            if (_timeTaken > 300)
+                log.info(" RequestId: {} || {} for event: {} Actual time taken: {} ms",LoggerHelper.getRequestIdFromMDC(), LoggerEvent.MORE_TIME_TAKEN, LoggerEvent.BOOKING_COMPLETE_MASTER_DATA_FETCH, _timeTaken);
         } catch (Exception ex) {
             log.error("Exception during fetching master data in retrieve API for booking number: {} with exception: {}", customerBooking.getBookingNumber(), ex.getMessage());
         }
+    }
+    public Runnable withMdc(Runnable runnable) {
+        Map<String, String> mdc = MDC.getCopyOfContextMap();
+        String token = RequestAuthContext.getAuthToken();
+        return () -> {
+            MDC.setContextMap(mdc);
+            RequestAuthContext.setAuthToken(token);
+            runnable.run();
+        };
     }
 
     private void populateTotalRevenueDetails(CustomerBooking customerBooking, CustomerBookingRequest request) {
@@ -1074,8 +1129,8 @@ public class CustomerBookingService implements ICustomerBookingService {
         customerBooking.setTotalRevenue(totalRevenue);
     }
 
-
-    private void addAllMasterDataInSingleCall(CustomerBooking customerBooking, CustomerBookingResponse customerBookingResponse) {
+    @Async
+    private CompletableFuture<ResponseEntity<?>> addAllMasterDataInSingleCall(CustomerBooking customerBooking, CustomerBookingResponse customerBookingResponse) {
         // Preprocessing
         Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
         List<MasterListRequest> listRequests = new ArrayList<>(masterDataUtils.createInBulkMasterListRequest(customerBookingResponse, CustomerBooking.class, fieldNameKeyMap, String.valueOf(customerBookingResponse.hashCode())));
@@ -1097,9 +1152,12 @@ public class CustomerBookingService implements ICustomerBookingService {
             customerBookingResponse.getContainersList().forEach(c -> c.setMasterData(masterDataUtils.setInBulkMasterList(fieldNameKeyMap.get(String.valueOf(c.hashCode())), keyMasterDataMap)));
         if (!Objects.isNull(customerBookingResponse.getPackingList()))
             customerBookingResponse.getPackingList().forEach(c -> c.setMasterData(masterDataUtils.setInBulkMasterList(fieldNameKeyMap.get(String.valueOf(c.hashCode())), keyMasterDataMap)));
+
+        return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(keyMasterDataMap));
     }
 
-    private void addAllLocationDataInSingleCall(CustomerBooking customerBooking, CustomerBookingResponse customerBookingResponse) {
+    @Async
+    private CompletableFuture<ResponseEntity<?>> addAllLocationDataInSingleCall(CustomerBooking customerBooking, CustomerBookingResponse customerBookingResponse) {
         // Preprocessing
         Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
         List<String> locationCodes = new ArrayList<>();
@@ -1114,6 +1172,8 @@ public class CustomerBookingService implements ICustomerBookingService {
             customerBookingResponse.getCarrierDetails().setUnlocationData(masterDataUtils.setInBulkUnlocations(fieldNameKeyMap.get(String.valueOf(customerBookingResponse.getCarrierDetails().hashCode())), keyMasterDataMap));
         if (!Objects.isNull(customerBookingResponse.getRoutingList()))
             customerBookingResponse.getRoutingList().forEach(r -> r.setUnlocationData(masterDataUtils.setInBulkUnlocations(fieldNameKeyMap.get(String.valueOf(r.hashCode())), keyMasterDataMap)));
+
+        return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(keyMasterDataMap));
     }
 
     private void addDedicatedMasterDataInSingleCall(CustomerBooking customerBooking, CustomerBookingResponse customerBookingResponse) {
@@ -1125,8 +1185,8 @@ public class CustomerBookingService implements ICustomerBookingService {
         this.addAllContainerTypesInSingleCall(customerBooking, customerBookingResponse);
         this.addAllChargeTypesInSingleCall(customerBooking, customerBookingResponse);
     }
-
-    private void addAllChargeTypesInSingleCall(CustomerBooking customerBooking, CustomerBookingResponse customerBookingResponse) {
+    @Async
+    private CompletableFuture<ResponseEntity<?>> addAllChargeTypesInSingleCall(CustomerBooking customerBooking, CustomerBookingResponse customerBookingResponse) {
         Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
         List<String> chargeTypes = new ArrayList<>();
 
@@ -1136,9 +1196,11 @@ public class CustomerBookingService implements ICustomerBookingService {
 
         if (!Objects.isNull(customerBookingResponse.getBookingCharges()))
             customerBookingResponse.getBookingCharges().forEach(r -> r.setChargeTypeMasterData(masterDataUtils.setInBulkChargeTypes(fieldNameKeyMap.get(String.valueOf(r.hashCode())), v1Data)));
-    }
 
-    private void addAllContainerTypesInSingleCall(CustomerBooking customerBooking, CustomerBookingResponse customerBookingResponse) {
+        return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(v1Data));
+    }
+    @Async
+    private CompletableFuture<ResponseEntity<?>> addAllContainerTypesInSingleCall(CustomerBooking customerBooking, CustomerBookingResponse customerBookingResponse) {
         Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
         List<String> containerTypes = new ArrayList<>();
         if (!Objects.isNull(customerBookingResponse.getContainersList()))
@@ -1148,6 +1210,24 @@ public class CustomerBookingService implements ICustomerBookingService {
 
         if (!Objects.isNull(customerBookingResponse.getContainersList()))
             customerBookingResponse.getContainersList().forEach(r -> r.setContainerCodeData(masterDataUtils.setInBulkContainerTypes(fieldNameKeyMap.get(String.valueOf(r.hashCode())), v1Data)));
+
+        return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(v1Data));
+    }
+
+    @Async
+    private CompletableFuture<ResponseEntity<?>> addAllVesselDataInSingleCall(CustomerBooking customerBooking, CustomerBookingResponse customerBookingResponse) {
+        if (!Objects.isNull(customerBookingResponse.getCarrierDetails())) {
+            customerBookingResponse.getCarrierDetails().setVesselsMasterData(masterDataUtils.vesselsMasterData(customerBookingResponse.getCarrierDetails(), CarrierDetails.class));
+        }
+        return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(Arrays.asList()));
+    }
+
+    @Async
+    private CompletableFuture<ResponseEntity<?>> addAllCarrierDataInSingleCall(CustomerBooking customerBooking, CustomerBookingResponse customerBookingResponse) {
+        if (!Objects.isNull(customerBookingResponse.getCarrierDetails())) {
+            customerBookingResponse.getCarrierDetails().setCarrierMasterData(masterDataUtils.carrierMasterData(customerBookingResponse.getCarrierDetails(), CarrierDetails.class));
+        }
+        return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(Arrays.asList()));
     }
 
 }

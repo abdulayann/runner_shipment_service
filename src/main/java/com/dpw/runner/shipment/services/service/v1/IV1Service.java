@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.service.v1;
 
+import com.dpw.runner.shipment.services.dto.response.CheckCreditLimitResponse;
 import com.dpw.runner.shipment.services.dto.v1.request.CreateConsolidationTaskRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.CreateShipmentTaskRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.SendEntityResponse;
@@ -11,6 +12,7 @@ import org.springframework.http.ResponseEntity;
 
 public interface IV1Service {
     ResponseEntity<?> createBooking(CustomerBooking customerBooking);
+    ResponseEntity<?> updateOrgCreditLimitFromBooking(CheckCreditLimitResponse request);
 
     V1DataResponse fetchMasterData(Object request);
 

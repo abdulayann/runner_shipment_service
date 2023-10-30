@@ -7,6 +7,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.RequestAuthCo
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.aspects.PermissionsValidationAspect.PermissionsContext;
+import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.service.impl.GetUserServiceFactory;
 import com.dpw.runner.shipment.services.service.interfaces.IUserService;
@@ -18,8 +19,14 @@ import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.util.AntPathMatcher;
+import org.springframework.web.filter.OncePerRequestFilter;
 
 import javax.servlet.*;
 import javax.servlet.http.HttpServletRequest;
@@ -29,9 +36,9 @@ import java.text.ParseException;
 import java.util.*;
 
 @Component
-@Order(1)
+//@Order(1)
 @Slf4j
-public class AuthFilter implements Filter {
+public class AuthFilter extends OncePerRequestFilter {
 
     @Autowired
     private GetUserServiceFactory getUserServiceFactory;
@@ -55,8 +62,8 @@ public class AuthFilter implements Filter {
     }
 
     @Override
-    public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain) throws IOException, ServletException {
-
+    public void doFilterInternal(HttpServletRequest servletRequest, HttpServletResponse servletResponse, FilterChain filterChain) throws IOException, ServletException {
+        try {
         LoggerHelper.putRequestId(UUID.randomUUID().toString());
         HttpServletRequest req = (HttpServletRequest) servletRequest;
         if(shouldNotFilter(req))
@@ -78,12 +85,13 @@ public class AuthFilter implements Filter {
             user = userService.getUserByToken(authToken);
         } catch (Exception e)
         {
-            String errormessage = "Auth failed:- User is not onboarded on shipment service";
-            log.info(errormessage);
+            log.info("Error while validating token with exception: {}", e.getMessage());
+            e.printStackTrace();
             res.setContentType("application/json");
             res.setStatus(HttpStatus.UNAUTHORIZED.value());
             return;
         }
+        log.info("Time taken to retrieve user definition: {} for request: {}", System.currentTimeMillis() - time, LoggerHelper.getRequestIdFromMDC());
 
         if (user == null) {
             String errormessage = "Auth failed:- User is not onboarded on shipment service";
@@ -105,10 +113,17 @@ public class AuthFilter implements Filter {
                 grantedPermissions.add(entry.getKey());
             }
         }
+        UsernamePasswordAuthenticationToken usernamePasswordAuthenticationToken = new UsernamePasswordAuthenticationToken(
+                user, null, getAuthorities(grantedPermissions));
+        usernamePasswordAuthenticationToken
+                .setDetails(new WebAuthenticationDetailsSource().buildDetails(req));
         PermissionsContext.setPermissions(grantedPermissions);
-        try {
-            filterChain.doFilter(servletRequest, servletResponse);
-            log.info(String.format("Request Finished , Total Time in milis:- %s", (System.currentTimeMillis() - time)));
+        SecurityContextHolder.getContext().setAuthentication(usernamePasswordAuthenticationToken);
+        filterChain.doFilter(servletRequest, servletResponse);
+        double _timeTaken = System.currentTimeMillis() - time;
+        log.info(String.format("Request Finished , Total Time in milis:- %s | Request ID: %s", (_timeTaken), LoggerHelper.getRequestIdFromMDC()));
+        if (_timeTaken > 500)
+            log.info(" RequestId: {} || {} for event: {} Actual time taken: {} ms for API :{}",LoggerHelper.getRequestIdFromMDC(), LoggerEvent.MORE_TIME_TAKEN, LoggerEvent.COMPLETE_API_TIME, _timeTaken, servletRequest.getRequestURI());
         }finally {
             MDC.remove(LoggingConstants.REQUEST_ID);
             TenantContext.removeTenant();
@@ -116,6 +131,16 @@ public class AuthFilter implements Filter {
             UserContext.removeUser();
         }
 
+    }
+
+    public Collection<? extends GrantedAuthority> getAuthorities(List<String> permissions) {
+        List<GrantedAuthority> authorities = new ArrayList<>();
+        if(!permissions.isEmpty()) {
+            for (String privilege : permissions) {
+                authorities.add(new SimpleGrantedAuthority(privilege));
+            }
+        }
+        return authorities;
     }
 
     private static String getFullURL(HttpServletRequest request) {

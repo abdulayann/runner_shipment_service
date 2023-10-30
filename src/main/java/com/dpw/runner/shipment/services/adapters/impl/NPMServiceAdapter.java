@@ -11,6 +11,8 @@ import com.dpw.runner.shipment.services.dto.request.npm.NPMFetchOffersRequest;
 import com.dpw.runner.shipment.services.dto.request.npm.NPMFetchOffersRequestFromUI;
 import com.dpw.runner.shipment.services.dto.request.npm.UpdateContractRequest;
 import com.dpw.runner.shipment.services.dto.response.ExchangeRates.ExchangeRatesResponse;
+import com.dpw.runner.shipment.services.dto.response.ListContractResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.CustomerBooking;
 import com.dpw.runner.shipment.services.entity.Packing;
@@ -19,6 +21,9 @@ import com.dpw.runner.shipment.services.exception.exceptions.NPMException;
 import com.dpw.runner.shipment.services.exception.response.NpmErrorResponse;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
+import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
+import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -64,6 +69,8 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
     private final RestTemplate restTemplate;
 
     private final RestTemplate restTemp;
+    @Autowired
+    private IV1Service v1Service;
 
     @Autowired
     public NPMServiceAdapter(@Qualifier("restTemplateForNPM") RestTemplate restTemplate, @Qualifier("restTemplateForExchangeRates") RestTemplate restTemp) {
@@ -79,7 +86,8 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
             ListContractRequest listContractRequest = (ListContractRequest) commonRequestModel.getData();
             String url = npmBaseUrl + npmContracts;
             log.info("Payload sent for event: {} with request payload: {}", IntegrationType.NPM_CONTRACT_FETCH, jsonHelper.convertToJson(listContractRequest));
-            ResponseEntity<?> response = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJson(listContractRequest)), Object.class);
+            ResponseEntity<ListContractResponse> response = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJson(listContractRequest)), ListContractResponse.class);
+            this.setOriginAndDestinationName(response.getBody());
             return ResponseHelper.buildDependentServiceResponse(response.getBody(),0,0);
         } catch (HttpStatusCodeException ex) {
             NpmErrorResponse npmErrorResponse = jsonHelper.readFromJson(ex.getResponseBodyAsString(), NpmErrorResponse.class);
@@ -138,6 +146,37 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
 
     private String getCurrencyCode(String countryCode)  {
         return UserContext.getUser().CompanyCurrency;
+    }
+
+
+    private void setOriginAndDestinationName(ListContractResponse response) {
+        Set<String> locCodes = new HashSet<>();
+        if(response != null && response.getContracts() != null  && !response.getContracts().isEmpty()) {
+            response.getContracts().forEach(cont -> {
+                locCodes.add(cont.getOrigin());
+                locCodes.add(cont.getDestination());
+            });
+            List<Object> criteria = Arrays.asList(
+                    Arrays.asList("LocationsReferenceGUID"),
+                    "In",
+                    Arrays.asList(locCodes)
+            );
+            CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(criteria).build();
+            V1DataResponse v1DataResponse = v1Service.fetchUnlocation(commonV1ListRequest);
+            List<UnlocationsResponse> unlocationsResponse = jsonHelper.convertValueToList(v1DataResponse.entities, UnlocationsResponse.class);
+            if (unlocationsResponse != null && !unlocationsResponse.isEmpty()) {
+                Map<String, String> locationMap = new HashMap<>();
+                for (UnlocationsResponse unlocation : unlocationsResponse) {
+                    locationMap.put(unlocation.getLocationsReferenceGUID(), unlocation.getName());
+                }
+                response.getContracts().forEach(cont -> {
+                    if(locationMap.containsKey(cont.getOrigin()))
+                        cont.setOrigin_name(locationMap.get(cont.getOrigin()));
+                    if(locationMap.containsKey(cont.getDestination()))
+                        cont.setDestination_name(locationMap.get(cont.getDestination()));
+                });
+            }
+        }
     }
 
     private NPMFetchOffersRequest createNPMOffersRequest(NPMFetchOffersRequestFromUI request) {

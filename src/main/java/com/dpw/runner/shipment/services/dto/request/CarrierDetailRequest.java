@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.dto.request;
 
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
+import com.dpw.runner.shipment.services.utils.ExcludeTimeZone;
 import io.swagger.annotations.ApiModel;
 import lombok.*;
 
@@ -29,9 +30,13 @@ public class CarrierDetailRequest implements IRunnerRequest {
     private String journeyRefNumber;
     private String origin;
     private String destination;
+    @ExcludeTimeZone
     private LocalDateTime eta;
+    @ExcludeTimeZone
     private LocalDateTime etd;
+    @ExcludeTimeZone
     private LocalDateTime ata;
+    @ExcludeTimeZone
     private LocalDateTime atd;
     private Long shipmentId;
     private String originPort;

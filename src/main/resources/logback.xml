@@ -9,6 +9,10 @@
         </encoder>
     </appender>
 
+    <appender name="ASYNC_CONSOLE" class="ch.qos.logback.classic.AsyncAppender">
+        <appender-ref ref="STDOUT" />
+    </appender>
+
     <appender name="SYSLOG-TCP" class="com.papertrailapp.logback.Syslog4jAppender">
         <layout class="ch.qos.logback.classic.PatternLayout">
             <pattern>${papertrail_app} ${papertrail_app}-${hostName} ${spring.application.name}: [%thread] %X{request_id} %-5level %logger{35}: %m%n%xEx</pattern>
@@ -22,12 +26,12 @@
     </appender>
 
     <logger name="dpw.runner" level="debug" additivity="false">
-        <appender-ref ref="SYSLOG-TCP" />
-        <appender-ref ref="STDOUT" />
+<!--        <appender-ref ref="SYSLOG-TCP" />-->
+        <appender-ref ref="ASYNC_CONSOLE" />
     </logger>
 
     <root level="debug">
 <!--        <appender-ref ref="SYSLOG-TCP" />-->
-        <appender-ref ref="STDOUT" />
+        <appender-ref ref="ASYNC_CONSOLE" />
     </root>
 </configuration>

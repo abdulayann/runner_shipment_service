@@ -75,7 +75,7 @@ public class CustomerBooking extends MultiTenancy {
     @MasterData(type = MasterDataType.INCOTERMS)
     private String incoTerms;
 
-    @OneToOne(fetch = FetchType.LAZY, targetEntity = CarrierDetails.class, cascade = CascadeType.ALL)
+    @OneToOne(targetEntity = CarrierDetails.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "carrier_detail_id", referencedColumnName = "id")
     private CarrierDetails carrierDetails;
 
@@ -165,9 +165,12 @@ public class CustomerBooking extends MultiTenancy {
     @Column(name = "shipment_id")
     private String shipmentId;
 
-    @OneToMany(fetch = FetchType.LAZY, mappedBy = "entityId")
-    @Where(clause = "entity = 'CustomerBooking'")
-    private List<AuditLog> logsList;
+    @Column(name = "shipment_entity_id")
+    private String shipmentEntityId;
+
+//    @OneToMany(fetch = FetchType.LAZY, mappedBy = "entityId")
+//    @Where(clause = "entity = 'CustomerBooking'")
+//    private List<AuditLog> logsList;
 
     @Column(name = "auto_update_weight_volume")
     private Boolean isAutoWeightVolumeUpdate;

@@ -8,15 +8,13 @@ import lombok.Setter;
 
 @Setter
 @Getter
-@NoArgsConstructor
 @AllArgsConstructor
-public class V1ShipmentCreationResponse {
-    @JsonProperty("Entity")
-    public Object entity;
-
-    @JsonProperty("ShipmentId")
-    public String shipmentId;
-
-    @JsonProperty("EntityId")
-    public String entityId;
+@NoArgsConstructor
+public class UpdateOrgCreditLimitBookingResponse {
+    @JsonProperty("Success")
+    private Boolean success;
+    @JsonProperty("CustomerIdentifier")
+    private String customerIdentifier;
+    @JsonProperty("Error")
+    private String error;
 }

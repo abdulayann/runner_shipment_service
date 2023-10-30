@@ -24,7 +24,7 @@ public class UserServiceV1 implements IUserService {
 
     @Override
     public UsersDto getUserByToken(String token) {
-        log.info("Token: " + token);
+        log.info("getUserByToken --- URL: {} ||| Token: {}", url, token);
         HttpHeaders headers = new HttpHeaders();
         headers.setAccept(Arrays.asList(MediaType.APPLICATION_JSON));
         if(token.split(" ").length <= 1 || !Objects.equals(token.split(" ")[0], "Bearer"))
