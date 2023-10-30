@@ -15,4 +15,5 @@ public class ListContractRequest implements IRunnerRequest {
     private String customer_org_id;
     private String org_role;
     private List<String> filter_contract_states;
+    private Long filter_per_page_records;
 }
