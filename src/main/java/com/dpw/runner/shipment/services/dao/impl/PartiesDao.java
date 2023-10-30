@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IPartiesDao;
 import com.dpw.runner.shipment.services.entity.Parties;
+import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.repository.interfaces.IPartiesRepository;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
@@ -34,6 +35,9 @@ public class PartiesDao implements IPartiesDao {
 
     @Override
     public Parties save(Parties parties) {
+        Set<String> errors = partiesValidation(parties);
+        if (! errors.isEmpty())
+            throw new ValidationException(errors.toString());
         return partiesRepository.save(parties);
     }
 
@@ -173,5 +177,14 @@ public class PartiesDao implements IPartiesDao {
             log.error(responseMsg, e);
             throw new Exception(e);
         }
+    }
+    
+    private Set<String> partiesValidation(Parties parties) {
+        Set<String> errors = new HashSet<>();
+        if(parties.getOrgCode() == null && parties.getAddressCode() == null && parties.getOrgData() == null && parties.getAddressData() == null) {
+            errors.add("Party details can't be empty");
+        }
+
+        return errors;
     }
 }

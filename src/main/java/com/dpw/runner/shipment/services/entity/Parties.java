@@ -54,12 +54,4 @@ public class Parties extends MultiTenancy {
     @Column(name = "address_data", columnDefinition = "jsonb")
     private Map<String, Object> addressData;
 
-    @AssertTrue
-    private boolean isValid() {
-        boolean isValidFlag = true;
-        //Validation 1 : All of the following properties shouldn't be null
-        isValidFlag = isValidFlag && !(orgCode == null && addressCode == null && orgData == null && addressData == null);
-        return isValidFlag;
-    }
-
 }
