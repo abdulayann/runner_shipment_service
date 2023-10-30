@@ -3,6 +3,8 @@ package com.dpw.runner.shipment.services.syncing.impl;
 import com.dpw.runner.shipment.services.dto.request.ProductSequenceConfigRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentSettingRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
+import com.dpw.runner.shipment.services.entity.ProductSequenceConfig;
+import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.syncing.Entity.*;
@@ -42,7 +44,7 @@ public class ShipmentSettingsSync implements IShipmentSettingsSync {
     private String SHIPMENT_SETTING_V1_SYNC_URL;
 
     @Override
-    public ResponseEntity<?> sync(ShipmentSettingRequest req) {
+    public ResponseEntity<?> sync(ShipmentSettingsDetails req) {
         ShipmentSettingsSyncRequest syncRequest = modelMapper.map(req, ShipmentSettingsSyncRequest.class);
 
         syncRequest.setHblTermsConditionTemplateRow(convertToList(req.getHblTermsConditionTemplate(), HblTermsConditionTemplateDto.class));
@@ -69,7 +71,7 @@ public class ShipmentSettingsSync implements IShipmentSettingsSync {
         return ResponseHelper.buildSuccessResponse(modelMapper.map(syncRequest, ShipmentSettingsSyncRequest.class));
     }
 
-    private ProductSequenceConfigDto mapProductSequenceConfig(ProductSequenceConfigRequest req) {
+    private ProductSequenceConfigDto mapProductSequenceConfig(ProductSequenceConfig req) {
         if(req == null)
             return null;
 

@@ -199,7 +199,8 @@ public class ConsolidationController {
     public ResponseEntity<RunnerResponse<CustomConsolidationRequest>> getCustomConsol(@RequestBody @Valid ConsolidationDetailsRequest request) {
         String responseMsg;
         try {
-            return (ResponseEntity<RunnerResponse<CustomConsolidationRequest>>) consolidationSync.sync(request);
+            return (ResponseEntity<RunnerResponse<CustomConsolidationRequest>>) consolidationSync.sync(
+                    jsonHelper.convertValue(request, ConsolidationDetails.class));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
