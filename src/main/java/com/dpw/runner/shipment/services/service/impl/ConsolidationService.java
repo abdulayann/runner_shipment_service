@@ -17,6 +17,8 @@ import com.dpw.runner.shipment.services.dto.v1.request.ConsoleBookingListRequest
 import com.dpw.runner.shipment.services.dto.v1.response.ConsoleBookingListResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import com.dpw.runner.shipment.services.entity.enums.ProductProcessTypes;
+import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
@@ -26,7 +28,10 @@ import com.dpw.runner.shipment.services.service_bus.AzureServiceBusTopic;
 import com.dpw.runner.shipment.services.service_bus.ISBProperties;
 import com.dpw.runner.shipment.services.service_bus.SBUtilsImpl;
 import com.dpw.runner.shipment.services.syncing.interfaces.IConsolidationSync;
+import com.dpw.runner.shipment.services.utils.GetNextNumberHelper;
 import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
+import com.dpw.runner.shipment.services.utils.ProductIdentifierUtility;
+import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
@@ -394,6 +399,7 @@ public class ConsolidationService implements IConsolidationService {
     void getConsolidation(ConsolidationDetails consolidationDetails) throws Exception{
         String responseMsg;
         try {
+            generateConsolidationNumber(consolidationDetails);
             consolidationDetails = consolidationDetailsDao.save(consolidationDetails, false);
 
             // audit logs
@@ -413,6 +419,57 @@ public class ConsolidationService implements IConsolidationService {
             log.error(responseMsg, e);
             throw new Exception(e);
         }
+    }
+
+    /**
+     * Method that generates consol and bol number
+     * @param consolidationDetails
+     */
+    private void generateConsolidationNumber(ConsolidationDetails consolidationDetails) {
+        List<ShipmentSettingsDetails> shipmentSettingsList = shipmentSettingsDao.list();
+
+        if(consolidationDetails.getConsolidationNumber() == null) {
+            if(shipmentSettingsList.get(0) != null && shipmentSettingsList.get(0).getCustomisedSequence()) {
+                String consoleNumber = getCustomizedConsolidationProcessNumber(consolidationDetails, shipmentSettingsList.get(0), ProductProcessTypes.ReferenceNumber);
+                String bol = getCustomizedConsolidationProcessNumber(consolidationDetails, shipmentSettingsList.get(0), ProductProcessTypes.BOLNumber);
+                if(bol != null && !bol.isEmpty())
+                    consolidationDetails.setBol(bol);
+                if(consoleNumber != null && !consoleNumber.isEmpty())
+                    consolidationDetails.setConsolidationNumber(consoleNumber);
+                if (!consolidationDetails.getConsolidationNumber().isEmpty())
+                    consolidationDetails.setConsolidationNumber("CONS000" + getConsolidationSerialNumber());
+                if (!consolidationDetails.getReferenceNumber().isEmpty())
+                    consolidationDetails.setReferenceNumber(consolidationDetails.getConsolidationNumber());
+            }
+        }
+    }
+
+    //TODO
+    private String getConsolidationSerialNumber() {
+        return null;
+    }
+
+    private String getCustomizedConsolidationProcessNumber(ConsolidationDetails consolidationDetails, ShipmentSettingsDetails shipmentSettingsDetails, ProductProcessTypes productProcessTypes) {
+        var productEngine = new ProductIdentifierUtility();
+        productEngine.populateEnabledTenantProducts(shipmentSettingsDetails);
+        if (productProcessTypes == ProductProcessTypes.ReferenceNumber) {
+            // to check the commmon sequence
+            var sequenceNumber = productEngine.GetCommonSequenceNumber(consolidationDetails.getTransportMode(), ProductProcessTypes.Consol_Shipment_TI);
+            if (sequenceNumber != null && !sequenceNumber.isEmpty()) {
+                return sequenceNumber;
+            }
+        }
+        var identifiedProduct = productEngine.IdentifyProduct(consolidationDetails);
+        if (identifiedProduct == null){
+            return "";
+        }
+        var sequenceSettings = GetNextNumberHelper.getProductSequence(identifiedProduct.getId(), productProcessTypes);
+        if(sequenceSettings == null){
+            return "";
+        }
+        String prefix = sequenceSettings.getPrefix() == null ? "" : sequenceSettings.getPrefix();
+        var user = UserContext.getUser();
+        return GetNextNumberHelper.generateCustomSequence(sequenceSettings, prefix, user.getTenantId(), false, null, false);
     }
 
 

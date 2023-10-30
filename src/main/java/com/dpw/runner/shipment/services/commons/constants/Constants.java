@@ -139,4 +139,5 @@ public class Constants {
     public static final String CONSOLIDATION_ADDRESSES = "CONSOLIDATION_ADDRESSES";
     public static final String PICK_UP = "Pickup";
     public static final String DELIVERY = "Delivery";
+    public static final String SHIPMENT_ID_PREFIX = "SHP000";
 }

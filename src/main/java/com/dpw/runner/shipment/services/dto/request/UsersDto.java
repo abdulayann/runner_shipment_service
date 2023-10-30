@@ -20,7 +20,7 @@ public class UsersDto {
     public String Email;
 //    public Boolean IsAdmin;;
     public Integer TenantId;
-    public String Code;
+    public String Code; //Tenant Code
     public String CompanyCode;
     public String TenantDisplayName;
 //    public String Code;
