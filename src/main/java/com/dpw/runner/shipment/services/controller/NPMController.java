@@ -10,6 +10,7 @@ import com.dpw.runner.shipment.services.dto.request.ListContractRequest;
 import com.dpw.runner.shipment.services.dto.request.npm.NPMFetchOffersRequestFromUI;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import com.dpw.runner.shipment.services.utils.ExcludeTimeZone;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import lombok.extern.slf4j.Slf4j;
@@ -35,6 +36,7 @@ public class NPMController {
             @ApiResponse(code = 200, message = NPMConstants.CONTRACT_LIST_SUCCESSFUL),
             @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
     })
+    @ExcludeTimeZone
     public ResponseEntity<?> fetchContracts(@RequestBody @Valid ListContractRequest request) {
         String responseMsg;
         ListContractRequest listContractRequest = jsonHelper.convertValue(request, ListContractRequest.class);
@@ -53,6 +55,7 @@ public class NPMController {
             @ApiResponse(code = 200, message = NPMConstants.LIST_SUCCESSFUL),
             @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
     })
+    @ExcludeTimeZone
     public ResponseEntity<?> getNPMOffers(@RequestBody @Valid NPMFetchOffersRequestFromUI request) {
         String responseMsg;
         try {
@@ -70,6 +73,7 @@ public class NPMController {
             @ApiResponse(code = 200, message = NPMConstants.LIST_SUCCESSFUL),
             @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
     })
+    @ExcludeTimeZone
     public ResponseEntity<?> getNPMOffersV8(@RequestBody @Valid NPMFetchOffersRequestFromUI request) {
         String responseMsg;
         try {
