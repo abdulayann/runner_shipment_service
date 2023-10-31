@@ -2,7 +2,6 @@ package com.dpw.runner.shipment.services.entitytransfer.dto;
 
 import com.dpw.runner.shipment.services.entitytransfer.common.request.IEntityTranferBaseEntity;
 import com.dpw.runner.shipment.services.entitytransfer.enums.AddressTypes;
-import com.dpw.runner.shipment.services.entitytransfer.enums.InvoiceTypeCode;
 import com.dpw.runner.shipment.services.entitytransfer.enums.RegStatus;
 import lombok.*;
 
@@ -35,7 +34,7 @@ public class EntityTransferAddress implements IEntityTranferBaseEntity {
     public Boolean IsObsolete;
     public Boolean IsEdited;
     public String locCode;
-    public InvoiceTypeCode CustomerType;
+    public int CustomerType;
     public String OrgCode;
     public Boolean DefaultAddress;
     public String TaxRegNumber;

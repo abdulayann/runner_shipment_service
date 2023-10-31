@@ -3,10 +3,6 @@ package com.dpw.runner.shipment.services.service.impl;
 import com.dpw.runner.shipment.services.adapters.interfaces.ICRPServiceAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.IFusionServiceAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.INPMServiceAdapter;
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.RequestAuthContext;
-import com.dpw.runner.shipment.services.commons.constants.Constants;
-import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
-import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
@@ -18,17 +14,13 @@ import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.request.crp.CRPRetrieveRequest;
 import com.dpw.runner.shipment.services.dto.request.npm.*;
-import com.dpw.runner.shipment.services.dto.request.npm.HazardousInfoRequest;
 import com.dpw.runner.shipment.services.dto.request.platformBooking.PlatformToRunnerCustomerBookingRequest;
 import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.BookingSource;
 import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferChargeType;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferContainerType;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
+import com.dpw.runner.shipment.services.entitytransfer.dto.*;
 import com.dpw.runner.shipment.services.exception.exceptions.CRPException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -466,7 +458,45 @@ public class CustomerBookingService implements ICustomerBookingService {
         }
         CheckCreditBalanceFusionRequest request = CheckCreditBalanceFusionRequest.builder().req_Params(new CheckCreditBalanceFusionRequest.ReqParams()).build();
         if(v1TenantSettingsResponse.getCreditLimitOn() == 0){
-            if(creditLimitRequest == null || creditLimitRequest.getCustomerIdentifierId() == null){
+
+            if(creditLimitRequest != null && creditLimitRequest.getCustomerIdentifierId() == null &&  creditLimitRequest.getClientOrgCode()!=null){
+                CommonV1ListRequest orgRequest = new CommonV1ListRequest();
+                List<Object> orgCriteria = new ArrayList<>();
+                List<Object> orgField = new ArrayList<>(List.of("OrganizationCode"));
+                String op = "=";
+                orgCriteria.addAll(List.of(orgField, op, creditLimitRequest.getClientOrgCode()));
+                orgRequest.setCriteriaRequests(orgCriteria);
+                V1DataResponse orgResponse = v1Service.fetchOrganization(orgRequest);
+                List<EntityTransferOrganizations> orgList = jsonHelper.convertValueToList(orgResponse.entities, EntityTransferOrganizations.class);
+
+
+                long orgId=orgList.get(0).getId();
+                creditLimitRequest.setCustomerIdentifierId(orgList.get(0).getCustomerIdentifier());
+                List<Object> finalCriteria= new ArrayList<>();
+
+
+                CommonV1ListRequest addressReq = new CommonV1ListRequest();
+                List<Object>addressCriteria =new ArrayList<>();
+                List<Object> addressField = new ArrayList<>(List.of("AddressShortCode"));
+                addressCriteria.addAll(List.of(addressField, op, creditLimitRequest.getClientAddressCode()));
+                finalCriteria.add(addressCriteria);
+
+                finalCriteria.add("and");
+
+                List<Object>orgIdCriteria=new ArrayList<>();
+                List<Object> orgIdfield = new ArrayList<>(List.of("OrgId"));
+                orgIdCriteria.add(List.of(orgIdfield, op, orgId));
+                finalCriteria.addAll(orgIdCriteria);
+
+                addressReq.setCriteriaRequests(finalCriteria);
+                V1DataResponse addressResponse = v1Service.addressList(addressReq);
+                List<EntityTransferAddress> addressList = jsonHelper.convertValueToList(addressResponse.entities, EntityTransferAddress.class);
+                creditLimitRequest.setSiteIdentifierId(addressList.get(0).getSiteIdentifier());
+
+
+            }
+
+            if(creditLimitRequest == null || creditLimitRequest.getCustomerIdentifierId() == null) {
                 log.error("CustomerIdentifierId is Required with Request Id {}", LoggerHelper.getRequestIdFromMDC());
                 throw new ValidationException("CustomerIdentifierId is Required for credit check");
             }
