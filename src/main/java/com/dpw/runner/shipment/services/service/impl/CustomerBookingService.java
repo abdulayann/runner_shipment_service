@@ -30,6 +30,7 @@ import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferChargeT
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferContainerType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
+import com.dpw.runner.shipment.services.entitytransfer.dto.*;
 import com.dpw.runner.shipment.services.exception.exceptions.CRPException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -475,7 +476,45 @@ public class CustomerBookingService implements ICustomerBookingService {
         }
         CheckCreditBalanceFusionRequest request = CheckCreditBalanceFusionRequest.builder().req_Params(new CheckCreditBalanceFusionRequest.ReqParams()).build();
         if(v1TenantSettingsResponse.getCreditLimitOn() == 0){
-            if(creditLimitRequest == null || creditLimitRequest.getCustomerIdentifierId() == null){
+
+            if(creditLimitRequest != null && creditLimitRequest.getCustomerIdentifierId() == null &&  creditLimitRequest.getClientOrgCode()!=null){
+                CommonV1ListRequest orgRequest = new CommonV1ListRequest();
+                List<Object> orgCriteria = new ArrayList<>();
+                List<Object> orgField = new ArrayList<>(List.of("OrganizationCode"));
+                String op = "=";
+                orgCriteria.addAll(List.of(orgField, op, creditLimitRequest.getClientOrgCode()));
+                orgRequest.setCriteriaRequests(orgCriteria);
+                V1DataResponse orgResponse = v1Service.fetchOrganization(orgRequest);
+                List<EntityTransferOrganizations> orgList = jsonHelper.convertValueToList(orgResponse.entities, EntityTransferOrganizations.class);
+
+
+                long orgId=orgList.get(0).getId();
+                creditLimitRequest.setCustomerIdentifierId(orgList.get(0).getCustomerIdentifier());
+                List<Object> finalCriteria= new ArrayList<>();
+
+
+                CommonV1ListRequest addressReq = new CommonV1ListRequest();
+                List<Object>addressCriteria =new ArrayList<>();
+                List<Object> addressField = new ArrayList<>(List.of("AddressShortCode"));
+                addressCriteria.addAll(List.of(addressField, op, creditLimitRequest.getClientAddressCode()));
+                finalCriteria.add(addressCriteria);
+
+                finalCriteria.add("and");
+
+                List<Object>orgIdCriteria=new ArrayList<>();
+                List<Object> orgIdfield = new ArrayList<>(List.of("OrgId"));
+                orgIdCriteria.add(List.of(orgIdfield, op, orgId));
+                finalCriteria.addAll(orgIdCriteria);
+
+                addressReq.setCriteriaRequests(finalCriteria);
+                V1DataResponse addressResponse = v1Service.addressList(addressReq);
+                List<EntityTransferAddress> addressList = jsonHelper.convertValueToList(addressResponse.entities, EntityTransferAddress.class);
+                creditLimitRequest.setSiteIdentifierId(addressList.get(0).getSiteIdentifier());
+
+
+            }
+
+            if(creditLimitRequest == null || creditLimitRequest.getCustomerIdentifierId() == null) {
                 log.error("CustomerIdentifierId is Required with Request Id {}", LoggerHelper.getRequestIdFromMDC());
                 throw new ValidationException("CustomerIdentifierId is Required for credit check");
             }
