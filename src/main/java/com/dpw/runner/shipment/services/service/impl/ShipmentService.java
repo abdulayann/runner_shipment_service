@@ -825,6 +825,41 @@ public class ShipmentService implements IShipmentService {
         carrierDao.save(carrierDetails);
     }
 
+
+    public Optional<ShipmentDetails> retrieveByIdOrGuid(ShipmentRequest request){
+        String responseMsg;
+
+        if (request == null) {
+            log.error("Request is empty for Shipment update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+        }
+
+        Optional<ShipmentDetails> oldEntity = Optional.ofNullable(null);
+
+        if(request.getId()!=null){
+            long id = request.getId();
+            oldEntity=shipmentDao.findById(id);
+            if (!oldEntity.isPresent()) {
+                log.debug("Shipment Details is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
+                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+            }
+
+        }
+
+        else if(request.getGuid()!=null){
+            UUID guid = request.getGuid();
+            oldEntity= shipmentDao.findByGuid(guid);
+            if (!oldEntity.isPresent()) {
+                log.debug("Shipment Details is null for GUID {} with Request GUID {}", request.getGuid(), LoggerHelper.getRequestIdFromMDC());
+                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+            }
+
+        }
+        else{
+            throw new RunnerException("Either Id or Guid is required");
+
+        }
+        return oldEntity;
+    }
     @Override
     @Transactional
     public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
@@ -833,16 +868,12 @@ public class ShipmentService implements IShipmentService {
         if (request == null) {
             log.error("Request is empty for Shipment update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
         }
-        if (request.getId() == null) {
-            log.error("Request Id is null for Shipment update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
-        }
+//        if (request.getId() == null) {
+//            log.error("Request Id is null for Shipment update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+//        }
         // TODO- implement Validation logic
-        long id = request.getId();
-        Optional<ShipmentDetails> oldEntity = shipmentDao.findById(id);
-        if (!oldEntity.isPresent()) {
-            log.debug("Shipment Details is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
-            throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
-        }
+
+      Optional<ShipmentDetails>oldEntity =retrieveByIdOrGuid(request);
 
         ShipmentDetails entity = objectMapper.convertValue(request, ShipmentDetails.class);
         entity.setId(oldEntity.get().getId());
@@ -900,8 +931,9 @@ public class ShipmentService implements IShipmentService {
         CarrierDetailRequest carrierDetailRequest = shipmentRequest.getCarrierDetails();
 
         // TODO- implement Validation logic
-        long id = shipmentRequest.getId();
-        Optional<ShipmentDetails> oldEntity = shipmentDao.findById(id);
+
+        Optional<ShipmentDetails> oldEntity = retrieveByIdOrGuid(shipmentRequest);
+        long id=oldEntity.get().getId();
         if (!oldEntity.isPresent()) {
             log.debug("Shipment Details is null for Id {}", shipmentRequest.getId());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
