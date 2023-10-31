@@ -1071,7 +1071,7 @@ public class ShipmentService implements IShipmentService {
             consolidationDetails.setContainersList(containers);
             attachConsolidations(shipmentDetails.getId(), List.of(id));
             try {
-                consolidationSync.sync(jsonHelper.convertValue(consolidationDetails, ConsolidationDetailsRequest.class));
+                consolidationSync.sync(consolidationDetails);
             } catch (Exception e) {
                 log.error("Error performing sync on consol entity, {}", e);
             }

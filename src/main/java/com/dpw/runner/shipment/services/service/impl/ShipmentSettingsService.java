@@ -124,7 +124,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
             }
 
             try{
-                shipmentSettingsSync.sync(modelMapper.map(shipmentSettingsDetails, ShipmentSettingRequest.class));
+                shipmentSettingsSync.sync(shipmentSettingsDetails);
             } catch (Exception e) {
                 log.error("Error Syncing Tenant Settings");
             }
@@ -280,7 +280,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
             }
 
             try{
-                shipmentSettingsSync.sync(modelMapper.map(shipmentSettingsDetails, ShipmentSettingRequest.class));
+                shipmentSettingsSync.sync(shipmentSettingsDetails);
             } catch (Exception e) {
                 log.error("Error Syncing Tenant Settings");
             }
@@ -381,7 +381,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
             }
 
             try{
-                shipmentSettingsSync.sync(modelMapper.map(shipmentSettingsDetails, ShipmentSettingRequest.class));
+                shipmentSettingsSync.sync(shipmentSettingsDetails);
             } catch (Exception e) {
                 log.error("Error Syncing Tenant Settings");
             }

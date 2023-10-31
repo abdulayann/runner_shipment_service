@@ -381,7 +381,7 @@ public class ConsolidationService implements IConsolidationService {
 
             try {
                 Optional<ConsolidationDetails> consol = consolidationDetailsDao.findById(consolidationDetails.getId());
-                consolidationSync.sync(jsonHelper.convertValue(consol.get(), ConsolidationDetailsRequest.class));
+                consolidationSync.sync(consol.get());
             } catch (Exception e){
                 log.error("Error performing sync on consolidation entity, {}", e);
             }
@@ -617,7 +617,7 @@ public class ConsolidationService implements IConsolidationService {
             entity.setContainersList(oldEntity.get().getContainersList());
         entity = consolidationDetailsDao.update(entity, false);
         try {
-            consolidationSync.sync(jsonHelper.convertValue(entity, ConsolidationDetailsRequest.class));
+            consolidationSync.sync(entity);
         } catch (Exception e) {
             log.error("Error performing sync on consol entity, {}", e);
         }
@@ -642,7 +642,7 @@ public class ConsolidationService implements IConsolidationService {
             }
         }
         Optional<ConsolidationDetails> consol = consolidationDetailsDao.findById(consolidationId);
-        consolidationSync.sync(jsonHelper.convertValue(consol.get(), ConsolidationDetailsRequest.class));
+        consolidationSync.sync(consol.get());
         return new ResponseEntity<>(HttpStatus.OK);
     }
 
@@ -662,7 +662,7 @@ public class ConsolidationService implements IConsolidationService {
             }
         }
         Optional<ConsolidationDetails> consol = consolidationDetailsDao.findById(consolidationId);
-        consolidationSync.sync(jsonHelper.convertValue(consol.get(), ConsolidationDetailsRequest.class));
+        consolidationSync.sync(consol.get());
 
         return new ResponseEntity<>(HttpStatus.OK);
     }
@@ -763,7 +763,7 @@ public class ConsolidationService implements IConsolidationService {
                 response.setConsolidationAddresses(convertToDtoList(updatedFileRepos, PartiesResponse.class));
             }
             try {
-                consolidationSync.sync(jsonHelper.convertValue(response, ConsolidationDetailsRequest.class));
+                consolidationSync.sync(jsonHelper.convertValue(response, ConsolidationDetails.class));
             } catch (Exception e){
                 log.error("Error performing sync on consolidation entity, {}", e);
             }

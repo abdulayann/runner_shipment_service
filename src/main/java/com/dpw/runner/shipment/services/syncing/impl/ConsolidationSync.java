@@ -3,9 +3,9 @@ package com.dpw.runner.shipment.services.syncing.impl;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.request.ArrivalDepartureDetailsRequest;
-import com.dpw.runner.shipment.services.dto.request.ConsolidationDetailsRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
+import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.syncing.Entity.*;
@@ -55,7 +55,7 @@ public class ConsolidationSync implements IConsolidationSync {
     private String CONSOLIDATION_V1_SYNC_URL;
 
     @Override
-    public ResponseEntity<?> sync(ConsolidationDetailsRequest request) {
+    public ResponseEntity<?> sync(ConsolidationDetails request) {
         CustomConsolidationRequest response = new CustomConsolidationRequest();
 
         response = modelMapper.map(request, CustomConsolidationRequest.class);
@@ -91,6 +91,9 @@ public class ConsolidationSync implements IConsolidationSync {
         String consolidationRequest = jsonHelper.convertToJson(response);
         retryTemplate.execute(ctx -> {
             log.info("Current retry : {}", ctx.getRetryCount());
+            if(ctx.getLastThrowable() != null) {
+                log.error("V1 error -> {}",ctx.getLastThrowable().getMessage());
+            }
             HttpEntity<V1DataResponse> entity = new HttpEntity(consolidationRequest, V1AuthHelper.getHeaders());
             var response_ = this.restTemplate.postForEntity(this.CONSOLIDATION_V1_SYNC_URL, entity, V1DataResponse.class, new Object[0]);
             return response_;
@@ -99,7 +102,7 @@ public class ConsolidationSync implements IConsolidationSync {
         return ResponseHelper.buildSuccessResponse(response);
     }
 
-    private void mapShipmentGuids(CustomConsolidationRequest response, ConsolidationDetailsRequest request) {
+    private void mapShipmentGuids(CustomConsolidationRequest response, ConsolidationDetails request) {
         List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByConsolidationId(request.getId());
         List<UUID> req = consoleShipmentMappings.stream()
                 .map(item -> {
@@ -109,7 +112,7 @@ public class ConsolidationSync implements IConsolidationSync {
         response.setShipmentGuids(req);
     }
 
-    private void mapJobs(CustomConsolidationRequest response, ConsolidationDetailsRequest request) {
+    private void mapJobs(CustomConsolidationRequest response, ConsolidationDetails request) {
         if(request == null || request.getJobsList() == null)
             return;
         List<JobRequestV2> req = request.getJobsList().stream()
@@ -124,7 +127,7 @@ public class ConsolidationSync implements IConsolidationSync {
         response.setJobsList(req);
     }
 
-    private void mapPackings(CustomConsolidationRequest response, ConsolidationDetailsRequest request) {
+    private void mapPackings(CustomConsolidationRequest response, ConsolidationDetails request) {
         if(request == null || request.getPackingList() == null)
             return;
         List<PackingRequestV2> req = request.getPackingList().stream()
@@ -138,7 +141,7 @@ public class ConsolidationSync implements IConsolidationSync {
         response.setPackingList(req);
     }
 
-    private void mapTruckDriverDetail(CustomConsolidationRequest response, ConsolidationDetailsRequest request) {
+    private void mapTruckDriverDetail(CustomConsolidationRequest response, ConsolidationDetails request) {
         if(request == null || request.getTruckDriverDetails() == null)
             return;
         List<TruckDriverDetailsRequestV2> req = request.getTruckDriverDetails().stream()
@@ -154,7 +157,7 @@ public class ConsolidationSync implements IConsolidationSync {
         response.setTruckDriverDetail(req);
     }
 
-    private void mapCarrierDetails(CustomConsolidationRequest response, ConsolidationDetailsRequest request) {
+    private void mapCarrierDetails(CustomConsolidationRequest response, ConsolidationDetails request) {
         if(request == null || request.getCarrierDetails() == null)
             return;
         modelMapper.map(request.getCarrierDetails(), response);
@@ -164,7 +167,7 @@ public class ConsolidationSync implements IConsolidationSync {
         response.setOriginPortName(request.getCarrierDetails().getOriginPort());
     }
 
-    private void mapAchievedQuantities(CustomConsolidationRequest response, ConsolidationDetailsRequest request) {
+    private void mapAchievedQuantities(CustomConsolidationRequest response, ConsolidationDetails request) {
         if(request == null || request.getAchievedQuantities() == null)
             return;
         modelMapper.map(request.getAchievedQuantities(), response);
@@ -172,7 +175,7 @@ public class ConsolidationSync implements IConsolidationSync {
         response.setConsolidatiedVolumeUnit(request.getAchievedQuantities().getConsolidatedVolumeUnit());
     }
 
-    private void mapAllocations(CustomConsolidationRequest response, ConsolidationDetailsRequest request) {
+    private void mapAllocations(CustomConsolidationRequest response, ConsolidationDetails request) {
         if(request == null || request.getAllocations() == null)
             return;
         modelMapper.map(request.getAllocations(), response);
@@ -180,7 +183,7 @@ public class ConsolidationSync implements IConsolidationSync {
         response.setIsTemparatureControlled(request.getAllocations().getIsTemperatureControlled());
     }
 
-    private void mapArrivalDepartureDetails(CustomConsolidationRequest response_, ConsolidationDetailsRequest request_) {
+    private void mapArrivalDepartureDetails(CustomConsolidationRequest response_, ConsolidationDetails request_) {
         if(request_ == null)
             return;
 
@@ -188,7 +191,7 @@ public class ConsolidationSync implements IConsolidationSync {
         ArrivalDepartureDetails response = response_.getArrivalDepartureDetails();
 
         // Arrival Details
-        ArrivalDepartureDetailsRequest request1 = request_.getArrivalDetails();
+        com.dpw.runner.shipment.services.entity.ArrivalDepartureDetails request1 = request_.getArrivalDetails();
 
         if(request1 != null) {
             if(request1.getContainerYardId() != null)
@@ -210,7 +213,7 @@ public class ConsolidationSync implements IConsolidationSync {
         }
 
         // Departure Details
-        ArrivalDepartureDetailsRequest request2 = request_.getDepartureDetails();
+        com.dpw.runner.shipment.services.entity.ArrivalDepartureDetails request2 = request_.getDepartureDetails();
 
         if(request2 != null) {
             if(request2.getContainerYardId() != null)

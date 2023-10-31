@@ -12,6 +12,8 @@ import com.dpw.runner.shipment.services.dto.response.JobResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentSettingsDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.TemplateUploadResponse;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentSettingsService;
 import com.dpw.runner.shipment.services.syncing.Entity.CustomShipmentSyncRequest;
@@ -43,6 +45,8 @@ public class ShipmentSettingsController {
     private IShipmentSettingsSync shipmentSettingsSync;
     @Autowired
     private IShipmentSettingsReverseSync shipmentSettingsReverseSync;
+    @Autowired
+    private JsonHelper jsonHelper;
 
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = ShipmentSettingsConstants.SHIPMENT_SETTINGS_SUCCESSFUL),
@@ -139,7 +143,8 @@ public class ShipmentSettingsController {
     public ResponseEntity<RunnerResponse<CustomShipmentSyncRequest>> getCustomShipment(@RequestBody @Valid ShipmentSettingRequest request) {
         String responseMsg;
         try {
-            return (ResponseEntity<RunnerResponse<CustomShipmentSyncRequest>>) shipmentSettingsSync.sync(request);
+            return (ResponseEntity<RunnerResponse<CustomShipmentSyncRequest>>) shipmentSettingsSync.sync(
+                    jsonHelper.convertValue(request, ShipmentSettingsDetails.class));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
