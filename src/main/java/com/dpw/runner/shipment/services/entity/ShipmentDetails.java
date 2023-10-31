@@ -353,4 +353,10 @@ public class ShipmentDetails extends MultiTenancy {
 
     @Column(name = "commodity")
     private String commodity;
+
+    @Column(name = "order_number")
+    private Long orderNumber;
+
+    @Column(name = "order_management_id")
+    private String orderManagementId;
 }
