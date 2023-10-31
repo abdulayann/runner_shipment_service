@@ -97,6 +97,7 @@ public class Constants {
     public static final String OWNERSHIP = "OwnerShip";
 
     public static final String SERVICE = "Service";
+    public static final String TI_TEMPLATE_TYPE = "TransportInstructionTemplateType";
 
     /**
      * Events
