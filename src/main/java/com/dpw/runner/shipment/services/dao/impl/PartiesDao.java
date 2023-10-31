@@ -34,12 +34,7 @@ public class PartiesDao implements IPartiesDao {
     }
 
     @Override
-    public Parties save(Parties parties) {
-        Set<String> errors = partiesValidation(parties);
-        if (! errors.isEmpty())
-            throw new ValidationException(errors.toString());
-        return partiesRepository.save(parties);
-    }
+    public Parties save(Parties parties) {return partiesRepository.save(parties);}
 
     @Override
     public Page<Parties> findAll(Specification<Parties> spec, Pageable pageable) {
@@ -178,13 +173,5 @@ public class PartiesDao implements IPartiesDao {
             throw new Exception(e);
         }
     }
-    
-    private Set<String> partiesValidation(Parties parties) {
-        Set<String> errors = new HashSet<>();
-        if(parties.getOrgCode() == null && parties.getAddressCode() == null && parties.getOrgData() == null && parties.getAddressData() == null) {
-            errors.add("Party details can't be empty");
-        }
 
-        return errors;
-    }
 }

@@ -1012,11 +1012,10 @@ public class ShipmentService implements IShipmentService {
             }
 
             return ResponseHelper.buildSuccessResponse(response);
-        } catch (ExecutionException e) {
+        } catch (Exception e) {
             String responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
-            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
             throw new RuntimeException(e);
         }
     }
