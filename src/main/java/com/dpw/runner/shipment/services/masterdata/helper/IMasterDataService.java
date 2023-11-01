@@ -119,4 +119,5 @@ public interface IMasterDataService {
     DependentServiceResponse fetchOwnType(Object request);
 
     DependentServiceResponse fetchCarrierFilterList(Object request);
+    DependentServiceResponse fetchGetTemplateMainPage(Object request);
 }

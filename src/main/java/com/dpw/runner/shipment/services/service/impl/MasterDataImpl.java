@@ -320,4 +320,9 @@ public class MasterDataImpl implements IMasterDataService {
     public ResponseEntity<?> retrieveTenant() {
         return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().retrieveTenant());
     }
+
+    @Override
+    public ResponseEntity<?> fetchGetTemplateMainPage(CommonRequestModel commonRequestModel) {
+        return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().fetchGetTemplateMainPage(commonRequestModel.getDependentData()));
+    }
 }
