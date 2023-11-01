@@ -1400,8 +1400,16 @@ public class ShipmentService implements IShipmentService {
                 response.setServicesList(convertToDtoList(updatedServiceDetails, ServiceDetailsResponse.class));
             }
 
+            try {
+                ShipmentDetails syncEntity = modelMapper.map(response, ShipmentDetails.class);
+                syncEntity.setIsShipmentReadOnly(response.isShipmentReadOnly());
+                shipmentSync.sync(syncEntity);
+            } catch (Exception e){
+                log.error("Error performing sync on shipment entity, {}", e);
+            }
+
             return ResponseHelper.buildSuccessResponse(response);
-        } catch (ExecutionException e) {
+        } catch (Exception e) {
             String responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
