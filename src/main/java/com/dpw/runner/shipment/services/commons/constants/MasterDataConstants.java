@@ -36,4 +36,5 @@ public class MasterDataConstants {
     public static final String RETRIEVE_TENANT_SETTINGS = "/retrieve";
     public static final String OWN_TYPE = "/own_type";
     public static final String CARRIER_FILTER_LIST = "/carrierFilterList";
+    public static final String LIST_MAIN_PAGE_TEMPLATE = "/main-page-template";
 }

@@ -441,4 +441,6 @@ public class ShipmentSettingsDetails extends MultiTenancy {
     @JoinColumn(name = "mawb_lock_settings_id", referencedColumnName = "id")
     private MawbLockSettings mawbLockSettings;
 
+    @Column(name = "hbl_multiple_original_approval")
+    private Integer hblMultipleOriginalApproval;
 }

@@ -240,6 +240,10 @@ public class V1ServiceImpl implements IV1Service {
     @Value("${v1service.url.base}${v1service.url.consolidationBookingData}")
     private String CONSOLIDATION_BOOKING_DATA;
 
+    @Value("${v1service.url.base}${v1service.url.mainPageTemplate}")
+    private String MAIN_PAGE_TEMPLATE_LIST;
+    @Value("${v1service.url.base}${v1service.url.hblTaskCreation}")
+    private String HBL_TASK_CREATION;
     @Autowired
     private JsonHelper jsonHelper;
 
@@ -1393,6 +1397,47 @@ public class V1ServiceImpl implements IV1Service {
             containerResponse = this.restTemplate.postForEntity(this.CONSOLIDATION_BOOKING_DATA, entity, ConsoleBookingListResponse.class, new Object[0]);
             log.info("Token time taken in fetchConsolidationBookingData() function " + (System.currentTimeMillis() - time));
             return (ConsoleBookingListResponse) containerResponse.getBody();
+        } catch (HttpStatusCodeException var6) {
+            if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
+                throw new UnAuthorizedException("UnAuthorizedException");
+            } else {
+                throw new V1ServiceException(var6.getMessage());
+            }
+        } catch (Exception var7) {
+            throw new V1ServiceException(var7.getMessage());
+        }
+    }
+
+    @Override
+    public V1DataResponse fetchGetTemplateMainPage(Object request) {
+        ResponseEntity tiDataResponse = null;
+
+        try {
+            long time = System.currentTimeMillis();
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            tiDataResponse = this.restTemplate.postForEntity(this.MAIN_PAGE_TEMPLATE_LIST, entity, V1DataResponse.class, new Object[0]);
+            log.info("Token time taken in fetchGetTemplateMainPage() function " + (System.currentTimeMillis() - time));
+            return (V1DataResponse) tiDataResponse.getBody();
+        } catch (HttpStatusCodeException var6) {
+            if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
+                throw new UnAuthorizedException("UnAuthorizedException");
+            } else {
+                throw new V1ServiceException(var6.getMessage());
+            }
+        } catch (Exception var7) {
+            throw new V1ServiceException(var7.getMessage());
+        }
+    }
+
+    @Override
+    public HblTaskCreationResponse createTaskforHBL(Object request) {
+        ResponseEntity tiDataResponse = null;
+        try {
+            long time = System.currentTimeMillis();
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            tiDataResponse = this.restTemplate.postForEntity(this.HBL_TASK_CREATION, entity, HblTaskCreationResponse.class, new Object[0]);
+            log.info("Total time taken in createTaskforHBL() function " + (System.currentTimeMillis() - time));
+            return (HblTaskCreationResponse) tiDataResponse.getBody();
         } catch (HttpStatusCodeException var6) {
             if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
                 throw new UnAuthorizedException("UnAuthorizedException");

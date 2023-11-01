@@ -112,4 +112,5 @@ public interface IMasterDataService extends ICommonService{
     ResponseEntity<?> listOwnType(CommonRequestModel commonRequestModel);
 
     ResponseEntity<?> listCarrierFilter(CommonRequestModel commonRequestModel);
+    ResponseEntity<?> fetchGetTemplateMainPage(CommonRequestModel commonRequestModel);
 }

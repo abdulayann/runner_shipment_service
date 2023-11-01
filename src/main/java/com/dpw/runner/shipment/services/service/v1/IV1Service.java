@@ -131,4 +131,6 @@ public interface IV1Service {
     V1DataResponse fetchTransportInstructionList(Object request);
     V1DataResponse fetchContainersListForTI(Object request);
     ConsoleBookingListResponse fetchConsolidationBookingData(Object request);
+    V1DataResponse fetchGetTemplateMainPage(Object request);
+    HblTaskCreationResponse createTaskforHBL(Object request);
 }

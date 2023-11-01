@@ -345,4 +345,8 @@ public class MapperMasterDataImpl implements IMasterDataService {
         return null;
     }
 
+    @Override
+    public DependentServiceResponse fetchGetTemplateMainPage(Object request) {
+        return null;
+    }
 }
