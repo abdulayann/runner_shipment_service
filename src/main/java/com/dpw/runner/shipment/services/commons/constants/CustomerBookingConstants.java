@@ -37,4 +37,6 @@ public class CustomerBookingConstants {
     public static final String RUNNER_FUSION = "Runner";
     public static final String GCR_FUSION = "GCR";
 
+    public static final String IMMEDIATE= "IMMEDIATE";
+
 }
