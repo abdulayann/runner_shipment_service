@@ -108,4 +108,6 @@ public class ShipmentRequest extends CommonRequest implements IRunnerRequest {
     private Boolean containsHazardous;
     private String fmcTlcId;
     private String commodity;
+    private Long orderNumber;
+    private String orderManagementId;
 }

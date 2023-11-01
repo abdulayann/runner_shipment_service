@@ -126,4 +126,6 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     private Boolean containsHazardous;
     private String fmcTlcId;
     private String commodity;
+    private Long orderNumber;
+    private String orderManagementId;
 }

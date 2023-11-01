@@ -100,4 +100,5 @@ public class ShipmentListResponse implements IRunnerResponse {
     private LocalDateTime customsFilingDate;
     private LocalDateTime amsFilingDate;
     private BigDecimal teuCount;
+    private String shipmentStatus;
 }
