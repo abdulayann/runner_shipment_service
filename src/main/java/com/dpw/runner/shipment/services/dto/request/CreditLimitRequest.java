@@ -13,4 +13,6 @@ import lombok.NoArgsConstructor;
 public class CreditLimitRequest implements IRunnerRequest {
     private String customerIdentifierId;
     private String siteIdentifierId;
+    private String clientOrgCode;
+    private String clientAddressCode;
 }
