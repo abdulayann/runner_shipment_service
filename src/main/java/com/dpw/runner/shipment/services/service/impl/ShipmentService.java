@@ -967,14 +967,14 @@ public class ShipmentService implements IShipmentService {
             entity = shipmentDao.update(entity, false);
             try {
                 // audit logs
-//               auditLogService.addAuditLog(
-//                       AuditLogMetaData.builder()
-//                               .newData(entity)
-//                               .prevData(jsonHelper.readFromJson(oldEntityJsonString, ShipmentDetails.class))
-//                               .parent(ShipmentDetails.class.getSimpleName())
-//                               .parentId(entity.getId())
-//                               .operation(DBOperationType.UPDATE.name()).build()
-//               );
+               auditLogService.addAuditLog(
+                       AuditLogMetaData.builder()
+                               .newData(entity)
+                               .prevData(jsonHelper.readFromJson(oldEntityJsonString, ShipmentDetails.class))
+                               .parent(ShipmentDetails.class.getSimpleName())
+                               .parentId(entity.getId())
+                               .operation(DBOperationType.UPDATE.name()).build()
+               );
             }
             catch (Exception e) {
                 log.error("Error creating audit service log", e);
