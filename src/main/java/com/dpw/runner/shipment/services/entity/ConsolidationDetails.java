@@ -14,6 +14,7 @@ import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Where;
 
 import javax.persistence.*;
+import javax.validation.constraints.Size;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -31,17 +32,21 @@ import java.util.List;
 public class ConsolidationDetails extends MultiTenancy {
 
     @Column(name = "consolidation_number")
+    @Size(max=20, message = "max size is 20 for consolidation_number")
     private String consolidationNumber;
 
     @Column(name = "consolidation_type")
+    @Size(max=100, message = "max size is 100 for consolidation_type")
     @MasterData(type = MasterDataType.CONSOlIDATION_TYPE)
     private String consolidationType;
 
     @Column(name = "transport_mode")
+    @Size(max=3, message = "max size is 3 for transport_mode")
     @MasterData(type = MasterDataType.MODE)
     private String transportMode;
 
     @Column(name = "container_category")
+    @Size(max=100, message = "max size is 100 for container_category")
     @MasterData(type = MasterDataType.CONTAINER_CATEGORY, cascade = Constants.TRANSPORT_MODE)
     private String containerCategory;
 
@@ -52,10 +57,12 @@ public class ConsolidationDetails extends MultiTenancy {
     private String mawb;
 
     @Column(name = "service_level")
+    @Size(max=20, message = "max size is 20 for service_level")
     @MasterData(type = MasterDataType.SERVICE_LEVEL)
     private String serviceLevel;
 
     @Column(name = "payment")
+    @Size(max=3, message = "max size is 3 for payment")
     @MasterData(type = MasterDataType.PAYMENT)
     private String payment;
 
@@ -88,12 +95,15 @@ public class ConsolidationDetails extends MultiTenancy {
     private String packageType;
 
     @Column(name = "agent_reference")
+    @Size(max=64, message = "max size is 64 for agent_reference")
     private String agentReference;
 
     @Column(name = "co_load_mbl")
+    @Size(max=64, message = "max size is 64 for co_load_mbl")
     private String coLoadMBL;
 
     @Column(name = "co_load_booking_reference")
+    @Size(max=64, message = "max size is 64 for co_load_booking_reference")
     private String coLoadBookingReference;
 
     @Column(name = "manifest_print")
@@ -179,6 +189,7 @@ public class ConsolidationDetails extends MultiTenancy {
     private LocalDateTime cargoClosingTime;
 
     @Column(name = "mrn_number")
+    @Size(max=50, message = "max size is 50 for mrn_number")
     private String mrnNumber;
 
     @Column(name = "msn_number")
@@ -194,9 +205,11 @@ public class ConsolidationDetails extends MultiTenancy {
     private LocalDateTime inwardDateAndTime;
 
     @Column(name = "igm_file_no")
+    @Size(max=10, message = "max size is 10 for igm_file_no")
     private String igmFileNo;
 
     @Column(name = "smtp_igm_number")
+    @Size(max=10, message = "max size is 10 smtp_igm_number")
     private String smtpigmNumber;
 
     @Column(name = "smtp_igm_date")
@@ -227,6 +240,7 @@ public class ConsolidationDetails extends MultiTenancy {
     private long sourceTenantId;
 
     @Column(name = "edi_transaction_id")
+    @Size(max=50, message = "max size is 50 for edi_transaction_id")
     private String ediTransactionId;
 
     @Column(name = "triangulation_partner")
@@ -245,6 +259,7 @@ public class ConsolidationDetails extends MultiTenancy {
     private Boolean isReceivingAgentFreeTextAddress;
 
     @Column(name = "receiving_agent_freetext_address")
+    @Size(max=256, message = "max size is 256 for receiving_agent_freetext_address")
     private String receivingAgentFreeTextAddress;
 
     @Column(name = "is_sending_agent_freetext_address")

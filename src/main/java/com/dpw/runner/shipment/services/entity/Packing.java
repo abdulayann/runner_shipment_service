@@ -13,6 +13,7 @@ import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.JoinColumn;
 import javax.persistence.Table;
+import javax.validation.constraints.Size;
 import java.math.BigDecimal;
 
 @Entity
@@ -207,6 +208,7 @@ public class Packing extends MultiTenancy {
     private Boolean isContractEnforced;
 
     @Column(name = "handling_info")
+    @Size(max=2500, message = "max size is 2500 for handling_info")
     private String handlingInfo;
 
     @Column(name = "contract_enforced_quantity_limit")

@@ -15,6 +15,7 @@ import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Where;
 
 import javax.persistence.*;
+import javax.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
@@ -37,8 +38,10 @@ public class AdditionalDetails extends MultiTenancy {
     @Column(name = "expiry_date")
     private LocalDateTime expiryDate;
 
+    @Size(max=3, message = "max size is 3 for inspection")
     private String inspection;
 
+    @Size(max=3, message = "max size is 3 for airway_bill_dims")
     @Column(name = "airway_bill_dims")
     private String airwayBillDims;
 
@@ -46,26 +49,32 @@ public class AdditionalDetails extends MultiTenancy {
     private BigDecimal shipperCOD;
 
     @Column(name = "shipper_cod_pm")
+    @Size(max=3, message = "max size is 3 for shipper_cod_pm")
     private String shipperCODPM;
 
+    @Size(max=3, message = "max size is 3 for phase")
     @Column(name = "phase")
     private String phase;
 
+    @Size(max=3, message = "max size is 3 for spot_rate")
     @Column(name = "spot_rate")
     private BigDecimal spotRate;
 
     @Column(name = "spot_rate_type")
     private String spotRateType;
 
+    @Size(max=3, message = "max size is 3 for efreight_status")
     @Column(name = "efreight_status")
     private String efreightStatus;
 
     @Column(name = "import_export_shipment_lock")
     private Boolean importExportShipmentLock;
 
+    @Size(max=20, message = "max size is 20 for cha_job_number")
     @Column(name = "cha_job_number")
     private String CHAJobNumber;
 
+    @Size(max=10, message = "max size is 10 for ad_code")
     @Column(name = "ad_code")
     private String ADCode;
 
@@ -147,6 +156,7 @@ public class AdditionalDetails extends MultiTenancy {
     @Column(name = "local_line_number")
     private Long localLineNumber;
 
+    @Size(max=10, message = "max size is 10 for smtp_igm_number")
     @Column(name = "smtp_igm_number")
     private String SMTPIGMNumber;
 
@@ -209,21 +219,25 @@ public class AdditionalDetails extends MultiTenancy {
     @Column(name = "total_duty")
     private BigDecimal totalDuty;
 
+    @Size(max=256, message = "max size is 256 for external_notes")
     @Column(name = "external_notes")
     private String externalNotes;
 
     @Column(name = "bonded_warehouse_id")
     private Long bondedWarehouseId;
 
+    @Size(max=3, message = "max size is 3 for release_type")
     @Column(name = "release_type")
     @MasterData(type = MasterDataType.RELEASE_TYPE)
     private String releaseType;
 
+    @Size(max=3, message = "max size is 3 for house_bill_type")
     @Column(name = "house_bill_type")
     @MasterData(type = MasterDataType.HOUSE_BILL_TYPE)
     private String houseBillType;
 
     @Column(name = "on_board")
+    @Size(max=3, message = "max size is 3 for on_board")
     @MasterData(type = MasterDataType.ON_BOARD)
     private String onBoard;
 
@@ -249,6 +263,7 @@ public class AdditionalDetails extends MultiTenancy {
     private String BLExporterShipment;
 
     @Column(name = "screening_status")
+    @Size(max=3, message = "max size is 3 for screening_status")
     @MasterData(type = MasterDataType.SCREENING_STATUS)
     private String screeningStatus;
 
