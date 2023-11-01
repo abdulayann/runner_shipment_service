@@ -54,7 +54,7 @@ public class CarrierDetails extends MultiTenancy {
     private String aircraftType;
 
     @Size(max=20, message = "max size is 20 for aircraft_type")
-    @Column(name = "aircraft_type")
+    @Column(name = "aircraft_registration")
     private String aircraftRegistration;
 
     @Column(name = "truck_ref_number")
