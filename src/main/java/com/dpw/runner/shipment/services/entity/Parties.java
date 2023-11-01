@@ -8,10 +8,10 @@ import lombok.*;
 import lombok.experimental.Accessors;
 import org.hibernate.annotations.*;
 
-import javax.persistence.*;
 import javax.persistence.Entity;
 import javax.persistence.Table;
-import javax.validation.constraints.AssertTrue;
+import javax.persistence.*;
+import javax.validation.constraints.Size;
 import java.util.Map;
 
 
@@ -45,6 +45,7 @@ public class Parties extends MultiTenancy {
     private String orgCode;
 
     @Column(name = "address_code")
+    @Size(max=100, message = "max limit is 100 for address_code")
     private String addressCode;
 
     @Type(type = "jsonb")

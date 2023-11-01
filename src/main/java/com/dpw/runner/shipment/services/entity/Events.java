@@ -7,6 +7,7 @@ import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Where;
 
 import javax.persistence.*;
+import javax.validation.constraints.Size;
 import java.time.LocalDateTime;
 
 @Entity
@@ -25,12 +26,15 @@ public class Events extends MultiTenancy {
     private Long entityId;
 
     @Column(name = "entity_type")
+    @Size(max=100, message = "max size is 100 for entity_type")
     private String entityType;
 
     @Column(name = "event_code")
+    @Size(max=210, message = "max size is 210 for event_code")
     private String eventCode;
 
     @Column(name = "description")
+    @Size(max=512, message = "max size is 512 for description")
     private String description;
 
     @Column(name = "estimated")
@@ -43,15 +47,19 @@ public class Events extends MultiTenancy {
     private Boolean isPublicTrackingEvent;
 
     @Column(name = "place_name")
+    @Size(max=100, message = "max size is 100 for place_name")
     private String placeName;
 
     @Column(name = "place_description")
+    @Size(max=100, message = "max size is 100 for place_description")
     private String placeDescription;
 
     @Column(name = "latitude")
+    @Size(max=100, message = "max size is 100 for latitude")
     private String latitude;
 
     @Column(name = "longitude")
+    @Size(max=100, message = "max size is 100 for longitude")
     private String longitude;
 
     @Column(name = "source")

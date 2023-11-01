@@ -17,6 +17,7 @@ import org.hibernate.annotations.TypeDef;
 import org.hibernate.annotations.Where;
 
 import javax.persistence.*;
+import javax.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -46,6 +47,7 @@ public class ShipmentDetails extends MultiTenancy {
     private String houseBill;
 
     @Column(name = "transport_mode")
+    @Size(max=4, message = "max size is 4 for transport_mode")
     @MasterData(type = MasterDataType.TRANSPORT_MODE)
     private String transportMode;
 
@@ -54,6 +56,7 @@ public class ShipmentDetails extends MultiTenancy {
     private String direction;
 
     @Column(name = "shipment_type")
+    @Size(max=3, message = "max size is 3 for shipment_type")
     @MasterData(type = MasterDataType.CONTAINER_CATEGORY, cascade = Constants.TRANSPORT_MODE)
     private String shipmentType;
 
@@ -81,6 +84,7 @@ public class ShipmentDetails extends MultiTenancy {
     private String serviceType;
 
     @Column(name = "master_bill")
+    @Size(max=50, message = "max size is 50 for master_bill")
     private String masterBill;
 
     @Column(name = "booking_reference")
@@ -100,6 +104,7 @@ public class ShipmentDetails extends MultiTenancy {
     private String incoterms;
 
     @Column(name = "shipment_id")
+    @Size(max=50, message = "max size is 50 for shipment_id")
     private String shipmentId;
 
     @Column(name = "is_domestic")
@@ -109,6 +114,7 @@ public class ShipmentDetails extends MultiTenancy {
     private String assignedTo;
 
     @Column(name = "additional_terms")
+    @Size(max=2048, message = "max size is 2048 for additional_terms")
     private String additionalTerms;
 
     @Column(name = "goods_description")
@@ -155,6 +161,7 @@ public class ShipmentDetails extends MultiTenancy {
     private BigDecimal volume;
 
     @Column(name = "volume_unit")
+    @Size(max=10, message = "max size is 10 for volume_unit")
     @MasterData(type = MasterDataType.VOLUME_UNIT)
     private String volumeUnit;
 
@@ -214,6 +221,7 @@ public class ShipmentDetails extends MultiTenancy {
     private String marksNum;
 
     @Column(name = "entry_detail")
+    @Size(max=3, message = "max size is 3 for entry_detail")
     private String entryDetail;
 
     @Column(name = "is_locked")
@@ -279,12 +287,14 @@ public class ShipmentDetails extends MultiTenancy {
     public BigDecimal goodsValue;
 
     @Column(name = "goods_value_currency")
+    @Size(max=3, message = "max size is 3 for goods_value_currency")
     public String goodsValueCurrency;
 
     @Column(name = "insurance_value")
     public BigDecimal insuranceValue;
 
     @Column(name = "insurance_value_currency")
+    @Size(max=3, message = "max size is 3 for insurance_value_currency")
     public String InsuranceValueCurrency;
 
     @OneToOne(fetch = FetchType.LAZY, targetEntity = AdditionalDetails.class, cascade = CascadeType.ALL)
@@ -337,9 +347,11 @@ public class ShipmentDetails extends MultiTenancy {
     private List<Parties> shipmentAddresses;
 
     @Column(name = "job_status")
+    @Size(max=3, message = "max size is 3 for job_status")
     private String jobStatus;
 
     @Column(name = "entry_ref_no")
+    @Size(max=250, message = "max size is 250 for entry_ref_no")
     private String entryRefNo;
 
     @Column(name = "flight_status")
