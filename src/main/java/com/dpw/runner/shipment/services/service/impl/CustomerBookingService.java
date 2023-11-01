@@ -561,7 +561,7 @@ public class CustomerBookingService implements ICustomerBookingService {
         double totalCreditAvailableBalance = (totalCreditLimit - outstandingAmount);
        var PaymentTerm=checkCreditBalanceFusionResponse.getData().getCreditDetails().get(0).getPaymentTerms();
        if(PaymentTerm==null||PaymentTerm.isEmpty()){
-           PaymentTerm="IMMEDIATE";
+           PaymentTerm=CustomerBookingConstants.IMMEDIATE;
        }
 
         double creditLimitUtilizedPer = totalCreditLimit != 0 ? (outstandingAmount * 100) / totalCreditLimit : 0;
