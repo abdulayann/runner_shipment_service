@@ -14,6 +14,7 @@ public interface IConsolidationService extends ICommonService{
     CompletableFuture<ResponseEntity<?>> retrieveByIdAsync(CommonRequestModel commonRequestModel);
     ResponseEntity<?> completeRetrieveById(CommonRequestModel commonRequestModel) throws ExecutionException, InterruptedException;
     ResponseEntity<?> completeUpdate(CommonRequestModel commonRequestModel) throws Exception;
+    ResponseEntity<?> partialUpdate(CommonRequestModel commonRequestModel) throws Exception;
     ResponseEntity<?> toggleLock(CommonRequestModel commonRequestModel);
     ResponseEntity<?> calculateUtilization(CommonRequestModel commonRequestModel);
     ResponseEntity<?> calculateAchieved_AllocatedForSameUnit(CommonRequestModel commonRequestModel);

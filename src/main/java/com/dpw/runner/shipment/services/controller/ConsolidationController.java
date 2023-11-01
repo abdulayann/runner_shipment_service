@@ -6,6 +6,7 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
+import com.dpw.runner.shipment.services.dto.patchRequest.ShipmentPatchRequest;
 import com.dpw.runner.shipment.services.dto.request.ConsolidationDetailsRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentAttachDetachRequest;
 import com.dpw.runner.shipment.services.dto.response.CarrierDetailResponse;
@@ -128,6 +129,21 @@ public class ConsolidationController {
         String responseMsg;
         try {
             return (ResponseEntity<RunnerResponse>) consolidationService.completeUpdate(CommonRequestModel.buildRequest(request));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+        }
+        return (ResponseEntity<RunnerResponse>) ResponseHelper.buildFailedResponse(responseMsg);
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.UPDATE_SUCCESSFUL, response = RunnerResponse.class)})
+    @PatchMapping(ApiConstants.API_PARTIAL_UPDATE)
+    public ResponseEntity<RunnerResponse> partialUpdate(@RequestBody @Valid Object request) {
+        String responseMsg;
+        try {
+            ShipmentPatchRequest req = jsonHelper.convertValue(request, ShipmentPatchRequest.class);
+            return (ResponseEntity<RunnerResponse>) consolidationService.partialUpdate(CommonRequestModel.buildRequest(req));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
