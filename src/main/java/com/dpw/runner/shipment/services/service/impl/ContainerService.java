@@ -169,7 +169,7 @@ public class ContainerService implements IContainerService {
         response.setHeader("Content-Disposition", "attachment; filename=\"containers.csv\"");
 
         try (PrintWriter writer = response.getWriter()) {
-            writer.println(parser.generateCSVHeader());
+            writer.println(parser.generateCSVHeaderForContainer());
             for (Containers container : result) {
                 writer.println(parser.formatContainerAsCSVLine(container));
             }
