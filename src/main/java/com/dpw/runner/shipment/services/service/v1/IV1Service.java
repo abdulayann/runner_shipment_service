@@ -133,4 +133,5 @@ public interface IV1Service {
     ConsoleBookingListResponse fetchConsolidationBookingData(Object request);
     V1DataResponse fetchGetTemplateMainPage(Object request);
     HblTaskCreationResponse createTaskforHBL(Object request);
+    ShipmentBillingListResponse fetchShipmentBillingData(Object request);
 }

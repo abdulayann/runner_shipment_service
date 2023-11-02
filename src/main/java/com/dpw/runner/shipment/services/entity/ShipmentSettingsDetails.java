@@ -48,6 +48,9 @@ public class ShipmentSettingsDetails extends MultiTenancy {
     @Column(name = "ship_consolidation_container_enabled")
     private Boolean shipConsolidationContainerEnabled;
 
+    @Column(name = "is_shipment_level_container")
+    private Boolean isShipmentLevelContainer;
+
     @Column(name = "auto_attach_consolidation")
     private Boolean autoAttachConsolidation;
 

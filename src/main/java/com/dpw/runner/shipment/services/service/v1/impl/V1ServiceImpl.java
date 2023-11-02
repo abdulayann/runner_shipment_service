@@ -240,6 +240,9 @@ public class V1ServiceImpl implements IV1Service {
     @Value("${v1service.url.base}${v1service.url.consolidationBookingData}")
     private String CONSOLIDATION_BOOKING_DATA;
 
+    @Value("${v1service.url.base}${v1service.url.shipmentBillingData}")
+    private String SHIPMENT_BILLING_DATA;
+
     @Value("${v1service.url.base}${v1service.url.mainPageTemplate}")
     private String MAIN_PAGE_TEMPLATE_LIST;
     @Value("${v1service.url.base}${v1service.url.hblTaskCreation}")
@@ -1389,14 +1392,35 @@ public class V1ServiceImpl implements IV1Service {
 
     @Override
     public ConsoleBookingListResponse fetchConsolidationBookingData(Object request) {
-        ResponseEntity<ConsoleBookingListResponse> containerResponse = null;
+        ResponseEntity<ConsoleBookingListResponse> consolResponse = null;
 
         try {
             long time = System.currentTimeMillis();
             HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
-            containerResponse = this.restTemplate.postForEntity(this.CONSOLIDATION_BOOKING_DATA, entity, ConsoleBookingListResponse.class, new Object[0]);
+            consolResponse = this.restTemplate.postForEntity(this.CONSOLIDATION_BOOKING_DATA, entity, ConsoleBookingListResponse.class, new Object[0]);
             log.info("Token time taken in fetchConsolidationBookingData() function " + (System.currentTimeMillis() - time));
-            return (ConsoleBookingListResponse) containerResponse.getBody();
+            return (ConsoleBookingListResponse) consolResponse.getBody();
+        } catch (HttpStatusCodeException var6) {
+            if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
+                throw new UnAuthorizedException("UnAuthorizedException");
+            } else {
+                throw new V1ServiceException(var6.getMessage());
+            }
+        } catch (Exception var7) {
+            throw new V1ServiceException(var7.getMessage());
+        }
+    }
+
+    @Override
+    public ShipmentBillingListResponse fetchShipmentBillingData(Object request) {
+        ResponseEntity<ShipmentBillingListResponse> shipmentResponse = null;
+
+        try {
+            long time = System.currentTimeMillis();
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            shipmentResponse = this.restTemplate.postForEntity(this.SHIPMENT_BILLING_DATA, entity, ShipmentBillingListResponse.class, new Object[0]);
+            log.info("Token time taken in fetchShipmentBillingData() function " + (System.currentTimeMillis() - time));
+            return (ShipmentBillingListResponse) shipmentResponse.getBody();
         } catch (HttpStatusCodeException var6) {
             if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
                 throw new UnAuthorizedException("UnAuthorizedException");

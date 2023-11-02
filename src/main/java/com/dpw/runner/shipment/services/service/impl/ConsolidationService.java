@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
@@ -17,9 +18,8 @@ import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.v1.request.ConsoleBookingListRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.ConsoleBookingListResponse;
 import com.dpw.runner.shipment.services.entity.*;
-import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.entity.enums.ProductProcessTypes;
-import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
@@ -33,7 +33,6 @@ import com.dpw.runner.shipment.services.syncing.interfaces.IConsolidationSync;
 import com.dpw.runner.shipment.services.utils.GetNextNumberHelper;
 import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
 import com.dpw.runner.shipment.services.utils.ProductIdentifierUtility;
-import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
@@ -255,7 +254,7 @@ public class ConsolidationService implements IConsolidationService {
                 ConsoleBookingListRequest consoleBookingListRequest = new ConsoleBookingListRequest();
                 consoleBookingListRequest.setGuidsList(guidsList);
                 ConsoleBookingListResponse consoleBookingListResponse = v1Service.fetchConsolidationBookingData(consoleBookingListRequest);
-                if(!consoleBookingListResponse.getData().isEmpty()) {
+                if(consoleBookingListResponse.getData() != null && !consoleBookingListResponse.getData().isEmpty()) {
                     for (ConsolidationListResponse consolidationDetails: consolidationListResponses) {
                         if(consoleBookingListResponse.getData().get(consolidationDetails.getGuid()) != null) {
                             consolidationDetails.setBookingStatus(consoleBookingListResponse.getData().get(consolidationDetails.getGuid()).getStatus());
@@ -350,7 +349,12 @@ public class ConsolidationService implements IConsolidationService {
 
             getConsolidation(consolidationDetails);
 
-            if (request.getContainersList() != null) {
+            List<ShipmentSettingsDetails> shipmentSettingsDetailsList = shipmentSettingsDao.getSettingsByTenantIds(List.of(TenantContext.getCurrentTenant()));
+            ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
+            if(shipmentSettingsDetailsList.size() > 0)
+                shipmentSettingsDetails = shipmentSettingsDetailsList.get(0);
+
+            if (request.getContainersList() != null && !shipmentSettingsDetails.getMergeContainers()) {
                 List<ContainerRequest> containerRequest = request.getContainersList();
                 List<Containers> containers = containerDao.updateEntityFromShipmentConsole(convertToEntityList(containerRequest, Containers.class), consolidationDetails.getId());
                 consolidationDetails.setContainersList(containers);
@@ -845,7 +849,11 @@ public class ConsolidationService implements IConsolidationService {
             }
 
             ConsolidationDetailsResponse response = jsonHelper.convertValue(entity, ConsolidationDetailsResponse.class);
-            if(containerRequestList != null) {
+            List<ShipmentSettingsDetails> shipmentSettingsDetailsList = shipmentSettingsDao.getSettingsByTenantIds(List.of(TenantContext.getCurrentTenant()));
+            ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
+            if(shipmentSettingsDetailsList.size() > 0)
+                shipmentSettingsDetails = shipmentSettingsDetailsList.get(0);
+            if(containerRequestList != null && !shipmentSettingsDetails.getMergeContainers()) {
                 List<Containers> updatedContainers = containerDao.updateEntityFromShipmentConsole(convertToEntityList(containerRequestList, Containers.class), id);
                 response.setContainersList(convertToDtoList(updatedContainers, ContainerResponse.class));
             }
@@ -1234,6 +1242,14 @@ public class ConsolidationService implements IConsolidationService {
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
             log.info("Consolidation details fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
+            List<ShipmentSettingsDetails> shipmentSettingsDetailsList = shipmentSettingsDao.getSettingsByTenantIds(List.of(TenantContext.getCurrentTenant()));
+            ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
+            if(shipmentSettingsDetailsList.size() > 0) {
+                shipmentSettingsDetails = shipmentSettingsDetailsList.get(0);
+            }
+            if(shipmentSettingsDetails.getMergeContainers() && consolidationDetails.get().getContainersList() != null && consolidationDetails.get().getContainersList().size() > 0) {
+                consolidationDetails.get().setContainersList(mergeContainers(consolidationDetails.get().getContainersList(), shipmentSettingsDetails));
+            }
             ConsolidationDetailsResponse response = jsonHelper.convertValue(consolidationDetails.get(), ConsolidationDetailsResponse.class);
             if(response != null && response.getGuid() != null) {
                 List<UUID> guidsList = new ArrayList<>();
@@ -1241,7 +1257,7 @@ public class ConsolidationService implements IConsolidationService {
                 ConsoleBookingListRequest consoleBookingListRequest = new ConsoleBookingListRequest();
                 consoleBookingListRequest.setGuidsList(guidsList);
                 ConsoleBookingListResponse consoleBookingListResponse = v1Service.fetchConsolidationBookingData(consoleBookingListRequest);
-                if(!consoleBookingListResponse.getData().isEmpty()) {
+                if(consoleBookingListResponse.getData() != null && !consoleBookingListResponse.getData().isEmpty()) {
                     if(consoleBookingListResponse.getData().get(response.getGuid()) != null) {
                         response.setBookingStatus(consoleBookingListResponse.getData().get(response.getGuid()).getStatus());
                         response.setBookingId(consoleBookingListResponse.getData().get(response.getGuid()).getIntraBookingId());
@@ -1275,6 +1291,14 @@ public class ConsolidationService implements IConsolidationService {
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
             log.info("Consolidation details async fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
+            List<ShipmentSettingsDetails> shipmentSettingsDetailsList = shipmentSettingsDao.getSettingsByTenantIds(List.of(TenantContext.getCurrentTenant()));
+            ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
+            if(shipmentSettingsDetailsList.size() > 0) {
+                shipmentSettingsDetails = shipmentSettingsDetailsList.get(0);
+            }
+            if(shipmentSettingsDetails.getMergeContainers() && consolidationDetails.get().getContainersList() != null && consolidationDetails.get().getContainersList().size() > 0) {
+                consolidationDetails.get().setContainersList(mergeContainers(consolidationDetails.get().getContainersList(), shipmentSettingsDetails));
+            }
             ConsolidationDetailsResponse response = jsonHelper.convertValue(consolidationDetails.get(), ConsolidationDetailsResponse.class);
             if(response != null && response.getGuid() != null) {
                 List<UUID> guidsList = new ArrayList<>();
@@ -1282,7 +1306,7 @@ public class ConsolidationService implements IConsolidationService {
                 ConsoleBookingListRequest consoleBookingListRequest = new ConsoleBookingListRequest();
                 consoleBookingListRequest.setGuidsList(guidsList);
                 ConsoleBookingListResponse consoleBookingListResponse = v1Service.fetchConsolidationBookingData(consoleBookingListRequest);
-                if(!consoleBookingListResponse.getData().isEmpty()) {
+                if(consoleBookingListResponse.getData() != null && !consoleBookingListResponse.getData().isEmpty()) {
                     if(consoleBookingListResponse.getData().get(response.getGuid()) != null) {
                         response.setBookingStatus(consoleBookingListResponse.getData().get(response.getGuid()).getStatus());
                         response.setBookingId(consoleBookingListResponse.getData().get(response.getGuid()).getIntraBookingId());
@@ -1296,6 +1320,156 @@ public class ConsolidationService implements IConsolidationService {
             log.error(responseMsg, e);
             return CompletableFuture.completedFuture(ResponseHelper.buildFailedResponse(responseMsg));
         }
+    }
+
+    private List<Containers> mergeContainers(List<Containers> containersList, ShipmentSettingsDetails shipmentSettingsDetails) throws Exception{
+        try {
+            List<Containers> response = new ArrayList<>();
+            HashMap<String, List<Containers>> map = new HashMap<>();
+            for(Containers container: containersList) {
+                if(IsStringNullOrEmpty(container.getContainerCode()) || IsStringNullOrEmpty(container.getContainerNumber()) || IsStringNullOrEmpty(container.getHblDeliveryMode())) {
+                    response.add(container);
+                    continue;
+                }
+                String key = container.getContainerCode() + container.getContainerNumber() + container.getHblDeliveryMode();
+                if(map.containsKey(key)) {
+                    List<Containers> temp = map.get(key);
+                    temp.add(container);
+                    map.put(key, temp);
+                }
+                else {
+                    List<Containers> containersList1 = new ArrayList<>();
+                    containersList1.add(container);
+                    map.put(key, containersList1);
+                }
+            }
+            if(map.size() > 0) {
+                for (Map.Entry<String, List<Containers>> entry : map.entrySet()) {
+                    List<Containers> value = entry.getValue();
+                    if(value.size() == 1) {
+                        response.add(value.get(0));
+                    }
+                    else if(entry.getValue().size() > 0){
+                        Containers finalContainer = value.get(0);
+                        finalContainer.setId(null);
+                        finalContainer.setGuid(null);
+                        for (int i=1; i < value.size(); i++) {
+                            finalContainer = convertIntoMergedConts(finalContainer, value.get(i), shipmentSettingsDetails);
+                        }
+                        response.add(finalContainer);
+                    }
+                }
+            }
+            return response;
+        } catch (Exception e) {
+            log.error("Error while merging consol containers");
+            throw new Exception(e);
+        }
+    }
+
+    private Containers convertIntoMergedConts(Containers finalContainer, Containers container, ShipmentSettingsDetails shipmentSettingsDetails) throws Exception{
+        try {
+            finalContainer.setDescriptionOfGoods(mergeTextField(finalContainer.getDescriptionOfGoods(), container.getDescriptionOfGoods()));
+//        finalContainer.setHa(mergeTextField(finalContainer.getDescriptionOfGoods(), container.getDescriptionOfGoods())); TODO- missing handling info in containers
+            if(finalContainer.getNoOfPackages() != null && container.getNoOfPackages() != null)
+                finalContainer.setNoOfPackages(finalContainer.getNoOfPackages() + container.getNoOfPackages());
+            else if(container.getNoOfPackages() != null)
+                finalContainer.setNoOfPackages(container.getNoOfPackages());
+            if(!IsStringNullOrEmpty(finalContainer.getPacks()) && !IsStringNullOrEmpty(container.getPacks()))
+                finalContainer.setPacks(String.valueOf(new BigDecimal(finalContainer.getPacks()).add(new BigDecimal(container.getPacks()))));
+            else if(!IsStringNullOrEmpty(container.getPacks())) {
+                finalContainer.setPacks(container.getPacks());
+            }
+            finalContainer.setMarksNums(mergeTextField(finalContainer.getMarksNums(), container.getMarksNums()));
+            finalContainer.setCustomsReleaseCode(mergeTextField(finalContainer.getCustomsReleaseCode(), container.getCustomsReleaseCode()));
+            finalContainer.setPacrNumber(mergeTextField(finalContainer.getPacrNumber(), container.getPacrNumber()));
+            finalContainer.setContainerComments(mergeTextField(finalContainer.getContainerComments(), container.getContainerComments()));
+            if(!IsStringNullOrEmpty(finalContainer.getPacksType()) && !IsStringNullOrEmpty(container.getPacksType()) && !container.getPacksType().equals(finalContainer.getPacksType()))
+                finalContainer.setPacksType(Constants.MPK);
+            // Net Weight field
+            if(finalContainer.getNetWeight() != null && container.getNetWeight() != null && finalContainer.getNetWeightUnit() != null && container.getNetWeightUnit() != null) {
+                if(finalContainer.getNetWeightUnit().equals(container.getNetWeightUnit()))
+                    finalContainer.setNetWeight(finalContainer.getNetWeight().add(container.getNetWeight()));
+                else {
+                    finalContainer.setNetWeight( new BigDecimal(convertUnit(Constants.MASS, finalContainer.getNetWeight(), finalContainer.getNetWeightUnit(), shipmentSettingsDetails.getWeightChargeableUnit()).doubleValue() +
+                                    convertUnit(Constants.MASS, container.getNetWeight(), container.getNetWeightUnit(), shipmentSettingsDetails.getWeightChargeableUnit()).doubleValue() ));
+                    finalContainer.setNetWeightUnit(shipmentSettingsDetails.getWeightChargeableUnit());
+                }
+            }
+            else if(container.getNetWeight() != null){
+                finalContainer.setNetWeightUnit(container.getNetWeightUnit());
+                finalContainer.setNetWeight(container.getNetWeight());
+            }
+            // Gross Weight field
+            if(finalContainer.getGrossWeight() != null && container.getGrossWeight() != null && finalContainer.getGrossWeightUnit() != null && container.getGrossWeightUnit() != null) {
+                if(finalContainer.getGrossWeightUnit().equals(container.getGrossWeightUnit()))
+                    finalContainer.setGrossWeight(finalContainer.getGrossWeight().add(container.getGrossWeight()));
+                else {
+                    finalContainer.setGrossWeight( new BigDecimal(convertUnit(Constants.MASS, finalContainer.getGrossWeight(), finalContainer.getGrossWeightUnit(), shipmentSettingsDetails.getWeightChargeableUnit()).doubleValue() +
+                            convertUnit(Constants.MASS, container.getGrossWeight(), container.getGrossWeightUnit(), shipmentSettingsDetails.getWeightChargeableUnit()).doubleValue() ));
+                    finalContainer.setGrossWeightUnit(shipmentSettingsDetails.getWeightChargeableUnit());
+                }
+            }
+            else if(container.getGrossWeight() != null){
+                finalContainer.setGrossWeightUnit(container.getGrossWeightUnit());
+                finalContainer.setGrossWeight(container.getGrossWeight());
+            }
+            // Tare Weight field
+            if(finalContainer.getTareWeight() != null && container.getTareWeight() != null && finalContainer.getTareWeightUnit() != null && container.getTareWeightUnit() != null) {
+                if(finalContainer.getTareWeightUnit().equals(container.getTareWeightUnit()))
+                    finalContainer.setTareWeight(finalContainer.getTareWeight().add(container.getTareWeight()));
+                else {
+                    finalContainer.setTareWeight( new BigDecimal(convertUnit(Constants.MASS, finalContainer.getTareWeight(), finalContainer.getTareWeightUnit(), shipmentSettingsDetails.getWeightChargeableUnit()).doubleValue() +
+                            convertUnit(Constants.MASS, container.getTareWeight(), container.getTareWeightUnit(), shipmentSettingsDetails.getWeightChargeableUnit()).doubleValue() ));
+                    finalContainer.setTareWeightUnit(shipmentSettingsDetails.getWeightChargeableUnit());
+                }
+            }
+            else if(container.getTareWeight() != null){
+                finalContainer.setTareWeightUnit(container.getTareWeightUnit());
+                finalContainer.setTareWeight(container.getTareWeight());
+            }
+            // Gross Volume field
+            if(finalContainer.getGrossVolume() != null && container.getGrossVolume() != null && finalContainer.getGrossVolumeUnit() != null && container.getGrossVolumeUnit() != null) {
+                if(finalContainer.getGrossVolumeUnit().equals(container.getGrossVolumeUnit()))
+                    finalContainer.setGrossVolume(finalContainer.getGrossVolume().add(container.getGrossVolume()));
+                else {
+                    finalContainer.setGrossVolume( new BigDecimal(convertUnit(Constants.VOLUME, finalContainer.getGrossVolume(), finalContainer.getGrossVolumeUnit(), shipmentSettingsDetails.getVolumeChargeableUnit()).doubleValue() +
+                            convertUnit(Constants.VOLUME, container.getGrossVolume(), container.getGrossVolumeUnit(), shipmentSettingsDetails.getVolumeChargeableUnit()).doubleValue() ));
+                    finalContainer.setGrossVolumeUnit(shipmentSettingsDetails.getVolumeChargeableUnit());
+                }
+            }
+            else if(container.getGrossVolume() != null){
+                finalContainer.setGrossVolumeUnit(container.getGrossVolumeUnit());
+                finalContainer.setGrossVolume(container.getGrossVolume());
+            }
+            // Measurement field
+            if(finalContainer.getMeasurement() != null && container.getMeasurement() != null && finalContainer.getMeasurementUnit() != null && container.getMeasurementUnit() != null) {
+                if(finalContainer.getMeasurementUnit().equals(container.getMeasurementUnit()))
+                    finalContainer.setMeasurement(finalContainer.getMeasurement().add(container.getMeasurement()));
+                else {
+                    finalContainer.setMeasurement( new BigDecimal(convertUnit(Constants.LENGTH, finalContainer.getMeasurement(), finalContainer.getMeasurementUnit(), shipmentSettingsDetails.getMeasurementChargeableUnit()).doubleValue() +
+                            convertUnit(Constants.LENGTH, container.getMeasurement(), container.getMeasurementUnit(), shipmentSettingsDetails.getMeasurementChargeableUnit()).doubleValue() ));
+                    finalContainer.setMeasurementUnit(shipmentSettingsDetails.getMeasurementChargeableUnit());
+                }
+            }
+            else if(container.getMeasurement() != null){
+                finalContainer.setMeasurementUnit(container.getMeasurementUnit());
+                finalContainer.setMeasurement(container.getMeasurement());
+            }
+            return finalContainer;
+        } catch (Exception e) {
+            throw new Exception(e);
+        }
+    }
+
+    private String mergeTextField(String a, String b) {
+        if(!IsStringNullOrEmpty(b) && !IsStringNullOrEmpty(b))
+            return a + "\n" + b;
+        if(!IsStringNullOrEmpty(b))
+            return b;
+        if(!IsStringNullOrEmpty(a))
+            return a;
+        return null;
     }
 
     public ResponseEntity<?> toggleLock(CommonRequestModel commonRequestModel) {

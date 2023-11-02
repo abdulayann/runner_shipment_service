@@ -30,6 +30,7 @@ public class Constants {
     public static final String TENANT_SETTINGS = "TENANT_SETTINGS";
     public static final String ROUTING = "ROUTING";
     public static final String PACKING = "PACKING";
+    public static final String MPK = "MPK";
     public static final String CONTAINER = "CONTAINER";
     public static final String CARRIAGE = "CARRIAGE";
     public static final String EVENTS = "EVENTS";
