@@ -16,11 +16,9 @@ import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.patchRequest.ShipmentPatchRequest;
 import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.response.*;
+import com.dpw.runner.shipment.services.dto.v1.request.ShipmentBillingListRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TIListRequest;
-import com.dpw.runner.shipment.services.dto.v1.response.TIContainerResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.TIResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1ContainerTypeResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.GenerationType;
 import com.dpw.runner.shipment.services.entity.enums.ProductProcessTypes;
@@ -322,6 +320,7 @@ public class ShipmentService implements IShipmentService {
         });
         setLocationData(responseList);
         setContainerTeu(lst, responseList);
+        setBillingData(lst, responseList);
         return responseList;
     }
 
@@ -479,6 +478,51 @@ public class ShipmentService implements IShipmentService {
                         }
                     }
                     dataMap.get(shipment.getId()).setTeuCount(teu);
+                }
+            }
+        }
+    }
+
+    private void setBillingData(List<ShipmentDetails> shipmentDetails, List<IRunnerResponse> responseList) {
+
+        Map<Long, ShipmentListResponse> dataMap = new HashMap<>();
+        for (IRunnerResponse response : responseList){
+            dataMap.put(((ShipmentListResponse)response).getId(), (ShipmentListResponse)response);
+        }
+
+        if(shipmentDetails != null && shipmentDetails.size() > 0) {
+            List<UUID> guidsList = new ArrayList<>();
+            for (ShipmentDetails details: shipmentDetails) {
+                guidsList.add(details.getGuid());
+            }
+            if(guidsList.size() > 0) {
+                ShipmentBillingListRequest shipmentBillingListRequest = new ShipmentBillingListRequest();
+                shipmentBillingListRequest.setGuidsList(guidsList);
+                ShipmentBillingListResponse shipmentBillingListResponse = v1Service.fetchShipmentBillingData(shipmentBillingListRequest);
+                if(shipmentBillingListResponse.getData() != null && !shipmentBillingListResponse.getData().isEmpty()) {
+                    for (ShipmentDetails details: shipmentDetails) {
+                        if(shipmentBillingListResponse.getData().get(details.getGuid()) != null) {
+                            ShipmentBillingListResponse.BillingData billingData = shipmentBillingListResponse.getData().get(details.getGuid());
+                            ShipmentListResponse shipmentListResponse = dataMap.get(details.getId());
+
+                            shipmentListResponse.setBillStatus(billingData.getBillStatus());
+                            shipmentListResponse.setJobStatus(billingData.getJobStatus());
+                            shipmentListResponse.setTotalEstimatedCost(billingData.getTotalEstimatedCost());
+                            shipmentListResponse.setTotalEstimatedRevenue(billingData.getTotalEstimatedRevenue());
+                            shipmentListResponse.setTotalEstimatedProfit(billingData.getTotalEstimatedProfit());
+                            shipmentListResponse.setTotalEstimatedProfitPercent(billingData.getTotalEstimatedProfitPercent());
+                            shipmentListResponse.setTotalCost(billingData.getTotalCost());
+                            shipmentListResponse.setTotalRevenue(billingData.getTotalRevenue());
+                            shipmentListResponse.setTotalProfit(billingData.getTotalProfit());
+                            shipmentListResponse.setTotalProfitPercent(billingData.getTotalProfitPercent());
+                            shipmentListResponse.setTotalPostedCost(billingData.getTotalPostedCost());
+                            shipmentListResponse.setTotalPostedRevenue(billingData.getTotalPostedRevenue());
+                            shipmentListResponse.setTotalPostedProfit(billingData.getTotalPostedProfit());
+                            shipmentListResponse.setTotalPostedProfitPercent(billingData.getTotalPostedProfitPercent());
+                            shipmentListResponse.setWayBillNumber(billingData.getWayBillNumber());
+                        }
+                    }
+
                 }
             }
         }
@@ -952,6 +996,10 @@ public class ShipmentService implements IShipmentService {
             tempConsolIds = oldEntity.get().getConsolidationList().stream().map(e -> e.getId()).collect(Collectors.toList());
 
         try {
+            List<ShipmentSettingsDetails> shipmentSettingsDetailsList = shipmentSettingsDao.getSettingsByTenantIds(List.of(TenantContext.getCurrentTenant()));
+            ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
+            if(shipmentSettingsDetailsList.size() > 0)
+                shipmentSettingsDetails = shipmentSettingsDetailsList.get(0);
             ShipmentDetails entity = objectMapper.convertValue(shipmentRequest, ShipmentDetails.class);
             entity.setId(oldEntity.get().getId());
             List<Containers> updatedContainers = new ArrayList<>();
@@ -1037,7 +1085,7 @@ public class ShipmentService implements IShipmentService {
             }
             if(updatedContainers.size() > 0) {
                 hblService.checkAllContainerAssigned(id, updatedContainers, updatedPackings);
-                if(tempConsolIds == null || tempConsolIds.size() == 0) {
+                if((tempConsolIds == null || tempConsolIds.size() == 0) && (shipmentSettingsDetails.getIsShipmentLevelContainer() == null || !shipmentSettingsDetails.getIsShipmentLevelContainer())) {
                     createConsolidation(entity, updatedContainers);
                 }
             }
@@ -1230,7 +1278,7 @@ public class ShipmentService implements IShipmentService {
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
             log.info("Shipment details fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
-            ShipmentDetailsResponse response = shipmentDetailsMapper.map(shipmentDetails.get());
+            ShipmentDetailsResponse response = modelMapper.map(shipmentDetails.get(), ShipmentDetailsResponse.class);
             createShipmentPayload(shipmentDetails.get(), response);
             //containerCountUpdate(shipmentDetails.get(), response);
             return ResponseHelper.buildSuccessResponse(response);

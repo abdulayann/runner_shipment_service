@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.dto.response;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.config.CustomLocalDateTimeSerializer;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.AllArgsConstructor;
@@ -102,6 +103,8 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     private List<ELDetailsResponse> elDetailsList;
     private List<BookingCarriageResponse> bookingCarriagesList;
     private List<JobResponse> jobsList;
+    @JsonIgnoreProperties("shipmentsList")
+    private List<ConsolidationDetailsResponse> consolidationList;
     private List<ContainerResponse> containersList;
     private Long container20Count;
     private Long container40Count;
