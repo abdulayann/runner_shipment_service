@@ -6,8 +6,10 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import org.springframework.core.io.Resource;
 import org.springframework.http.ResponseEntity;
 
+import java.lang.reflect.InvocationTargetException;
+
 public interface IAuditLogService {
     Resource downloadExcel(CommonRequestModel commonRequestModel);
     ResponseEntity<?> list(CommonRequestModel commonRequestModel);
-    void addAuditLog(AuditLogMetaData auditLogMetaData) throws IllegalAccessException, NoSuchFieldException, JsonProcessingException;
+    void addAuditLog(AuditLogMetaData auditLogMetaData) throws IllegalAccessException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, NoSuchMethodException;
 }
