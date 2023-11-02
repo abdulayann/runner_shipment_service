@@ -1,9 +1,11 @@
 package com.dpw.runner.shipment.services.dto.response;
 
+import com.dpw.runner.shipment.services.commons.requests.AuditLogChanges;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import lombok.Data;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 public class AuditLogResponse implements IRunnerResponse {
@@ -11,7 +13,7 @@ public class AuditLogResponse implements IRunnerResponse {
     private String operation;
     private String entity;
     private Long entityId;
-    private Object changes;
+    private List<AuditLogChanges> changes;
     private String parentType;
     private Long parentId;
     private LocalDateTime createdAt;
