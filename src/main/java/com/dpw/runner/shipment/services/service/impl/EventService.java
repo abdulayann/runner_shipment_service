@@ -11,32 +11,44 @@ import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IEventDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.request.EventsRequest;
+import com.dpw.runner.shipment.services.dto.request.TrackingRequest;
 import com.dpw.runner.shipment.services.dto.response.EventsResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.Events;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import com.dpw.runner.shipment.services.exception.exceptions.V1ServiceException;
+import com.dpw.runner.shipment.services.exception.response.V1ErrorResponse;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IEventService;
 import com.dpw.runner.shipment.services.syncing.Entity.EventsRequestV2;
 import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
+import com.dpw.runner.shipment.services.utils.V1AuthHelper;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.http.HttpEntity;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.interceptor.TransactionAspectSupport;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.HttpServerErrorException;
+import org.springframework.web.client.RestTemplate;
 
+import javax.json.JsonString;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -68,6 +80,12 @@ public class EventService implements IEventService {
 
     @Autowired
     private IConsolidationDetailsDao consolidationDao;
+
+    @Autowired
+    private RestTemplate restTemplate;
+
+    @Value("${v1service.url.base}${v1.service.url.trackEventDetails}")
+    private String TRACK_EVENT_DETAILS_URL;
 
     @Transactional
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
@@ -328,4 +346,44 @@ public class EventService implements IEventService {
             throw new RuntimeException(e);
         }
     }
+
+  public ResponseEntity<?> trackEvents(Long id) {
+    Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(id);
+    if (shipmentDetails.isEmpty()) {
+      log.debug(
+          "No Shipment present for the current Event",
+              id,
+          LoggerHelper.getRequestIdFromMDC());
+      throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+    }
+    String shipmentId = shipmentDetails.get().getShipmentId();
+    TrackingRequest trackingRequest = TrackingRequest.builder().referenceNumber(shipmentId).build();
+
+    HttpEntity<V1DataResponse> entity = new HttpEntity(trackingRequest, V1AuthHelper.getHeaders());
+    V1DataResponse response = new V1DataResponse();
+    try {
+      var v1response =
+          this.restTemplate.postForEntity(TRACK_EVENT_DETAILS_URL, entity, V1DataResponse.class);
+      response = v1response.getBody();
+    } catch (HttpClientErrorException | HttpServerErrorException ex) {
+      throw new V1ServiceException(
+          jsonHelper
+              .readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class)
+              .getError()
+              .getMessage());
+    }
+    List<EventsResponse> res = new ArrayList<>();
+    if (response != null && response.getEntities() != null) {
+      List<EventsRequestV2> responseEvents =
+          jsonHelper.convertValue(response.getEntities(), new TypeReference<>() {});
+      for (var i : responseEvents) {
+        EventsResponse eventsResponse = modelMapper.map(i, EventsResponse.class);
+        eventsResponse.setShipmentId(id);
+        eventsResponse.setUpdatable(true);
+        res.add(eventsResponse);
+      }
+    }
+
+    return ResponseHelper.buildSuccessResponse(res);
+  }
 }
