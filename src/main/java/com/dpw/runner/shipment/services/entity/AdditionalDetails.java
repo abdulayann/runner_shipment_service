@@ -56,10 +56,10 @@ public class AdditionalDetails extends MultiTenancy {
     @Column(name = "phase")
     private String phase;
 
-    @Size(max=3, message = "max size is 3 for spot_rate")
     @Column(name = "spot_rate")
     private BigDecimal spotRate;
 
+    @Size(max=3, message = "max size is 3 for spot_rate_type")
     @Column(name = "spot_rate_type")
     private String spotRateType;
 
