@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.dto.response;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.config.CustomLocalDateTimeSerializer;
+import com.dpw.runner.shipment.services.config.CustomLocalTimeSerializer;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.*;
 
@@ -35,6 +36,7 @@ public class PickupDeliveryDetailsResponse implements IRunnerResponse {
     private String dropMode;
     private BigDecimal labourCharge;
     private String labourChargeUnit;
+    @JsonSerialize(using = CustomLocalTimeSerializer.class)
     private LocalTime labourDuration;
     private String shipperRef;
     private String interimReceipt;
@@ -44,9 +46,11 @@ public class PickupDeliveryDetailsResponse implements IRunnerResponse {
     private LocalDateTime storageDate;
     private BigDecimal truckWaitTimeCharge;
     private String truckWaitTimeChargeUnit;
+    @JsonSerialize(using = CustomLocalTimeSerializer.class)
     private LocalTime truckWaitDuration;
     private BigDecimal storageCharge;
     private String storageChargeUnit;
+    @JsonSerialize(using = CustomLocalTimeSerializer.class)
     private LocalTime storageChargeDuration;
     private String ucrReference;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
