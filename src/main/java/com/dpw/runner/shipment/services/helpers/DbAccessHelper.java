@@ -287,6 +287,29 @@ public class DbAccessHelper {
                     return criteriaBuilder.lessThan(path.get(fieldName), covertStringToLocalDate((String) input.getValue(), "yyyy-MM-dd"));
                 }
                 return criteriaBuilder.lt(path.get(fieldName), (Number) input.getValue());
+            case ">=":
+                if (dataType.isAssignableFrom(String.class)) {
+                    return criteriaBuilder.greaterThanOrEqualTo(path.get(fieldName), (String) input.getValue());
+                }
+                if (dataType.isAssignableFrom(Date.class)) {
+                    return criteriaBuilder.greaterThanOrEqualTo(path.get(fieldName), covertStringToData((String) input.getValue(), "yyyy-MM-dd"));
+                }
+                if (dataType.isAssignableFrom(LocalDateTime.class)) {
+                    return criteriaBuilder.greaterThanOrEqualTo(path.get(fieldName), covertStringToLocalDate((String) input.getValue(), "yyyy-MM-dd"));
+                }
+                return criteriaBuilder.gt(path.get(fieldName), (Number) input.getValue());
+
+            case "<=":
+                if (dataType.isAssignableFrom(String.class)) {
+                    return criteriaBuilder.lessThanOrEqualTo(path.get(fieldName), (String) input.getValue());
+                }
+                if (dataType.isAssignableFrom(Date.class)) {
+                    return criteriaBuilder.lessThanOrEqualTo(path.get(fieldName), covertStringToData((String) input.getValue(), "yyyy-MM-dd"));
+                }
+                if (dataType.isAssignableFrom(LocalDateTime.class)) {
+                    return criteriaBuilder.lessThanOrEqualTo(path.get(fieldName), covertStringToLocalDate((String) input.getValue(), "yyyy-MM-dd"));
+                }
+                return criteriaBuilder.lt(path.get(fieldName), (Number) input.getValue());
 
             case "LIKE":
                 return criteriaBuilder.like(criteriaBuilder.lower(path.get(fieldName)),
@@ -357,13 +380,11 @@ public class DbAccessHelper {
     }
 
     private static LocalDateTime covertStringToLocalDate(String date, String pattern) {
-
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern(pattern);
-
         try {
             return LocalDate.parse(date, formatter).atStartOfDay();
         } catch (Exception e) {
-            return null;
+            return LocalDateTime.parse(date,DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
         }
     }
 
