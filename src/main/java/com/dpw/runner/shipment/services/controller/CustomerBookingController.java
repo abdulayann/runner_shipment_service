@@ -18,6 +18,7 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.ICustomerBookingService;
+import com.dpw.runner.shipment.services.utils.ExcludeTimeZone;
 import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
@@ -68,6 +69,7 @@ public class CustomerBookingController {
             @ApiResponse(code = 200, message = CustomerBookingConstants.LIST_SUCCESSFUL),
             @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
     })
+    @ExcludeTimeZone
     public ResponseEntity<?> listCRPService(@RequestBody @Valid CRPListRequest request) {
         String responseMsg;
         CRPListRequest listRequest = jsonHelper.convertValue(request, CRPListRequest.class);
@@ -86,6 +88,7 @@ public class CustomerBookingController {
             @ApiResponse(code = 200, message = CustomerBookingConstants.RETRIEVE_SUCCESSFUL),
             @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
     })
+    @ExcludeTimeZone
     public ResponseEntity<?> retrieveCRPService(@RequestBody @Valid CRPRetrieveRequest request) {
         String responseMsg;
         CRPRetrieveRequest retrieveRequest = jsonHelper.convertValue(request, CRPRetrieveRequest.class);
@@ -162,6 +165,7 @@ public class CustomerBookingController {
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = CustomerBookingConstants.CREDIT_LIMIT_RETRIEVE_SUCCESSFUL, response = RunnerResponse.class)})
     @PostMapping(CustomerBookingConstants.FUSION_CHECK_CREDIT_LIMIT)
+    @ExcludeTimeZone
     public ResponseEntity<?> checkCreditLimitFromFusion(@RequestBody @Valid CreditLimitRequest request) {
         String responseMsg;
         try {

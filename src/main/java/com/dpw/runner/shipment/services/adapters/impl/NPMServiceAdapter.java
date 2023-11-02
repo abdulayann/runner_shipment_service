@@ -6,11 +6,10 @@ import com.dpw.runner.shipment.services.commons.constants.NPMConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.dao.interfaces.ICustomerBookingDao;
 import com.dpw.runner.shipment.services.dto.request.ListContractRequest;
-import com.dpw.runner.shipment.services.dto.request.exchangeRates.ExchangeRatesRequest;
 import com.dpw.runner.shipment.services.dto.request.npm.NPMFetchOffersRequest;
 import com.dpw.runner.shipment.services.dto.request.npm.NPMFetchOffersRequestFromUI;
 import com.dpw.runner.shipment.services.dto.request.npm.UpdateContractRequest;
-import com.dpw.runner.shipment.services.dto.response.ExchangeRates.ExchangeRatesResponse;
+import com.dpw.runner.shipment.services.dto.response.FetchOffersResponse;
 import com.dpw.runner.shipment.services.dto.response.ListContractResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.Containers;
@@ -118,7 +117,8 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
         var request = createNPMOffersRequest(fetchOffersRequest);
         try {
             log.info("Payload sent for event: {} with request payload: {}", IntegrationType.NPM_OFFER_FETCH_V2, jsonHelper.convertToJson(request));
-            ResponseEntity<?> response = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJson(request)), Object.class);
+            ResponseEntity<FetchOffersResponse> response = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJson(request)), FetchOffersResponse.class);
+            this.setMeasurementBasis(response.getBody());
             return ResponseHelper.buildDependentServiceResponse(response.getBody(),0,0);
         } catch (HttpStatusCodeException ex) {
             NpmErrorResponse npmErrorResponse = jsonHelper.readFromJson(ex.getResponseBodyAsString(), NpmErrorResponse.class);
@@ -175,6 +175,67 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
                     if(locationMap.containsKey(cont.getDestination()))
                         cont.setDestination_name(locationMap.get(cont.getDestination()));
                 });
+            }
+        }
+    }
+
+    private String mapMeasurementBasis(String uom)
+    {
+        if(uom == null || uom.isEmpty())
+            return uom;
+        uom = uom.toLowerCase();
+        switch(uom)
+        {
+            case "perctr":
+                return "ContainerCount";
+            case "percbm":
+                return "Volume";
+            case "perkg":
+                return "Weight";
+            case "pership":
+                return "Shipment";
+            default:
+                return uom;
+        }
+    }
+
+    private void setMeasurementBasis(FetchOffersResponse response)
+    {
+        if(response != null && response.getOffers() != null && !response.getOffers().isEmpty())
+        {
+            FetchOffersResponse.Offer offer = response.getOffers().get(0);
+            if(offer.getEntity_rate_cards() != null && !offer.getEntity_rate_cards().isEmpty())
+            {
+                for (FetchOffersResponse.EntityRateCard entityRateCard: offer.getEntity_rate_cards()) {
+                    if(entityRateCard.getLoads_rates_info() != null && !entityRateCard.getLoads_rates_info().isEmpty())
+                    {
+                        for(FetchOffersResponse.LoadsRatesInfo loadsRatesInfo : entityRateCard.getLoads_rates_info())
+                        {
+                            if(loadsRatesInfo.getAssociated_rates() != null && !loadsRatesInfo.getAssociated_rates().isEmpty())
+                            {
+                                for(FetchOffersResponse.AssociatedRate associatedRate: loadsRatesInfo.getAssociated_rates())
+                                {
+                                    if(associatedRate != null)
+                                        associatedRate.setRates_uom(mapMeasurementBasis(associatedRate.getRates_uom()));
+                                }
+                            }
+                        }
+                    }
+                    if(entityRateCard.getAggregated_shipment_load_rates_info() != null && !entityRateCard.getAggregated_shipment_load_rates_info().isEmpty())
+                    {
+                        for(FetchOffersResponse.LoadsRatesInfo loadsRatesInfo : entityRateCard.getAggregated_shipment_load_rates_info())
+                        {
+                            if(loadsRatesInfo.getAssociated_rates() != null && !loadsRatesInfo.getAssociated_rates().isEmpty())
+                            {
+                                for(FetchOffersResponse.AssociatedRate associatedRate: loadsRatesInfo.getAssociated_rates())
+                                {
+                                    if(associatedRate != null)
+                                        associatedRate.setRates_uom(mapMeasurementBasis(associatedRate.getRates_uom()));
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
     }
