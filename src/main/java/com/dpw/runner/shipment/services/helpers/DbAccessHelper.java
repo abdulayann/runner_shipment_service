@@ -166,7 +166,7 @@ public class DbAccessHelper {
                 if (!query.getResultType().isAssignableFrom(Long.class)) {
                     for (String table : tableName) {
                         Join<Class, T> join = (Join) root.fetch(table, JoinType.LEFT);
-                        query.distinct(true);
+                        //query.distinct(true);
                     }
                 }
                 return criteriaBuilder.conjunction();
