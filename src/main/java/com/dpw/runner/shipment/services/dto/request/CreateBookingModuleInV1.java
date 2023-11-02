@@ -115,7 +115,7 @@ public class CreateBookingModuleInV1 {
             private String CreditorCode;
             private String DebitorAddressCode;
             private String CreditorAddressCode;
-
+            private String PerMeasurementBasis;
 
         }
 
