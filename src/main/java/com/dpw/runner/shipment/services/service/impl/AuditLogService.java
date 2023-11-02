@@ -150,13 +150,6 @@ public class AuditLogService implements IAuditLogService {
     public ResponseEntity<?> list(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
-//            ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
-//            if(request == null) {
-//                log.error("Request is empty for audit log list with Request Id {}", LoggerHelper.getRequestIdFromMDC());
-//            }
-//            Pair<Specification<AuditLog>, Pageable> tuple = fetchData(request, AuditLog.class);
-//            Page<AuditLog> auditLogPage = auditLogDao.findAll(tuple.getLeft(), tuple.getRight());
-//            log.info("Audit log list retrieved successfully for Request Id {} ", LoggerHelper.getRequestIdFromMDC());
             var triplet = fetchList(commonRequestModel);
             return ResponseHelper.buildListSuccessResponse(
                     triplet.getLeft(),
@@ -199,7 +192,26 @@ public class AuditLogService implements IAuditLogService {
     }
 
     private AuditLogResponse convertEntityToDto(AuditLog auditLog) {
-        return jsonHelper.convertValue(auditLog, AuditLogResponse.class);
+        // return jsonHelper.convertValue(auditLog, AuditLogResponse.class);
+        AuditLogResponse response = new AuditLogResponse();
+        response.setId(auditLog.getId());
+        response.setOperation(auditLog.getOperation());
+        response.setEntityId(auditLog.getEntityId());
+        response.setEntity(auditLog.getEntity());
+        response.setParentId(auditLog.getParentId());
+        response.setParentType(auditLog.getParentType());
+        response.setCreatedAt(auditLog.getCreatedAt());
+        response.setCreatedBy(auditLog.getCreatedBy());
+
+        List<AuditLogChanges> changes = new ArrayList<>();
+        for (Map.Entry<String, AuditLogChanges> entry : auditLog.getChanges().entrySet()) {
+            AuditLogChanges auditChange = entry.getValue();
+            auditChange.setFieldName(entry.getKey());
+            changes.add(entry.getValue());
+        }
+
+        response.setChanges(changes);
+        return response;
     }
 
     private void validateRequest(AuditLogMetaData auditLogMetaData) {
