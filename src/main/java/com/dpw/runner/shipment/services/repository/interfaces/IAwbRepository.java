@@ -7,6 +7,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 
@@ -15,4 +17,9 @@ public interface IAwbRepository extends MultiTenancyRepository<Awb> {
     List<Awb> findByShipmentId(Long shipmentId);
     List<Awb> findByConsolidationId(Long shipmentId);
 
+    @Query(value = "SELECT * FROM awb WHERE awb_shipment_info ->> 'issuingAgentName' = :issuingAgent", nativeQuery = true)
+    List<Awb> findByIssuingAgent(@Param("issuingAgent") String issuingAgent);
+
+    @Query(value = "SELECT * FROM awb WHERE awb_shipment_info ->> 'awbNumber' = :awbNumber", nativeQuery = true)
+    List<Awb> findByAwbNumber(@Param("awbNumber") String awbNumber);
 }

@@ -15,4 +15,7 @@ public interface IAwbDao {
     Optional<Awb> findById(Long id);
     List<Awb> findByShipmentId(Long shipmentId);
     List<Awb> findByConsolidationId(Long consolidationId);
+
+    List<Awb> findByIssuingAgent(String issuingAgent);
+    List<Awb> findByAwbNumber(String awbNumber);
 }

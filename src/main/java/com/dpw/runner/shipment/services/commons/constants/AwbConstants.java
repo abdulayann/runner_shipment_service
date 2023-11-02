@@ -19,4 +19,7 @@ public class AwbConstants {
     public static final String FREIGHT_AMOUNT = "Freight Amount";
     public static final String OTHER_AMOUNT = "Other Amount";
     public static final String AWB_SYNC_SUCCESSFUL = "Successful AWB Syncing";
+
+    public static final String ISSUING_AGENT_NAME = "Issuing Agent Name";
+    public static final String AWB_NUMBER = "AWB Number";
 }
