@@ -17,9 +17,9 @@ public interface IAwbRepository extends MultiTenancyRepository<Awb> {
     List<Awb> findByShipmentId(Long shipmentId);
     List<Awb> findByConsolidationId(Long shipmentId);
 
-    @Query(value = "SELECT * FROM awb WHERE awb_shipment_info ->> 'issuingAgentName' = :issuingAgent", nativeQuery = true)
+    @Query(value = "SELECT e FROM Awb e WHERE FUNCTION('jsonb_extract_path_text', e.awbShipmentInfo, 'issuingAgentName') = :issuingAgent")
     List<Awb> findByIssuingAgent(@Param("issuingAgent") String issuingAgent);
 
-    @Query(value = "SELECT * FROM awb WHERE awb_shipment_info ->> 'awbNumber' = :awbNumber", nativeQuery = true)
+    @Query(value = "SELECT e FROM Awb e WHERE FUNCTION('jsonb_extract_path_text', e.awbShipmentInfo, 'awbNumber') = :awbNumber")
     List<Awb> findByAwbNumber(@Param("awbNumber") String awbNumber);
 }
