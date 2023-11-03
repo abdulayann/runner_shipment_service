@@ -25,6 +25,7 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IAwbService;
+import com.dpw.runner.shipment.services.syncing.interfaces.IAwbSync;
 import com.dpw.runner.shipment.services.utils.AwbUtility;
 import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
@@ -89,12 +90,13 @@ public class AwbService implements IAwbService {
     @Autowired
     RestTemplate restTemplate;
 
+    @Autowired
+    IAwbSync awbSync;
+
     private Integer totalPacks = 0;
     private List<String> attachedShipmentDescriptions = new ArrayList<>();
     private BigDecimal totalVolumetricWeightOfAwbPacks = new BigDecimal(0);
 
-    @Value("${v1service.url.base}${v1service.url.awbSync}")
-    private String AWB_V1_SYNC_URL;
 
     public ResponseEntity<?> createAwb(CommonRequestModel commonRequestModel) {
         String responseMsg;
@@ -791,24 +793,7 @@ public class AwbService implements IAwbService {
 
     @Async
     private void callV1Sync(Awb entity){
-
-        AwbResponse req = jsonHelper.convertValue(entity, AwbResponse.class);
-        if(entity.getShipmentId() != null){
-            Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(entity.getShipmentId());
-            req.setShipmentGuid(shipmentDetails.get().getGuid());
-        }
-        if(entity.getConsolidationId() != null){
-            Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(entity.getConsolidationId());
-            req.setConsolidationGuid(consolidationDetails.get().getGuid());
-        }
-
-        String finalCs = jsonHelper.convertToJson(req);
-        HttpEntity<V1DataResponse> httpEntity = new HttpEntity(finalCs, V1AuthHelper.getHeaders());
-        retryTemplate.execute(ctx -> {
-            log.info("Current retry : {}", ctx.getRetryCount());
-            var response = this.restTemplate.postForEntity(this.AWB_V1_SYNC_URL, httpEntity, V1DataResponse.class, new Object[0]);
-            return response;
-        });
+        awbSync.sync(entity);
     }
 
 }
