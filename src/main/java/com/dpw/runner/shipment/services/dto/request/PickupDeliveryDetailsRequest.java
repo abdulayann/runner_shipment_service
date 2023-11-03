@@ -2,6 +2,8 @@ package com.dpw.runner.shipment.services.dto.request;
 
 import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
+import com.dpw.runner.shipment.services.config.CustomLocalTimeDeserializer;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.swagger.annotations.ApiModel;
 import lombok.*;
 
@@ -33,6 +35,7 @@ public class PickupDeliveryDetailsRequest extends CommonRequest implements IRunn
     private String dropMode;
     private BigDecimal labourCharge;
     private String labourChargeUnit;
+    @JsonDeserialize(using = CustomLocalTimeDeserializer.class)
     private LocalTime labourDuration;
     private String shipperRef;
     private String interimReceipt;
@@ -40,9 +43,11 @@ public class PickupDeliveryDetailsRequest extends CommonRequest implements IRunn
     private LocalDateTime storageDate;
     private BigDecimal truckWaitTimeCharge;
     private String truckWaitTimeChargeUnit;
+    @JsonDeserialize(using = CustomLocalTimeDeserializer.class)
     private LocalTime truckWaitDuration;
     private BigDecimal storageCharge;
     private String storageChargeUnit;
+    @JsonDeserialize(using = CustomLocalTimeDeserializer.class)
     private LocalTime storageChargeDuration;
     private String ucrReference;
     private LocalDateTime emptyTruckInDate;

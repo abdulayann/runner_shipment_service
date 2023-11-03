@@ -32,7 +32,7 @@ public class DbAccessHelper {
         Pageable pages;
         globalSearchCriteria(request, tableName);
         if (request.getSortRequest() != null && request.getFilterCriteria() != null &&
-                (request.getFilterCriteria().size() == 0  || (request.getFilterCriteria().size() == 1 && request.getFilterCriteria().get(0).getInnerFilter() != null))) {
+                (request.getFilterCriteria().size() == 0  || (request.getFilterCriteria().size() == 1 && request.getFilterCriteria().get(0).getInnerFilter() != null && request.getFilterCriteria().get(0).getInnerFilter().size() == 0))) {
             String _tableName = tableNames.get(request.getSortRequest().getFieldName()).getTableName();
             Sort sortRequest = null;
             if (Objects.equals(_tableName, className.getSimpleName()))
@@ -84,13 +84,18 @@ public class DbAccessHelper {
 
     private static List<FilterCriteria> createCriteriaForGlobalSearch(Map<String, RunnerEntityMapping> tableName, String containsText) {
         List<FilterCriteria> innerFilters = new ArrayList<>();
-        List<RunnerEntityMapping> entityMappingList = tableName.entrySet().stream()
-                        .filter(x -> x.getValue().isContainsText()).map(x -> x.getValue()).collect(Collectors.toList());
-        entityMappingList.forEach(c -> {
-            innerFilters.add(FilterCriteria.builder().logicOperator(innerFilters.isEmpty() ? null : "OR")
-                            .criteria(Criteria.builder().fieldName(c.getFieldName()).value(containsText).operator("LIKE").build()).build());
-
-        });
+        for (String key: tableName.keySet()) {
+            if(tableName.get(key).isContainsText()) {
+                innerFilters.add(FilterCriteria.builder().logicOperator(innerFilters.isEmpty() ? null : "OR")
+                        .criteria(Criteria.builder().fieldName(key).value(containsText).operator("LIKE").build()).build());
+            }
+        }
+//        List<RunnerEntityMapping> entityMappingList = tableName.entrySet().stream()
+//                        .filter(x -> x.getValue().isContainsText()).map(x -> x.getValue()).collect(Collectors.toList());
+//        entityMappingList.forEach(c -> {
+//
+//
+//        });
         return innerFilters.isEmpty() ? null : innerFilters;
     }
 
