@@ -11,4 +11,7 @@ public interface IAwbService {
     ResponseEntity<?> updateGoodsAndPacksForMawb(CommonRequestModel commonRequestModel);
     ResponseEntity<?> retrieveById(CommonRequestModel commonRequestModel);
     ResponseEntity<?> createV1Awb(CommonRequestModel commonRequestModel);
+
+    ResponseEntity<?> retrieveByIssuingAgent(String issuingAgentName);
+    ResponseEntity<?> retrieveByAwbNumber(String awbNumber);
 }

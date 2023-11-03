@@ -11,7 +11,7 @@ import com.dpw.runner.shipment.services.dto.request.CreateAwbRequest;
 import com.dpw.runner.shipment.services.dto.response.AwbResponse;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
-import com.dpw.runner.shipment.services.service.impl.AwbService;
+import com.dpw.runner.shipment.services.service.interfaces.IAwbService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
@@ -31,7 +31,7 @@ import java.util.List;
 @Slf4j
 public class AwbController {
     @Autowired
-    private AwbService awbService;
+    private IAwbService awbService;
     @Autowired
     ObjectMapper objectMapper;
 
