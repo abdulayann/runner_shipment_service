@@ -25,6 +25,11 @@ import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IAwbService;
 import com.dpw.runner.shipment.services.utils.*;
+import com.dpw.runner.shipment.services.syncing.interfaces.IAwbSync;
+import com.dpw.runner.shipment.services.utils.AwbUtility;
+import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
+import com.dpw.runner.shipment.services.utils.StringUtility;
+import com.dpw.runner.shipment.services.utils.V1AuthHelper;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -88,6 +93,9 @@ public class AwbService implements IAwbService {
 
     @Autowired
     private UnitConversionUtility unitConversionUtility;
+
+    @Autowired
+    IAwbSync awbSync;
 
     private Integer totalPacks = 0;
     private List<String> attachedShipmentDescriptions = new ArrayList<>();
@@ -925,24 +933,7 @@ public class AwbService implements IAwbService {
 
     @Async
     private void callV1Sync(Awb entity){
-
-        AwbResponse req = jsonHelper.convertValue(entity, AwbResponse.class);
-        if(entity.getShipmentId() != null){
-            Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(entity.getShipmentId());
-            req.setShipmentGuid(shipmentDetails.get().getGuid());
-        }
-        if(entity.getConsolidationId() != null){
-            Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(entity.getConsolidationId());
-            req.setConsolidationGuid(consolidationDetails.get().getGuid());
-        }
-
-        String finalCs = jsonHelper.convertToJson(req);
-        HttpEntity<V1DataResponse> httpEntity = new HttpEntity(finalCs, V1AuthHelper.getHeaders());
-        retryTemplate.execute(ctx -> {
-            log.info("Current retry : {}", ctx.getRetryCount());
-            var response = this.restTemplate.postForEntity(this.AWB_V1_SYNC_URL, httpEntity, V1DataResponse.class, new Object[0]);
-            return response;
-        });
+        awbSync.sync(entity);
     }
 
     public ResponseEntity<?> customAwbRetrieve(List<String> awbNumber, String issuingAgentName) {
