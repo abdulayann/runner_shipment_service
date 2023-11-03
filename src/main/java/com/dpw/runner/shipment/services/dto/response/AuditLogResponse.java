@@ -13,7 +13,7 @@ public class AuditLogResponse implements IRunnerResponse {
     private String operation;
     private String entity;
     private Long entityId;
-    private List<AuditLogChanges> changes;
+    private Object changes;
     private String parentType;
     private Long parentId;
     private LocalDateTime createdAt;
