@@ -16,4 +16,6 @@ public class EventConstants {
     public static final String MASTER_SEAWAY_BILL_OR_NOT = "MASSEA";
     public static final String SHIPPING_ADVISE_SENT_OR_NOT = "SHPSI";
     public static final String SR_SENT_OR_NOT = "SHPRSC";
+    public static final String TRACK_EVENTS_FETCH_SUCCESSFUL = "Track Events fetched Successfully";
+    public static final String TRACK_EVENT_DETAILS = "/trackEvents";
 }
