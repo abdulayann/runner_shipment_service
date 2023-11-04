@@ -54,7 +54,8 @@ public class AuthFilter extends OncePerRequestFilter {
             "/configuration/security",
             "/swagger-ui.html",
             "/webjars/**",
-            "/api/v2/enums/**"};
+            "/api/v2/enums/**",
+            "/api/v2/cache/**"};
 
     protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
         return Arrays.stream(ignoredPaths)
@@ -82,7 +83,7 @@ public class AuthFilter extends OncePerRequestFilter {
         }
         UsersDto user = null;
         try{
-            user = userService.getUserByToken(authToken);
+            user = userService.getUserByToken(tokenUtility.getUserIdAndBranchId(authToken), authToken);
         } catch (Exception e)
         {
             log.info("Error while validating token with exception: {}", e.getMessage());

@@ -10,13 +10,15 @@ import org.springframework.stereotype.Component;
 
 import javax.servlet.http.HttpServletResponse;
 import java.text.ParseException;
+import java.util.Objects;
 
 @Component
 @Slf4j
 public class TokenUtility {
     private static final String BEARER = "Bearer";
     public static final String NAME_FIELD = "nameid";
-
+    public static final String USER_ID_FIELD = "userId";
+    public static final String BRANCH_ID_FIELD = "branchId";
     public String getUserNameFromToken(String token, HttpServletResponse res) throws ParseException, BadJWTException {
         String[] tokenSplits = token.split(" ");
         if(tokenSplits.length>2 || !BEARER.equals(tokenSplits[0])) throw new BadJWTException("Expected 'Bearer token'");
@@ -30,6 +32,22 @@ public class TokenUtility {
     private void validateValidity(JWTClaimsSet claimsSet) throws BadJWTException {
         DefaultJWTClaimsVerifier defaultJWTClaimsVerifier=new DefaultJWTClaimsVerifier(claimsSet,null);
         defaultJWTClaimsVerifier.verify(claimsSet,null);
+    }
+
+    public String getUserIdAndBranchId(String token) {
+        try {
+            if(token.split(" ").length <= 1 || !Objects.equals(token.split(" ")[0], "Bearer"))
+                return null;
+            token = token.split(" ")[1];
+
+            JWT parse = JWTParser.parse(token);
+            JWTClaimsSet claimsSet = parse.getJWTClaimsSet();
+            validateValidity(claimsSet);
+            return claimsSet.getClaim(USER_ID_FIELD) + "|" + claimsSet.getClaim(BRANCH_ID_FIELD);
+        } catch (Exception ex) {
+            log.error("Error occurred during decrypting token: {} || Exception message: {}", token, ex.getMessage());
+        }
+        return null;
     }
 
 }

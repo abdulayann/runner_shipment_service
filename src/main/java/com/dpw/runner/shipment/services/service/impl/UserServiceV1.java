@@ -1,10 +1,13 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.service.interfaces.IUserService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
@@ -14,6 +17,7 @@ import java.util.Objects;
 
 @Service
 @Slf4j
+@EnableCaching
 public class UserServiceV1 implements IUserService {
 
     @Autowired
@@ -23,7 +27,8 @@ public class UserServiceV1 implements IUserService {
     private String url;
 
     @Override
-    public UsersDto getUserByToken(String token) {
+    @Cacheable(cacheNames = CacheConstants.CACHE_KEY, keyGenerator = "customKeyGenerator")
+    public UsersDto getUserByToken(String key, String token) {
         log.info("getUserByToken --- URL: {} ||| Token: {}", url, token);
         HttpHeaders headers = new HttpHeaders();
         headers.setAccept(Arrays.asList(MediaType.APPLICATION_JSON));
