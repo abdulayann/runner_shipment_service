@@ -9,7 +9,7 @@ import java.util.Arrays;
 public class UserServiceMavani implements IUserService {
 
     @Override
-    public UsersDto getUserByToken(String token) {
+    public UsersDto getUserByToken(String key, String token) {
         return new UsersDto();
     } // TODO- actually fetch from mavani
 }
