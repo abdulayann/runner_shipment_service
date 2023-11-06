@@ -247,6 +247,9 @@ public class V1ServiceImpl implements IV1Service {
     @Value("${v1service.url.base}${v1service.url.shipmentBillingData}")
     private String SHIPMENT_BILLING_DATA;
 
+    @Value("${v1service.url.base}${v1service.url.shipmentWayBillFilter}")
+    private String SHIPMENT_WAY_BILL_FILTER;
+
     @Value("${v1service.url.base}${v1service.url.mainPageTemplate}")
     private String MAIN_PAGE_TEMPLATE_LIST;
     @Value("${v1service.url.base}${v1service.url.hblTaskCreation}")
@@ -1442,6 +1445,27 @@ public class V1ServiceImpl implements IV1Service {
             shipmentResponse = this.restTemplate.postForEntity(this.SHIPMENT_BILLING_DATA, entity, ShipmentBillingListResponse.class, new Object[0]);
             log.info("Token time taken in fetchShipmentBillingData() function " + (System.currentTimeMillis() - time));
             return (ShipmentBillingListResponse) shipmentResponse.getBody();
+        } catch (HttpStatusCodeException var6) {
+            if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
+                throw new UnAuthorizedException("UnAuthorizedException");
+            } else {
+                throw new V1ServiceException(var6.getMessage());
+            }
+        } catch (Exception var7) {
+            throw new V1ServiceException(var7.getMessage());
+        }
+    }
+
+    @Override
+    public GuidsListResponse fetchWayBillNumberFilterGuids(Object request) {
+        ResponseEntity<GuidsListResponse> shipmentResponse = null;
+
+        try {
+            long time = System.currentTimeMillis();
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            shipmentResponse = this.restTemplate.postForEntity(this.SHIPMENT_WAY_BILL_FILTER, entity, GuidsListResponse.class, new Object[0]);
+            log.info("Token time taken in fetchShipmentBillingData() function " + (System.currentTimeMillis() - time));
+            return (GuidsListResponse) shipmentResponse.getBody();
         } catch (HttpStatusCodeException var6) {
             if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
                 throw new UnAuthorizedException("UnAuthorizedException");

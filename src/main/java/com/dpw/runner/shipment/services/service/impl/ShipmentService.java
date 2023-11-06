@@ -18,6 +18,7 @@ import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.v1.request.ShipmentBillingListRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TIListRequest;
+import com.dpw.runner.shipment.services.dto.v1.request.WayBillNumberFilterRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.GenerationType;
@@ -203,6 +204,7 @@ public class ShipmentService implements IShipmentService {
             Map.entry("direction", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).fieldName("direction").isContainsText(true).build()),
             Map.entry("shipmentType", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).fieldName("shipmentType").isContainsText(true).build()),
             Map.entry("status", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(Integer.class).fieldName("status").build()),
+            Map.entry("guid", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(UUID.class).fieldName("guid").build()),
             Map.entry("source", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).fieldName("source").isContainsText(true).build()),
             Map.entry("jobType", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).fieldName("jobType").isContainsText(true).build()),
             Map.entry("createdBy", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).fieldName("createdBy").isContainsText(true).build()),
@@ -1171,6 +1173,7 @@ public class ShipmentService implements IShipmentService {
                 log.error("Request is empty for Shipment list with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
             request.setIncludeTbls(Arrays.asList("additionalDetails", "client", "consigner", "consignee", "carrierDetails"));
+            checkWayBillNumberCriteria(request);
             Pair<Specification<ShipmentDetails>, Pageable> tuple = fetchData(request, ShipmentDetails.class, tableNames);
             Page<ShipmentDetails> shipmentDetailsPage = shipmentDao.findAll(tuple.getLeft(), tuple.getRight());
             log.info("Shipment list retrieved successfully for Request Id {} ", LoggerHelper.getRequestIdFromMDC());
@@ -1199,6 +1202,33 @@ public class ShipmentService implements IShipmentService {
             return ResponseHelper.buildFailedResponse(responseMsg);
         }
 
+    }
+
+    private void checkWayBillNumberCriteria(ListCommonRequest request)
+    {
+        if(request != null && request.getFilterCriteria() != null && request.getFilterCriteria().size() > 0)
+        {
+            checkForWayBillFilter(request.getFilterCriteria());
+        }
+    }
+
+    private void checkForWayBillFilter(List<FilterCriteria> filterCriteriaList) {
+        for(FilterCriteria filterCriteria: filterCriteriaList)
+        {
+            if(filterCriteria.getCriteria() != null && filterCriteria.getCriteria().getFieldName() != null &&
+                    filterCriteria.getCriteria().getFieldName().equals("wayBillNumber") && filterCriteria.getCriteria().getValue() != null) {
+
+                WayBillNumberFilterRequest wayBillNumberFilterRequest = new WayBillNumberFilterRequest();
+                wayBillNumberFilterRequest.setWayBillNumber(filterCriteria.getCriteria().getValue().toString());
+                GuidsListResponse guidsListResponse = v1Service.fetchWayBillNumberFilterGuids(wayBillNumberFilterRequest);
+                filterCriteria.getCriteria().setFieldName("guid");
+                filterCriteria.getCriteria().setOperator("IN");
+                filterCriteria.getCriteria().setValue(guidsListResponse.getGuidsList());
+            }
+            if(filterCriteria.getInnerFilter() != null && filterCriteria.getInnerFilter().size() > 0) {
+                checkForWayBillFilter(filterCriteria.getInnerFilter());
+            }
+        }
     }
 
     @Override
