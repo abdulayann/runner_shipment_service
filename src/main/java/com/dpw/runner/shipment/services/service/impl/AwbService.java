@@ -11,7 +11,6 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerPartialListResponse;
-import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.request.AwbRequest;
 import com.dpw.runner.shipment.services.dto.request.CreateAwbRequest;
@@ -24,6 +23,7 @@ import com.dpw.runner.shipment.services.exception.exceptions.ValidationException
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import com.dpw.runner.shipment.services.repository.interfaces.IAwbRepository;
 import com.dpw.runner.shipment.services.service.interfaces.IAwbService;
 import com.dpw.runner.shipment.services.utils.AwbUtility;
 import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
@@ -31,7 +31,6 @@ import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.dpw.runner.shipment.services.utils.V1AuthHelper;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
-import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataRetrievalFailureException;
@@ -46,13 +45,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import java.math.BigDecimal;
-import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 
 @SuppressWarnings("ALL")
 @Service
@@ -61,6 +58,9 @@ public class AwbService implements IAwbService {
 
     @Autowired
     private IAwbDao awbDao;
+
+    @Autowired
+    private IAwbRepository awbRepository;
 
     @Autowired
     IShipmentDao shipmentDao;
@@ -809,6 +809,36 @@ public class AwbService implements IAwbService {
             var response = this.restTemplate.postForEntity(this.AWB_V1_SYNC_URL, httpEntity, V1DataResponse.class, new Object[0]);
             return response;
         });
+    }
+
+    public ResponseEntity<?> retrieveByIssuingAgent(String issuingAgentName) {
+        String responseMsg;
+        try {
+            if (issuingAgentName == null)
+                log.error("Request is empty for AWB retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            List<Awb> awbs = awbRepository.findByIssuingAgent(issuingAgentName);
+            return ResponseHelper.buildSuccessResponse(jsonHelper.convertValueToList(awbs, AwbResponse.class));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
+    public ResponseEntity<?> retrieveByAwbNumber(String awbNumber) {
+        String responseMsg;
+        try {
+            if (awbNumber == null)
+                log.error("Request is empty for AWB retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            List<Awb> awbs = awbRepository.findByAwbNumber(awbNumber);
+            return ResponseHelper.buildSuccessResponse(jsonHelper.convertValueToList(awbs, AwbResponse.class));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
     }
 
 }

@@ -4,30 +4,24 @@ import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
-import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.AwbRequest;
 import com.dpw.runner.shipment.services.dto.request.CreateAwbRequest;
 import com.dpw.runner.shipment.services.dto.response.AwbResponse;
-import com.dpw.runner.shipment.services.dto.response.BookingCarriageResponse;
-import com.dpw.runner.shipment.services.entity.Awb;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IAwbService;
-import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
-import java.util.ArrayList;
 import java.util.List;
 
 
@@ -94,6 +88,18 @@ public class AwbController {
     public ResponseEntity<RunnerResponse<AwbResponse>> retrieveById(@ApiParam(value = AwbConstants.AWB_ID, required = true) @RequestParam Long id, @RequestParam(name = "includeColumns", required = false) List<String> includeColumns) {
         CommonGetRequest request = CommonGetRequest.builder().id(id).includeColumns(includeColumns).build();
         return (ResponseEntity<RunnerResponse<AwbResponse>>) awbService.retrieveById(CommonRequestModel.buildRequest(request));
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = AwbConstants.AWB_RETRIEVE_BY_ID_SUCCESSFUL)})
+    @GetMapping("/retrieve/issuingAgentName")
+    public ResponseEntity<RunnerResponse<AwbResponse>> retrieveByIssuingAgentName(@ApiParam(value = AwbConstants.ISSUING_AGENT_NAME, required = true) @RequestParam String issuingAgentName) {
+        return (ResponseEntity<RunnerResponse<AwbResponse>>) awbService.retrieveByIssuingAgent(issuingAgentName);
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = AwbConstants.AWB_RETRIEVE_BY_ID_SUCCESSFUL)})
+    @GetMapping("/retrieve/awbNumber")
+    public ResponseEntity<RunnerResponse<AwbResponse>> retrieveByAwbNumber(@ApiParam(value = AwbConstants.AWB_NUMBER, required = true) @RequestParam String awbNumber) {
+        return (ResponseEntity<RunnerResponse<AwbResponse>>) awbService.retrieveByAwbNumber(awbNumber);
     }
 
 

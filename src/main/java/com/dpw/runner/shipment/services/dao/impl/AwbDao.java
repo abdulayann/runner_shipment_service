@@ -41,4 +41,11 @@ public class AwbDao implements IAwbDao {
 
     @Override
     public List<Awb> findByConsolidationId(Long consolidationId) {return awbRepository.findByConsolidationId(consolidationId);}
+
+    @Override
+    public List<Awb> findByIssuingAgent(String issuingAgent) { return awbRepository.findByIssuingAgent(issuingAgent);}
+
+    @Override
+    public List<Awb> findByAwbNumber(String awbNumber) { return awbRepository.findByAwbNumber(awbNumber);}
+
 }
