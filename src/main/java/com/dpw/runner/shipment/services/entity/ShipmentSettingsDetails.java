@@ -446,4 +446,7 @@ public class ShipmentSettingsDetails extends MultiTenancy {
 
     @Column(name = "hbl_multiple_original_approval")
     private Integer hblMultipleOriginalApproval;
+
+    @Column(name = "hbl_approval_flow")
+    private Boolean hblApprovalFlow;
 }
