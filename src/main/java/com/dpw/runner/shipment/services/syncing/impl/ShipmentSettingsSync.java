@@ -1,7 +1,5 @@
 package com.dpw.runner.shipment.services.syncing.impl;
 
-import com.dpw.runner.shipment.services.dto.request.ProductSequenceConfigRequest;
-import com.dpw.runner.shipment.services.dto.request.ShipmentSettingRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.ProductSequenceConfig;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
@@ -50,6 +48,8 @@ public class ShipmentSettingsSync implements IShipmentSettingsSync {
         syncRequest.setHblTermsConditionTemplateRow(convertToList(req.getHblTermsConditionTemplate(), HblTermsConditionTemplateDto.class));
         syncRequest.setHblHawbBackPrintTemplateRow(convertToList(req.getHblHawbBackPrintTemplate(), HblTermsConditionTemplateDto.class));
         syncRequest.setHblLock(convertToList(List.of(req.getHblLockSettings()), HblLockDto.class));
+        syncRequest.setHawbLock(convertToList(List.of(req.getHawbLockSettings()), HawbLockDto.class));
+        syncRequest.setMawbLock(convertToList(List.of(req.getMawbLockSettings()), MawbLockDto.class));
         syncRequest.setTenantProducts(convertToList(req.getTenantProducts(), TenantProductsDto.class));
         if(req.getProductSequenceConfig() != null) {
             syncRequest.setProductSequenceConfig(req.getProductSequenceConfig().stream()
