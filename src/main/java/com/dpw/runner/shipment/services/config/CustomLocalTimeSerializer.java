@@ -18,7 +18,6 @@ public class CustomLocalTimeSerializer extends JsonSerializer<LocalTime> {
         gen.writeNumberField("hour", value.getHour());
         gen.writeNumberField("minute", value.getMinute());
         gen.writeNumberField("second", value.getSecond());
-        gen.writeNumberField("nano", value.getNano());
         gen.writeEndObject();
     }
 }

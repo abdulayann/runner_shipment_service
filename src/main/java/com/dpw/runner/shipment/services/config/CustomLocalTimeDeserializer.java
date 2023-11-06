@@ -22,8 +22,7 @@ public class CustomLocalTimeDeserializer extends JsonDeserializer<LocalTime> {
             int hour = node.get("hour").asInt();
             int minute = node.get("minute").asInt();
             int second = node.get("second").asInt();
-            int nano = node.get("nano").asInt();
-            return LocalTime.of(hour, minute, second, nano);
+            return LocalTime.of(hour, minute, second);
         } catch (Exception e) {
             try {
                 return LocalTime.parse(((TextNode) node).textValue());
