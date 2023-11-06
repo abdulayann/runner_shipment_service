@@ -60,9 +60,6 @@ public class AwbService implements IAwbService {
     private IAwbDao awbDao;
 
     @Autowired
-    private IAwbRepository awbRepository;
-
-    @Autowired
     IShipmentDao shipmentDao;
 
     @Autowired
@@ -811,27 +808,18 @@ public class AwbService implements IAwbService {
         });
     }
 
-    public ResponseEntity<?> retrieveByIssuingAgent(String issuingAgentName) {
+    public ResponseEntity<?> customAwbRetrieve(List<String> awbNumber, String issuingAgentName) {
         String responseMsg;
         try {
-            if (issuingAgentName == null)
+            List<Awb> awbs = new ArrayList<>();
+            if (awbNumber == null && issuingAgentName == null)
                 log.error("Request is empty for AWB retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
-            List<Awb> awbs = awbRepository.findByIssuingAgent(issuingAgentName);
-            return ResponseHelper.buildSuccessResponse(jsonHelper.convertValueToList(awbs, AwbResponse.class));
-        } catch (Exception e) {
-            responseMsg = e.getMessage() != null ? e.getMessage()
-                    : DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;
-            log.error(responseMsg, e);
-            return ResponseHelper.buildFailedResponse(responseMsg);
-        }
-    }
-
-    public ResponseEntity<?> retrieveByAwbNumber(String awbNumber) {
-        String responseMsg;
-        try {
-            if (awbNumber == null)
-                log.error("Request is empty for AWB retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
-            List<Awb> awbs = awbRepository.findByAwbNumber(awbNumber);
+            else if (issuingAgentName == null)
+                awbs = awbDao.findByAwbNumber(awbNumber);
+            else if (awbNumber == null)
+                awbs = awbDao.findByIssuingAgent(issuingAgentName);
+            else
+                awbs = awbDao.findByAwbNumberAndIssuingAgent(awbNumber, issuingAgentName);
             return ResponseHelper.buildSuccessResponse(jsonHelper.convertValueToList(awbs, AwbResponse.class));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()

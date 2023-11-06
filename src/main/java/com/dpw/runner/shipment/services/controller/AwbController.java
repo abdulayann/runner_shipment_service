@@ -91,18 +91,10 @@ public class AwbController {
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = AwbConstants.AWB_RETRIEVE_BY_ID_SUCCESSFUL)})
-    @GetMapping("/retrieve/issuingAgentName")
-    public ResponseEntity<RunnerResponse<AwbResponse>> retrieveByIssuingAgentName(@ApiParam(value = AwbConstants.ISSUING_AGENT_NAME, required = true) @RequestParam String issuingAgentName) {
-        return (ResponseEntity<RunnerResponse<AwbResponse>>) awbService.retrieveByIssuingAgent(issuingAgentName);
+    @GetMapping("/customRetrieve")
+    public ResponseEntity<RunnerResponse<AwbResponse>> retrieveByIssuingAgentName(@ApiParam(value = AwbConstants.AWB_NUMBER, required = true) @RequestParam List<String> awbNumber, @ApiParam(value = AwbConstants.ISSUING_AGENT_NAME, required = true) @RequestParam String issuingAgentName) {
+        return (ResponseEntity<RunnerResponse<AwbResponse>>) awbService.customAwbRetrieve(awbNumber, issuingAgentName);
     }
-
-    @ApiResponses(value = {@ApiResponse(code = 200, message = AwbConstants.AWB_RETRIEVE_BY_ID_SUCCESSFUL)})
-    @GetMapping("/retrieve/awbNumber")
-    public ResponseEntity<RunnerResponse<AwbResponse>> retrieveByAwbNumber(@ApiParam(value = AwbConstants.AWB_NUMBER, required = true) @RequestParam String awbNumber) {
-        return (ResponseEntity<RunnerResponse<AwbResponse>>) awbService.retrieveByAwbNumber(awbNumber);
-    }
-
-
 
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = AwbConstants.MAWB_CREATE_SUCCESSFUL),

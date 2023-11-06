@@ -17,5 +17,6 @@ public interface IAwbDao {
     List<Awb> findByConsolidationId(Long consolidationId);
 
     List<Awb> findByIssuingAgent(String issuingAgent);
-    List<Awb> findByAwbNumber(String awbNumber);
+    List<Awb> findByAwbNumber(List<String> awbNumber);
+    List<Awb> findByAwbNumberAndIssuingAgent(List<String> awbNumber, String issuingAgent);
 }
