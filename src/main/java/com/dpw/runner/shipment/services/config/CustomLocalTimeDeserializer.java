@@ -15,7 +15,7 @@ public class CustomLocalTimeDeserializer extends JsonDeserializer<LocalTime> {
     @Override
     public LocalTime deserialize(JsonParser jsonParser, DeserializationContext deserializationContext) throws IOException {
         JsonNode node = jsonParser.getCodec().readTree(jsonParser);
-        if(node == null || node.isEmpty()) {
+        if(node == null || (node.isObject() && node.isEmpty())) {
             return null;
         }
         try {
