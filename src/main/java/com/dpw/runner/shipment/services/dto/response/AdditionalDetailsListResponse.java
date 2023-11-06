@@ -82,9 +82,9 @@ public class AdditionalDetailsListResponse implements IRunnerResponse {
     private String BLChargesDisplay;
     private String BLExporterShipment;
     private String screeningStatus;
-    private Long paidPlace;
-    private Long placeOfIssue;
-    private Long placeOfSupply;
+    private String paidPlace;
+    private String placeOfIssue;
+    private String placeOfSupply;
     private LocalDateTime dateOfIssue;
     private LocalDateTime dateOfReceipt;
     private String goodsCO;
