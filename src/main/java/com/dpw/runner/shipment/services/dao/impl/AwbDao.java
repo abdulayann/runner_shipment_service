@@ -46,6 +46,11 @@ public class AwbDao implements IAwbDao {
     public List<Awb> findByIssuingAgent(String issuingAgent) { return awbRepository.findByIssuingAgent(issuingAgent);}
 
     @Override
-    public List<Awb> findByAwbNumber(String awbNumber) { return awbRepository.findByAwbNumber(awbNumber);}
+    public List<Awb> findByAwbNumber(List<String> awbNumber) { return awbRepository.findByAwbNumber(awbNumber);}
+
+    @Override
+    public List<Awb> findByAwbNumberAndIssuingAgent(List<String> awbNumber, String issuingAgent) {
+        return awbRepository.findByAwbNumberAndIssuingAgent(awbNumber, issuingAgent);
+    }
 
 }
