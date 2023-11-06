@@ -232,7 +232,7 @@ public class ShipmentService implements IShipmentService {
             Map.entry("dateOfIssue", RunnerEntityMapping.builder().tableName("additionalDetails").dataType(LocalDateTime.class).fieldName("dateOfIssue").build()),
             Map.entry("dateOfReceipt", RunnerEntityMapping.builder().tableName("additionalDetails").dataType(LocalDateTime.class).fieldName("dateOfReceipt").build()),
             Map.entry("goodsCo", RunnerEntityMapping.builder().tableName("additionalDetails").dataType(String.class).fieldName("goodsCo").build()),
-            Map.entry("boeDate", RunnerEntityMapping.builder().tableName("additionalDetails").dataType(LocalDateTime.class).fieldName("BOEDate").build()),
+            Map.entry("BOEDate", RunnerEntityMapping.builder().tableName("additionalDetails").dataType(LocalDateTime.class).fieldName("BOEDate").build()),
             Map.entry("boeNumber", RunnerEntityMapping.builder().tableName("additionalDetails").dataType(String.class).fieldName("BOENumber").isContainsText(true).build()),
             Map.entry("shippingLine", RunnerEntityMapping.builder().tableName("carrierDetails").dataType(String.class).fieldName("shippingLine").isContainsText(true).build()),
             Map.entry("vessel", RunnerEntityMapping.builder().tableName("carrierDetails").dataType(String.class).fieldName("vessel").build()),
@@ -242,6 +242,7 @@ public class ShipmentService implements IShipmentService {
             Map.entry("eta", RunnerEntityMapping.builder().tableName("carrierDetails").dataType(LocalDateTime.class).fieldName("eta").build()),
             Map.entry("etd", RunnerEntityMapping.builder().tableName("carrierDetails").dataType(LocalDateTime.class).fieldName("etd").build()),
             Map.entry("ata", RunnerEntityMapping.builder().tableName("carrierDetails").dataType(LocalDateTime.class).fieldName("ata").build()),
+            Map.entry("atd", RunnerEntityMapping.builder().tableName("carrierDetails").dataType(LocalDateTime.class).fieldName("atd").build()),
             Map.entry("weight", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(BigDecimal.class).fieldName("weight").build()),
             Map.entry("weightUnit", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).fieldName("weightUnit").build()),
             Map.entry("volume", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(BigDecimal.class).fieldName("volume").build()),
@@ -262,8 +263,13 @@ public class ShipmentService implements IShipmentService {
             Map.entry("id", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(Long.class).fieldName("id").build()),
             Map.entry("consolidationNumber", RunnerEntityMapping.builder().tableName("consolidationList").dataType(String.class).fieldName("consolidationNumber").build()),
             Map.entry("orderNumber", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).fieldName("orderManagementId").build()),
-            Map.entry("referenceNumber", RunnerEntityMapping.builder().tableName("referenceNumbersList").dataType(String.class).fieldName("referenceNumber").build())
-            );
+            Map.entry("referenceNumber", RunnerEntityMapping.builder().tableName("referenceNumbersList").dataType(String.class).fieldName("referenceNumber").build()),
+            Map.entry("activityType", RunnerEntityMapping.builder().tableName("additionalDetails").dataType(String.class).fieldName("activityType").build()),
+            Map.entry("goodsCO", RunnerEntityMapping.builder().tableName("additionalDetails").dataType(String.class).fieldName("goodsCO").build()),
+            Map.entry("route", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).fieldName("route").build()),
+            Map.entry("cargoFinanceBooking", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(Boolean.class).fieldName("cargoFinanceBooking").build()),
+            Map.entry("isCmsHBLSent", RunnerEntityMapping.builder().tableName("additionalDetails").dataType(Boolean.class).fieldName("isCmsHBLSent").build())
+    );
 
     @Override
     @Transactional
