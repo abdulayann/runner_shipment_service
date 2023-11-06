@@ -4,7 +4,7 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.config.CustomLocalDateTimeSerializer;
 import com.dpw.runner.shipment.services.config.CustomLocalTimeSerializer;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import lombok.*;
+import lombok.Data;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -57,4 +57,5 @@ public class PickupDeliveryDetailsResponse implements IRunnerResponse {
     private LocalDateTime emptyTruckInDate;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime loadedTruckGateOutDate;
+    private String pickupDeliveryInstruction;
 }

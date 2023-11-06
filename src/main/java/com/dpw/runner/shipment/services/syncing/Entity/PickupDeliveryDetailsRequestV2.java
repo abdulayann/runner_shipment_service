@@ -73,4 +73,6 @@ public class PickupDeliveryDetailsRequestV2 implements IRunnerRequest {
     private String Type;
     @JsonProperty("UcrReference")
     private String UcrReference;
+    @JsonProperty("PickupDeliveryInstruction")
+    private String PickupDeliveryInstruction;
 }

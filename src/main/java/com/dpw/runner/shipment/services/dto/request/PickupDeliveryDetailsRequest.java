@@ -52,4 +52,5 @@ public class PickupDeliveryDetailsRequest extends CommonRequest implements IRunn
     private String ucrReference;
     private LocalDateTime emptyTruckInDate;
     private LocalDateTime loadedTruckGateOutDate;
+    private String pickupDeliveryInstruction;
 }
