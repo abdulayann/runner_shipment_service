@@ -1510,7 +1510,7 @@ public class ShipmentService implements IShipmentService {
         String lockingUser = shipmentDetails.getLockedBy();
         String currentUser = userContext.getUser().getUsername();
 
-        if (shipmentDetails.getIsLocked()) {
+        if (shipmentDetails.getIsLocked() != null && shipmentDetails.getIsLocked()) {
             if (lockingUser != null && lockingUser.equals(currentUser))
                 shipmentDetails.setIsLocked(false);
         } else {
