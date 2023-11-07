@@ -114,7 +114,7 @@ public class PickupDeliveryDetails extends MultiTenancy {
     private LocalTime storageChargeDuration;
 
     @Column(name = "ucr_reference")
-    @Size(max=50, message = "max size is 50 for ucr_reference")
+    @Size(max = 50, message = "max size is 50 for ucr_reference")
     public String ucrReference;
 
     @Column(name = "empty_truck_in_date")
@@ -122,4 +122,7 @@ public class PickupDeliveryDetails extends MultiTenancy {
 
     @Column(name = "loaded_truck_gate_out_date")
     public LocalDateTime loadedTruckGateOutDate;
+
+    @Column(name = "pickup_delivery_instruction")
+    public String pickupDeliveryInstruction;
 }
