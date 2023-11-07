@@ -292,7 +292,7 @@ public class AuditLogService implements IAuditLogService {
                 if (field.getType() == BigDecimal.class) {
                     BigDecimal number1 = (BigDecimal) newValue;
                     BigDecimal number2 = (BigDecimal) prevValue;
-                    if((number1 == null) || (number1 != null && number1.compareTo(number2) != 0)) {
+                    if((number1 == null) || (number1 != null && compareTo(number1, number2) != 0)) {
                         if (number1 != null && number2 != null && number1.setScale(5, BigDecimal.ROUND_DOWN).compareTo(number2.setScale(5, BigDecimal.ROUND_DOWN)) != 0) {
                             auditLogChanges = createAuditLogChangesObject(fieldName, newValue, prevValue);
                         } else if (!(number1 == null && number2 == null)) {
@@ -349,8 +349,6 @@ public class AuditLogService implements IAuditLogService {
                 fieldValueMap.put(fieldName, auditLogChanges);
         }
 
-        ObjectMapper objectMapper = new ObjectMapper();
-
         return fieldValueMap;
         // return fieldValueMap.toString();
     }
@@ -377,5 +375,10 @@ public class AuditLogService implements IAuditLogService {
                 .newValue(newValue)
                 .oldValue(oldValue)
                 .build();
+    }
+
+    private static <T extends Comparable<T>> int compareTo(final T c1, final T c2) {
+        final boolean f1, f2;
+        return (f1 = c1 == null) ^ (f2 = c2 == null) ? f1 ? -1 : 1 : f1 && f2 ? 0 : c1.compareTo(c2);
     }
 }
