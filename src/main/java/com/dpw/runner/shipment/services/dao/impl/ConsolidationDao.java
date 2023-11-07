@@ -74,15 +74,7 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
             }
             oldConsole = oldEntity.get();
         }
-        errors.addAll(applyConsolidationValidations(consolidationDetails, oldConsole));
-        if (! errors.isEmpty())
-            throw new ValidationException(errors.toString());
-        if(!fromV1Sync && consolidationDetails.getTransportMode() == "AIR")
-            consolidationMAWBCheck(consolidationDetails);
-        consolidationDetails = consolidationRepository.save(consolidationDetails);
-        if(!fromV1Sync && consolidationDetails.getMawb() != null && consolidationDetails.getShipmentType().equals(Constants.IMP)) {
-            setMawbStock(consolidationDetails);
-        }
+        onSave(consolidationDetails, errors, oldConsole, fromV1Sync);
         return consolidationDetails;
     }
 
@@ -99,6 +91,12 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
             }
             oldConsole = oldEntity;
         }
+        onSave(consolidationDetails, errors, oldConsole, fromV1Sync);
+        return consolidationDetails;
+    }
+
+    private void onSave(ConsolidationDetails consolidationDetails, Set<String> errors, ConsolidationDetails oldConsole, boolean fromV1Sync)
+    {
         errors.addAll(applyConsolidationValidations(consolidationDetails, oldConsole));
         if (! errors.isEmpty())
             throw new ValidationException(errors.toString());
@@ -108,7 +106,6 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
         if(!fromV1Sync && consolidationDetails.getMawb() != null && consolidationDetails.getShipmentType().equals(Constants.IMP)) {
             setMawbStock(consolidationDetails);
         }
-        return consolidationDetails;
     }
 
     @Override
@@ -202,7 +199,7 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
                 if (shipmentSettingsDetails.getRestrictedLocations() == null || !shipmentSettingsDetails.getRestrictedLocations().contains(unLoc)) {
                     errors.add("Value entered for Loading Port is not allowed or invalid");
                 }
-                unLoc = request.getFirstLoad();
+                unLoc = request.getCarrierDetails().getOrigin();
                 if (shipmentSettingsDetails.getRestrictedLocations() == null || !shipmentSettingsDetails.getRestrictedLocations().contains(unLoc)) {
                     errors.add("Value entered for First Load is not allowed or invalid");
                 }
@@ -211,7 +208,7 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
                 if (shipmentSettingsDetails.getRestrictedLocations() == null || !shipmentSettingsDetails.getRestrictedLocations().contains(unLoc)) {
                     errors.add("Value entered for Discharge Port is not allowed or invalid");
                 }
-                unLoc = request.getLastDischarge();
+                unLoc = request.getCarrierDetails().getDestination();
                 if (shipmentSettingsDetails.getRestrictedLocations() == null || !shipmentSettingsDetails.getRestrictedLocations().contains(unLoc)) {
                     errors.add("Value entered for Last Discharge is not allowed or invalid");
                 }

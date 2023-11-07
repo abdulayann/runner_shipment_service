@@ -109,26 +109,7 @@ public class ShipmentDao implements IShipmentDao {
             if(shipmentDetails.getContainersList() == null)
                 shipmentDetails.setContainersList(new ArrayList<>());
         }
-        errors.addAll(applyShipmentValidations(shipmentDetails, oldShipment));
-        if (! errors.isEmpty())
-            throw new ValidationException(errors.toString());
-        if (!fromV1Sync && shipmentDetails.getTransportMode().equals("AIR") && shipmentDetails.getShipmentType().equals("DRT"))
-            directShipmentMAWBCheck(shipmentDetails);
-        shipmentDetails = shipmentRepository.save(shipmentDetails);
-        if(!fromV1Sync && shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && shipmentDetails.getJobType() != null && shipmentDetails.getJobType().equals(Constants.SHIPMENT_TYPE_DRT)) {
-            if(shipmentDetails.getMasterBill() != null && !shipmentDetails.getDirection().equals(Constants.IMP)) {
-                setMawbStock(shipmentDetails);
-            }
-        }
-//        EventMessage eventMessage = EventMessage.builder().messageType(Constants.SERVICE).entity(Constants.SHIPMENT).request(shipmentDetails).build();
-//        sbUtils.sendMessagesToTopic(isbProperties, azureServiceBusTopic.getTopic(), Arrays.asList(new ServiceBusMessage(jsonHelper.convertToJson(eventMessage))));
-        try {
-            producer.produceToKafka(jsonHelper.convertToJson(shipmentDetails), senderQueue, UUID.randomUUID().toString());
-        }
-        catch (Exception e)
-        {
-            log.error("Error pushing to kafka");
-        }
+        onSave(shipmentDetails, errors, oldShipment, fromV1Sync);
         return shipmentDetails;
     }
 
@@ -162,6 +143,12 @@ public class ShipmentDao implements IShipmentDao {
             }
             oldShipment = oldEntity.get();
         }
+        onSave(shipmentDetails, errors, oldShipment, fromV1Sync);
+        return shipmentDetails;
+    }
+
+    private void onSave(ShipmentDetails shipmentDetails, Set<String> errors, ShipmentDetails oldShipment, boolean fromV1Sync)
+    {
         errors.addAll(applyShipmentValidations(shipmentDetails, oldShipment));
         if (! errors.isEmpty())
             throw new ValidationException(errors.toString());
@@ -173,14 +160,15 @@ public class ShipmentDao implements IShipmentDao {
                 setMawbStock(shipmentDetails);
             }
         }
+//        EventMessage eventMessage = EventMessage.builder().messageType(Constants.SERVICE).entity(Constants.SHIPMENT).request(shipmentDetails).build();
+//        sbUtils.sendMessagesToTopic(isbProperties, azureServiceBusTopic.getTopic(), Arrays.asList(new ServiceBusMessage(jsonHelper.convertToJson(eventMessage))));
         try {
             producer.produceToKafka(jsonHelper.convertToJson(shipmentDetails), senderQueue, UUID.randomUUID().toString());
         }
         catch (Exception e)
         {
-            log.error("Error pushing to kafka");
+            log.error("Error pushing shipment to kafka");
         }
-        return shipmentDetails;
     }
 
     @Override

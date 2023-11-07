@@ -19,6 +19,7 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IPickupDeliveryDetailsService;
+import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
 import com.dpw.runner.shipment.services.syncing.Entity.PickupDeliveryDetailsRequestV2;
 import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
 import com.nimbusds.jose.util.Pair;
@@ -60,6 +61,9 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
 
     @Autowired
     private ModelMapper modelMapper;
+
+    @Autowired
+    private IShipmentService shipmentService;
 
     @Transactional
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
@@ -281,6 +285,7 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
             }
 
             oldShipment = shipmentDao.save(oldShipment, true);
+            shipmentService.afterSave(oldShipment);
             PickupDeliveryDetailsResponse pickupDeliveryDetailsResponse = new PickupDeliveryDetailsResponse();
             if(pickupDeliveryDetailsRequestV2.getType().equals(Constants.PICK_UP))
                 pickupDeliveryDetailsResponse = jsonHelper.convertValue(oldShipment.getPickupDetails(), PickupDeliveryDetailsResponse.class);

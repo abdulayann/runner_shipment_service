@@ -25,8 +25,6 @@ public class ConsolidationDetailsResponse implements IRunnerResponse {
     private String mawb;
     private String serviceLevel;
     private String payment;
-    private String firstLoad;
-    private String lastDischarge;
     private String declarationType;
     private String deliveryMode;
     private Boolean isLinked;
@@ -115,4 +113,6 @@ public class ConsolidationDetailsResponse implements IRunnerResponse {
     private List<PartiesResponse> consolidationAddresses;
     private String bookingStatus;
     private String bookingNumber;
+    private LocalDateTime createdAt;
+    private String carrierBookingRef;
 }
