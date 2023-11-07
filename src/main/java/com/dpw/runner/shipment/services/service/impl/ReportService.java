@@ -28,6 +28,7 @@ import com.dpw.runner.shipment.services.exception.exceptions.ValidationException
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IFileRepoService;
 import com.dpw.runner.shipment.services.service.interfaces.IReportService;
+import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.itextpdf.text.DocumentException;
@@ -88,6 +89,9 @@ public class ReportService implements IReportService {
 
     @Autowired
     private IDocumentManagerService documentManagerService;
+
+    @Autowired
+    private IShipmentService shipmentService;
 
     @Override
     public byte[] getDocumentData(CommonRequestModel request) throws DocumentException, IOException {
@@ -436,8 +440,8 @@ public class ReportService implements IReportService {
             {
                 shipmentDetails.getAdditionalDetails().setDateOfIssue(LocalDate.now().atStartOfDay());
             }
-            shipmentDao.update(shipmentDetails, false);
-
+            shipmentDetails = shipmentDao.update(shipmentDetails, false);
+            shipmentService.afterSave(shipmentDetails);
             if (pdfByteContent != null)
             {
                 DocUploadRequest docUploadRequest = new DocUploadRequest();

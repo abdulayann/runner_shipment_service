@@ -104,8 +104,11 @@ public class ShipmentController {
     // @PreAuthorize("hasAuthority('"+ Permissions.AdministrationGeneral+"')") //TODO-Authorization
     @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.LIST_SUCCESSFUL, responseContainer = ShipmentConstants.RESPONSE_CONTAINER_LIST)})
     @PostMapping(ApiConstants.API_LIST)
-    public ResponseEntity<?> list(@RequestBody @Valid ListCommonRequest listCommonRequest) {
+    public ResponseEntity<?> list(@RequestBody @Valid ListCommonRequest listCommonRequest, @RequestParam(required = false) Boolean getFullShipment) {
         try {
+            if(getFullShipment != null && getFullShipment.booleanValue()) {
+                return (ResponseEntity<RunnerListResponse<ShipmentListResponse>>) shipmentService.fullShipmentsList(CommonRequestModel.buildRequest(listCommonRequest));
+            }
            return (ResponseEntity<RunnerListResponse<ShipmentListResponse>>) shipmentService.list(CommonRequestModel.buildRequest(listCommonRequest));
         } catch (Exception ex) {
             System.out.println(ex.toString());

@@ -23,4 +23,6 @@ public interface IShipmentService extends ICommonService{
     ResponseEntity<?> cloneShipment(CommonRequestModel commonRequestModel);
     ResponseEntity<?> transportInstructionList(CommonRequestModel commonRequestModel);
     ResponseEntity<?> containerListForTI(CommonRequestModel commonRequestModel);
+    void afterSave(ShipmentDetails shipmentDetails);
+    ResponseEntity<?> fullShipmentsList(CommonRequestModel commonRequestModel);
 }

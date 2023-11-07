@@ -66,14 +66,6 @@ public class ConsolidationDetails extends MultiTenancy {
     @MasterData(type = MasterDataType.PAYMENT)
     private String payment;
 
-    @Column(name = "first_load")
-    @UnlocationData
-    private String firstLoad;
-
-    @Column(name = "last_discharge")
-    @UnlocationData
-    private String lastDischarge;
-
     @Column(name = "declaration_type")
     @MasterData(type = MasterDataType.CUSTOM_DECL_TYPE)
     private String declarationType;
@@ -364,4 +356,8 @@ public class ConsolidationDetails extends MultiTenancy {
     @Where(clause = "entity_type = 'CONSOLIDATION_ADDRESSES'")
     @BatchSize(size = 50)
     private List<Parties> consolidationAddresses;
+
+    @Column(name = "carrier_booking_ref")
+    @Size(max=64, message = "max size is 64 for carrier_booking_ref")
+    private String carrierBookingRef;
 }

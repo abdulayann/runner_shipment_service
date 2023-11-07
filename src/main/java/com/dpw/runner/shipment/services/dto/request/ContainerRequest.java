@@ -101,4 +101,5 @@ public class ContainerRequest extends CommonRequest implements IRunnerRequest {
     private List<ShipmentRequest> shipmentsList;
     private Long contractEnforcedQuantityLimit;
     private String ownType;
+    private String handlingInfo;
 }

@@ -2,7 +2,6 @@ package com.dpw.runner.shipment.services.syncing.impl;
 
 import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
-import com.dpw.runner.shipment.services.dto.request.ArrivalDepartureDetailsRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
@@ -67,8 +66,6 @@ public class ConsolidationSync implements IConsolidationSync {
         response.setType(request.getConsolidationType());
         response.setContainerType(request.getContainerCategory());
         response.setDOPlaceOfIssueName(request.getDoPlaceOfIssue());
-        response.setFirstLoadString(request.getFirstLoad());
-        response.setLastDischargeString(request.getLastDischarge());
         response.setOriginals(request.getOriginal());
         response.setPrinOtherDocs(request.getPrintOtherDocs());
         response.setReferenceNo(request.getReferenceNumber());

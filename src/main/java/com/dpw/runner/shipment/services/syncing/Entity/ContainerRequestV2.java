@@ -168,4 +168,6 @@ public class ContainerRequestV2 implements IRunnerRequest {
     private List<UUID> ShipmentGuids;
     @JsonProperty("ConsolidationGuid")
     private UUID ConsolidationGuid;
+    @JsonProperty("HandlingInfo")
+    private String handlingInfo;
 }
