@@ -368,11 +368,13 @@ public class AwbService implements IAwbService {
     }
 
     private void calculateAndUpdateGoodsPacksMawb(List<AwbPackingInfo> allHawbPacks, Awb mawb, ShipmentSettingsDetails tenantSettings) {
-        AwbGoodsDescriptionInfo awbGoodsDescriptionInfo = null;
+        AwbGoodsDescriptionInfo mawbGoodsDescriptionInfo = null;
         if (mawb.getAwbGoodsDescriptionInfo() != null && mawb.getAwbGoodsDescriptionInfo().size() > 0) {
-            awbGoodsDescriptionInfo = mawb.getAwbGoodsDescriptionInfo().get(0);
+            // V1 always fetches via FirstOrDefault method post repo list call
+            mawbGoodsDescriptionInfo = mawb.getAwbGoodsDescriptionInfo().get(0);
 
-            Long mawbGoodsDescId = 1L; //awbGoodsDescriptionInfo.getId();  // TODO goodsDescId where to get this
+            Long mawbGoodsDescId = null; //mawbGoodsDescriptionInfo.getId();  // TODO goodsDescId where to get this
+            UUID mawbGoodsDescGuid = mawbGoodsDescriptionInfo.getGuid();
             Integer noOfPacks = 0;
             BigDecimal totalGrossVolumeOfMawbGood = BigDecimal.ZERO;
             BigDecimal totalGrossWeightOfMawbGood = BigDecimal.ZERO;
@@ -398,9 +400,14 @@ public class AwbService implements IAwbService {
                             totalGrossVolumeOfMawbGood = totalGrossVolumeOfMawbGood.add((BigDecimal) unitConversionUtility.convertUnit(Constants.MASS, i.getWeight(), i.getWeightUnit(), tenantSettings.getVolumeChargeableUnit()));
                     }
 
-                    // Link pack to Goods if link not already present
+                    // Link pack to Goods if link not already present and save
+                    // save part will happen in awbDao.save()
                     if (i.getMawbGoodsDescId() == null)
                         i.setMawbGoodsDescId(mawbGoodsDescId);
+                    if (i.getAwbGoodsDescriptionInfoGuid() == null)
+                        i.setAwbGoodsDescriptionInfoGuid(mawbGoodsDescGuid);
+
+                    mawbGoodsDescriptionInfo.getAwbPackingInfo().add(i);
 
                 } catch (Exception e) {
                     log.error(e.getMessage());
@@ -415,27 +422,28 @@ public class AwbService implements IAwbService {
                     chargeableWeightOfMawbGood = volumetricWeightOfMawbGood;
             }
 
-            if (awbGoodsDescriptionInfo.getChargeableWt().compareTo(chargeableWeightOfMawbGood) == 1)
-                chargeableWeightOfMawbGood = awbGoodsDescriptionInfo.getChargeableWt();
+            if (mawbGoodsDescriptionInfo.getChargeableWt().compareTo(chargeableWeightOfMawbGood) == 1)
+                chargeableWeightOfMawbGood = mawbGoodsDescriptionInfo.getChargeableWt();
 
-            if (awbGoodsDescriptionInfo.getRateCharge() != null && awbGoodsDescriptionInfo.getRateClass() != null) {
-                if (awbGoodsDescriptionInfo.getRateClass() == 1)
-                    awbGoodsDescriptionInfo.setTotalAmount(awbGoodsDescriptionInfo.getRateCharge());
+            if (mawbGoodsDescriptionInfo.getRateCharge() != null && mawbGoodsDescriptionInfo.getRateClass() != null) {
+                if (mawbGoodsDescriptionInfo.getRateClass() == 1)
+                    mawbGoodsDescriptionInfo.setTotalAmount(mawbGoodsDescriptionInfo.getRateCharge());
                 else
-                    awbGoodsDescriptionInfo.setTotalAmount(awbGoodsDescriptionInfo.getRateCharge().multiply(roundOffAirShipment(chargeableWeightOfMawbGood)));
+                    mawbGoodsDescriptionInfo.setTotalAmount(mawbGoodsDescriptionInfo.getRateCharge().multiply(roundOffAirShipment(chargeableWeightOfMawbGood)));
             }
-            totalAmountOfMawbGood = awbGoodsDescriptionInfo.getTotalAmount();
+            totalAmountOfMawbGood = mawbGoodsDescriptionInfo.getTotalAmount();
 
             // Consolidation Lite flow
             if(tenantSettings != null && tenantSettings.getConsolidationLite() != true){
-                awbGoodsDescriptionInfo = new AwbGoodsDescriptionInfo();
-                awbGoodsDescriptionInfo.setGrossWt(totalGrossWeightOfMawbGood);
-                awbGoodsDescriptionInfo.setGrossWtUnit(grossWeightUnit);
-                awbGoodsDescriptionInfo.setPiecesNo(noOfPacks);
-                awbGoodsDescriptionInfo.setChargeableWt(roundOffAirShipment(chargeableWeightOfMawbGood));
-                awbGoodsDescriptionInfo.setTotalAmount(totalAmountOfMawbGood);
+                mawbGoodsDescriptionInfo = new AwbGoodsDescriptionInfo();
+                mawbGoodsDescriptionInfo.setGrossWt(totalGrossWeightOfMawbGood);
+                mawbGoodsDescriptionInfo.setGrossWtUnit(grossWeightUnit);
+                mawbGoodsDescriptionInfo.setPiecesNo(noOfPacks);
+                mawbGoodsDescriptionInfo.setChargeableWt(roundOffAirShipment(chargeableWeightOfMawbGood));
+                mawbGoodsDescriptionInfo.setTotalAmount(totalAmountOfMawbGood);
             }
-
+            // Can there be a scenario of multiple Goods information ?
+            mawb.setAwbGoodsDescriptionInfo(List.of(mawbGoodsDescriptionInfo));
             awbDao.save(mawb);
         }
     }
