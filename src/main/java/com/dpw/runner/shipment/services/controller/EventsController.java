@@ -103,7 +103,7 @@ public class EventsController {
             @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
     })
     @GetMapping(EventConstants.TRACK_EVENT_DETAILS)
-    public ResponseEntity<?> trackEventDetails(@RequestParam(name = "shipment id") Long id) {
+    public ResponseEntity<?> trackEventDetails(@RequestParam(name = "shipmentId") Long id) {
         String responseMsg;
         try {
             return eventService.trackEvents(id);
