@@ -60,6 +60,27 @@ public class ContainerController {
         return ResponseEntity.status(HttpStatus.EXPECTATION_FAILED).body("CSV File upload failed");
     }
 
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = ContainerConstants.CONTAINER_EVENTS_CREATE_SUCCESSFUL),
+            @ApiResponse(code = 404, message = ContainerConstants.NO_DATA, response = RunnerResponse.class)
+    })
+    @PostMapping(ApiConstants.API_UPLOAD_EVENTS)
+    public ResponseEntity<String> uploadEventsCSV(@ModelAttribute BulkUploadRequest request) throws IOException {
+        if (request.getFile().isEmpty()) {
+            return ResponseEntity.badRequest().body("No File Found !");
+        }
+
+        try {
+            containerService.uploadContainerEvents(request);
+            return ResponseEntity.ok("CSV file uploaded successfully!");
+        } catch (Exception e) {
+            String responseMessage = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
+            log.error(responseMessage, e);
+        }
+        return ResponseEntity.status(HttpStatus.EXPECTATION_FAILED).body("CSV File upload failed");
+    }
+
     @GetMapping(ApiConstants.API_DOWNLOAD)
     public void downloadCSV(HttpServletResponse response, @ModelAttribute BulkDownloadRequest request) {
         try {

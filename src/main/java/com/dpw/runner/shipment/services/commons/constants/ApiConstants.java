@@ -3,6 +3,8 @@ package com.dpw.runner.shipment.services.commons.constants;
 public class ApiConstants {
     public static final String API_CREATE = "/create";
     public static final String API_UPLOAD = "/upload";
+    public static final String API_UPLOAD_EVENTS = "/upload-events";
+
 
     public static final String API_DOWNLOAD = "/download";
 

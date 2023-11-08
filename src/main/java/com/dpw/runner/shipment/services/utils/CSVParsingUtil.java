@@ -266,6 +266,29 @@ public class CSVParsingUtil<T> {
     }
 
 
+    public List<Events> parseCSVFileEvents(MultipartFile file) throws IOException, CsvException {
+        List<Events> entityList = new ArrayList<>();
+        try (CSVReader csvReader = new CSVReader(new InputStreamReader(new BOMInputStream(file.getInputStream()), StandardCharsets.UTF_8))) {
+            String[] header = csvReader.readNext();
+            for (int i = 0; i < header.length; i++) {
+                header[i] = getCamelCase(header[i]);
+            }
+
+            List<String[]> records = csvReader.readAll();
+            for (String[] record : records) {
+                Events entity = new Events();
+                for (int i = 0; i < record.length; i++) {
+                    setFieldForEvents(entity, header[i], record[i]);
+                }
+                entityList.add(entity);
+            }
+        } catch (NoSuchFieldException | IllegalAccessException e) {
+            throw new RuntimeException(e);
+        }
+        return entityList;
+    }
+
+
     public void setField(T entity, String attributeName, String attributeValue) throws NoSuchFieldException, IllegalAccessException {
         Field field = entity.getClass().getDeclaredField(attributeName);
         field.setAccessible(true);
@@ -295,5 +318,33 @@ public class CSVParsingUtil<T> {
         field.set(entity, parsedValue);
     }
 
+    public void setFieldForEvents(Events entity, String attributeName, String attributeValue) throws NoSuchFieldException, IllegalAccessException {
+        Field field = entity.getClass().getDeclaredField(attributeName);
+        field.setAccessible(true);
+
+        Class<?> fieldType = field.getType();
+        Object parsedValue = null;
+        if (attributeValue.isEmpty())
+            return;
+        if (fieldType == int.class || fieldType == Integer.class) {
+            parsedValue = Integer.parseInt(attributeValue);
+        } else if (fieldType == String.class) {
+            parsedValue = attributeValue;
+        } else if (fieldType == Long.class || fieldType == long.class) {
+            parsedValue = Long.parseLong(attributeValue);
+        } else if (fieldType == boolean.class || fieldType == Boolean.class) {
+            parsedValue = Boolean.parseBoolean(attributeValue);
+        } else if (fieldType == BigDecimal.class) {
+            parsedValue = BigDecimal.valueOf(Double.valueOf(attributeValue));
+        } else if (fieldType == ContainerStatus.class) {
+            parsedValue = ContainerStatus.valueOf(attributeValue);
+        } else if (fieldType == LocalDateTime.class) {
+            parsedValue = LocalDateTime.parse(attributeValue);
+        } else {
+            throw new NoSuchFieldException();
+        }
+
+        field.set(entity, parsedValue);
+    }
 
 }

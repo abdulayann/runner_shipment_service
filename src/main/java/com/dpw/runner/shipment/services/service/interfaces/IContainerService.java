@@ -18,6 +18,8 @@ public interface IContainerService extends ICommonService {
 
     void uploadContainers(BulkUploadRequest request) throws Exception;
 
+    void uploadContainerEvents(BulkUploadRequest request) throws Exception;
+
     void downloadContainers(HttpServletResponse response, BulkDownloadRequest request) throws Exception;
 
     void downloadContainerEvents(HttpServletResponse response, BulkDownloadRequest request) throws Exception;

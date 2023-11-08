@@ -137,6 +137,22 @@ public class ContainerService implements IContainerService {
     }
 
     @Override
+    public void uploadContainerEvents(BulkUploadRequest request) throws Exception {
+        List<Events> eventsList = parser.parseCSVFileEvents(request.getFile());
+        eventsList = eventsList.stream().map(c -> {
+            c.setEntityId(request.getConsolidationId());
+            c.setEntityType("CONSOLIDATION");
+            return c;
+        }).collect(Collectors.toList());
+        eventsList = eventDao.saveAll(eventsList);
+        if (request.getShipmentId() != null) {
+            eventsList.stream().forEach(container -> {
+                shipmentsContainersMappingDao.updateShipmentsMappings(container.getId(), List.of(request.getShipmentId()));
+            });
+        }
+    }
+
+    @Override
     public void downloadContainers(HttpServletResponse response, @ModelAttribute BulkDownloadRequest request) throws Exception {
         List<ShipmentsContainersMapping> mappings;
         List<Containers> result = new ArrayList<>();
