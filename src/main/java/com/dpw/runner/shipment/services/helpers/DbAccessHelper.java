@@ -253,6 +253,9 @@ public class DbAccessHelper {
                 if (dataType.isAssignableFrom(String.class)) {
                     return criteriaBuilder.equal(criteriaBuilder.lower(path.get(fieldName)), (((String) input.getValue()).toLowerCase()));
                 }
+                else if (dataType.isAssignableFrom(UUID.class) && input.getValue() instanceof String) {
+                    return criteriaBuilder.equal(path.get(fieldName), UUID.fromString((String) input.getValue()));
+                }
                 else if(dataType.isEnum()) {
                     return criteriaBuilder.equal(path.get(fieldName), getEnum(dataType.getName(), (String) input.getValue()));
                 }
