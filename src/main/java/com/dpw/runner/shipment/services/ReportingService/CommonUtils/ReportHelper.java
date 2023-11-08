@@ -229,7 +229,7 @@ public class ReportHelper {
             return value;
 
         DecimalFormat df = new DecimalFormat("#.00");
-        return df.format(value);
+        return df.format(Double.valueOf(value));
     }
 
     public static String GenerateFormattedDate(LocalDateTime localDateTime, String pattern){
@@ -294,6 +294,8 @@ public class ReportHelper {
 
     public static String concatGroupedContainerCount(Map<String, Long> containerCountGrouped) {
         String containerCount = "";
+        if (Objects.isNull(containerCountGrouped))
+            return "0";
         for (Map.Entry<String, Long> entry : containerCountGrouped.entrySet()) {
             if (!containerCount.isEmpty()) {
                 containerCount += " & ";
@@ -305,6 +307,8 @@ public class ReportHelper {
 
     public static String concatGroupedFieldValues(Map<String, Double> fieldValuesGrouped, int decimalPlaces) {
         String fieldValue = "";
+        if (Objects.isNull(fieldValuesGrouped))
+            return "0";
         for (Map.Entry<String, Double> entry : fieldValuesGrouped.entrySet()) {
             double value = Math.round(entry.getValue() * Math.pow(10, decimalPlaces)) / Math.pow(10, decimalPlaces);
             if (!fieldValue.isEmpty()) {
@@ -317,6 +321,8 @@ public class ReportHelper {
 
     public static String concatGroupedFields(Map<String, Double> fieldMap, int decimalPlaces) {
         String fieldValue = "";
+        if (Objects.isNull(fieldMap))
+            return "0";
         for (Map.Entry<String, Double> entry : fieldMap.entrySet()) {
             double value = Math.round(entry.getValue() * Math.pow(10, decimalPlaces)) / Math.pow(10, decimalPlaces);
             if (!fieldValue.isEmpty()) {
@@ -329,6 +335,8 @@ public class ReportHelper {
 
     public static Map<String, UnlocationsResponse> getLocationData(Set<String> locCodes) {
         Map<String, UnlocationsResponse> locationMap = new HashMap<>();
+        if (Objects.isNull(locCodes))
+            return locationMap;
         if (locCodes.size() > 0) {
             List<Object> criteria = Arrays.asList(
                     List.of("LocCode"),

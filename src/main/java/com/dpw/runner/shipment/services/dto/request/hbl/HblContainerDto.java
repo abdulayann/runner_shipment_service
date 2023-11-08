@@ -34,6 +34,6 @@ public class HblContainerDto {
     private String  hazardousUn;
     private String  containerTypeName;
     private String  packageUnit;
-    private Integer  quantity;
+    private Long  quantity;
     private String  quantityCode;
 }

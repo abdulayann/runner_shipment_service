@@ -349,13 +349,13 @@ public class ReportService implements IReportService {
             boolean bWaterMark = false;
             if(reportRequest.getFrontTemplateCode() != null || reportRequest.getBackTemplateCode() != null) {
                 if (reportRequest.getFrontTemplateCode() != null) {
-                    HblTermsConditionTemplate frontTemplate = hblTermsConditionTemplateDao.getTemplateCode(reportRequest.getFrontTemplateCode(), 1, reportRequest.getPrintType());
+                    HblTermsConditionTemplate frontTemplate = hblTermsConditionTemplateDao.getTemplateCode(reportRequest.getFrontTemplateCode(), true, reportRequest.getPrintType());
                     if (frontTemplate != null) {
                         fWaterMark = frontTemplate.getIsWaterMarkRequired();
                     }
                 }
                 if (reportRequest.getBackTemplateCode() != null) {
-                    HblTermsConditionTemplate backTemplate = hblTermsConditionTemplateDao.getTemplateCode(reportRequest.getBackTemplateCode(), 0, reportRequest.getPrintType());
+                    HblTermsConditionTemplate backTemplate = hblTermsConditionTemplateDao.getTemplateCode(reportRequest.getBackTemplateCode(), false, reportRequest.getPrintType());
                     if (backTemplate != null) {
                         bWaterMark = backTemplate.getIsWaterMarkRequired();
                     }
@@ -600,11 +600,11 @@ public class ReportService implements IReportService {
                 {
                     if (frontTemplateCode != null && backTemplateCode != null)
                     {
-                        String front = hblTermsConditionTemplateDao.getTemplateCode(frontTemplateCode, 1 ,printType).getTemplateFileName();
+                        String front = hblTermsConditionTemplateDao.getTemplateCode(frontTemplateCode, true ,printType).getTemplateFileName();
                         String back = null;
                         if (backTemplateCode.length() > 0)
                         {
-                            back = hblTermsConditionTemplateDao.getTemplateCode(backTemplateCode, 0 ,printType).getTemplateFileName();
+                            back = hblTermsConditionTemplateDao.getTemplateCode(backTemplateCode, false ,printType).getTemplateFileName();
                         }
                         return setDocPages(null, front, back, true, null, null, row);
                     }
@@ -1067,7 +1067,7 @@ public class ReportService implements IReportService {
         uploadDocumentRequest.setFileResource(CommonUtils.getByteResource(new ByteArrayInputStream(document), filename));
 
         MultipartFile file = new BASE64DecodedMultipartFile(document);
-        var uploadResponse = documentManagerService.temporaryFileUpload(file);
+        var uploadResponse = documentManagerService.temporaryFileUpload(file, filename);
         if (!uploadResponse.getSuccess())
             throw new IOException("File Upload Failed");
         var saveResponse = documentManagerService.saveFile(DocumentManagerSaveFileRequest.builder().fileName(filename)

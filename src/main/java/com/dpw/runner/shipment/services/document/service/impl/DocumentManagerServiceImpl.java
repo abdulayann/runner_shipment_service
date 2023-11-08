@@ -32,15 +32,15 @@ public class DocumentManagerServiceImpl implements IDocumentManagerService {
     private HttpServletRequest httpServletRequest;
 
     @Override
-    public DocumentManagerResponse<DocumentManagerDataResponse> temporaryFileUpload(MultipartFile file) {
+    public DocumentManagerResponse<DocumentManagerDataResponse> temporaryFileUpload(MultipartFile file, String filename) {
 
-        if (ObjectUtils.isEmpty(file.getOriginalFilename())) {
+        if (ObjectUtils.isEmpty(filename)) {
             throw new BadRequestException("fileName cannot be null or empty");
         }
 
         String token = httpServletRequest.getHeader(HttpHeaders.AUTHORIZATION);
         try {
-            String originalFileName = file.getOriginalFilename();
+            String originalFileName = filename;
             String base64EncodedFile = FileUtils.convertMultipartFileToBase64(file);
             String encodedFile = "data:@file/" + FileUtils.getFileExtenation(originalFileName) + ";base64," + base64EncodedFile;
 
