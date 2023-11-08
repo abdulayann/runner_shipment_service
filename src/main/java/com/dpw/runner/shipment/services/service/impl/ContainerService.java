@@ -48,8 +48,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.convertToEntityList;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.*;
 import static com.dpw.runner.shipment.services.utils.StringUtility.isNotEmpty;
 import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
 
@@ -138,6 +137,22 @@ public class ContainerService implements IContainerService {
     }
 
     @Override
+    public void uploadContainerEvents(BulkUploadRequest request) throws Exception {
+        List<Events> eventsList = parser.parseCSVFileEvents(request.getFile());
+        eventsList = eventsList.stream().map(c -> {
+            c.setEntityId(request.getConsolidationId());
+            c.setEntityType("CONSOLIDATION");
+            return c;
+        }).collect(Collectors.toList());
+        eventsList = eventDao.saveAll(eventsList);
+        if (request.getShipmentId() != null) {
+            eventsList.stream().forEach(container -> {
+                shipmentsContainersMappingDao.updateShipmentsMappings(container.getId(), List.of(request.getShipmentId()));
+            });
+        }
+    }
+
+    @Override
     public void downloadContainers(HttpServletResponse response, @ModelAttribute BulkDownloadRequest request) throws Exception {
         List<ShipmentsContainersMapping> mappings;
         List<Containers> result = new ArrayList<>();
@@ -172,6 +187,32 @@ public class ContainerService implements IContainerService {
             writer.println(parser.generateCSVHeaderForContainer());
             for (Containers container : result) {
                 writer.println(parser.formatContainerAsCSVLine(container));
+            }
+        }
+    }
+
+    @Override
+    public void downloadContainerEvents(HttpServletResponse response, BulkDownloadRequest request) throws Exception {
+        List<Events> result = new ArrayList<>();
+        if (request.getConsolidationId() != null) {
+            ListCommonRequest req2 = constructListRequestFromEntityId(Long.valueOf(request.getConsolidationId()), "CONSOLIDATION");
+            Pair<Specification<Events>, Pageable> pair = fetchData(req2, Events.class);
+            Page<Events> containerEventsPage = eventDao.findAll(pair.getLeft(), pair.getRight());
+            List<Events> containerEvents = containerEventsPage.getContent();
+            if (result.isEmpty()) {
+                result.addAll(containerEvents);
+            } else {
+                result = result.stream().filter(result::contains).collect(Collectors.toList());
+            }
+        }
+
+        response.setContentType("text/csv");
+        response.setHeader("Content-Disposition", "attachment; filename=\"consolidation_events.csv\"");
+
+        try (PrintWriter writer = response.getWriter()) {
+            writer.println(parser.generateCSVHeaderForEvent());
+            for (Events event : result) {
+                writer.println(parser.formatEventAsCSVLine(event));
             }
         }
     }

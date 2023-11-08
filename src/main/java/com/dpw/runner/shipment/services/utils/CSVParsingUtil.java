@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
 import com.dpw.runner.shipment.services.dto.response.PickupDeliveryDetailsListResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentListResponse;
 import com.dpw.runner.shipment.services.entity.Containers;
+import com.dpw.runner.shipment.services.entity.Events;
 import com.dpw.runner.shipment.services.entity.enums.ContainerStatus;
 import com.opencsv.CSVReader;
 import com.opencsv.exceptions.CsvException;
@@ -39,6 +40,18 @@ public class CSVParsingUtil<T> {
     public String generateCSVHeaderForContainer() {
         StringBuilder headerBuilder = new StringBuilder();
         Field[] fields = Containers.class.getDeclaredFields();
+        for (Field field : fields) {
+            if (headerBuilder.length() > 0) {
+                headerBuilder.append(",");
+            }
+            headerBuilder.append(field.getName());
+        }
+        return headerBuilder.toString();
+    }
+
+    public String generateCSVHeaderForEvent() {
+        StringBuilder headerBuilder = new StringBuilder();
+        Field[] fields = Events.class.getDeclaredFields();
         for (Field field : fields) {
             if (headerBuilder.length() > 0) {
                 headerBuilder.append(",");
@@ -202,6 +215,24 @@ public class CSVParsingUtil<T> {
         return lineBuilder.toString();
     }
 
+    public String formatEventAsCSVLine(Events entity) {
+        StringBuilder lineBuilder = new StringBuilder();
+        Field[] fields = Events.class.getDeclaredFields();
+        for (Field field : fields) {
+            if (hiddenFields.contains(field.getName())) continue;
+            field.setAccessible(true);
+            try {
+                Object value = field.get(entity);
+                lineBuilder.append(value != null ? value.toString() : "");
+                lineBuilder.append(",");
+            } catch (IllegalAccessException e) {
+                e.printStackTrace();
+            }
+        }
+        lineBuilder.deleteCharAt(lineBuilder.length() - 1);
+        return lineBuilder.toString();
+    }
+
 
     public String getCamelCase(String name) {
         return WordUtils.uncapitalize(name);
@@ -235,7 +266,59 @@ public class CSVParsingUtil<T> {
     }
 
 
+    public List<Events> parseCSVFileEvents(MultipartFile file) throws IOException, CsvException {
+        List<Events> entityList = new ArrayList<>();
+        try (CSVReader csvReader = new CSVReader(new InputStreamReader(new BOMInputStream(file.getInputStream()), StandardCharsets.UTF_8))) {
+            String[] header = csvReader.readNext();
+            for (int i = 0; i < header.length; i++) {
+                header[i] = getCamelCase(header[i]);
+            }
+
+            List<String[]> records = csvReader.readAll();
+            for (String[] record : records) {
+                Events entity = new Events();
+                for (int i = 0; i < record.length; i++) {
+                    setFieldForEvents(entity, header[i], record[i]);
+                }
+                entityList.add(entity);
+            }
+        } catch (NoSuchFieldException | IllegalAccessException e) {
+            throw new RuntimeException(e);
+        }
+        return entityList;
+    }
+
+
     public void setField(T entity, String attributeName, String attributeValue) throws NoSuchFieldException, IllegalAccessException {
+        Field field = entity.getClass().getDeclaredField(attributeName);
+        field.setAccessible(true);
+
+        Class<?> fieldType = field.getType();
+        Object parsedValue = null;
+        if (attributeValue.isEmpty())
+            return;
+        if (fieldType == int.class || fieldType == Integer.class) {
+            parsedValue = Integer.parseInt(attributeValue);
+        } else if (fieldType == String.class) {
+            parsedValue = attributeValue;
+        } else if (fieldType == Long.class || fieldType == long.class) {
+            parsedValue = Long.parseLong(attributeValue);
+        } else if (fieldType == boolean.class || fieldType == Boolean.class) {
+            parsedValue = Boolean.parseBoolean(attributeValue);
+        } else if (fieldType == BigDecimal.class) {
+            parsedValue = BigDecimal.valueOf(Double.valueOf(attributeValue));
+        } else if (fieldType == ContainerStatus.class) {
+            parsedValue = ContainerStatus.valueOf(attributeValue);
+        } else if (fieldType == LocalDateTime.class) {
+            parsedValue = LocalDateTime.parse(attributeValue);
+        } else {
+            throw new NoSuchFieldException();
+        }
+
+        field.set(entity, parsedValue);
+    }
+
+    public void setFieldForEvents(Events entity, String attributeName, String attributeValue) throws NoSuchFieldException, IllegalAccessException {
         Field field = entity.getClass().getDeclaredField(attributeName);
         field.setAccessible(true);
 

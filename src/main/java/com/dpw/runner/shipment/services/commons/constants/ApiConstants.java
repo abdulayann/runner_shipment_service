@@ -3,6 +3,8 @@ package com.dpw.runner.shipment.services.commons.constants;
 public class ApiConstants {
     public static final String API_CREATE = "/create";
     public static final String API_UPLOAD = "/upload";
+    public static final String API_UPLOAD_EVENTS = "/upload-events";
+
 
     public static final String API_DOWNLOAD = "/download";
 
@@ -49,4 +51,5 @@ public class ApiConstants {
     public static final String SYNC = "/sync";
     public static final String LIST_TI = "/list/TI";
     public static final String LIST_CONTAINER_FOR_TI = "/list/TI/containers";
+    public static final String API_DOWNLOAD_EVENTS = "/download-events";
 }

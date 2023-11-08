@@ -13,6 +13,8 @@ import java.util.UUID;
 public interface IEventDao {
     Events save(Events events);
 
+    List<Events> saveAll(List<Events> eventsList);
+
     Optional<Events> findByGuid(UUID id);
 
     Page<Events> findAll(Specification<Events> spec, Pageable pageable);

@@ -50,6 +50,16 @@ public class EventDao implements IEventDao {
     }
 
     @Override
+    public List<Events> saveAll(List<Events> containers) {
+        List<Events> res = new ArrayList<>();
+        for (Events req : containers) {
+            req = save(req);
+            res.add(req);
+        }
+        return res;
+    }
+
+    @Override
     public Page<Events> findAll(Specification<Events> spec, Pageable pageable) {
         return eventRepository.findAll(spec, pageable);
     }

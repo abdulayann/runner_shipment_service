@@ -9,11 +9,20 @@ import javax.servlet.http.HttpServletResponse;
 
 public interface IContainerService extends ICommonService {
     ResponseEntity<?> calculateAchieved_AllocatedForSameUnit(CommonRequestModel commonRequestModel);
+
     ResponseEntity<?> calculateAchievedQuantity_onPackAssign(CommonRequestModel commonRequestModel);
+
     ResponseEntity<?> calculateAchievedQuantity_onPackDetach(CommonRequestModel commonRequestModel);
+
     ResponseEntity<?> getContainersForSelection(CommonRequestModel commonRequestModel);
+
     void uploadContainers(BulkUploadRequest request) throws Exception;
 
+    void uploadContainerEvents(BulkUploadRequest request) throws Exception;
+
     void downloadContainers(HttpServletResponse response, BulkDownloadRequest request) throws Exception;
+
+    void downloadContainerEvents(HttpServletResponse response, BulkDownloadRequest request) throws Exception;
+
     ResponseEntity<?> V1ContainerCreateAndUpdate(CommonRequestModel commonRequestModel) throws Exception;
 }

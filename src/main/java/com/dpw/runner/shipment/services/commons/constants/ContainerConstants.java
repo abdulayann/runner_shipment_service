@@ -10,4 +10,5 @@ public class ContainerConstants {
     public static final String NO_DATA = "Not Found!";
     public static final String CONTAINER_ID = "Container Id";
     public static final String RESPONSE_CONTAINER_LIST = "List";
+    public static final String CONTAINER_EVENTS_CREATE_SUCCESSFUL = "Container Events Successfully Created";
 }
