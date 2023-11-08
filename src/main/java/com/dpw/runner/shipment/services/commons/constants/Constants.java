@@ -59,7 +59,7 @@ public class Constants {
     public static final String SHIPMENT_TYPE_LCL = "LCL";
     public static final String CARGO_TYPE_FCL = "FCL";
     public static final String DIRECTION_EXP = "EXP";
-
+    public static final String DIRECTION_IMP = "IMP";
 
     //MasterDataFactory
     public static final String MAPPER_MASTER_DATA = "Mapper";
