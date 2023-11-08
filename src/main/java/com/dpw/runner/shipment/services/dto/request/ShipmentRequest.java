@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.dto.request;
 
 import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
+import com.dpw.runner.shipment.services.entity.enums.CustomerCategoryRates;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -111,4 +112,7 @@ public class ShipmentRequest extends CommonRequest implements IRunnerRequest {
     private Long orderNumber;
     private String orderManagementId;
     private String orderManagementNumber;
+    private CustomerCategoryRates customerCategory;
+    private String contractId;
+    private String contractType;
 }
