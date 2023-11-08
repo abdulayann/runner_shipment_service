@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
 import com.dpw.runner.shipment.services.dto.response.PickupDeliveryDetailsListResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentListResponse;
 import com.dpw.runner.shipment.services.entity.Containers;
+import com.dpw.runner.shipment.services.entity.Events;
 import com.dpw.runner.shipment.services.entity.enums.ContainerStatus;
 import com.opencsv.CSVReader;
 import com.opencsv.exceptions.CsvException;
@@ -39,6 +40,18 @@ public class CSVParsingUtil<T> {
     public String generateCSVHeaderForContainer() {
         StringBuilder headerBuilder = new StringBuilder();
         Field[] fields = Containers.class.getDeclaredFields();
+        for (Field field : fields) {
+            if (headerBuilder.length() > 0) {
+                headerBuilder.append(",");
+            }
+            headerBuilder.append(field.getName());
+        }
+        return headerBuilder.toString();
+    }
+
+    public String generateCSVHeaderForEvent() {
+        StringBuilder headerBuilder = new StringBuilder();
+        Field[] fields = Events.class.getDeclaredFields();
         for (Field field : fields) {
             if (headerBuilder.length() > 0) {
                 headerBuilder.append(",");
@@ -202,6 +215,24 @@ public class CSVParsingUtil<T> {
         return lineBuilder.toString();
     }
 
+    public String formatEventAsCSVLine(Events entity) {
+        StringBuilder lineBuilder = new StringBuilder();
+        Field[] fields = Events.class.getDeclaredFields();
+        for (Field field : fields) {
+            if (hiddenFields.contains(field.getName())) continue;
+            field.setAccessible(true);
+            try {
+                Object value = field.get(entity);
+                lineBuilder.append(value != null ? value.toString() : "");
+                lineBuilder.append(",");
+            } catch (IllegalAccessException e) {
+                e.printStackTrace();
+            }
+        }
+        lineBuilder.deleteCharAt(lineBuilder.length() - 1);
+        return lineBuilder.toString();
+    }
+
 
     public String getCamelCase(String name) {
         return WordUtils.uncapitalize(name);
@@ -263,5 +294,6 @@ public class CSVParsingUtil<T> {
 
         field.set(entity, parsedValue);
     }
+
 
 }

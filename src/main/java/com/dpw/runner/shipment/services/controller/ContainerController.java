@@ -69,6 +69,15 @@ public class ContainerController {
         }
     }
 
+    @GetMapping(ApiConstants.API_DOWNLOAD_EVENTS)
+    public void downloadEventsCSV(HttpServletResponse response, @ModelAttribute BulkDownloadRequest request) {
+        try {
+            containerService.downloadContainerEvents(response, request);
+        } catch (Exception ex) {
+            log.error(ex.getMessage());
+        }
+    }
+
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = ContainerConstants.CONTAINER_CREATE_SUCCESSFUL),
             @ApiResponse(code = 404, message = ContainerConstants.NO_DATA, response = RunnerResponse.class)
