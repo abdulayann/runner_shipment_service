@@ -379,7 +379,6 @@ public class EventService implements IEventService {
       for (var i : responseEvents) {
         EventsResponse eventsResponse = modelMapper.map(i, EventsResponse.class);
         eventsResponse.setShipmentId(id);
-        eventsResponse.setUpdatable(true);
         res.add(eventsResponse);
       }
     }
