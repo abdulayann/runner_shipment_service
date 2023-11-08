@@ -9,7 +9,7 @@ import com.dpw.runner.shipment.services.document.response.DocumentManagerRespons
 import org.springframework.web.multipart.MultipartFile;
 
 public interface IDocumentManagerService {
-    DocumentManagerResponse<DocumentManagerDataResponse> temporaryFileUpload(MultipartFile file);
+    DocumentManagerResponse<DocumentManagerDataResponse> temporaryFileUpload(MultipartFile file, String filename);
 
     DocumentManagerResponse<DocumentManagerDataResponse> saveFile(DocumentManagerSaveFileRequest saveFileRequest);
 

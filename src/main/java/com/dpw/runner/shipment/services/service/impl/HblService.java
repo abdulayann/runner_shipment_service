@@ -448,6 +448,7 @@ public class HblService implements IHblService {
             hblContainer.setShipperSealNumber(container.getShipperSealNumber());
             hblContainer.setCustomsSealNumber(container.getCustomsSealNumber());
             hblContainer.setContainerDesc(container.getDescriptionOfGoods());
+            hblContainer.setQuantity(container.getContainerCount());
             hblContainers.add(hblContainer);
         });
 

@@ -27,7 +27,7 @@ public class DocumentManagerController {
     @PostMapping(value = "/temp/upload", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<DocumentManagerResponse<DocumentManagerDataResponse>> temporaryFileUpload(
             @RequestBody MultipartFile file) {
-        return new ResponseEntity<>(documentManagerService.temporaryFileUpload(file), HttpStatus.OK);
+        return new ResponseEntity<>(documentManagerService.temporaryFileUpload(file, file.getOriginalFilename()), HttpStatus.OK);
     }
 
     @PostMapping(value = "/save/file", produces = MediaType.APPLICATION_JSON_VALUE)
