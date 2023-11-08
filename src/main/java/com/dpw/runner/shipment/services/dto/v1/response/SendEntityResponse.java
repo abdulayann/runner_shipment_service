@@ -13,4 +13,6 @@ import lombok.Setter;
 public class SendEntityResponse {
     @JsonProperty("IsCreated")
     private Boolean isCreated;
+    @JsonProperty("Error")
+    private String error;
 }

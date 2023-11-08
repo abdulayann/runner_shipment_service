@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.entitytransfer.service.impl;
 
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
@@ -13,9 +14,7 @@ import com.dpw.runner.shipment.services.dto.request.ConsolidationDetailsRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
-import com.dpw.runner.shipment.services.dto.v1.request.CreateConsolidationTaskRequest;
-import com.dpw.runner.shipment.services.dto.v1.request.CreateShipmentTaskRequest;
-import com.dpw.runner.shipment.services.dto.v1.request.V1SaveRequest;
+import com.dpw.runner.shipment.services.dto.v1.request.*;
 import com.dpw.runner.shipment.services.dto.v1.response.SendEntityResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.TenantIdResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
@@ -79,6 +78,8 @@ public class EntityTransferService implements IEntityTransferService {
     @Autowired
     private IV1Service v1Service;
     @Autowired
+    private TenantContext tenantContext;
+    @Autowired
     private JsonHelper jsonHelper;
     @Transactional
     @Override
@@ -86,7 +87,7 @@ public class EntityTransferService implements IEntityTransferService {
         SendShipmentRequest sendShipmentRequest = (SendShipmentRequest) commonRequestModel.getData();
         Long shipId = sendShipmentRequest.getShipId();
         List<Integer> sendToBranch = sendShipmentRequest.getSendToBranch();
-        List<Long> additionalDocs = sendShipmentRequest.getAdditionalDocs();
+        List<String> additionalDocs = sendShipmentRequest.getAdditionalDocs();
         List<String> sendToOrg = sendShipmentRequest.getSendToOrg();
         if((sendToBranch == null || sendToBranch.size() == 0) && (sendToOrg == null || sendToOrg.size() == 0)){
             throw new ValidationException(EntityTransferConstants.SELECT_SENDTOBRANCH_OR_SENDTOORG);
@@ -105,25 +106,56 @@ public class EntityTransferService implements IEntityTransferService {
             } else {
                 shipmentDetails.get().setFileRepoList(null);
             }
-            EntityTransferShipmentDetails entityTransferShipmentDetails = modelMapper.map(shipmentDetails.get(), EntityTransferShipmentDetails.class);
-
-            this.createShipmentPayload(entityTransferShipmentDetails);
-            log.info("Shipment Payload Created.");
-
             List<Integer> successTenantIds = new ArrayList<>();
-            if(sendToBranch != null && sendToBranch.size() != 0) {
-                this.createTasks(sendToBranch, successTenantIds, entityTransferShipmentDetails, shipmentDetails.get(), false);
-            }
+            // TODO Only V1 Shipment Task is triggered for current requirement
+            if(true) {
+                List<Integer> tenantIdsFromOrg = new ArrayList<>();
+                if(sendToOrg != null && !sendToOrg.isEmpty())
+                    tenantIdsFromOrg = tenantIdFromOrganizations(sendToOrg);
+                CreateV1ShipmentTaskFromV2Request request = CreateV1ShipmentTaskFromV2Request.builder()
+                        .shipmentId(shipmentDetails.get().getShipmentId())
+                        .sendToBranch(sendToBranch)
+                        .sendToOrg(sendToOrg)
+                        .additionalDocs(additionalDocs)
+                        .build();
+                log.info("Entity Transfer V1 Shipment Request Created:" + jsonHelper.convertToJson(request));
+                try {
+                    SendEntityResponse v1ShipmentTaskResponse = v1Service.sendV1ShipmentTask(request);
+                    if (v1ShipmentTaskResponse.getIsCreated()) {
+                        if(sendToBranch != null && !sendToBranch.isEmpty())
+                            successTenantIds.addAll(sendToBranch);
+                        if(sendToOrg != null && !sendToOrg.isEmpty()) {
+                            successTenantIds.addAll(tenantIdsFromOrg);
+                        }
+                    } else {
+                        log.error("Entity Transfer failed Send V1 shipment: " + v1ShipmentTaskResponse.getError());
+                        throw new RuntimeException("Entity Transfer failed Send V1 shipment: " + v1ShipmentTaskResponse.getError());
+                    }
+                } catch (Exception ex) {
+                    log.error("Entity Transfer failed Send V1 shipment: " + ex);
+                    throw new RuntimeException("Entity Transfer failed Send V1 shipment: " + ex);
+                }
+            } else {
+                EntityTransferShipmentDetails entityTransferShipmentDetails = modelMapper.map(shipmentDetails.get(), EntityTransferShipmentDetails.class);
 
-            if(sendToOrg != null && sendToOrg.size() != 0) {
-                List<Integer> tenantIdsFromOrg = tenantIdFromOrganizations(sendToOrg);
-                log.info("Org TenantId: " + tenantIdsFromOrg);
-                if(tenantIdsFromOrg != null && tenantIdsFromOrg.size() != 0) {
-                    this.createTasks(tenantIdsFromOrg, successTenantIds, entityTransferShipmentDetails, shipmentDetails.get(), true);
+                this.createShipmentPayload(entityTransferShipmentDetails);
+                log.info("Shipment Payload Created.");
+
+
+                if (sendToBranch != null && sendToBranch.size() != 0) {
+                    this.createTasks(sendToBranch, successTenantIds, entityTransferShipmentDetails, shipmentDetails.get(), false);
+                }
+
+                if (sendToOrg != null && sendToOrg.size() != 0) {
+                    List<Integer> tenantIdsFromOrg = tenantIdFromOrganizations(sendToOrg);
+                    log.info("Org TenantId: " + tenantIdsFromOrg);
+                    if (tenantIdsFromOrg != null && tenantIdsFromOrg.size() != 0) {
+                        this.createTasks(tenantIdsFromOrg, successTenantIds, entityTransferShipmentDetails, shipmentDetails.get(), true);
+                    }
                 }
             }
 
-            SendShipmentResponse sendShipmentResponse = SendShipmentResponse.builder().successTenantIds(successTenantIds).entityTransferShipmentDetails(entityTransferShipmentDetails).build();
+            SendShipmentResponse sendShipmentResponse = SendShipmentResponse.builder().successTenantIds(successTenantIds).build();
             return ResponseHelper.buildSuccessResponse(sendShipmentResponse);
         }
         return ResponseHelper.buildFailedResponse(EntityTransferConstants.SEND_SHIPMENT_NO_SHIPMENT_FOUND +shipId);
@@ -609,8 +641,8 @@ public class EntityTransferService implements IEntityTransferService {
         SendConsolidationRequest sendConsolidationRequest = (SendConsolidationRequest) commonRequestModel.getData();
         Long consolId = sendConsolidationRequest.getConsolId();
         List<Integer> sendToBranch = sendConsolidationRequest.getSendToBranch();
-        List<Long> additionalDocs = sendConsolidationRequest.getAdditionalDocs();
-        Map<Long, List<Long>> shipAdditionalDocs = sendConsolidationRequest.getShipAdditionalDocs();
+        List<String> additionalDocs = sendConsolidationRequest.getAdditionalDocs();
+        Map<Long, List<String>> shipAdditionalDocs = sendConsolidationRequest.getShipAdditionalDocs();
         List<String> sendToOrg = sendConsolidationRequest.getSendToOrg();
 
         if((sendToBranch == null || sendToBranch.size() == 0) && (sendToOrg == null || sendToOrg.size() == 0)){
@@ -633,6 +665,9 @@ public class EntityTransferService implements IEntityTransferService {
 
             Map<Long, UUID> idVsGuidMap = new HashMap<>();
             Map<UUID, List<UUID>> containerVsShipmentGuid = new HashMap<>();
+
+            List<String> shipId = new ArrayList<>();
+            List<List<String>> docList = new ArrayList<>();
 
             List<String> houseBills = new ArrayList<>();
             List<String> shipmentIds = new ArrayList<>();
@@ -661,6 +696,8 @@ public class EntityTransferService implements IEntityTransferService {
                                 return shipAdditionalDocs.get(shipment.getId()).indexOf(fileRepo.getId()) != -1;
                             }).collect(Collectors.toList());
                             shipment.setFileRepoList(shipFileRepoList);
+                            shipId.add(shipment.getShipmentId());
+                            docList.add(shipAdditionalDocs.get(shipment.getId()));
                         } else {
                             shipment.setFileRepoList(null);
                         }
@@ -669,32 +706,68 @@ public class EntityTransferService implements IEntityTransferService {
                     }
                 });
             }
-            if(consolidationDetails.get().getContainersList() != null) {
-                consolidationDetails.get().getContainersList().forEach(cont -> {
-                    if (idVsGuidMap.containsKey(cont.getId())) {
-                        cont.setGuid(idVsGuidMap.get(cont.getId()));
-                    }
-                });
-            }
-            EntityTransferConsolidationDetails entityTransferConsolidationDetails = modelMapper.map(consolidationDetails.get(), EntityTransferConsolidationDetails.class);
-
-            entityTransferConsolidationDetails.setContainerVsShipmentGuid(containerVsShipmentGuid);
-            this.createConsolidationPayload(entityTransferConsolidationDetails);
-            log.info("Consolidation Payload Created.");
 
             List<Integer> successTenantIds = new ArrayList<>();
-            if(sendToBranch != null || sendToBranch.size() != 0) {
-                this.createConsoleTasks(sendToBranch, successTenantIds, entityTransferConsolidationDetails, consolidationDetails.get(), false, houseBills, shipmentIds);
-            }
 
-            if(sendToOrg != null || sendToOrg.size() != 0) {
-                List<Integer> tenantIdsFromOrg = tenantIdFromOrganizations(sendToOrg);
-                if(tenantIdsFromOrg != null || tenantIdsFromOrg.size() != 0) {
-                    this.createConsoleTasks(tenantIdsFromOrg, successTenantIds, entityTransferConsolidationDetails, consolidationDetails.get(), true, houseBills, shipmentIds);
+            // TODO Only V1 Consolidation Task is triggered for current requirement
+            if(true) {
+                List<Integer> tenantIdsFromOrg = new ArrayList<>();
+                if(sendToOrg != null && !sendToOrg.isEmpty())
+                    tenantIdsFromOrg = tenantIdFromOrganizations(sendToOrg);
+                CreateV1ConsolidationTaskFromV2Request request = CreateV1ConsolidationTaskFromV2Request.builder()
+                        .consoleId(consolidationDetails.get().getConsolidationNumber())
+                        .sendToBranch(sendToBranch)
+                        .sendToOrg(sendToOrg)
+                        .additionalDocs(additionalDocs)
+                        .shipId(shipId)
+                        .docList(docList)
+                        .build();
+                log.info("Entity Transfer Send V1 Consolidation Request Created:" + jsonHelper.convertToJson(request));
+                try {
+                    SendEntityResponse v1ConsoleTaskResponse = v1Service.sendV1ConsolidationTask(request);;
+                    if (v1ConsoleTaskResponse.getIsCreated()) {
+                        if(sendToBranch != null && !sendToBranch.isEmpty())
+                            successTenantIds.addAll(sendToBranch);
+                        if(sendToOrg != null && !sendToOrg.isEmpty()) {
+                            successTenantIds.addAll(tenantIdsFromOrg);
+                        }
+                    } else {
+                        log.error("Entity Transfer failed Send V1 Consolidation: " + v1ConsoleTaskResponse.getError());
+                        throw new RuntimeException("Entity Transfer failed Send V1 Consolidation: " + v1ConsoleTaskResponse.getError());
+                    }
+                } catch (Exception ex) {
+                    log.error("Entity Transfer failed Send V1 Consolidation: " + ex);
+                    throw new RuntimeException("Entity Transfer failed Send V1 Consolidation: " + ex);
+                }
+            } else {
+
+                if (consolidationDetails.get().getContainersList() != null) {
+                    consolidationDetails.get().getContainersList().forEach(cont -> {
+                        if (idVsGuidMap.containsKey(cont.getId())) {
+                            cont.setGuid(idVsGuidMap.get(cont.getId()));
+                        }
+                    });
+                }
+                EntityTransferConsolidationDetails entityTransferConsolidationDetails = modelMapper.map(consolidationDetails.get(), EntityTransferConsolidationDetails.class);
+
+                entityTransferConsolidationDetails.setContainerVsShipmentGuid(containerVsShipmentGuid);
+                this.createConsolidationPayload(entityTransferConsolidationDetails);
+                log.info("Consolidation Payload Created.");
+
+
+                if (sendToBranch != null || sendToBranch.size() != 0) {
+                    this.createConsoleTasks(sendToBranch, successTenantIds, entityTransferConsolidationDetails, consolidationDetails.get(), false, houseBills, shipmentIds);
+                }
+
+                if (sendToOrg != null || sendToOrg.size() != 0) {
+                    List<Integer> tenantIdsFromOrg = tenantIdFromOrganizations(sendToOrg);
+                    if (tenantIdsFromOrg != null || tenantIdsFromOrg.size() != 0) {
+                        this.createConsoleTasks(tenantIdsFromOrg, successTenantIds, entityTransferConsolidationDetails, consolidationDetails.get(), true, houseBills, shipmentIds);
+                    }
                 }
             }
 
-            SendConsolidationResponse sendConsolidationResponse = SendConsolidationResponse.builder().successTenantIds(successTenantIds).entityTransferConsolidationDetails(entityTransferConsolidationDetails).build();
+            SendConsolidationResponse sendConsolidationResponse = SendConsolidationResponse.builder().successTenantIds(successTenantIds).build();
             return ResponseHelper.buildSuccessResponse(sendConsolidationResponse);
         }
         return ResponseHelper.buildFailedResponse(EntityTransferConstants.SEND_CONSOLIDATION_NO_CONSOLIDATION_FOUND +consolId);
