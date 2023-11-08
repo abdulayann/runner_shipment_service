@@ -96,4 +96,17 @@ public class ShipmentPatchRequest extends CommonRequest implements IRunnerReques
     private JsonNullable<String> volumetricWeightUnit;
     private JsonNullable<BigDecimal> weight;
     private JsonNullable<String> weightUnit;
+    private JsonNullable<String> jobStatus;
+    private JsonNullable<BigDecimal> goodsValue;
+    private JsonNullable<String> goodsValueCurrency;
+    private JsonNullable<BigDecimal> insuranceValue;
+    private JsonNullable<String> InsuranceValueCurrency;
+    private JsonNullable<String> entryRefNo;
+    private JsonNullable<String> flightStatus;
+    private JsonNullable<Boolean> containsHazardous;
+    private JsonNullable<String> fmcTlcId;
+    private JsonNullable<String> commodity;
+    private JsonNullable<Long> orderNumber;
+    private JsonNullable<String> orderManagementId;
+    private JsonNullable<String> orderManagementNumber;
 }
