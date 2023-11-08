@@ -13,7 +13,7 @@ import java.util.List;
 @NoArgsConstructor
 public class SendShipmentRequest implements IRunnerRequest {
     private Long shipId;
-    private List<Long> additionalDocs;
+    private List<String> additionalDocs;
     private List<Integer> sendToBranch;
     private List<String> sendToOrg;
 }

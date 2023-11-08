@@ -3,6 +3,8 @@ package com.dpw.runner.shipment.services.service.v1;
 import com.dpw.runner.shipment.services.dto.response.CheckCreditLimitResponse;
 import com.dpw.runner.shipment.services.dto.v1.request.CreateConsolidationTaskRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.CreateShipmentTaskRequest;
+import com.dpw.runner.shipment.services.dto.v1.request.CreateV1ConsolidationTaskFromV2Request;
+import com.dpw.runner.shipment.services.dto.v1.request.CreateV1ShipmentTaskFromV2Request;
 import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.CustomerBooking;
 import org.springframework.http.ResponseEntity;
@@ -116,6 +118,8 @@ public interface IV1Service {
     SendEntityResponse sendConsolidationTask(CreateConsolidationTaskRequest request);
 
     SendEntityResponse sendShipmentTask(CreateShipmentTaskRequest request);
+    SendEntityResponse sendV1ConsolidationTask(CreateV1ConsolidationTaskFromV2Request request);
+    SendEntityResponse sendV1ShipmentTask(CreateV1ShipmentTaskFromV2Request request);
 
     V1DataResponse addressList(Object request);
 
