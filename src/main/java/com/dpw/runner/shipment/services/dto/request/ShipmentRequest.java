@@ -110,4 +110,5 @@ public class ShipmentRequest extends CommonRequest implements IRunnerRequest {
     private String commodity;
     private Long orderNumber;
     private String orderManagementId;
+    private String orderManagementNumber;
 }

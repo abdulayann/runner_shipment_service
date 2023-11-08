@@ -1,10 +1,6 @@
 package com.dpw.runner.shipment.services.helpers;
 
-import com.dpw.runner.shipment.services.commons.requests.Criteria;
-import com.dpw.runner.shipment.services.commons.requests.FilterCriteria;
-import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
-import com.dpw.runner.shipment.services.commons.requests.SortRequest;
-import com.dpw.runner.shipment.services.commons.requests.RunnerEntityMapping;
+import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.utils.ObjectUtility;
 import com.nimbusds.jose.util.Pair;
 import org.springframework.data.domain.PageRequest;
@@ -19,7 +15,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static org.springframework.data.jpa.domain.Specification.where;
 
@@ -328,6 +323,8 @@ public class DbAccessHelper {
                     return criteriaBuilder.isMember(input.getValue(), path.get(fieldName));
                 else
                     throw new RuntimeException("Criteria not supported yet");
+            case "ISNULL":
+                return criteriaBuilder.isNull(path.get(fieldName));
             default:
                 throw new RuntimeException("Operation not supported yet");
         }

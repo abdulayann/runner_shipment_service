@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.dto.response;
 
+import com.dpw.runner.shipment.services.Kafka.Dto.AwbShipConsoleDto;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.awb.*;
 import lombok.Data;
@@ -24,4 +25,5 @@ public class AwbResponse implements IRunnerResponse {
     public List<AwbGoodsDescriptionInfo> awbGoodsDescriptionInfo;
     public List<AwbPackingInfo> awbPackingInfo;
     public List<AwbSpecialHandlingCodesMappingInfo> awbSpecialHandlingCodesMappings;
+    public AwbShipConsoleDto awbKafkaEntity;
 }
