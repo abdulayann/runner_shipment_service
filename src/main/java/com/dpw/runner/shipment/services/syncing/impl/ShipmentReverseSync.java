@@ -6,7 +6,7 @@ import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.Ownership;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
-import com.dpw.runner.shipment.services.service.impl.ShipmentService;
+import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
 import com.dpw.runner.shipment.services.syncing.Entity.CustomShipmentSyncRequest;
 import com.dpw.runner.shipment.services.syncing.Entity.PartyRequestV2;
 import lombok.extern.slf4j.Slf4j;
@@ -26,7 +26,7 @@ public class ShipmentReverseSync {
     ModelMapper modelMapper;
 
     @Autowired
-    ShipmentService shipmentService;
+    IShipmentService shipmentService;
 
     public ResponseEntity<?> reverseSync(CommonRequestModel commonRequestModel) {
         String responseMsg;

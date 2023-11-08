@@ -1261,6 +1261,7 @@ public class ConsolidationService implements IConsolidationService {
                     if(consoleBookingListResponse.getData().get(response.getGuid()) != null) {
                         response.setBookingStatus(consoleBookingListResponse.getData().get(response.getGuid()).getStatus());
                         response.setBookingId(consoleBookingListResponse.getData().get(response.getGuid()).getIntraBookingId());
+                        response.setBookingNumber(consoleBookingListResponse.getData().get(response.getGuid()).getBookingNumber());
                     }
                 }
             }
@@ -1310,6 +1311,7 @@ public class ConsolidationService implements IConsolidationService {
                     if(consoleBookingListResponse.getData().get(response.getGuid()) != null) {
                         response.setBookingStatus(consoleBookingListResponse.getData().get(response.getGuid()).getStatus());
                         response.setBookingId(consoleBookingListResponse.getData().get(response.getGuid()).getIntraBookingId());
+                        response.setBookingNumber(consoleBookingListResponse.getData().get(response.getGuid()).getBookingNumber());
                     }
                 }
             }

@@ -44,8 +44,6 @@ public class ConsolidationReverseSync implements IConsolidationReverseSync {
             response.setConsolidationType(request.getType());
             response.setContainerCategory(request.getContainerType());
             response.setDoPlaceOfIssue(request.getDOPlaceOfIssueName());
-            response.setFirstLoad(request.getFirstLoadString());
-            response.setLastDischarge(request.getLastDischargeString());
             response.setOriginal(request.getOriginals());
             response.setPrintOtherDocs(request.getPrinOtherDocs());
             response.setReferenceNumber(request.getReferenceNo());
