@@ -148,7 +148,7 @@ public class PackingService implements IPackingService {
         response.setHeader("Content-Disposition", "attachment; filename=\"packings.csv\"");
 
         try (PrintWriter writer = response.getWriter()) {
-            writer.println(parser.generateCSVHeader());
+            writer.println(parser.generateCSVHeaderForContainer());
             for (Packing packing : result) {
                 writer.println(parser.formatContainerAsCSVLine(packing));
             }

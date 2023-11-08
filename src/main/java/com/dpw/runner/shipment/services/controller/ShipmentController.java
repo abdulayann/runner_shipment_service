@@ -33,6 +33,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -263,16 +264,33 @@ public class ShipmentController {
             @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
     })
     @PostMapping(ApiConstants.LIST_CONTAINER_FOR_TI)
-    public ResponseEntity<?> listContainersForTI(@RequestBody @Valid TIListRequest request){
+    public ResponseEntity<?> listContainersForTI(@RequestBody @Valid TIListRequest request) {
         String responseMsg = "failure executing :(";
         try {
             return shipmentService.containerListForTI(CommonRequestModel.buildRequest(request));
-        } catch (Exception e){
+        } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : "Error listing containers for shipment TI";
             log.error(responseMsg, e);
         }
         return ResponseHelper.buildFailedResponse(responseMsg);
+    }
+
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = ShipmentConstants.EXPORT_SUCCESSFUL),
+            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
+    })
+    @PostMapping(ApiConstants.EXPORT_LIST)
+    public void exportShipmentList(HttpServletResponse response, @RequestBody @Valid ListCommonRequest listCommonRequest) {
+        String responseMsg = "failure executing :(";
+        try {
+            shipmentService.exportExcel(response, CommonRequestModel.buildRequest(listCommonRequest));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : "Error listing shipment for shipment";
+            log.error(responseMsg, e);
+        }
+
     }
 
 }

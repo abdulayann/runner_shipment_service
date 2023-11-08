@@ -45,6 +45,12 @@ import com.dpw.runner.shipment.services.utils.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.util.CellRangeAddress;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
@@ -58,6 +64,9 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.StringUtils;
 
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -79,6 +88,8 @@ public class ShipmentService implements IShipmentService {
     private ObjectMapper objectMapper;
     @Autowired
     private ShipmentDetailsMapper shipmentDetailsMapper;
+
+    private final CSVParsingUtil<ShipmentDetails> parser = new CSVParsingUtil<>(ShipmentDetails.class);
 
     @Autowired
     private IShipmentDao shipmentDao;
@@ -1163,6 +1174,143 @@ public class ShipmentService implements IShipmentService {
             }
         }
     }
+
+    @Override
+    public void exportExcel(HttpServletResponse response, CommonRequestModel commonRequestModel) throws IOException, IllegalAccessException {
+        String responseMsg;
+
+        ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
+        if (request == null) {
+            log.error("Request is empty for Shipment list with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+        }
+        request.setIncludeTbls(Arrays.asList("additionalDetails", "client", "consigner", "consignee", "carrierDetails"));
+        Pair<Specification<ShipmentDetails>, Pageable> tuple = fetchData(request, ShipmentDetails.class, tableNames);
+        Page<ShipmentDetails> shipmentDetailsPage = shipmentDao.findAll(tuple.getLeft(), tuple.getRight());
+        log.info("Shipment list retrieved successfully for Request Id {} ", LoggerHelper.getRequestIdFromMDC());
+
+        Workbook workbook = new XSSFWorkbook();
+        Sheet sheet = workbook.createSheet("ShipmentList");
+        makeHeadersInSheet(sheet);
+
+        //Filling the data
+        List<IRunnerResponse> shipmentListResponseData = convertEntityListToDtoList(shipmentDetailsPage.getContent());
+
+        for (int i = 0; i < shipmentListResponseData.size(); i++) {
+            Row itemRow = sheet.createRow(i + 2);
+            ShipmentListResponse shipment = (ShipmentListResponse) shipmentListResponseData.get(i);
+            var shipmentBasicValues = parser.getAllAttributeValuesAsList(shipment);
+            int offset = 0;
+            for (int j = 0; j < shipmentBasicValues.size(); j++)
+                itemRow.createCell(offset + j).setCellValue(shipmentBasicValues.get(j));
+            offset += shipmentBasicValues.size();
+
+            var shipmentClientValues = parser.getAllAttributeValuesAsListForParty(shipment.getClient());
+            for (int j = 0; j < shipmentClientValues.size(); j++)
+                itemRow.createCell(offset + j).setCellValue(shipmentClientValues.get(j));
+            offset += shipmentClientValues.size();
+
+            var shipmentConsigneeValues = parser.getAllAttributeValuesAsListForParty(shipment.getConsignee());
+            for (int j = 0; j < shipmentConsigneeValues.size(); j++)
+                itemRow.createCell(offset + j).setCellValue(shipmentConsigneeValues.get(j));
+            offset += shipmentConsigneeValues.size();
+
+            var shipmentConsignerValues = parser.getAllAttributeValuesAsListForParty(shipment.getConsignee());
+            for (int j = 0; j < shipmentConsignerValues.size(); j++)
+                itemRow.createCell(offset + j).setCellValue(shipmentConsignerValues.get(j));
+            offset += shipmentConsignerValues.size();
+
+            var carrierDetails = parser.getAllAttributeValuesAsListForCarrier(shipment.getCarrierDetails());
+            for (int j = 0; j < carrierDetails.size(); j++)
+                itemRow.createCell(offset + j).setCellValue(carrierDetails.get(j));
+            offset += carrierDetails.size();
+
+            var pickupDetails = parser.getAllAttributeValuesAsListForPDDetail(shipment.getPickupDetails());
+            for (int j = 0; j < pickupDetails.size(); j++)
+                itemRow.createCell(offset + j).setCellValue(pickupDetails.get(j));
+            offset += pickupDetails.size();
+
+            var deliveryDetails = parser.getAllAttributeValuesAsListForPDDetail(shipment.getDeliveryDetails());
+            for (int j = 0; j < deliveryDetails.size(); j++)
+                itemRow.createCell(offset + j).setCellValue(deliveryDetails.get(j));
+            offset += deliveryDetails.size();
+        }
+
+        response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+        response.setHeader("Content-Disposition", "attachment; filename=shipmentList.xlsx");
+
+        try (OutputStream outputStream = response.getOutputStream()) {
+            workbook.write(outputStream);
+        }
+
+    }
+
+    private void makeHeadersInSheet(Sheet sheet) {
+        Row preHeaderRow = sheet.createRow(0);
+        Row headerRow = sheet.createRow(1);
+        List<String> shipmentHeader = parser.getHeadersForShipment();
+        for (int i = 0; i < shipmentHeader.size(); i++) {
+            Cell cell = headerRow.createCell(i);
+            cell.setCellValue(shipmentHeader.get(i));
+        }
+
+        //Create Parties Headers
+        int offSet = shipmentHeader.size();
+
+        preHeaderRow.createCell(offSet).setCellValue("Client");
+        List<String> partiesClientHeader = parser.getHeadersForParties();
+        for (int i = 0; i < partiesClientHeader.size(); i++) {
+            Cell cell = headerRow.createCell(offSet + i);
+            cell.setCellValue(partiesClientHeader.get(i));
+        }
+        sheet.addMergedRegion(new CellRangeAddress(0, 0, offSet, offSet + partiesClientHeader.size() - 1));
+        offSet += partiesClientHeader.size();
+
+        preHeaderRow.createCell(offSet).setCellValue("Consignee");
+        List<String> partiesConsigneeHeader = parser.getHeadersForParties();
+        for (int i = 0; i < partiesConsigneeHeader.size(); i++) {
+            Cell cell = headerRow.createCell(offSet + i);
+            cell.setCellValue(partiesConsigneeHeader.get(i));
+        }
+        sheet.addMergedRegion(new CellRangeAddress(0, 0, offSet, offSet + partiesConsigneeHeader.size() - 1));
+        offSet += partiesConsigneeHeader.size();
+
+        preHeaderRow.createCell(offSet).setCellValue("Consigner");
+        List<String> partiesConsignerHeader = parser.getHeadersForParties();
+        for (int i = 0; i < partiesConsignerHeader.size(); i++) {
+            Cell cell = headerRow.createCell(offSet + i);
+            cell.setCellValue(partiesConsignerHeader.get(i));
+        }
+        sheet.addMergedRegion(new CellRangeAddress(0, 0, offSet, offSet + partiesConsignerHeader.size() - 1));
+        offSet += partiesConsignerHeader.size();
+
+        preHeaderRow.createCell(offSet).setCellValue("Carrier Details");
+        List<String> carrierHeader = parser.getHeadersForCarrier();
+        for (int i = 0; i < carrierHeader.size(); i++) {
+            Cell cell = headerRow.createCell(offSet + i);
+            cell.setCellValue(carrierHeader.get(i));
+        }
+        sheet.addMergedRegion(new CellRangeAddress(0, 0, offSet, offSet + carrierHeader.size() - 1));
+        offSet += carrierHeader.size();
+
+        preHeaderRow.createCell(offSet).setCellValue("Pickup Details");
+        List<String> pickupDeliveryDetails = parser.getHeadersForPDDetails();
+        for (int i = 0; i < pickupDeliveryDetails.size(); i++) {
+            Cell cell = headerRow.createCell(offSet + i);
+            cell.setCellValue(pickupDeliveryDetails.get(i));
+        }
+        sheet.addMergedRegion(new CellRangeAddress(0, 0, offSet, offSet + pickupDeliveryDetails.size() - 1));
+        offSet += pickupDeliveryDetails.size();
+
+        preHeaderRow.createCell(offSet).setCellValue("Delivery Details");
+        for (int i = 0; i < pickupDeliveryDetails.size(); i++) {
+            Cell cell = headerRow.createCell(offSet + i);
+            cell.setCellValue(pickupDeliveryDetails.get(i));
+        }
+        sheet.addMergedRegion(new CellRangeAddress(0, 0, offSet, offSet + pickupDeliveryDetails.size() - 1));
+        offSet += pickupDeliveryDetails.size();
+
+    }
+
 
     public ResponseEntity<?> list(CommonRequestModel commonRequestModel) {
         String responseMsg;
