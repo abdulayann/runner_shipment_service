@@ -53,4 +53,9 @@ public class AwbDao implements IAwbDao {
         return awbRepository.findByAwbNumberAndIssuingAgent(awbNumber, issuingAgent);
     }
 
+    @Override
+    public List<Awb> saveAll(List<Awb> req) {
+        return awbRepository.saveAll(req);
+    }
+
 }

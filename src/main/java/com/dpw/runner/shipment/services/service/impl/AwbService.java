@@ -5,10 +5,7 @@ import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
-import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
-import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
-import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
-import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerPartialListResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
@@ -166,6 +163,7 @@ public class AwbService implements IAwbService {
         Awb awb = convertRequestToEntity(request);
         try {
             String oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
+            updateAwbOtherChargesInfo(awb.getAwbOtherChargesInfo());
             awb = awbDao.save(awb);
             try {
                 callV1Sync(awb);
@@ -252,6 +250,17 @@ public class AwbService implements IAwbService {
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
             log.info("AWB fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
+
+            // Get packs of all linked HAWB
+            if(awb.get().getAwbShipmentInfo().getEntityType().equals(Constants.MAWB)) {
+                List<Awb> linkedHawb = getLinkedAwbFromMawb(awb.get());
+                List<AwbPackingInfo> linkedPacks = new ArrayList<>();
+                for(var hawb : linkedHawb){
+//                    awb.get().getAwbGoodsDescriptionInfo().addAll(hawb.getAwbGoodsDescriptionInfo());
+                    linkedPacks.addAll(hawb.getAwbPackingInfo());
+                }
+                awb.get().setAwbPackingInfo(linkedPacks);
+            }
             AwbResponse response = convertEntityToDto(awb.get());
 
             if(request.getIncludeColumns()==null||request.getIncludeColumns().size()==0)
@@ -329,21 +338,9 @@ public class AwbService implements IAwbService {
     }
 
     private void updateGoodsAndPacks(CreateAwbRequest request) {
-        // Mawb Id;
         Awb mawb = awbDao.findByConsolidationId(request.getConsolidationId()).get(0);
-        Long mawbId = mawb.getId();
-        List<MawbHawbLink> mawbHawbLinks = mawbHawbLinkDao.findByMawbId(mawbId);
+        List<Awb> linkedHawb = getLinkedAwbFromMawb(mawb);
         List<AwbPackingInfo> allHawbPacks = new ArrayList<>();
-
-        // Fetch all the awb records with the mapped hawbId
-        ListCommonRequest listCommonRequest = CommonUtils.constructListCommonRequest("id", mawbHawbLinks.stream().map(i -> i.getHawbId()).collect(Collectors.toList()), "IN");
-        Pair<Specification<Awb>, Pageable> pair = fetchData(listCommonRequest, Awb.class);
-        Page<Awb> page = awbDao.findAll(pair.getLeft(), pair.getRight());
-
-        List<Awb> linkedHawb = new ArrayList<>();
-        if(!page.isEmpty())
-            linkedHawb = page.getContent();
-
         for(var i : linkedHawb) {
             allHawbPacks.addAll(i.getAwbPackingInfo());
         }
@@ -355,7 +352,7 @@ public class AwbService implements IAwbService {
             tenantSettings = tenantSettingsList.get(0);
         }
 
-        if(allHawbPacks.size() ==0 && tenantSettings != null && tenantSettings.getConsolidationLite() != true) {
+        if(allHawbPacks.size() == 0 && tenantSettings != null && tenantSettings.getConsolidationLite() != true) {
             updateGoodsDescForMawb(mawb);
         } else if (allHawbPacks.size() > 0) {
             calculateAndUpdateGoodsPacksMawb(allHawbPacks, mawb,tenantSettings);
@@ -390,6 +387,8 @@ public class AwbService implements IAwbService {
             BigDecimal totalAmountOfMawbGood = BigDecimal.ZERO;
             String grossWeightUnit = "";
 
+            Map<String, List<AwbPackingInfo>> hawbPacksMap = new HashMap<>(); // map to store awbNumber -> packsList
+
             for(var i : allHawbPacks) {
                 noOfPacks += Integer.parseInt(i.getPacks());
                 try {
@@ -412,10 +411,14 @@ public class AwbService implements IAwbService {
                     // save part will happen in awbDao.save()
                     if (i.getMawbGoodsDescId() == null)
                         i.setMawbGoodsDescId(mawbGoodsDescId);
-                    if (i.getAwbGoodsDescriptionInfoGuid() == null)
-                        i.setAwbGoodsDescriptionInfoGuid(mawbGoodsDescGuid);
 
-                    mawbGoodsDescriptionInfo.getAwbPackingInfo().add(i);
+                    if(hawbPacksMap.get(i.getAwbNumber()) == null) {
+                        hawbPacksMap.put(i.getAwbNumber(), new ArrayList<>());
+                    }else {
+                        List<AwbPackingInfo> existingPacks = hawbPacksMap.get(i.getAwbNumber());
+                        existingPacks.add(i);
+                        hawbPacksMap.put(i.getAwbNumber(), existingPacks);
+                    }
 
                 } catch (Exception e) {
                     log.error(e.getMessage());
@@ -452,7 +455,23 @@ public class AwbService implements IAwbService {
             }
             // Can there be a scenario of multiple Goods information ?
             mawb.setAwbGoodsDescriptionInfo(List.of(mawbGoodsDescriptionInfo));
+            saveHawbPacks(mawb, hawbPacksMap);
             awbDao.save(mawb);
+        }
+    }
+
+    private void saveHawbPacks(Awb mawb, Map<String, List<AwbPackingInfo>> hawbPacksMap) {
+        List<String> awbNumbers = hawbPacksMap.keySet().stream().toList();
+        ListCommonRequest listCommonRequest = CommonUtils.constructListCommonRequest("awbNumber", awbNumbers, "IN");
+        Pair<Specification<Awb>, Pageable> pair = fetchData(listCommonRequest, Awb.class);
+        Page<Awb> page = awbDao.findAll(pair.getLeft(), pair.getRight());
+
+        if(!page.isEmpty()) {
+            List<Awb> hawbList = page.getContent();
+            for(var hawb : hawbList) {
+                hawb.setAwbPackingInfo(hawbPacksMap.get(hawb.getAwbNumber()));
+            }
+            awbDao.saveAll(hawbList);
         }
     }
 
@@ -489,6 +508,7 @@ public class AwbService implements IAwbService {
         var awbPackingInfo = generateMawbPackingInfo(consolidationDetails);
         // generate Awb Entity
         return Awb.builder()
+                .awbNumber(consolidationDetails.getMawb())
                 .awbShipmentInfo(generateMawbShipmentInfo(consolidationDetails, request))
                 .awbNotifyPartyInfo(generateMawbNotifyPartyinfo(consolidationDetails, request))
                 .awbRoutingInfo(generateMawbRoutingInfo(consolidationDetails, request))
@@ -673,6 +693,7 @@ public class AwbService implements IAwbService {
         var awbPackingInfo = generateAwbPackingInfo(shipmentDetails, packings);
         // generate Awb Entity
         return Awb.builder()
+                .awbNumber(shipmentDetails.getHouseBill())
                 .awbShipmentInfo(generateAwbShipmentInfo(shipmentDetails, request))
                 .awbNotifyPartyInfo(generateAwbNotifyPartyinfo(shipmentDetails, request))
                 .awbRoutingInfo(generateAwbRoutingInfo(shipmentDetails, request))
@@ -928,6 +949,32 @@ public class AwbService implements IAwbService {
             request.getAwbGoodsDescriptionInfo().forEach(i -> i.setEntityId(entityId) );
         if(request.getAwbSpecialHandlingCodesMappings() != null)
             request.getAwbSpecialHandlingCodesMappings().forEach(i -> i.setEntityId(entityId) );
+    }
+
+    private void updateAwbOtherChargesInfo(List<AwbOtherChargesInfo> otherChargesInfos) {
+        if(otherChargesInfos != null && otherChargesInfos.size() > 0) {
+            otherChargesInfos.stream().map(i -> {
+                if(i.getGuid() == null)
+                    i.setGuid(UUID.randomUUID());
+                return i;
+            }).toList();
+        }
+    }
+
+    List<Awb> getLinkedAwbFromMawb(Awb mawb) {
+        Long mawbId = mawb.getId();
+        List<MawbHawbLink> mawbHawbLinks = mawbHawbLinkDao.findByMawbId(mawbId);
+
+        // Fetch all the awb records with the mapped hawbId
+        ListCommonRequest listCommonRequest = CommonUtils.constructListCommonRequest("id", mawbHawbLinks.stream().map(i -> i.getHawbId()).collect(Collectors.toList()), "IN");
+        Pair<Specification<Awb>, Pageable> pair = fetchData(listCommonRequest, Awb.class);
+        Page<Awb> page = awbDao.findAll(pair.getLeft(), pair.getRight());
+
+        List<Awb> linkedHawb = new ArrayList<>();
+        if(!page.isEmpty())
+            linkedHawb = page.getContent();
+
+        return linkedHawb;
     }
 
 

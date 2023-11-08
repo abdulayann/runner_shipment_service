@@ -26,6 +26,9 @@ public class Awb extends MultiTenancy {
     @Column(name = "shipment_id")
     private Long shipmentId;
 
+    @Column(name = "awb_number")
+    private String awbNumber;
+
     @Type(type = "jsonb")
     @Column(name = "awb_shipment_info", columnDefinition = "jsonb")
     private AwbShipmentInfo awbShipmentInfo;
