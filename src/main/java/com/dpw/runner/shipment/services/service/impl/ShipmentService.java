@@ -1116,7 +1116,7 @@ public class ShipmentService implements IShipmentService {
                 }
             }
             afterSave(entity);
-            ShipmentDetailsResponse response = jsonHelper.convertValue(entity, ShipmentDetailsResponse.class);
+            ShipmentDetailsResponse response = shipmentDetailsMapper.map(entity);
             return ResponseHelper.buildSuccessResponse(response);
         } catch (Exception e) {
             String responseMsg = e.getMessage() != null ? e.getMessage()
@@ -1717,7 +1717,7 @@ public class ShipmentService implements IShipmentService {
             }
 
             afterSave(entity);
-            ShipmentDetailsResponse response = jsonHelper.convertValue(entity, ShipmentDetailsResponse.class);
+            ShipmentDetailsResponse response = shipmentDetailsMapper.map(entity);
             return ResponseHelper.buildSuccessResponse(response);
         } catch (Exception e) {
             String responseMsg = e.getMessage() != null ? e.getMessage()
@@ -1993,7 +1993,7 @@ public class ShipmentService implements IShipmentService {
                 entity.setNotesList(updatedNotes);
             }
             afterSave(entity);
-            ShipmentDetailsResponse response = jsonHelper.convertValue(entity, ShipmentDetailsResponse.class);
+            ShipmentDetailsResponse response = shipmentDetailsMapper.map(entity);
 
             return ResponseHelper.buildSuccessResponse(response);
         } catch (ExecutionException e) {

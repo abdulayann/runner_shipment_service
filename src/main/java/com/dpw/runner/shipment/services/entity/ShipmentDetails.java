@@ -371,4 +371,7 @@ public class ShipmentDetails extends MultiTenancy {
 
     @Column(name = "order_management_id")
     private String orderManagementId;
+
+    @Column(name = "order_management_number")
+    private String orderManagementNumber;
 }
