@@ -141,4 +141,5 @@ public interface IV1Service {
     V1DataResponse fetchGetTemplateMainPage(Object request);
     HblTaskCreationResponse createTaskforHBL(Object request);
     ShipmentBillingListResponse fetchShipmentBillingData(Object request);
+    V1DataResponse fetchRolesList(Object request);
 }
