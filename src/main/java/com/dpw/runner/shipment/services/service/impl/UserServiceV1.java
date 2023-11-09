@@ -27,7 +27,7 @@ public class UserServiceV1 implements IUserService {
     private String url;
 
     @Override
-    @Cacheable(cacheNames = CacheConstants.CACHE_KEY, keyGenerator = "customKeyGenerator")
+    @Cacheable(cacheNames = CacheConstants.CACHE_KEY_USER, keyGenerator = "customKeyGenerator")
     public UsersDto getUserByToken(String key, String token) {
         log.info("getUserByToken --- URL: {} ||| Token: {}", url, token);
         HttpHeaders headers = new HttpHeaders();
