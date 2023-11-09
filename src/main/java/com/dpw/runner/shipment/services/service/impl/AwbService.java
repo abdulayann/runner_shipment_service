@@ -21,6 +21,7 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IAwbService;
+import com.dpw.runner.shipment.services.syncing.Entity.AwbRequestV2;
 import com.dpw.runner.shipment.services.utils.*;
 import com.dpw.runner.shipment.services.syncing.interfaces.IAwbSync;
 import com.dpw.runner.shipment.services.utils.AwbUtility;
@@ -887,7 +888,7 @@ public class AwbService implements IAwbService {
 
     public ResponseEntity<?> createV1Awb(CommonRequestModel commonRequestModel){
         try{
-            AwbRequest request = (AwbRequest) commonRequestModel.getData();
+            AwbRequestV2 request = (AwbRequestV2) commonRequestModel.getData();
 
             Long entityId = null;
             var awbType = request.getAwbShipmentInfo().getEntityType();
