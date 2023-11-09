@@ -1,19 +1,22 @@
 package com.dpw.runner.shipment.services.config;
 
+import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.cache.RedisCacheConfiguration;
+import org.springframework.data.redis.cache.RedisCacheManager;
 import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
 import org.springframework.data.redis.connection.jedis.JedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.serializer.JdkSerializationRedisSerializer;
-import org.springframework.data.redis.serializer.RedisSerializationContext;
-import org.springframework.data.redis.serializer.RedisSerializer;
-import org.springframework.data.redis.serializer.StringRedisSerializer;
+import org.springframework.data.redis.serializer.*;
 
 import java.time.Duration;
+import java.util.HashMap;
+import java.util.Map;
 
 @Configuration
 @EnableCaching
@@ -34,6 +37,8 @@ public class RedisConfig {
         redisStandaloneConfiguration.setPassword(REDIS_PASSWORD);
 
         JedisConnectionFactory jedisConnectionFactory = new JedisConnectionFactory(redisStandaloneConfiguration);
+        jedisConnectionFactory.getPoolConfig().setMaxIdle(60);
+        jedisConnectionFactory.getPoolConfig().setMinIdle(30);
         return  jedisConnectionFactory;
     }
 
@@ -49,17 +54,22 @@ public class RedisConfig {
         return redisTemplate;
     }
 
-    /**
-     * Override the config to view the cache value in readble format.
-     * @return
-     */
-    @Bean
-    public RedisCacheConfiguration cacheConfiguration() {
-
-        return RedisCacheConfiguration.defaultCacheConfig()
+    @Bean(value = "cacheManager")
+    public CacheManager redisCacheManager(JedisConnectionFactory lettuceConnectionFactory) {
+        RedisCacheConfiguration redisCacheConfiguration = RedisCacheConfiguration.defaultCacheConfig()
                 .disableCachingNullValues()
                 .entryTtl(Duration.ofHours(1))
                 .serializeKeysWith(RedisSerializationContext.SerializationPair.fromSerializer(RedisSerializer.string()))
                 .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(RedisSerializer.json()));
+        redisCacheConfiguration.usePrefix();
+
+        Map<String, RedisCacheConfiguration> cacheConfigurations = new HashMap<>();
+        cacheConfigurations.put(CacheConstants.CACHE_KEY_USER,
+                RedisCacheConfiguration.defaultCacheConfig().entryTtl(Duration.ofHours(1)));
+        cacheConfigurations.put(CacheConstants.CACHE_KEY_MASTER_DATA,
+                RedisCacheConfiguration.defaultCacheConfig().entryTtl(Duration.ofMinutes(15)));
+
+        return RedisCacheManager.RedisCacheManagerBuilder.fromConnectionFactory(lettuceConnectionFactory)
+                .cacheDefaults(redisCacheConfiguration).withInitialCacheConfigurations(cacheConfigurations).build();
     }
 }
