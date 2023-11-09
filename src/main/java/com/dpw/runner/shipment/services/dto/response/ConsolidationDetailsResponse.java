@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Builder
@@ -115,4 +116,7 @@ public class ConsolidationDetailsResponse implements IRunnerResponse {
     private String bookingNumber;
     private LocalDateTime createdAt;
     private String carrierBookingRef;
+    public Map<String, String> masterData;
+    public Map<String, String> unlocationData;
+    public Map<String, String> currenciesMasterData;
 }

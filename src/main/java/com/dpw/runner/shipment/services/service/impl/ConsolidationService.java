@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
@@ -19,6 +20,7 @@ import com.dpw.runner.shipment.services.dto.v1.request.ConsoleBookingListRequest
 import com.dpw.runner.shipment.services.dto.v1.response.ConsoleBookingListResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.ProductProcessTypes;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCommodityType;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
@@ -31,6 +33,7 @@ import com.dpw.runner.shipment.services.service_bus.ISBProperties;
 import com.dpw.runner.shipment.services.service_bus.SBUtilsImpl;
 import com.dpw.runner.shipment.services.syncing.interfaces.IConsolidationSync;
 import com.dpw.runner.shipment.services.utils.GetNextNumberHelper;
+import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
 import com.dpw.runner.shipment.services.utils.ProductIdentifierUtility;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -140,6 +143,9 @@ public class ConsolidationService implements IConsolidationService {
 
     @Autowired
     private IV1Service v1Service;
+
+    @Autowired
+    private MasterDataUtils masterDataUtils;
 
     @Autowired
     private ConsolidationDetailsMapper consolidationDetailsMapper;
@@ -1265,6 +1271,7 @@ public class ConsolidationService implements IConsolidationService {
                     }
                 }
             }
+            createConsolidationPayload(consolidationDetails.get(), response);
             return ResponseHelper.buildSuccessResponse(response);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -1315,6 +1322,7 @@ public class ConsolidationService implements IConsolidationService {
                     }
                 }
             }
+            createConsolidationPayload(consolidationDetails.get(), response);
             return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(response));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -1322,6 +1330,46 @@ public class ConsolidationService implements IConsolidationService {
             log.error(responseMsg, e);
             return CompletableFuture.completedFuture(ResponseHelper.buildFailedResponse(responseMsg));
         }
+    }
+
+    private void createConsolidationPayload (ConsolidationDetails consolidationDetails, ConsolidationDetailsResponse consolidationDetailsResponse) {
+        this.addAllMasterDatas(consolidationDetails, consolidationDetailsResponse);
+        this.addAllUnlocationDatas(consolidationDetails, consolidationDetailsResponse);
+        this.addDedicatedMasterData(consolidationDetails, consolidationDetailsResponse);
+        this.addAllContainerTypesInSingleCall(consolidationDetails,consolidationDetailsResponse);
+    }
+
+    private void addAllMasterDatas (ConsolidationDetails consolidationDetails, ConsolidationDetailsResponse consolidationDetailsResponse) {
+        consolidationDetailsResponse.setMasterData(masterDataUtils.addMasterData(consolidationDetailsResponse, ConsolidationDetails.class));
+        if(consolidationDetailsResponse.getCarrierDetails() != null) {
+            consolidationDetailsResponse.getCarrierDetails().setMasterData(masterDataUtils.addMasterData(consolidationDetailsResponse.getCarrierDetails(), CarrierDetails.class));
+        }
+    }
+
+    private void addAllUnlocationDatas (ConsolidationDetails consolidationDetails, ConsolidationDetailsResponse consolidationDetailsResponse) {
+        consolidationDetailsResponse.setUnlocationData(masterDataUtils.addUnlocationData(consolidationDetailsResponse, ConsolidationDetails.class, EntityTransferConstants.UNLOCATION_CODE));
+        if(consolidationDetailsResponse.getCarrierDetails() != null) {
+            consolidationDetailsResponse.getCarrierDetails().setUnlocationData(masterDataUtils.addUnlocationData(consolidationDetailsResponse.getCarrierDetails(), CarrierDetails.class, EntityTransferConstants.UNLOCATION_CODE));
+        }
+    }
+
+    private void addDedicatedMasterData (ConsolidationDetails consolidationDetails, ConsolidationDetailsResponse consolidationDetailsResponse) {
+        if(consolidationDetailsResponse.getCarrierDetails() != null) {
+            consolidationDetailsResponse.getCarrierDetails().setCarrierMasterData(masterDataUtils.carrierMasterData(consolidationDetailsResponse.getCarrierDetails(), CarrierDetails.class));
+        }
+        consolidationDetailsResponse.setCurrenciesMasterData(masterDataUtils.currencyMasterData(consolidationDetails, ConsolidationDetails.class));
+    }
+
+    private void addAllContainerTypesInSingleCall(ConsolidationDetails consolidationDetails, ConsolidationDetailsResponse consolidationDetailsResponse) {
+        Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
+        Set<String> containerTypes = new HashSet<>();
+        if (!Objects.isNull(consolidationDetailsResponse.getContainersList()))
+            consolidationDetailsResponse.getContainersList().forEach(r -> containerTypes.addAll(masterDataUtils.createInBulkCommodityTypeRequest(r, Containers.class, fieldNameKeyMap, String.valueOf(r.hashCode()))));
+
+        Map<String, EntityTransferCommodityType> v1Data = masterDataUtils.fetchInBulkCommodityTypes(new ArrayList<>(containerTypes));
+
+        if (!Objects.isNull(consolidationDetailsResponse.getContainersList()))
+            consolidationDetailsResponse.getContainersList().forEach(r -> r.setCommodityTypeData(masterDataUtils.setInBulkCommodityTypes(fieldNameKeyMap.get(String.valueOf(r.hashCode())), v1Data)));
     }
 
     private List<Containers> mergeContainers(List<Containers> containersList, ShipmentSettingsDetails shipmentSettingsDetails) throws Exception{

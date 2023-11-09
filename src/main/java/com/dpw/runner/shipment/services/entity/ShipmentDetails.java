@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.entity;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.entity.enums.CustomerCategoryRates;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.utils.DedicatedMasterData;
 import com.dpw.runner.shipment.services.utils.MasterData;
@@ -374,4 +375,16 @@ public class ShipmentDetails extends MultiTenancy {
 
     @Column(name = "order_management_number")
     private String orderManagementNumber;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "customer_category")
+    private CustomerCategoryRates customerCategory;
+
+    @Column(name = "contract_id")
+    @Size(max=64, message = "max size is 64 for contract_id")
+    private String contractId;
+
+    @Column(name = "contract_type")
+    @Size(max=64, message = "max size is 64 for contract_type")
+    private String contractType;
 }
