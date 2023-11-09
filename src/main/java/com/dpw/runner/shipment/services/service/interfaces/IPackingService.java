@@ -4,7 +4,6 @@ import com.dpw.runner.shipment.services.commons.requests.BulkDownloadRequest;
 import com.dpw.runner.shipment.services.commons.requests.BulkUploadRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletResponse;
 
@@ -16,5 +15,7 @@ public interface IPackingService extends ICommonService {
     ResponseEntity<?> calculateWeightVolumne(CommonRequestModel commonRequestModel) throws Exception;
 
     ResponseEntity<?> V1PackingCreateAndUpdate(CommonRequestModel commonRequestModel) throws Exception;
+
+    ResponseEntity<?> listPacksToDetach(CommonRequestModel commonRequestModel) throws Exception;
 
 }

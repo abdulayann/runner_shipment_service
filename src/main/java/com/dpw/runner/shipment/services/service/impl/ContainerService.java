@@ -435,12 +435,12 @@ public class ContainerService implements IContainerService {
 
     private Containers changeAchievedUnit(Containers container) throws Exception{
         try {
-            if(container.getAchievedVolumeUnit() != container.getAllocatedVolumeUnit()) {
+            if(!container.getAchievedVolumeUnit().equals(container.getAllocatedVolumeUnit())) {
                 BigDecimal val = new BigDecimal(convertUnit(Constants.VOLUME, container.getAchievedVolume(), container.getAchievedVolumeUnit(), container.getAllocatedVolumeUnit()).toString());
                 container.setAchievedVolume(val);
                 container.setAchievedVolumeUnit(container.getAllocatedVolumeUnit());
             }
-            if(container.getAchievedWeightUnit() != container.getAllocatedWeightUnit()) {
+            if(!container.getAchievedWeightUnit().equals(container.getAllocatedWeightUnit())) {
                 BigDecimal val = new BigDecimal(convertUnit(Constants.MASS, container.getAchievedWeight(), container.getAchievedWeightUnit(), container.getAllocatedWeightUnit()).toString());
                 container.setAchievedWeight(val);
                 container.setAchievedWeightUnit(container.getAllocatedWeightUnit());
@@ -471,26 +471,55 @@ public class ContainerService implements IContainerService {
     public ResponseEntity<?> calculateAchievedQuantity_onPackAssign(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
-            ContainerPackAssignDetachRequest containerPackAssignDetachRequest = (ContainerPackAssignDetachRequest) commonRequestModel.getData();
-            List<Packing> packingList = convertToEntityList(containerPackAssignDetachRequest.getPackingRequestList(), Packing.class);
-            Containers container = convertRequestToEntity(containerPackAssignDetachRequest.getContainer());
-            container = changeAchievedUnit(container);
-            for(Packing packing: packingList) {
-                if(packing.getWeight() != null && !packing.getWeightUnit().isEmpty()) {
-                    BigDecimal val = new BigDecimal(convertUnit(Constants.MASS, packing.getWeight(), packing.getWeightUnit(), container.getAchievedWeightUnit()).toString());
-                    container.setAchievedWeight(container.getAchievedWeight().add(val));
-                    container.setWeightUtilization(((container.getAchievedWeight().divide(container.getAllocatedWeight())).multiply(new BigDecimal(100))).toString());
-                }
-                if(packing.getVolume() != null && !packing.getVolumeUnit().isEmpty()) {
-                    BigDecimal val = new BigDecimal(convertUnit(Constants.VOLUME, packing.getVolume(), packing.getVolumeUnit(), container.getAchievedVolumeUnit()).toString());
-                    container.setAchievedVolume(container.getAchievedVolume().add(val));
-                    container.setVolumeUtilization(((container.getAchievedVolume().divide(container.getAllocatedVolume())).multiply(new BigDecimal(100))).toString());
+            ContainerPackAssignDetachRequest request = (ContainerPackAssignDetachRequest) commonRequestModel.getData();
+
+            Optional<Containers> containersOptional = containerDao.findById(request.getContainerId());
+            if(containersOptional.isPresent()) {
+                Containers container = containersOptional.get();
+                changeAchievedUnit(container);
+                ListCommonRequest listCommonRequest = constructListCommonRequest("id", request.getPacksId(), "IN");
+                Pair<Specification<Packing>, Pageable> pair = fetchData(listCommonRequest, Packing.class);
+                Page<Packing> packings = packingDao.findAll(pair.getLeft(), pair.getRight());
+                if(!packings.isEmpty() && packings.get().findAny().isPresent()) {
+                    List<Packing> packingList = packings.stream().toList();
+                    for(Packing packing: packingList) {
+                        if(packing.getWeight() != null && !packing.getWeightUnit().isEmpty()) {
+                            BigDecimal val = new BigDecimal(convertUnit(Constants.MASS, packing.getWeight(), packing.getWeightUnit(), container.getAchievedWeightUnit()).toString());
+                            container.setAchievedWeight(container.getAchievedWeight().add(val));
+                            container.setWeightUtilization(((container.getAchievedWeight().divide(container.getAllocatedWeight())).multiply(new BigDecimal(100))).toString());
+                        }
+                        if(packing.getVolume() != null && !packing.getVolumeUnit().isEmpty()) {
+                            BigDecimal val = new BigDecimal(convertUnit(Constants.VOLUME, packing.getVolume(), packing.getVolumeUnit(), container.getAchievedVolumeUnit()).toString());
+                            container.setAchievedVolume(container.getAchievedVolume().add(val));
+                            container.setVolumeUtilization(((container.getAchievedVolume().divide(container.getAllocatedVolume())).multiply(new BigDecimal(100))).toString());
+                        }
+                    }
+                    return assignContainers(packingList, container, request.getShipmentId());
                 }
             }
-            return ResponseHelper.buildSuccessResponse(convertEntityToDto(container));
+            responseMsg = "Data not available for provided request";
+            throw new DataRetrievalFailureException(responseMsg);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_CALCULATION_ERROR;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
+    public ResponseEntity<?> assignContainers(List<Packing> packingList, Containers container, Long shipmentId) {
+        String responseMsg;
+        try {
+            shipmentsContainersMappingDao.assignShipments(container.getId(), List.of(shipmentId));
+            Containers containers = containerDao.save(jsonHelper.convertValue(container, Containers.class));
+            for (Packing packing: packingList) {
+                packing.setContainerId(container.getId());
+            }
+            packingDao.saveAll(packingList);
+            return ResponseHelper.buildSuccessResponse(convertEntityToDto(containers));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(responseMsg);
         }
@@ -500,26 +529,56 @@ public class ContainerService implements IContainerService {
     public ResponseEntity<?> calculateAchievedQuantity_onPackDetach(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
-            ContainerPackAssignDetachRequest containerPackAssignDetachRequest = (ContainerPackAssignDetachRequest) commonRequestModel.getData();
-            List<Packing> packingList = convertToEntityList(containerPackAssignDetachRequest.getPackingRequestList(), Packing.class);
-            Containers container = convertRequestToEntity(containerPackAssignDetachRequest.getContainer());
-            container = changeAchievedUnit(container);
-            for(Packing packing: packingList) {
-                if(packing.getWeight() != null && !packing.getWeightUnit().isEmpty()) {
-                    BigDecimal val = new BigDecimal(convertUnit(Constants.MASS, packing.getWeight(), packing.getWeightUnit(), container.getAchievedWeightUnit()).toString());
-                    container.setAchievedWeight(container.getAchievedWeight().subtract(val));
-                    container.setWeightUtilization(((container.getAchievedWeight().divide(container.getAllocatedWeight())).multiply(new BigDecimal(100))).toString());
-                }
-                if(packing.getVolume() != null && !packing.getVolumeUnit().isEmpty()) {
-                    BigDecimal val = new BigDecimal(convertUnit(Constants.VOLUME, packing.getVolume(), packing.getVolumeUnit(), container.getAchievedVolumeUnit()).toString());
-                    container.setAchievedVolume(container.getAchievedVolume().subtract(val));
-                    container.setVolumeUtilization(((container.getAchievedVolume().divide(container.getAllocatedVolume())).multiply(new BigDecimal(100))).toString());
+            ContainerPackAssignDetachRequest request = (ContainerPackAssignDetachRequest) commonRequestModel.getData();
+
+            Optional<Containers> containersOptional = containerDao.findById(request.getContainerId());
+            if(containersOptional.isPresent()) {
+                Containers container = containersOptional.get();
+                changeAchievedUnit(container);
+                ListCommonRequest listCommonRequest = constructListCommonRequest("id", request.getPacksId(), "IN");
+                Pair<Specification<Packing>, Pageable> pair = fetchData(listCommonRequest, Packing.class);
+                Page<Packing> packings = packingDao.findAll(pair.getLeft(), pair.getRight());
+                if(!packings.isEmpty() && packings.get().findAny().isPresent())
+                {
+                    List<Packing> packingList = packings.stream().toList();
+                    for(Packing packing: packingList) {
+                        if(packing.getWeight() != null && !packing.getWeightUnit().isEmpty()) {
+                            BigDecimal val = new BigDecimal(convertUnit(Constants.MASS, packing.getWeight(), packing.getWeightUnit(), container.getAchievedWeightUnit()).toString());
+                            container.setAchievedWeight(container.getAchievedWeight().subtract(val));
+                            container.setWeightUtilization(((container.getAchievedWeight().divide(container.getAllocatedWeight())).multiply(new BigDecimal(100))).toString());
+                        }
+                        if(packing.getVolume() != null && !packing.getVolumeUnit().isEmpty()) {
+                            BigDecimal val = new BigDecimal(convertUnit(Constants.VOLUME, packing.getVolume(), packing.getVolumeUnit(), container.getAchievedVolumeUnit()).toString());
+                            container.setAchievedVolume(container.getAchievedVolume().subtract(val));
+                            container.setVolumeUtilization(((container.getAchievedVolume().divide(container.getAllocatedVolume())).multiply(new BigDecimal(100))).toString());
+                        }
+                    }
+                    return detachContainer(packingList, container, request.getShipmentId());
                 }
             }
-            return ResponseHelper.buildSuccessResponse(convertEntityToDto(container));
+            responseMsg = "Data not available for provided request";
+            throw new DataRetrievalFailureException(responseMsg);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_CALCULATION_ERROR;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
+    public ResponseEntity<?> detachContainer(List<Packing> packingList, Containers container, Long shipmentId) {
+        String responseMsg;
+        try {
+            shipmentsContainersMappingDao.detachShipments(container.getId(), List.of(shipmentId));
+            Containers containers = containerDao.save(jsonHelper.convertValue(container, Containers.class));
+            for (Packing packing: packingList) {
+                packing.setContainerId(null);
+            }
+            packingDao.saveAll(packingList);
+            return ResponseHelper.buildSuccessResponse(convertEntityToDto(containers));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(responseMsg);
         }
