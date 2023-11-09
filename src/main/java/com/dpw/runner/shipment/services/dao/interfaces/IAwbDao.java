@@ -19,4 +19,5 @@ public interface IAwbDao {
     List<Awb> findByIssuingAgent(String issuingAgent);
     List<Awb> findByAwbNumber(List<String> awbNumber);
     List<Awb> findByAwbNumberAndIssuingAgent(List<String> awbNumber, String issuingAgent);
+    List<Awb> saveAll(List<Awb> req);
 }

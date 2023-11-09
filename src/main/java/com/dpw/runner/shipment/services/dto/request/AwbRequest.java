@@ -19,6 +19,7 @@ public class AwbRequest implements IRunnerRequest {
     private UUID guid;
     private UUID shipmentGuid;
     private UUID consolidationGuid;
+    private String awbNumber;
     private AwbShipmentInfo awbShipmentInfo;
     private List<AwbNotifyPartyInfo> awbNotifyPartyInfo;
     private List<AwbRoutingInfo> awbRoutingInfo;
