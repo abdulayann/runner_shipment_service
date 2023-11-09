@@ -13,8 +13,8 @@ public class AwbResponse implements IRunnerResponse {
     private Integer id;
     private UUID guid;
     private String awbNumber;
-    private UUID shipmentGuid;
-    private UUID consolidationGuid;
+    private Long shipmentId;
+    private Long consolidationId;
     private AwbShipmentInfo awbShipmentInfo;
     public List<AwbNotifyPartyInfo> awbNotifyPartyInfo;
     public List<AwbRoutingInfo> awbRoutingInfo;
