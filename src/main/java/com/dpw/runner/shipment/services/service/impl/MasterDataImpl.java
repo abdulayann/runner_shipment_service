@@ -1,9 +1,12 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
+import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.masterdata.factory.MasterDataFactory;
 import com.dpw.runner.shipment.services.service.interfaces.IMasterDataService;
+import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -15,6 +18,8 @@ public class MasterDataImpl implements IMasterDataService {
 
     @Autowired
     private MasterDataFactory masterDataFactory;
+    @Autowired
+    private IV1Service v1Service;
 
     @Override
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
@@ -324,5 +329,11 @@ public class MasterDataImpl implements IMasterDataService {
     @Override
     public ResponseEntity<?> fetchGetTemplateMainPage(CommonRequestModel commonRequestModel) {
         return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().fetchGetTemplateMainPage(commonRequestModel.getDependentData()));
+    }
+    @Override
+    public ResponseEntity<?> listRoles(CommonRequestModel commonRequestModel) {
+        V1DataResponse v1DataResponse = v1Service.fetchRolesList(commonRequestModel.getDependentData());
+        return ResponseHelper.buildDependentServiceResponse(DependentServiceResponse.builder().success(true)
+                .data(v1DataResponse.entities).pageSize(v1DataResponse.take).numberOfRecords(v1DataResponse.totalCount).pageNo(v1DataResponse.skip).build());
     }
 }
