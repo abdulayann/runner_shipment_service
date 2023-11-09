@@ -1387,7 +1387,7 @@ public class V1ServiceImpl implements IV1Service {
         try {
             long time = System.currentTimeMillis();
             HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
-            masterDataResponse = this.restTemplate.postForEntity(this.OWN_TYPE, entity, V1RetrieveResponse.class, new Object[0]);
+            masterDataResponse = this.restTemplate.postForEntity(this.OWN_TYPE, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in fetchOwnType() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) masterDataResponse.getBody();
         } catch (HttpClientErrorException | HttpServerErrorException ex) {
@@ -1404,7 +1404,7 @@ public class V1ServiceImpl implements IV1Service {
         try {
             long time = System.currentTimeMillis();
             HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
-            masterDataResponse = this.restTemplate.postForEntity(this.CARRIER_FILTER_LIST, entity, V1RetrieveResponse.class, new Object[0]);
+            masterDataResponse = this.restTemplate.postForEntity(this.CARRIER_FILTER_LIST, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in fetchCarrierFilterList() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) masterDataResponse.getBody();
         } catch (HttpClientErrorException | HttpServerErrorException ex) {
