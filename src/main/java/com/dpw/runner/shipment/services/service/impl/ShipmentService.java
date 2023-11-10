@@ -1159,9 +1159,9 @@ public class ShipmentService implements IShipmentService {
             if(shipmentDetails.getCarrierDetails().getOriginPort() == shipmentDetails.getCarrierDetails().getDestinationPort()) {
                 throw new ValidationException("‘Origin’ and ‘Destination’ can't be same");
             }
-            consolidationDetails.setCarrierDetails(shipmentDetails.getCarrierDetails());
-            consolidationDetails.getCarrierDetails().setGuid(null);
+            consolidationDetails.setCarrierDetails(jsonHelper.convertValue(shipmentDetails.getCarrierDetails(), CarrierDetails.class));
             consolidationDetails.getCarrierDetails().setId(null);
+            consolidationDetails.getCarrierDetails().setGuid(null);
             consolidationDetails.setShipmentType(shipmentDetails.getDirection());
             consolidationDetails.setContainerCategory(shipmentDetails.getShipmentType());
             consolidationDetails.setIsReceivingAgentFreeTextAddress(false);
