@@ -354,6 +354,13 @@ public class PackingService implements IPackingService {
     }
 
     @Override
+    public ResponseEntity<?> listPacksToDetach(CommonRequestModel commonRequestModel) throws Exception {
+        Long containerId = commonRequestModel.getId();
+        ListCommonRequest listCommonRequest = constructListCommonRequest("containerId", containerId, "=");
+        return list(CommonRequestModel.buildRequest(listCommonRequest));
+    }
+
+    @Override
     public ResponseEntity<?> V1PackingCreateAndUpdate(CommonRequestModel commonRequestModel) throws Exception {
         PackingRequestV2 packingRequestV2 = (PackingRequestV2) commonRequestModel.getData();
         try {

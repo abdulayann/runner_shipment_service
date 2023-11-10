@@ -143,7 +143,7 @@ public class ContainerController {
         return (ResponseEntity<RunnerListResponse<ContainerResponse>>) containerService.calculateAchievedQuantity_onPackAssign(CommonRequestModel.buildRequest(containerPackAssignDetachRequest));
     }
 
-    @ApiResponses(value = { @ApiResponse(code = 200, message = ContainerConstants.CONTAINER_CALCULATION_SUCCESSFUL) })
+    @ApiResponses(value = { @ApiResponse(code = 200, message = ContainerConstants.CONTAINER_DETACH_SUCCESSFUL) })
     @PostMapping(ApiConstants.API_CALCULATE_ACHIEVED_PACK_DETACH)
     public ResponseEntity<RunnerListResponse<ContainerResponse>> calculateAchievedOnPackDetach(@RequestBody ContainerPackAssignDetachRequest containerPackAssignDetachRequest) {
         return (ResponseEntity<RunnerListResponse<ContainerResponse>>) containerService.calculateAchievedQuantity_onPackDetach(CommonRequestModel.buildRequest(containerPackAssignDetachRequest));

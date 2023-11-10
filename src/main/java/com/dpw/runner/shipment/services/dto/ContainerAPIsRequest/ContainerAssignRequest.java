@@ -9,4 +9,5 @@ import lombok.Setter;
 public class ContainerAssignRequest implements IRunnerRequest {
     Long shipmentId;
     Long consolidationId;
+    Integer take;
 }
