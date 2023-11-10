@@ -694,7 +694,12 @@ public class ConsolidationService implements IConsolidationService {
             }
         }
         Optional<ConsolidationDetails> consol = consolidationDetailsDao.findById(consolidationId);
-        consolidationSync.sync(consol.get());
+        try {
+            consolidationSync.sync(consol.get());
+        }
+        catch (Exception e) {
+            log.error("Error Syncing Consol");
+        }
         return new ResponseEntity<>(HttpStatus.OK);
     }
 
@@ -714,7 +719,12 @@ public class ConsolidationService implements IConsolidationService {
             }
         }
         Optional<ConsolidationDetails> consol = consolidationDetailsDao.findById(consolidationId);
-        consolidationSync.sync(consol.get());
+        try {
+            consolidationSync.sync(consol.get());
+        }
+        catch (Exception e) {
+            log.error("Error Syncing Consol");
+        }
 
         return new ResponseEntity<>(HttpStatus.OK);
     }
