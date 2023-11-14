@@ -16,5 +16,6 @@ public class TenantModel {
     public String vatRegNumber;
     public String panNumber;
     public String companyRegNumber;
+    public boolean IATAAgent;
 
 }

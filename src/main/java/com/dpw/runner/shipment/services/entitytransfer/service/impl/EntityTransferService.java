@@ -1,14 +1,14 @@
 package com.dpw.runner.shipment.services.entitytransfer.service.impl;
 
+import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
+import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
-import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IShipmentsContainersMappingDao;
+import com.dpw.runner.shipment.services.dao.impl.ShipmentDao;
+import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
 import com.dpw.runner.shipment.services.dto.request.ConsolidationDetailsRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
@@ -21,14 +21,8 @@ import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entitytransfer.common.request.IEntityTranferBaseEntity;
 import com.dpw.runner.shipment.services.entitytransfer.dto.*;
-import com.dpw.runner.shipment.services.entitytransfer.dto.request.ImportConsolidationRequest;
-import com.dpw.runner.shipment.services.entitytransfer.dto.request.ImportShipmentRequest;
-import com.dpw.runner.shipment.services.entitytransfer.dto.request.SendConsolidationRequest;
-import com.dpw.runner.shipment.services.entitytransfer.dto.request.SendShipmentRequest;
-import com.dpw.runner.shipment.services.entitytransfer.dto.response.ImportConsolidationResponse;
-import com.dpw.runner.shipment.services.entitytransfer.dto.response.ImportShipmentResponse;
-import com.dpw.runner.shipment.services.entitytransfer.dto.response.SendConsolidationResponse;
-import com.dpw.runner.shipment.services.entitytransfer.dto.response.SendShipmentResponse;
+import com.dpw.runner.shipment.services.entitytransfer.dto.request.*;
+import com.dpw.runner.shipment.services.entitytransfer.dto.response.*;
 import com.dpw.runner.shipment.services.entitytransfer.service.interfaces.IEntityTransferService;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
@@ -37,6 +31,7 @@ import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
+import com.dpw.runner.shipment.services.masterdata.factory.MasterDataFactory;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationService;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
@@ -45,6 +40,7 @@ import com.dpw.runner.shipment.services.utils.DedicatedMasterData;
 import com.dpw.runner.shipment.services.utils.MasterData;
 import com.dpw.runner.shipment.services.utils.UnlocationData;
 import com.dpw.runner.shipment.services.validator.enums.Operators;
+import com.google.common.base.Strings;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -55,6 +51,7 @@ import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
 import java.lang.reflect.Field;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -81,6 +78,12 @@ public class EntityTransferService implements IEntityTransferService {
     private TenantContext tenantContext;
     @Autowired
     private JsonHelper jsonHelper;
+    @Autowired
+    private IHblDao hblDao;
+    @Autowired
+    private IAwbDao awbDao;
+    @Autowired
+    MasterDataFactory masterDataFactory;
     @Transactional
     @Override
     public ResponseEntity<?> sendShipment(CommonRequestModel commonRequestModel) {
@@ -1382,6 +1385,160 @@ public class EntityTransferService implements IEntityTransferService {
         this.createContainerTypeMasterData(containerTypeList);
         this.createCurrencyMasterData(currencyList);
         this.createCommodityTypeMasterData(commodityTypeList);
+    }
+
+
+    @Override
+    public ResponseEntity<?> sendConsolidationValidation(CommonRequestModel commonRequestModel) {
+        ValidateSendConsolidationRequest request = (ValidateSendConsolidationRequest) commonRequestModel.getData();
+        Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(request.getConsoleId());
+        if (!consolidationDetails.isPresent()) {
+            log.debug("Consolidation Details is null for Id {} with Request Id {}", request.getConsoleId(), LoggerHelper.getRequestIdFromMDC());
+            throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+        }
+        if(consolidationDetails.get().getTransportMode().equals(Constants.TRANSPORT_MODE_SEA) ||
+                consolidationDetails.get().getTransportMode().equals(Constants.TRANSPORT_MODE_AIR))
+        {
+            String flightNumber = null;
+            String voyage = null;
+            String bol = null;
+            if (consolidationDetails.get().getTransportMode().equals(Constants.TRANSPORT_MODE_SEA)) {
+                flightNumber = consolidationDetails.get().getCarrierDetails().getVessel();
+                voyage = consolidationDetails.get().getCarrierDetails().getVoyage();
+                bol = consolidationDetails.get().getBol();
+            } else if (consolidationDetails.get().getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)) {
+                flightNumber = consolidationDetails.get().getCarrierDetails().getFlightNumber();
+                voyage = consolidationDetails.get().getCarrierDetails().getShippingLine();
+                bol = consolidationDetails.get().getBol();
+            }
+            LocalDateTime eta = consolidationDetails.get().getCarrierDetails().getEta();
+            LocalDateTime etd = consolidationDetails.get().getCarrierDetails().getEtd();
+            String polId = consolidationDetails.get().getCarrierDetails().getOriginPort();
+            String podId = consolidationDetails.get().getCarrierDetails().getDestinationPort();
+            if(Strings.isNullOrEmpty(bol) || Strings.isNullOrEmpty(voyage) || Strings.isNullOrEmpty(flightNumber) ||
+                    eta == null || etd == null || Strings.isNullOrEmpty(polId) || Strings.isNullOrEmpty(podId)) {
+                throw new ValidationException("Please validate empty or invalid inputs (marked with Red Cross) before sending consolidation");
+            }
+            else {
+                Boolean sendConsolidationError = false;
+                Boolean hblGenerationError = false;
+                for (var shipment: consolidationDetails.get().getShipmentsList()) {
+                    if(shipment.getTransportMode().equals(Constants.TRANSPORT_MODE_SEA) ||
+                            shipment.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)) {
+                        String shipFlightNumber = null;
+                        String shipVoyage = null;
+                        if(shipment.getTransportMode().equals(Constants.TRANSPORT_MODE_SEA)){
+                            shipFlightNumber = shipment.getCarrierDetails().getVessel();
+                            shipVoyage = shipment.getCarrierDetails().getVoyage();
+                        } else if (shipment.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)) {
+                            shipFlightNumber = shipment.getCarrierDetails().getFlightNumber();
+                            shipVoyage = shipment.getCarrierDetails().getShippingLine();
+                        }
+
+                        if(shipment.getTransportMode().equals(Constants.TRANSPORT_MODE_SEA) &&
+                                shipment.getDirection().equals(Constants.DIRECTION_EXP)) {
+                            List<Hbl> hbls = hblDao.findByShipmentId(shipment.getId());
+                            if(hbls.isEmpty())
+                                hblGenerationError = true;
+                        }
+
+                        DependentServiceResponse dependentServiceResponse = masterDataFactory.getMasterDataService().retrieveTenant();
+                        TenantModel tenantModel = modelMapper.map(dependentServiceResponse.getData(), TenantModel.class);
+                        // TODO Need to set that.tenant.IATAAgent = true condition for Air
+                        if(shipment.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) &&
+                                shipment.getDirection().equals(Constants.DIRECTION_EXP) && tenantModel.IATAAgent){
+                            List<Awb> awbs = awbDao.findByShipmentId(shipment.getId());
+                            if(awbs.isEmpty())
+                                hblGenerationError = true;
+                        }
+
+                        LocalDateTime shipEta = shipment.getCarrierDetails().getEta();
+                        LocalDateTime shipEtd = shipment.getCarrierDetails().getEtd();
+                        String shipPolId = shipment.getCarrierDetails().getOriginPort();
+                        String shipPodId = shipment.getCarrierDetails().getDestinationPort();
+                        if(Strings.isNullOrEmpty(shipment.getHouseBill()) || Strings.isNullOrEmpty(shipment.getMasterBill()) ||
+                                shipVoyage == null || shipFlightNumber == null || shipEta == null || shipEtd == null ||
+                                Strings.isNullOrEmpty(shipPolId) || Strings.isNullOrEmpty(shipPodId)) {
+                            sendConsolidationError = true;
+                        }
+                        if(hblGenerationError){
+                            sendConsolidationError = true;
+                        }
+                    }
+                }
+
+
+                if(sendConsolidationError){
+                    if(hblGenerationError){
+                        if(consolidationDetails.get().getTransportMode().equals(Constants.TRANSPORT_MODE_SEA)) {
+                            throw new ValidationException("Please enter the HBL, MBL, ETA, ETD, Vessel & Voyage details in the attached shipments and generate the Original HBL before sending consolidation");
+                        } else if (consolidationDetails.get().getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)) {
+                            throw new ValidationException("Please enter the HAWB, MAWB, ETA, ETD, Airline and Flight number details in the attached shipments and generate the Original HAWB before sending consolidation");
+                        }
+                    } else {
+                        if(consolidationDetails.get().getTransportMode().equals(Constants.TRANSPORT_MODE_SEA)) {
+                            throw new ValidationException("Please enter the HBL, MBL, ETA, ETD, Vessel & Voyage details in the attached shipments before sending consolidation");
+                        } else if (consolidationDetails.get().getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)) {
+                            throw new ValidationException("Please enter the HAWB, MAWB, ETA, ETD, Airline and Flight number details in the attached shipments before sending consolidation");
+                        }
+                    }
+                }
+            }
+        }
+        ValidationResponse response = ValidationResponse.builder().success(true).build();
+        return ResponseHelper.buildSuccessResponse(response);
+    }
+
+    @Override
+    public ResponseEntity<?> sendShipmentValidation(CommonRequestModel commonRequestModel) {
+        ValidateSendShipmentRequest request = (ValidateSendShipmentRequest) commonRequestModel.getData();
+        Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(request.getShipId());
+        if (!shipmentDetails.isPresent()) {
+            log.debug("Shipment Details is null for Id {} with Request Id {}", request.getShipId(), LoggerHelper.getRequestIdFromMDC());
+            throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+        }
+        if(shipmentDetails.get().getTransportMode().equals(Constants.TRANSPORT_MODE_SEA) ||
+                shipmentDetails.get().getTransportMode().equals(Constants.TRANSPORT_MODE_AIR))
+        {
+            String flightNumber = null;
+            String voyage = null;
+            if (shipmentDetails.get().getTransportMode().equals(Constants.TRANSPORT_MODE_SEA)) {
+                flightNumber = shipmentDetails.get().getCarrierDetails().getVessel();
+                voyage = shipmentDetails.get().getCarrierDetails().getVoyage();
+            } else if (shipmentDetails.get().getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)) {
+                flightNumber = shipmentDetails.get().getCarrierDetails().getFlightNumber();
+                voyage = shipmentDetails.get().getCarrierDetails().getShippingLine();
+            }
+            LocalDateTime eta = shipmentDetails.get().getCarrierDetails().getEta();
+            LocalDateTime etd = shipmentDetails.get().getCarrierDetails().getEtd();
+            String polId = shipmentDetails.get().getCarrierDetails().getOriginPort();
+            String podId = shipmentDetails.get().getCarrierDetails().getDestinationPort();
+            if(Strings.isNullOrEmpty(voyage) || Strings.isNullOrEmpty(flightNumber) ||
+                    eta == null || etd == null || Strings.isNullOrEmpty(polId) || Strings.isNullOrEmpty(podId) ||
+                    Strings.isNullOrEmpty(shipmentDetails.get().getHouseBill()) ||
+                    Strings.isNullOrEmpty(shipmentDetails.get().getMasterBill())) {
+                throw new ValidationException("Please validate empty or invalid inputs (marked with Red Cross) before sending shipment");
+            }
+            else {
+                var shipment = shipmentDetails.get();
+                if(shipment.getDirection().equals(Constants.DIRECTION_EXP)) {
+                    if(shipment.getTransportMode().equals(Constants.TRANSPORT_MODE_SEA)) {
+                        List<Hbl> hbls = hblDao.findByShipmentId(shipment.getId());
+                        if(hbls.isEmpty())
+                            throw new ValidationException("Please generate original HBL before sending shipment");
+                    }
+                    DependentServiceResponse dependentServiceResponse = masterDataFactory.getMasterDataService().retrieveTenant();
+                    TenantModel tenantModel = modelMapper.map(dependentServiceResponse.getData(), TenantModel.class);
+                    if(shipment.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && tenantModel.IATAAgent){
+                        List<Awb> awbs = awbDao.findByShipmentId(shipment.getId());
+                        if(awbs.isEmpty())
+                            throw new ValidationException("Please generate original HAWB before sending shipment");
+                    }
+                }
+            }
+        }
+        ValidationResponse response = ValidationResponse.builder().success(true).build();
+        return ResponseHelper.buildSuccessResponse(response);
     }
 
 }
