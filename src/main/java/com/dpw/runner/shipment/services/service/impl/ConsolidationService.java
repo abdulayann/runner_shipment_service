@@ -169,23 +169,23 @@ public class ConsolidationService implements IConsolidationService {
     private Map<String, RunnerEntityMapping> tableNames = Map.ofEntries(
             Map.entry("type", RunnerEntityMapping.builder().tableName("parties").dataType(String.class).build()),
             Map.entry("cutoffDate", RunnerEntityMapping.builder().tableName("allocations").dataType(LocalDateTime.class).build()),
-            Map.entry("createdBy", RunnerEntityMapping.builder().tableName("consolidationDetails").dataType(String.class).build()),
+            Map.entry("createdBy", RunnerEntityMapping.builder().tableName("ConsolidationDetails").dataType(String.class).build()),
 //            Map.entry("bookingId", RunnerEntityMapping.builder().tableName("BookingCharges").dataType(Long.class).build()),
             Map.entry("orderNumber", RunnerEntityMapping.builder().tableName("Jobs").dataType(String.class).build()),
 //            Map.entry("bookingStatus", RunnerEntityMapping.builder().tableName("CustomerBooking").dataType(BookingStatus.class).build()),
             Map.entry("orgCode", RunnerEntityMapping.builder().tableName("parties").dataType(Integer.class).build()),
-            Map.entry("referenceNumber", RunnerEntityMapping.builder().tableName("consolidationDetails").dataType(String.class).build()),
+            Map.entry("referenceNumber", RunnerEntityMapping.builder().tableName("ConsolidationDetails").dataType(String.class).build()),
             Map.entry("shipmentId", RunnerEntityMapping.builder().tableName("shipmentsList").dataType(String.class).build()),
-            Map.entry("consolidationNumber", RunnerEntityMapping.builder().tableName("consolidationDetails").dataType(String.class).build()),
-            Map.entry("consolidationType", RunnerEntityMapping.builder().tableName("consolidationDetails").dataType(String.class).build()),
-            Map.entry("transportMode", RunnerEntityMapping.builder().tableName("consolidationDetails").dataType(String.class).build()),
-            Map.entry("releaseType", RunnerEntityMapping.builder().tableName("consolidationDetails").dataType(String.class).build()),
-            Map.entry("deliveryMode", RunnerEntityMapping.builder().tableName("consolidationDetails").dataType(String.class).build()),
-            Map.entry("containerCategory", RunnerEntityMapping.builder().tableName("consolidationDetails").dataType(String.class).build()),
-            Map.entry("shipmentType", RunnerEntityMapping.builder().tableName("consolidationDetails").dataType(String.class).build()),
-            Map.entry("mawb", RunnerEntityMapping.builder().tableName("consolidationDetails").dataType(String.class).build()),
-            Map.entry("serviceLevel", RunnerEntityMapping.builder().tableName("consolidationDetails").dataType(String.class).build()),
-            Map.entry("bookingType", RunnerEntityMapping.builder().tableName("consolidationDetails").dataType(String.class).build()),
+            Map.entry("consolidationNumber", RunnerEntityMapping.builder().tableName("ConsolidationDetails").dataType(String.class).build()),
+            Map.entry("consolidationType", RunnerEntityMapping.builder().tableName("ConsolidationDetails").dataType(String.class).build()),
+            Map.entry("transportMode", RunnerEntityMapping.builder().tableName("ConsolidationDetails").dataType(String.class).build()),
+            Map.entry("releaseType", RunnerEntityMapping.builder().tableName("ConsolidationDetails").dataType(String.class).build()),
+            Map.entry("deliveryMode", RunnerEntityMapping.builder().tableName("ConsolidationDetails").dataType(String.class).build()),
+            Map.entry("containerCategory", RunnerEntityMapping.builder().tableName("ConsolidationDetails").dataType(String.class).build()),
+            Map.entry("shipmentType", RunnerEntityMapping.builder().tableName("ConsolidationDetails").dataType(String.class).build()),
+            Map.entry("mawb", RunnerEntityMapping.builder().tableName("ConsolidationDetails").dataType(String.class).build()),
+            Map.entry("serviceLevel", RunnerEntityMapping.builder().tableName("ConsolidationDetails").dataType(String.class).build()),
+            Map.entry("bookingType", RunnerEntityMapping.builder().tableName("ConsolidationDetails").dataType(String.class).build()),
             Map.entry("addressCode", RunnerEntityMapping.builder().tableName("parties").dataType(Integer.class).build()),
             Map.entry("shippingLine", RunnerEntityMapping.builder().tableName("carrierDetails").dataType(String.class).build()),
             Map.entry("vessel", RunnerEntityMapping.builder().tableName("carrierDetails").dataType(String.class).build()),
@@ -197,15 +197,15 @@ public class ConsolidationService implements IConsolidationService {
             Map.entry("ata", RunnerEntityMapping.builder().tableName("carrierDetails").dataType(LocalDateTime.class).build()),
             Map.entry("containerNumber", RunnerEntityMapping.builder().tableName("containersList").dataType(String.class).build()),
             Map.entry("containerCode", RunnerEntityMapping.builder().tableName("containersList").dataType(String.class).build()),
-            Map.entry("bookingCutoff", RunnerEntityMapping.builder().tableName("consolidationDetails").dataType(LocalDateTime.class).build()),
-            Map.entry("estimatedTerminalCutoff", RunnerEntityMapping.builder().tableName("consolidationDetails").dataType(LocalDateTime.class).build()),
-            Map.entry("hazardousBookingCutoff", RunnerEntityMapping.builder().tableName("consolidationDetails").dataType(LocalDateTime.class).build()),
-            Map.entry("isDomestic", RunnerEntityMapping.builder().tableName("consolidationDetails").dataType(Boolean.class).build()),
-            Map.entry("payment", RunnerEntityMapping.builder().tableName("consolidationDetails").dataType(String.class).build()),
-            Map.entry("reeferCutoff", RunnerEntityMapping.builder().tableName("consolidationDetails").dataType(LocalDateTime.class).build()),
-            Map.entry("shipInstructionCutoff", RunnerEntityMapping.builder().tableName("consolidationDetails").dataType(LocalDateTime.class).build()),
-            Map.entry("terminalCutoff", RunnerEntityMapping.builder().tableName("consolidationDetails").dataType(LocalDateTime.class).build()),
-            Map.entry("verifiedGrossMassCutoff", RunnerEntityMapping.builder().tableName("consolidationDetails").dataType(LocalDateTime.class).build())
+            Map.entry("bookingCutoff", RunnerEntityMapping.builder().tableName("ConsolidationDetails").dataType(LocalDateTime.class).build()),
+            Map.entry("estimatedTerminalCutoff", RunnerEntityMapping.builder().tableName("ConsolidationDetails").dataType(LocalDateTime.class).build()),
+            Map.entry("hazardousBookingCutoff", RunnerEntityMapping.builder().tableName("ConsolidationDetails").dataType(LocalDateTime.class).build()),
+            Map.entry("isDomestic", RunnerEntityMapping.builder().tableName("ConsolidationDetails").dataType(Boolean.class).build()),
+            Map.entry("payment", RunnerEntityMapping.builder().tableName("ConsolidationDetails").dataType(String.class).build()),
+            Map.entry("reeferCutoff", RunnerEntityMapping.builder().tableName("ConsolidationDetails").dataType(LocalDateTime.class).build()),
+            Map.entry("shipInstructionCutoff", RunnerEntityMapping.builder().tableName("ConsolidationDetails").dataType(LocalDateTime.class).build()),
+            Map.entry("terminalCutoff", RunnerEntityMapping.builder().tableName("ConsolidationDetails").dataType(LocalDateTime.class).build()),
+            Map.entry("verifiedGrossMassCutoff", RunnerEntityMapping.builder().tableName("ConsolidationDetails").dataType(LocalDateTime.class).build())
     );
 
     @Override
@@ -259,14 +259,18 @@ public class ConsolidationService implements IConsolidationService {
             if(guidsList.size() > 0) {
                 ConsoleBookingListRequest consoleBookingListRequest = new ConsoleBookingListRequest();
                 consoleBookingListRequest.setGuidsList(guidsList);
-                ConsoleBookingListResponse consoleBookingListResponse = v1Service.fetchConsolidationBookingData(consoleBookingListRequest);
-                if(consoleBookingListResponse.getData() != null && !consoleBookingListResponse.getData().isEmpty()) {
-                    for (ConsolidationListResponse consolidationDetails: consolidationListResponses) {
-                        if(consoleBookingListResponse.getData().get(consolidationDetails.getGuid()) != null) {
-                            consolidationDetails.setBookingStatus(consoleBookingListResponse.getData().get(consolidationDetails.getGuid()).getStatus());
-                            consolidationDetails.setBookingId(consoleBookingListResponse.getData().get(consolidationDetails.getGuid()).getIntraBookingId());
+                try {
+                    ConsoleBookingListResponse consoleBookingListResponse = v1Service.fetchConsolidationBookingData(consoleBookingListRequest);
+                    if (consoleBookingListResponse.getData() != null && !consoleBookingListResponse.getData().isEmpty()) {
+                        for (ConsolidationListResponse consolidationDetails : consolidationListResponses) {
+                            if (consoleBookingListResponse.getData().get(consolidationDetails.getGuid()) != null) {
+                                consolidationDetails.setBookingStatus(consoleBookingListResponse.getData().get(consolidationDetails.getGuid()).getStatus());
+                                consolidationDetails.setBookingId(consoleBookingListResponse.getData().get(consolidationDetails.getGuid()).getIntraBookingId());
+                            }
                         }
                     }
+                } catch (Exception e) {
+                    log.debug(e.getMessage());
                 }
             }
         }
