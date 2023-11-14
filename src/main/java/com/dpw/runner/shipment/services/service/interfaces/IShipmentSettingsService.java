@@ -7,4 +7,5 @@ public interface IShipmentSettingsService extends ICommonService{
     ResponseEntity<?> uploadTemplate(CommonRequestModel commonRequestModel);
     ResponseEntity<?> completeUpdate(CommonRequestModel commonRequestModel) throws Exception;
     ResponseEntity<?> completeSettingsUpdateCreateV1(CommonRequestModel commonRequestModel) throws Exception;
-}
+    ResponseEntity<?> retrieveByTenantId(CommonRequestModel commonRequestModel);
+    }

@@ -20,4 +20,5 @@ public interface IShipmentSettingsDao {
     Optional<ShipmentSettingsDetails> findByGuid(UUID guid);
     Integer getShipmentConsoleImportApprovarRole(int tenantId);
     List<ShipmentSettingsDetails> getSettingsByTenantIds(List<Integer> tenantId);
+    Optional<ShipmentSettingsDetails> findByTenantId(Integer tenantId);
 }

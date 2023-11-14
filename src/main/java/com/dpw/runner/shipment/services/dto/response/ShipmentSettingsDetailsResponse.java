@@ -142,4 +142,5 @@ public class ShipmentSettingsDetailsResponse implements IRunnerResponse {
     private MawbLockSettingsResponse mawbLockSettings;
     private Integer hblMultipleOriginalApproval;
     private Boolean hblApprovalFlow;
+    private Boolean isShipmentLevelContainer;
 }

@@ -24,4 +24,5 @@ public interface IShipmentSettingsRepository extends MultiTenancyRepository<Ship
 
     @Query("SELECT sd FROM ShipmentSettingsDetails sd WHERE sd.tenantId In ?1")
     List<ShipmentSettingsDetails> getTenantSetting(List<Integer> tenantId);
+    Optional<ShipmentSettingsDetails> findByTenantId(Integer tenantId);
 }

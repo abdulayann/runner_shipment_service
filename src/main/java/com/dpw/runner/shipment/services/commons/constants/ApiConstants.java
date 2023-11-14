@@ -53,4 +53,5 @@ public class ApiConstants {
     public static final String LIST_CONTAINER_FOR_TI = "/list/TI/containers";
     public static final String API_DOWNLOAD_EVENTS = "/download-events";
     public static final String API_LIST_PACKS_TO_DETACH = "/list/packs/detach";
+    public static final String API_RETRIEVE_BY_TENANT_ID = "/retrieve/tenantId";
 }
