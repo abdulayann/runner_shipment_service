@@ -60,4 +60,8 @@ public class ShipmentSettingsDao implements IShipmentSettingsDao {
         return shipmentSettingsRepository.getTenantSetting(tenantId);
     }
 
+    @Override
+    public Optional<ShipmentSettingsDetails> findByTenantId(Integer tenantId) {
+        return shipmentSettingsRepository.findByTenantId(tenantId);
+    }
 }

@@ -38,10 +38,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.interceptor.TransactionAspectSupport;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
@@ -674,6 +671,31 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
                 log.error(responseMsg, e);
                 return ResponseHelper.buildFailedResponse(responseMsg);
             }
+        }
+    }
+
+    @Override
+    public ResponseEntity<?> retrieveByTenantId(CommonRequestModel commonRequestModel){
+        String responseMsg;
+        try {
+            CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
+            if (request == null || Objects.isNull(request.getId())) {
+                log.error("Request is empty for Shipment Settings retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+            }
+            Optional<ShipmentSettingsDetails> shipmentSettingsDetails = shipmentSettingsDao.findByTenantId(request.getId().intValue());
+            if (!shipmentSettingsDetails.isPresent()) {
+                log.debug("Shipment Setting is null for tenant id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
+                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+            }
+            log.info("Shipment Settings details fetched successfully for tenant id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
+            ShipmentSettingsDetailsResponse response = convertEntityToDto(shipmentSettingsDetails.get());
+            return ResponseHelper.buildSuccessResponse(response);
+        }  catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
         }
     }
 }
