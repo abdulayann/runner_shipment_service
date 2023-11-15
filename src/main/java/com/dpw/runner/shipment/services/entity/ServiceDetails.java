@@ -12,6 +12,7 @@ import org.hibernate.annotations.Where;
 import javax.persistence.*;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 
 
 @Entity
@@ -42,7 +43,7 @@ public class ServiceDetails extends MultiTenancy {
     private Parties contractor;
 
     @Column(name = "srv_location")
-    private int srvLocation;
+    private String srvLocation;
 
     @Column(name = "booking_date")
     private LocalDateTime bookingDate;
@@ -51,7 +52,7 @@ public class ServiceDetails extends MultiTenancy {
     private Long serviceCount;
 
     @Column(name = "service_duration")
-    private Duration serviceDuration;
+    private LocalTime serviceDuration;
 
     @Column(name = "completion_date")
     private LocalDateTime completionDate;
