@@ -232,7 +232,7 @@ public class TestDataGenerator {
             int random = new Random().nextInt(10);
             list.add(ServiceDetailsRequest.builder()
                     .serviceType(SERVICE_TYPES.get(new Random().nextInt(100) % SERVICE_TYPES.size()))
-                    .srvLocation(random)
+//                    .srvLocation(random)
                     .bookingDate(LocalDateTime.now())
                     .serviceCount((long) (random))
                     .completionDate(LocalDateTime.now())
