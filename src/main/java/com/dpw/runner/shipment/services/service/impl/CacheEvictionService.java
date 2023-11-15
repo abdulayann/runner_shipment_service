@@ -30,6 +30,8 @@ public class CacheEvictionService {
     public void clearAllCache() {
         try {
             cacheManager.getCache(CacheConstants.CACHE_KEY).clear();
+            cacheManager.getCache(CacheConstants.CACHE_KEY_USER).clear();
+            cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA).clear();
         } catch (Exception e) {
             log.error("Error during evicting cache {}", e);
             throw new CacheEvictionException(e.getMessage());
@@ -39,7 +41,7 @@ public class CacheEvictionService {
     public void clearCacheByName(CommonRequestModel commonRequestModel) {
         try {
             CacheRequest request = (CacheRequest) commonRequestModel.getData();
-            cacheManager.getCache(CacheConstants.CACHE_KEY).evictIfPresent(baseKey + request.getKey());
+            cacheManager.getCache(CacheConstants.CACHE_KEY_USER).evictIfPresent(baseKey + request.getKey());
         } catch (Exception e) {
             log.error("Error during evicting cache {}", e);
             throw new CacheEvictionException(e.getMessage());
