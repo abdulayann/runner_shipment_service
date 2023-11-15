@@ -11,6 +11,8 @@ public class ShipmentSettingsConstants {
     public static final String SHIPMENT_SETTINGS_DELETE_SUCCESSFUL = "Successful Shipment Settings Data Delete";
     public static final String SHIPMENT_SETTINGS_TEMPLATE_UPLOAD_SUCCESSFUL = "Shipment Settings Template Upload Successfully To Doc Service";
     public static final String UPLOAD_TEMPLATE = "/template-upload";
+    public static final String DOWNLOAD_TEMPLATE = "/template-download";
     public static final String UPLOAD_TEMPLATE_FAILED = "Error While Uploading Documents To Document Service";
     public static final String UPDATE_TEMPLATE_FAILED = "Error While Updating Documents To Document Service";
+    public static final String DOWNLOAD_TEMPLATE_FAILED = "Error While Downloading Document From Document Service";
 }
