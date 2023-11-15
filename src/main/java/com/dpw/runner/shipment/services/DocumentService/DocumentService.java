@@ -1,8 +1,11 @@
 package com.dpw.runner.shipment.services.DocumentService;
 
+import com.dpw.runner.shipment.services.commons.constants.ShipmentSettingsConstants;
 import com.dpw.runner.shipment.services.dto.request.TemplateUploadRequest;
 import com.dpw.runner.shipment.services.dto.response.TemplateUploadResponse;
 import com.dpw.runner.shipment.services.dto.response.UploadDocumentResponse;
+import com.dpw.runner.shipment.services.helpers.LoggerHelper;
+import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
@@ -140,7 +143,7 @@ public class DocumentService {
         return response;
     }
 
-    public ResponseEntity<?> DownloadTemplate(String templateId) throws Exception {
+    public byte[] DownloadTemplate(String templateId) throws Exception {
         String url = templateBaseUrl+templateId+"/download";
 
         HttpHeaders headers = new HttpHeaders();
@@ -149,9 +152,13 @@ public class DocumentService {
 
         HttpEntity<Object> request = new HttpEntity<Object>(headers);
 
-        ResponseEntity<?> response = restTemplate.exchange(url, HttpMethod.GET, request, byte[].class);
-
-        return response;
+        ResponseEntity<byte[]> response = restTemplate.exchange(url, HttpMethod.GET, request, byte[].class);
+        if(response.getStatusCode() != HttpStatus.OK){
+            LoggerHelper.error("Error While Downloading Template From Document Service");
+            String responseMsg = ShipmentSettingsConstants.DOWNLOAD_TEMPLATE_FAILED + " : " + response.getBody();
+            throw new Exception(responseMsg);
+        }
+        return response.getBody();
     }
 
     public ResponseEntity<UploadDocumentResponse> PostDocument(ByteArrayResource file, String path) throws Exception{

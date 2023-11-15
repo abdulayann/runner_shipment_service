@@ -118,7 +118,7 @@ public class ResponseHelper {
                 .contentLength(resource.contentLength())
                 .header(HttpHeaders.CONTENT_DISPOSITION,
                         ContentDisposition.attachment()
-                                .filename("whatever")
+                                .filename("DownloadDocument")
                                 .build().toString())
                 .body(resource);
     }

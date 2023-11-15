@@ -139,10 +139,10 @@ public class ShipmentSettingsController {
         return (ResponseEntity<RunnerListResponse<TemplateUploadResponse>>) shipmentSettingsService.uploadTemplate(CommonRequestModel.buildRequest(templateUploadRequest));
     }
 
-    @ApiResponses(value = { @ApiResponse(code = 200, message = ShipmentSettingsConstants.SHIPMENT_SETTINGS_TEMPLATE_UPLOAD_SUCCESSFUL) })
+    @ApiResponses(value = { @ApiResponse(code = 200, message = ShipmentSettingsConstants.TEMPLATE_DOWNLOAD_SUCCESSFUL) })
     @GetMapping(ShipmentSettingsConstants.DOWNLOAD_TEMPLATE)
-    public ResponseEntity<RunnerListResponse<TemplateUploadResponse>> downloadTemplate(@RequestParam String templateId) {
-        return (ResponseEntity<RunnerListResponse<TemplateUploadResponse>>) shipmentSettingsService.downloadTemplate(templateId);
+    public ResponseEntity<?> downloadTemplate(@RequestParam String templateId) {
+        return (ResponseEntity<?>) shipmentSettingsService.downloadTemplate(templateId);
     }
 
     @PostMapping(ApiConstants.API_GET_CUSTOM_REQ)

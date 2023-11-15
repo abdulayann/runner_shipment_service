@@ -15,4 +15,5 @@ public class ShipmentSettingsConstants {
     public static final String UPLOAD_TEMPLATE_FAILED = "Error While Uploading Documents To Document Service";
     public static final String UPDATE_TEMPLATE_FAILED = "Error While Updating Documents To Document Service";
     public static final String DOWNLOAD_TEMPLATE_FAILED = "Error While Downloading Document From Document Service";
+    public static final String TEMPLATE_DOWNLOAD_SUCCESSFUL = "Template Downloaded Successfully from Doc Service";
 }
