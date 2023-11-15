@@ -25,6 +25,7 @@ import com.dpw.runner.shipment.services.service_bus.SBUtilsImpl;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSettingsSync;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.kafka.common.protocol.types.Field;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
@@ -671,6 +672,19 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
                 log.error(responseMsg, e);
                 return ResponseHelper.buildFailedResponse(responseMsg);
             }
+        }
+    }
+    @Override
+    public ResponseEntity<?> downloadTemplate(String templateId) {
+        try {
+            byte[] response = documentService.DownloadTemplate(templateId);
+            return ResponseHelper.buildFileResponse(response);
+        } catch (Exception e) {
+            LoggerHelper.error("Error While Downloading Template From Document Service");
+            String responseMsg = e.getMessage() != null ? e.getMessage()
+                    : ShipmentSettingsConstants.DOWNLOAD_TEMPLATE_FAILED;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
         }
     }
 
