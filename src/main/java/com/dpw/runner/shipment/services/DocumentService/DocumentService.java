@@ -140,6 +140,20 @@ public class DocumentService {
         return response;
     }
 
+    public ResponseEntity<?> DownloadTemplate(String templateId) throws Exception {
+        String url = templateBaseUrl+templateId+"/download";
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("x-api-key", templatexApiKey);
+        headers.setContentType(MediaType.TEXT_PLAIN);
+
+        HttpEntity<Object> request = new HttpEntity<Object>(headers);
+
+        ResponseEntity<?> response = restTemplate.exchange(url, HttpMethod.GET, request, byte[].class);
+
+        return response;
+    }
+
     public ResponseEntity<UploadDocumentResponse> PostDocument(ByteArrayResource file, String path) throws Exception{
 
         String url = BaseUrl+UploadFileUrl;
