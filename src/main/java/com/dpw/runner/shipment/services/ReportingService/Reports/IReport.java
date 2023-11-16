@@ -302,8 +302,8 @@ public abstract class IReport {
         dictionary.put(ReportConstants.GROSS_VOLUME,shipment.getVolume());
         dictionary.put(ReportConstants.GROSS_VOLUME_UNIT,shipment.getVolumeUnit());
 
-        dictionary.put(ReportConstants.DELIVERY_CFS, delivery != null && delivery.getSourceDetail() != null ? delivery.getSourceDetail().getOrgData().get(FULL_NAME) : null);
-        dictionary.put(ReportConstants.PICKUP_CFS, pickup != null && pickup.getDestinationDetail() != null ? pickup.getDestinationDetail().getOrgData().get(FULL_NAME) : null);
+        dictionary.put(ReportConstants.DELIVERY_CFS, (delivery != null && !Objects.isNull(delivery.getSourceDetail()) && !Objects.isNull(delivery.getSourceDetail().getOrgData())) ? delivery.getSourceDetail().getOrgData().get(FULL_NAME) : null);
+        dictionary.put(ReportConstants.PICKUP_CFS, (pickup != null && !Objects.isNull(pickup.getDestinationDetail()) && !Objects.isNull(pickup.getDestinationDetail().getOrgData()) )? pickup.getDestinationDetail().getOrgData().get(FULL_NAME) : null);
         dictionary.put(ReportConstants.MARKS_N_NUMS,shipment.getMarksNum());
         dictionary.put(ReportConstants.ORIGINALS,additionalDetails.getOriginal() == null ? 1 : additionalDetails.getOriginal());
         dictionary.put(ReportConstants.ORIGINAL_WORDS, "");
@@ -647,7 +647,7 @@ public abstract class IReport {
         dictionary.put(ReportConstants.PACKS, hblDataDto.getPackageCount());
         dictionary.put(ReportConstants.PACKS_UNIT, hblDataDto.getPackageType());
         MasterData masterData = getMasterListData(MasterDataType.PACKS_UNIT, hblDataDto.getPackageType());
-        dictionary.put(ReportConstants.PACKS_UNIT_DESC, masterData != null && !masterData.getItemDescription().isEmpty() ? masterData.getItemDescription() : hblDataDto.getPackageType());
+        dictionary.put(ReportConstants.PACKS_UNIT_DESC, masterData != null && masterData.getItemDescription() != null ? masterData.getItemDescription() : hblDataDto.getPackageType());
         dictionary.put(ReportConstants.DESCRIPTION, hblDataDto.getCargoDescription());
         dictionary.put(ReportConstants.DESCRIPTION_CAPS, hblDataDto.getCargoDescription() != null ? hblDataDto.getCargoDescription().toUpperCase() : null);
         dictionary.put(ReportConstants.PLACE_OF_DELIVERY, hblDataDto.getPlaceOfDelivery());
