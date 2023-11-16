@@ -83,7 +83,7 @@ public class ProductIdentifierUtility {
     ProductSequenceConfig returnProduct = null;
     //
     ListCommonRequest listRequest =
-        CommonUtils.constructListCommonRequest("isCommonSequence", 1, "=");
+        CommonUtils.constructListCommonRequest("isCommonSequence", true, "=");
     Pair<Specification<TenantProducts>, Pageable> pair =
         fetchData(listRequest, TenantProducts.class);
     Page<TenantProducts> tenantProducts =

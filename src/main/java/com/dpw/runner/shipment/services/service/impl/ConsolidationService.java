@@ -150,6 +150,9 @@ public class ConsolidationService implements IConsolidationService {
     @Autowired
     private ConsolidationDetailsMapper consolidationDetailsMapper;
 
+    @Autowired
+    private ProductIdentifierUtility productEngine;
+
     private List<String> TRANSPORT_MODES = Arrays.asList("SEA", "ROAD", "RAIL", "AIR");
     private List<String> SHIPMENT_TYPE = Arrays.asList("FCL", "LCL");
     private List<String> WEIGHT_UNIT = Arrays.asList("KGS", "G", "DT");
@@ -470,7 +473,6 @@ public class ConsolidationService implements IConsolidationService {
     }
 
     private String getCustomizedConsolidationProcessNumber(ConsolidationDetails consolidationDetails, ShipmentSettingsDetails shipmentSettingsDetails, ProductProcessTypes productProcessTypes) {
-        var productEngine = new ProductIdentifierUtility();
         productEngine.populateEnabledTenantProducts(shipmentSettingsDetails);
         if (productProcessTypes == ProductProcessTypes.ReferenceNumber) {
             // to check the commmon sequence
