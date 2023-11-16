@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.CarrierDetailModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
@@ -27,9 +28,11 @@ import com.dpw.runner.shipment.services.exception.exceptions.ValidationException
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.service.interfaces.IHblService;
 import com.dpw.runner.shipment.services.syncing.Entity.HblRequestV2;
 import com.dpw.runner.shipment.services.syncing.interfaces.IHblSync;
+import com.dpw.runner.shipment.services.utils.AwbUtility;
 import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.nimbusds.jose.util.Pair;
@@ -45,10 +48,7 @@ import org.springframework.retry.support.RetryTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.interceptor.TransactionAspectSupport;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
@@ -357,14 +357,12 @@ public class HblService implements IHblService {
             hblData.setConsigneeName(StringUtility.convertToString(shipmentDetail.getConsignee().getOrgData().get(PartiesConstants.FULLNAME)));
             hblData.setConsigneeAddress(constructAddress(shipmentDetail.getConsignee().getAddressData()));
         }
-//        hblData.setOriginOfGoods(shipmentDetail.goo); : Missing in shipments
         AdditionalDetails additionalDetails = shipmentDetail.getAdditionalDetails() != null ? shipmentDetail.getAdditionalDetails() : new AdditionalDetails();
         CarrierDetails carrierDetails = shipmentDetail.getCarrierDetails() != null ? shipmentDetail.getCarrierDetails() : new CarrierDetails();
 
         hblData.setPlaceOfReceipt(StringUtility.convertToString(additionalDetails.getPlaceOfSupply()));
         hblData.setPortOfLoad(carrierDetails.getOrigin());
         hblData.setPortOfDischarge(carrierDetails.getDestination());
-//        hblData.setPlaceOfDelivery(StringUtility.convertToString(additionalDetails.getDe));
         hblData.setCargoDescription(shipmentDetail.getGoodsDescription());
         hblData.setMarksAndNumbers(shipmentDetail.getMarksNum());
         hblData.setPackageCount(shipmentDetail.getNoOfPacks());
@@ -384,6 +382,18 @@ public class HblService implements IHblService {
         hblData.setVesselName(carrierDetails.getVessel());
         hblData.setNoOfCopies(StringUtility.convertToString(additionalDetails.getCopy()));
         hblData.setVersion(1);
+        hblData.setOriginOfGoods(additionalDetails.getGoodsCO());
+        hblData.setVoyage(carrierDetails.getVoyage());
+        if (!Objects.isNull(additionalDetails.getImportBroker())) {
+            Parties importBroker = additionalDetails.getImportBroker();
+            if (!Objects.isNull(importBroker.getOrgData()) && importBroker.getOrgData().containsKey(PartiesConstants.FULLNAME))
+                hblData.setDeliveryAgent(String.valueOf(importBroker.getOrgData().get(PartiesConstants.FULLNAME)));
+            if (!Objects.isNull(importBroker.getAddressData()) )
+                hblData.setDeliveryAgentAddress(AwbUtility.constructAddress(importBroker.getAddressData()));
+        }
+        UnlocationsResponse destination = ReportHelper.getUNLocRow(carrierDetails.getDestination());
+        if (!Objects.isNull(destination))
+            hblData.setPlaceOfDelivery(destination.getCountry());
         // TODO: This needs to re-visit after incorporating this setting in service
         if (/*Unico HBL*/true) {
             hblData.setTransportType(shipmentDetail.getTransportMode());
