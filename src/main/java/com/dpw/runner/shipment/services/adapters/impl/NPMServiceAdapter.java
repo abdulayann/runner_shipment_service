@@ -4,14 +4,15 @@ import com.dpw.runner.shipment.services.adapters.interfaces.INPMServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.NPMConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
+import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
+import com.dpw.runner.shipment.services.dao.interfaces.IAwbDao;
 import com.dpw.runner.shipment.services.dao.interfaces.ICustomerBookingDao;
 import com.dpw.runner.shipment.services.dto.request.ListContractRequest;
-import com.dpw.runner.shipment.services.dto.request.npm.NPMFetchOffersRequest;
-import com.dpw.runner.shipment.services.dto.request.npm.NPMFetchOffersRequestFromUI;
-import com.dpw.runner.shipment.services.dto.request.npm.UpdateContractRequest;
+import com.dpw.runner.shipment.services.dto.request.npm.*;
 import com.dpw.runner.shipment.services.dto.response.FetchOffersResponse;
 import com.dpw.runner.shipment.services.dto.response.ListContractResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
+import com.dpw.runner.shipment.services.entity.Awb;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.CustomerBooking;
 import com.dpw.runner.shipment.services.entity.Packing;
@@ -43,6 +44,9 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
     @Value("${NPM.BaseUrl}")
     private String npmBaseUrl;
 
+    @Value("${npmservice.url.base}")
+    private String npmServiceBaseUrl;
+
     @Value("${NPM.Contracts}")
     private String npmContracts;
 
@@ -55,6 +59,12 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
 
     @Value("${NPM.Update}")
     private String npmUpdateUrl;
+
+    @Value("${npmservice.url.autosell}")
+    private String npmAwbAutoSell;
+
+    @Value("${npmservice.url.importrates}")
+    private String npmAwbImportRates;
 
     @Autowired
     JsonHelper jsonHelper;
@@ -70,6 +80,13 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
     private final RestTemplate restTemp;
     @Autowired
     private IV1Service v1Service;
+
+    @Autowired
+    @Qualifier("restTemplateForNpmService")
+    private RestTemplate npmServiceRestTemplate;
+
+    @Autowired
+    private IAwbDao awbDao;
 
     @Autowired
     public NPMServiceAdapter(@Qualifier("restTemplateForNPM") RestTemplate restTemplate, @Qualifier("restTemplateForExchangeRates") RestTemplate restTemp) {
@@ -142,6 +159,39 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
             throw new NPMException("Error from NPM while fetching offers: " + npmErrorResponse.getErrorMessage());
         }
 
+    }
+
+    @Override
+    public ResponseEntity<?> awbAutoSell(CommonRequestModel commonRequestModel) throws Exception {
+        try {
+            String url = npmServiceBaseUrl + npmAwbAutoSell;
+            NPMAutoSellRequest autoSellRequest = (NPMAutoSellRequest) commonRequestModel.getData();
+            var req = jsonHelper.convertToJson(autoSellRequest);
+            ResponseEntity<DependentServiceResponse> response = npmServiceRestTemplate.exchange(RequestEntity.post(URI.create(url)).body(req), DependentServiceResponse.class);
+            return ResponseHelper.buildDependentServiceResponse(response.getBody().getData(), 0, 0);
+        } catch (HttpStatusCodeException ex) {
+            NpmErrorResponse npmErrorResponse = jsonHelper.readFromJson(ex.getResponseBodyAsString(), NpmErrorResponse.class);
+            log.error("NPM awb auto sell failed due to: {}", jsonHelper.convertToJson(npmErrorResponse));
+            throw new NPMException("Error from NPM : " + npmErrorResponse.getErrorMessage());
+        }
+    }
+
+    @Override
+    public ResponseEntity<?> awbImportRates(CommonRequestModel commonRequestModel) throws Exception {
+        try {
+            String url = npmServiceBaseUrl + npmAwbImportRates;
+            NPMImportRatesRequest importRatesRequest = (NPMImportRatesRequest) commonRequestModel.getData();
+            var req = jsonHelper.convertToJson(importRatesRequest);
+            ResponseEntity<DependentServiceResponse> response = npmServiceRestTemplate.exchange(RequestEntity.post(URI.create(url)).body(req), DependentServiceResponse.class);
+            Awb updatedAwb = jsonHelper.convertValue(response.getBody().getData(), Awb.class);
+            log.info("Updated AWB from npm service : {}", updatedAwb);
+            awbDao.save(updatedAwb);
+            return ResponseHelper.buildDependentServiceResponse(response.getBody().getData(),0,0);
+        } catch (HttpStatusCodeException ex) {
+            NpmErrorResponse npmErrorResponse = jsonHelper.readFromJson(ex.getResponseBodyAsString(), NpmErrorResponse.class);
+            log.error("NPM awb import rates failed due to: {}", jsonHelper.convertToJson(npmErrorResponse));
+            throw new NPMException("Error from NPM : " + npmErrorResponse.getErrorMessage());
+        }
     }
 
     private String getCurrencyCode(String countryCode)  {
