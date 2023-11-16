@@ -26,6 +26,11 @@ import com.dpw.runner.shipment.services.utils.CSVParsingUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -43,6 +48,7 @@ import org.springframework.transaction.interceptor.TransactionAspectSupport;
 import org.springframework.web.bind.annotation.ModelAttribute;
 
 import javax.servlet.http.HttpServletResponse;
+import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -85,6 +91,8 @@ public class ContainerService implements IContainerService {
 
     @Autowired
     private AuditLogService auditLogService;
+    @Autowired
+    private ICustomerBookingDao customerBookingDao;
 
     @Autowired
     private KafkaProducer producer;
@@ -709,8 +717,7 @@ public class ContainerService implements IContainerService {
             }
             ContainerResponse response = objectMapper.convertValue(containers, ContainerResponse.class);
             return ResponseHelper.buildSuccessResponse(response);
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             String responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
@@ -718,6 +725,87 @@ public class ContainerService implements IContainerService {
             throw new RuntimeException(e);
         }
     }
+
+    @Override
+    public void exportContainers(HttpServletResponse response, ExportContainerListRequest request) throws Exception {
+        List<ShipmentsContainersMapping> mappings;
+        Optional<ConsolidationDetails> consol = null;
+        List<IRunnerResponse> containersList = null;
+        if (request.getConsolidationId() != null) {
+            consol = consolidationDetailsDao.findById(Long.valueOf(request.getConsolidationId()));
+
+            if (consol.isEmpty())
+                throw new RuntimeException("Consolidation does not exist, pls save the consol first");
+
+            if (consol.get().getContainersList().isEmpty())
+                throw new RuntimeException("No containers found attached to consoliation");
+
+            List<Containers> containers = consol.get().getContainersList();
+            if (containers == null || containers.isEmpty()) {
+                throw new RuntimeException("No containers present for this consol");
+            }
+            containersList = convertEntityListToDtoList(containers);
+
+        } else {
+            throw new RuntimeException("Consolidation does not exist, pls save the consol first");
+        }
+
+        Workbook workbook = new XSSFWorkbook();
+        Sheet sheet = workbook.createSheet("ContainersList");
+        makeHeadersInSheet(sheet, consol);
+
+        for (int i = 0; i < containersList.size(); i++) {
+            Row itemRow = sheet.createRow(i + 1);
+            ContainerResponse container = (ContainerResponse) containersList.get(i);
+            var consolBasicValues = parser.getAllAttributeValuesAsListContainer(container);
+            int offset = 0;
+            for (int j = 0; j < consolBasicValues.size(); j++)
+                itemRow.createCell(offset + j).setCellValue(consolBasicValues.get(j));
+            offset += consolBasicValues.size();
+
+            itemRow.createCell(offset + 0).setCellValue(consol.get().getBol());
+            itemRow.createCell(offset + 1).setCellValue(0);
+            itemRow.createCell(offset + 2).setCellValue(0);
+            itemRow.createCell(offset + 3).setCellValue(request.getFreeTimeNoOfDaysDetention());
+            itemRow.createCell(offset + 4).setCellValue(request.getFreeTimeNoOfDaysStorage());
+            itemRow.createCell(offset + 5).setCellValue(consol.get().getCarrierDetails().getVoyage());
+
+            var booking = customerBookingDao.findById(container.getBookingId());
+            var bookingNum = booking.isPresent() ? booking.get().getBookingNumber() : "";
+            var bookingDate = booking.isPresent() ? booking.get().getBookingDate() : null;
+
+            itemRow.createCell(offset + 6).setCellValue(bookingDate);
+            itemRow.createCell(offset + 7).setCellValue(bookingNum);
+        }
+
+        response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+        response.setHeader("Content-Disposition", "attachment; filename=containerList.xlsx");
+
+        try (OutputStream outputStream = response.getOutputStream()) {
+            workbook.write(outputStream);
+        }
+
+    }
+
+    private void makeHeadersInSheet(Sheet sheet, Optional<ConsolidationDetails> consol) {
+//        Row preHeaderRow = sheet.createRow(0);
+        Row headerRow = sheet.createRow(0);
+        List<String> containerHeader = parser.getHeadersForContainer();
+        for (int i = 0; i < containerHeader.size(); i++) {
+            Cell cell = headerRow.createCell(i);
+            cell.setCellValue(containerHeader.get(i));
+        }
+
+        containerHeader.add("bol");
+        containerHeader.add("NoOfDays (Detention)");
+        containerHeader.add("NoOfDays (Storage)");
+        containerHeader.add("FreeTimeNoOfDays (Storage)");
+        containerHeader.add("FreeTimeNoOfDays (Detention)");
+        containerHeader.add("Voyage");
+        containerHeader.add("Booking Date");
+        containerHeader.add("Booking Number");
+    }
+
 
     private IRunnerResponse convertEntityToDto(Containers container) {
         return jsonHelper.convertValue(container, ContainerResponse.class);

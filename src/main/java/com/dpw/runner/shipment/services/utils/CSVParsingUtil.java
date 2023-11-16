@@ -170,6 +170,24 @@ public class CSVParsingUtil<T> {
         return headers;
     }
 
+    public List<String> getHeadersForContainer() {
+        List<String> headers = new ArrayList<>();
+        List<Field> containerFields = Arrays.stream(ContainerResponse.class.getDeclaredFields()).toList();
+        final Set requiredFields = Set.of("containerNumber", "volumeUtilization", "weightUtilization", "achievedVolume",
+                "achievedVolumeUnit", "achievedWeight", "achievedWeightUnit", "grossVolume", "grossVolumeUnit",
+                "allocatedWeight", "allocatedWeightUnit", "netWeight", "netWeightUnit", "grossWeight", "grossWeightUnit", "remarks",
+                "extraParams", "chargeable", "chargeableUnit", "ownType", "packs", "packsType", "marksNums", "innerPackageMeasurementUnit", "pacrNumber");
+        containerFields = containerFields.stream().filter(field -> {
+            if (requiredFields.contains(field.getName())) return true;
+            else return false;
+        }).collect(Collectors.toList());
+
+        for (Field field : containerFields) {
+            headers.add(field.getName());
+        }
+        return headers;
+    }
+
     public List<String> getAllAttributeValuesAsListForCarrier(CarrierDetailResponse carrierDetailResponse) throws IllegalAccessException {
         if (carrierDetailResponse == null) carrierDetailResponse = new CarrierDetailResponse();
         Class<?> clazz = carrierDetailResponse.getClass();
@@ -327,6 +345,28 @@ public class CSVParsingUtil<T> {
         return lst;
     }
 
+    public List<String> getAllAttributeValuesAsListContainer(ContainerResponse response) throws IllegalAccessException {
+        Class<?> clazz = response.getClass();
+        List<Field> containerFields = Arrays.stream(ContainerResponse.class.getDeclaredFields()).toList();
+        final Set requiredFields = Set.of("containerNumber", "volumeUtilization", "weightUtilization", "achievedVolume",
+                "achievedVolumeUnit", "achievedWeight", "achievedWeightUnit", "grossVolume", "grossVolumeUnit",
+                "allocatedWeight", "allocatedWeightUnit", "netWeight", "netWeightUnit", "grossWeight", "grossWeightUnit", "remarks",
+                "extraParams", "chargeable", "chargeableUnit", "ownType", "packs", "packsType", "marksNums", "innerPackageMeasurementUnit", "pacrNumber");
+        containerFields = containerFields.stream().filter(field -> {
+            if (requiredFields.contains(field.getName())) return true;
+            else return false;
+        }).collect(Collectors.toList());
+
+        List<String> lst = new ArrayList<>();
+
+        for (Field field : containerFields) {
+            field.setAccessible(true);
+            Object value = field.get(response);
+            lst.add(value != null ? value.toString() : "");
+        }
+        return lst;
+    }
+
     public String formatContainerAsCSVLine(T entity) {
         StringBuilder lineBuilder = new StringBuilder();
         Field[] fields = Containers.class.getDeclaredFields();
@@ -476,4 +516,5 @@ public class CSVParsingUtil<T> {
 
         field.set(entity, parsedValue);
     }
+
 }
