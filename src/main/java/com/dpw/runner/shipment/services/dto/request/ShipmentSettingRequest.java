@@ -151,4 +151,7 @@ public class ShipmentSettingRequest extends CommonRequest implements IRunnerRequ
     private Integer hblMultipleOriginalApproval;
     private Boolean hblApprovalFlow;
     private Boolean isShipmentLevelContainer;
+    private Boolean restrictBlRelease;
+    private Integer restrictBlApprovalRole;
+    private Boolean eManifest;
 }
