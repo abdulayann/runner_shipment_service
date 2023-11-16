@@ -455,21 +455,25 @@ public class ConsolidationService implements IConsolidationService {
             if(shipmentSettingsList.get(0) != null && shipmentSettingsList.get(0).getCustomisedSequence()) {
                 String consoleNumber = getCustomizedConsolidationProcessNumber(consolidationDetails, shipmentSettingsList.get(0), ProductProcessTypes.ReferenceNumber);
                 String bol = getCustomizedConsolidationProcessNumber(consolidationDetails, shipmentSettingsList.get(0), ProductProcessTypes.BOLNumber);
+
                 if(bol != null && !bol.isEmpty())
                     consolidationDetails.setBol(bol);
                 if(consoleNumber != null && !consoleNumber.isEmpty())
                     consolidationDetails.setConsolidationNumber(consoleNumber);
-                if (!consolidationDetails.getConsolidationNumber().isEmpty())
+                if (consolidationDetails.getConsolidationNumber() == null || consolidationDetails.getConsolidationNumber().isEmpty())
                     consolidationDetails.setConsolidationNumber("CONS000" + getConsolidationSerialNumber());
-                if (!consolidationDetails.getReferenceNumber().isEmpty())
+                if (consolidationDetails.getReferenceNumber() == null || consolidationDetails.getReferenceNumber().isEmpty())
                     consolidationDetails.setReferenceNumber(consolidationDetails.getConsolidationNumber());
             }
         }
     }
 
-    //TODO
     private String getConsolidationSerialNumber() {
-        return null;
+        Long maxId = consolidationDetailsDao.findMaxId();
+        if(maxId == null)
+            maxId = 0L;
+        maxId += 1;
+        return maxId.toString();
     }
 
     private String getCustomizedConsolidationProcessNumber(ConsolidationDetails consolidationDetails, ShipmentSettingsDetails shipmentSettingsDetails, ProductProcessTypes productProcessTypes) {

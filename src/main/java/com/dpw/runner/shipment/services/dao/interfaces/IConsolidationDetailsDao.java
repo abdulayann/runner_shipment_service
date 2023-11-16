@@ -21,4 +21,5 @@ public interface IConsolidationDetailsDao {
     Optional<ConsolidationDetails> findByGuid (UUID guid);
     List<ConsolidationDetails> findByBol (String bol);
     List<ConsolidationDetails> findByReferenceNumber(String ref);
+    Long findMaxId();
 }

@@ -158,6 +158,11 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
         return consolidationRepository.findByReferenceNumber(ref);
     }
 
+    @Override
+    public Long findMaxId() {
+        return consolidationRepository.findMaxId();
+    }
+
     private Set<String> applyConsolidationValidations(ConsolidationDetails request, ConsolidationDetails oldEntity) {
         Set<String> errors = new LinkedHashSet<>();
         ShipmentSettingsDetails shipmentSettingsDetails = shipmentSettingsDao.getSettingsByTenantIds(List.of(TenantContext.getCurrentTenant())).get(0);
