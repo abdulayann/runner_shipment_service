@@ -111,14 +111,14 @@ public class ResponseHelper {
         return new ResponseEntity<>(runnerResponse, HttpStatus.OK);
     }
 
-    public static ResponseEntity<?> buildFileResponse(byte[] bytes) {
+    public static ResponseEntity<?> buildFileResponse(byte[] bytes, MediaType contentType, String fileName) {
         ByteArrayResource resource = new ByteArrayResource(bytes);
         return ResponseEntity.ok()
-                .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                .contentType(contentType)
                 .contentLength(resource.contentLength())
                 .header(HttpHeaders.CONTENT_DISPOSITION,
                         ContentDisposition.attachment()
-                                .filename("DownloadDocument")
+                                .filename(fileName)
                                 .build().toString())
                 .body(resource);
     }
