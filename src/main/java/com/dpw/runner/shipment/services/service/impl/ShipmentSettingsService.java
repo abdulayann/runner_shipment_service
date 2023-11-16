@@ -678,7 +678,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
     public ResponseEntity<?> downloadTemplate(String templateId) {
         try {
             byte[] response = documentService.DownloadTemplate(templateId);
-            return ResponseHelper.buildFileResponse(response);
+            return ResponseHelper.buildFileResponse(response, null, "DownloadDocument.docx");
         } catch (Exception e) {
             LoggerHelper.error("Error While Downloading Template From Document Service");
             String responseMsg = e.getMessage() != null ? e.getMessage()
