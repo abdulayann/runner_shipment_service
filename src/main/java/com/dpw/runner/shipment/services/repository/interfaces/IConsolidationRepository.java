@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -26,4 +27,7 @@ public interface IConsolidationRepository extends MultiTenancyRepository<Consoli
     }
     List<ConsolidationDetails> findByBol (String bol);
     List<ConsolidationDetails> findByReferenceNumber(String ref);
+
+    @Query(value = "SELECT MAX(c.id) FROM consolidation_details c", nativeQuery = true)
+    Long findMaxId();
 }
