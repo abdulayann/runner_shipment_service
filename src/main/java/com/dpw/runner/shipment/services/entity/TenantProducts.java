@@ -41,6 +41,9 @@ public class TenantProducts extends MultiTenancy {
     @Column(name = "shipment_settings_id")
     private Long shipmentSettingsId;
 
+    @Column(name = "is_common_sequence")
+    private Boolean isCommonSequence;
+
     @Column(name = "transport_mode")
     @ElementCollection(targetClass = String.class, fetch = FetchType.EAGER)
     @CollectionTable(name = "tenant_products_transport_mode", joinColumns = @JoinColumn(name = "tenant_product_id"))
