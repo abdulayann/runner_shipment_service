@@ -449,4 +449,13 @@ public class ShipmentSettingsDetails extends MultiTenancy {
 
     @Column(name = "hbl_approval_flow")
     private Boolean hblApprovalFlow;
+
+    @Column(name = "restrict_bl_release")
+    private Boolean restrictBlRelease;
+
+    @Column(name = "restrict_bl_approval_role")
+    private Integer restrictBlApprovalRole;
+
+    @Column(name = "e_manifest")
+    private Boolean eManifest;
 }
