@@ -363,4 +363,7 @@ public class AdditionalDetails extends MultiTenancy {
     @Column(name = "custom_decl_type")
     @MasterData(type = MasterDataType.CUSTOM_DECL_TYPE)
     private String customDeclType;
+
+    @Column(name = "agent_reference")
+    private String agentReference;
 }

@@ -123,4 +123,5 @@ public class AdditionalDetailResponse implements IRunnerResponse {
     Map<String, String> masterData;
     Map<String, String> unlocationData;
     private String customDeclType;
+    private String agentReference;
 }
