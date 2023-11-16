@@ -21,6 +21,7 @@ import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.masterdata.response.VesselsResponse;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
+import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.fasterxml.jackson.core.type.TypeReference;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -118,7 +119,7 @@ public class HblReport extends IReport{
         unlocationsResponse = jsonHelper.convertValueToList(v1DataResponse.entities, UnlocationsResponse.class);
         if(unlocationsResponse != null && unlocationsResponse.size() > 0)
             hblModel.placeOfIssue = unlocationsResponse.get(0);
-        masterData = getMasterListData(MasterDataType.COUNTRIES, hblModel.placeOfIssue.getCountry());
+        masterData = getMasterListData(MasterDataType.COUNTRIES, Objects.isNull(hblModel.placeOfIssue) ? StringUtility.getEmptyString() : hblModel.placeOfIssue.getCountry());
         hblModel.issuePlaceCountry = (masterData != null ? masterData.getItemDescription() : null);
 
         // polPort
