@@ -335,11 +335,11 @@ public class HblReport extends IReport{
             dictionary.put(SENDING_AGENT_ADDRESS_FREE_TEXT, dictionary.get(SENDING_AGENT_ADDRESS));
             dictionary.put(RECEIVING_AGENT_ADDRESS_FREE_TEXT, dictionary.get(RECEIVING_AGENT_ADDRESS));
 
-        } else {
-            PartiesModel receivingAgentParty = hblModel.consolidation.getReceivingAgent();
+        } else if (!Objects.isNull(hblModel.shipment) && !Objects.isNull(hblModel.shipment.getAdditionalDetails())) {
+            PartiesModel receivingAgentParty = hblModel.shipment.getAdditionalDetails().getReceivingAgent();
             if (!Objects.isNull(receivingAgentParty)) {
                 List<String> receivingAgent = ReportHelper.getOrgAddress(
-                        null,
+                        getValueFromMap(receivingAgentParty.getAddressData(), COMPANY_NAME),
                         getValueFromMap(receivingAgentParty.getAddressData(), ADDRESS1),
                         getValueFromMap(receivingAgentParty.getAddressData(), ADDRESS2),
                         ReportHelper.getCityCountry(
@@ -351,10 +351,10 @@ public class HblReport extends IReport{
                 );
                 dictionary.put(RECEIVING_AGENT_ADDRESS, receivingAgent);
             }
-            PartiesModel sendingAgentParty = hblModel.consolidation.getSendingAgent();
+            PartiesModel sendingAgentParty = hblModel.shipment.getAdditionalDetails().getSendingAgent();
             if (!Objects.isNull(sendingAgentParty)) {
                 List<String> sendingAgent = ReportHelper.getOrgAddress(
-                        null,
+                        getValueFromMap(sendingAgentParty.getAddressData(), COMPANY_NAME),
                         getValueFromMap(sendingAgentParty.getAddressData(), ADDRESS1),
                         getValueFromMap(sendingAgentParty.getAddressData(), ADDRESS2),
                         ReportHelper.getCityCountry(
@@ -428,7 +428,7 @@ public class HblReport extends IReport{
         }
         dictionary.put(NOTIFY_PARTY_ADDRESS, notifyPartyAddress);
 
-        if(hblModel.shipment.getIsNotifyConsigneeEqual()) {
+        if(!Objects.isNull(hblModel.shipment.getIsNotifyConsigneeEqual()) && hblModel.shipment.getIsNotifyConsigneeEqual()) {
             dictionary.put(NOTIFY_PARTY, "Same as Consignee");
             dictionary.put(NOTIFY_PARTY_CAPS, "SAME AS CONSIGNEE");
         } else {
@@ -538,8 +538,8 @@ public class HblReport extends IReport{
         dictionary.put(FREIGHT_OVERSEAS_CURRENCY, hblModel.shipment.getFreightOverseasCurrency());
         dictionary.put(ORIGINALS, hblModel.shipment.getAdditionalDetails().getOriginal());
         dictionary.put(ORIGINAL_WORDS, numberToWords(hblModel.shipment.getAdditionalDetails().getOriginal()));
-        dictionary.put(ISSUE_PLACE_NAME, hblModel.placeOfIssue.getName());
-        dictionary.put(ISSUE_PLACE_COUNTRY, hblModel.placeOfIssue.getCountry());
+        dictionary.put(ISSUE_PLACE_NAME, hblModel.placeOfIssue != null ? hblModel.placeOfIssue.getName() : "");
+        dictionary.put(ISSUE_PLACE_COUNTRY, hblModel.placeOfIssue != null ? hblModel.placeOfIssue.getCountry() : "");
         dictionary.put(ISSUEPLACECOUNTRYNAME, hblModel.issuePlaceCountry); //MasterData
         dictionary.put(BL_COMMENTS, hblModel.blObject.getHblData().getBlComments());
         dictionary.put(MARKS_AND_NUMBER, hblModel.blObject.getHblData().getMarksAndNumbers());
@@ -786,8 +786,9 @@ public class HblReport extends IReport{
 
         if(!Objects.isNull(hblModel.shipment.getPackingList()) && !hblModel.shipment.getPackingList().isEmpty())
         {
-            String packsJson = jsonHelper.convertToJson(hblModel.shipment.getPackingList());
-            var values = jsonHelper.convertValue(packsJson, new TypeReference<List<Map<String, Object>>>() {});
+            var values = hblModel.shipment.getPackingList().stream()
+                    .map(i -> jsonHelper.convertJsonToMap(jsonHelper.convertToJson(i)))
+                    .toList();
             values.forEach(v -> {
                 JsonDateFormat(v);
                 if(v.containsKey(COMMODITY_NAME))
@@ -880,22 +881,22 @@ public class HblReport extends IReport{
         dictionary.put(ReportConstants.SHIPMENT_CONTAINERS, hblModel.commonContainers);
         dictionary.put(ReportConstants.PRE_CARRIAGE, hblModel.preCarriageVessel != null ? hblModel.preCarriageVessel.getName() : null);
         PickupDeliveryDetailsModel pickup = hblModel.shipment.getPickupDetails();
-        if(pickup != null && pickup.getTransporterDetail() != null)
+        if(pickup != null && pickup.getTransporterDetail() != null && pickup.getTransporterDetail().getAddressData() != null)
         {
             Map<String, Object> address = pickup.getTransporterDetail().getAddressData();
             dictionary.put(ReportConstants.PICKUP_TRANSPORT, ReportHelper.getOrgAddressWithPhoneEmail(
-                    address.get("OrgFullName").toString(), address.get(ReportConstants.ADDRESS1).toString(), address.get(ReportConstants.ADDRESS2).toString(),
-                    address.get(ReportConstants.COUNTRY).toString(), address.get(ReportConstants.EMAIL).toString(), address.get(ReportConstants.CONTACT_PHONE).toString(),
-                            null
+                    StringUtility.convertToString(address.get(COMPANY_NAME)), StringUtility.convertToString(address.get(ReportConstants.ADDRESS1)), StringUtility.convertToString(address.get(ReportConstants.ADDRESS2)),
+                    StringUtility.convertToString(address.get(ReportConstants.COUNTRY)), StringUtility.convertToString(address.get(ReportConstants.EMAIL)), StringUtility.convertToString(address.get(ReportConstants.CONTACT_PHONE)),
+                    null
             ));
         }
         PickupDeliveryDetailsModel delivery = hblModel.shipment.getDeliveryDetails();
-        if(delivery != null && delivery.getAgentDetail() != null)
+        if(delivery != null && delivery.getAgentDetail() != null && delivery.getAgentDetail().getAddressData() != null)
         {
             Map<String, Object> address = delivery.getAgentDetail().getAddressData();
             dictionary.put(ReportConstants.DELIVERY_AGENT, ReportHelper.getOrgAddressWithPhoneEmail(
-                    address.get("OrgFullName").toString(), address.get(ReportConstants.ADDRESS1).toString(), address.get(ReportConstants.ADDRESS2).toString(),
-                    address.get(ReportConstants.COUNTRY).toString(), address.get(ReportConstants.EMAIL).toString(), address.get(ReportConstants.CONTACT_PHONE).toString(),
+                    StringUtility.convertToString(address.get(COMPANY_NAME)), StringUtility.convertToString(address.get(ReportConstants.ADDRESS1)), StringUtility.convertToString(address.get(ReportConstants.ADDRESS2)),
+                    StringUtility.convertToString(address.get(ReportConstants.COUNTRY)), StringUtility.convertToString(address.get(ReportConstants.EMAIL)), StringUtility.convertToString(address.get(ReportConstants.CONTACT_PHONE)),
                     null
             ));
         }
