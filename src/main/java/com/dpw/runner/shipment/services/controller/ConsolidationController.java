@@ -237,6 +237,5 @@ public class ConsolidationController {
                     : "Error listing shipment for shipment";
             log.error(responseMsg, e);
         }
-
     }
 }

@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.commons.requests.BulkDownloadRequest;
 import com.dpw.runner.shipment.services.commons.requests.BulkUploadRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.entity.Containers;
+import com.dpw.runner.shipment.services.commons.requests.ExportContainerListRequest;
 import org.springframework.http.ResponseEntity;
 
 import javax.servlet.http.HttpServletResponse;
@@ -32,6 +33,8 @@ public interface IContainerService extends ICommonService {
     void afterSave(Containers containers, boolean isCreate);
 
     void afterSaveList(List<Containers> containers, boolean isCreate);
+
+    void exportContainers(HttpServletResponse response, ExportContainerListRequest request) throws Exception;
 
     ResponseEntity<?> V1BulkContainerCreateAndUpdate(CommonRequestModel commonRequestModel);
 }
