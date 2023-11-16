@@ -465,6 +465,11 @@ public class ConsolidationService implements IConsolidationService {
                 if (consolidationDetails.getReferenceNumber() == null || consolidationDetails.getReferenceNumber().isEmpty())
                     consolidationDetails.setReferenceNumber(consolidationDetails.getConsolidationNumber());
             }
+            else {
+                consolidationDetails.setConsolidationNumber("CONS000" + getConsolidationSerialNumber());
+                if (consolidationDetails.getReferenceNumber() == null || consolidationDetails.getReferenceNumber().isEmpty())
+                    consolidationDetails.setReferenceNumber(consolidationDetails.getConsolidationNumber());
+            }
         }
     }
 
