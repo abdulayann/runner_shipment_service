@@ -111,4 +111,5 @@ public class AdditionalDetailRequest extends CommonRequest implements IRunnerReq
     private PartiesRequest sendingAgent;
     private PartiesRequest receivingAgent;
     private String customDeclType;
+    private String agentReference;
 }
