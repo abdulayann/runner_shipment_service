@@ -1,9 +1,6 @@
 package com.dpw.runner.shipment.services.utils;
 
-import com.dpw.runner.shipment.services.dto.response.CarrierDetailResponse;
-import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
-import com.dpw.runner.shipment.services.dto.response.PickupDeliveryDetailsListResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentListResponse;
+import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.Events;
 import com.dpw.runner.shipment.services.entity.enums.ContainerStatus;
@@ -75,10 +72,66 @@ public class CSVParsingUtil<T> {
         return headers;
     }
 
+
+    public List<String> getHeadersForAllocations() {
+        List<String> headers = new ArrayList<>();
+        List<Field> fields = Arrays.stream(AllocationsResponse.class.getDeclaredFields()).toList();
+        Set removedFields = Set.of("id", "guid");
+        fields = fields.stream().filter(field -> {
+            if (removedFields.contains(field.getName())) return false;
+            else return true;
+        }).collect(Collectors.toList());
+        for (Field field : fields) {
+            headers.add(field.getName());
+        }
+        return headers;
+    }
+
+    public List<String> getHeadersForConsolidation() {
+        List<String> headers = new ArrayList<>();
+        List<Field> fields = Arrays.stream(ConsolidationListResponse.class.getDeclaredFields()).toList();
+        Set removedFields = Set.of("sendingAgent", "receivingAgent", "borrowedFrom", "creditor", "coLoadWith", "arrivalDetails",
+                "departureDetails", "carrierDetails", "achievedQuantities", "allocations");
+        fields = fields.stream().filter(field -> {
+            if (removedFields.contains(field.getName())) return false;
+            else return true;
+        }).collect(Collectors.toList());
+        for (Field field : fields)
+            headers.add(field.getName());
+        return headers;
+    }
+
+    public List<String> getHeadersForArrivalDepartureDetails() {
+        List<String> headers = new ArrayList<>();
+        List<Field> fields = Arrays.stream(ConsolidationListResponse.class.getDeclaredFields()).toList();
+        Set removedFields = Set.of("id", "guid", "containerYardId", "transportPortId", "CFSId", "CTOId", "firstForeignPortId", "lastForeignPortId");
+        fields = fields.stream().filter(field -> {
+            if (removedFields.contains(field.getName())) return false;
+            else return true;
+        }).collect(Collectors.toList());
+        for (Field field : fields)
+            headers.add(field.getName());
+        return headers;
+    }
+
     public List<String> getHeadersForParties() {
         List<String> headers = new ArrayList<>();
         List<Field> fields = Arrays.stream(PartiesResponse.class.getDeclaredFields()).toList();
         Set removedFields = Set.of("guid", "id", "orgData", "addressData");
+        fields = fields.stream().filter(field -> {
+            if (removedFields.contains(field.getName())) return false;
+            else return true;
+        }).collect(Collectors.toList());
+        for (Field field : fields) {
+            headers.add(field.getName());
+        }
+        return headers;
+    }
+
+    public List<String> getHeadersForAchievedQuantities() {
+        List<String> headers = new ArrayList<>();
+        List<Field> fields = Arrays.stream(AchievedQuantitiesResponse.class.getDeclaredFields()).toList();
+        Set removedFields = Set.of("guid", "id");
         fields = fields.stream().filter(field -> {
             if (removedFields.contains(field.getName())) return false;
             else return true;
@@ -192,6 +245,83 @@ public class CSVParsingUtil<T> {
         for (Field field : fields) {
             field.setAccessible(true);
             Object value = field.get(shipment);
+            lst.add(value != null ? value.toString() : "");
+        }
+        return lst;
+    }
+
+    public List<String> getAllAttributeValuesAsListConsol(ConsolidationListResponse response) throws IllegalAccessException {
+        Class<?> clazz = response.getClass();
+        List<Field> fields = Arrays.stream(clazz.getDeclaredFields()).toList();
+        Set removedFields = Set.of("sendingAgent", "receivingAgent", "borrowedFrom", "creditor", "coLoadWith", "arrivalDetails", "departureDetails", "carrierDetails", "achievedQuantities", "allocations"); // Parties
+        fields = fields.stream().filter(field -> {
+            if (removedFields.contains(field.getName())) return false;
+            else return true;
+        }).collect(Collectors.toList());
+
+        List<String> lst = new ArrayList<>();
+
+        for (Field field : fields) {
+            field.setAccessible(true);
+            Object value = field.get(response);
+            lst.add(value != null ? value.toString() : "");
+        }
+        return lst;
+    }
+
+    public List<String> getAllAttributeValuesAsListForAllocations(AllocationsResponse response) throws IllegalAccessException {
+        Class<?> clazz = response.getClass();
+        List<Field> fields = Arrays.stream(clazz.getDeclaredFields()).toList();
+        Set removedFields = Set.of("id", "guid");
+        fields = fields.stream().filter(field -> {
+            if (removedFields.contains(field.getName())) return false;
+            else return true;
+        }).collect(Collectors.toList());
+
+        List<String> lst = new ArrayList<>();
+
+        for (Field field : fields) {
+            field.setAccessible(true);
+            Object value = field.get(response);
+            lst.add(value != null ? value.toString() : "");
+        }
+        return lst;
+    }
+
+
+    public List<String> getAllAttributeValuesAsListForAchievedQuantities(AchievedQuantitiesResponse response) throws IllegalAccessException {
+        Class<?> clazz = response.getClass();
+        List<Field> fields = Arrays.stream(clazz.getDeclaredFields()).toList();
+        Set removedFields = Set.of("id", "guid");
+        fields = fields.stream().filter(field -> {
+            if (removedFields.contains(field.getName())) return false;
+            else return true;
+        }).collect(Collectors.toList());
+
+        List<String> lst = new ArrayList<>();
+
+        for (Field field : fields) {
+            field.setAccessible(true);
+            Object value = field.get(response);
+            lst.add(value != null ? value.toString() : "");
+        }
+        return lst;
+    }
+
+    public List<String> getAllAttributeValuesAsListForArrivalDepartureDetails(ArrivalDepartureDetailsResponse response) throws IllegalAccessException {
+        Class<?> clazz = response.getClass();
+        List<Field> fields = Arrays.stream(clazz.getDeclaredFields()).toList();
+        Set removedFields = Set.of("id", "guid");
+        fields = fields.stream().filter(field -> {
+            if (removedFields.contains(field.getName())) return false;
+            else return true;
+        }).collect(Collectors.toList());
+
+        List<String> lst = new ArrayList<>();
+
+        for (Field field : fields) {
+            field.setAccessible(true);
+            Object value = field.get(response);
             lst.add(value != null ? value.toString() : "");
         }
         return lst;
@@ -346,5 +476,4 @@ public class CSVParsingUtil<T> {
 
         field.set(entity, parsedValue);
     }
-
 }

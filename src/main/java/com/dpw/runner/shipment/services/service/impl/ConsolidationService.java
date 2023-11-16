@@ -32,13 +32,16 @@ import com.dpw.runner.shipment.services.service_bus.AzureServiceBusTopic;
 import com.dpw.runner.shipment.services.service_bus.ISBProperties;
 import com.dpw.runner.shipment.services.service_bus.SBUtilsImpl;
 import com.dpw.runner.shipment.services.syncing.interfaces.IConsolidationSync;
-import com.dpw.runner.shipment.services.utils.GetNextNumberHelper;
-import com.dpw.runner.shipment.services.utils.MasterDataUtils;
-import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
-import com.dpw.runner.shipment.services.utils.ProductIdentifierUtility;
+import com.dpw.runner.shipment.services.utils.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.util.CellRangeAddress;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
@@ -52,6 +55,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.interceptor.TransactionAspectSupport;
 
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
@@ -81,6 +87,8 @@ public class ConsolidationService implements IConsolidationService {
     private IAchievedQuantitiesDao achievedQuantitiesDao;
     @Autowired
     private IPartiesDao partiesDao;
+
+    private final CSVParsingUtil<ConsolidationDetails> parser = new CSVParsingUtil<>(ConsolidationDetails.class);
 
     @Autowired
     private JsonHelper jsonHelper;
@@ -1701,5 +1709,195 @@ public class ConsolidationService implements IConsolidationService {
             TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
             throw new RuntimeException(e);
         }
+    }
+
+    private void makeHeadersInSheet(Sheet sheet) {
+        Row preHeaderRow = sheet.createRow(0);
+        Row headerRow = sheet.createRow(1);
+        List<String> consolHeaders = parser.getHeadersForConsolidation();
+        for (int i = 0; i < consolHeaders.size(); i++) {
+            Cell cell = headerRow.createCell(i);
+            cell.setCellValue(consolHeaders.get(i));
+        }
+
+        //Create Parties Headers
+        int offSet = consolHeaders.size();
+
+        preHeaderRow.createCell(offSet).setCellValue("sendingAgent");
+        List<String> sendingAgentParty = parser.getHeadersForParties();
+        for (int i = 0; i < sendingAgentParty.size(); i++) {
+            Cell cell = headerRow.createCell(offSet + i);
+            cell.setCellValue(sendingAgentParty.get(i));
+        }
+        sheet.addMergedRegion(new CellRangeAddress(0, 0, offSet, offSet + sendingAgentParty.size() - 1));
+        offSet += sendingAgentParty.size();
+
+        preHeaderRow.createCell(offSet).setCellValue("receivingAgent");
+        List<String> receivingAgentParty = parser.getHeadersForParties();
+        for (int i = 0; i < receivingAgentParty.size(); i++) {
+            Cell cell = headerRow.createCell(offSet + i);
+            cell.setCellValue(receivingAgentParty.get(i));
+        }
+        sheet.addMergedRegion(new CellRangeAddress(0, 0, offSet, offSet + receivingAgentParty.size() - 1));
+        offSet += receivingAgentParty.size();
+
+        preHeaderRow.createCell(offSet).setCellValue("borrowedFrom");
+        List<String> borrowedFromParty = parser.getHeadersForParties();
+        for (int i = 0; i < borrowedFromParty.size(); i++) {
+            Cell cell = headerRow.createCell(offSet + i);
+            cell.setCellValue(borrowedFromParty.get(i));
+        }
+        sheet.addMergedRegion(new CellRangeAddress(0, 0, offSet, offSet + borrowedFromParty.size() - 1));
+        offSet += borrowedFromParty.size();
+
+        preHeaderRow.createCell(offSet).setCellValue("creditor");
+        List<String> creditorParty = parser.getHeadersForParties();
+        for (int i = 0; i < creditorParty.size(); i++) {
+            Cell cell = headerRow.createCell(offSet + i);
+            cell.setCellValue(creditorParty.get(i));
+        }
+        sheet.addMergedRegion(new CellRangeAddress(0, 0, offSet, offSet + creditorParty.size() - 1));
+        offSet += creditorParty.size();
+
+        preHeaderRow.createCell(offSet).setCellValue("coLoadWith");
+        List<String> coLoadWith = parser.getHeadersForParties();
+        for (int i = 0; i < coLoadWith.size(); i++) {
+            Cell cell = headerRow.createCell(offSet + i);
+            cell.setCellValue(coLoadWith.get(i));
+        }
+        sheet.addMergedRegion(new CellRangeAddress(0, 0, offSet, offSet + coLoadWith.size() - 1));
+        offSet += coLoadWith.size();
+
+        preHeaderRow.createCell(offSet).setCellValue("arrivalDetails");
+        List<String> arrivalDetails = parser.getHeadersForArrivalDepartureDetails();
+        for (int i = 0; i < arrivalDetails.size(); i++) {
+            Cell cell = headerRow.createCell(offSet + i);
+            cell.setCellValue(arrivalDetails.get(i));
+        }
+        sheet.addMergedRegion(new CellRangeAddress(0, 0, offSet, offSet + arrivalDetails.size() - 1));
+        offSet += arrivalDetails.size();
+
+        preHeaderRow.createCell(offSet).setCellValue("departureDetails");
+        List<String> departureDetails = parser.getHeadersForArrivalDepartureDetails();
+        for (int i = 0; i < departureDetails.size(); i++) {
+            Cell cell = headerRow.createCell(offSet + i);
+            cell.setCellValue(departureDetails.get(i));
+        }
+        sheet.addMergedRegion(new CellRangeAddress(0, 0, offSet, offSet + departureDetails.size() - 1));
+        offSet += departureDetails.size();
+
+
+        preHeaderRow.createCell(offSet).setCellValue("allocations");
+        List<String> allocations = parser.getHeadersForAllocations();
+        for (int i = 0; i < allocations.size(); i++) {
+            Cell cell = headerRow.createCell(offSet + i);
+            cell.setCellValue(allocations.get(i));
+        }
+        sheet.addMergedRegion(new CellRangeAddress(0, 0, offSet, offSet + allocations.size() - 1));
+        offSet += allocations.size();
+
+        preHeaderRow.createCell(offSet).setCellValue("Carrier Details");
+        List<String> carrierDetails = parser.getHeadersForCarrier();
+        for (int i = 0; i < carrierDetails.size(); i++) {
+            Cell cell = headerRow.createCell(offSet + i);
+            cell.setCellValue(carrierDetails.get(i));
+        }
+        sheet.addMergedRegion(new CellRangeAddress(0, 0, offSet, offSet + carrierDetails.size() - 1));
+        offSet += carrierDetails.size();
+
+        preHeaderRow.createCell(offSet).setCellValue("Achieved Quantities");
+        List<String> achievedQuantities = parser.getHeadersForAchievedQuantities();
+        for (int i = 0; i < achievedQuantities.size(); i++) {
+            Cell cell = headerRow.createCell(offSet + i);
+            cell.setCellValue(achievedQuantities.get(i));
+        }
+        sheet.addMergedRegion(new CellRangeAddress(0, 0, offSet, offSet + achievedQuantities.size() - 1));
+        offSet += achievedQuantities.size();
+    }
+
+    @Override
+    public void exportExcel(HttpServletResponse response, CommonRequestModel commonRequestModel) throws IOException, IllegalAccessException {
+        String responseMsg;
+
+        ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
+        if (request == null) {
+            log.error("Request is empty for Consolidation list with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+        }
+        Pair<Specification<ConsolidationDetails>, Pageable> tuple = fetchData(request, ConsolidationDetails.class, tableNames);
+        Page<ConsolidationDetails> consolidationDetailsPage = consolidationDetailsDao.findAll(tuple.getLeft(), tuple.getRight());
+        List<IRunnerResponse> consoleResponse = convertEntityListToDtoList(consolidationDetailsPage.getContent());
+        log.info("Consolidation list retrieved successfully for Request Id {} ", LoggerHelper.getRequestIdFromMDC());
+
+        Workbook workbook = new XSSFWorkbook();
+        Sheet sheet = workbook.createSheet("ConsolidationList");
+        makeHeadersInSheet(sheet);
+
+        for (int i = 0; i < consoleResponse.size(); i++) {
+            Row itemRow = sheet.createRow(i + 2);
+            ConsolidationListResponse consol = (ConsolidationListResponse) consoleResponse.get(i);
+            var consolBasicValues = parser.getAllAttributeValuesAsListConsol(consol);
+            int offset = 0;
+            for (int j = 0; j < consolBasicValues.size(); j++)
+                itemRow.createCell(offset + j).setCellValue(consolBasicValues.get(j));
+            offset += consolBasicValues.size();
+
+            var sendingAgentValues = parser.getAllAttributeValuesAsListForParty(consol.getSendingAgent());
+            for (int j = 0; j < sendingAgentValues.size(); j++)
+                itemRow.createCell(offset + j).setCellValue(sendingAgentValues.get(j));
+            offset += sendingAgentValues.size();
+
+            var receivingAgentValues = parser.getAllAttributeValuesAsListForParty(consol.getReceivingAgent());
+            for (int j = 0; j < receivingAgentValues.size(); j++)
+                itemRow.createCell(offset + j).setCellValue(receivingAgentValues.get(j));
+            offset += receivingAgentValues.size();
+
+            var borrowedFrom = parser.getAllAttributeValuesAsListForParty(consol.getBorrowedFrom());
+            for (int j = 0; j < borrowedFrom.size(); j++)
+                itemRow.createCell(offset + j).setCellValue(borrowedFrom.get(j));
+            offset += borrowedFrom.size();
+
+            var creditor = parser.getAllAttributeValuesAsListForParty(consol.getCreditor());
+            for (int j = 0; j < creditor.size(); j++)
+                itemRow.createCell(offset + j).setCellValue(creditor.get(j));
+            offset += creditor.size();
+
+            var coLoadWith = parser.getAllAttributeValuesAsListForParty(consol.getCoLoadWith());
+            for (int j = 0; j < coLoadWith.size(); j++)
+                itemRow.createCell(offset + j).setCellValue(coLoadWith.get(j));
+            offset += coLoadWith.size();
+
+            var arrivalDetails = parser.getAllAttributeValuesAsListForArrivalDepartureDetails(consol.getArrivalDetails());
+            for (int j = 0; j < arrivalDetails.size(); j++)
+                itemRow.createCell(offset + j).setCellValue(arrivalDetails.get(j));
+            offset += arrivalDetails.size();
+
+            var departureDetails = parser.getAllAttributeValuesAsListForArrivalDepartureDetails(consol.getDepartureDetails());
+            for (int j = 0; j < departureDetails.size(); j++)
+                itemRow.createCell(offset + j).setCellValue(departureDetails.get(j));
+            offset += departureDetails.size();
+
+            var allocations = parser.getAllAttributeValuesAsListForAllocations(consol.getAllocations());
+            for (int j = 0; j < allocations.size(); j++)
+                itemRow.createCell(offset + j).setCellValue(allocations.get(j));
+            offset += allocations.size();
+
+            var carrierDetails = parser.getAllAttributeValuesAsListForCarrier(consol.getCarrierDetails());
+            for (int j = 0; j < carrierDetails.size(); j++)
+                itemRow.createCell(offset + j).setCellValue(carrierDetails.get(j));
+            offset += carrierDetails.size();
+
+            var achievedQuantities = parser.getAllAttributeValuesAsListForAchievedQuantities(consol.getAchievedQuantities());
+            for (int j = 0; j < achievedQuantities.size(); j++)
+                itemRow.createCell(offset + j).setCellValue(achievedQuantities.get(j));
+            offset += achievedQuantities.size();
+        }
+
+        response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+        response.setHeader("Content-Disposition", "attachment; filename=consolidationList.xlsx");
+
+        try (OutputStream outputStream = response.getOutputStream()) {
+            workbook.write(outputStream);
+        }
+
     }
 }
