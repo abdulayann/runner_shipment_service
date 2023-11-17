@@ -1541,4 +1541,43 @@ public class EntityTransferService implements IEntityTransferService {
         return ResponseHelper.buildSuccessResponse(response);
     }
 
+    @Override
+    public ResponseEntity<?> checkTaskExist(CommonRequestModel commonRequestModel) {
+        CheckTaskExistRequest request = (CheckTaskExistRequest) commonRequestModel.getData();
+        CheckTaskExistV1Request requestV1 = CheckTaskExistV1Request.builder().entityType(request.getEntityType())
+                .sendToBranch(request.getSendToBranch())
+                .sendToOrg(request.getSendToOrg())
+                .build();
+        if(request.getSendToBranch() == null){
+            requestV1.setSendToBranch(new ArrayList<>());
+        }
+        if(request.getSendToOrg() == null){
+            requestV1.setSendToOrg(new ArrayList<>());
+        }
+        if(request.getEntityType().equals(Constants.Shipments)){
+            Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(request.getEntityId());
+            if (!shipmentDetails.isPresent()) {
+                log.debug("Shipment Details is null for Id {} with Request Id {}", request.getEntityId(), LoggerHelper.getRequestIdFromMDC());
+                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+            }
+            requestV1.setShipId(shipmentDetails.get().getShipmentId());
+        } else if (request.getEntityType().equals(Constants.Consolidations)) {
+            Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(request.getEntityId());
+            if (!consolidationDetails.isPresent()) {
+                log.debug("Consolidation Details is null for Id {} with Request Id {}", request.getEntityId(), LoggerHelper.getRequestIdFromMDC());
+                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+            }
+            requestV1.setConsoleId(consolidationDetails.get().getConsolidationNumber());
+        }
+        CheckTaskExistResponse response = new CheckTaskExistResponse();
+        try {
+            response = v1Service.checkTaskExist(requestV1);
+        }
+        catch (Exception ex) {
+            log.error("Check Task exist failed to check from V1: " + ex);
+            throw new RuntimeException("Check Task exist failed to check from V1: " + ex);
+        }
+        return ResponseHelper.buildSuccessResponse(response);
+    }
+
 }
