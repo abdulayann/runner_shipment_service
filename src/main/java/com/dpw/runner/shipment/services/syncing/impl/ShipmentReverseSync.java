@@ -6,9 +6,11 @@ import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.Ownership;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import com.dpw.runner.shipment.services.service.impl.ShipmentService;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
 import com.dpw.runner.shipment.services.syncing.Entity.CustomShipmentSyncRequest;
 import com.dpw.runner.shipment.services.syncing.Entity.PartyRequestV2;
+import com.dpw.runner.shipment.services.syncing.Entity.ShipmentServiceRequestV2;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentReverseSync;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
@@ -38,6 +40,7 @@ public class ShipmentReverseSync implements IShipmentReverseSync {
             mapCarrierDetailsReverse(cs, sd);
             mapAdditionalDetailsReverse(cs, sd);
             mapReverseShipmentGuids(sd, cs);
+            mapShipmentServiceReverse(cs, sd);
 
 //            // Clarity required
 //            if(cs.getStatusString() != null && !cs.getStatusString().isEmpty()){
@@ -129,6 +132,19 @@ public class ShipmentReverseSync implements IShipmentReverseSync {
         additionalDetails.setTraderOrSupplier(mapPartyObject(cs.getTraderOrSupplierParty()));
         additionalDetails.setGuid(null);
         sd.setAdditionalDetails(additionalDetails);
+    }
+
+    private void mapShipmentServiceReverse(CustomShipmentSyncRequest cs, ShipmentDetails sd) {
+        if(cs.getServicesList() == null)
+            return;
+        List<ServiceDetails> res = cs.getServicesList().stream().map(
+                i -> {
+                    var _service = modelMapper.map(i, ServiceDetails.class);
+                    _service.setServiceDuration(i.getServiceDurationSpan());
+                    return _service;
+                }
+        ).toList();
+        sd.setServicesList(res);
     }
 
     private Parties mapPartyObject(PartyRequestV2 sourcePartyObject) {
