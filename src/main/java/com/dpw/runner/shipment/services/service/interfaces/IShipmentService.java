@@ -35,4 +35,5 @@ public interface IShipmentService extends ICommonService {
     void afterSave(ShipmentDetails shipmentDetails, boolean isCreate);
     ResponseEntity<?> fullShipmentsList(CommonRequestModel commonRequestModel);
     ResponseEntity<?> assignShipmentContainers(CommonRequestModel commonRequestModel);
+    ResponseEntity<?> retrieveByOrderId(String orderId);
 }

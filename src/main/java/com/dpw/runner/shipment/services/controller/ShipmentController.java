@@ -1,5 +1,10 @@
 package com.dpw.runner.shipment.services.controller;
 
+import com.dpw.runner.shipment.services.adapters.impl.OrderManagementAdapter;
+import com.dpw.runner.shipment.services.commons.constants.ApiConstants;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.commons.constants.ShipmentConstants;
 import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
@@ -30,6 +35,7 @@ import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.retry.support.RetryTemplate;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletResponse;
@@ -59,6 +65,8 @@ public class ShipmentController {
     ModelMapper modelMapper;
     @Autowired
     ObjectMapper objectMapper;
+    @Autowired
+    OrderManagementAdapter orderManagementAdapter;
 
 
 
@@ -298,6 +306,16 @@ public class ShipmentController {
             log.error(responseMsg, e);
         }
 
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.RETRIEVE_BY_ORDER_ID_SUCCESSFUL)})
+    @GetMapping(ApiConstants.API_RETRIEVE_BY_ORDER_ID)
+    public ResponseEntity<?> retrieveByOrderId(@ApiParam(value = ShipmentConstants.ORDER_ID, required = true) @RequestParam String orderId) {
+        try {
+            return (ResponseEntity<RunnerResponse<ShipmentDetailsResponse>>) shipmentService.retrieveByOrderId(orderId);
+        } catch (Exception e) {
+            return ResponseHelper.buildFailedResponse(e.getMessage());
+        }
     }
 
 }

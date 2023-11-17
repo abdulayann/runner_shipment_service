@@ -30,4 +30,6 @@ public class ShipmentConstants {
 
     public static final String SHIPMENT_SYNC_SUCCESSFUL = "Shipment synced successfully";
     public static final String EXPORT_SUCCESSFUL = "Export Successful";
+    public static final String RETRIEVE_BY_ORDER_ID_SUCCESSFUL = "Successful Shipment Data Retrieval By Order Id";
+    public static final String ORDER_ID = "Order Id";
 }
