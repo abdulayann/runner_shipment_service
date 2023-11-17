@@ -1,0 +1,354 @@
+package com.dpw.runner.shipment.services.adapters.impl;
+
+import com.azure.messaging.servicebus.ServiceBusMessage;
+import com.dpw.runner.shipment.services.adapters.config.TrackingServiceConfig;
+import com.dpw.runner.shipment.services.adapters.interfaces.ITrackingServiceAdapter;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.dao.interfaces.IAwbDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
+import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
+import com.dpw.runner.shipment.services.dto.TrackingService.UniversalTrackingPayload;
+import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.masterdata.dto.CarrierMasterData;
+import com.dpw.runner.shipment.services.masterdata.factory.MasterDataFactory;
+import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
+import com.dpw.runner.shipment.services.service_bus.ISBProperties;
+import com.dpw.runner.shipment.services.service_bus.SBUtilsImpl;
+import com.dpw.runner.shipment.services.utils.StringUtility;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.time.format.DateTimeFormatter;
+import java.util.*;
+
+
+@Slf4j
+@Service
+public class TrackingServiceAdapter implements ITrackingServiceAdapter {
+
+    @Autowired
+    private IConsoleShipmentMappingDao consoleShipmentMappingDao;
+
+    @Autowired
+    private IConsolidationDetailsDao consolidationDetailsDao;
+
+    @Autowired
+    private IShipmentDao shipmentDao;
+
+    @Autowired
+    private IAwbDao awbDao;
+
+    @Autowired
+    private MasterDataFactory masterDataFactory;
+
+    @Autowired
+    private JsonHelper jsonHelper;
+
+    @Autowired
+    private TrackingServiceConfig trackingServiceConfig;
+
+    @Autowired
+    private ISBProperties isbProperties;
+
+    @Autowired
+    private SBUtilsImpl sbUtils;
+
+
+    @Override
+    public UniversalTrackingPayload.UniversalEventsPayload mapEventDetailsForTracking(String bookingReferenceNumber, String referenceNumberType, String runnerReferenceNumber, List<Events> events) {
+        return UniversalTrackingPayload.UniversalEventsPayload.builder()
+            .runnerReferenceNumber(runnerReferenceNumber)
+            .referenceNumberType(referenceNumberType)
+            .bookingReferenceNumber(bookingReferenceNumber)
+            .events(mapEvents(events))
+            .build();
+    }
+
+
+    public List<UniversalTrackingPayload.EventDetail> mapEvents(List<Events> events)
+    {
+        List<UniversalTrackingPayload.EventDetail> infoList = new ArrayList<>();
+        events.forEach(i -> {
+            UniversalTrackingPayload.EventDetail eventDetail = UniversalTrackingPayload.EventDetail.builder()
+                    .id(i.getId())
+                    .description(i.getDescription())
+                    .eventCode(i.getEventCode())
+                    .estimated(i.getEstimated())
+                    .actual(i.getActual())
+                    .placeName(i.getPlaceName())
+                    .build();
+            infoList.add(eventDetail);
+        });
+        return infoList;
+    }
+
+    @Override
+    public void publishUpdatesToTrackingServiceQueue(String jsonBody, Boolean isTrackingEvents) {
+        if(isTrackingEvents){
+          // Publish to EventsMessage Topic
+          sbUtils.sendMessagesToTopic(
+              isbProperties,
+              trackingServiceConfig.getEventsMessageTopic(),
+              List.of(new ServiceBusMessage(jsonBody)));
+        } else {
+            sbUtils.sendMessagesToTopic(
+                    isbProperties,
+                    trackingServiceConfig.getRunnerFlowMessageTopic(),
+                    List.of(new ServiceBusMessage(jsonBody)));
+        }
+    }
+
+    @Override
+    public boolean checkIfConsolAttached(ShipmentDetails shipmentDetails) {
+        boolean res = false;
+        try {
+            List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByShipmentId(shipmentDetails.getId());
+            ConsolidationDetails consolidationDetails = null;
+            if(consoleShipmentMappings != null && consoleShipmentMappings.size() > 0) {
+                Optional<ConsolidationDetails> optional = consolidationDetailsDao.findById(consoleShipmentMappings.get(0).getConsolidationId());
+                consolidationDetails = optional.get();
+            }
+
+            if(consolidationDetails != null && !consolidationDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR))
+                res = GetContainerDetailsAttachedForShipment(shipmentDetails).size() > 0;
+            else
+                res = !Objects.isNull(shipmentDetails.getHouseBill());
+
+        } catch (Exception e) {
+            log.error(e.getMessage());
+        }
+        return res;
+    }
+
+    @Override
+    public boolean checkIfAwbExists(ConsolidationDetails consolidationDetails) {
+        List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByConsolidationId(consolidationDetails.getId());
+        if(consoleShipmentMappings != null && consoleShipmentMappings.size() > 0){
+            Optional<ShipmentDetails> optional = shipmentDao.findById(consoleShipmentMappings.get(0).getShipmentId());
+            var shipment = optional.get();
+            return (shipment.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && shipment.getHouseBill() != null);
+        }
+        return false;
+    }
+
+    @Override
+    public boolean checkIfConsolContainersExist(ConsolidationDetails consolidationDetails) {
+        boolean res = false;
+        if(consolidationDetails.getContainersList() != null) {
+            res = true;
+            for(var c : consolidationDetails.getContainersList()) {
+                res = res && (!Objects.isNull(c.getContainerNumber()));
+            }
+        }
+        return res;
+    }
+
+    @Override
+    public UniversalTrackingPayload mapConsoleDataToTrackingServiceData(ConsolidationDetails consolidationDetails) {
+        UniversalTrackingPayload trackingPayload = null;
+        if(consolidationDetails != null) {
+            ShipmentDetails shipment = GetShipmentIfConsolAttached(consolidationDetails);
+            trackingPayload = mapDetailsToTSData(consolidationDetails, shipment, false);
+            log.info("Consolidation tracking payload : {}", trackingPayload);
+        }
+        return trackingPayload;
+    }
+
+    private ShipmentDetails GetShipmentIfConsolAttached(ConsolidationDetails consolidationDetails) {
+        ShipmentDetails shipmentDetails = null;
+        List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByConsolidationId(consolidationDetails.getId());
+        if(consoleShipmentMappings != null && consoleShipmentMappings.size() > 0) {
+            Long shipmentId = consoleShipmentMappings.get(0).getShipmentId();
+            Optional<ShipmentDetails> optional = shipmentDao.findById(shipmentId);
+            shipmentDetails = optional.get();
+        }
+        return shipmentDetails;
+    }
+
+    @Override
+    public UniversalTrackingPayload mapShipmentDataToTrackingServiceData(ShipmentDetails shipmentDetails) {
+        UniversalTrackingPayload trackingPayload = null;
+        ConsolidationDetails consol = getConsolidationFromShipment(shipmentDetails.getId(), TenantContext.getCurrentTenant());
+        trackingPayload = mapDetailsToTSData(consol, shipmentDetails, true);
+        log.info("Shipment Tracking Update: {}", trackingPayload.toString());
+        return trackingPayload;
+    }
+
+    @Override
+    public List<Events> getAllEvents(ShipmentDetails shipmentDetails, ConsolidationDetails consolidationDetails) {
+        // Modified Logic (currently returning only shipment/ consol events)
+        // This will be replaced once the below to-do item is completed
+        if(shipmentDetails != null)
+            return shipmentDetails.getEventsList();
+        else
+            return consolidationDetails.getEventsList();
+
+        //TODO (this method fetches all types of events based on a referenceNumber from ship/consol)
+        // eventsRepository.GetDataForEventsFromRefrenceNumber(uow.Connection,refrenceNoRequest,false);
+    }
+
+    private ConsolidationDetails getConsolidationFromShipment(Long shipmentId, Integer currentTenant) {
+        ConsolidationDetails consolidationDetails = null;
+        try{
+            List<ConsoleShipmentMapping> linkedConsol = consoleShipmentMappingDao.findByShipmentId(shipmentId);
+            if(linkedConsol != null && linkedConsol.size() > 0) {
+                Optional<ConsolidationDetails> optional = consolidationDetailsDao.findById(linkedConsol.get(0).getConsolidationId());
+                consolidationDetails = optional.get();
+            }
+        } catch (Exception e) {
+            log.error("Error while fetching linked consol from shipment with id {}", shipmentId);
+        }
+        return  consolidationDetails;
+    }
+
+    private UniversalTrackingPayload mapDetailsToTSData(ConsolidationDetails inputConsol, ShipmentDetails inputShipment, boolean isRequestFromShipment) {
+        UniversalTrackingPayload trackingPayload = null;
+        List<UniversalTrackingPayload.ShipmentDetail> shipmentDetails = new ArrayList<>();
+        var shipDetails = getShipmentDetails(inputShipment);
+
+        if(shipDetails != null)
+            shipmentDetails.add(shipDetails);
+
+        var entityDetails = getEntityDetails(inputConsol, inputShipment, isRequestFromShipment);
+        var consolNumber = inputConsol !=null ? inputConsol.getConsolidationNumber() : null;
+        var masterBill = inputConsol !=null ? inputConsol.getBol() : null;
+        var shipmentNumber =  inputShipment !=null ? inputShipment.getShipmentId() : null;
+
+
+        if(!isRequestFromShipment)
+            trackingPayload = mapDetailsForTracking(Constants.CONSOLIDATION, consolNumber,masterBill, shipmentDetails, entityDetails);
+        else
+            trackingPayload = mapDetailsForTracking(Constants.SHIPMENT, shipmentNumber,masterBill, shipmentDetails, entityDetails);
+
+        if(inputShipment != null && inputShipment.getSource().equals("API")) {
+            if(!isRequestFromShipment)
+                trackingPayload.setBookingReferenceNumber(inputConsol.getReferenceNumber());
+            else
+                trackingPayload.setBookingReferenceNumber(inputShipment.getBookingReference());
+        }
+        else
+            trackingPayload.setBookingReferenceNumber(null);
+
+        if((inputConsol != null && ! inputConsol.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)) || (inputShipment != null && inputShipment.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)))
+            trackingPayload.setEntityType("Container");
+        else
+            trackingPayload.setEntityType("awb");
+
+        if(inputConsol != null)
+            trackingPayload.setCarrier(fetchCarrierName(inputConsol.getCarrierDetails().getShippingLine()));
+        else
+            trackingPayload.setCarrier(inputShipment.getCarrierDetails().getShippingLine());
+
+        return trackingPayload;
+    }
+
+    private List<UniversalTrackingPayload.EntityDetail> getEntityDetails(ConsolidationDetails inputConsol, ShipmentDetails inputShipment, boolean isRequestFromShipment) {
+        if(inputConsol!=null && !inputConsol.getTransportMode().equals("AIR")) {
+            if(!isRequestFromShipment)
+                return GetContainerDetailsFromConsol(inputConsol);
+            else
+                return GetContainerDetailsAttachedForShipment(inputShipment);
+        }
+        else if(inputShipment.getTransportMode().equals("AIR"))
+                return GetAWBDetailsFromShipment(inputShipment);
+        else
+            return null;
+    }
+
+    private List<UniversalTrackingPayload.EntityDetail> GetAWBDetailsFromShipment(ShipmentDetails inputShipment) {
+        List<UniversalTrackingPayload.EntityDetail> result = new ArrayList<>();
+        Awb awb = awbDao.findByShipmentId(inputShipment.getId()).get(0);
+        result.add(UniversalTrackingPayload.EntityDetail.builder()
+                        .trackingNumber(inputShipment.getHouseBill())
+                        .allocationDate(awb.getCreatedAt().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")))
+                .build());
+        return result;
+    }
+
+    private List<UniversalTrackingPayload.EntityDetail> GetContainerDetailsAttachedForShipment(ShipmentDetails inputShipment) {
+        return getEntityDetailsFromContainers(inputShipment.getContainersList());
+    }
+
+
+    private List<UniversalTrackingPayload.EntityDetail> GetContainerDetailsFromConsol(ConsolidationDetails inputConsol) {
+        return getEntityDetailsFromContainers(inputConsol.getContainersList());
+    }
+
+    private List<UniversalTrackingPayload.EntityDetail> getEntityDetailsFromContainers(List<Containers> containersList) {
+        if(containersList == null || containersList.size() == 0)
+            return null;
+
+        List<UniversalTrackingPayload.EntityDetail> result = new ArrayList<>();
+        for (var container : containersList) {
+            var entityDetail = UniversalTrackingPayload.EntityDetail.builder()
+                    .trackingNumber(container.getContainerNumber())
+                    .allocationDate(container.getAllocationDate() != null ? (DateTimeFormatter.ofPattern("yyyy-MM-dd").format(container.getAllocationDate())) : null)
+                    .grossWeight(container.getGrossWeight())
+                    .grossWeightUom(container.getGrossWeightUnit())
+                    .isEmpty(container.getIsEmpty())
+                    .isReefer(container.getIsReefer())
+                    .isShipperOwned(container.getIsShipperOwned())
+                    // .containerTypeCode(container.ContainerTypeCode) // TODO
+                    .mode(container.getHblDeliveryMode())
+                    .containerCount(container.getContainerCount())
+                    .descriptionOfGoods(container.getDescriptionOfGoods())
+                    .noofPackages(container.getNoOfPackages())
+                    .netWeight(container.getNetWeight())
+                    .netWeightUom(container.getNetWeightUnit())
+                    .build();
+            result.add(entityDetail);
+        }
+        return result;
+    }
+
+    private String fetchCarrierName(String carrier) {
+        if(StringUtility.isEmpty(carrier)) return null;
+        List<Object> carrierCriteria = Arrays.asList(
+                List.of("ItemValue"),
+                "=",
+                carrier
+        );
+        CommonV1ListRequest carrierRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(carrierCriteria).build();
+        CarrierListObject carrierListObject = new CarrierListObject();
+        carrierListObject.setListObject(carrierRequest);
+        Object carrierResponse = masterDataFactory.getMasterDataService().fetchCarrierMasterData(carrierListObject).getData();
+        List<CarrierMasterData> carrierMasterData = jsonHelper.convertValueToList(carrierResponse, CarrierMasterData.class);
+        if(carrierMasterData == null || carrierMasterData.isEmpty())
+            return null;
+        return carrierMasterData.get(0).getItemDescription();
+    }
+
+    private UniversalTrackingPayload.ShipmentDetail getShipmentDetails(ShipmentDetails shipmentsRow) {
+        if(shipmentsRow == null)
+            return null;
+
+        return UniversalTrackingPayload.ShipmentDetail.builder().build();
+        // TODO map the following properties
+//                .originName(shipmentsRow.OriginName)
+//                .destinationName(shipmentsRow.DestinationName)
+//                .destinationCountry(shipmentsRow.DestinationCountry)
+//                .originPortCode(shipmentsRow.POLCode)
+//                .destinationPortCode(shipmentsRow.PODCode)
+//                .serviceMode(shipmentsRow.ServiceMode)
+//                .estimatedPickupDate(shipmentsRow.EstimatedPickup != null ? ((DateTime)shipmentsRow.EstimatedPickup).Date.ToString("yyyy-MM-dd") : null)
+//                .bookingCreationDate(shipmentsRow.DateofIssue != null ? ((DateTime)shipmentsRow.DateofIssue).Date.ToString("yyyy-MM-dd") : null)
+//                .houseBill(shipmentsRow.getHouseBill())
+//                .shipmentType(shipmentsRow.getDirection()) // Custom_ShipType
+//                .build();
+    }
+
+    private UniversalTrackingPayload mapDetailsForTracking(String referenceNumberType, String runnerReferenceNumber, String masterBill, List<UniversalTrackingPayload.ShipmentDetail> shipmentDetail, List<UniversalTrackingPayload.EntityDetail> entityDetail) {
+        return UniversalTrackingPayload.builder()
+        .runnerReferenceNumber(runnerReferenceNumber)
+        .referenceNumberType(referenceNumberType)
+        .shipmentDetails(shipmentDetail)
+        .entityDetails(entityDetail)
+        .masterBill(masterBill)
+        .build();
+    }
+}
