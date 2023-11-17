@@ -92,6 +92,8 @@ public class ReportService implements IReportService {
 
     @Autowired
     private IShipmentService shipmentService;
+    @Autowired
+    private IHblReleaseTypeMappingDao hblReleaseTypeMappingDao;
 
     @Override
     public byte[] getDocumentData(CommonRequestModel request) throws DocumentException, IOException {
@@ -306,7 +308,7 @@ public class ReportService implements IReportService {
             byte[] mainDoc_hawb = GetFromDocumentService(dataRetrived, Pages.getMainPageId());
             byte[] firstpage_hawb = GetFromDocumentService(dataRetrived, Pages.getMainPageId());
             byte[] backprint_hawb = GetFromDocumentService(dataRetrived, Pages.getMainPageId());
-            List<byte[]> pdfBytes_hawb = getOriginalandCopies(Pages, reportRequest.getReportInfo(), mainDoc_hawb, firstpage_hawb, backprint_hawb, dataRetrived, hbltype);
+            List<byte[]> pdfBytes_hawb = getOriginalandCopies(Pages, reportRequest.getReportInfo(), mainDoc_hawb, firstpage_hawb, backprint_hawb, dataRetrived, hbltype, tenantSettingsRow, reportRequest.getNoOfCopies());
             pdfByte_Content = CommonUtils.concatAndAddContent(pdfBytes_hawb);
             if (pdfByte_Content == null) return null;
             if (reportRequest.getPrintType().equalsIgnoreCase(TypeOfHblPrint.Draft.name()))
@@ -345,7 +347,7 @@ public class ReportService implements IReportService {
             return null;
         }
 
-        List<byte[]> pdfBytes = getOriginalandCopies(pages, reportRequest.getReportInfo(), mainDoc, firstpage, backprint, dataRetrived, hbltype);
+        List<byte[]> pdfBytes = getOriginalandCopies(pages, reportRequest.getReportInfo(), mainDoc, firstpage, backprint, dataRetrived, hbltype, tenantSettingsRow, reportRequest.getNoOfCopies());
         boolean waterMarkRequired = true;
         try
         {
@@ -450,7 +452,7 @@ public class ReportService implements IReportService {
                 docUploadRequest.setType(ReportConstants.SHIPMENT_HOUSE_BILL);
                 docUploadRequest.setReportId(reportRequest.getReportId());
                 try {
-                    AddHouseBillToRepo(docUploadRequest, reportRequest.getPrintType(), pdfByteContent, tenantSettingsRow);
+                    AddHouseBillToRepo(docUploadRequest, reportRequest.getPrintType(), pdfByteContent, tenantSettingsRow, shipmentDetails.getAdditionalDetails().getReleaseType());
                 } catch (Exception e) {
                     log.error(e.getMessage());
                     //TODO - Abhimanyu doc upload failing
@@ -489,7 +491,7 @@ public class ReportService implements IReportService {
             docUploadRequest.setType(ReportConstants.SEAWAY_BILL);
             docUploadRequest.setReportId(reportRequest.getReportId());
             try {
-                AddHouseBillToRepo(docUploadRequest, TypeOfHblPrint.Draft.name().toUpperCase(), pdfByteContent, tenantSettingsRow);
+                AddHouseBillToRepo(docUploadRequest, TypeOfHblPrint.Draft.name().toUpperCase(), pdfByteContent, tenantSettingsRow, null);
             } catch (Exception e) {
                 log.error(e.getMessage());
                 throw new ValidationException("Unable to upload doc");
@@ -844,7 +846,7 @@ public class ReportService implements IReportService {
         return GetFromDocumentService(json, Pages.getMainPageId());
     }
 
-    public List<byte[]> getOriginalandCopies(DocPages pages, String ReportInfo, byte[] mainDoc, byte[] firstpage, byte[] backprint, final Map<String, Object> json, String hbltype) throws DocumentException, IOException {
+    public List<byte[]> getOriginalandCopies(DocPages pages, String ReportInfo, byte[] mainDoc, byte[] firstpage, byte[] backprint, final Map<String, Object> json, String hbltype, ShipmentSettingsDetails shipmentSettings, String noOfCopies) throws DocumentException, IOException {
 
         List<byte[]> pdfBytes = new ArrayList<>();
 
@@ -902,6 +904,17 @@ public class ReportService implements IReportService {
             }
 
         }
+
+        try {
+            if (!Objects.isNull(shipmentSettings) && !Objects.isNull(shipmentSettings.getRestrictBlRelease())
+                    && shipmentSettings.getRestrictBlRelease() && StringUtility.isNotEmpty(noOfCopies)) {
+                Integer _copy = Integer.parseInt(noOfCopies);
+                byte[] pdfByteContentCopy = MergeDocumentBytes(mainDoc, firstpage, backprint, logopath, ReportInfo, pages.getShipmentSettingsDetails());
+                while (_copy-- > 1) {
+                    pdfBytes.add(pdfByteContentCopy);
+                }
+            }
+        } catch (Exception ex) { /* Ignore */ }
         return pdfBytes;
 
     }
@@ -1044,13 +1057,14 @@ public class ReportService implements IReportService {
         }
     }
 
-    public void AddHouseBillToRepo(DocUploadRequest uploadRequest, String printType, byte[] document, ShipmentSettingsDetails shipmentSettingsDetails) throws IOException {
+    public void AddHouseBillToRepo(DocUploadRequest uploadRequest, String printType, byte[] document, ShipmentSettingsDetails shipmentSettingsDetails, String releaseType) throws IOException {
         List<Hbl> blObjectList = hblDao.findByShipmentId(Long.parseLong(uploadRequest.getReportId()));
         Hbl blObject = blObjectList.get(0);
         String fileVersion = null;
         if(printType.equalsIgnoreCase(TypeOfHblPrint.Original.name())){
-            fileVersion =  blObject.getHblData().getOriginalSeq().toString();
-            blObject.getHblData().setOriginalSeq(blObject.getHblData().getOriginalSeq() + 1);
+            fileVersion =  StringUtility.convertToString(blObject.getHblData().getOriginalSeq());
+            blObject.getHblData().setOriginalSeq(blObject.getHblData().getOriginalSeq() != null ? blObject.getHblData().getOriginalSeq() + 1 : 1);
+            updateInReleaseMappingTable(blObject, releaseType, shipmentSettingsDetails);
         }else{
             fileVersion = blObject.getHblData().getVersion().toString();
             blObject.getHblData().setVersion(blObject.getHblData().getVersion()+ 1);
@@ -1093,6 +1107,27 @@ public class ReportService implements IReportService {
 
         if (shipmentDetails.getAdditionalDetails().getOriginal() >= 1) {
             createAutoEvent(uploadRequest.getReportId(), EventConstants.GENERATE_BL_EVENT_EXCLUSIVE_OF_DRAFT, shipmentSettingsDetails);
+        }
+    }
+
+    private void updateInReleaseMappingTable(Hbl hbl, String releaseType, ShipmentSettingsDetails shipmentSettings) {
+        if (StringUtility.isNotEmpty(releaseType) && !Objects.isNull(shipmentSettings) && !Objects.isNull(shipmentSettings.getRestrictBlRelease())
+                && shipmentSettings.getRestrictBlRelease()) {
+            List<HblReleaseTypeMapping> releaseTypeMappingList = hblReleaseTypeMappingDao.findByReleaseTypeAndHblId(hbl.getId(), releaseType);
+            HblReleaseTypeMapping releaseTypeMapping;
+            if (releaseTypeMappingList == null || releaseTypeMappingList.isEmpty()) {
+                // create new
+                releaseTypeMapping = HblReleaseTypeMapping.builder()
+                        .hblId(hbl.getId())
+                        .releaseType(releaseType)
+                        .copiesPrinted(1)
+                        .build();
+            }
+            else {
+                releaseTypeMapping = releaseTypeMappingList.get(0);
+                releaseTypeMapping.setCopiesPrinted(releaseTypeMapping.getCopiesPrinted() + 1);
+            }
+            hblReleaseTypeMappingDao.save(releaseTypeMapping);
         }
     }
 }

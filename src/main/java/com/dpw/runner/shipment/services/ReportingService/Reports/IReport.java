@@ -471,19 +471,19 @@ public abstract class IReport {
         PartiesModel receivingAgent = consolidation.getReceivingAgent();
         PartiesModel creditor = consolidation.getCreditor();
         ArrivalDepartureDetailsModel arrivalDetails = consolidation.getArrivalDetails();
-
         UnlocationsResponse lastForeignPort = null;
-        List<Object> criteria = Arrays.asList(
-                Arrays.asList("LocCode"),
-                "=",
-                arrivalDetails.getLastForeignPort()
-        );
-        CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(criteria).build();
-        Object unlocations = masterDataFactory.getMasterDataService().fetchUnlocationData(commonV1ListRequest).getData();
-        List<UnlocationsResponse> unlocationsResponse = jsonHelper.convertValueToList(unlocations, UnlocationsResponse.class);
-        if(unlocationsResponse.size() > 0)
-            lastForeignPort = unlocationsResponse.get(0);
-
+        if (arrivalDetails != null) {
+            List<Object> criteria = Arrays.asList(
+                    Arrays.asList("LocCode"),
+                    "=",
+                    arrivalDetails.getLastForeignPort()
+            );
+            CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(criteria).build();
+            Object unlocations = masterDataFactory.getMasterDataService().fetchUnlocationData(commonV1ListRequest).getData();
+            List<UnlocationsResponse> unlocationsResponse = jsonHelper.convertValueToList(unlocations, UnlocationsResponse.class);
+            if(unlocationsResponse.size() > 0)
+                lastForeignPort = unlocationsResponse.get(0);
+        }
         dictionary.put(ReportConstants.CARGO_CLOSING_TIME, consolidation.getCargoClosingTime());
         dictionary.put(ReportConstants.DOCS_CLOSING_TIME, consolidation.getDocsClosingTime());
         dictionary.put(ReportConstants.MASTER_BILL, consolidation.getBol());
@@ -494,11 +494,11 @@ public abstract class IReport {
             Map<String, Object> addressData = sendingAgent.getAddressData();
             if(addressData != null)
             {
-                exportAgentAddress = ReportHelper.getOrgAddressWithPhoneEmail(addressData.get(COMPANY_NAME).toString(), addressData.get(ADDRESS1).toString(),
-                        addressData.get(ADDRESS2).toString(),
-                        ReportHelper.getCityCountry(addressData.get(CITY).toString(), addressData.get(COUNTRY).toString()),
-                        null, addressData.get(CONTACT_PHONE).toString(),
-                        addressData.get(ZIP_POST_CODE).toString()
+                exportAgentAddress = ReportHelper.getOrgAddressWithPhoneEmail(StringUtility.convertToString(addressData.get(COMPANY_NAME)), StringUtility.convertToString(addressData.get(ADDRESS1)),
+                        StringUtility.convertToString(addressData.get(ADDRESS2)),
+                        ReportHelper.getCityCountry(StringUtility.convertToString(addressData.get(CITY)), StringUtility.convertToString(addressData.get(COUNTRY))),
+                        null, StringUtility.convertToString(addressData.get(CONTACT_PHONE)),
+                        StringUtility.convertToString(addressData.get(ZIP_POST_CODE))
                 );
                 dictionary.put(ReportConstants.SENDING_AGENT_NAME, addressData.get(COMPANY_NAME));
             }
@@ -513,11 +513,11 @@ public abstract class IReport {
             Map<String, Object> addressData = receivingAgent.getAddressData();
             if(addressData != null)
             {
-                importAgentAddress = ReportHelper.getOrgAddressWithPhoneEmail(addressData.get(COMPANY_NAME).toString(), addressData.get(ADDRESS1).toString(),
-                        addressData.get(ADDRESS2).toString(),
-                        ReportHelper.getCityCountry(addressData.get(CITY).toString(), addressData.get(COUNTRY).toString()),
-                        null, addressData.get(CONTACT_PHONE).toString(),
-                        addressData.get(ZIP_POST_CODE).toString()
+                importAgentAddress = ReportHelper.getOrgAddressWithPhoneEmail(StringUtility.convertToString(addressData.get(COMPANY_NAME)), StringUtility.convertToString(addressData.get(ADDRESS1)),
+                        StringUtility.convertToString(addressData.get(ADDRESS2)),
+                        ReportHelper.getCityCountry(StringUtility.convertToString(addressData.get(CITY)), StringUtility.convertToString(addressData.get(COUNTRY))),
+                        null, StringUtility.convertToString(addressData.get(CONTACT_PHONE)),
+                        StringUtility.convertToString(addressData.get(ZIP_POST_CODE))
                 );
                 dictionary.put(ReportConstants.RECEIVING_AGENT_NAME, addressData.get(COMPANY_NAME));
             }
@@ -608,11 +608,11 @@ public abstract class IReport {
         }
         if(notifyParty != null){
             Map<String, Object> addressData = notifyParty.getAddressData();
-            List<String> consolNotifyPartyAddress = ReportHelper.getOrgAddressWithPhoneEmail(addressData.get(COMPANY_NAME).toString(), addressData.get(ADDRESS1).toString(),
-                    addressData.get(ADDRESS2).toString(),
-                    ReportHelper.getCityCountry(addressData.get(CITY).toString(), addressData.get(COUNTRY).toString()),
-                    null, addressData.get(CONTACT_PHONE).toString(),
-                    addressData.get(ZIP_POST_CODE).toString()
+            List<String> consolNotifyPartyAddress = ReportHelper.getOrgAddressWithPhoneEmail(StringUtility.convertToString(addressData.get(COMPANY_NAME)), StringUtility.convertToString(addressData.get(ADDRESS1)),
+                    StringUtility.convertToString(addressData.get(ADDRESS2)),
+                    ReportHelper.getCityCountry(StringUtility.convertToString(addressData.get(CITY)), StringUtility.convertToString(addressData.get(COUNTRY))),
+                    null, StringUtility.convertToString(addressData.get(CONTACT_PHONE)),
+                    StringUtility.convertToString(addressData.get(ZIP_POST_CODE))
             );
             dictionary.put(ReportConstants.CONSOL_NOTIFY_ADDRESS, consolNotifyPartyAddress);
         }
