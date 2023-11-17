@@ -967,19 +967,6 @@ public class ConsolidationService implements IConsolidationService {
         }
     }
 
-    @Override
-    public void afterSave(ConsolidationDetails consolidationDetails, boolean isCreate)
-    {
-        try {
-            KafkaResponse kafkaResponse = producer.getKafkaResponse(consolidationDetails, isCreate);
-            producer.produceToKafka(jsonHelper.convertToJson(kafkaResponse), senderQueue, UUID.randomUUID().toString());
-        }
-        catch (Exception e)
-        {
-            log.error("Error pushing consolidationx to kafka");
-        }
-    }
-
     private ConsolidationDetails calculateConsolUtilization(ConsolidationDetails consolidationDetails) throws Exception {
         String responseMsg;
         try {
@@ -1958,7 +1945,9 @@ public class ConsolidationService implements IConsolidationService {
 
     }
 
-    public void afterSave(ConsolidationDetails consolidationDetails) {
+    @Override
+    public void afterSave(ConsolidationDetails consolidationDetails, boolean isCreate)
+    {
         try {
             if(trackingServiceAdapter.checkIfConsolContainersExist(consolidationDetails) || trackingServiceAdapter.checkIfAwbExists(consolidationDetails)) {
                 UniversalTrackingPayload _utPayload = trackingServiceAdapter.mapConsoleDataToTrackingServiceData(consolidationDetails);
@@ -1979,6 +1968,8 @@ public class ConsolidationService implements IConsolidationService {
                     trackingServiceAdapter.publishUpdatesToTrackingServiceQueue(jsonBody,true);
                 }
             }
+            KafkaResponse kafkaResponse = producer.getKafkaResponse(consolidationDetails, isCreate);
+            producer.produceToKafka(jsonHelper.convertToJson(kafkaResponse), senderQueue, UUID.randomUUID().toString());
         }
         catch (Exception e) {
             log.error(e.getMessage());
