@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 
+import com.dpw.runner.shipment.services.adapters.interfaces.ITrackingServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
@@ -13,6 +14,7 @@ import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
+import com.dpw.runner.shipment.services.dto.TrackingService.UniversalTrackingPayload;
 import com.dpw.runner.shipment.services.dto.patchRequest.ConsolidationPatchRequest;
 import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.response.*;
@@ -20,6 +22,7 @@ import com.dpw.runner.shipment.services.dto.v1.request.ConsoleBookingListRequest
 import com.dpw.runner.shipment.services.dto.v1.response.ConsoleBookingListResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.ProductProcessTypes;
+import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCommodityType;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -160,6 +163,9 @@ public class ConsolidationService implements IConsolidationService {
 
     @Autowired
     private ProductIdentifierUtility productEngine;
+
+    @Autowired
+    private ITrackingServiceAdapter trackingServiceAdapter;
 
     private List<String> TRANSPORT_MODES = Arrays.asList("SEA", "ROAD", "RAIL", "AIR");
     private List<String> SHIPMENT_TYPE = Arrays.asList("FCL", "LCL");
@@ -416,6 +422,7 @@ public class ConsolidationService implements IConsolidationService {
             } catch (Exception e){
                 log.error("Error performing sync on consolidation entity, {}", e);
             }
+            afterSave(consolidationDetails);
             // EventMessage eventMessage = EventMessage.builder().messageType(Constants.SERVICE).entity(Constants.CONSOLIDATION).request(consolidationDetails).build();
             // sbUtils.sendMessagesToTopic(isbProperties, azureServiceBusTopic.getTopic(), Arrays.asList(new ServiceBusMessage(jsonHelper.convertToJsonIncludeNulls(eventMessage))));
 
@@ -697,6 +704,8 @@ public class ConsolidationService implements IConsolidationService {
         } catch (Exception e) {
             log.error("Error performing sync on consol entity, {}", e);
         }
+        afterSave(entity);
+
         return ResponseHelper.buildSuccessResponse(jsonHelper.convertValue(entity, ConsolidationDetailsResponse.class));
 
     }
@@ -833,6 +842,7 @@ public class ConsolidationService implements IConsolidationService {
             } catch (Exception e){
                 log.error("Error performing sync on consolidation entity, {}", e);
             }
+            afterSave(entity);
 
             return ResponseHelper.buildSuccessResponse(response);
 
@@ -930,7 +940,7 @@ public class ConsolidationService implements IConsolidationService {
             } catch (Exception e){
                 log.error("Error performing sync on consolidation entity, {}", e);
             }
-
+            afterSave(entity);
             return ResponseHelper.buildSuccessResponse(response);
         } catch (ExecutionException e) {
             String responseMsg = e.getMessage() != null ? e.getMessage()
@@ -1908,5 +1918,32 @@ public class ConsolidationService implements IConsolidationService {
             workbook.write(outputStream);
         }
 
+    }
+
+    public void afterSave(ConsolidationDetails consolidationDetails) {
+        try {
+            if(trackingServiceAdapter.checkIfConsolContainersExist(consolidationDetails) || trackingServiceAdapter.checkIfAwbExists(consolidationDetails)) {
+                UniversalTrackingPayload _utPayload = trackingServiceAdapter.mapConsoleDataToTrackingServiceData(consolidationDetails);
+                List<UniversalTrackingPayload> trackingPayloads = new ArrayList<>();
+                if(_utPayload != null) {
+                    trackingPayloads.add(_utPayload);
+                    var jsonBody = jsonHelper.convertToJson(trackingPayloads);
+                    trackingServiceAdapter.publishUpdatesToTrackingServiceQueue(jsonBody, false);
+                }
+            }
+            if(consolidationDetails != null) {
+                var events = trackingServiceAdapter.getAllEvents(null,consolidationDetails);
+                var universalEventsPayload = trackingServiceAdapter.mapEventDetailsForTracking(consolidationDetails.getReferenceNumber(),Constants.CONSOLIDATION, consolidationDetails.getConsolidationNumber(), events);
+                List<UniversalTrackingPayload.UniversalEventsPayload> trackingPayloads= new ArrayList<>();
+                if(universalEventsPayload != null) {
+                    trackingPayloads.add(universalEventsPayload);
+                    var jsonBody = jsonHelper.convertToJson(trackingPayloads);
+                    trackingServiceAdapter.publishUpdatesToTrackingServiceQueue(jsonBody,true);
+                }
+            }
+        }
+        catch (Exception e) {
+            log.error(e.getMessage());
+        }
     }
 }
