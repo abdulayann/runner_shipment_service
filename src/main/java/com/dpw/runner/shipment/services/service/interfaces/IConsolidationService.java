@@ -35,4 +35,6 @@ public interface IConsolidationService extends ICommonService{
     ResponseEntity<?> completeV1ConsolidationCreateAndUpdate(CommonRequestModel commonRequestModel) throws Exception;
 
     void exportExcel(HttpServletResponse response, CommonRequestModel commonRequestModel) throws IOException, IllegalAccessException;
+
+    void afterSave(ConsolidationDetails consolidationDetails, boolean isCreate);
 }

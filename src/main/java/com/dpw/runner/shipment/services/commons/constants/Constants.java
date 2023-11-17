@@ -145,4 +145,6 @@ public class Constants {
 
     // Source
     public static final String API = "API";
+    public static final String KAFKA_EVENT_CREATE = "create";
+    public static final String KAFKA_EVENT_UPDATE = "update";
 }

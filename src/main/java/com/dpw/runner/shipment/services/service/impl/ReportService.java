@@ -441,7 +441,7 @@ public class ReportService implements IReportService {
                 shipmentDetails.getAdditionalDetails().setDateOfIssue(LocalDate.now().atStartOfDay());
             }
             shipmentDetails = shipmentDao.update(shipmentDetails, false);
-            shipmentService.afterSave(shipmentDetails);
+            shipmentService.afterSave(shipmentDetails, false);
             if (pdfByteContent != null)
             {
                 DocUploadRequest docUploadRequest = new DocUploadRequest();

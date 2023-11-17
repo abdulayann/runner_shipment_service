@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.utils.MasterData;
 import com.dpw.runner.shipment.services.utils.OrganizationData;
+import com.dpw.runner.shipment.services.utils.TenantIdData;
 import com.dpw.runner.shipment.services.utils.UnlocationData;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.*;
@@ -229,22 +230,26 @@ public class ConsolidationDetails extends MultiTenancy {
     private Long warehouseId;
 
     @Column(name = "source_tenant_id")
-    private long sourceTenantId;
+    @TenantIdData
+    private Long sourceTenantId;
 
     @Column(name = "edi_transaction_id")
     @Size(max=50, message = "max size is 50 for edi_transaction_id")
     private String ediTransactionId;
 
     @Column(name = "triangulation_partner")
+    @TenantIdData
     private Long triangulationPartner;
 
     @Column(name = "receiving_branch")
+    @TenantIdData
     private Long receivingBranch;
 
     @Column(name = "intra_branch")
     private boolean intraBranch;
 
     @Column(name = "documentation_partner")
+    @TenantIdData
     private Long documentationPartner;
 
     @Column(name = "is_receiving_agent_freetext_address")

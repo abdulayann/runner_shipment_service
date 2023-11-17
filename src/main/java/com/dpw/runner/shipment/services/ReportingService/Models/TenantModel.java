@@ -17,5 +17,5 @@ public class TenantModel {
     public String panNumber;
     public String companyRegNumber;
     public boolean IATAAgent;
-
+    public Long tenantId;
 }

@@ -5,13 +5,13 @@ import com.dpw.runner.shipment.services.commons.requests.Criteria;
 import com.dpw.runner.shipment.services.commons.requests.FilterCriteria;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.itextpdf.text.*;
 import com.itextpdf.text.pdf.*;
 import org.krysalis.barcode4j.impl.upcean.EAN13Bean;
 import org.krysalis.barcode4j.output.bitmap.BitmapCanvasProvider;
+import org.modelmapper.ModelMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,6 +36,9 @@ import java.util.stream.Collectors;
 public class CommonUtils {
 
     private static ObjectMapper mapper;
+
+    @Autowired
+    private ModelMapper modelMapper;
 
     @Autowired
     private JsonHelper jsonHelper;
@@ -166,6 +169,18 @@ public class CommonUtils {
         return  lst.stream()
                 .map(item -> this.convertToCreateClass(item, clazz))
                 .collect(Collectors.toList());
+    }
+
+    public <T,P> List<P> convertToList(final List<T> lst, Class<P> clazz) {
+        if(lst == null)
+            return null;
+        return  lst.stream()
+                .map(item -> convertToClassModelMapper(item, clazz))
+                .collect(Collectors.toList());
+    }
+
+    private  <T,P> P convertToClassModelMapper(T obj, Class<P> clazz) {
+        return modelMapper.map(obj, clazz);
     }
 
     public <T,P> P convertToCreateClass(T obj, Class<P> clazz) {

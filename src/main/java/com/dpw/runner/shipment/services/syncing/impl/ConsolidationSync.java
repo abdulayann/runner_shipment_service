@@ -17,6 +17,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.ResponseEntity;
 import org.springframework.retry.support.RetryTemplate;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
@@ -54,6 +55,7 @@ public class ConsolidationSync implements IConsolidationSync {
     private String CONSOLIDATION_V1_SYNC_URL;
 
     @Override
+    @Async
     public ResponseEntity<?> sync(ConsolidationDetails request) {
         CustomConsolidationRequest response = new CustomConsolidationRequest();
 

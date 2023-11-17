@@ -76,7 +76,7 @@ public class ConsolidationDetailsRequest extends CommonRequest implements IRunne
     private LocalDateTime doIssueDate;
     private Long bondedWarehouseId;
     private Long warehouseId;
-    private long sourceTenantId;
+    private Long sourceTenantId;
     private String ediTransactionId;
     private Long triangulationPartner;
     private Long receivingBranch;
