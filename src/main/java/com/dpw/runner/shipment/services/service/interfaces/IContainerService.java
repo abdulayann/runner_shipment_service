@@ -3,9 +3,11 @@ package com.dpw.runner.shipment.services.service.interfaces;
 import com.dpw.runner.shipment.services.commons.requests.BulkDownloadRequest;
 import com.dpw.runner.shipment.services.commons.requests.BulkUploadRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
+import com.dpw.runner.shipment.services.entity.Containers;
 import org.springframework.http.ResponseEntity;
 
 import javax.servlet.http.HttpServletResponse;
+import java.util.List;
 
 public interface IContainerService extends ICommonService {
     ResponseEntity<?> calculateAchieved_AllocatedForSameUnit(CommonRequestModel commonRequestModel);
@@ -25,4 +27,8 @@ public interface IContainerService extends ICommonService {
     void downloadContainerEvents(HttpServletResponse response, BulkDownloadRequest request) throws Exception;
 
     ResponseEntity<?> V1ContainerCreateAndUpdate(CommonRequestModel commonRequestModel) throws Exception;
+
+    void afterSave(Containers containers, boolean isCreate);
+
+    void afterSaveList(List<Containers> containers, boolean isCreate);
 }

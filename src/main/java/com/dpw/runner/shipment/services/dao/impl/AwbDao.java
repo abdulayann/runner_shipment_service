@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
 import com.dpw.runner.shipment.services.Kafka.Dto.AwbShipConsoleDto;
+import com.dpw.runner.shipment.services.Kafka.Dto.KafkaResponse;
 import com.dpw.runner.shipment.services.Kafka.Producer.KafkaProducer;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dao.interfaces.IAwbDao;
@@ -42,13 +43,17 @@ public class AwbDao implements IAwbDao {
     IConsolidationDetailsDao consolidationDetailsDao;
     @Override
     public Awb save(Awb awbShipmentInfo) {
+        boolean isCreate = false;
+        if (awbShipmentInfo.getId() == null) {
+            isCreate = true;
+        }
         Awb awb = awbRepository.save(awbShipmentInfo);
-        pushToKafka(awb);
+        pushToKafka(awb, isCreate);
         return awb;
     }
 
     @Async
-    private void pushToKafka(Awb awb) {
+    private void pushToKafka(Awb awb, boolean isCreate) {
         try {
             AwbResponse awbResponse = jsonHelper.convertValue(awb, AwbResponse.class);
             if(awb.getShipmentId() != null && awb.getAwbShipmentInfo().getEntityType().equals(Constants.DMAWB)) {
@@ -68,8 +73,8 @@ public class AwbDao implements IAwbDao {
                 return;
             }
 
-            String json = jsonHelper.convertToJson(awbResponse);
-            producer.produceToKafka(json, senderQueue, UUID.randomUUID().toString());
+            KafkaResponse kafkaResponse = producer.getKafkaResponse(awbResponse, isCreate);
+            producer.produceToKafka(jsonHelper.convertToJson(kafkaResponse), senderQueue, UUID.randomUUID().toString());
         }
         catch (Exception e)
         {

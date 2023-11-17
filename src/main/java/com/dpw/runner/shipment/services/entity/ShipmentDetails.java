@@ -8,6 +8,7 @@ import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.utils.DedicatedMasterData;
 import com.dpw.runner.shipment.services.utils.MasterData;
 import com.dpw.runner.shipment.services.utils.OrganizationData;
+import com.dpw.runner.shipment.services.utils.TenantIdData;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
 import lombok.*;
@@ -249,15 +250,19 @@ public class ShipmentDetails extends MultiTenancy {
     private String route;
 
     @Column(name = "source_tenant_id")
+    @TenantIdData
     private Long sourceTenantId;
 
     @Column(name = "documentation_partner")
+    @TenantIdData
     private Long documentationPartner;
 
     @Column(name = "triangulation_partner")
+    @TenantIdData
     private Long triangulationPartner;
 
     @Column(name = "receiving_branch")
+    @TenantIdData
     private Long receivingBranch;
 
     @Column(name = "intra_branch")

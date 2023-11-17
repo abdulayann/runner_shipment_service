@@ -26,5 +26,6 @@ public class EntityTransferConstants {
     public static final String SELECT_SENDTOBRANCH_OR_SENDTOORG = "Please select atleast one send to branch or send to org option";
     public static final String APPROVAL_ROLE_NOT_ASSIGNED = "Approval role not assigned to tenant: ";
     public static final String CHARGE_CODE = "ChargeCode";
+    public static final String TENANT_ID = "TenantId";
 
 }

@@ -16,6 +16,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.ResponseEntity;
 import org.springframework.retry.support.RetryTemplate;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
@@ -51,6 +52,7 @@ public class HblSync implements IHblSync {
     private String HBL_V1_SYNC_URL;
 
     @Override
+    @Async
     public ResponseEntity<?> sync(Hbl hbl) {
         HblRequestV2 hblRequest = new HblRequestV2();
         Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(hbl.getShipmentId());

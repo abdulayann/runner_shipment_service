@@ -1,5 +1,7 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import com.dpw.runner.shipment.services.Kafka.Dto.KafkaResponse;
+import com.dpw.runner.shipment.services.Kafka.Producer.KafkaProducer;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
@@ -26,6 +28,7 @@ import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -45,6 +48,7 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
@@ -82,6 +86,12 @@ public class ContainerService implements IContainerService {
     @Autowired
     private AuditLogService auditLogService;
 
+    @Autowired
+    private KafkaProducer producer;
+
+    @Value("${containersKafka.queue}")
+    private String senderQueue;
+
     @Transactional
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
         String responseMsg;
@@ -114,6 +124,7 @@ public class ContainerService implements IContainerService {
                             .operation(DBOperationType.CREATE.name()).build()
             );
             log.info("Container Details Saved Successfully for Id {} with Request Id {}", container.getId(), LoggerHelper.getRequestIdFromMDC());
+            afterSave(container, true);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
@@ -135,6 +146,7 @@ public class ContainerService implements IContainerService {
                 shipmentsContainersMappingDao.updateShipmentsMappings(container.getId(), List.of(request.getShipmentId()));
             });
         }
+        afterSaveList(containersList, true);
     }
 
     @Override
@@ -231,6 +243,7 @@ public class ContainerService implements IContainerService {
                 }
             }
             Containers entity = containerDao.save(containers);
+            afterSave(entity, false);
             return ResponseHelper.buildSuccessResponse(jsonHelper.convertValue(entity, ContainerResponse.class));
         }
 
@@ -305,6 +318,7 @@ public class ContainerService implements IContainerService {
                         convertToEntityList(eventsRequestList, Events.class), containers.getId(), Constants.CONTAINER);
                 containers.setEventsList(events);
             }
+            afterSave(containers, false);
             log.info("Updated the container details for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -517,6 +531,7 @@ public class ContainerService implements IContainerService {
                 packing.setContainerId(container.getId());
             }
             packingDao.saveAll(packingList);
+            afterSave(containers, false);
             return ResponseHelper.buildSuccessResponse(convertEntityToDto(containers));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -576,6 +591,7 @@ public class ContainerService implements IContainerService {
                 packing.setContainerId(null);
             }
             packingDao.saveAll(packingList);
+            afterSave(containers, false);
             return ResponseHelper.buildSuccessResponse(convertEntityToDto(containers));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -637,6 +653,25 @@ public class ContainerService implements IContainerService {
         }
     }
 
+    public void afterSave(Containers containers, boolean isCreate) {
+        try {
+            KafkaResponse kafkaResponse = producer.getKafkaResponse(containers, isCreate);
+            producer.produceToKafka(jsonHelper.convertToJson(kafkaResponse), senderQueue, UUID.randomUUID().toString());
+        }
+        catch (Exception e)
+        {
+            log.error("Error pushing container to kafka");
+        }
+    }
+
+    public void afterSaveList(List<Containers> containers, boolean isCreate) {
+        if(containers != null && containers.size() > 0) {
+            for (Containers container : containers) {
+                afterSave(container, isCreate);
+            }
+        }
+    }
+
     @Override
     public ResponseEntity<?> V1ContainerCreateAndUpdate(CommonRequestModel commonRequestModel) throws Exception {
         ContainerRequestV2 containerRequest = (ContainerRequestV2) commonRequestModel.getData();
@@ -644,9 +679,11 @@ public class ContainerService implements IContainerService {
             List<Containers> existingCont = containerDao.findByGuid(containerRequest.getGuid());
             Containers containers = modelMapper.map(containerRequest, Containers.class);
             List<Long> shipIds = null;
+            boolean isCreate = true;
             if(existingCont != null && existingCont.size() > 0) {
                 containers.setId(existingCont.get(0).getId());
                 containers.setConsolidationId(existingCont.get(0).getConsolidationId());
+                isCreate = false;
             }
             else
             {
@@ -666,6 +703,7 @@ public class ContainerService implements IContainerService {
                 }
             }
             containers = containerDao.save(containers);
+            afterSave(containers, isCreate);
             if(shipIds != null) {
                 shipmentsContainersMappingDao.assignShipments(containers.getId(), shipIds);
             }

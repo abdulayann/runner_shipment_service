@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.service.impl;
 
 
 import com.azure.messaging.servicebus.ServiceBusMessage;
+import com.dpw.runner.shipment.services.Kafka.Dto.KafkaResponse;
 import com.dpw.runner.shipment.services.Kafka.Producer.KafkaProducer;
 import com.dpw.runner.shipment.services.adapters.interfaces.ITrackingServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
@@ -17,6 +18,7 @@ import com.dpw.runner.shipment.services.commons.responses.RunnerPartialListRespo
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.TrackingService.UniversalTrackingPayload;
+import com.dpw.runner.shipment.services.dto.ContainerAPIsRequest.ShipmentContainerAssignRequest;
 import com.dpw.runner.shipment.services.dto.patchRequest.ShipmentPatchRequest;
 import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.response.*;
@@ -37,6 +39,7 @@ import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.mapper.ShipmentDetailsMapper;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
+import com.dpw.runner.shipment.services.service.interfaces.IConsolidationService;
 import com.dpw.runner.shipment.services.service.interfaces.IHblService;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
@@ -162,6 +165,9 @@ public class ShipmentService implements IShipmentService {
     private IConsolidationDetailsDao consolidationDetailsDao;
 
     @Autowired
+    private IConsolidationService consolidationService;
+
+    @Autowired
     private SBUtilsImpl sbUtils;
 
     @Autowired
@@ -196,6 +202,9 @@ public class ShipmentService implements IShipmentService {
 
     @Autowired
     private ITrackingServiceAdapter trackingServiceAdapter;
+    
+    @Autowired
+    private IShipmentsContainersMappingDao shipmentsContainersMappingDao;
 
     private ShipmentDetails currentShipment;
 
@@ -325,7 +334,7 @@ public class ShipmentService implements IShipmentService {
             shipmentDetail.setCarrierDetails(carrierDetail);
 
             shipmentDetail = shipmentDao.save(shipmentDetail, false);
-            afterSave(shipmentDetail);
+            afterSave(shipmentDetail, true);
         }
 
         return response;
@@ -721,7 +730,7 @@ public class ShipmentService implements IShipmentService {
                     createConsolidation(shipmentDetails, updatedContainers);
                 }
             }
-            afterSave(shipmentDetails);
+            afterSave(shipmentDetails, true);
 //            EventMessage eventMessage = EventMessage.builder().messageType(Constants.SERVICE).entity(Constants.SHIPMENT).request(shipmentDetails).build();
 //            sbUtils.sendMessagesToTopic(isbProperties, azureServiceBusTopic.getTopic(), Arrays.asList(new ServiceBusMessage(jsonHelper.convertToJsonIncludeNulls(eventMessage))));
 
@@ -963,7 +972,7 @@ public class ShipmentService implements IShipmentService {
         if (entity.getContainersList() == null)
             entity.setContainersList(oldEntity.get().getContainersList());
         entity = shipmentDao.update(entity, false);
-        afterSave(entity);
+        afterSave(entity, false);
         try {
             shipmentSync.sync(entity);
         } catch (Exception e){
@@ -1123,7 +1132,7 @@ public class ShipmentService implements IShipmentService {
                     createConsolidation(entity, updatedContainers);
                 }
             }
-            afterSave(entity);
+            afterSave(entity, false);
             ShipmentDetailsResponse response = shipmentDetailsMapper.map(entity);
             return ResponseHelper.buildSuccessResponse(response);
         } catch (Exception e) {
@@ -1134,7 +1143,7 @@ public class ShipmentService implements IShipmentService {
         }
     }
 
-    public void afterSave(ShipmentDetails shipmentDetails) {
+    public void afterSave(ShipmentDetails shipmentDetails, boolean isCreate) {
         try {
             if(shipmentDetails.getStatus() != null && !Objects.equals(shipmentDetails.getStatus(), ShipmentStatus.Completed.getValue()) || shipmentDetails.getStatus() != null && !Objects.equals(shipmentDetails.getStatus(), ShipmentStatus.Cancelled.getValue())) {
                 if (trackingServiceAdapter.checkIfConsolAttached(shipmentDetails)|| (shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && shipmentDetails.getShipmentType().equals(Constants.SHIPMENT_TYPE_DRT) && !Objects.isNull(shipmentDetails.getHouseBill()))) {
@@ -1157,7 +1166,8 @@ public class ShipmentService implements IShipmentService {
                     trackingServiceAdapter.publishUpdatesToTrackingServiceQueue(jsonBody,true);
                 }
             }
-            producer.produceToKafka(jsonHelper.convertToJson(shipmentDetails), senderQueue, UUID.randomUUID().toString());
+            KafkaResponse kafkaResponse = producer.getKafkaResponse(shipmentDetails, isCreate);
+            producer.produceToKafka(jsonHelper.convertToJson(kafkaResponse), senderQueue, UUID.randomUUID().toString());
         }
         catch (Exception e) {
             log.error(e.getMessage());
@@ -1193,7 +1203,7 @@ public class ShipmentService implements IShipmentService {
             consolidationDetails.setIsReceivingAgentFreeTextAddress(false);
             consolidationDetails.setIsSendingAgentFreeTextAddress(false);
             consolidationDetails.setIsInland(false);
-            consolidationDetails.setSourceTenantId(TenantContext.getCurrentTenant());
+            consolidationDetails.setSourceTenantId(TenantContext.getCurrentTenant().longValue());
             // TODO- which one is CarrierBookingRef
             // TODO- default organizations Row -- setAgentOrganizationAndAddress() function in v1
 //            if(consolidationDetails.getShipmentType() != null && !consolidationDetails.getShipmentType().isEmpty()
@@ -1213,6 +1223,7 @@ public class ShipmentService implements IShipmentService {
             }
             consolidationDetails.setContainersList(containers);
             attachConsolidations(shipmentDetails.getId(), List.of(id));
+            consolidationService.afterSave(consolidationDetails, true);
             try {
                 consolidationSync.sync(consolidationDetails);
             } catch (Exception e) {
@@ -1375,6 +1386,21 @@ public class ShipmentService implements IShipmentService {
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
+    @Override
+    public ResponseEntity<?> assignShipmentContainers(CommonRequestModel commonRequestModel) {
+        String responseMsg;
+        try {
+            ShipmentContainerAssignRequest request = (ShipmentContainerAssignRequest) commonRequestModel.getData();
+            shipmentsContainersMappingDao.assignContainers(request.getShipmentId(), request.getContainerIds());
+            return ResponseHelper.buildSuccessResponse();
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(responseMsg);
         }
@@ -1743,7 +1769,7 @@ public class ShipmentService implements IShipmentService {
                 log.error("Error performing sync on shipment entity, {}", e);
             }
 
-            afterSave(entity);
+            afterSave(entity, false);
             ShipmentDetailsResponse response = shipmentDetailsMapper.map(entity);
             return ResponseHelper.buildSuccessResponse(response);
         } catch (Exception e) {
@@ -1769,7 +1795,7 @@ public class ShipmentService implements IShipmentService {
             shipmentDetails.setLockedBy(currentUser);
         }
         shipmentDetails = shipmentDao.save(shipmentDetails, false);
-        afterSave(shipmentDetails);
+        afterSave(shipmentDetails, false);
         return ResponseHelper.buildSuccessResponse();
     }
 
@@ -1925,10 +1951,12 @@ public class ShipmentService implements IShipmentService {
             List<Containers> oldContainers = null;
             Long id = null;
             ShipmentDetails oldShipment = null;
+            boolean isCreate = true;
             if(oldEntity != null && oldEntity.isPresent()) {
                 oldShipment = oldEntity.get();
                 id = oldEntity.get().getId();
                 oldContainers = oldEntity.get().getContainersList();
+                isCreate = false;
             }
             ShipmentDetails entity = objectMapper.convertValue(shipmentRequest, ShipmentDetails.class);
             entity.setId(id);
@@ -2019,7 +2047,7 @@ public class ShipmentService implements IShipmentService {
                 List<Notes> updatedNotes = notesDao.updateEntityFromOtherEntity(convertToEntityList(notesRequestList, Notes.class), id, Constants.SHIPMENT, oldNoteList.stream().toList());
                 entity.setNotesList(updatedNotes);
             }
-            afterSave(entity);
+            afterSave(entity, isCreate);
             ShipmentDetailsResponse response = shipmentDetailsMapper.map(entity);
 
             return ResponseHelper.buildSuccessResponse(response);
@@ -2037,6 +2065,7 @@ public class ShipmentService implements IShipmentService {
         this.addAllUnlocationDatas(shipmentDetails, shipmentDetailsResponse);
         this.addDedicatedMasterData(shipmentDetails, shipmentDetailsResponse);
         this.addAllContainerTypesInSingleCall(shipmentDetails,shipmentDetailsResponse);
+        this.addAllTenantIdDatas(shipmentDetails, shipmentDetailsResponse);
     }
     private void addAllMasterDatas (ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse) {
         shipmentDetailsResponse.setMasterData(masterDataUtils.addMasterData(shipmentDetailsResponse, ShipmentDetails.class));
@@ -2059,7 +2088,9 @@ public class ShipmentService implements IShipmentService {
         }
     }
 
-
+    private void addAllTenantIdDatas (ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse) {
+        shipmentDetailsResponse.setTenantIdsData(masterDataUtils.addTenantIdsData(shipmentDetailsResponse, ShipmentDetails.class, EntityTransferConstants.TENANT_ID));
+    }
 
     private void addDedicatedMasterData (ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse) {
         if(shipmentDetailsResponse.getCarrierDetails() != null) {

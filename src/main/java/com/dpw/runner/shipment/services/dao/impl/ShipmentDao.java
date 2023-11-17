@@ -1,6 +1,5 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
-import com.dpw.runner.shipment.services.Kafka.Producer.KafkaProducer;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
@@ -28,7 +27,6 @@ import com.dpw.runner.shipment.services.validator.ValidatorUtility;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -77,12 +75,6 @@ public class ShipmentDao implements IShipmentDao {
 
     @Autowired
     private IV1Service v1Service;
-
-    @Value("${shipmentsKafka.queue}")
-    private String senderQueue;
-
-    @Autowired
-    private KafkaProducer producer;
 
     @Override
     public ShipmentDetails save(ShipmentDetails shipmentDetails, boolean fromV1Sync) {
@@ -162,13 +154,6 @@ public class ShipmentDao implements IShipmentDao {
         }
 //        EventMessage eventMessage = EventMessage.builder().messageType(Constants.SERVICE).entity(Constants.SHIPMENT).request(shipmentDetails).build();
 //        sbUtils.sendMessagesToTopic(isbProperties, azureServiceBusTopic.getTopic(), Arrays.asList(new ServiceBusMessage(jsonHelper.convertToJson(eventMessage))));
-        try {
-            producer.produceToKafka(jsonHelper.convertToJson(shipmentDetails), senderQueue, UUID.randomUUID().toString());
-        }
-        catch (Exception e)
-        {
-            log.error("Error pushing shipment to kafka");
-        }
     }
 
     @Override

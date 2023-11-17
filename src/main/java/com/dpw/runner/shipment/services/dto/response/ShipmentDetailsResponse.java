@@ -71,7 +71,7 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     private boolean cargoFinanceBooking;
     private String bookingNumber;
     private String route;
-    private Long SourceTenantId;
+    private Long sourceTenantId;
     private Long documentationPartner;
     private Long triangulationPartner;
     private Long receivingBranch;
@@ -116,6 +116,7 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     public Map<String, String> masterData;
     public Map<String, String> unlocationData;
     public Map<String, String> currenciesMasterData;
+    public Map<String, String> tenantIdsData;
     public BigDecimal goodsValue;
     public String goodsValueCurrency;
     public BigDecimal insuranceValue;

@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.utils;
 
+import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
@@ -18,6 +19,7 @@ import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.validator.enums.Operators;
 import lombok.extern.slf4j.Slf4j;
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
@@ -36,6 +38,12 @@ public class MasterDataUtils{
     private IV1Service v1Service;
     @Autowired
     private JsonHelper jsonHelper;
+
+    @Autowired
+    private ModelMapper modelMapper;
+
+    @Autowired
+    private CommonUtils commonUtils;
 
     @Autowired
     CacheManager cacheManager;
@@ -242,6 +250,53 @@ public class MasterDataUtils{
                 }
             });
             return fieldNameUnlocationDataMap;
+        }
+        return null;
+    }
+
+    public Map<String, String> addTenantIdsData (IRunnerResponse entityPayload, Class baseClass, String onField) {
+        if (Objects.isNull(entityPayload))
+            return null;
+
+        Map<String, String> fieldNameTenantIdsDataMap = new HashMap<>();
+        Map<Long, TenantModel> keyTenantModelDataMap = new HashMap<>();
+        Map<String, Long> fieldNameKeyMap = new HashMap<>();
+        List<Long> tenantIdsList = new ArrayList<>();
+        for(Field field  : baseClass.getDeclaredFields())
+        {
+            if (field.isAnnotationPresent(TenantIdData.class))
+            {
+                try {
+                    Field field1 = entityPayload.getClass().getDeclaredField(field.getName());
+                    field1.setAccessible(true);
+                    Long tenantId = (Long) field1.get(entityPayload);
+                    if(tenantId != null) {
+                        tenantIdsList.add(tenantId);
+                        fieldNameKeyMap.put(field.getName(), tenantId);
+                    }
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }
+        if(tenantIdsList.size() > 0){
+            CommonV1ListRequest request = new CommonV1ListRequest();
+            List<Object> field = new ArrayList<>(List.of(onField));
+            String operator = Operators.IN.getValue();
+            List<Object> criteria = new ArrayList<>(List.of(field, operator, List.of(tenantIdsList)));
+            request.setCriteriaRequests(criteria);
+            V1DataResponse response = v1Service.listCousinBranches(request);
+
+            List<TenantModel> tenantModelList = commonUtils.convertToList((List<?>) response.entities, TenantModel.class);
+            tenantModelList.forEach(tenantModel -> {
+                keyTenantModelDataMap.put(tenantModel.tenantId, tenantModel);
+            });
+            fieldNameKeyMap.forEach((key, value) -> {
+                if(keyTenantModelDataMap.containsKey(value)) {
+                    fieldNameTenantIdsDataMap.put(key, keyTenantModelDataMap.get(value).tenantName);
+                }
+            });
+            return fieldNameTenantIdsDataMap;
         }
         return null;
     }

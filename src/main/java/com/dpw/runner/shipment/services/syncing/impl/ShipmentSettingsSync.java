@@ -15,6 +15,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.ResponseEntity;
 import org.springframework.retry.support.RetryTemplate;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
@@ -42,6 +43,7 @@ public class ShipmentSettingsSync implements IShipmentSettingsSync {
     private String SHIPMENT_SETTING_V1_SYNC_URL;
 
     @Override
+    @Async
     public ResponseEntity<?> sync(ShipmentSettingsDetails req) {
         ShipmentSettingsSyncRequest syncRequest = modelMapper.map(req, ShipmentSettingsSyncRequest.class);
 

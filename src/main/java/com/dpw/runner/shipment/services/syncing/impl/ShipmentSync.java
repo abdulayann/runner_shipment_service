@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.syncing.impl;
 
 import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.CarrierDetails;
 import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
@@ -16,13 +17,16 @@ import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.ResponseEntity;
 import org.springframework.retry.support.RetryTemplate;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -42,6 +46,8 @@ public class ShipmentSync implements IShipmentSync {
     IConsoleShipmentMappingDao consoleShipmentMappingDao;
     @Autowired
     IConsolidationDetailsDao consolidationDetailsDao;
+    @Autowired
+    IShipmentDao shipmentDao;
 
     private RetryTemplate retryTemplate = RetryTemplate.builder()
             .maxAttempts(3)
@@ -53,6 +59,7 @@ public class ShipmentSync implements IShipmentSync {
     private String SHIPMENT_V1_SYNC_URL;
 
     @Override
+    @Async
     public ResponseEntity<?> sync(ShipmentDetails sd) {
         CustomShipmentSyncRequest temp = new CustomShipmentSyncRequest();
 
@@ -119,6 +126,18 @@ public class ShipmentSync implements IShipmentSync {
         });
 
         return ResponseHelper.buildSuccessResponse(modelMapper.map(cs, CustomShipmentSyncRequest.class));
+    }
+
+    @Override
+    @Async
+    public ResponseEntity<?> syncById(Long shipmentId) {
+        Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(shipmentId);
+        if(shipmentDetails.isPresent()) {
+            return sync(shipmentDetails.get());
+        }
+        else {
+            throw new DataRetrievalFailureException("");
+        }
     }
 
     private void mapConsolidationGuids(CustomShipmentSyncRequest response, ShipmentDetails request) {
