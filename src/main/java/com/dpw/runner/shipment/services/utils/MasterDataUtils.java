@@ -9,6 +9,7 @@ import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
 import com.dpw.runner.shipment.services.dto.response.CustomerBookingResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
+import com.dpw.runner.shipment.services.entity.CarrierDetails;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.entitytransfer.dto.*;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -514,59 +515,23 @@ public class MasterDataUtils{
         return list.stream().collect(Collectors.toMap(EntityTransferChargeType::getChargeCode, Function.identity(), (oldValue, newValue) -> newValue));
 
     }
-
     public void setLocationData(List<IRunnerResponse> responseList) {
         Set<String> locCodes = new HashSet<>();
+        Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
         for (IRunnerResponse response : responseList) {
-            if (((CustomerBookingResponse) response).getCarrierDetails() != null) {
-                if (StringUtility.isNotEmpty(((CustomerBookingResponse) response).getCarrierDetails().getOriginPort())) {
-                    locCodes.add(((CustomerBookingResponse) response).getCarrierDetails().getOriginPort());
-                }
-                if (StringUtility.isNotEmpty(((CustomerBookingResponse) response).getCarrierDetails().getDestinationPort())) {
-                    locCodes.add(((CustomerBookingResponse) response).getCarrierDetails().getDestinationPort());
-                }
-                if (StringUtility.isNotEmpty(((CustomerBookingResponse) response).getCarrierDetails().getOrigin())) {
-                    locCodes.add(((CustomerBookingResponse) response).getCarrierDetails().getOrigin());
-                }
-                if (StringUtility.isNotEmpty(((CustomerBookingResponse) response).getCarrierDetails().getDestination())) {
-                    locCodes.add(((CustomerBookingResponse) response).getCarrierDetails().getDestination());
-                }
+            CustomerBookingResponse bookingResponse = ((CustomerBookingResponse) response);
+            if (bookingResponse != null && bookingResponse.getCarrierDetails() != null) {
+                locCodes.addAll(createInBulkUnLocationsRequest(bookingResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName() + bookingResponse.getCarrierDetails().getId() ));
             }
         }
 
-        if (locCodes.size() > 0) {
-            List<Object> criteria = Arrays.asList(
-                    Arrays.asList("LocationsReferenceGUID"),
-                    "In",
-                    Arrays.asList(locCodes)
-            );
-            CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(criteria).build();
-            V1DataResponse v1DataResponse = v1Service.fetchUnlocation(commonV1ListRequest);
-            List<UnlocationsResponse> unlocationsResponse = jsonHelper.convertValueToList(v1DataResponse.entities, UnlocationsResponse.class);
-            if (unlocationsResponse != null && unlocationsResponse.size() > 0) {
-                Map<String, String> locationMap = new HashMap<>();
-                for (UnlocationsResponse unlocation : unlocationsResponse) {
-                    locationMap.put(unlocation.getLocationsReferenceGUID(), unlocation.getLocCode() + " " + unlocation.getNameWoDiacritics());
-                }
+        Map<String, EntityTransferUnLocations> v1Data = fetchInBulkUnlocations(locCodes.stream().toList(), EntityTransferConstants.LOCATION_SERVICE_GUID);
+        pushToCache(v1Data, CacheConstants.UNLOCATIONS);
 
-                for (IRunnerResponse response : responseList) {
-                    if (((CustomerBookingResponse) response).getCarrierDetails() != null) {
-                        Map<String, String> unlocationData = new HashMap<>();
-                        if (StringUtility.isNotEmpty(((CustomerBookingResponse) response).getCarrierDetails().getOriginPort())) {
-                            unlocationData.put("originPort", locationMap.get(((CustomerBookingResponse) response).getCarrierDetails().getOriginPort()));
-                        }
-                        if (StringUtility.isNotEmpty(((CustomerBookingResponse) response).getCarrierDetails().getDestinationPort())) {
-                            unlocationData.put("destinationPort", locationMap.get(((CustomerBookingResponse) response).getCarrierDetails().getDestinationPort()));
-                        }
-                        if (StringUtility.isNotEmpty(((CustomerBookingResponse) response).getCarrierDetails().getOrigin())) {
-                            unlocationData.put("origin", locationMap.get(((CustomerBookingResponse) response).getCarrierDetails().getOrigin()));
-                        }
-                        if (StringUtility.isNotEmpty(((CustomerBookingResponse) response).getCarrierDetails().getDestination())) {
-                            unlocationData.put("destination", locationMap.get(((CustomerBookingResponse) response).getCarrierDetails().getDestination()));
-                        }
-                        ((CustomerBookingResponse) response).getCarrierDetails().setUnlocationData(unlocationData);
-                    }
-                }
+        for (IRunnerResponse response : responseList) {
+            CustomerBookingResponse bookingResponse = ((CustomerBookingResponse) response);
+            if (bookingResponse != null && bookingResponse.getCarrierDetails() != null) {
+                bookingResponse.getCarrierDetails().setUnlocationData(setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName() + bookingResponse.getCarrierDetails().getId()),  CacheConstants.UNLOCATIONS));
             }
         }
     }
