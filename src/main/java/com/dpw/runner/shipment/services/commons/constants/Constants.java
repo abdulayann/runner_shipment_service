@@ -128,6 +128,7 @@ public class Constants {
     public static final String CARGO_RUNNER = "CargoRunner";
 
     public static final String Shipments = "[Shipments]";
+    public static final String Consolidations = "[Consolidations]";
 
     public static final String IMP = "IMP";
     public static final String SHIPMENT_TYPE_DRT = "DRT";
