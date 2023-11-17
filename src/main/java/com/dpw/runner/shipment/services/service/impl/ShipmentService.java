@@ -1,7 +1,9 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 
+import com.azure.messaging.servicebus.ServiceBusMessage;
 import com.dpw.runner.shipment.services.Kafka.Producer.KafkaProducer;
+import com.dpw.runner.shipment.services.adapters.interfaces.ITrackingServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
@@ -14,6 +16,7 @@ import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerPartialListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
+import com.dpw.runner.shipment.services.dto.TrackingService.UniversalTrackingPayload;
 import com.dpw.runner.shipment.services.dto.patchRequest.ShipmentPatchRequest;
 import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.response.*;
@@ -40,6 +43,7 @@ import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service_bus.AzureServiceBusTopic;
 import com.dpw.runner.shipment.services.service_bus.ISBProperties;
 import com.dpw.runner.shipment.services.service_bus.SBUtilsImpl;
+import com.dpw.runner.shipment.services.service_bus.model.EventMessage;
 import com.dpw.runner.shipment.services.syncing.impl.ShipmentSync;
 import com.dpw.runner.shipment.services.syncing.interfaces.IConsolidationSync;
 import com.dpw.runner.shipment.services.utils.*;
@@ -189,6 +193,9 @@ public class ShipmentService implements IShipmentService {
 
     @Autowired
     private KafkaProducer producer;
+
+    @Autowired
+    private ITrackingServiceAdapter trackingServiceAdapter;
 
     private ShipmentDetails currentShipment;
 
@@ -1127,14 +1134,33 @@ public class ShipmentService implements IShipmentService {
         }
     }
 
-    public void afterSave(ShipmentDetails shipmentDetails)
-    {
+    public void afterSave(ShipmentDetails shipmentDetails) {
         try {
+            if(shipmentDetails.getStatus() != null && !Objects.equals(shipmentDetails.getStatus(), ShipmentStatus.Completed.getValue()) || shipmentDetails.getStatus() != null && !Objects.equals(shipmentDetails.getStatus(), ShipmentStatus.Cancelled.getValue())) {
+                if (trackingServiceAdapter.checkIfConsolAttached(shipmentDetails)|| (shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && shipmentDetails.getShipmentType().equals(Constants.SHIPMENT_TYPE_DRT) && !Objects.isNull(shipmentDetails.getHouseBill()))) {
+                    UniversalTrackingPayload _utPayload = trackingServiceAdapter.mapShipmentDataToTrackingServiceData(shipmentDetails);
+                    List<UniversalTrackingPayload> trackingPayloads = new ArrayList<>();
+                    if(_utPayload != null) {
+                        trackingPayloads.add(_utPayload);
+                        var jsonBody = jsonHelper.convertToJson(trackingPayloads);
+                        trackingServiceAdapter.publishUpdatesToTrackingServiceQueue(jsonBody, false);
+                    }
+                }
+            }
+            if(shipmentDetails.getSource() != null && shipmentDetails.getSource().equals(Constants.API)) {
+                var events = trackingServiceAdapter.getAllEvents(shipmentDetails,null);
+                var universalEventsPayload = trackingServiceAdapter.mapEventDetailsForTracking(shipmentDetails.getBookingReference(),Constants.SHIPMENT, shipmentDetails.getShipmentId(), events);
+                List<UniversalTrackingPayload.UniversalEventsPayload> trackingPayloads= new ArrayList<>();
+                if(universalEventsPayload != null) {
+                    trackingPayloads.add(universalEventsPayload);
+                    var jsonBody = jsonHelper.convertToJson(trackingPayloads);
+                    trackingServiceAdapter.publishUpdatesToTrackingServiceQueue(jsonBody,true);
+                }
+            }
             producer.produceToKafka(jsonHelper.convertToJson(shipmentDetails), senderQueue, UUID.randomUUID().toString());
         }
-        catch (Exception e)
-        {
-            log.error("Error pushing shipment to kafka");
+        catch (Exception e) {
+            log.error(e.getMessage());
         }
     }
 
