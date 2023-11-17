@@ -67,6 +67,7 @@ public class ShipmentSync implements IShipmentSync {
         // First map nested entity that are root level properties in v1
         mapAdditionalDetails(cs, sd);
         mapCarrierDetails(cs, sd);
+        mapShipmentServices(cs, sd);
 
         // Map remaining object so there's no info lost for root -> root properties
         // example Guid
@@ -196,6 +197,20 @@ public class ShipmentSync implements IShipmentSync {
         cs.setSendingForwarderParty(mapPartyObject(sd.getAdditionalDetails().getSendingForwarder()));
         cs.setTraderOrSupplierParty(mapPartyObject(sd.getAdditionalDetails().getTraderOrSupplier()));
     }
+
+    private void mapShipmentServices(CustomShipmentSyncRequest cs, ShipmentDetails sd) {
+        if(sd.getServicesList() == null)
+            return;
+        List<ShipmentServiceRequestV2> res = sd.getServicesList().stream().map(
+                i -> {
+                    var _service = modelMapper.map(i, ShipmentServiceRequestV2.class);
+                    _service.setServiceDurationSpan(i.getServiceDuration());
+                    return _service;
+                }
+        ).toList();
+        cs.setServicesList(res);
+    }
+
 
     private <T,P> List<P> convertToList(final List<T> lst, Class<P> clazz) {
         if(lst == null)
