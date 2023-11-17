@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.controller;
 
 import com.dpw.runner.shipment.services.entitytransfer.dto.request.*;
+import com.dpw.runner.shipment.services.entitytransfer.dto.response.CheckTaskExistResponse;
 import com.dpw.runner.shipment.services.entitytransfer.service.interfaces.IEntityTransferService;
 import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
@@ -120,6 +121,23 @@ public class EntityTransferController {
         String responseMsg;
         try {
             return (ResponseEntity<RunnerResponse>) entityTransferService.sendShipmentValidation(CommonRequestModel.buildRequest(request));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+        }
+        return ResponseHelper.buildFailedResponse(responseMsg);
+    }
+
+
+    @PostMapping(EntityTransferConstants.CHECK_TASK_EXIST)
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = EntityTransferConstants.CHECK_TASK_SUCCESSFUL)
+    })
+    public ResponseEntity<?> checkTaskExist(@RequestBody @Valid CheckTaskExistRequest request) {
+        String responseMsg;
+        try {
+            return (ResponseEntity<CheckTaskExistResponse>) entityTransferService.checkTaskExist(CommonRequestModel.buildRequest(request));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
