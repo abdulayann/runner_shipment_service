@@ -70,16 +70,16 @@ public class CustomConsolidationRequest implements IRunnerResponse, IRunnerReque
 //    @JsonProperty("Id")
 //    private Long Id;
     @JsonProperty("IntraBranch")
-    private Boolean IntraBranch;
+    private boolean IntraBranch;
     @JsonProperty("InwardDateandTime")
     private LocalDateTime InwardDateandTime;
 
     @JsonProperty("IsInland")
-    private Boolean IsInland;
+    private boolean IsInland;
     @JsonProperty("IsReceivingAgentFreeTextAddress")
-    private Boolean IsReceivingAgentFreeTextAddress;
+    private boolean IsReceivingAgentFreeTextAddress;
     @JsonProperty("IsSendingAgentFreeTextAddress")
-    private Boolean IsSendingAgentFreeTextAddress;
+    private boolean IsSendingAgentFreeTextAddress;
 
 
     // Using this field to address diff in v1 and v2
@@ -210,7 +210,7 @@ public class CustomConsolidationRequest implements IRunnerResponse, IRunnerReque
     @JsonProperty("Atd")
     private LocalDateTime Atd;
     @JsonProperty("IsDomestic")
-    private Boolean IsDomestic;
+    private boolean IsDomestic;
     @JsonProperty("VoyageNumber")
     private String VoyageNumber;
     @JsonProperty("Vessel")
@@ -364,7 +364,7 @@ public class CustomConsolidationRequest implements IRunnerResponse, IRunnerReque
     @JsonProperty("CutoffDate")
     private LocalDateTime CutoffDate;
     @JsonProperty("Hazardous")
-    private Boolean Hazardous;
+    private boolean Hazardous;
     @JsonProperty("DGClass")
     private String DGClass;
     @JsonProperty("DGSubstance")
@@ -380,7 +380,7 @@ public class CustomConsolidationRequest implements IRunnerResponse, IRunnerReque
     @JsonProperty("MaxTempUnit")
     private String MaxTempUnit;
     @JsonProperty("Override")
-    private Boolean Override;
+    private boolean Override;
     @JsonProperty("WeightVolume")
     private BigDecimal WeightVolume;
     @JsonProperty("WeightVolumeUnit")
@@ -451,11 +451,11 @@ public class CustomConsolidationRequest implements IRunnerResponse, IRunnerReque
 //    @JsonProperty("Docs
 //    private List<FileRepoRow> Docs;
     @JsonProperty("IsCharter")
-    private Boolean IsCharter;
+    private boolean IsCharter;
     @JsonProperty("IsCargoOnly")
-    private Boolean IsCargoOnly;
+    private boolean IsCargoOnly;
     @JsonProperty("IsLinked")
-    private Boolean IsLinked;
+    private boolean IsLinked;
 //    @JsonProperty("consolidatedBill
 //    private List<BillRow> consolidatedBill;
 
@@ -511,7 +511,7 @@ public class CustomConsolidationRequest implements IRunnerResponse, IRunnerReque
     @JsonProperty("CTOFaxPhone")
     private String CTOFaxPhone;
     @JsonProperty("IsLocked")
-    private Boolean IsLocked;
+    private boolean IsLocked;
 
     //Consolidation Address
     @JsonProperty("ConsolidationAddress")

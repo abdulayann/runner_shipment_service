@@ -5,7 +5,6 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
-import javax.servlet.http.Part;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -31,7 +30,7 @@ public class CustomShipmentSyncRequest implements IRunnerRequest, IRunnerRespons
     @JsonProperty("MasterBill")
     private String MasterBill;
     @JsonProperty("IsDomestic")
-    private Boolean IsDomestic;
+    private boolean IsDomestic;
     @JsonProperty("Weight")
     private BigDecimal Weight;
     @JsonProperty("WeightUnit")
@@ -208,7 +207,7 @@ public class CustomShipmentSyncRequest implements IRunnerRequest, IRunnerRespons
     @JsonProperty("DeliveryMode")
     private String DeliveryMode; // TODO : REMOVE
     @JsonProperty("DraftPrinted")
-    private Boolean DraftPrinted;
+    private boolean DraftPrinted;
 
     @JsonProperty("Etailor")
     private PartyRequestV2 Etailor;
@@ -233,21 +232,21 @@ public class CustomShipmentSyncRequest implements IRunnerRequest, IRunnerRespons
     @JsonProperty("ImportBroker")
     private PartyRequestV2 ImportBroker;
     @JsonProperty("ImportExportShipmentLock")
-    private Boolean ImportExportShipmentLock;
+    private boolean ImportExportShipmentLock;
     @JsonProperty("InvoiceValue")
     private BigDecimal InvoiceValue;
     @JsonProperty("InwardDateAndTime")
     private LocalDateTime InwardDateAndTime;
     @JsonProperty("IsCmsHBLSent")
-    private Boolean IsCmsHBLSent;
+    private boolean IsCmsHBLSent;
     @JsonProperty("IsCreditOverrideApproved")
-    private Boolean IsCreditOverrideApproved;
+    private boolean IsCreditOverrideApproved;
     @JsonProperty("IsExportClearance")
-    private Boolean IsExportClearance;
+    private boolean IsExportClearance;
     @JsonProperty("IsImportClearance")
-    private Boolean IsImportClearance;
+    private boolean IsImportClearance;
     @JsonProperty("IsInland")
-    private Boolean IsInland;
+    private boolean IsInland;
     @JsonProperty("LgdStatus")
     private String LgdStatus;
     @JsonProperty("LineNumber")
@@ -269,7 +268,7 @@ public class CustomShipmentSyncRequest implements IRunnerRequest, IRunnerRespons
     @JsonProperty("PeruEntryExitPoint")
     private String PeruEntryExitPoint;
     @JsonProperty("PrintedOriginal")
-    private Boolean PrintedOriginal;
+    private boolean PrintedOriginal;
     @JsonProperty("ReceivingAgent")
     private PartyRequestV2 ReceivingAgent;
     @JsonProperty("ReceivingForwarderParty")
@@ -289,7 +288,7 @@ public class CustomShipmentSyncRequest implements IRunnerRequest, IRunnerRespons
     @JsonProperty("SupplierInvoiceNumber")
     private String SupplierInvoiceNumber;
     @JsonProperty("SurrenderPrinted")
-    private Boolean SurrenderPrinted;
+    private boolean SurrenderPrinted;
     @JsonProperty("TipoDocumentConsignee")
     private String TipoDocumentConsignee;
     @JsonProperty("TipoDocumentNotifyParty")
@@ -301,7 +300,7 @@ public class CustomShipmentSyncRequest implements IRunnerRequest, IRunnerRespons
     @JsonProperty("WarehouseId")
     private Long WarehouseId; //int64
     @JsonProperty("Wblprinted")
-    private Boolean Wblprinted;
+    private boolean Wblprinted;
     // ---- Additional Details ends here
 
 
@@ -321,7 +320,7 @@ public class CustomShipmentSyncRequest implements IRunnerRequest, IRunnerRespons
     @JsonProperty("AssignedTo")
     private String AssignedTo;
     @JsonProperty("AutoUpdateWtVol")
-    private Boolean AutoUpdateWtVol;
+    private boolean AutoUpdateWtVol;
 
     @JsonProperty("BookingNumber")
     private String BookingNumber;
@@ -331,14 +330,14 @@ public class CustomShipmentSyncRequest implements IRunnerRequest, IRunnerRespons
     @JsonProperty("BookingType")
     private String BookingType;
     @JsonProperty("CargoFinanceBooking")
-    private Boolean CargoFinanceBooking;
+    private boolean CargoFinanceBooking;
     // private BigDecimal Chargeable;
     // private String ChargableUnit;
 
     @JsonProperty("ConsolidationReferenceNumber")
     private String ConsolidationReferenceNumber;
     @JsonProperty("ContainerAutoWeightVolumeUpdate")
-    private Boolean ContainerAutoWeightVolumeUpdate;
+    private boolean ContainerAutoWeightVolumeUpdate;
     //Direction
     // private String Custom_ShipType;
     @JsonProperty("DocumentationPartner")
@@ -354,13 +353,13 @@ public class CustomShipmentSyncRequest implements IRunnerRequest, IRunnerRespons
     //innerPackUnit
     // private String InnersUnit;
     @JsonProperty("IntraBranch")
-    private Boolean IntraBranch;
+    private boolean IntraBranch;
     @JsonProperty("IsLocked")
-    private Boolean IsLocked;
+    private boolean IsLocked;
     @JsonProperty("IsNotifyConsigneeEqual")
-    private Boolean IsNotifyConsigneeEqual;
+    private boolean IsNotifyConsigneeEqual;
     @JsonProperty("IsShipmentReadOnly")
-    private Boolean IsShipmentReadOnly;
+    private boolean IsShipmentReadOnly;
 
     // LockedBy is username in v2 and user id in v1 ,
     // keeping lockedByUser to sync this info and fetching info from repos in v1
