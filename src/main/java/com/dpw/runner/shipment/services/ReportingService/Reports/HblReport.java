@@ -178,7 +178,7 @@ public class HblReport extends IReport{
         hblModel.noofPackages = 0;
         if(hblModel.shipment.getContainersList() != null && hblModel.shipment.getContainersList().size() > 0) {
             for (ContainerModel container: hblModel.shipment.getContainersList()) {
-                hblModel.noofPackages = container.getNoOfPackages() + hblModel.noofPackages;
+                hblModel.noofPackages = container.getNoOfPackages() != null ? container.getNoOfPackages() : 0 + hblModel.noofPackages;
                 hblModel.containerCountGrouped = new HashMap<>();
                 hblModel.containerWeightGrouped = new HashMap<>();
                 hblModel.containerVolumeGrouped = new HashMap<>();
