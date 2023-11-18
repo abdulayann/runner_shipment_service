@@ -1,0 +1,149 @@
+package com.dpw.runner.shipment.services.adapters.impl;
+
+import com.dpw.runner.shipment.services.adapters.interfaces.IOrderManagementAdapter;
+import com.dpw.runner.shipment.services.dto.response.OrderManagement.OrderManagementDTO;
+import com.dpw.runner.shipment.services.dto.response.OrderManagement.OrderManagementResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
+import com.dpw.runner.shipment.services.entity.AdditionalDetails;
+import com.dpw.runner.shipment.services.entity.CarrierDetails;
+import com.dpw.runner.shipment.services.entity.Parties;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
+import com.dpw.runner.shipment.services.service.v1.IV1Service;
+import com.dpw.runner.shipment.services.validator.enums.Operators;
+import com.fasterxml.jackson.core.type.TypeReference;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpMethod;
+import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
+
+import java.util.*;
+
+@Slf4j
+@Service
+public class OrderManagementAdapter implements IOrderManagementAdapter {
+
+    @Autowired
+    @Qualifier("restTemplateForOrderManagement")
+    private RestTemplate restTemplate;
+
+    @Value("${order.management.baseUrl}")
+    private String baseUrl;
+    @Value("${order.management.getOrder}")
+    private String getOrderUrl;
+
+    @Autowired
+    private IV1Service v1Service;
+
+    @Autowired
+    private JsonHelper jsonHelper;
+
+
+    @Override
+    public ShipmentDetails getOrder(String orderId) {
+        try {
+            String url = baseUrl + getOrderUrl + orderId;
+            var response = restTemplate.exchange(url, HttpMethod.GET, null, OrderManagementResponse.class);
+            var shipment = generateShipmentFromOrder(Objects.requireNonNull(response.getBody()).getOrder());
+            return shipment;
+        } catch (Exception e) {
+            log.error(e.getMessage());
+            throw new RunnerException(e.getMessage());
+        }
+    }
+
+    private ShipmentDetails generateShipmentFromOrder(OrderManagementDTO order) {
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setAdditionalDetails(new AdditionalDetails());
+        shipmentDetails.setCarrierDetails(new CarrierDetails());
+        var partyMap = getPartyDetails(List.of(order.getSupplierCode(), order.getBuyerCode(), order.getNotifyPartyCode(), order.getSendingAgentCode(), order.getReceivingAgentCode()));
+
+        shipmentDetails.setTransportMode(order.getTransportMode());
+        shipmentDetails.setIncoterms(order.getIncoTerm());
+        shipmentDetails.getCarrierDetails().setOrigin(order.getOriginName());
+        shipmentDetails.getCarrierDetails().setOriginPort(order.getOriginPortName());
+        shipmentDetails.getCarrierDetails().setDestination(order.getDestinationName());
+        shipmentDetails.getCarrierDetails().setDestinationPort(order.getDestinationPortName());
+
+
+
+        if(partyMap.get(order.getSupplierCode()) != null) {
+            shipmentDetails.setConsigner(new Parties());
+            shipmentDetails.getConsigner().setOrgCode(order.getSupplierCode());
+            shipmentDetails.getConsigner().setOrgData(partyMap.get(order.getSupplierCode()));
+            shipmentDetails.getConsigner().setAddressCode(order.getSupplierAddressCode());
+            shipmentDetails.getConsigner().setAddressData(order.getSupplierAddress());
+        }
+        if(partyMap.get(order.getBuyerCode()) != null) {
+            shipmentDetails.setConsignee(new Parties());
+            shipmentDetails.getConsignee().setOrgCode(order.getBuyerCode());
+            shipmentDetails.getConsignee().setOrgData(partyMap.get(order.getBuyerCode()));
+            shipmentDetails.getConsignee().setAddressCode(order.getBuyerAddressCode());
+            shipmentDetails.getConsignee().setAddressData(order.getBuyerAddress());
+        }
+        if(partyMap.get(order.getNotifyPartyCode()) != null) {
+            shipmentDetails.getAdditionalDetails().setNotifyParty(new Parties());
+            shipmentDetails.getAdditionalDetails().getNotifyParty().setOrgCode(order.getNotifyPartyCode());
+            shipmentDetails.getAdditionalDetails().getNotifyParty().setOrgData(partyMap.get(order.getNotifyPartyCode()));
+            shipmentDetails.getAdditionalDetails().getNotifyParty().setAddressCode(order.getNotifyPartyAddressCode());
+            shipmentDetails.getAdditionalDetails().getNotifyParty().setAddressData(order.getNotifyPartyAddress());
+        }
+        if(partyMap.get(order.getSendingAgentCode()) != null) {
+            shipmentDetails.getAdditionalDetails().setSendingAgent(new Parties());
+            shipmentDetails.getAdditionalDetails().getSendingAgent().setOrgCode(order.getSendingAgentCode());
+            shipmentDetails.getAdditionalDetails().getSendingAgent().setOrgData(partyMap.get(order.getSendingAgentCode()));
+            shipmentDetails.getAdditionalDetails().getSendingAgent().setAddressCode(order.getSendingAgentAddressCode());
+            shipmentDetails.getAdditionalDetails().getSendingAgent().setAddressData(order.getSendingAgentAddress());
+        }
+        if(partyMap.get(order.getReceivingAgentCode()) != null) {
+            shipmentDetails.getAdditionalDetails().setReceivingAgent(new Parties());
+            shipmentDetails.getAdditionalDetails().getReceivingAgent().setOrgCode(order.getReceivingAgentCode());
+            shipmentDetails.getAdditionalDetails().getReceivingAgent().setOrgData(partyMap.get(order.getReceivingAgentCode()));
+            shipmentDetails.getAdditionalDetails().getReceivingAgent().setAddressCode(order.getReceivingAgentAddressCode());
+            shipmentDetails.getAdditionalDetails().getReceivingAgent().setAddressData(order.getReceivingAgentAddress());
+        }
+
+        shipmentDetails.setShipmentType(order.getContainerMode());
+        if(order.getPacksAmount() != null){
+            shipmentDetails.setNoOfPacks(order.getPacksAmount().getAmount() != null ? order.getPacksAmount().getAmount().intValue() : null);
+            shipmentDetails.setPacksUnit(order.getPacksAmount().getUnit());
+        }
+        if(order.getWeightAmount() != null){
+            shipmentDetails.setWeight(order.getWeightAmount().getAmount());
+            shipmentDetails.setWeightUnit(order.getWeightAmount().getUnit());
+        }
+        if(order.getVolumeAmount() != null){
+            shipmentDetails.setVolume(order.getVolumeAmount().getAmount());
+            shipmentDetails.setVolumeUnit(order.getVolumeAmount().getUnit());
+        }
+        shipmentDetails.setOrderManagementId(order.getOrderId());
+        shipmentDetails.setOrderManagementNumber(order.getOrderNumber());
+
+//        TODO map remaining fields
+//        shipmentDetails.setServiceMode(order.serviceMode);
+
+        return shipmentDetails;
+    }
+
+    private Map<String, Map<String, Object>> getPartyDetails (List<String> orgCodes) {
+        CommonV1ListRequest orgRequest = new CommonV1ListRequest();
+        List<Object> orgField = new ArrayList<>(List.of("OrganizationCode"));
+        String operator = Operators.IN.getValue();
+        List<Object> orgCriteria = new ArrayList<>(List.of(orgField, operator, List.of(orgCodes)));
+        orgRequest.setCriteriaRequests(orgCriteria);
+        V1DataResponse orgResponse = v1Service.fetchOrganization(orgRequest);
+        List<Map<String, Object>> responseMap = jsonHelper.convertValue(orgResponse.entities, new TypeReference<List<Map<String, Object>>>() {});
+        Map<String, Map<String, Object>> res = new HashMap<>();
+        if(responseMap != null) {
+            for (Map<String, Object> i : responseMap) {
+                res.putIfAbsent((String) i.get("OrganizationCode"), i);
+            }
+        }
+        return res;
+    }
+}

@@ -4,6 +4,7 @@ package com.dpw.runner.shipment.services.service.impl;
 import com.azure.messaging.servicebus.ServiceBusMessage;
 import com.dpw.runner.shipment.services.Kafka.Dto.KafkaResponse;
 import com.dpw.runner.shipment.services.Kafka.Producer.KafkaProducer;
+import com.dpw.runner.shipment.services.adapters.impl.OrderManagementAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.ITrackingServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
@@ -194,6 +195,9 @@ public class ShipmentService implements IShipmentService {
     @Autowired
     private ISequenceIncrementorDao sequenceIncrementorDao;
 
+    @Autowired
+    private OrderManagementAdapter orderManagementAdapter;
+
     @Value("${shipmentsKafka.queue}")
     private String senderQueue;
 
@@ -202,7 +206,7 @@ public class ShipmentService implements IShipmentService {
 
     @Autowired
     private ITrackingServiceAdapter trackingServiceAdapter;
-    
+
     @Autowired
     private IShipmentsContainersMappingDao shipmentsContainersMappingDao;
 
@@ -2191,6 +2195,16 @@ public class ShipmentService implements IShipmentService {
                     : DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
+    @Override
+    public ResponseEntity<?> retrieveByOrderId(String orderId) {
+        try {
+            ShipmentDetailsResponse response = jsonHelper.convertValue(orderManagementAdapter.getOrder(orderId), ShipmentDetailsResponse.class);
+            return ResponseHelper.buildSuccessResponse(response);
+        } catch (Exception e){
+            throw new RunnerException(e.getMessage());
         }
     }
 

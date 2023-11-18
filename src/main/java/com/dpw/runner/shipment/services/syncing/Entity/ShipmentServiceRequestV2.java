@@ -2,8 +2,10 @@ package com.dpw.runner.shipment.services.syncing.Entity;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
+import org.apache.tomcat.jni.Local;
 
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.UUID;
 
 @Data
@@ -19,7 +21,7 @@ public class ShipmentServiceRequestV2 {
     @JsonProperty("Contractor")
     private PartyRequestV2 Contractor;
     @JsonProperty("SrvLocation")
-    private Long SrvLocation;
+    private String SrvLocation;
     @JsonProperty("BookingDate")
     private LocalDateTime BookingDate;
     @JsonProperty("ServiceCount")
@@ -31,5 +33,5 @@ public class ShipmentServiceRequestV2 {
     @JsonProperty("RefNumber")
     private String RefNumber;
     @JsonProperty("ServiceDurationSpan")
-    private Object ServiceDurationSpan;
+    private LocalTime ServiceDurationSpan;
 }
