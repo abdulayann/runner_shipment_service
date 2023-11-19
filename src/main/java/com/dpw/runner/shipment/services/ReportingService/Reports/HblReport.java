@@ -905,11 +905,11 @@ public class HblReport extends IReport{
 
     // isActive Criteria not clear from v1 impl
     private String masterListDescriptionPacksUnit(String packageType) {
-        if(packageType == null || packageType.isEmpty())
+        if (packageType == null || packageType.isEmpty())
             return packageType;
 
-        MasterData masterData = getMasterListData(MasterDataType.PAYMENT, packageType);
-        return  (masterData != null ? masterData.getItemDescription() : null);
+        MasterData masterData = getMasterListData(MasterDataType.PAYMENT_TYPE, packageType);
+        return (masterData != null ? masterData.getItemDescription() : null);
     }
 
     private String getLogoPath(UsersDto user) {

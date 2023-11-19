@@ -48,10 +48,11 @@ public class ReportsFactory {
     @Autowired
     private PreAlertReport preAlertReport;
 
-    public IReport getReport(String key)
-    {
-        switch(key)
-        {
+    @Autowired
+    private ShippingRequestOutReport shippingRequestOutReport;
+
+    public IReport getReport(String key) {
+        switch (key) {
             case ReportConstants.ARRIVAL_NOTICE:
                 return arrivalNoticeReport;
             case ReportConstants.BOOKING_CONFIRMATION:
@@ -93,7 +94,8 @@ public class ReportsFactory {
                 return customsInstructionsReport;
             case ReportConstants.PRE_ALERT:
                 return preAlertReport;
-
+            case ReportConstants.SHIPPING_REQUEST_OUT:
+                return shippingRequestOutReport;
         }
         return null;
     }
