@@ -4,8 +4,16 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
-public class ReportConstants
-{
+public class ReportConstants {
+    public static final String LOADING_PORT_COUNTRY_NAME = "LoadingPortCountryName";
+    public static final String LOADING_PORT_CODE = "LoadingPortCode";
+    public static final String DISCHARGE_PORT_CODE = "DischargePortCode";
+    public static final String DISCHARGE_PORT_COUNTRY_NAME = "DischargePortCountryName";
+    public static final String CONSOL_CONTAINERSUMMARY = "ConsolContainerSummary";
+    public static final String TOTAL_PACK_UNIT_DESCRIPTION = "TotalPackUnitDescription";
+    public static final String TOTAL_PACK_UNIT_CODE = "TotalPacksUnitCode";
+    public static final String CONSOL_DESCRIPTION_ENABLED = "ConsolDescriptionEnable";
+    public static final String SHIPMENT_HASCONTAINERS = "ShipmentHasContainers";
     public static final String MASTER_BILL = "MasterBill";
     public static final String HOUSE_BILL = "HouseBill";
     public static final String VESSEL_NAME = "VesselName";
@@ -571,6 +579,7 @@ public class ReportConstants
     public static final String CSR = "CSR";
     public static final String ERN = "ERN";
     public static final String SHIPPING_REQUEST = "ShippingRequest";
+    public static final String SHIPPING_REQUEST_OUT = "ShippingRequestOut";
     public static final String SHIPPING_REQUEST_AIR = "ShippingRequestAir";
     public static final String IMPORT_SHIPMENT_MANIFEST = "ImportShipmentManifest";
     public static final String EXPORT_SHIPMENT_MANIFEST = "ExportShipmentManifest";
@@ -659,4 +668,6 @@ public class ReportConstants
     // APis
     public static final String REPORT_API_HANDLE = "/api/v2/report";
     public static final String REPORT_CREATE_SUCCESSFUL = "Successful Report Creation";
+    public static final String SERVICE_MODE = "ServiceMode";
+    public static final String SHIPMENT_PACKS_UNIT_DESC = "ShipmentPacksUnitDescription";
 }
