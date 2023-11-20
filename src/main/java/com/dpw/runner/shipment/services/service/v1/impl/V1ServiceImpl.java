@@ -12,6 +12,7 @@ import com.dpw.runner.shipment.services.exception.exceptions.UnAuthorizedExcepti
 import com.dpw.runner.shipment.services.exception.exceptions.V1ServiceException;
 import com.dpw.runner.shipment.services.exception.response.V1ErrorResponse;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.V1AuthHelper;
 import org.slf4j.Logger;
@@ -264,8 +265,12 @@ public class V1ServiceImpl implements IV1Service {
     private String HBL_TASK_CREATION;
     @Value("${v1service.url.base}${v1service.url.roleList}")
     private String ROLES_LIST;
+    @Value("${v1service.url.base}${v1service.url.dataSync}")
+    private String DATA_SYNC_URL;
     @Autowired
     private JsonHelper jsonHelper;
+    @Autowired
+    private V1AuthHelper v1AuthHelper;
 
     @Autowired
     public V1ServiceImpl(@Qualifier("restTemplateForV1") RestTemplate restTemplate) {
@@ -1589,6 +1594,29 @@ public class V1ServiceImpl implements IV1Service {
             tiDataResponse = this.restTemplate.postForEntity(this.ROLES_LIST, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in fetchRolesList() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) tiDataResponse.getBody();
+        } catch (HttpStatusCodeException var6) {
+            if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
+                throw new UnAuthorizedException("UnAuthorizedException");
+            } else {
+                throw new V1ServiceException(var6.getMessage());
+            }
+        } catch (Exception var7) {
+            throw new V1ServiceException(var7.getMessage());
+        }
+    }
+
+    @Override
+    public V1DataSyncResponse v1DataSync(Object request) {
+        ResponseEntity tiDataResponse = null;
+
+        try {
+            long time = System.currentTimeMillis();
+            log.info("Request: {} || Payload sent for event: {} with request payload: {}", LoggerHelper.getRequestIdFromMDC(), IntegrationType.V1_DATA_SYNC, jsonHelper.convertToJson(request));
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, v1AuthHelper.getHeadersForDataSync());
+            tiDataResponse = this.restTemplate.postForEntity(this.DATA_SYNC_URL, entity, V1DataSyncResponse.class, new Object[0]);
+            log.info("Request: {} || Response for event: {} with response{}", LoggerHelper.getRequestIdFromMDC(), IntegrationType.V1_DATA_SYNC, jsonHelper.convertToJson(tiDataResponse.getBody()));
+            log.info("Request: {} || Total time taken in v1DataSync() function: {}", LoggerHelper.getRequestIdFromMDC() ,(System.currentTimeMillis() - time));
+            return (V1DataSyncResponse) tiDataResponse.getBody();
         } catch (HttpStatusCodeException var6) {
             if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
                 throw new UnAuthorizedException("UnAuthorizedException");

@@ -3,11 +3,14 @@ package com.dpw.runner.shipment.services.syncing.impl;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1DataSyncResponse;
 import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.syncing.Entity.*;
+import com.dpw.runner.shipment.services.syncing.constants.SyncingConstants;
 import com.dpw.runner.shipment.services.syncing.interfaces.IConsolidationSync;
 import com.dpw.runner.shipment.services.utils.V1AuthHelper;
 import lombok.extern.slf4j.Slf4j;
@@ -44,6 +47,8 @@ public class ConsolidationSync implements IConsolidationSync {
 
     @Autowired
     IShipmentDao shipmentDao;
+    @Autowired
+    private IV1Service v1Service;
 
     private RetryTemplate retryTemplate = RetryTemplate.builder()
             .maxAttempts(3)
@@ -87,15 +92,14 @@ public class ConsolidationSync implements IConsolidationSync {
         mapShipmentGuids(response, request);
 
         response.setGuid(request.getGuid());
-        String consolidationRequest = jsonHelper.convertToJson(response);
+        String consolidationRequest = jsonHelper.convertToJson(V1DataSyncRequest.builder().entity(response).module(SyncingConstants.CONSOLIDATION).build());
         retryTemplate.execute(ctx -> {
             log.info("Current retry : {}", ctx.getRetryCount());
             if(ctx.getLastThrowable() != null) {
                 log.error("V1 error -> {}",ctx.getLastThrowable().getMessage());
             }
-            HttpEntity<V1DataResponse> entity = new HttpEntity(consolidationRequest, V1AuthHelper.getHeaders());
-            var response_ = this.restTemplate.postForEntity(this.CONSOLIDATION_V1_SYNC_URL, entity, V1DataResponse.class, new Object[0]);
-            return response_;
+            V1DataSyncResponse response_ = v1Service.v1DataSync(consolidationRequest);
+            return ResponseHelper.buildSuccessResponse(response_);
         });
 
         return ResponseHelper.buildSuccessResponse(response);

@@ -1,11 +1,14 @@
 package com.dpw.runner.shipment.services.syncing.impl;
 
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1DataSyncResponse;
 import com.dpw.runner.shipment.services.entity.ProductSequenceConfig;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.syncing.Entity.*;
+import com.dpw.runner.shipment.services.syncing.constants.SyncingConstants;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSettingsSync;
 import com.dpw.runner.shipment.services.utils.V1AuthHelper;
 import lombok.extern.slf4j.Slf4j;
@@ -32,6 +35,8 @@ public class ShipmentSettingsSync implements IShipmentSettingsSync {
     JsonHelper jsonHelper;
     @Autowired
     RestTemplate restTemplate;
+    @Autowired
+    private IV1Service v1Service;
 
     private RetryTemplate retryTemplate = RetryTemplate.builder()
             .maxAttempts(3)
@@ -62,15 +67,14 @@ public class ShipmentSettingsSync implements IShipmentSettingsSync {
         syncRequest.setIsLowMarginApprovalRequired(req.getLowMarginApproval());
         syncRequest.setShipmentInstruction(req.getShippingInstruction());
 
-        String payload = jsonHelper.convertToJson(syncRequest);
+        String payload = jsonHelper.convertToJson(V1DataSyncRequest.builder().entity(syncRequest).module(SyncingConstants.TENANT_SETTINGS).build());
         retryTemplate.execute(ctx -> {
             log.info("Current retry : {}", ctx.getRetryCount());
             if(ctx.getLastThrowable() != null) {
                 log.error("V1 error -> {}",ctx.getLastThrowable().getMessage());
             }
-            HttpEntity<V1DataResponse> entity = new HttpEntity(payload, V1AuthHelper.getHeaders());
-            var response = this.restTemplate.postForEntity(this.SHIPMENT_SETTING_V1_SYNC_URL, entity, V1DataResponse.class, new Object[0]);
-            return response;
+            V1DataSyncResponse response_ = v1Service.v1DataSync(payload);
+            return ResponseHelper.buildSuccessResponse(response_);
         });
 
         return ResponseHelper.buildSuccessResponse(modelMapper.map(syncRequest, ShipmentSettingsSyncRequest.class));
