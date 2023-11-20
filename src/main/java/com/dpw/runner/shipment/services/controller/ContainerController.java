@@ -1,10 +1,7 @@
 package com.dpw.runner.shipment.services.controller;
 
 import com.dpw.runner.shipment.services.commons.constants.*;
-import com.dpw.runner.shipment.services.commons.requests.BulkDownloadRequest;
-import com.dpw.runner.shipment.services.commons.requests.BulkUploadRequest;
-import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
-import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
+import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.ContainerAPIsRequest.ContainerAssignRequest;
@@ -88,6 +85,17 @@ public class ContainerController {
             containerService.downloadContainers(response, request);
         } catch (Exception ex) {
             log.error(ex.getMessage());
+        }
+    }
+
+    @PostMapping(ApiConstants.EXPORT_LIST)
+    public ResponseEntity<String> exportContainers(HttpServletResponse response, @RequestBody ExportContainerListRequest request) {
+        try {
+            containerService.exportContainers(response, request);
+            return ResponseEntity.ok("Export Successfull");
+        } catch (Exception ex) {
+            log.error(ex.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ex.getMessage());
         }
     }
 
