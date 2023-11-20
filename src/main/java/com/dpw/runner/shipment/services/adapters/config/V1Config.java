@@ -25,7 +25,7 @@ public class V1Config {
                 .build();
         HttpComponentsClientHttpRequestFactory requestFactory = new HttpComponentsClientHttpRequestFactory(httpClient);
         requestFactory.setConnectTimeout(60 * 1000);
-        requestFactory.setReadTimeout(30 * 1000);
+        requestFactory.setReadTimeout(60 * 1000);
         return new RestTemplate(requestFactory);
     }
 }
