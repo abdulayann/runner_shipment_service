@@ -37,4 +37,5 @@ public interface IContainerService extends ICommonService {
     void exportContainers(HttpServletResponse response, ExportContainerListRequest request) throws Exception;
 
     ResponseEntity<?> V1BulkContainerCreateAndUpdate(CommonRequestModel commonRequestModel);
+    ResponseEntity<?> validateContainerNumber(String containerNumber);
 }

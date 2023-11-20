@@ -29,5 +29,6 @@ public class EntityTransferConstants {
     public static final String APPROVAL_ROLE_NOT_ASSIGNED = "Approval role not assigned to tenant: ";
     public static final String CHARGE_CODE = "ChargeCode";
     public static final String TENANT_ID = "TenantId";
+    public static final String ID = "Id";
 
 }

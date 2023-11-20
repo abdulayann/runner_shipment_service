@@ -1398,6 +1398,7 @@ public class ConsolidationService implements IConsolidationService {
         this.addDedicatedMasterData(consolidationDetails, consolidationDetailsResponse);
         this.addAllContainerTypesInSingleCall(consolidationDetails,consolidationDetailsResponse);
         this.addAllTenantIdDatas(consolidationDetails, consolidationDetailsResponse);
+        this.addWarehouseData(consolidationDetails, consolidationDetailsResponse);
     }
 
     private void addAllMasterDatas (ConsolidationDetails consolidationDetails, ConsolidationDetailsResponse consolidationDetailsResponse) {
@@ -1416,6 +1417,10 @@ public class ConsolidationService implements IConsolidationService {
 
     private void addAllTenantIdDatas (ConsolidationDetails consolidationDetails, ConsolidationDetailsResponse consolidationDetailsResponse) {
         consolidationDetailsResponse.setTenantIdsData(masterDataUtils.addTenantIdsData(consolidationDetailsResponse, ConsolidationDetails.class, EntityTransferConstants.TENANT_ID));
+    }
+
+    private void addWarehouseData (ConsolidationDetails consolidationDetails, ConsolidationDetailsResponse consolidationDetailsResponse) {
+        consolidationDetailsResponse.setTextData(masterDataUtils.addTextData(consolidationDetailsResponse, ConsolidationDetails.class, EntityTransferConstants.ID));
     }
 
     private void addDedicatedMasterData (ConsolidationDetails consolidationDetails, ConsolidationDetailsResponse consolidationDetailsResponse) {

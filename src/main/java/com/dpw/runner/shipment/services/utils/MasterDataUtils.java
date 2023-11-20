@@ -9,6 +9,7 @@ import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
 import com.dpw.runner.shipment.services.dto.response.CustomerBookingResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.WareHouseResponse;
 import com.dpw.runner.shipment.services.entity.CarrierDetails;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.entitytransfer.dto.*;
@@ -16,7 +17,6 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
-import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.validator.enums.Operators;
 import lombok.extern.slf4j.Slf4j;
@@ -298,6 +298,53 @@ public class MasterDataUtils{
                 }
             });
             return fieldNameTenantIdsDataMap;
+        }
+        return null;
+    }
+
+    public Map<String, String> addTextData (IRunnerResponse entityPayload, Class baseClass, String onField) {
+        if (Objects.isNull(entityPayload))
+            return null;
+
+        Map<String, String> fieldNameTextDataMap = new HashMap<>();
+        Map<Long, WareHouseResponse> keyWareHouseDataMap = new HashMap<>();
+        Map<String, Long> fieldNameKeyMap = new HashMap<>();
+        List<Long> wareHouseIdsList = new ArrayList<>();
+        for(Field field  : baseClass.getDeclaredFields())
+        {
+            if (field.isAnnotationPresent(DedicatedMasterData.class) && field.getDeclaredAnnotation(DedicatedMasterData.class).type().equals(Constants.WARE_HOUSE_DATA))
+            {
+                try {
+                    Field field1 = entityPayload.getClass().getDeclaredField(field.getName());
+                    field1.setAccessible(true);
+                    Long wareHouseId = (Long) field1.get(entityPayload);
+                    if(wareHouseId != null) {
+                        wareHouseIdsList.add(wareHouseId);
+                        fieldNameKeyMap.put(field.getName(), wareHouseId);
+                    }
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }
+        if(wareHouseIdsList.size() > 0){
+            CommonV1ListRequest request = new CommonV1ListRequest();
+            List<Object> field = new ArrayList<>(List.of(onField));
+            String operator = Operators.IN.getValue();
+            List<Object> criteria = new ArrayList<>(List.of(field, operator, List.of(wareHouseIdsList)));
+            request.setCriteriaRequests(criteria);
+            V1DataResponse response = v1Service.fetchWarehouseData(request);
+
+            List<WareHouseResponse> wareHousesList = commonUtils.convertToList((List<?>) response.entities, WareHouseResponse.class);
+            wareHousesList.forEach(wareHouseResponse -> {
+                keyWareHouseDataMap.put(wareHouseResponse.getId(), wareHouseResponse);
+            });
+            fieldNameKeyMap.forEach((key, value) -> {
+                if(keyWareHouseDataMap.containsKey(value)) {
+                    fieldNameTextDataMap.put(key, keyWareHouseDataMap.get(value).getWarehouseDepotCode() + " - " + keyWareHouseDataMap.get(value).getWarehouseDepotName());
+                }
+            });
+            return fieldNameTextDataMap;
         }
         return null;
     }

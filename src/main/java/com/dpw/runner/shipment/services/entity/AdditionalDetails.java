@@ -6,6 +6,7 @@ import com.dpw.runner.shipment.services.entity.enums.AndesStatus;
 import com.dpw.runner.shipment.services.entity.enums.LGDStatus;
 import com.dpw.runner.shipment.services.entity.enums.Ownership;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
+import com.dpw.runner.shipment.services.utils.DedicatedMasterData;
 import com.dpw.runner.shipment.services.utils.MasterData;
 import com.dpw.runner.shipment.services.utils.OrganizationData;
 import com.dpw.runner.shipment.services.utils.UnlocationData;
@@ -130,6 +131,7 @@ public class AdditionalDetails extends MultiTenancy {
     private String andesTicket;
 
     @Column(name = "warehouse_id")
+    @DedicatedMasterData(type = Constants.WARE_HOUSE_DATA)
     private Long warehouseId;
 
     @Column(name = "activity_type")
@@ -224,6 +226,7 @@ public class AdditionalDetails extends MultiTenancy {
     private String externalNotes;
 
     @Column(name = "bonded_warehouse_id")
+    @DedicatedMasterData(type = Constants.WARE_HOUSE_DATA)
     private Long bondedWarehouseId;
 
     @Size(max=3, message = "max size is 3 for release_type")

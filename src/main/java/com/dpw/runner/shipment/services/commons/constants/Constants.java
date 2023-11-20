@@ -110,6 +110,7 @@ public class Constants {
     public static final String AMSEDI = "AMSEDI";
 
     public static final String COMMODITY_TYPE_MASTER_DATA = "CommodityType";
+    public static final String WARE_HOUSE_DATA = "WareHouse";
     public static final String CONTAINER_TYPE_MASTER_DATA = "ContainerType";
     public static final String CURRENCY_MASTER_DATA = "Currency";
     public static final String VESSEL_MASTER_DATA = "Vessel";
