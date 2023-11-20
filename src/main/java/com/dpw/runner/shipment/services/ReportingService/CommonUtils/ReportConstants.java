@@ -670,4 +670,22 @@ public class ReportConstants {
     public static final String REPORT_CREATE_SUCCESSFUL = "Successful Report Creation";
     public static final String SERVICE_MODE = "ServiceMode";
     public static final String SHIPMENT_PACKS_UNIT_DESC = "ShipmentPacksUnitDescription";
+    public static final String UN = "UN";
+    public static final String COMMON_CONTAINERS = "CommonContainers";
+    public static final String MANIFEST_PRINT = "ManifestPrint";
+    public static final String ORIGIN_CODE = "OriginCode";
+    public static final String DESTINATION_CODE = "DestinationCode";
+    public static final String LAST_FOREIGN_PORT_NAME = "LastForeginPortName";
+    public static final String CTO_ADDRESS = "CtoAddress";
+    public static final String PCHARGE_UNIT = "PChargeUnit";
+
+    public static final String PVOLUME_UNIT = "PVolumeUnit";
+
+    public static final String PWEIGHT_UNIT = "PWeightUnit";
+
+    public static final String CUSTOMS_ENTRY_NUMBER = "CustomsEntryNumber";
+
+    public static final String CONSOL_SHIPMENT_TOTAL_PACKAGES = "TotalPackages";
+//    public static final String SERVICE_MODE = "ServiceMode";
+//    public static final String SHIPMENT_PACKS_UNIT_DESC = "ShipmentPacksUnitDescription";
 }

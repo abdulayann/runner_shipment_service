@@ -49,6 +49,9 @@ public class ReportsFactory {
     private PreAlertReport preAlertReport;
 
     @Autowired
+    private ManifestPrintReport manifestPrintReport;
+
+    @Autowired
     private ShippingRequestOutReport shippingRequestOutReport;
 
     public IReport getReport(String key) {
@@ -96,6 +99,8 @@ public class ReportsFactory {
                 return preAlertReport;
             case ReportConstants.SHIPPING_REQUEST_OUT:
                 return shippingRequestOutReport;
+            case ReportConstants.MANIFEST_PRINT:
+                return manifestPrintReport;
         }
         return null;
     }
