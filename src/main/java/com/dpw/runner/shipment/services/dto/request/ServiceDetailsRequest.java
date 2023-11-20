@@ -2,7 +2,6 @@ package com.dpw.runner.shipment.services.dto.request;
 
 import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
-import com.dpw.runner.shipment.services.config.CustomLocalTimeDeserializer;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.swagger.annotations.ApiModel;
 import lombok.*;
@@ -27,7 +26,6 @@ public class ServiceDetailsRequest extends CommonRequest implements IRunnerReque
     private String srvLocation;
     private LocalDateTime bookingDate;
     private Long serviceCount;
-    @JsonDeserialize(using = CustomLocalTimeDeserializer.class)
     private LocalTime serviceDuration;
     private LocalDateTime completionDate;
     private String refNumber;
