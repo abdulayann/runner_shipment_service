@@ -2,12 +2,13 @@ package com.dpw.runner.shipment.services.dto.request;
 
 import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
-import com.dpw.runner.shipment.services.entity.Parties;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.swagger.annotations.ApiModel;
 import lombok.*;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 
 @Getter
 @Setter
@@ -22,10 +23,10 @@ public class ServiceDetailsRequest extends CommonRequest implements IRunnerReque
     private Long consolidationId;
     private String serviceType;
     private PartiesRequest contractor;
-    private int srvLocation;
+    private String srvLocation;
     private LocalDateTime bookingDate;
     private Long serviceCount;
-    private Duration serviceDuration;
+    private LocalTime serviceDuration;
     private LocalDateTime completionDate;
     private String refNumber;
     private String serviceNotes;
