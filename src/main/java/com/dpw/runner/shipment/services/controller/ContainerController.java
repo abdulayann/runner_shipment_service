@@ -14,6 +14,7 @@ import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerService;
+import com.dpw.runner.shipment.services.syncing.Entity.BulkContainerRequestV2;
 import com.dpw.runner.shipment.services.syncing.Entity.ContainerRequestV2;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
@@ -182,7 +183,24 @@ public class ContainerController {
         String responseMsg = "failure executing :(";
         try {
             return containerService.V1ContainerCreateAndUpdate(CommonRequestModel.buildRequest(request));
-        } catch (Exception e){
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : "Error syncing provided Container";
+            log.error(responseMsg, e);
+        }
+        return ResponseHelper.buildFailedResponse(responseMsg);
+    }
+
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = ShipmentConstants.SHIPMENT_SYNC_SUCCESSFUL),
+            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
+    })
+    @PostMapping(ApiConstants.BULK_SYNC)
+    public ResponseEntity<?> syncBulkContainerToService(@RequestBody @Valid BulkContainerRequestV2 request) {
+        String responseMsg = "failure executing :(";
+        try {
+            return containerService.V1BulkContainerCreateAndUpdate(CommonRequestModel.buildRequest(request));
+        } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : "Error syncing provided Container";
             log.error(responseMsg, e);

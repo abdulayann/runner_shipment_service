@@ -26,9 +26,12 @@ public interface IContainerService extends ICommonService {
 
     void downloadContainerEvents(HttpServletResponse response, BulkDownloadRequest request) throws Exception;
 
+
     ResponseEntity<?> V1ContainerCreateAndUpdate(CommonRequestModel commonRequestModel) throws Exception;
 
     void afterSave(Containers containers, boolean isCreate);
 
     void afterSaveList(List<Containers> containers, boolean isCreate);
+
+    ResponseEntity<?> V1BulkContainerCreateAndUpdate(CommonRequestModel commonRequestModel);
 }

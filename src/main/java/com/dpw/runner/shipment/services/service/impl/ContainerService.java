@@ -21,7 +21,9 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerService;
+import com.dpw.runner.shipment.services.syncing.Entity.BulkContainerRequestV2;
 import com.dpw.runner.shipment.services.syncing.Entity.ContainerRequestV2;
+import com.dpw.runner.shipment.services.syncing.impl.ContainerSync;
 import com.dpw.runner.shipment.services.utils.CSVParsingUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.util.Pair;
@@ -82,6 +84,9 @@ public class ContainerService implements IContainerService {
     private IConsolidationDetailsDao consolidationDetailsDao;
     @Autowired
     private IShipmentDao shipmentDao;
+
+    @Autowired
+    private ContainerSync containerSync;
 
     @Autowired
     private AuditLogService auditLogService;
@@ -146,6 +151,7 @@ public class ContainerService implements IContainerService {
                 shipmentsContainersMappingDao.updateShipmentsMappings(container.getId(), List.of(request.getShipmentId()));
             });
         }
+        containerSync.sync(containersList, request.getConsolidationId(), request.getShipmentId());
         afterSaveList(containersList, true);
     }
 
@@ -653,13 +659,14 @@ public class ContainerService implements IContainerService {
         }
     }
 
+    /**
+     * V1 -> V2 sync
+     */
     public void afterSave(Containers containers, boolean isCreate) {
         try {
             KafkaResponse kafkaResponse = producer.getKafkaResponse(containers, isCreate);
             producer.produceToKafka(jsonHelper.convertToJson(kafkaResponse), senderQueue, UUID.randomUUID().toString());
-        }
-        catch (Exception e)
-        {
+        } catch (Exception e) {
             log.error("Error pushing container to kafka");
         }
     }
@@ -680,37 +687,61 @@ public class ContainerService implements IContainerService {
             Containers containers = modelMapper.map(containerRequest, Containers.class);
             List<Long> shipIds = null;
             boolean isCreate = true;
-            if(existingCont != null && existingCont.size() > 0) {
-                containers.setId(existingCont.get(0).getId());
-                containers.setConsolidationId(existingCont.get(0).getConsolidationId());
-                isCreate = false;
-            }
-            else
-            {
-                if(containerRequest.getConsolidationGuid() != null) {
+            if (existingCont != null && existingCont.size() > 0) {
+                if (existingCont != null && existingCont.size() > 0) {
+                    containers.setId(existingCont.get(0).getId());
+                    containers.setConsolidationId(existingCont.get(0).getConsolidationId());
+                } else {
+                    if (containerRequest.getConsolidationGuid() != null) {
+                        isCreate = false;
+                    }
+                }
+            } else {
+                if (containerRequest.getConsolidationGuid() != null) {
                     Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findByGuid(containerRequest.getConsolidationGuid());
-                    if(!consolidationDetails.isEmpty() && consolidationDetails.get() != null) {
+                    if (!consolidationDetails.isEmpty() && consolidationDetails.get() != null) {
                         containers.setConsolidationId(consolidationDetails.get().getId());
                     }
                 }
-                if(containerRequest.getShipmentGuids() != null && containerRequest.getShipmentGuids().size() > 0) {
+                if (containerRequest.getShipmentGuids() != null && containerRequest.getShipmentGuids().size() > 0) {
                     ListCommonRequest listCommonRequest = constructListCommonRequest("guid", containerRequest.getShipmentGuids(), "IN");
                     Pair<Specification<ShipmentDetails>, Pageable> pair = fetchData(listCommonRequest, ShipmentDetails.class);
                     Page<ShipmentDetails> shipmentDetails = shipmentDao.findAll(pair.getLeft(), pair.getRight());
-                    if(shipmentDetails.get() != null && shipmentDetails.get().count() > 0) {
+                    if (shipmentDetails.get() != null && shipmentDetails.get().count() > 0) {
                         shipIds = shipmentDetails.get().map(e -> e.getId()).collect(Collectors.toList());
                     }
                 }
             }
             containers = containerDao.save(containers);
             afterSave(containers, isCreate);
-            if(shipIds != null) {
+            if (shipIds != null) {
                 shipmentsContainersMappingDao.assignShipments(containers.getId(), shipIds);
             }
             ContainerResponse response = objectMapper.convertValue(containers, ContainerResponse.class);
             return ResponseHelper.buildSuccessResponse(response);
+        } catch (Exception e) {
+            String responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+            throw new RuntimeException(e);
         }
-        catch (Exception e) {
+    }
+
+    /**
+     * Create bulk containers from V1 in V2
+     */
+    @Override
+    public ResponseEntity<?> V1BulkContainerCreateAndUpdate(CommonRequestModel commonRequestModel) {
+        BulkContainerRequestV2 bulkContainerRequest = (BulkContainerRequestV2) commonRequestModel.getData();
+        try {
+            List<ResponseEntity<?>> responses = new ArrayList<>();
+            for (ContainerRequestV2 containerRequest : bulkContainerRequest.getBulkContainers())
+                responses.add(this.V1ContainerCreateAndUpdate(CommonRequestModel.builder()
+                        .data(containerRequest)
+                        .build()));
+            return ResponseHelper.buildSuccessResponse(responses);
+        } catch (Exception e) {
             String responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
