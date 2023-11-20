@@ -341,7 +341,7 @@ public class MasterDataUtils{
             });
             fieldNameKeyMap.forEach((key, value) -> {
                 if(keyWareHouseDataMap.containsKey(value)) {
-                    fieldNameTextDataMap.put(key, keyWareHouseDataMap.get(value).getWarehouseDepotCodeAndDescription());
+                    fieldNameTextDataMap.put(key, keyWareHouseDataMap.get(value).getWarehouseDepotCode() + " - " + keyWareHouseDataMap.get(value).getWarehouseDepotName());
                 }
             });
             return fieldNameTextDataMap;

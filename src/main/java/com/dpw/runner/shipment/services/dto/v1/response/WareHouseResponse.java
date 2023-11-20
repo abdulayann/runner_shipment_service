@@ -7,6 +7,8 @@ import lombok.Data;
 public class WareHouseResponse {
     @JsonProperty("Id")
     private Long id;
-    @JsonProperty("WarehouseDepotCodeAndDescription")
-    private String warehouseDepotCodeAndDescription;
+    @JsonProperty("WarehouseDepotCode")
+    private String warehouseDepotCode;
+    @JsonProperty("WarehouseDepotName")
+    private String warehouseDepotName;
 }
