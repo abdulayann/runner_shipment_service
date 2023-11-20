@@ -686,6 +686,7 @@ public class ReportConstants {
     public static final String CUSTOMS_ENTRY_NUMBER = "CustomsEntryNumber";
 
     public static final String CONSOL_SHIPMENT_TOTAL_PACKAGES = "TotalPackages";
+    public static final String CONTAINER_MANIFEST_PRINT = "ContainerManifestPrint";
 //    public static final String SERVICE_MODE = "ServiceMode";
 //    public static final String SHIPMENT_PACKS_UNIT_DESC = "ShipmentPacksUnitDescription";
 }

@@ -54,6 +54,9 @@ public class ReportsFactory {
     @Autowired
     private ShippingRequestOutReport shippingRequestOutReport;
 
+    @Autowired
+    private ContainerManifestPrint containerManifestPrint;
+
     public IReport getReport(String key) {
         switch (key) {
             case ReportConstants.ARRIVAL_NOTICE:
@@ -101,6 +104,8 @@ public class ReportsFactory {
                 return shippingRequestOutReport;
             case ReportConstants.MANIFEST_PRINT:
                 return manifestPrintReport;
+            case ReportConstants.CONTAINER_MANIFEST_PRINT:
+                return containerManifestPrint;
         }
         return null;
     }
