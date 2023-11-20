@@ -158,6 +158,12 @@ public class ContainerController {
         return (ResponseEntity<RunnerListResponse<ContainerResponse>>) containerService.calculateAchievedQuantity_onPackDetach(CommonRequestModel.buildRequest(containerPackAssignDetachRequest));
     }
 
+    @ApiResponses(value = { @ApiResponse(code = 200, message = ContainerConstants.CONTAINER_VALIDATED) })
+    @PostMapping(ApiConstants.API_VALIDATE_CONTAINER_NUMBER)
+    public ResponseEntity<?> validateContainerNumber(@RequestParam String containerNumber) {
+        return (ResponseEntity<?>) containerService.validateContainerNumber(containerNumber);
+    }
+
     @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.CONTAINER_UPDATE_SUCCESSFUL)})
     @PutMapping(value = ApiConstants.API_UPDATE)
     public ResponseEntity<RunnerResponse<ContainerResponse>> update(@RequestBody ContainerRequest request) {

@@ -3,10 +3,7 @@ package com.dpw.runner.shipment.services.entity;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
-import com.dpw.runner.shipment.services.utils.MasterData;
-import com.dpw.runner.shipment.services.utils.OrganizationData;
-import com.dpw.runner.shipment.services.utils.TenantIdData;
-import com.dpw.runner.shipment.services.utils.UnlocationData;
+import com.dpw.runner.shipment.services.utils.*;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.*;
 import lombok.experimental.Accessors;
@@ -224,9 +221,11 @@ public class ConsolidationDetails extends MultiTenancy {
     private LocalDateTime doIssueDate;
 
     @Column(name = "bonded_warehouse_id")
+    @DedicatedMasterData(type = Constants.WARE_HOUSE_DATA)
     private Long bondedWarehouseId;
 
     @Column(name = "warehouse_id")
+    @DedicatedMasterData(type = Constants.WARE_HOUSE_DATA)
     private Long warehouseId;
 
     @Column(name = "source_tenant_id")

@@ -9,6 +9,7 @@ import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.ContainerAPIsRequest.ContainerAssignRequest;
+import com.dpw.runner.shipment.services.dto.ContainerAPIsRequest.ContainerNumberCheckResponse;
 import com.dpw.runner.shipment.services.dto.ContainerAPIsRequest.ContainerPackAssignDetachRequest;
 import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
 import com.dpw.runner.shipment.services.dto.request.EventsRequest;
@@ -667,9 +668,77 @@ public class ContainerService implements IContainerService {
         }
     }
 
-    /**
-     * V1 -> V2 sync
-     */
+    @Override
+    public ResponseEntity<?> validateContainerNumber(String containerNumber) {
+        String responseMsg;
+        try {
+            ContainerNumberCheckResponse response = new ContainerNumberCheckResponse();
+            response.setLastDigit(-1);
+            if (containerNumber.length() != 10 && containerNumber.length() != 11) {
+                response.setSuccess(false);
+                return ResponseHelper.buildSuccessResponse(response);
+            }
+            for (int i = 0; i < 4; i++) {
+                if ((int) containerNumber.charAt(i) < 65 || (int) containerNumber.charAt(i) > 90) {
+                    response.setSuccess(false);
+                    return ResponseHelper.buildSuccessResponse(response);
+                }
+            }
+            for (int i = 4; i < 10; i++) {
+                if ((int) containerNumber.charAt(i) < 48 || (int) containerNumber.charAt(i) > 57) {
+                    response.setSuccess(false);
+                    return ResponseHelper.buildSuccessResponse(response);
+                }
+            }
+            if (containerNumber.length() == 11) {
+                if ((int) containerNumber.charAt(10) < 48 || (int) containerNumber.charAt(10) > 57) {
+                    response.setSuccess(false);
+                    return ResponseHelper.buildSuccessResponse(response);
+                }
+            }
+            List<Integer> eqvNumValue = assignEquivalentNumberValue();
+            int expandedVal = 0;
+            for (int i = 0; i < 4; i++) {
+                expandedVal = expandedVal + (int) Math.pow(2, i) * eqvNumValue.get((int) containerNumber.charAt(i) - 65);
+            }
+            for (int i = 4; i < 10; i++) {
+                expandedVal = expandedVal + (int) Math.pow(2, i) * ((int) containerNumber.charAt(i) - 48);
+            }
+            int checkDigit = expandedVal % 11;
+            if (checkDigit == 10)
+                checkDigit = 0;
+            if (containerNumber.length() == 11) {
+                if (checkDigit != (int) containerNumber.charAt(10) - 48) {
+                    response.setSuccess(false);
+                    response.setLastDigit(-2);
+                    return ResponseHelper.buildSuccessResponse(response);
+                }
+            } else response.setLastDigit(checkDigit);
+            response.setSuccess(true);
+            return ResponseHelper.buildSuccessResponse(response);
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_INVALID_REQUEST_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
+    private List<Integer> assignEquivalentNumberValue() {
+        List<Integer> eqvNumValue = new ArrayList<>();
+        int val = 10;
+
+        for (int i = 0; i < 26; i++) {
+            if (val % 11 == 0)
+                val++;
+
+            eqvNumValue.add(val);
+            val++;
+        }
+
+        return eqvNumValue;
+    }
+
     public void afterSave(Containers containers, boolean isCreate) {
         try {
             KafkaResponse kafkaResponse = producer.getKafkaResponse(containers, isCreate);
@@ -687,6 +756,10 @@ public class ContainerService implements IContainerService {
         }
     }
 
+    /**
+     * V1 -> V2 sync
+     */
+    
     @Override
     public ResponseEntity<?> V1ContainerCreateAndUpdate(CommonRequestModel commonRequestModel) throws Exception {
         ContainerRequestV2 containerRequest = (ContainerRequestV2) commonRequestModel.getData();

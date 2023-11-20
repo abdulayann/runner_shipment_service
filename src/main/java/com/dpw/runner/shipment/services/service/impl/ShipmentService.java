@@ -1,7 +1,6 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 
-import com.azure.messaging.servicebus.ServiceBusMessage;
 import com.dpw.runner.shipment.services.Kafka.Dto.KafkaResponse;
 import com.dpw.runner.shipment.services.Kafka.Producer.KafkaProducer;
 import com.dpw.runner.shipment.services.adapters.impl.OrderManagementAdapter;
@@ -18,11 +17,12 @@ import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerPartialListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
-import com.dpw.runner.shipment.services.dto.TrackingService.UniversalTrackingPayload;
 import com.dpw.runner.shipment.services.dto.ContainerAPIsRequest.ShipmentContainerAssignRequest;
+import com.dpw.runner.shipment.services.dto.TrackingService.UniversalTrackingPayload;
 import com.dpw.runner.shipment.services.dto.patchRequest.ShipmentPatchRequest;
 import com.dpw.runner.shipment.services.dto.request.*;
-import com.dpw.runner.shipment.services.dto.response.*;
+import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.ShipmentListResponse;
 import com.dpw.runner.shipment.services.dto.v1.request.ShipmentBillingListRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TIListRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.WayBillNumberFilterRequest;
@@ -47,7 +47,6 @@ import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service_bus.AzureServiceBusTopic;
 import com.dpw.runner.shipment.services.service_bus.ISBProperties;
 import com.dpw.runner.shipment.services.service_bus.SBUtilsImpl;
-import com.dpw.runner.shipment.services.service_bus.model.EventMessage;
 import com.dpw.runner.shipment.services.syncing.impl.ShipmentSync;
 import com.dpw.runner.shipment.services.syncing.interfaces.IConsolidationSync;
 import com.dpw.runner.shipment.services.utils.*;
@@ -2070,6 +2069,7 @@ public class ShipmentService implements IShipmentService {
         this.addDedicatedMasterData(shipmentDetails, shipmentDetailsResponse);
         this.addAllContainerTypesInSingleCall(shipmentDetails,shipmentDetailsResponse);
         this.addAllTenantIdDatas(shipmentDetails, shipmentDetailsResponse);
+        this.addWarehouseData(shipmentDetails, shipmentDetailsResponse);
     }
     private void addAllMasterDatas (ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse) {
         shipmentDetailsResponse.setMasterData(masterDataUtils.addMasterData(shipmentDetailsResponse, ShipmentDetails.class));
@@ -2094,6 +2094,12 @@ public class ShipmentService implements IShipmentService {
 
     private void addAllTenantIdDatas (ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse) {
         shipmentDetailsResponse.setTenantIdsData(masterDataUtils.addTenantIdsData(shipmentDetailsResponse, ShipmentDetails.class, EntityTransferConstants.TENANT_ID));
+    }
+
+    private void addWarehouseData (ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse) {
+        if(shipmentDetailsResponse.getAdditionalDetails() != null) {
+            shipmentDetailsResponse.getAdditionalDetails().setTextData(masterDataUtils.addTextData(shipmentDetailsResponse, ShipmentDetails.class, EntityTransferConstants.ID));
+        }
     }
 
     private void addDedicatedMasterData (ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse) {

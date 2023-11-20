@@ -120,4 +120,5 @@ public class ConsolidationDetailsResponse implements IRunnerResponse {
     public Map<String, String> unlocationData;
     public Map<String, String> currenciesMasterData;
     public Map<String, String> tenantIdsData;
+    public Map<String, String> textData;
 }

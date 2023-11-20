@@ -39,6 +39,7 @@ public class ApiConstants {
     public static final String API_CHANGE_UNIT_ALLOCATED_ACHIEVED = "/calculate/achieved/unit";
     public static final String API_CALCULATE_ACHIEVED_PACK_ASSIGN = "/assign/packs";
     public static final String API_CALCULATE_ACHIEVED_PACK_DETACH = "/detach/packs";
+    public static final String API_VALIDATE_CONTAINER_NUMBER = "/number/validate";
     public static final String API_CALCULATE_UTILIZATION = "/calculate/utilization";
     public static final String API_CALCULATE_CHARGEABLE = "/calculate/chargeable";
     public static final String API_CALCULATE_ACHIEVED_VALUES = "/calculate/achieved";
