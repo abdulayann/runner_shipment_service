@@ -2145,6 +2145,8 @@ public class ShipmentService implements IShipmentService {
             cloneShipmentDetails.setBookingReference(null);
             cloneShipmentDetails.setContainersList(null);
             cloneShipmentDetails.setRoutingsList(null);
+            cloneShipmentDetails.setShipmentId(null);
+            cloneShipmentDetails.setMasterBill(null);
 
             CommonRequestModel requestModel = CommonRequestModel.buildRequest(cloneShipmentDetails);
             log.info("Shipment details cloning started for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());

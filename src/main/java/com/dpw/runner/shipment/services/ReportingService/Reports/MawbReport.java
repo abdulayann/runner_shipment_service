@@ -17,7 +17,7 @@ public class MawbReport extends IReport{
 
     @Override
     public Map<String, Object> getData(Long id) {
-        MawbModel mawbModel = (MawbModel) getDocumentModel(id);
+        HawbModel mawbModel = (HawbModel) getDocumentModel(id);
         return populateDictionary(mawbModel);
     }
 
