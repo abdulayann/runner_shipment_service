@@ -983,7 +983,7 @@ public class CustomerBookingService implements ICustomerBookingService {
             CustomerBookingResponse response = modelMapper.map(customerBooking, CustomerBookingResponse.class);
             responseList.add(response);
         });
-        masterDataUtils.setLocationData(responseList);
+        masterDataUtils.setLocationData(responseList, EntityTransferConstants.LOCATION_SERVICE_GUID);
         return responseList;
     }
 

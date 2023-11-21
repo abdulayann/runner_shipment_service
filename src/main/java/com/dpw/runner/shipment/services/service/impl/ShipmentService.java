@@ -7,6 +7,7 @@ import com.dpw.runner.shipment.services.adapters.impl.OrderManagementAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.ITrackingServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
+import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
@@ -29,15 +30,19 @@ import com.dpw.runner.shipment.services.dto.v1.request.WayBillNumberFilterReques
 import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.GenerationType;
+import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.entity.enums.ProductProcessTypes;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCommodityType;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.mapper.ShipmentDetailsMapper;
+import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationService;
@@ -47,6 +52,7 @@ import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service_bus.AzureServiceBusTopic;
 import com.dpw.runner.shipment.services.service_bus.ISBProperties;
 import com.dpw.runner.shipment.services.service_bus.SBUtilsImpl;
+import com.dpw.runner.shipment.services.service_bus.model.EventMessage;
 import com.dpw.runner.shipment.services.syncing.impl.ShipmentSync;
 import com.dpw.runner.shipment.services.syncing.interfaces.IConsolidationSync;
 import com.dpw.runner.shipment.services.utils.*;
@@ -366,9 +372,14 @@ public class ShipmentService implements IShipmentService {
                 response.setShipmentStatus(ShipmentStatus.values()[shipmentDetail.getStatus()].toString());
             responseList.add(response);
         });
-        setLocationData(responseList);
-        setContainerTeu(lst, responseList);
-        setBillingData(lst, responseList);
+        try {
+            masterDataUtils.setLocationData(responseList, EntityTransferConstants.UNLOCATION_CODE);
+            masterDataUtils.setContainerTeuData(lst, responseList);
+            setBillingData(lst, responseList);
+        }
+        catch (Exception ex) {
+            log.error("Request: {} || Error occured for event: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), IntegrationType.MASTER_DATA_FETCH_FOR_SHIPMENT_LIST, ex.getLocalizedMessage());
+        }
         return responseList;
     }
 
@@ -430,102 +441,6 @@ public class ShipmentService implements IShipmentService {
                     } else if (events.getEventCode().equalsIgnoreCase(Constants.AMSEDI)) {
                         response.setAmsFilingDate(events.getActual());
                     }
-                }
-            }
-        }
-    }
-
-    private void setLocationData(List<IRunnerResponse> responseList) {
-        Set<String> locCodes = new HashSet<>();
-        for (IRunnerResponse response : responseList) {
-            if (((ShipmentListResponse) response).getCarrierDetails() != null) {
-                if (StringUtility.isNotEmpty(((ShipmentListResponse) response).getCarrierDetails().getOriginPort())) {
-                    locCodes.add(((ShipmentListResponse) response).getCarrierDetails().getOriginPort());
-                }
-                if (StringUtility.isNotEmpty(((ShipmentListResponse) response).getCarrierDetails().getDestinationPort())) {
-                    locCodes.add(((ShipmentListResponse) response).getCarrierDetails().getDestinationPort());
-                }
-            }
-        }
-
-        if (locCodes.size() > 0) {
-            List<Object> criteria = Arrays.asList(
-                    Arrays.asList("LocCode"),
-                    "In",
-                    Arrays.asList(locCodes)
-            );
-            CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(criteria).build();
-            V1DataResponse v1DataResponse = v1Service.fetchUnlocation(commonV1ListRequest);
-            List<UnlocationsResponse> unlocationsResponse = jsonHelper.convertValueToList(v1DataResponse.entities, UnlocationsResponse.class);
-            if (unlocationsResponse != null && unlocationsResponse.size() > 0) {
-                Map<String, String> locationMap = new HashMap<>();
-                for (UnlocationsResponse unlocation : unlocationsResponse) {
-                    locationMap.put(unlocation.getLocCode(), unlocation.getName());
-                }
-
-                for (IRunnerResponse response : responseList) {
-                    if (((ShipmentListResponse) response).getCarrierDetails() != null) {
-                        if (StringUtility.isNotEmpty(((ShipmentListResponse) response).getCarrierDetails().getOriginPort())) {
-                            ((ShipmentListResponse) response).getCarrierDetails().setOriginPortName(locationMap.get(((ShipmentListResponse) response).getCarrierDetails().getOriginPort()));
-                        }
-                        if (StringUtility.isNotEmpty(((ShipmentListResponse) response).getCarrierDetails().getDestinationPort())) {
-                            ((ShipmentListResponse) response).getCarrierDetails().setDestinationPortName(locationMap.get(((ShipmentListResponse) response).getCarrierDetails().getDestinationPort()));
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    private void setContainerTeu(List<ShipmentDetails> shipmentDetails, List<IRunnerResponse> responseList) {
-
-        Map<Long, ShipmentListResponse> dataMap = new HashMap<>();
-        for (IRunnerResponse response : responseList){
-            dataMap.put(((ShipmentListResponse)response).getId(), (ShipmentListResponse)response);
-        }
-
-        Set<String> containerType = new HashSet<>();
-
-        for(ShipmentDetails shipment : shipmentDetails) {
-            if(shipment.getContainersList() != null) {
-                for(Containers containers : shipment.getContainersList()) {
-                    if(StringUtility.isNotEmpty(containers.getContainerCode())) {
-                        containerType.add(containers.getContainerCode());
-                    }
-                }
-            }
-        }
-
-        if(containerType.size() > 0) {
-            List<Object> criteria = Arrays.asList(
-                    Arrays.asList("Code"),
-                    "In",
-                    Arrays.asList(containerType)
-            );
-            CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(criteria).build();
-            V1DataResponse v1DataResponse = v1Service.fetchContainerTypeData(commonV1ListRequest);
-            List<V1ContainerTypeResponse> containerTypeResponses = jsonHelper.convertValueToList(v1DataResponse.entities, V1ContainerTypeResponse.class);
-            if(containerTypeResponses != null && containerTypeResponses.size() > 0) {
-                Map<String, BigDecimal> containerTypeMap = new HashMap<>();
-                for(V1ContainerTypeResponse containerTypeResponse : containerTypeResponses) {
-                    if(containerTypeResponse.getTeu() != null) {
-                        containerTypeMap.put(containerTypeResponse.getCode(), containerTypeResponse.getTeu());
-                    }
-                }
-
-                BigDecimal teu;
-                for(ShipmentDetails shipment : shipmentDetails) {
-                    teu = BigDecimal.ZERO;
-                    if(shipment.getContainersList() != null) {
-                        for(Containers containers : shipment.getContainersList()) {
-                            if(StringUtility.isNotEmpty(containers.getContainerCode())) {
-                                if(containerTypeMap.containsKey(containers.getContainerCode()) && containers.getContainerCount() != null) {
-                                    teu = teu.add(containerTypeMap.get(containers.getContainerCode()).multiply(BigDecimal.valueOf(containers.getContainerCount())));
-                                }
-                            }
-                        }
-                    }
-                    dataMap.get(shipment.getId()).setTeuCount(teu);
                 }
             }
         }
@@ -2066,61 +1981,110 @@ public class ShipmentService implements IShipmentService {
 
 
     private void createShipmentPayload (ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse) {
-        this.addAllMasterDatas(shipmentDetails, shipmentDetailsResponse);
-        this.addAllUnlocationDatas(shipmentDetails, shipmentDetailsResponse);
-        this.addDedicatedMasterData(shipmentDetails, shipmentDetailsResponse);
-        this.addAllContainerTypesInSingleCall(shipmentDetails,shipmentDetailsResponse);
-        this.addAllTenantIdDatas(shipmentDetails, shipmentDetailsResponse);
-        this.addWarehouseData(shipmentDetails, shipmentDetailsResponse);
+        try {
+            this.addAllMasterDataInSingleCall(shipmentDetails, shipmentDetailsResponse);
+            this.addAllUnlocationDataInSingleCall(shipmentDetails, shipmentDetailsResponse);
+            this.addAllCarrierDataInSingleCall(shipmentDetails, shipmentDetailsResponse);
+            this.addAllCurrencyDataInSingleCall(shipmentDetails, shipmentDetailsResponse);
+            this.addAllCommodityTypesInSingleCall(shipmentDetails, shipmentDetailsResponse);
+            this.addAllTenantDataInSingleCall(shipmentDetails, shipmentDetailsResponse);
+            this.addAllWarehouseDataInSingleCall(shipmentDetails, shipmentDetailsResponse);
+        }
+        catch (Exception ex) {
+            log.error("Request: {} || Error occured for event: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), IntegrationType.MASTER_DATA_FETCH_FOR_SHIPMENT_RETRIEVE, ex.getLocalizedMessage());
+        }
+
     }
-    private void addAllMasterDatas (ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse) {
-        shipmentDetailsResponse.setMasterData(masterDataUtils.addMasterData(shipmentDetailsResponse, ShipmentDetails.class));
-        if(shipmentDetailsResponse.getAdditionalDetails() != null) {
-            shipmentDetailsResponse.getAdditionalDetails().setMasterData(masterDataUtils.addMasterData(shipmentDetailsResponse.getAdditionalDetails(), AdditionalDetails.class));
-        }
-        if(shipmentDetailsResponse.getCarrierDetails() != null) {
-            shipmentDetailsResponse.getCarrierDetails().setMasterData(masterDataUtils.addMasterData(shipmentDetailsResponse.getCarrierDetails(), CarrierDetails.class));
-        }
-    }
+    private void addAllMasterDataInSingleCall (ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse) {
 
+        Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
+        List<MasterListRequest> listRequests = new ArrayList<>(masterDataUtils.createInBulkMasterListRequest(shipmentDetailsResponse, ShipmentDetails.class, fieldNameKeyMap, ShipmentDetails.class.getSimpleName() ));
+        if (!Objects.isNull(shipmentDetailsResponse.getAdditionalDetails()))
+            listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(shipmentDetailsResponse.getAdditionalDetails(), AdditionalDetails.class, fieldNameKeyMap, AdditionalDetails.class.getSimpleName() ));
+        if (!Objects.isNull(shipmentDetailsResponse.getCarrierDetails()))
+            listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(shipmentDetailsResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName() ));
 
+        Map<String, EntityTransferMasterLists> keyMasterDataMap = masterDataUtils.fetchInBulkMasterList(listRequests);
+        masterDataUtils.pushToCache(keyMasterDataMap, CacheConstants.MASTER_LIST);
 
-    private void addAllUnlocationDatas (ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse) {
-        if(shipmentDetailsResponse.getAdditionalDetails() != null) {
-            shipmentDetailsResponse.getAdditionalDetails().setUnlocationData(masterDataUtils.addUnlocationData(shipmentDetailsResponse.getAdditionalDetails(), AdditionalDetails.class, EntityTransferConstants.UNLOCATION_CODE));
-        }
-        if(shipmentDetailsResponse.getCarrierDetails() != null) {
-            shipmentDetailsResponse.getCarrierDetails().setUnlocationData(masterDataUtils.addUnlocationData(shipmentDetailsResponse.getCarrierDetails(), CarrierDetails.class, EntityTransferConstants.UNLOCATION_CODE));
-        }
-    }
+        shipmentDetailsResponse.setMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(ShipmentDetails.class.getSimpleName()), CacheConstants.MASTER_LIST));
+        if (!Objects.isNull(shipmentDetailsResponse.getAdditionalDetails()))
+            shipmentDetailsResponse.getAdditionalDetails().setMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(AdditionalDetails.class.getSimpleName()), CacheConstants.MASTER_LIST) );
+        if (!Objects.isNull(shipmentDetailsResponse.getCarrierDetails()))
+                shipmentDetailsResponse.getCarrierDetails().setMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName()), CacheConstants.MASTER_LIST) );
 
-    private void addAllTenantIdDatas (ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse) {
-        shipmentDetailsResponse.setTenantIdsData(masterDataUtils.addTenantIdsData(shipmentDetailsResponse, ShipmentDetails.class, EntityTransferConstants.TENANT_ID));
-    }
-
-    private void addWarehouseData (ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse) {
-        if(shipmentDetailsResponse.getAdditionalDetails() != null) {
-            shipmentDetailsResponse.getAdditionalDetails().setTextData(masterDataUtils.addTextData(shipmentDetailsResponse, ShipmentDetails.class, EntityTransferConstants.ID));
-        }
     }
 
-    private void addDedicatedMasterData (ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse) {
-        if(shipmentDetailsResponse.getCarrierDetails() != null) {
-            shipmentDetailsResponse.getCarrierDetails().setCarrierMasterData(masterDataUtils.carrierMasterData(shipmentDetailsResponse.getCarrierDetails(), CarrierDetails.class));
-        }
-        shipmentDetailsResponse.setCurrenciesMasterData(masterDataUtils.currencyMasterData(shipmentDetails, ShipmentDetails.class));
+
+
+    private void addAllUnlocationDataInSingleCall (ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse) {
+        Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
+        List<String> locationCodes = new ArrayList<>();
+        if (!Objects.isNull(shipmentDetailsResponse.getCarrierDetails()))
+            locationCodes.addAll((masterDataUtils.createInBulkUnLocationsRequest(shipmentDetailsResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName() )));
+        if (!Objects.isNull(shipmentDetailsResponse.getAdditionalDetails()))
+            locationCodes.addAll((masterDataUtils.createInBulkUnLocationsRequest(shipmentDetailsResponse.getAdditionalDetails(), AdditionalDetails.class, fieldNameKeyMap, AdditionalDetails.class.getSimpleName() )));
+        // TODO: This needs to be change to fetch based on LocationServiceGuid once UI is ready
+        Map<String, EntityTransferUnLocations> keyMasterDataMap = masterDataUtils.fetchInBulkUnlocations(locationCodes, EntityTransferConstants.UNLOCATION_CODE);
+        masterDataUtils.pushToCache(keyMasterDataMap, CacheConstants.UNLOCATIONS);
+
+        if (!Objects.isNull(shipmentDetailsResponse.getCarrierDetails()))
+            shipmentDetailsResponse.getCarrierDetails().setUnlocationData(masterDataUtils.setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName()), CacheConstants.UNLOCATIONS));
+        if (!Objects.isNull(shipmentDetailsResponse.getAdditionalDetails()))
+            shipmentDetailsResponse.getAdditionalDetails().setUnlocationData(masterDataUtils.setMasterData(fieldNameKeyMap.get(AdditionalDetails.class.getSimpleName()), CacheConstants.UNLOCATIONS));
     }
 
-    private void addAllContainerTypesInSingleCall(ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse) {
+    private void addAllTenantDataInSingleCall (ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse) {
+        Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
+        List<String> tenantIdList = new ArrayList<>(masterDataUtils.createInBulkTenantsRequest(shipmentDetailsResponse, ShipmentDetails.class, fieldNameKeyMap, ShipmentDetails.class.getSimpleName()));
+        Map v1Data = masterDataUtils.fetchInTenantsList(tenantIdList);
+        masterDataUtils.pushToCache(v1Data, CacheConstants.TENANTS);
+        shipmentDetailsResponse.setTenantIdsData(masterDataUtils.setMasterData(fieldNameKeyMap.get(ShipmentDetails.class.getSimpleName()), CacheConstants.TENANTS));
+    }
+
+    private void addAllCurrencyDataInSingleCall (ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse) {
+        Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
+        List<String> currencyList = new ArrayList<>(masterDataUtils.createInBulkCurrencyRequest(shipmentDetailsResponse, ShipmentDetails.class, fieldNameKeyMap, ShipmentDetails.class.getSimpleName()));
+        Map v1Data = masterDataUtils.fetchInCurrencyList(currencyList);
+        masterDataUtils.pushToCache(v1Data, CacheConstants.CURRENCIES);
+        shipmentDetailsResponse.setCurrenciesMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(ShipmentDetails.class.getSimpleName()), CacheConstants.CURRENCIES));
+    }
+
+    private void addAllCarrierDataInSingleCall (ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse) {
+        if (!Objects.isNull(shipmentDetailsResponse.getCarrierDetails())) {
+            Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
+            List<String> carrierList = new ArrayList<>(masterDataUtils.createInBulkCarriersRequest(shipmentDetailsResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName()));
+            Map v1Data = masterDataUtils.fetchInBulkCarriers(carrierList);
+            masterDataUtils.pushToCache(v1Data, CacheConstants.CARRIER);
+            shipmentDetailsResponse.getCarrierDetails().setCarrierMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName()), CacheConstants.CARRIER));
+        }
+    }
+
+    private void addAllCommodityTypesInSingleCall(ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse) {
         Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
         Set<String> containerTypes = new HashSet<>();
         if (!Objects.isNull(shipmentDetailsResponse.getContainersList()))
-            shipmentDetailsResponse.getContainersList().forEach(r -> containerTypes.addAll(masterDataUtils.createInBulkCommodityTypeRequest(r, Containers.class, fieldNameKeyMap, String.valueOf(r.hashCode()))));
+            shipmentDetailsResponse.getContainersList().forEach(r -> containerTypes.addAll(masterDataUtils.createInBulkCommodityTypeRequest(r, Containers.class, fieldNameKeyMap, Containers.class.getSimpleName() + r.getId() )));
 
-        Map<String, EntityTransferCommodityType> v1Data = masterDataUtils.fetchInBulkCommodityTypes(new ArrayList<>(containerTypes));
+        Map<String, EntityTransferCommodityType> v1Data = masterDataUtils.fetchInBulkCommodityTypes(containerTypes.stream().toList());
+        masterDataUtils.pushToCache(v1Data, CacheConstants.COMMODITY);
 
         if (!Objects.isNull(shipmentDetailsResponse.getContainersList()))
-            shipmentDetailsResponse.getContainersList().forEach(r -> r.setCommodityTypeData(masterDataUtils.setInBulkCommodityTypes(fieldNameKeyMap.get(String.valueOf(r.hashCode())), v1Data)));
+            shipmentDetailsResponse.getContainersList().forEach(r -> r.setCommodityTypeData(masterDataUtils.setMasterData(fieldNameKeyMap.get(Containers.class.getSimpleName() + r.getId()), CacheConstants.COMMODITY)));
+    }
+
+    private void addAllWarehouseDataInSingleCall (ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse) {
+        Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
+        Set<String> wareHouseTypes = new HashSet<>();
+        if (!Objects.isNull(shipmentDetailsResponse.getAdditionalDetails()))
+            wareHouseTypes.addAll(masterDataUtils.createInBulkWareHouseRequest(shipmentDetailsResponse.getAdditionalDetails(), AdditionalDetails.class, fieldNameKeyMap, AdditionalDetails.class.getSimpleName()) );
+
+        Map v1Data = masterDataUtils.fetchInWareHousesList(wareHouseTypes.stream().toList());
+        masterDataUtils.pushToCache(v1Data, CacheConstants.WAREHOUSES);
+
+        if (!Objects.isNull(shipmentDetailsResponse.getAdditionalDetails()))
+            shipmentDetailsResponse.getAdditionalDetails().setTextData(masterDataUtils.setMasterData(fieldNameKeyMap.get(AdditionalDetails.class.getSimpleName()), CacheConstants.WAREHOUSES));
+
     }
 
     public ResponseEntity<?> cloneShipment(CommonRequestModel commonRequestModel) {
