@@ -1664,7 +1664,7 @@ public class ConsolidationService implements IConsolidationService {
         if(shipmentRequests != null && !shipmentRequests.isEmpty()) {
             for(ShipmentRequest shipmentRequest : shipmentRequests) {
                 Optional<ShipmentDetails> shipmentDetails = shipmentDao.findByGuid(shipmentRequest.getGuid());
-                if(shipmentDetails.get() != null && shipmentDetails.get().getId() != null) {
+                if(shipmentDetails.isPresent() && shipmentDetails.get().getId() != null) {
                     ShipmentDetails shipmentDetails1 = new ShipmentDetails();
                     shipmentDetails1.setId(shipmentDetails.get().getId());
                     tempShipIds.add(shipmentDetails1);
