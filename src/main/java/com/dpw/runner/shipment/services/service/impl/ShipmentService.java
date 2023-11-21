@@ -1649,7 +1649,7 @@ public class ShipmentService implements IShipmentService {
     public ResponseEntity<?> partialUpdate(CommonRequestModel commonRequestModel) throws Exception {
 
         ShipmentPatchRequest shipmentRequest = (ShipmentPatchRequest) commonRequestModel.getData();
-        if (shipmentRequest.getId() == null && (shipmentRequest.getShipmentId() == null || shipmentRequest.getShipmentId().get() == "")) {
+        if ((shipmentRequest.getId() == null && shipmentRequest.getGuid() == null) && (shipmentRequest.getShipmentId() == null || shipmentRequest.getShipmentId().get() == "")) {
             log.error("Request Id is null for update request with Id {}", LoggerHelper.getRequestIdFromMDC());
             throw new Exception("Request Id is null");
         }
@@ -1669,9 +1669,12 @@ public class ShipmentService implements IShipmentService {
         // TODO- implement Validation logic
         Long id = null;
         Optional<ShipmentDetails> oldEntity = null;
-        if(shipmentRequest.getId() != null) {
-            id = shipmentRequest.getId().get();
-            oldEntity = shipmentDao.findById(id);
+        ShipmentRequest fetchShipmentRequest = new ShipmentRequest();
+        fetchShipmentRequest.setId(shipmentRequest.getId() != null ? shipmentRequest.getId().get() : null);
+        fetchShipmentRequest.setGuid(shipmentRequest.getGuid());
+        if(shipmentRequest.getId() != null || shipmentRequest.getGuid() != null) {
+            oldEntity = retrieveByIdOrGuid(fetchShipmentRequest);
+            id = oldEntity.get().getId();
         }
         else {
             ListCommonRequest listCommonRequest = constructListCommonRequest("shipmentId", shipmentRequest.getShipmentId().get(), "=");
