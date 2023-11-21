@@ -5,15 +5,18 @@ import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
-import com.dpw.runner.shipment.services.commons.requests.*;
+import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
+import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
+import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
+import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerPartialListResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.request.AwbRequest;
 import com.dpw.runner.shipment.services.dto.request.CreateAwbRequest;
+import com.dpw.runner.shipment.services.dto.request.ResetAwbRequest;
 import com.dpw.runner.shipment.services.dto.request.awb.*;
 import com.dpw.runner.shipment.services.dto.response.AwbResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
@@ -22,12 +25,8 @@ import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IAwbService;
 import com.dpw.runner.shipment.services.syncing.Entity.AwbRequestV2;
-import com.dpw.runner.shipment.services.utils.*;
 import com.dpw.runner.shipment.services.syncing.interfaces.IAwbSync;
-import com.dpw.runner.shipment.services.utils.AwbUtility;
-import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
-import com.dpw.runner.shipment.services.utils.StringUtility;
-import com.dpw.runner.shipment.services.utils.V1AuthHelper;
+import com.dpw.runner.shipment.services.utils.*;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,7 +35,6 @@ import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.http.HttpEntity;
 import org.springframework.http.ResponseEntity;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.scheduling.annotation.Async;
@@ -1003,6 +1001,54 @@ public class AwbService implements IAwbService {
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(responseMsg);
         }
+    }
+
+    @Override
+    public ResponseEntity<?> reset(CommonRequestModel commonRequestModel) {
+        ResetAwbRequest resetAwbRequest = (ResetAwbRequest) commonRequestModel.getData();
+        Optional<Awb> awbOptional = awbDao.findById(resetAwbRequest.getId());
+
+        if (awbOptional.isEmpty()) {
+            throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+        }
+
+        Awb awb = awbOptional.get();
+
+        Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(awb.getShipmentId());
+        Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(awb.getConsolidationId());
+
+        if (shipmentDetails.isEmpty() || consolidationDetails.isEmpty())
+            throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+
+        CreateAwbRequest createAwbRequest = CreateAwbRequest.builder()
+                .ConsolidationId(resetAwbRequest.getConsolidationId())
+                .ShipmentId(resetAwbRequest.getShipmentId())
+                .AwbType(resetAwbRequest.getAwbType())
+                .build();
+        switch (resetAwbRequest.getResetType()) {
+            case ALL: {
+                awb = generateAwb(createAwbRequest);
+                break;
+            }
+            case AWB_ROUTING: {
+                awb.setAwbRoutingInfo(generateAwbRoutingInfo(shipmentDetails.get(), createAwbRequest));
+                break;
+            }
+            case AWB_NOTIFY_PARTY_INFO: {
+                awb.setAwbNotifyPartyInfo(generateAwbNotifyPartyinfo(shipmentDetails.get(), createAwbRequest));
+                break;
+            }
+            case AWB_PACKS_AND_GOODS: {
+                awb.setAwbPackingInfo(generateMawbPackingInfo(consolidationDetails.get()));
+                break;
+            }
+            case AWB_OTHER_CHARGES_INFO: {
+//                awb.setAwbOtherChargesInfo()
+                //TODO
+            }
+        }
+        awb = awbDao.save(awb);
+        return ResponseHelper.buildSuccessResponse(convertEntityToDto(awb));
     }
 
 }
