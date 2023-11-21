@@ -113,21 +113,34 @@ public abstract class IReport {
         ship.CustomsSealNumber = row.getCustomsSealNumber();
         ship.ShipperSealNumber = row.getShipperSealNumber();
         CommodityResponse commodityResponse = getCommodity(row.getCommodityCode());
-        if(commodityResponse != null)
+        if (commodityResponse != null)
             ship.CommodityDescription = commodityResponse.getDescription();
         return ship;
     }
 
-    public void populateBLContainer(ShipmentContainers shipmentContainer, HblContainerDto blObjectContainer)
-    {
+    public String getTotalPackUnitCode(List<ShipmentModel> shipmentModelList) {
+        String unitCode = "";
+        for (var c : shipmentModelList) {
+            if (c.getPacksUnit() != null && !c.getPacksUnit().isEmpty()) {
+                if (!unitCode.equals(c.getPacksUnit()))
+                    unitCode = "MPK";
+            } else {
+                if (unitCode.equals("MPK"))
+                    unitCode = c.getPacksUnit();
+            }
+        }
+        return unitCode;
+    }
+
+    public void populateBLContainer(ShipmentContainers shipmentContainer, HblContainerDto blObjectContainer) {
         shipmentContainer.BL_ContainerType = blObjectContainer.getContainerType();
         shipmentContainer.BL_SealNumber = blObjectContainer.getSealNumber();
-        if(blObjectContainer.getContainerGrossWeight() != null)
+        if (blObjectContainer.getContainerGrossWeight() != null)
             shipmentContainer.BL_GrossWeight = blObjectContainer.getContainerGrossWeight().setScale(2, RoundingMode.HALF_UP);
         else
             shipmentContainer.BL_GrossWeight = BigDecimal.ZERO;
         shipmentContainer.BL_GrossWeightUnit = blObjectContainer.getContainerGrossWeightUnit();
-        if(blObjectContainer.getContainerGrossVolume() != null)
+        if (blObjectContainer.getContainerGrossVolume() != null)
             shipmentContainer.BL_GrossVolume = blObjectContainer.getContainerGrossVolume().setScale(2, RoundingMode.HALF_UP);
         else
             shipmentContainer.BL_GrossVolume = BigDecimal.ZERO;
