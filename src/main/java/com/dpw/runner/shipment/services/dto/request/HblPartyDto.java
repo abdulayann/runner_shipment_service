@@ -15,6 +15,7 @@ import java.util.UUID;
 public class HblPartyDto {
     private Long id;
     private UUID guid;
+    private Boolean isShipmentCreated;
     private String type;
     private String orgCode;
     private Integer orgId;

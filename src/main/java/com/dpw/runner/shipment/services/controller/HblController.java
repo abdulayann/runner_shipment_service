@@ -120,4 +120,18 @@ public class HblController {
         return (ResponseEntity<RunnerResponse<HblResponse>>) ResponseHelper.buildFailedResponse(responseMsg);
     }
 
+    @ApiResponses(value = {@ApiResponse(code = 200, message = HblConstants.HBL_GENERATION_SUCCESS, response = RunnerResponse.class)})
+    @PostMapping(HblConstants.API_PARTIAL_UPDATE)
+    public ResponseEntity<RunnerResponse> partialUpdateHBL(@RequestBody @Valid HblGenerateRequest request) {
+        String responseMsg;
+        try {
+            return (ResponseEntity<RunnerResponse>) hblService.partialUpdateHBL(CommonRequestModel.buildRequest(request));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+        }
+        return (ResponseEntity<RunnerResponse>) ResponseHelper.buildFailedResponse(responseMsg);
+    }
+
 }
