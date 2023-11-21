@@ -9,6 +9,8 @@ import org.springframework.http.MediaType;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.Collections;
+
 @Configuration
 public class NPMConfig {
 
@@ -49,6 +51,7 @@ public class NPMConfig {
             HttpHeaders headers = request.getHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
             headers.set("x-api-key", xApiKey);
+            headers.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
             headers.add("Authorization", RequestAuthContext.getAuthToken());
             return execution.execute(request, body);
         });

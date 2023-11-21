@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.NPMConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
+import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IAwbDao;
 import com.dpw.runner.shipment.services.dao.interfaces.ICustomerBookingDao;
 import com.dpw.runner.shipment.services.dto.request.ListContractRequest;
@@ -170,9 +171,9 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
             ResponseEntity<DependentServiceResponse> response = npmServiceRestTemplate.exchange(RequestEntity.post(URI.create(url)).body(req), DependentServiceResponse.class);
             return ResponseHelper.buildDependentServiceResponse(response.getBody().getData(), 0, 0);
         } catch (HttpStatusCodeException ex) {
-            NpmErrorResponse npmErrorResponse = jsonHelper.readFromJson(ex.getResponseBodyAsString(), NpmErrorResponse.class);
-            log.error("NPM awb auto sell failed due to: {}", jsonHelper.convertToJson(npmErrorResponse));
-            throw new NPMException("Error from NPM : " + npmErrorResponse.getErrorMessage());
+            RunnerResponse npmErrorResponse = jsonHelper.readFromJson(ex.getResponseBodyAsString(), RunnerResponse.class);
+            log.error("NPM awb auto sell failed due to: {}", jsonHelper.convertToJson(npmErrorResponse.getError()));
+            throw new NPMException("Error from NPM : " + npmErrorResponse.getError().getMessage());
         }
     }
 
@@ -188,9 +189,9 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
             awbDao.save(updatedAwb);
             return ResponseHelper.buildDependentServiceResponse(response.getBody().getData(),0,0);
         } catch (HttpStatusCodeException ex) {
-            NpmErrorResponse npmErrorResponse = jsonHelper.readFromJson(ex.getResponseBodyAsString(), NpmErrorResponse.class);
-            log.error("NPM awb import rates failed due to: {}", jsonHelper.convertToJson(npmErrorResponse));
-            throw new NPMException("Error from NPM : " + npmErrorResponse.getErrorMessage());
+            RunnerResponse npmErrorResponse = jsonHelper.readFromJson(ex.getResponseBodyAsString(), RunnerResponse.class);
+            log.error("NPM awb import rates failed due to: {}", jsonHelper.convertToJson(npmErrorResponse.getError() ));
+            throw new NPMException("Error from NPM : " + npmErrorResponse.getError().getMessage());
         }
     }
 
