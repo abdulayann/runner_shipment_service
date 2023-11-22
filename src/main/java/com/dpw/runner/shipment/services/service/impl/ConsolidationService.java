@@ -182,6 +182,9 @@ public class ConsolidationService implements IConsolidationService {
     @Autowired
     private KafkaProducer producer;
 
+    @Autowired
+    private GetNextNumberHelper getNextNumberHelper;
+
     @Value("${consolidationsKafka.queue}")
     private String senderQueue;
 
@@ -528,13 +531,13 @@ public class ConsolidationService implements IConsolidationService {
         if (identifiedProduct == null){
             return "";
         }
-        var sequenceSettings = GetNextNumberHelper.getProductSequence(identifiedProduct.getId(), productProcessTypes);
+        var sequenceSettings = getNextNumberHelper.getProductSequence(identifiedProduct.getId(), productProcessTypes);
         if(sequenceSettings == null){
             return "";
         }
         String prefix = sequenceSettings.getPrefix() == null ? "" : sequenceSettings.getPrefix();
         var user = UserContext.getUser();
-        return GetNextNumberHelper.generateCustomSequence(sequenceSettings, prefix, user.getTenantId(), false, null, false);
+        return getNextNumberHelper.generateCustomSequence(sequenceSettings, prefix, user.getTenantId(), false, null, false);
     }
 
 

@@ -37,7 +37,8 @@ public class ProductSequenceConfigDao implements IProductSequenceConfigDao {
         return productSequenceConfigRepository.save(productSequenceConfig);
     }
 
-    private Optional<ProductSequenceConfig> findById(Long id) {
+    @Override
+    public Optional<ProductSequenceConfig> findById(Long id) {
         return productSequenceConfigRepository.findById(id);
     }
 
@@ -65,6 +66,7 @@ public class ProductSequenceConfigDao implements IProductSequenceConfigDao {
         return res;
     }
 
+    @Override
     public Page<ProductSequenceConfig> findAll(Specification<ProductSequenceConfig> spec, Pageable pageable) {
         return productSequenceConfigRepository.findAll(spec, pageable);
     }

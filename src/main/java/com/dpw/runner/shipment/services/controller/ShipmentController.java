@@ -318,4 +318,14 @@ public class ShipmentController {
         }
     }
 
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.CREATE_SUCCESSFUL)})
+    @GetMapping(ShipmentConstants.GENERATE_CUSTOM_HOUSE_BL)
+    public ResponseEntity<?> generateCustomHouseBLNumber() {
+        try {
+            return (ResponseEntity<RunnerResponse<String>>) shipmentService.generateCustomHouseBLNumber();
+        } catch (Exception e) {
+            return ResponseHelper.buildFailedResponse(e.getMessage());
+        }
+    }
+
 }

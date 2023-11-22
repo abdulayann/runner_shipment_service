@@ -4,7 +4,6 @@ import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.Repo
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SEA;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
-import static com.dpw.runner.shipment.services.utils.GetNextNumberHelper.padLeft;
 import static java.io.FileDescriptor.out;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
@@ -33,6 +32,7 @@ public class ProductIdentifierUtility {
 
   @Autowired ITenantProductsDao tenantProductsDao;
   @Autowired ProductSequenceConfigDao productSequenceConfigDao;
+  @Autowired GetNextNumberHelper getNextNumberHelper;
 
   /**
    * Alternative for v1 constructor call with TenantSettings as a parameter
@@ -162,7 +162,7 @@ public class ProductIdentifierUtility {
     if (identifiedProduct == null) {
       return null;
     } else {
-      return GetNextNumberHelper.getProductSequence(identifiedProduct.getId(), processType);
+      return getNextNumberHelper.getProductSequence(identifiedProduct.getId(), processType);
     }
   }
 
@@ -424,7 +424,7 @@ public class ProductIdentifierUtility {
               numberOfDigits = 3;
             }
             String counter =
-                padLeft(productSequence.getSerialCounter().toString(), numberOfDigits, '0');
+                    getNextNumberHelper.padLeft(productSequence.getSerialCounter().toString(), numberOfDigits, '0');
             result = (result == null ? new StringBuilder("null") : result).append(counter);
             productSequenceConfigDao.save(productSequence);
           }

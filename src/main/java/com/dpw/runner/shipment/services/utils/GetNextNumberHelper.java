@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.requests.Criteria;
 import com.dpw.runner.shipment.services.commons.requests.FilterCriteria;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.commons.requests.RunnerEntityMapping;
 import com.dpw.runner.shipment.services.dao.interfaces.IProductSequenceConfigDao;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.entity.ProductSequenceConfig;
@@ -18,15 +19,22 @@ import java.time.format.TextStyle;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import com.dpw.runner.shipment.services.helpers.DbAccessHelper;
+import com.nimbusds.jose.util.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Component;
 
 @Component
 public class GetNextNumberHelper {
 
-  @Autowired private static IProductSequenceConfigDao productSequenceConfigDao;
+  @Autowired
+  private IProductSequenceConfigDao productSequenceConfigDao;
 
-  public static String generateCustomSequence(
+  public String generateCustomSequence(
       ProductSequenceConfig sequenceSettings,
       String regexPattern,
       int tenantId,
@@ -116,7 +124,7 @@ public class GetNextNumberHelper {
     return prefix + suffix;
   }
 
-  public static String GetNextRegexSequenceNumber(
+  public String GetNextRegexSequenceNumber(
       ProductSequenceConfig sequenceSettings, int TenantId, String resetFreq) {
     LocalDateTime seqStartTime = sequenceSettings.getSequenceStartTime();
     boolean resetCounter = seqStartTime == null;
@@ -154,8 +162,7 @@ public class GetNextNumberHelper {
   }
 
   // TODO criteria to find the Product sequence
-  public static ProductSequenceConfig getProductSequence(
-      Long productId, ProductProcessTypes processType) {
+  public ProductSequenceConfig getProductSequence( Long productId, ProductProcessTypes processType) {
     FilterCriteria entityIdCriteria =
         FilterCriteria.builder()
             .innerFilter(
@@ -163,7 +170,7 @@ public class GetNextNumberHelper {
                     FilterCriteria.builder()
                         .criteria(
                             Criteria.builder()
-                                .fieldName("tenantProducts.id")
+                                .fieldName("tenantProductId")
                                 .operator("=")
                                 .value(productId)
                                 .build())
@@ -174,7 +181,7 @@ public class GetNextNumberHelper {
                             Criteria.builder()
                                 .fieldName("productProcessTypes")
                                 .operator("=")
-                                .value(processType)
+                                .value(processType.toString())
                                 .build())
                         .build()))
             .build();
@@ -185,15 +192,30 @@ public class GetNextNumberHelper {
             .pageSize(Integer.MAX_VALUE)
             .filterCriteria(Arrays.asList(entityIdCriteria))
             .build();
-    //        var repo = new ProductSequenceConfigRepository();
-    //        var request = new ListRequest();
-    //        request.Criteria = new Criteria("TenantProduct") == productId.Value && new
-    // Criteria("ProductProcessTypes") == processType;
-    //        return repo.List(uow.Connection, request).Entities.FirstOrDefault();
-    return new ProductSequenceConfig();
+
+    Map<String, RunnerEntityMapping> tableNames =
+        Map.ofEntries(
+            Map.entry(
+                "tenantProductId",
+                RunnerEntityMapping.builder()
+                    .tableName("tenantProducts")
+                    .dataType(Long.class)
+                    .fieldName("id")
+                    .build()),
+            Map.entry(
+                "productProcessTypes",
+                RunnerEntityMapping.builder()
+                    .tableName("ProductSequenceConfig")
+                    .dataType(ProductProcessTypes.class)
+                    .fieldName("productProcessTypes")
+                    .build()));
+
+    Pair<Specification<ProductSequenceConfig>, Pageable> pair = DbAccessHelper.fetchData(listCommonRequest, ProductSequenceConfig.class, tableNames);
+    Page<ProductSequenceConfig> productSequenceConfigPage = productSequenceConfigDao.findAll(pair.getLeft(), pair.getRight());
+    return productSequenceConfigPage.getTotalElements() > 0 ? productSequenceConfigPage.getContent().get(0) : new ProductSequenceConfig();
   }
 
-  public static String padLeft(String input, int len, char c) {
+  public String padLeft(String input, int len, char c) {
     if (input.length() >= len) {
       return input;
     }
