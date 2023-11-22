@@ -17,7 +17,7 @@ public class EntityTransferChargeType implements IEntityTranferBaseEntity, Seria
     public String ChargeCodeAlt;
     public Double DefaultCost;
     public Double DefaultSell;
-    public Double DefaultCurrency;
+    public String DefaultCurrency;
     public Boolean Taxable;
     public Boolean Hazardous;
 }
