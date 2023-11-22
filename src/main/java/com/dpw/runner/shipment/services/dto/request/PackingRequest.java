@@ -24,7 +24,6 @@ public class PackingRequest extends CommonRequest implements IRunnerRequest {
     private Integer DGSubstanceId;
     private String packs;
     private String packsType;
-    private String containerNumber;
     private BigDecimal weight;
     private String weightUnit;
     private BigDecimal volume;

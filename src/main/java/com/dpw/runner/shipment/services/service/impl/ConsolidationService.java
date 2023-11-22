@@ -2000,6 +2000,8 @@ public class ConsolidationService implements IConsolidationService {
     public void afterSave(ConsolidationDetails consolidationDetails, boolean isCreate)
     {
         try {
+            if(consolidationDetails.getTenantId() == null)
+                consolidationDetails.setTenantId(TenantContext.getCurrentTenant());
             if(trackingServiceAdapter.checkIfConsolContainersExist(consolidationDetails) || trackingServiceAdapter.checkIfAwbExists(consolidationDetails)) {
                 UniversalTrackingPayload _utPayload = trackingServiceAdapter.mapConsoleDataToTrackingServiceData(consolidationDetails);
                 List<UniversalTrackingPayload> trackingPayloads = new ArrayList<>();

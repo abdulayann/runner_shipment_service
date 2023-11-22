@@ -49,9 +49,6 @@ public class Packing extends MultiTenancy {
     @MasterData(type = MasterDataType.PACKS_UNIT)
     private String packsType;
 
-    @Column(name = "container_number")
-    private String containerNumber;
-
     @Column(name = "weight")
     private BigDecimal weight;
 

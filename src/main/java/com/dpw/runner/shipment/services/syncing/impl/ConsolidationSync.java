@@ -2,7 +2,6 @@ package com.dpw.runner.shipment.services.syncing.impl;
 
 import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
-import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataSyncResponse;
 import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
@@ -12,12 +11,10 @@ import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.syncing.Entity.*;
 import com.dpw.runner.shipment.services.syncing.constants.SyncingConstants;
 import com.dpw.runner.shipment.services.syncing.interfaces.IConsolidationSync;
-import com.dpw.runner.shipment.services.utils.V1AuthHelper;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpEntity;
 import org.springframework.http.ResponseEntity;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.scheduling.annotation.Async;
@@ -49,6 +46,8 @@ public class ConsolidationSync implements IConsolidationSync {
     IShipmentDao shipmentDao;
     @Autowired
     private IV1Service v1Service;
+    @Autowired
+    private SyncEntityConversionService syncEntityConversionService;
 
     private RetryTemplate retryTemplate = RetryTemplate.builder()
             .maxAttempts(3)
@@ -133,15 +132,8 @@ public class ConsolidationSync implements IConsolidationSync {
     private void mapPackings(CustomConsolidationRequest response, ConsolidationDetails request) {
         if(request == null || request.getPackingList() == null)
             return;
-        List<PackingRequestV2> req = request.getPackingList().stream()
-                .map(item -> {
-                    PackingRequestV2 p;
-                    p = modelMapper.map(item, PackingRequestV2.class);
-                    p.setOriginName(item.getOrigin());
-                    return p;
-                })
-                .collect(Collectors.toList());
-        response.setPackingList(req);
+        List<PackingRequestV2> res = syncEntityConversionService.packingsV2ToV1(request.getPackingList(), request.getContainersList());
+        response.setPackingList(res);
     }
 
     private void mapTruckDriverDetail(CustomConsolidationRequest response, ConsolidationDetails request) {

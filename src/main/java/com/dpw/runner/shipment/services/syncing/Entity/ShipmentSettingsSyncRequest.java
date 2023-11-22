@@ -265,11 +265,16 @@ public class ShipmentSettingsSyncRequest implements IRunnerRequest {
     private List<HawbLockDto> HawbLock;
     @JsonProperty("MawbLock")
     private List<MawbLockDto> MawbLock;
-    // TODO- Add in v1 settings dto as well, also handle naming convention in v1
     @JsonProperty("HblMultipleOriginalApproval")
     private Integer hblMultipleOriginalApproval;
     @JsonProperty("HblApprovalFlow")
     private Boolean hblApprovalFlow;
     @JsonProperty("IsShipmentLevelContainer")
     private Boolean isShipmentLevelContainer;
+    @JsonProperty("RestrictBlRelease")
+    private Boolean restrictBlRelease;
+    @JsonProperty("RestrictBlApprovalRole")
+    private Integer restrictBlApprovalRole;
+    @JsonProperty("EManifest")
+    private Boolean eManifest;
 }
