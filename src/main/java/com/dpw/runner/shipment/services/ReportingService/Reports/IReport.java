@@ -434,7 +434,7 @@ public abstract class IReport {
     public ShipmentModel getShipment(Long Id)
     {
         ShipmentDetails shipmentDetails = shipmentDao.findById(Id).get();
-        return modelMapper.map(shipmentDetails, ShipmentModel.class);
+        return jsonHelper.convertValue(shipmentDetails, ShipmentModel.class);
     }
 
     public ConsolidationModel getFirstConsolidationFromShipmentId(Long shipmentId)
@@ -465,7 +465,7 @@ public abstract class IReport {
     public ConsolidationModel getConsolidation(Long Id)
     {
         ConsolidationDetails consolidationDetails = consolidationDetailsDao.findById(Id).get();
-        return modelMapper.map(consolidationDetails, ConsolidationModel.class);
+        return jsonHelper.convertValue(consolidationDetails, ConsolidationModel.class);
     }
 
     public Hbl getHbl(Long Id) {

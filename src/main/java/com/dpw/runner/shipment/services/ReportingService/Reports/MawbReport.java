@@ -32,7 +32,7 @@ public class MawbReport extends IReport{
             hawbModel.setMawb(getMawb(hawbModel.getConsolidationDetails().getId()));
         }
         hawbModel.awb = hawbModel.getMawb();
-        hawbModel.setEntityType("HAWB");
+        hawbModel.setEntityType("MAWB");
         return hawbModel;
     }
 
