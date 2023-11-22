@@ -13,6 +13,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @NoArgsConstructor
 public class EntityTransferAddress implements IEntityTranferBaseEntity {
+    public Long Id;
     public Long OrgId;
     public String AddressShortCode;
     public String CompanyName;

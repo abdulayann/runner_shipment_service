@@ -2,7 +2,6 @@ package com.dpw.runner.shipment.services.entity;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
-import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
 import com.dpw.runner.shipment.services.utils.DedicatedMasterData;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -29,10 +28,10 @@ public class BookingCharges extends MultiTenancy {
 
     @Column(name = "charges_type")
     @DedicatedMasterData(type = Constants.CHARGE_TYPE_MASTER_DATA)
-    private String chargeType; //charge type master data
+    private String chargeType; //charge type master data //,., chargeTypeId in externalBillCharges -> billChargeRequest
 
     @Column(name = "details")
-    private String details;
+    private String details; //...
 
     @Column(name = "charges_code_alt")
     private String chargeCodeAlt;
@@ -41,56 +40,56 @@ public class BookingCharges extends MultiTenancy {
     private String hsnMaster; //HSN SAC Master data
 
     @Column(name = "measurement_basis")
-    private String measurementBasis; //enum
+        private String measurementBasis; //enum  ...
 
     @Column(name = "measurement_container_type")
-    private String measurementContainerType; //container type master data
+    private String measurementContainerType; //container type master data   code
 
     @Column(name = "total_unit_count")
-    private BigDecimal totalUnitCount;
+    private BigDecimal totalUnitCount;  ///
 
     @Column(name = "measurement_unit")
-    private String measurementUnit;
+    private String measurementUnit; ///
 
     @Column(name = "cost_currency_exchange_update")
-    private String costCurrencyExchangeUpdate; //enum
+    private String costCurrencyExchangeUpdate; //enum   //...
 
     @Column(name = "reciprocal_currency_cost")
     private Boolean reciprocalCurrencyCost;
 
     @Column(name = "estimated_cost")
-    private BigDecimal estimatedCost;
+    private BigDecimal estimatedCost;  //.. total estimated cost
 
     @Column(name = "local_cost_amount")
-    private BigDecimal localCostAmount;
+    private BigDecimal localCostAmount;  // ,,,
 
     @Column(name = "overseas_cost_amount")
-    private BigDecimal overseasCostAmount;
+    private BigDecimal overseasCostAmount; //...
 
     @Column(name = "overseas_cost_currency")
-    private String overseasCostCurrency; //currencies master data
+    private String overseasCostCurrency; //currencies master data //...
 
     @Column(name = "local_cost_currency")
-    private String localCostCurrency; //currencies master data
+    private String localCostCurrency; //currencies master data  ...
 
     @Column(name = "current_cost_rate")
-    private BigDecimal currentCostRate;
+    private BigDecimal currentCostRate;  ///
 
     @Column(name = "cost_rate_currency")
-    private String costRateCurrency; //currencies master data
+    private String costRateCurrency; //currencies master data  ///
 
     @Column(name = "cost_exchange")
-    private BigDecimal costExchange;
+    private BigDecimal costExchange;  ///
 
     @Column(name = "cost_account")
-    private String costAccount;
+    private String costAccount;  // ...
 
     @Column(name = "cost_comments")
     private String costComments;
 
     @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "creditor_id", referencedColumnName = "id")
-    private Parties creditor;
+    private Parties creditor;  // .. creditorID
 
     @Column(name = "cost_tax_id")
     private String costTaxId;
@@ -132,19 +131,19 @@ public class BookingCharges extends MultiTenancy {
     private Boolean reciprocalCurrencyRevenue;
 
     @Column(name = "estimated_revenue")
-    private BigDecimal estimatedRevenue;
+    private BigDecimal estimatedRevenue;  // .,, totalEstimatedRevenue
 
     @Column(name = "local_sell_amount")
-    private BigDecimal localSellAmount;
+    private BigDecimal localSellAmount;  // ...
 
     @Column(name = "overseas_sell_amount")
-    private BigDecimal overseasSellAmount;
+    private BigDecimal overseasSellAmount;  // ...
 
     @Column(name = "overseas_sell_currency")
-    private String overseasSellCurrency; //currencies master data
+    private String overseasSellCurrency; //currencies master data ...
 
     @Column(name = "local_sell_currency")
-    private String localSellCurrency; //currencies master data
+    private String localSellCurrency; //currencies master data ...
 
     @Column(name = "current_sell_rate")
     private BigDecimal currentSellRate;
@@ -156,14 +155,14 @@ public class BookingCharges extends MultiTenancy {
     private BigDecimal sellExchange;
 
     @Column(name = "revenue_account")
-    private String revenueAccount;
+    private String revenueAccount; //..
 
     @Column(name = "revenue_comments")
     private String revenueComments;
 
     @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "debtor_id", referencedColumnName = "id")
-    private Parties debtor;
+    private Parties debtor; // .. debtorID
 
     @Column(name = "revenue_tax_id")
     private String revenueTaxId;
@@ -175,10 +174,10 @@ public class BookingCharges extends MultiTenancy {
     private BigDecimal localTax;
 
     @Column(name = "tax_percentage")
-    private BigDecimal taxPercentage;
+    private BigDecimal taxPercentage; //..
 
     @Column(name = "overseas_tax")
-    private BigDecimal overseasTax;
+    private BigDecimal overseasTax;  // ..
 
     @Column(name = "no_gst")
     private Boolean noGST;

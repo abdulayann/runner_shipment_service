@@ -469,7 +469,6 @@ public class CustomerBookingService implements ICustomerBookingService {
                 V1DataResponse orgResponse = v1Service.fetchOrganization(orgRequest);
                 List<EntityTransferOrganizations> orgList = jsonHelper.convertValueToList(orgResponse.entities, EntityTransferOrganizations.class);
 
-
                 long orgId=orgList.get(0).getId();
                 creditLimitRequest.setCustomerIdentifierId(orgList.get(0).getCustomerIdentifier());
                 List<Object> finalCriteria= new ArrayList<>();
