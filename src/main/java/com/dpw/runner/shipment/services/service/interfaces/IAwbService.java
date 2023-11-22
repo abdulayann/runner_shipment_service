@@ -15,4 +15,6 @@ public interface IAwbService {
     ResponseEntity<?> createV1Awb(CommonRequestModel commonRequestModel);
 
     ResponseEntity<?> customAwbRetrieve(List<String> awbNumber, String issuingAgentName);
+
+    ResponseEntity<?> reset(CommonRequestModel commonRequestModel);
 }
