@@ -21,6 +21,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -267,6 +268,13 @@ public class V1ServiceImpl implements IV1Service {
     private String ROLES_LIST;
     @Value("${v1service.url.base}${v1service.url.dataSync}")
     private String DATA_SYNC_URL;
+    @Value("${v1service.url.base}${v1service.url.getMaxShipmentId}")
+    private String GET_MAX_SHIPMENT_ID_URL;
+    @Value("${v1service.url.base}${v1service.url.getShipmentSequenceNumber}")
+    private String GET_SHIPMENT_SEQUENCE_NUMBER_URL;
+    @Value("${v1service.url.base}${v1service.url.getMaxConsolidationId}")
+    private String GET_MAX_CONSOL_ID_URL;
+
     @Autowired
     private JsonHelper jsonHelper;
     @Autowired
@@ -1617,6 +1625,64 @@ public class V1ServiceImpl implements IV1Service {
             log.info("Request: {} || Response for event: {} with response{}", LoggerHelper.getRequestIdFromMDC(), IntegrationType.V1_DATA_SYNC, jsonHelper.convertToJson(tiDataResponse.getBody()));
             log.info("Request: {} || Total time taken in v1DataSync() function: {}", LoggerHelper.getRequestIdFromMDC() ,(System.currentTimeMillis() - time));
             return (V1DataSyncResponse) tiDataResponse.getBody();
+        } catch (HttpStatusCodeException var6) {
+            if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
+                throw new UnAuthorizedException("UnAuthorizedException");
+            } else {
+                throw new V1ServiceException(var6.getMessage());
+            }
+        } catch (Exception var7) {
+            throw new V1ServiceException(var7.getMessage());
+        }
+    }
+
+    @Override
+    public String getMaxShipmentId() {
+        ResponseEntity v1Response = null;
+        try {
+            long time = System.currentTimeMillis();
+            HttpEntity<String> entity = new HttpEntity<>(V1AuthHelper.getHeaders());
+            v1Response = this.restTemplate.exchange(this.GET_MAX_SHIPMENT_ID_URL, HttpMethod.GET, entity, String.class);
+            log.info("Request: {} || Total time taken to get max shipment id: {}", LoggerHelper.getRequestIdFromMDC() ,(System.currentTimeMillis() - time));
+            return (String) v1Response.getBody();
+        } catch (HttpStatusCodeException var6) {
+            if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
+                throw new UnAuthorizedException("UnAuthorizedException");
+            } else {
+                throw new V1ServiceException(var6.getMessage());
+            }
+        } catch (Exception var7) {
+            throw new V1ServiceException(var7.getMessage());
+        }
+    }
+
+    @Override
+    public String getShipmentSerialNumber() {
+        ResponseEntity v1Response = null;
+        try {
+            long time = System.currentTimeMillis();
+            v1Response = this.restTemplate.getForEntity(this.GET_MAX_SHIPMENT_ID_URL, String.class, V1AuthHelper.getHeaders());
+            log.info("Request: {} || Total time taken to get max shipment id: {}", LoggerHelper.getRequestIdFromMDC() ,(System.currentTimeMillis() - time));
+            return (String) v1Response.getBody();
+        } catch (HttpStatusCodeException var6) {
+            if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
+                throw new UnAuthorizedException("UnAuthorizedException");
+            } else {
+                throw new V1ServiceException(var6.getMessage());
+            }
+        } catch (Exception var7) {
+            throw new V1ServiceException(var7.getMessage());
+        }
+    }
+
+    @Override
+    public String getMaxConsolidationId() {
+        ResponseEntity v1Response = null;
+        try {
+            long time = System.currentTimeMillis();
+            v1Response = this.restTemplate.getForEntity(this.GET_MAX_SHIPMENT_ID_URL, String.class, V1AuthHelper.getHeaders());
+            log.info("Request: {} || Total time taken to get max shipment id: {}", LoggerHelper.getRequestIdFromMDC() ,(System.currentTimeMillis() - time));
+            return (String) v1Response.getBody();
         } catch (HttpStatusCodeException var6) {
             if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
                 throw new UnAuthorizedException("UnAuthorizedException");

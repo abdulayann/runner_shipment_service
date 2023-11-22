@@ -1807,10 +1807,11 @@ public class ShipmentService implements IShipmentService {
     }
 
     private String getShipmentsSerialNumber() {
-
-        SequenceIncrementor sequenceIncrementor = SequenceIncrementor.builder().entityId(1L).build();
-        sequenceIncrementorDao.save(sequenceIncrementor);
-        return sequenceIncrementor.getShipmentIncrementId().toString();
+        // Moving this responsibility to v1 sequnce table to avoid syncing overhead
+        return v1Service.getShipmentSerialNumber();
+//        SequenceIncrementor sequenceIncrementor = SequenceIncrementor.builder().entityId(1L).build();
+//        sequenceIncrementorDao.save(sequenceIncrementor);
+//        return sequenceIncrementor.getShipmentIncrementId().toString();
     }
 
     private String createShipmentSequence(ShipmentSettingsDetails shipmentSetting) {
@@ -2118,7 +2119,7 @@ public class ShipmentService implements IShipmentService {
             cloneShipmentDetails.setShipmentId(null);
             cloneShipmentDetails.setMasterBill(null);
             
-            if(cloneShipmentDetails.getDirection().equals(Constants.DIRECTION_EXP))
+            if(Constants.TRANSPORT_MODE_SEA.equals(cloneShipmentDetails.getTransportMode()) && Constants.DIRECTION_EXP.equals(cloneShipmentDetails.getDirection()))
                 cloneShipmentDetails.setHouseBill(generateCustomHouseBL());
 
             CommonRequestModel requestModel = CommonRequestModel.buildRequest(cloneShipmentDetails);
@@ -2220,8 +2221,9 @@ public class ShipmentService implements IShipmentService {
                     res += StringUtility.getRandomString(10);
                     break;
                 case "Serial" :
-                    Long serialNumber = shipmentDao.findMaxId() + 1;
-                    res += serialNumber.toString();
+                    String serialNumber = v1Service.getMaxShipmentId();
+//                    Long serialNumber = shipmentDao.findMaxId() + 1;
+                    res += serialNumber;
                     break;
                 default : res = "";
                     break;

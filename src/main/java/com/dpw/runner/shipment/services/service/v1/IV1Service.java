@@ -142,4 +142,9 @@ public interface IV1Service {
     ShipmentBillingListResponse fetchShipmentBillingData(Object request);
     V1DataResponse fetchRolesList(Object request);
     V1DataSyncResponse v1DataSync(Object request);
+
+    String getMaxShipmentId();
+    String getShipmentSerialNumber();
+    String getMaxConsolidationId();
+
 }

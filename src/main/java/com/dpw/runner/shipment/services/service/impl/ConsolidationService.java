@@ -512,11 +512,12 @@ public class ConsolidationService implements IConsolidationService {
     }
 
     private String getConsolidationSerialNumber() {
-        Long maxId = consolidationDetailsDao.findMaxId();
-        if(maxId == null)
-            maxId = 0L;
-        maxId += 1;
-        return maxId.toString();
+        String maxId = v1Service.getMaxConsolidationId();
+//        Long maxId = consolidationDetailsDao.findMaxId();
+//        if(maxId == null)
+//            maxId = 0L;
+//        maxId += 1;
+        return maxId;
     }
 
     private String getCustomizedConsolidationProcessNumber(ConsolidationDetails consolidationDetails, ShipmentSettingsDetails shipmentSettingsDetails, ProductProcessTypes productProcessTypes) {
