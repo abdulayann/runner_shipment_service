@@ -14,4 +14,5 @@ public class CreateAwbRequest implements IRunnerRequest {
     private Long ShipmentId;
     private Long ConsolidationId;
     private String AwbType;
+    private Boolean isReset;
 }

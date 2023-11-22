@@ -1127,6 +1127,7 @@ public class ShipmentService implements IShipmentService {
             consolidationDetails.setIsSendingAgentFreeTextAddress(false);
             consolidationDetails.setIsInland(false);
             consolidationDetails.setSourceTenantId(TenantContext.getCurrentTenant().longValue());
+            consolidationService.generateConsolidationNumber(consolidationDetails);
             // TODO- which one is CarrierBookingRef
             // TODO- default organizations Row -- setAgentOrganizationAndAddress() function in v1
 //            if(consolidationDetails.getShipmentType() != null && !consolidationDetails.getShipmentType().isEmpty()

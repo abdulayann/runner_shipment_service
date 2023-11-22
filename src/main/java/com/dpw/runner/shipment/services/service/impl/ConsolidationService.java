@@ -485,7 +485,8 @@ public class ConsolidationService implements IConsolidationService {
      * Method that generates consol and bol number
      * @param consolidationDetails
      */
-    private void generateConsolidationNumber(ConsolidationDetails consolidationDetails) {
+    @Override
+    public void generateConsolidationNumber(ConsolidationDetails consolidationDetails) {
         List<ShipmentSettingsDetails> shipmentSettingsList = shipmentSettingsDao.list();
 
         if(consolidationDetails.getConsolidationNumber() == null) {
