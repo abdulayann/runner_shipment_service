@@ -16,185 +16,185 @@ import java.util.List;
 @AllArgsConstructor
 @Data
 public class ShipmentModel {
-    @JsonProperty("additionalDetails")
+    @JsonProperty("AdditionalDetails")
     private AdditionalDetailModel additionalDetails;
-    @JsonProperty("additionalTerms")
+    @JsonProperty("AdditionalTerms")
     private String additionalTerms;
-    @JsonProperty("assignedTo")
+    @JsonProperty("AssignedTo")
     private String assignedTo;
-    @JsonProperty("autoUpdateWtVol")
+    @JsonProperty("AutoUpdateWtVol")
     private Boolean autoUpdateWtVol;
-    @JsonProperty("bookingCarriagesList")
+    @JsonProperty("BookingCarriagesList")
     private List<BookingCarriageModel> bookingCarriagesList;
-    @JsonProperty("bookingNumber")
+    @JsonProperty("BookingNumber")
     private String bookingNumber;
-    @JsonProperty("bookingReference")
+    @JsonProperty("BookingReference")
     private String bookingReference;
-    @JsonProperty("bookingType")
+    @JsonProperty("BookingType")
     private String bookingType;
-    @JsonProperty("cargoFinanceBooking")
+    @JsonProperty("CargoFinanceBooking")
     private Boolean cargoFinanceBooking;
-    @JsonProperty("carrierDetails")
+    @JsonProperty("CarrierDetails")
     private CarrierDetailModel carrierDetails;
-    @JsonProperty("chargable")
+    @JsonProperty("Chargable")
     private BigDecimal chargable;
-    @JsonProperty("chargeableUnit")
+    @JsonProperty("ChargeableUnit")
     private String chargeableUnit;
-    @JsonProperty("client")
+    @JsonProperty("Client")
     private PartiesModel client;
-    @JsonProperty("consignee")
+    @JsonProperty("Consignee")
     private PartiesModel consignee;
-    @JsonProperty("consigner")
+    @JsonProperty("Consigner")
     private PartiesModel consigner;
-    @JsonProperty("consolRef")
+    @JsonProperty("ConsolRef")
     private String consolRef;
-    @JsonProperty("containerAutoWeightVolumeUpdate")
+    @JsonProperty("ContainerAutoWeightVolumeUpdate")
     private Boolean containerAutoWeightVolumeUpdate;
-    @JsonProperty("containersList")
+    @JsonProperty("ContainersList")
     private List<ContainerModel> containersList = new ArrayList<>();
-    @JsonProperty("direction")
+    @JsonProperty("Direction")
     private String direction;
-    @JsonProperty("documentationPartner")
+    @JsonProperty("DocumentationPartner")
     private Long documentationPartner;
-    @JsonProperty("elDetailsList")
+    @JsonProperty("ElDetailsList")
     private List<ELDetailsModel> elDetailsList;
-    @JsonProperty("entryDetail")
+    @JsonProperty("EntryDetail")
     private String entryDetail;
-    @JsonProperty("eventsList")
+    @JsonProperty("EventsList")
     private List<EventsModel> eventsList;
-    @JsonProperty("fileRepoList")
+    @JsonProperty("FileRepoList")
     private List<FileRepoModel> fileRepoList;
-    @JsonProperty("financeClosedBy")
+    @JsonProperty("FinanceClosedBy")
     private String financeClosedBy;
-    @JsonProperty("financeClosedOn")
+    @JsonProperty("FinanceClosedOn")
     private LocalDateTime financeClosedOn;
-    @JsonProperty("freightLocal")
+    @JsonProperty("FreightLocal")
     private Integer freightLocal;
-    @JsonProperty("freightLocalCurrency")
+    @JsonProperty("FreightLocalCurrency")
     private String freightLocalCurrency;
-    @JsonProperty("freightOverseas")
+    @JsonProperty("FreightOverseas")
     private Integer freightOverseas;
-    @JsonProperty("freightOverseasCurrency")
+    @JsonProperty("FreightOverseasCurrency")
     private String freightOverseasCurrency;
-    @JsonProperty("goodsDescription")
+    @JsonProperty("GoodsDescription")
     private String goodsDescription;
-    @JsonProperty("houseBill")
+    @JsonProperty("HouseBill")
     private String houseBill;
-    @JsonProperty("id")
+    @JsonProperty("Id")
     private Long id;
-    @JsonProperty("incoterms")
+    @JsonProperty("Incoterms")
     private String incoterms;
-    @JsonProperty("innerPackUnit")
+    @JsonProperty("InnerPackUnit")
     private String innerPackUnit;
-    @JsonProperty("innerPacks")
+    @JsonProperty("InnerPacks")
     private Integer innerPacks;
-    @JsonProperty("intraBranch")
+    @JsonProperty("IntraBranch")
     private Boolean intraBranch;
-    @JsonProperty("isDomestic")
+    @JsonProperty("IsDomestic")
     private Boolean isDomestic;
-    @JsonProperty("isLocked")
+    @JsonProperty("IsLocked")
     private Boolean isLocked;
-    @JsonProperty("isNotifyConsigneeEqual")
+    @JsonProperty("IsNotifyConsigneeEqual")
     private Boolean isNotifyConsigneeEqual;
-    @JsonProperty("isShipmentReadOnly")
+    @JsonProperty("IsShipmentReadOnly")
     private Boolean isShipmentReadOnly;
-    @JsonProperty("jobType")
+    @JsonProperty("JobType")
     private String jobType;
-    @JsonProperty("jobsList")
+    @JsonProperty("JobsList")
     private List<JobModel> jobsList;
-    @JsonProperty("lockedBy")
+    @JsonProperty("LockedBy")
     private String lockedBy;
-    @JsonProperty("marksNum")
+    @JsonProperty("MarksNum")
     private String marksNum;
-    @JsonProperty("masterBill")
+    @JsonProperty("MasterBill")
     private String masterBill;
-    @JsonProperty("netWeight")
+    @JsonProperty("NetWeight")
     private BigDecimal netWeight;
-    @JsonProperty("netWeightUnit")
+    @JsonProperty("NetWeightUnit")
     private String netWeightUnit;
-    @JsonProperty("noOfPacks")
+    @JsonProperty("NoOfPacks")
     private Integer noOfPacks;
-    @JsonProperty("notesList")
+    @JsonProperty("NotesList")
     private List<NotesModel> notesList;
-    @JsonProperty("packingList")
+    @JsonProperty("PackingList")
     private List<PackingModel> packingList;
-    @JsonProperty("packsUnit")
+    @JsonProperty("PacksUnit")
     private String packsUnit;
-    @JsonProperty("paymentTerms")
+    @JsonProperty("PaymentTerms")
     private String paymentTerms;
-    @JsonProperty("pickupDetails")
+    @JsonProperty("PickupDetails")
     private PickupDeliveryDetailsModel pickupDetails;
-    @JsonProperty("deliveryDetails")
+    @JsonProperty("DeliveryDetails")
     private PickupDeliveryDetailsModel deliveryDetails;
-    @JsonProperty("prevShipmentStatus")
+    @JsonProperty("PrevShipmentStatus")
     private Integer prevShipmentStatus;
-    @JsonProperty("receivingBranch")
+    @JsonProperty("ReceivingBranch")
     private Long receivingBranch;
-    @JsonProperty("referenceNumbersList")
+    @JsonProperty("ReferenceNumbersList")
     private List<ReferenceNumbersModel> referenceNumbersList;
-    @JsonProperty("route")
+    @JsonProperty("Route")
     private String route;
-    @JsonProperty("routingsList")
+    @JsonProperty("RoutingsList")
     private List<RoutingsModel> routingsList;
-    @JsonProperty("salesAgent")
+    @JsonProperty("SalesAgent")
     private Long salesAgent;
-    @JsonProperty("serviceType")
+    @JsonProperty("ServiceType")
     private String serviceType;
-    @JsonProperty("servicesList")
+    @JsonProperty("ServicesList")
     private List<ServiceDetailsModel> servicesList;
-    @JsonProperty("shipmentCompletedBy")
+    @JsonProperty("ShipmentCompletedBy")
     private String shipmentCompletedBy;
-    @JsonProperty("shipmentCompletedOn")
+    @JsonProperty("ShipmentCompletedOn")
     private LocalDateTime shipmentCompletedOn;
-    @JsonProperty("shipmentCreatedOn")
+    @JsonProperty("ShipmentCreatedOn")
     private LocalDateTime shipmentCreatedOn;
-    @JsonProperty("shipmentId")
+    @JsonProperty("ShipmentId")
     private String shipmentId;
-    @JsonProperty("shipmentType")
+    @JsonProperty("ShipmentType")
     private String shipmentType;
-    @JsonProperty("source")
+    @JsonProperty("Source")
     private String source;
-    @JsonProperty("sourceTenantId")
+    @JsonProperty("SourceTenantId")
     private Long sourceTenantId;
-    @JsonProperty("status")
+    @JsonProperty("Status")
     private Integer status;
-    @JsonProperty("transportMode")
+    @JsonProperty("TransportMode")
     private String transportMode;
-    @JsonProperty("triangulationPartner")
+    @JsonProperty("TriangulationPartner")
     private Long triangulationPartner;
-    @JsonProperty("truckDriverDetails")
+    @JsonProperty("TruckDriverDetails")
     private List<TruckDriverDetailsModel> truckDriverDetails;
-    @JsonProperty("volume")
+    @JsonProperty("Volume")
     private BigDecimal volume;
-    @JsonProperty("volumeUnit")
+    @JsonProperty("VolumeUnit")
     private String volumeUnit;
-    @JsonProperty("volumetricWeight")
+    @JsonProperty("VolumetricWeight")
     private BigDecimal volumetricWeight;
-    @JsonProperty("volumetricWeightUnit")
+    @JsonProperty("VolumetricWeightUnit")
     private String volumetricWeightUnit;
-    @JsonProperty("weight")
+    @JsonProperty("Weight")
     private BigDecimal weight;
-    @JsonProperty("weightUnit")
+    @JsonProperty("WeightUnit")
     private String weightUnit;
-    @JsonProperty("jobStatus")
+    @JsonProperty("JobStatus")
     private String jobStatus;
-    @JsonProperty("goodsValue")
+    @JsonProperty("GoodsValue")
     private BigDecimal goodsValue;
-    @JsonProperty("goodsValueCurrency")
+    @JsonProperty("GoodsValueCurrency")
     private String goodsValueCurrency;
-    @JsonProperty("insuranceValue")
+    @JsonProperty("InsuranceValue")
     private BigDecimal insuranceValue;
-    @JsonProperty("insuranceValueCurrency")
+    @JsonProperty("InsuranceValueCurrency")
     private String InsuranceValueCurrency;
-    @JsonProperty("consolidationList")
-    @JsonIgnoreProperties("shipmentsList")
+    @JsonProperty("ConsolidationList")
+    @JsonIgnoreProperties("ShipmentsList")
     private List<ConsolidationModel> consolidationList;
-    @JsonProperty("shipmentAddresses")
+    @JsonProperty("ShipmentAddresses")
     private List<PartiesModel> shipmentAddresses;
-    @JsonProperty("shipmentContainers")
+    @JsonProperty("ShipmentContainers")
     private List<ShipmentContainers> shipmentContainersList;
-    @JsonProperty("entryRefNo")
-    public String entryRefNo;
+    @JsonProperty("EntryRefNo")
+    private String entryRefNo;
 
 }
 
