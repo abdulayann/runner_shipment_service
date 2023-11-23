@@ -1641,8 +1641,8 @@ public class V1ServiceImpl implements IV1Service {
         ResponseEntity v1Response = null;
         try {
             long time = System.currentTimeMillis();
-            HttpEntity<String> entity = new HttpEntity<>(V1AuthHelper.getHeaders());
-            v1Response = this.restTemplate.exchange(this.GET_MAX_SHIPMENT_ID_URL, HttpMethod.GET, entity, String.class);
+            HttpEntity<Object> entity = new HttpEntity<>(V1AuthHelper.getHeaders());
+            v1Response = this.restTemplate.exchange(this.GET_MAX_SHIPMENT_ID_URL, HttpMethod.GET, entity, Object.class);
             log.info("Request: {} || Total time taken to get max shipment id: {}", LoggerHelper.getRequestIdFromMDC() ,(System.currentTimeMillis() - time));
             return (String) v1Response.getBody();
         } catch (HttpStatusCodeException var6) {
@@ -1661,7 +1661,8 @@ public class V1ServiceImpl implements IV1Service {
         ResponseEntity v1Response = null;
         try {
             long time = System.currentTimeMillis();
-            v1Response = this.restTemplate.getForEntity(this.GET_MAX_SHIPMENT_ID_URL, String.class, V1AuthHelper.getHeaders());
+            HttpEntity<Object> entity = new HttpEntity<>(V1AuthHelper.getHeaders());
+            v1Response = this.restTemplate.exchange(this.GET_SHIPMENT_SEQUENCE_NUMBER_URL, HttpMethod.GET, entity, Object.class);
             log.info("Request: {} || Total time taken to get max shipment id: {}", LoggerHelper.getRequestIdFromMDC() ,(System.currentTimeMillis() - time));
             return (String) v1Response.getBody();
         } catch (HttpStatusCodeException var6) {
@@ -1680,7 +1681,8 @@ public class V1ServiceImpl implements IV1Service {
         ResponseEntity v1Response = null;
         try {
             long time = System.currentTimeMillis();
-            v1Response = this.restTemplate.getForEntity(this.GET_MAX_SHIPMENT_ID_URL, String.class, V1AuthHelper.getHeaders());
+            HttpEntity<Object> entity = new HttpEntity<>(V1AuthHelper.getHeaders());
+            v1Response = this.restTemplate.exchange(this.GET_MAX_CONSOL_ID_URL, HttpMethod.GET, entity, Object.class);
             log.info("Request: {} || Total time taken to get max shipment id: {}", LoggerHelper.getRequestIdFromMDC() ,(System.currentTimeMillis() - time));
             return (String) v1Response.getBody();
         } catch (HttpStatusCodeException var6) {

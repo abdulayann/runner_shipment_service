@@ -276,6 +276,7 @@ public class AwbService implements IAwbService {
 
     public ResponseEntity<?> createMawb(CommonRequestModel commonRequestModel) {
         String responseMsg;
+
         CreateAwbRequest request = (CreateAwbRequest) commonRequestModel.getData();
         if (request == null) {
             log.debug("Request is empty for MAWB Create for Request Id {}", LoggerHelper.getRequestIdFromMDC());
@@ -1031,7 +1032,7 @@ public class AwbService implements IAwbService {
         Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(awb.getShipmentId());
         Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(awb.getConsolidationId());
 
-        if (shipmentDetails.isEmpty() || consolidationDetails.isEmpty())
+        if (shipmentDetails.isEmpty() && consolidationDetails.isEmpty())
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
 
         CreateAwbRequest createAwbRequest = CreateAwbRequest.builder()

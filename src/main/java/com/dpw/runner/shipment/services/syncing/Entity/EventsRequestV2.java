@@ -43,4 +43,10 @@ public class EventsRequestV2 implements IRunnerRequest {
     private UUID ShipmentGuid;
     @JsonProperty("ConsolidationGuid")
     private UUID ConsolidationGuid;
+
+    // Tracking events conditional fields
+    @JsonProperty("ContainerNumber")
+    private String containerNumber;
+    @JsonProperty("AWBNumber")
+    private String awbNumber;
 }
