@@ -5,8 +5,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 
 @NoArgsConstructor
 @AllArgsConstructor
@@ -23,13 +23,13 @@ public class ServiceDetailsModel {
     @JsonProperty("Contractor")
     private PartiesModel contractor;
     @JsonProperty("SrvLocation")
-    private int srvLocation;
+    private String srvLocation;
     @JsonProperty("BookingDate")
     private LocalDateTime bookingDate;
     @JsonProperty("ServiceCount")
     private Long serviceCount;
     @JsonProperty("ServiceDuration")
-    private Duration serviceDuration;
+    private LocalTime serviceDuration;
     @JsonProperty("CompletionDate")
     private LocalDateTime completionDate;
     @JsonProperty("RefNumber")

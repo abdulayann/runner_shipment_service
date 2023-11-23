@@ -13,197 +13,197 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ConsolidationModel {
-    @JsonProperty("id")
+    @JsonProperty("Id")
     private Long id;
-    @JsonProperty("consolidationNumber")
+    @JsonProperty("ConsolidationNumber")
     private String consolidationNumber;
-    @JsonProperty("consolidationType")
+    @JsonProperty("ConsolidationType")
     private String consolidationType;
-    @JsonProperty("transportMode")
+    @JsonProperty("TransportMode")
     private String transportMode;
-    @JsonProperty("containerCategory")
+    @JsonProperty("ContainerCategory")
     private String containerCategory;
-    @JsonProperty("isDomestic")
+    @JsonProperty("IsDomestic")
     private Boolean isDomestic;
-    @JsonProperty("mawb")
+    @JsonProperty("Mawb")
     private String mawb;
-    @JsonProperty("serviceLevel")
+    @JsonProperty("ServiceLevel")
     private String serviceLevel;
-    @JsonProperty("payment")
+    @JsonProperty("Payment")
     private String payment;
-    @JsonProperty("firstLoad")
+    @JsonProperty("FirstLoad")
     private String firstLoad;
-    @JsonProperty("lastDischarge")
+    @JsonProperty("LastDischarge")
     private String lastDischarge;
-    @JsonProperty("bookingType")
+    @JsonProperty("BookingType")
     private String bookingType;
-    @JsonProperty("declarationType")
+    @JsonProperty("DeclarationType")
     private String declarationType;
-    @JsonProperty("deliveryMode")
+    @JsonProperty("DeliveryMode")
     private String deliveryMode;
-    @JsonProperty("isLinked")
+    @JsonProperty("IsLinked")
     private Boolean isLinked;
-    @JsonProperty("isCharter")
+    @JsonProperty("IsCharter")
     private Boolean isCharter;
-    @JsonProperty("referenceNumber")
+    @JsonProperty("ReferenceNumber")
     private String referenceNumber;
-    @JsonProperty("packageType")
+    @JsonProperty("PackageType")
     private String packageType;
-    @JsonProperty("agentReference")
+    @JsonProperty("AgentReference")
     private String agentReference;
-    @JsonProperty("coLoadMBL")
+    @JsonProperty("CoLoadMBL")
     private String coLoadMBL;
-    @JsonProperty("coLoadBookingReference")
+    @JsonProperty("CoLoadBookingReference")
     private String coLoadBookingReference;
-    @JsonProperty("manifestPrint")
+    @JsonProperty("ManifestPrint")
     private String manifestPrint;
-    @JsonProperty("printOtherDocs")
+    @JsonProperty("PrintOtherDocs")
     private String printOtherDocs;
-    @JsonProperty("awbDims")
+    @JsonProperty("AwbDims")
     private String awbDims;
-    @JsonProperty("releaseType")
+    @JsonProperty("ReleaseType")
     private String releaseType;
-    @JsonProperty("masterBillIssueDate")
+    @JsonProperty("MasterBillIssueDate")
     private LocalDateTime masterBillIssueDate;
-    @JsonProperty("dgClass")
+    @JsonProperty("DgClass")
     private String dgClass;
-    @JsonProperty("dgSubstance")
+    @JsonProperty("DgSubstance")
     private String dgSubstance;
-    @JsonProperty("override")
+    @JsonProperty("Override")
     private Boolean override;
-    @JsonProperty("estimatedTerminalCutoff")
+    @JsonProperty("EstimatedTerminalCutoff")
     private LocalDateTime estimatedTerminalCutoff;
-    @JsonProperty("terminalCutoff")
+    @JsonProperty("TerminalCutoff")
     private LocalDateTime terminalCutoff;
-    @JsonProperty("verifiedGrossMassCutoff")
+    @JsonProperty("VerifiedGrossMassCutoff")
     private LocalDateTime verifiedGrossMassCutoff;
-    @JsonProperty("reeferCutoff")
+    @JsonProperty("ReeferCutoff")
     private LocalDateTime reeferCutoff;
-    @JsonProperty("bookingCutoff")
+    @JsonProperty("BookingCutoff")
     private LocalDateTime bookingCutoff;
-    @JsonProperty("shipInstructionCutoff")
+    @JsonProperty("ShipInstructionCutoff")
     private LocalDateTime shipInstructionCutoff;
-    @JsonProperty("hazardousBookingCutoff")
+    @JsonProperty("HazardousBookingCutoff")
     private LocalDateTime hazardousBookingCutoff;
-    @JsonProperty("volumeUtilization")
+    @JsonProperty("VolumeUtilization")
     private String volumeUtilization;
-    @JsonProperty("weightUtilization")
+    @JsonProperty("WeightUtilization")
     private String weightUtilization;
-    @JsonProperty("shipmentType")
+    @JsonProperty("ShipmentType")
     private String shipmentType;
-    @JsonProperty("bol")
+    @JsonProperty("Bol")
     private String bol;
-    @JsonProperty("isCargoOnly")
+    @JsonProperty("IsCargoOnly")
     private Boolean isCargoOnly;
-    @JsonProperty("isLocked")
+    @JsonProperty("IsLocked")
     private Boolean isLocked;
-    @JsonProperty("lockedBy")
+    @JsonProperty("LockedBy")
     private String lockedBy;
-    @JsonProperty("specialInstructions")
+    @JsonProperty("SpecialInstructions")
     private String specialInstructions;
-    @JsonProperty("description")
+    @JsonProperty("Description")
     private String description;
-    @JsonProperty("marksnNums")
+    @JsonProperty("MarksnNums")
     private String marksnNums;
-    @JsonProperty("additionalTerms")
+    @JsonProperty("AdditionalTerms")
     private String additionalTerms;
-    @JsonProperty("docsClosingTime")
+    @JsonProperty("DocsClosingTime")
     private LocalDateTime docsClosingTime;
-    @JsonProperty("cargoClosingTime")
+    @JsonProperty("CargoClosingTime")
     private LocalDateTime cargoClosingTime;
-    @JsonProperty("mrnNumber")
+    @JsonProperty("MrnNumber")
     private String mrnNumber;
-    @JsonProperty("msnNumber")
+    @JsonProperty("MsnNumber")
     private String msnNumber;
-    @JsonProperty("igmFileDate")
+    @JsonProperty("IgmFileDate")
     private LocalDateTime igmFileDate;
-    @JsonProperty("igmInwardDate")
+    @JsonProperty("IgmInwardDate")
     private LocalDateTime igmInwardDate;
-    @JsonProperty("inwardDateAndTime")
+    @JsonProperty("InwardDateAndTime")
     private LocalDateTime inwardDateAndTime;
-    @JsonProperty("igmFileNo")
+    @JsonProperty("IgmFileNo")
     private String igmFileNo;
-    @JsonProperty("smtpigmNumber")
+    @JsonProperty("SmtpigmNumber")
     private String smtpigmNumber;
-    @JsonProperty("smtpigmDate")
+    @JsonProperty("SmtpigmDate")
     private LocalDateTime smtpigmDate;
-    @JsonProperty("isInland")
+    @JsonProperty("IsInland")
     private Boolean isInland;
-    @JsonProperty("original")
+    @JsonProperty("Original")
     private Integer original;
-    @JsonProperty("copy")
+    @JsonProperty("Copy")
     private Integer copy;
-    @JsonProperty("doPlaceOfIssue")
+    @JsonProperty("DoPlaceOfIssue")
     private String doPlaceOfIssue;
-    @JsonProperty("doIssueDate")
+    @JsonProperty("DoIssueDate")
     private LocalDateTime doIssueDate;
-    @JsonProperty("bondedWarehouseId")
+    @JsonProperty("BondedWarehouseId")
     private Long bondedWarehouseId;
-    @JsonProperty("warehouseId")
+    @JsonProperty("WarehouseId")
     private Long warehouseId;
-    @JsonProperty("sourceTenantId")
+    @JsonProperty("SourceTenantId")
     private long sourceTenantId;
-    @JsonProperty("ediTransactionId")
+    @JsonProperty("EdiTransactionId")
     private String ediTransactionId;
-    @JsonProperty("triangulationPartner")
+    @JsonProperty("TriangulationPartner")
     private long triangulationPartner;
-    @JsonProperty("receivingBranch")
+    @JsonProperty("ReceivingBranch")
     private long receivingBranch;
-    @JsonProperty("intraBranch")
+    @JsonProperty("IntraBranch")
     private boolean intraBranch;
-    @JsonProperty("documentationPartner")
+    @JsonProperty("DocumentationPartner")
     private long documentationPartner;
-    @JsonProperty("isReceivingAgentFreeTextAddress")
+    @JsonProperty("IsReceivingAgentFreeTextAddress")
     private Boolean isReceivingAgentFreeTextAddress;
-    @JsonProperty("receivingAgentFreeTextAddress")
+    @JsonProperty("ReceivingAgentFreeTextAddress")
     private String receivingAgentFreeTextAddress;
-    @JsonProperty("isSendingAgentFreeTextAddress")
+    @JsonProperty("IsSendingAgentFreeTextAddress")
     private Boolean isSendingAgentFreeTextAddress;
-    @JsonProperty("sendingAgentFreeTextAddress")
+    @JsonProperty("SendingAgentFreeTextAddress")
     private String sendingAgentFreeTextAddress;
-    @JsonProperty("placeOfIssue")
+    @JsonProperty("PlaceOfIssue")
     private String placeOfIssue;
-    @JsonProperty("carrierDetails")
+    @JsonProperty("CarrierDetails")
     private CarrierDetailModel carrierDetails;
-    @JsonProperty("achievedQuantities")
+    @JsonProperty("AchievedQuantities")
     private AchievedQuantitiesModel achievedQuantities;
-    @JsonProperty("allocations")
+    @JsonProperty("Allocations")
     private AllocationsModel allocations;
-    @JsonProperty("arrivalDetails")
+    @JsonProperty("ArrivalDetails")
     private ArrivalDepartureDetailsModel arrivalDetails;
-    @JsonProperty("departureDetails")
+    @JsonProperty("DepartureDetails")
     private ArrivalDepartureDetailsModel departureDetails;
-    @JsonProperty("sendingAgent")
+    @JsonProperty("SendingAgent")
     private PartiesModel sendingAgent;
-    @JsonProperty("receivingAgent")
+    @JsonProperty("ReceivingAgent")
     private PartiesModel receivingAgent;
-    @JsonProperty("borrowedFrom")
+    @JsonProperty("BorrowedFrom")
     private PartiesModel borrowedFrom;
-    @JsonProperty("creditor")
+    @JsonProperty("Creditor")
     private PartiesModel creditor;
-    @JsonProperty("coLoadWith")
+    @JsonProperty("CoLoadWith")
     private PartiesModel coLoadWith;
-    @JsonProperty("packingList")
+    @JsonProperty("PackingList")
     private List<PackingModel> packingList;
-    @JsonProperty("referenceNumbersList")
+    @JsonProperty("ReferenceNumbersList")
     private List<ReferenceNumbersModel> referenceNumbersList;
-    @JsonProperty("routingsList")
+    @JsonProperty("RoutingsList")
     private List<RoutingsModel> routingsList;
-    @JsonProperty("containersList")
+    @JsonProperty("ContainersList")
     private List<ContainerModel> containersList;
-    @JsonProperty("truckDriverDetails")
+    @JsonProperty("TruckDriverDetails")
     private List<TruckDriverDetailsModel> truckDriverDetails;
-    @JsonProperty("jobsList")
+    @JsonProperty("JobsList")
     private List<JobModel> jobsList;
-    @JsonProperty("eventsList")
+    @JsonProperty("EventsList")
     private List<EventsModel> eventsList;
-    @JsonProperty("fileRepoList")
+    @JsonProperty("FileRepoList")
     private List<FileRepoModel> fileRepoList;
-    @JsonProperty("shipmentsList")
-    @JsonIgnoreProperties("consolidationList")
+    @JsonProperty("ShipmentsList")
+    @JsonIgnoreProperties("ConsolidationList")
     private List<ShipmentModel> shipmentsList;
-    @JsonProperty("shipmentIds")
+    @JsonProperty("ShipmentIds")
     private List<Long> shipmentIds;
-    @JsonProperty("consolidationAddresses")
+    @JsonProperty("ConsolidationAddresses")
     private List<PartiesModel> consolidationAddresses;
 }

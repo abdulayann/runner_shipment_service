@@ -1,6 +1,8 @@
 package com.dpw.runner.shipment.services.ReportingService.Models;
 
-public class TenantModel {
+import java.io.Serializable;
+
+public class TenantModel implements Serializable {
     public String tenantName;
     public String address1;
     public String address2;
