@@ -215,6 +215,9 @@ public class ShipmentService implements IShipmentService {
     @Autowired
     private IShipmentsContainersMappingDao shipmentsContainersMappingDao;
 
+    @Autowired
+    private GetNextNumberHelper getNextNumberHelper;
+
     private ShipmentDetails currentShipment;
 
     private List<String> TRANSPORT_MODES = Arrays.asList("SEA", "ROAD", "RAIL", "AIR");
@@ -1124,6 +1127,7 @@ public class ShipmentService implements IShipmentService {
             consolidationDetails.setIsSendingAgentFreeTextAddress(false);
             consolidationDetails.setIsInland(false);
             consolidationDetails.setSourceTenantId(TenantContext.getCurrentTenant().longValue());
+            consolidationService.generateConsolidationNumber(consolidationDetails);
             // TODO- which one is CarrierBookingRef
             // TODO- default organizations Row -- setAgentOrganizationAndAddress() function in v1
 //            if(consolidationDetails.getShipmentType() != null && !consolidationDetails.getShipmentType().isEmpty()
@@ -1781,7 +1785,7 @@ public class ShipmentService implements IShipmentService {
         if (identifiedProduct == null){
             return "";
         }
-        var sequenceSettings = GetNextNumberHelper.getProductSequence(identifiedProduct.getId(), productProcessType);
+        var sequenceSettings = getNextNumberHelper.getProductSequence(identifiedProduct.getId(), productProcessType);
         if(sequenceSettings == null){
             sequenceSettings = productEngine.getShipmentProductWithOutContainerType(currentShipment, productProcessType);
             if (sequenceSettings == null)
@@ -1791,7 +1795,7 @@ public class ShipmentService implements IShipmentService {
                 if (defaultProduct == null || identifiedProduct == defaultProduct) {
                     return "";
                 }
-                sequenceSettings = GetNextNumberHelper.getProductSequence(defaultProduct.getId(), productProcessType);
+                sequenceSettings = getNextNumberHelper.getProductSequence(defaultProduct.getId(), productProcessType);
                 if (sequenceSettings == null) {
                     return "";
                 }
@@ -1799,14 +1803,15 @@ public class ShipmentService implements IShipmentService {
         }
         String prefix = sequenceSettings.getPrefix() == null ? "" : sequenceSettings.getPrefix();
         var user = UserContext.getUser();
-        return GetNextNumberHelper.generateCustomSequence(sequenceSettings, prefix, user.TenantId, true, null, false);
+        return getNextNumberHelper.generateCustomSequence(sequenceSettings, prefix, user.TenantId, true, null, false);
     }
 
     private String getShipmentsSerialNumber() {
-
-        SequenceIncrementor sequenceIncrementor = SequenceIncrementor.builder().entityId(1L).build();
-        sequenceIncrementorDao.save(sequenceIncrementor);
-        return sequenceIncrementor.getShipmentIncrementId().toString();
+        // Moving this responsibility to v1 sequnce table to avoid syncing overhead
+        return v1Service.getShipmentSerialNumber();
+//        SequenceIncrementor sequenceIncrementor = SequenceIncrementor.builder().entityId(1L).build();
+//        sequenceIncrementorDao.save(sequenceIncrementor);
+//        return sequenceIncrementor.getShipmentIncrementId().toString();
     }
 
     private String createShipmentSequence(ShipmentSettingsDetails shipmentSetting) {
@@ -2113,6 +2118,9 @@ public class ShipmentService implements IShipmentService {
             cloneShipmentDetails.setRoutingsList(null);
             cloneShipmentDetails.setShipmentId(null);
             cloneShipmentDetails.setMasterBill(null);
+            
+            if(Constants.TRANSPORT_MODE_SEA.equals(cloneShipmentDetails.getTransportMode()) && Constants.DIRECTION_EXP.equals(cloneShipmentDetails.getDirection()))
+                cloneShipmentDetails.setHouseBill(generateCustomHouseBL());
 
             CommonRequestModel requestModel = CommonRequestModel.buildRequest(cloneShipmentDetails);
             log.info("Shipment details cloning started for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
@@ -2183,6 +2191,46 @@ public class ShipmentService implements IShipmentService {
         } catch (Exception e){
             throw new RunnerException(e.getMessage());
         }
+    }
+
+    @Override
+    public ResponseEntity<?> generateCustomHouseBLNumber() {
+        try {
+            return ResponseHelper.buildSuccessResponse(generateCustomHouseBL());
+        } catch (Exception e) {
+            throw new RunnerException(e.getMessage());
+        }
+    }
+
+    private String generateCustomHouseBL() {
+        String res = null;
+        List<ShipmentSettingsDetails> shipmentSettingsDetailsList = shipmentSettingsDao.getSettingsByTenantIds(List.of(TenantContext.getCurrentTenant()));
+        ShipmentSettingsDetails tenantSetting = null;
+        if(shipmentSettingsDetailsList.get(0) != null)
+            tenantSetting = shipmentSettingsDetailsList.get(0);
+
+        if(tenantSetting.getRestrictHblGen() && tenantSetting.getCustomisedSequence()) {
+            // generate via Product Identifier Utility
+            // res = someMethod();
+        }
+
+        if(res == null || res.isEmpty()) {
+            res = tenantSetting.getHousebillPrefix();
+            switch(tenantSetting.getHousebillNumberGeneration()) {
+                case "Random" :
+                    res += StringUtility.getRandomString(10);
+                    break;
+                case "Serial" :
+                    String serialNumber = v1Service.getMaxShipmentId();
+//                    Long serialNumber = shipmentDao.findMaxId() + 1;
+                    res += serialNumber;
+                    break;
+                default : res = "";
+                    break;
+            }
+        }
+
+        return res;
     }
 
 }

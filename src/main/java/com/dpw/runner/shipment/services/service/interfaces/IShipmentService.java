@@ -36,4 +36,5 @@ public interface IShipmentService extends ICommonService {
     ResponseEntity<?> fullShipmentsList(CommonRequestModel commonRequestModel);
     ResponseEntity<?> assignShipmentContainers(CommonRequestModel commonRequestModel);
     ResponseEntity<?> retrieveByOrderId(String orderId);
+    ResponseEntity<?> generateCustomHouseBLNumber();
 }

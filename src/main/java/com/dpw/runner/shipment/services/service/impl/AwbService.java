@@ -501,6 +501,13 @@ public class AwbService implements IAwbService {
     }
 
     private Awb generateMawb(CreateAwbRequest request, ConsolidationDetails consolidationDetails) {
+
+        if(request.getIsReset() == null || request.getIsReset() == false) {
+            List<Awb> existingAwbs = awbDao.findByShipmentId(request.getShipmentId());
+            if(existingAwbs.size() > 0)
+                throw new RunnerException("MAWB already created for current Consolidation !");
+        }
+
         // validate the request
         AwbUtility.validateConsolidationInfoBeforeGeneratingAwb(consolidationDetails);
 
@@ -677,6 +684,13 @@ public class AwbService implements IAwbService {
     }
 
     private Awb generateAwb(CreateAwbRequest request) {
+
+        if(request.getIsReset() == null || request.getIsReset() == false) {
+            List<Awb> existingAwbs = awbDao.findByShipmentId(request.getShipmentId());
+            if(existingAwbs.size() > 0)
+                throw new RunnerException("AWB already created for current Shipment !");
+        }
+
         // fetch sehipment info
         ShipmentDetails shipmentDetails = shipmentDao.findById(request.getShipmentId()).get();
 
@@ -1024,6 +1038,7 @@ public class AwbService implements IAwbService {
                 .ConsolidationId(resetAwbRequest.getConsolidationId())
                 .ShipmentId(resetAwbRequest.getShipmentId())
                 .AwbType(resetAwbRequest.getAwbType())
+                .isReset(true)
                 .build();
         switch (resetAwbRequest.getResetType()) {
             case ALL: {

@@ -206,6 +206,9 @@ public class ShipmentDao implements IShipmentDao {
         }
     }
 
+    @Override
+    public Long findMaxId() { return shipmentRepository.findMaxId(); }
+
     public Set<String> applyShipmentValidations(ShipmentDetails request, ShipmentDetails oldEntity) {
         Set<String> errors = new LinkedHashSet<>();
 

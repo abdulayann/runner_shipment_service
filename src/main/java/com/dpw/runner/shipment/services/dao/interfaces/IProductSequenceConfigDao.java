@@ -1,8 +1,12 @@
 package com.dpw.runner.shipment.services.dao.interfaces;
 
 import com.dpw.runner.shipment.services.entity.ProductSequenceConfig;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface IProductSequenceConfigDao {
 
@@ -10,5 +14,6 @@ public interface IProductSequenceConfigDao {
     List<ProductSequenceConfig> saveAll(List<ProductSequenceConfig> productSequenceConfigList);
     List<ProductSequenceConfig> saveEntityFromSettings(List<ProductSequenceConfig> productSequenceConfigList, Long shipmentSettingsId);
     List<ProductSequenceConfig> updateEntityFromSettings(List<ProductSequenceConfig> productSequenceConfigList, Long shipmentSettingsId) throws Exception;
-
+    Page<ProductSequenceConfig> findAll(Specification<ProductSequenceConfig> spec, Pageable pageable);
+    Optional<ProductSequenceConfig> findById(Long id);
 }
