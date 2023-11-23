@@ -3,7 +3,6 @@ package com.dpw.runner.shipment.services.syncing.impl;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
-import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataSyncResponse;
 import com.dpw.runner.shipment.services.entity.CarrierDetails;
 import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
@@ -15,13 +14,12 @@ import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.syncing.Entity.*;
 import com.dpw.runner.shipment.services.syncing.constants.SyncingConstants;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
-import com.dpw.runner.shipment.services.utils.V1AuthHelper;
+import com.dpw.runner.shipment.services.utils.EmailServiceUtility;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataRetrievalFailureException;
-import org.springframework.http.HttpEntity;
 import org.springframework.http.ResponseEntity;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.scheduling.annotation.Async;
@@ -53,6 +51,10 @@ public class ShipmentSync implements IShipmentSync {
     IShipmentDao shipmentDao;
     @Autowired
     private IV1Service v1Service;
+
+    @Autowired
+    private EmailServiceUtility emailServiceUtility;
+
 
     private RetryTemplate retryTemplate = RetryTemplate.builder()
             .maxAttempts(3)
@@ -123,10 +125,18 @@ public class ShipmentSync implements IShipmentSync {
         String finalCs = jsonHelper.convertToJson(V1DataSyncRequest.builder().entity(cs).module(SyncingConstants.SHIPMENT).build());
         retryTemplate.execute(ctx -> {
             log.info("Current retry : {}", ctx.getRetryCount());
-            if(ctx.getLastThrowable() != null) {
-                log.error("V1 error -> {}",ctx.getLastThrowable().getMessage());
+            if (ctx.getLastThrowable() != null) {
+                log.error("V1 error -> {}", ctx.getLastThrowable().getMessage());
             }
             V1DataSyncResponse response_ = v1Service.v1DataSync(finalCs);
+            if (!response_.getIsSuccess()) {
+                try {
+                    emailServiceUtility.sendEmailForSyncEntity(String.valueOf(sd.getId()), String.valueOf(sd.getGuid()),
+                            "Shipment Sync", response_.getError().toString());
+                } catch (Exception ex) {
+                    log.error("Not able to send email for sync failure for Shipment Sync " + ex.getMessage());
+                }
+            }
             return ResponseHelper.buildSuccessResponse(response_);
         });
 

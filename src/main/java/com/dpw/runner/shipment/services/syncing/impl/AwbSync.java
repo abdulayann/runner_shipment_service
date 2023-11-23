@@ -2,7 +2,6 @@ package com.dpw.runner.shipment.services.syncing.impl;
 
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
-import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataSyncResponse;
 import com.dpw.runner.shipment.services.entity.Awb;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
@@ -13,12 +12,11 @@ import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.syncing.Entity.*;
 import com.dpw.runner.shipment.services.syncing.constants.SyncingConstants;
 import com.dpw.runner.shipment.services.syncing.interfaces.IAwbSync;
-import com.dpw.runner.shipment.services.utils.V1AuthHelper;
+import com.dpw.runner.shipment.services.utils.EmailServiceUtility;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpEntity;
 import org.springframework.http.ResponseEntity;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.scheduling.annotation.Async;
@@ -51,6 +49,9 @@ public class AwbSync implements IAwbSync {
     @Autowired
     private IV1Service v1Service;
 
+    @Autowired
+    private EmailServiceUtility emailServiceUtility;
+
     private RetryTemplate retryTemplate = RetryTemplate.builder()
             .maxAttempts(3)
             .fixedBackoff(1000)
@@ -76,10 +77,18 @@ public class AwbSync implements IAwbSync {
         String finalHbl = jsonHelper.convertToJson(V1DataSyncRequest.builder().entity(awbRequest).module(SyncingConstants.AWB).build());
         retryTemplate.execute(ctx -> {
             log.info("Current retry : {}", ctx.getRetryCount());
-            if(ctx.getLastThrowable() != null) {
-                log.error("V1 error -> {}",ctx.getLastThrowable().getMessage());
+            if (ctx.getLastThrowable() != null) {
+                log.error("V1 error -> {}", ctx.getLastThrowable().getMessage());
             }
             V1DataSyncResponse response = v1Service.v1DataSync(finalHbl);
+            if (!response.getIsSuccess()) {
+                try {
+                    emailServiceUtility.sendEmailForSyncEntity(String.valueOf(awb.getId()), String.valueOf(awb.getGuid()),
+                            "Awb", response.getError().toString());
+                } catch (Exception ex) {
+                    log.error("Not able to send email for sync failure for AWB: " + ex.getMessage());
+                }
+            }
             return ResponseHelper.buildSuccessResponse(response);
         });
         return ResponseHelper.buildSuccessResponse(modelMapper.map(finalHbl, HblDataRequestV2.class));
