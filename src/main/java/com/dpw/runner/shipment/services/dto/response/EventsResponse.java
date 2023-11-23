@@ -27,4 +27,8 @@ public class EventsResponse implements IRunnerResponse {
     private String longitude;
     private String source;
     private String event_estimate_update_reasons;
+
+    // Conditional response from TrackingEvents
+    private String containerNumber;
+    private String awbNumber;
 }
