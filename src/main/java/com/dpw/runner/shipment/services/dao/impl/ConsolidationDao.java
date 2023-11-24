@@ -306,12 +306,12 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
         if (!isCarrierExist)
             consolidationRequest.setCarrierDetails(correspondingCarrier);
 
-        if (consolidationRequest.getShipmentType() == "IMP") {
+        if (consolidationRequest.getShipmentType().equals(Constants.IMP)) {
             return;
         }
 
         if (isMAWBNumberExist)
-            if (mawbStocksLink.getStatus() == "Consumed" && mawbStocksLink.getEntityId() != consolidationRequest.getId()) // If MasterBill number is already Consumed.
+            if (mawbStocksLink.getStatus().equals("Consumed") && !mawbStocksLink.getEntityId().equals(consolidationRequest.getId())) // If MasterBill number is already Consumed.
                 throw new ValidationException("The MAWB number entered is already consumed. Please enter another MAWB number.");
 
             else
