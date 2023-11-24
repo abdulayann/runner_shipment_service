@@ -15,4 +15,6 @@ public interface IHblService extends ICommonService {
     ResponseEntity<?> resetHbl(CommonRequestModel buildRequest);
     ResponseEntity<?> saveV1Hbl(CommonRequestModel commonRequestModel) throws Exception;
     void checkAllContainerAssigned(Long shipmentId, List<Containers> containersList, List<Packing> packings);
+    ResponseEntity<?> partialUpdateHBL(CommonRequestModel commonRequestModel);
+
 }

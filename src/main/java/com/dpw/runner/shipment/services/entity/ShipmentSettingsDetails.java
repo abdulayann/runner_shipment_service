@@ -419,6 +419,18 @@ public class ShipmentSettingsDetails extends MultiTenancy {
     @Column(name = "unico_bl_object")
     private Boolean unicoBlObject;
 
+    @Column(name = "restrict_bl_edit")
+    private Boolean restrictBLEdit;
+
+    @Column(name = "restrict_awb_edit")
+    private Boolean restrictAWBEdit;
+
+    @Column(name = "auto_update_shipment_awb")
+    private Boolean autoUpdateShipmentAWB;
+
+    @Column(name = "auto_update_shipment_bl")
+    private Boolean autoUpdateShipmentBL;
+
     @OneToOne(targetEntity = HblLockSettings.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "hbl_lock_settings_id", referencedColumnName = "id")
     private HblLockSettings hblLockSettings;

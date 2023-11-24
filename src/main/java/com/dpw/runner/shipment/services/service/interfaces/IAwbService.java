@@ -17,4 +17,6 @@ public interface IAwbService {
     ResponseEntity<?> customAwbRetrieve(List<String> awbNumber, String issuingAgentName);
 
     ResponseEntity<?> reset(CommonRequestModel commonRequestModel);
+    ResponseEntity<?> partialAutoUpdateAwb(CommonRequestModel commonRequestModel);
+    ResponseEntity<?> partialAutoUpdateMawb(CommonRequestModel commonRequestModel);
 }

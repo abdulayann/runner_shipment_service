@@ -24,6 +24,7 @@ import com.dpw.runner.shipment.services.dto.request.hbl.HblContainerDto;
 import com.dpw.runner.shipment.services.dto.request.hbl.HblDataDto;
 import com.dpw.runner.shipment.services.dto.response.HblResponse;
 import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entity.enums.HblReset;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
@@ -256,6 +257,49 @@ public class HblService implements IHblService {
 
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(hbl));
     }
+    @Override
+    public ResponseEntity<?> partialUpdateHBL(CommonRequestModel commonRequestModel) {
+        HblGenerateRequest request = (HblGenerateRequest) commonRequestModel.getData();
+        Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(request.getShipmentId());
+        if (shipmentDetails.isEmpty())
+            throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+
+        List<Hbl> hbls = hblDao.findByShipmentId(request.getShipmentId());
+        if (hbls.isEmpty())
+            throw new ValidationException(String.format(HblConstants.HBL_NO_DATA_FOUND_SHIPMENT, shipmentDetails.get().getShipmentId()));
+
+        Hbl hbl = hbls.get(0);
+        List<ShipmentSettingsDetails> shipmentSettingsDetailsList = shipmentSettingsDao.getSettingsByTenantIds(List.of(TenantContext.getCurrentTenant()));
+        if(shipmentSettingsDetailsList.isEmpty()){
+            log.error("Failed to fetch Shipment Settings Details");
+            throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+        }
+        ShipmentSettingsDetails shipmentSettingsDetails = shipmentSettingsDetailsList.get(0);
+        if(shipmentSettingsDetails.getRestrictBLEdit()) {
+            HblResetRequest resetRequest = HblResetRequest.builder().id(hbl.getId()).resetType(HblReset.ALL).build();
+            return resetHbl(CommonRequestModel.buildRequest(resetRequest));
+        } else if (shipmentSettingsDetails.getAutoUpdateShipmentBL()){
+            updateHblFromShipment(shipmentDetails.get(), hbl, shipmentSettingsDetails);
+            hbl = hblDao.save(hbl);
+        }
+
+        try {
+            hblSync.sync(hbl);
+        }
+        catch (Exception e) {
+            log.error("Error performing sync on hbl entity, {}", e);
+        }
+
+        return ResponseHelper.buildSuccessResponse(convertEntityToDto(hbl));
+    }
+
+    private void updateHblFromShipment(ShipmentDetails shipmentDetails, Hbl hbl, ShipmentSettingsDetails shipmentSettingsDetails) {
+        updateShipmentToHBL(shipmentDetails, hbl, shipmentSettingsDetails.getHblLockSettings());
+        updateShipmentCargoToHBL(shipmentDetails.getPackingList(), hbl, shipmentSettingsDetails.getHblLockSettings());
+        updateShipmentContainersToHBL(shipmentDetails.getContainersList(), hbl, shipmentSettingsDetails.getHblLockSettings());
+        updateShipmentPartiesToHBL(shipmentDetails.getAdditionalDetails() != null ? shipmentDetails.getAdditionalDetails().getNotifyParty() : null, hbl, shipmentSettingsDetails.getHblLockSettings());
+
+    }
 
     @Override
     public ResponseEntity<?> retrieveByShipmentId(CommonRequestModel request) {
@@ -446,6 +490,7 @@ public class HblService implements IHblService {
         List<HblContainerDto> hblContainers = new ArrayList<>();
         containers.forEach(container -> {
             HblContainerDto hblContainer = HblContainerDto.builder().build();
+            hblContainer.setGuid(container.getGuid());
             hblContainer.setCarrierSealNumber(container.getCarrierSealNumber());
             hblContainer.setSealNumber(container.getSealNumber());
             hblContainer.setNoOfPackages(container.getNoOfPackages());
@@ -470,6 +515,7 @@ public class HblService implements IHblService {
         List<HblCargoDto> hblCargoes = new ArrayList<>();
         packings.forEach(pack -> {
             HblCargoDto cargo = HblCargoDto.builder().build();
+            cargo.setGuid(pack.getGuid());
             cargo.setBlContainerContainerNumber(pack.getContainerNumber());
             cargo.setCargoDesc(pack.getGoodsDescription());
             cargo.setCargoGrossVolume(pack.getVolume());
@@ -491,6 +537,7 @@ public class HblService implements IHblService {
         List<HblPartyDto> hblParties = new ArrayList<>();
         HblPartyDto hblParty = HblPartyDto.builder().build();
         if (party != null) {
+            hblParty.setIsShipmentCreated(true);
             hblParty.setName(StringUtility.convertToString(party.getOrgData().get(PartiesConstants.FULLNAME)));
             hblParty.setAddress(constructAddress(party.getAddressData()));
             hblParty.setEmail(StringUtility.convertToString(party.getOrgData().get(PartiesConstants.EMAIL)));
@@ -540,6 +587,249 @@ public class HblService implements IHblService {
             throw new RuntimeException(e);
         }
         
+    }
+    private void updateShipmentToHBL(ShipmentDetails shipmentDetail, Hbl hbl, HblLockSettings hblLock) {
+        HblDataDto hblData = hbl.getHblData();
+
+        if(shipmentDetail.getConsigner() != null) {
+            if(!hblLock.getConsignorNameLock())
+                hblData.setConsignorName(StringUtility.convertToString(shipmentDetail.getConsigner().getOrgData().get(PartiesConstants.FULLNAME)) );
+            if(!hblLock.getConsignorAddressLock())
+                hblData.setConsignorAddress(constructAddress(shipmentDetail.getConsigner().getAddressData()));
+        }
+        if(shipmentDetail.getConsignee() != null) {
+            if(!hblLock.getConsigneeNameLock())
+                hblData.setConsigneeName(StringUtility.convertToString(shipmentDetail.getConsignee().getOrgData().get(PartiesConstants.FULLNAME)));
+            if(!hblLock.getConsigneeAddressLock())
+                hblData.setConsigneeAddress(constructAddress(shipmentDetail.getConsignee().getAddressData()));
+        }
+//        hblData.setOriginOfGoods(shipmentDetail.goo); : Missing in shipments
+        AdditionalDetails additionalDetails = shipmentDetail.getAdditionalDetails() != null ? shipmentDetail.getAdditionalDetails() : new AdditionalDetails();
+        CarrierDetails carrierDetails = shipmentDetail.getCarrierDetails() != null ? shipmentDetail.getCarrierDetails() : new CarrierDetails();
+
+        if(!hblLock.getPlaceOfReceiptLock())
+            hblData.setPlaceOfReceipt(StringUtility.convertToString(additionalDetails.getPlaceOfSupply()));
+        if(!hblLock.getPortOfLoadLock())
+            hblData.setPortOfLoad(carrierDetails.getOrigin());
+        if(!hblLock.getPortOfDischargeLock())
+            hblData.setPortOfDischarge(carrierDetails.getDestination());
+//        hblData.setPlaceOfDelivery(StringUtility.convertToString(additionalDetails.getDe));
+        if(!hblLock.getCargoDescriptionLock())
+            hblData.setCargoDescription(shipmentDetail.getGoodsDescription());
+        if(!hblLock.getMarksAndNumbersLock())
+            hblData.setMarksAndNumbers(shipmentDetail.getMarksNum());
+        if(!hblLock.getPackageCountLock())
+            hblData.setPackageCount(shipmentDetail.getNoOfPacks());
+        if(!hblLock.getPackageTypeLock())
+            hblData.setPackageType(shipmentDetail.getPacksUnit());
+        if(!hblLock.getBlReferenceNumberLock())
+            hblData.setBlReferenceNumber(shipmentDetail.getBookingReference());
+        if(!hblLock.getCargoNetWeightLock())
+            hblData.setCargoNetWeight(shipmentDetail.getNetWeight());
+        if(!hblLock.getCargoGrossWeightLock())
+            hblData.setCargoGrossWeight(shipmentDetail.getWeight());
+        if(!hblLock.getCargoGrossVolumeLock())
+            hblData.setCargoGrossVolume(shipmentDetail.getVolume());
+        if(!hblLock.getCargoNetWeightUnitLock())
+            hblData.setCargoNetWeightUnit(shipmentDetail.getNetWeightUnit());
+        if(!hblLock.getCargoGrossWeightUnitLock())
+            hblData.setCargoGrossWeightUnit(shipmentDetail.getWeightUnit());
+        if(!hblLock.getCargoGrossVolumeUnitLock())
+            hblData.setCargoGrossVolumeUnit(shipmentDetail.getVolumeUnit());
+        if(!hblLock.getHouseBillLock())
+            hblData.setHouseBill(shipmentDetail.getHouseBill());
+        if(!hblLock.getVesselNameLock())
+            hblData.setVesselName(carrierDetails.getVessel());
+
+        // TODO: This needs to re-visit after incorporating this setting in service
+        if (/*Unico HBL*/true) {
+            if(!hblLock.getTransportTypeLock())
+                hblData.setTransportType(shipmentDetail.getTransportMode());
+            if(!hblLock.getShipmentTypeLock())
+                hblData.setShipmentType(shipmentDetail.getDirection());
+            if(!hblLock.getShippingTime())
+                hblData.setShippingTime(carrierDetails.getEtd() == null ? null : carrierDetails.getEtd().toLocalTime().toString());
+            if(!hblLock.getEtd())
+                hblData.setEtd(carrierDetails.getEtd());
+            if(!hblLock.getIncoTerms())
+                hblData.setIncoTerms(shipmentDetail.getIncoterms());
+//            hblData.setIncoTermPlace(shipmentDetail.incotermsDesctiption);
+            if(!hblLock.getFinalDestination())
+                hblData.setFinalDestination(carrierDetails.getDestination());
+            if(!hblLock.getQuantity())
+                hblData.setQuantity(shipmentDetail.getInnerPacks());
+            if(!hblLock.getQuantityCode())
+                hblData.setQuantityCode(shipmentDetail.getInnerPackUnit());
+            if(shipmentDetail.getElDetailsList() != null) {
+                if(!hblLock.getElNumber())
+                    hblData.setElNumber(String.join(",",
+                        shipmentDetail.getElDetailsList().stream().map(c -> c.getElNumber()).collect(Collectors.toList())));
+                if(!hblLock.getElDate())
+                    hblData.setElDate(String.join(",",
+                        shipmentDetail.getElDetailsList().stream().map(c -> c.getCreatedAt().toString()).collect(Collectors.toList())));
+            }
+            if(shipmentDetail.getReferenceNumbersList() != null) {
+                if(!hblLock.getInvoiceNumbers())
+                    hblData.setInvoiceNumbers(String.join(",",
+                        shipmentDetail.getReferenceNumbersList().stream().filter(c -> c.getType() == Constants.INVNO)
+                                .map(c -> c.getReferenceNumber()).collect(Collectors.toList())));
+                if(!hblLock.getLcNumber())
+                    hblData.setLcNumber(String.join(",",
+                        shipmentDetail.getReferenceNumbersList().stream().filter(c -> c.getType() == Constants.CON)
+                                .map(c -> c.getReferenceNumber()).collect(Collectors.toList())));
+            }
+
+        }
+
+    }
+    private void updateShipmentCargoToHBL(List<Packing> packings, Hbl hbl, HblLockSettings hblLock) {
+        Map<UUID, Packing> packMap = new HashMap<>();
+        packings.forEach(pack -> {
+            packMap.put(pack.getGuid(), pack);
+        });
+        List<HblCargoDto> deletedList = new ArrayList<>();
+        hbl.getHblCargo().forEach(cargo -> {
+            if(packMap.containsKey(cargo.getGuid())){
+                updateShipmentCargoFieldToHbl(packMap.get(cargo.getGuid()), cargo, hblLock);
+                packMap.remove(cargo.getGuid());
+            }else {
+                deletedList.add(cargo);
+            }
+        });
+        hbl.getHblCargo().removeAll(deletedList);
+
+        packMap.forEach((guid, pack) -> {
+            HblCargoDto cargo = HblCargoDto.builder().build();
+            cargo.setGuid(pack.getGuid());
+            cargo.setBlContainerContainerNumber(pack.getContainerNumber());
+            cargo.setCargoDesc(pack.getGoodsDescription());
+            cargo.setCargoGrossVolume(pack.getVolume());
+            cargo.setCargoGrossVolumeUnit(pack.getVolumeUnit());
+            cargo.setCargoGrossWeight(pack.getWeight());
+            cargo.setCargoGrossWeightUnit(pack.getWeightUnit());
+            cargo.setHsCode(pack.getHSCode());
+            cargo.setHazmatDetails(pack.getHazardous());
+            cargo.setMarksAndNumbers(pack.getMarksnNums());
+            cargo.setPackageCount(Integer.parseInt(pack.getPacks() == null ? "0" : pack.getPacks()));
+            cargo.setPackageType(pack.getPacksType());
+            hbl.getHblCargo().add(cargo);
+        });
+    }
+
+    private void updateShipmentCargoFieldToHbl(Packing pack, HblCargoDto cargo, HblLockSettings hblLock) {
+        if(!hblLock.getBlContainerIdLock())
+            cargo.setBlContainerContainerNumber(pack.getContainerNumber());
+        if(!hblLock.getCargoDescriptionLock())
+            cargo.setCargoDesc(pack.getGoodsDescription());
+        if(!hblLock.getCargoGrossVolumeLock())
+            cargo.setCargoGrossVolume(pack.getVolume());
+        if(!hblLock.getCargoGrossVolumeUnitLock())
+            cargo.setCargoGrossVolumeUnit(pack.getVolumeUnit());
+        if(!hblLock.getCargoGrossWeightLock())
+            cargo.setCargoGrossWeight(pack.getWeight());
+        if(!hblLock.getCargoGrossWeightUnitLock())
+            cargo.setCargoGrossWeightUnit(pack.getWeightUnit());
+        if(!hblLock.getHsCodeLock())
+            cargo.setHsCode(pack.getHSCode());
+        if(!hblLock.getHazmatDetailsLock())
+            cargo.setHazmatDetails(pack.getHazardous());
+        if(!hblLock.getMarksAndNumbersLock())
+            cargo.setMarksAndNumbers(pack.getMarksnNums());
+        if(!hblLock.getPackageCountLock())
+            cargo.setPackageCount(Integer.parseInt(pack.getPacks() == null ? "0" : pack.getPacks()));
+        if(!hblLock.getPackageTypeLock())
+            cargo.setPackageType(pack.getPacksType());
+    }
+    private void updateShipmentContainersToHBL(List<Containers> containers, Hbl hbl, HblLockSettings hblLock) {
+        Map<UUID, Containers> contMap = new HashMap<>();
+        containers.forEach(cont -> {
+            contMap.put(cont.getGuid(), cont);
+        });
+        List<HblContainerDto> deletedList = new ArrayList<>();
+        hbl.getHblContainer().forEach(hblCont -> {
+            if(contMap.containsKey(hblCont.getGuid())){
+                updateShipmentContainersToHBL(contMap.get(hblCont.getGuid()), hblCont, hblLock);
+                contMap.remove(hblCont.getGuid());
+            }else {
+                deletedList.add(hblCont);
+            }
+        });
+        hbl.getHblContainer().removeAll(deletedList);
+
+        if(!contMap.isEmpty()) {
+            contMap.forEach((guid, container) -> {
+                HblContainerDto hblContainer = HblContainerDto.builder().build();
+                hblContainer.setGuid(container.getGuid());
+                hblContainer.setCarrierSealNumber(container.getCarrierSealNumber());
+                hblContainer.setSealNumber(container.getSealNumber());
+                hblContainer.setNoOfPackages(container.getNoOfPackages());
+                hblContainer.setContainerGrossVolume(container.getGrossVolume());
+                hblContainer.setContainerGrossVolumeUnit(container.getGrossVolumeUnit());
+                hblContainer.setContainerGrossWeight(container.getGrossWeight());
+                hblContainer.setContainerGrossWeightUnit(container.getGrossWeightUnit());
+                hblContainer.setContainerNumber(container.getContainerNumber());
+                hblContainer.setContainerType(container.getContainerCode());
+                hblContainer.setShipperSealNumber(container.getShipperSealNumber());
+                hblContainer.setCustomsSealNumber(container.getCustomsSealNumber());
+                hblContainer.setContainerDesc(container.getDescriptionOfGoods());
+                hblContainer.setQuantity(container.getContainerCount());
+                hbl.getHblContainer().add(hblContainer);
+            });
+        }
+
+    }
+    private void updateShipmentContainersToHBL(Containers container, HblContainerDto hblContainer, HblLockSettings hblLock) {
+        if(!hblLock.getCarrierSealNumberLock())
+            hblContainer.setCarrierSealNumber(container.getCarrierSealNumber());
+        if(!hblLock.getContainerGrossVolumeLock())
+            hblContainer.setContainerGrossVolume(container.getGrossVolume());
+        if(!hblLock.getContainerGrossVolumeUnitLock())
+            hblContainer.setContainerGrossVolumeUnit(container.getGrossVolumeUnit());
+        if(!hblLock.getContainerGrossWeightLock())
+            hblContainer.setContainerGrossWeight(container.getGrossWeight());
+        if(!hblLock.getContainerGrossWeightUnitLock())
+            hblContainer.setContainerGrossWeightUnit(container.getGrossWeightUnit());
+        if(!hblLock.getContainerNumberLock())
+            hblContainer.setContainerNumber(container.getContainerNumber());
+        if(!hblLock.getContainerTypeLock())
+            hblContainer.setContainerType(container.getContainerCode());
+        if(!hblLock.getShipperSealNumberLock())
+            hblContainer.setShipperSealNumber(container.getShipperSealNumber());
+        if(!hblLock.getContainerDescLock())
+            hblContainer.setContainerDesc(container.getDescriptionOfGoods());
+        if(!hblLock.getQuantity())
+            hblContainer.setQuantity(container.getContainerCount());
+    }
+
+    private void updateShipmentPartiesToHBL(Parties party, Hbl hbl, HblLockSettings hblLock) {
+        boolean createNotifyParty = true;
+        HblPartyDto deleteParty = new HblPartyDto();
+        for(var hblParty: hbl.getHblNotifyParty()){
+            if(hblParty.getIsShipmentCreated() != null && hblParty.getIsShipmentCreated()){
+                createNotifyParty = false;
+                if(party != null){
+                    if(!hblLock.getNotifyPartyNameLock())
+                        hblParty.setName(StringUtility.convertToString(party.getOrgData().get(PartiesConstants.FULLNAME)));
+                    if(!hblLock.getNotifyPartyAddressLock())
+                        hblParty.setAddress(constructAddress(party.getAddressData()));
+                    if(!hblLock.getNotifyPartyEmailLock())
+                        hblParty.setEmail(StringUtility.convertToString(party.getOrgData().get(PartiesConstants.EMAIL)));
+                } else {
+                    deleteParty = hblParty;
+                }
+            }
+        }
+        hbl.getHblNotifyParty().remove(deleteParty);
+
+        HblPartyDto hblParty = HblPartyDto.builder().build();
+        if (party != null && createNotifyParty) {
+            hblParty.setIsShipmentCreated(true);
+            hblParty.setName(StringUtility.convertToString(party.getOrgData().get(PartiesConstants.FULLNAME)));
+            hblParty.setAddress(constructAddress(party.getAddressData()));
+            hblParty.setEmail(StringUtility.convertToString(party.getOrgData().get(PartiesConstants.EMAIL)));
+            hbl.getHblNotifyParty().add(hblParty);
+        }
+
     }
     
 }

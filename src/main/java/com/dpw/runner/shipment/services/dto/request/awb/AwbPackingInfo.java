@@ -13,6 +13,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 public class AwbPackingInfo {
+    private UUID guid;
     private Integer dgGoodsId;
     private Integer dgSubstanceId;
     private String packs;
@@ -39,7 +40,7 @@ public class AwbPackingInfo {
     private Boolean isTemperatureControlled;
     private BigDecimal minTemp;
     private String minTempUnit;
-    private String maxTemp;
+    private BigDecimal maxTemp;
     private String maxTempUnit;
     private String hsCode;
     private String countryCode;

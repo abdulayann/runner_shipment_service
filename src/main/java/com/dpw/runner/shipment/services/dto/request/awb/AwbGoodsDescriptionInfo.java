@@ -28,5 +28,6 @@ public class AwbGoodsDescriptionInfo {
     private String hsCode;
     private UUID guid;
     private List<AwbPackingInfo> awbPackingInfo;
+    private Boolean isShipmentCreated;
 
 }
