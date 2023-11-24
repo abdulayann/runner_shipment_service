@@ -31,6 +31,7 @@ import com.dpw.runner.shipment.services.service.interfaces.IReportService;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
+import com.google.common.base.Strings;
 import com.itextpdf.text.DocumentException;
 import com.itextpdf.text.Image;
 import com.itextpdf.text.Rectangle;
@@ -547,8 +548,12 @@ public class ReportService implements IReportService {
                     tenant = shipmentSettingsDetails;
                 }
             }
-            return GetTemplateId(tenant, admin, key, hblType, objectType,
+            DocPages page = GetTemplateId(tenant, admin, key, hblType, objectType,
                     printType, frontTemplateCode, backTemplateCode, isOriginalPrinted, transportMode, multiTemplateCode);
+            if(Strings.isNullOrEmpty(page.getFirstPageId()) && Strings.isNullOrEmpty(page.getMainPageId()) && Strings.isNullOrEmpty(page.getBackPrintId())){
+                throw new ValidationException("Please upload template in branch settings for: "+ key);
+            }
+            return page;
 
         }
         return null;
