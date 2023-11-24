@@ -174,7 +174,7 @@ public abstract class IReport {
         UnlocationsResponse pol = null, pod = null, origin = null, destination = null, paidPlace = null, placeOfIssue = null, placeOfSupply = null;
 
         List<Object> criteria = Arrays.asList(
-                Arrays.asList("LocCode"),
+                Arrays.asList("LocationsReferenceGUID"),
                 "=",
                 shipment.getCarrierDetails().getOriginPort()
         );
@@ -185,7 +185,7 @@ public abstract class IReport {
             pol = unlocationsResponse.get(0);
 
         criteria = Arrays.asList(
-                Arrays.asList("LocCode"),
+                Arrays.asList("LocationsReferenceGUID"),
                 "=",
                 shipment.getCarrierDetails().getDestinationPort()
         );
@@ -196,7 +196,7 @@ public abstract class IReport {
             pod = unlocationsResponse.get(0);
 
         criteria = Arrays.asList(
-                Arrays.asList("LocCode"),
+                Arrays.asList("LocationsReferenceGUID"),
                 "=",
                 shipment.getCarrierDetails().getOrigin()
         );
@@ -207,7 +207,7 @@ public abstract class IReport {
             origin = unlocationsResponse.get(0);
 
         criteria = Arrays.asList(
-                Arrays.asList("LocCode"),
+                Arrays.asList("LocationsReferenceGUID"),
                 "=",
                 shipment.getCarrierDetails().getDestination()
         );
@@ -218,7 +218,7 @@ public abstract class IReport {
             destination = unlocationsResponse.get(0);
 
         criteria = Arrays.asList(
-                Arrays.asList("LocCode"),
+                Arrays.asList("LocationsReferenceGUID"),
                 "=",
                 additionalDetails.getPaidPlace()
         );
@@ -229,7 +229,7 @@ public abstract class IReport {
             paidPlace = unlocationsResponse.get(0);
 
         criteria = Arrays.asList(
-                Arrays.asList("LocCode"),
+                Arrays.asList("LocationsReferenceGUID"),
                 "=",
                 additionalDetails.getPlaceOfIssue()
         );
@@ -240,7 +240,7 @@ public abstract class IReport {
             placeOfIssue = unlocationsResponse.get(0);
 
         criteria = Arrays.asList(
-                Arrays.asList("LocCode"),
+                Arrays.asList("LocationsReferenceGUID"),
                 "=",
                 additionalDetails.getPlaceOfSupply()
         );
@@ -487,7 +487,7 @@ public abstract class IReport {
         UnlocationsResponse lastForeignPort = null;
         if (arrivalDetails != null) {
             List<Object> criteria = Arrays.asList(
-                    Arrays.asList("LocCode"),
+                    Arrays.asList("LocationsReferenceGUID"),
                     "=",
                     arrivalDetails.getLastForeignPort()
             );
@@ -893,7 +893,7 @@ public abstract class IReport {
         if(UNLocCode == null || UNLocCode.isEmpty())
             return null;
         List <Object> criteria = Arrays.asList(
-                Arrays.asList("LocCode"),
+                Arrays.asList("LocationsReferenceGUID"),
                 "=",
                 UNLocCode
         );

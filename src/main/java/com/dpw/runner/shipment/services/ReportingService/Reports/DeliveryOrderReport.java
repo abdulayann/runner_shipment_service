@@ -48,7 +48,7 @@ public class DeliveryOrderReport extends IReport{
             if(StringUtility.isNotEmpty(deliveryOrderModel.consolidationDetails.getPlaceOfIssue()))
             {
                 List<Object> criteria = Arrays.asList(
-                        Arrays.asList("LocCode"),
+                        Arrays.asList("LocationsReferenceGUID"),
                         "=",
                         deliveryOrderModel.consolidationDetails.getPlaceOfIssue()
                 );
