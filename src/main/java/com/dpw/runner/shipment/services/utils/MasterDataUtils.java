@@ -1159,7 +1159,7 @@ public class MasterDataUtils{
             CommonV1ListRequest request = new CommonV1ListRequest();
             List<Object> field = new ArrayList<>(List.of(EntityTransferConstants.ID));
             String operator = Operators.IN.getValue();
-            List<Object> criteria = new ArrayList<>(List.of(field, operator, List.of(request)));
+            List<Object> criteria = new ArrayList<>(List.of(field, operator, List.of(requests)));
             request.setCriteriaRequests(criteria);
             V1DataResponse response = v1Service.fetchWarehouseData(request);
             List<WareHouseResponse> wareHousesList = commonUtils.convertToList((List<?>) response.entities, WareHouseResponse.class);
