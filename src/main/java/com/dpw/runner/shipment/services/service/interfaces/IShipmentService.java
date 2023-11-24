@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.service.interfaces;
 
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
+import com.dpw.runner.shipment.services.dto.request.CustomerBookingRequest;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import org.springframework.http.ResponseEntity;
 
@@ -34,6 +35,7 @@ public interface IShipmentService extends ICommonService {
     ResponseEntity<?> containerListForTI(CommonRequestModel commonRequestModel);
     void afterSave(ShipmentDetails shipmentDetails, boolean isCreate);
     ResponseEntity<?> fullShipmentsList(CommonRequestModel commonRequestModel);
+    ResponseEntity<?> createShipmentInV2(CustomerBookingRequest customerBookingRequest) throws Exception;
     ResponseEntity<?> assignShipmentContainers(CommonRequestModel commonRequestModel);
     ResponseEntity<?> retrieveByOrderId(String orderId);
     ResponseEntity<?> generateCustomHouseBLNumber();

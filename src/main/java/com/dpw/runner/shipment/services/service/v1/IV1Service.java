@@ -7,8 +7,10 @@ import com.dpw.runner.shipment.services.entity.CustomerBooking;
 import com.dpw.runner.shipment.services.entitytransfer.dto.response.CheckTaskExistResponse;
 import org.springframework.http.ResponseEntity;
 
+import java.util.UUID;
+
 public interface IV1Service {
-    ResponseEntity<?> createBooking(CustomerBooking customerBooking);
+    ResponseEntity<?> createBooking(CustomerBooking customerBooking, boolean isShipmentEnabled, boolean isBillingEnabled, UUID shipmentGuid);
     ResponseEntity<?> updateOrgCreditLimitFromBooking(CheckCreditLimitResponse request);
 
     V1DataResponse fetchMasterData(Object request);

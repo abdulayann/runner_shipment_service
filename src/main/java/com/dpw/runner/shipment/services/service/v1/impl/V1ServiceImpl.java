@@ -30,6 +30,8 @@ import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.UUID;
+
 import static com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil.createBookingRequestForV1;
 
 @Service
@@ -286,10 +288,10 @@ public class V1ServiceImpl implements IV1Service {
     }
 
     @Override
-    public ResponseEntity<?> createBooking(CustomerBooking customerBooking) {
+    public ResponseEntity<?> createBooking(CustomerBooking customerBooking, boolean isShipmentEnabled, boolean isBillingEnabled, UUID shipmentGuid) {
         try {
             long time = System.currentTimeMillis();
-            var request = createBookingRequestForV1(customerBooking);
+            var request = createBookingRequestForV1(customerBooking, isShipmentEnabled, isBillingEnabled, shipmentGuid);
             HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
             log.info("Payload sent for event: {} with request payload: {}", IntegrationType.V1_SHIPMENT_CREATION, jsonHelper.convertToJson(request));
             return this.restTemplate.postForEntity(this.CUSTOMER_BOOKING_URL, entity, V1ShipmentCreationResponse.class, new Object[0]);

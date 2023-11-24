@@ -872,6 +872,72 @@ public class ShipmentService implements IShipmentService {
     }
     @Override
     @Transactional
+    public ResponseEntity<?> createShipmentInV2(CustomerBookingRequest customerBookingRequest) throws Exception
+    {
+        ConsolidationDetailsRequest consolidationDetailsRequest = ConsolidationDetailsRequest.builder().
+                        carrierDetails(customerBookingRequest.getCarrierDetails()).
+                        consolidationType("STD").
+                        transportMode(customerBookingRequest.getTransportType()).
+                        containerCategory(customerBookingRequest.getCargoType()).
+                        shipmentType(customerBookingRequest.getDirection()).
+                        referenceNumber(customerBookingRequest.getBookingNumber()).
+                        departureDetails(ArrivalDepartureDetailsRequest.builder().
+                                firstForeignPort(customerBookingRequest.getCarrierDetails().getOrigin()).
+                                lastForeignPort(customerBookingRequest.getCarrierDetails().getOrigin()).
+                                type("Departure").
+                                build()
+                        ).
+                        arrivalDetails(ArrivalDepartureDetailsRequest.builder().
+                                firstForeignPort(customerBookingRequest.getCarrierDetails().getDestination()).
+                                lastForeignPort(customerBookingRequest.getCarrierDetails().getDestination()).
+                                type("Arrival").
+                                build()
+                        ).
+                        containersList(customerBookingRequest.getContainersList()).
+                        build();
+
+        consolidationService.create(CommonRequestModel.buildRequest(consolidationDetailsRequest));
+
+        ShipmentRequest shipmentRequest = ShipmentRequest.builder().
+                carrierDetails(customerBookingRequest.getCarrierDetails()).
+                contractId(customerBookingRequest.getContractId()).
+                contractType(customerBookingRequest.getContractStatus()).
+                noOfPacks(customerBookingRequest.getQuantity()).
+                packsUnit(customerBookingRequest.getQuantityUnit()).
+                weight(customerBookingRequest.getGrossWeight()).
+                weightUnit(customerBookingRequest.getGrossWeightUnit()).
+                volume(customerBookingRequest.getVolume()).
+                volumeUnit(customerBookingRequest.getVolumeUnit()).
+                volumetricWeight(customerBookingRequest.getWeightVolume()).
+                volumetricWeightUnit(customerBookingRequest.getWeightVolumeUnit()).
+                bookingReference(customerBookingRequest.getBookingNumber()).
+                shipmentCreatedOn(customerBookingRequest.getBookingDate()).
+                client(customerBookingRequest.getCustomer()).
+                consignee(customerBookingRequest.getConsignee()).
+                consigner(customerBookingRequest.getConsignor()).
+                additionalDetails(AdditionalDetailRequest.builder().
+                        notifyParty(customerBookingRequest.getNotifyParty()).
+                        build()
+                ).
+                shipmentType(customerBookingRequest.getCargoType()).
+                transportMode(customerBookingRequest.getTransportType()).
+                direction(customerBookingRequest.getDirection()).
+                jobType("STD").
+                incoterms(customerBookingRequest.getIncoTerms()).
+                serviceType(customerBookingRequest.getServiceMode()).
+                status(1).
+                fmcTlcId(customerBookingRequest.getFmcTlcId()).
+                containersList(customerBookingRequest.getContainersList()).
+                packingList(customerBookingRequest.getPackingList()).
+                fileRepoList(customerBookingRequest.getFileRepoList()).
+                routingsList(customerBookingRequest.getRoutingList()).
+                build();
+
+        return this.create(CommonRequestModel.buildRequest(shipmentRequest));
+    }
+
+    @Override
+    @Transactional
     public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
         String responseMsg;
         ShipmentRequest request = (ShipmentRequest) commonRequestModel.getData();
