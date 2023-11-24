@@ -20,4 +20,6 @@ public class V1TenantSettingsResponse {
     private String BusinessUnitName;
     private boolean EnableIGMDetails;
     private boolean GSTTaxAutoCalculation;
+    private Boolean BillingServiceV2Enabled;
+    private Boolean ShipmentServiceV2Enabled;
 }
