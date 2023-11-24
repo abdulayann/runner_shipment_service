@@ -1405,19 +1405,41 @@ public class EntityTransferService implements IEntityTransferService {
             if (consolidationDetails.get().getTransportMode().equals(Constants.TRANSPORT_MODE_SEA)) {
                 flightNumber = consolidationDetails.get().getCarrierDetails().getVessel();
                 voyage = consolidationDetails.get().getCarrierDetails().getVoyage();
-                bol = consolidationDetails.get().getBol();
+                bol = consolidationDetails.get().getMawb();
             } else if (consolidationDetails.get().getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)) {
                 flightNumber = consolidationDetails.get().getCarrierDetails().getFlightNumber();
                 voyage = consolidationDetails.get().getCarrierDetails().getShippingLine();
-                bol = consolidationDetails.get().getBol();
+                bol = consolidationDetails.get().getMawb();
             }
             LocalDateTime eta = consolidationDetails.get().getCarrierDetails().getEta();
             LocalDateTime etd = consolidationDetails.get().getCarrierDetails().getEtd();
             String polId = consolidationDetails.get().getCarrierDetails().getOriginPort();
             String podId = consolidationDetails.get().getCarrierDetails().getDestinationPort();
+            List<String> missingField = new ArrayList<>();
             if(Strings.isNullOrEmpty(bol) || Strings.isNullOrEmpty(voyage) || Strings.isNullOrEmpty(flightNumber) ||
                     eta == null || etd == null || Strings.isNullOrEmpty(polId) || Strings.isNullOrEmpty(podId)) {
-                throw new ValidationException("Please validate empty or invalid inputs (marked with Red Cross) before sending consolidation");
+                if(Strings.isNullOrEmpty(bol) && consolidationDetails.get().getTransportMode().equals(Constants.TRANSPORT_MODE_AIR))
+                    missingField.add("Mawb Number");
+                if(Strings.isNullOrEmpty(bol) && consolidationDetails.get().getTransportMode().equals(Constants.TRANSPORT_MODE_SEA))
+                    missingField.add("Master Bill");
+                if(Strings.isNullOrEmpty(voyage) && consolidationDetails.get().getTransportMode().equals(Constants.TRANSPORT_MODE_AIR))
+                    missingField.add("Flight Carrier");
+                if(Strings.isNullOrEmpty(flightNumber) && consolidationDetails.get().getTransportMode().equals(Constants.TRANSPORT_MODE_AIR))
+                    missingField.add("Flight Number");
+                if(Strings.isNullOrEmpty(voyage) && consolidationDetails.get().getTransportMode().equals(Constants.TRANSPORT_MODE_SEA))
+                    missingField.add("Voyage");
+                if(Strings.isNullOrEmpty(flightNumber) && consolidationDetails.get().getTransportMode().equals(Constants.TRANSPORT_MODE_SEA))
+                    missingField.add("Vessel");
+                if(eta == null)
+                    missingField.add("Eta");
+                if(etd == null)
+                    missingField.add("Etd");
+                if(Strings.isNullOrEmpty(polId))
+                    missingField.add("Origin Port");
+                if(Strings.isNullOrEmpty(podId))
+                    missingField.add("Destination Port");
+                String joinMissingField = String.join(",", missingField);
+                throw new ValidationException("Please validate these fields before sending consolidation: " + joinMissingField);
             }
             else {
                 Boolean sendConsolidationError = false;
@@ -1513,11 +1535,37 @@ public class EntityTransferService implements IEntityTransferService {
             LocalDateTime etd = shipmentDetails.get().getCarrierDetails().getEtd();
             String polId = shipmentDetails.get().getCarrierDetails().getOriginPort();
             String podId = shipmentDetails.get().getCarrierDetails().getDestinationPort();
+            List<String> missingField = new ArrayList<>();
             if(Strings.isNullOrEmpty(voyage) || Strings.isNullOrEmpty(flightNumber) ||
                     eta == null || etd == null || Strings.isNullOrEmpty(polId) || Strings.isNullOrEmpty(podId) ||
                     Strings.isNullOrEmpty(shipmentDetails.get().getHouseBill()) ||
                     Strings.isNullOrEmpty(shipmentDetails.get().getMasterBill())) {
-                throw new ValidationException("Please validate empty or invalid inputs (marked with Red Cross) before sending shipment");
+                if(Strings.isNullOrEmpty(voyage) && shipmentDetails.get().getTransportMode().equals(Constants.TRANSPORT_MODE_AIR))
+                    missingField.add("Flight Carrier");
+                if(Strings.isNullOrEmpty(flightNumber) && shipmentDetails.get().getTransportMode().equals(Constants.TRANSPORT_MODE_AIR))
+                    missingField.add("Flight Number");
+                if(Strings.isNullOrEmpty(voyage) && shipmentDetails.get().getTransportMode().equals(Constants.TRANSPORT_MODE_SEA))
+                    missingField.add("Voyage");
+                if(Strings.isNullOrEmpty(flightNumber) && shipmentDetails.get().getTransportMode().equals(Constants.TRANSPORT_MODE_SEA))
+                    missingField.add("Vessel");
+                if(eta == null)
+                    missingField.add("Eta");
+                if(etd == null)
+                    missingField.add("Etd");
+                if(Strings.isNullOrEmpty(polId))
+                    missingField.add("Origin Port");
+                if(Strings.isNullOrEmpty(podId))
+                    missingField.add("Destination Port");
+                if(Strings.isNullOrEmpty(shipmentDetails.get().getHouseBill()) && shipmentDetails.get().getTransportMode().equals(Constants.TRANSPORT_MODE_AIR))
+                    missingField.add("HAWB Number");
+                if(Strings.isNullOrEmpty(shipmentDetails.get().getMasterBill()) && shipmentDetails.get().getTransportMode().equals(Constants.TRANSPORT_MODE_AIR))
+                    missingField.add("MAWB Number");
+                if(Strings.isNullOrEmpty(shipmentDetails.get().getHouseBill()) && shipmentDetails.get().getTransportMode().equals(Constants.TRANSPORT_MODE_SEA))
+                    missingField.add("House Bill");
+                if(Strings.isNullOrEmpty(shipmentDetails.get().getMasterBill()) && shipmentDetails.get().getTransportMode().equals(Constants.TRANSPORT_MODE_SEA))
+                    missingField.add("Master Bill");
+                String joinMissingField = String.join(",", missingField);
+                throw new ValidationException("Please validate these fields before sending shipment: " + joinMissingField);
             }
             else {
                 var shipment = shipmentDetails.get();
