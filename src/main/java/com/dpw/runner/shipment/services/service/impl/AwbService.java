@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
@@ -15,9 +16,12 @@ import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.request.AwbRequest;
 import com.dpw.runner.shipment.services.dto.request.CreateAwbRequest;
 import com.dpw.runner.shipment.services.dto.request.ResetAwbRequest;
+import com.dpw.runner.shipment.services.dto.request.HblPartyDto;
 import com.dpw.runner.shipment.services.dto.request.awb.*;
+import com.dpw.runner.shipment.services.dto.request.hbl.HblCargoDto;
 import com.dpw.runner.shipment.services.dto.response.AwbResponse;
 import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entity.enums.AwbReset;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -560,6 +564,8 @@ public class AwbService implements IAwbService {
                     notifyPartyInfo.setAddress(AwbUtility.constructAddress(party.getAddressData()).toUpperCase());
                     notifyPartyInfo.setEntityId(consolidationDetails.getId());
                     notifyPartyInfo.setEntityType(request.getAwbType());
+                    notifyPartyInfo.setGuid(party.getGuid());
+                    notifyPartyInfo.setIsShipmentCreated(true);
                     // notifyPartyInfo.setAddressId(shipmentNotifyParty.getAddressData()); // field missing: AddressId
                     notifyPartyInfo.setNotifyOrgId(consolidationDetails.getId());
                     notifyPartyList.add(notifyPartyInfo);
@@ -577,6 +583,7 @@ public class AwbService implements IAwbService {
                 consolidationDetails.getCarrierDetails().getDestinationPort() != null
         ) {
             AwbRoutingInfo routingInfo = new AwbRoutingInfo();
+            routingInfo.setIsShipmentCreated(true);
 //            routingInfo.setOrigin(consolidationDetails.getCarrierDetails().getOriginPort()); // field missing: POLId
 //            routingInfo.setDestination(consolidationDetails.getCarrierDetails().getDestinationPort()); // field missing PODId:
             routingInfo.setOriginPortName(consolidationDetails.getCarrierDetails().getOriginPort());
@@ -617,6 +624,7 @@ public class AwbService implements IAwbService {
         awbGoodsDescriptionInfo.setEntityId(consolidationDetails.getId());
         awbGoodsDescriptionInfo.setEntityType(request.getAwbType());
         awbGoodsDescriptionInfo.setGrossWtUnit("KG");
+        awbGoodsDescriptionInfo.setIsShipmentCreated(true);
         awbGoodsDescriptionInfo.setGuid(UUID.randomUUID());
         for (var awbPacking:awbPackingList) {
             awbPacking.setAwbGoodsDescriptionInfoGuid(awbGoodsDescriptionInfo.getGuid());
@@ -767,6 +775,7 @@ public class AwbService implements IAwbService {
                 shipmentDetails.getAdditionalDetails().getNotifyParty().getId() != null) {
             var shipmentNotifyParty = shipmentDetails.getAdditionalDetails().getNotifyParty();
             AwbNotifyPartyInfo notifyPartyInfo = new AwbNotifyPartyInfo();
+            notifyPartyInfo.setIsShipmentCreated(true);
             var name = StringUtility.convertToString(shipmentNotifyParty.getOrgData().get(PartiesConstants.FULLNAME));
             notifyPartyInfo.setName(name == null ? name : name.toUpperCase());
             notifyPartyInfo.setAddress(AwbUtility.constructAddress(shipmentNotifyParty.getAddressData()).toUpperCase());
@@ -786,6 +795,7 @@ public class AwbService implements IAwbService {
         ) {
             var flightDate = request.getAwbType() == Constants.DMAWB ? shipmentDetails.getCarrierDetails().getEtd() : null;
             AwbRoutingInfo routingInfo = new AwbRoutingInfo();
+            routingInfo.setIsShipmentCreated(true);
 //            routingInfo.setOrigin(shipmentDetails.getCarrierDetails().getOriginPort()); // field missing: POLId
 //            routingInfo.setDestination(shipmentDetails.getCarrierDetails().getDestinationPort()); // field missing PODId:
             routingInfo.setOriginPortName(shipmentDetails.getCarrierDetails().getOriginPort());
@@ -832,6 +842,7 @@ public class AwbService implements IAwbService {
         AwbGoodsDescriptionInfo awbGoodsDescriptionInfo = new AwbGoodsDescriptionInfo();
         awbGoodsDescriptionInfo.setEntityId(shipmentDetails.getId());
         awbGoodsDescriptionInfo.setEntityType(request.getAwbType());
+        awbGoodsDescriptionInfo.setIsShipmentCreated(true);
         awbGoodsDescriptionInfo.setGrossWt(shipmentDetails.getWeight());
         awbGoodsDescriptionInfo.setGrossWtUnit(shipmentDetails.getWeightUnit());
         awbGoodsDescriptionInfo.setPiecesNo(totalPacks);
@@ -853,6 +864,7 @@ public class AwbService implements IAwbService {
             // Integer totalPacks = 0;
             for (var packing : packings) {
                 AwbPackingInfo awbPacking = new AwbPackingInfo();
+                awbPacking.setGuid(packing.getGuid());
                 awbPacking.setDgGoodsId(packing.getDGGoodsId());
                 awbPacking.setDgSubstanceId(packing.getDGSubstanceId());
                 awbPacking.setPacks(packing.getPacks());
@@ -1067,4 +1079,757 @@ public class AwbService implements IAwbService {
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(awb));
     }
 
+    @Override
+    public ResponseEntity<?> partialAutoUpdateAwb(CommonRequestModel commonRequestModel) {
+        String responseMsg;
+        CreateAwbRequest request = (CreateAwbRequest) commonRequestModel.getData();
+        if (request == null) {
+            log.debug("Request is empty for AWB Create for Request Id {}", LoggerHelper.getRequestIdFromMDC());
+        }
+
+        if (request.getShipmentId() == null) {
+            log.error("Shipment Id can't be null or empty in create AWB Request");
+            throw new ValidationException("Shipment Id can't be null or empty in Create AWB Request");
+        }
+
+        List<Awb> awbs = awbDao.findByShipmentId(request.getShipmentId());
+        if(awbs.isEmpty()){
+            log.error("No Awb exist for given shipment to update");
+            throw new ValidationException("No Awb exist for given shipment to update");
+        }
+
+        Awb awb = awbs.get(0);
+
+        List<ShipmentSettingsDetails> shipmentSettingsDetailsList = shipmentSettingsDao.getSettingsByTenantIds(List.of(TenantContext.getCurrentTenant()));
+        if(shipmentSettingsDetailsList.isEmpty()){
+            log.error("Failed to fetch Shipment Settings Details");
+            throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+        }
+        ShipmentSettingsDetails shipmentSettingsDetails = shipmentSettingsDetailsList.get(0);
+
+        try {
+            if(shipmentSettingsDetails.getRestrictAWBEdit()){
+                ResetAwbRequest resetAwbRequest = ResetAwbRequest.builder()
+                        .id(awb.getId())
+                        .shipmentId(request.getShipmentId())
+                        .consolidationId(request.getConsolidationId())
+                        .awbType(request.getAwbType())
+                        .resetType(AwbReset.ALL)
+                        .build();
+                return this.reset(CommonRequestModel.buildRequest(resetAwbRequest));
+            }
+            else if(shipmentSettingsDetails.getAutoUpdateShipmentAWB()) {
+                updateAwbFromShipment(awb, request, shipmentSettingsDetails);
+                awb = awbDao.save(awb);
+            }
+
+            log.info("AWB created successfully for Id {} with Request Id {}", awb.getId(), LoggerHelper.getRequestIdFromMDC());
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+        return ResponseHelper.buildSuccessResponse(convertEntityToDto(awb));
+    }
+
+    private void updateAwbFromShipment(Awb awb, CreateAwbRequest request, ShipmentSettingsDetails shipmentSettingsDetails) {
+        ShipmentDetails shipmentDetails = shipmentDao.findById(request.getShipmentId()).get();
+
+        // fetch all packings
+        List<Packing> packings = shipmentDetails.getPackingList();
+
+
+
+        HawbLockSettings hawbLockSettings = shipmentSettingsDetails.getHawbLockSettings();
+        MawbLockSettings mawbLockSettings = shipmentSettingsDetails.getMawbLockSettings();
+
+        Integer totalPacksCount = 0;
+        updateShipmentPackingInfoToAwb(shipmentDetails, packings, awb, request, hawbLockSettings, mawbLockSettings, totalPacksCount);
+        updateShipmentInfoToAwb(shipmentDetails, request, awb, hawbLockSettings, mawbLockSettings);
+        updateShipmentNotifyPartyinfoToAwb(shipmentDetails, request, awb, hawbLockSettings, mawbLockSettings);
+        updateShipmemtRoutingInfoToAwb(shipmentDetails, request, awb, hawbLockSettings, mawbLockSettings);
+        updateAwbGoodsDescriptionInfoFromShipment(shipmentDetails, request, awb, hawbLockSettings, mawbLockSettings);
+        updateAwbCargoInfoFromShipment(shipmentDetails, request, awb, hawbLockSettings, mawbLockSettings);
+        updateAwbOtherInfoFromShipment(shipmentDetails, request, awb, hawbLockSettings, mawbLockSettings);
+    }
+
+    private void updateShipmentPackingInfoToAwb(ShipmentDetails shipmentDetails, List<Packing> packings, Awb awb, CreateAwbRequest request, HawbLockSettings hawbLockSettings, MawbLockSettings mawbLockSettings, Integer totalPacksCount) {
+        Map<UUID, Packing> packMap = new HashMap<>();
+        packings.forEach(pack -> {
+            packMap.put(pack.getGuid(), pack);
+        });
+        List<AwbPackingInfo> deletedList = new ArrayList<>();
+        for (var cargo: awb.getAwbPackingInfo()) {
+            if(cargo.getGuid() != null) {
+                if (packMap.containsKey(cargo.getGuid())) {
+                    updateShipmentPackingFieldToHbl(packMap.get(cargo.getGuid()), cargo, request, hawbLockSettings, mawbLockSettings);
+                    totalPacksCount += Integer.parseInt(cargo.getPacks());
+                    packMap.remove(cargo.getGuid());
+                } else {
+                    deletedList.add(cargo);
+                }
+            } else {
+                totalPacksCount += Integer.parseInt(cargo.getPacks());
+            }
+        }
+
+        awb.getAwbPackingInfo().removeAll(deletedList);
+
+        if(!packMap.isEmpty()) {
+            for (var packing: packMap.values()) {
+                AwbPackingInfo awbPacking = new AwbPackingInfo();
+                awbPacking.setGuid(packing.getGuid());
+                awbPacking.setDgGoodsId(packing.getDGGoodsId());
+                awbPacking.setDgSubstanceId(packing.getDGSubstanceId());
+                awbPacking.setPacks(packing.getPacks());
+                awbPacking.setPacksType(packing.getPacksType());
+                awbPacking.setContainerNumber(packing.getContainerNumber());
+                awbPacking.setWeight(packing.getWeight());
+                awbPacking.setWeightUnit(packing.getWeightUnit());
+                awbPacking.setVolume(packing.getVolume());
+                awbPacking.setVolumeUnit(packing.getVolumeUnit());
+                awbPacking.setInspections(packing.getInspections());
+                awbPacking.setOrigin(packing.getOrigin());
+                awbPacking.setCommodity(packing.getCommodity());
+                awbPacking.setPackingOrder(packing.getPackingOrder());
+                awbPacking.setLength(packing.getLength());
+                awbPacking.setLengthUnit(packing.getLengthUnit());
+                awbPacking.setWidth(packing.getWidth());
+                awbPacking.setWidthUnit(packing.getWidthUnit());
+                awbPacking.setHeight(packing.getHeight());
+                awbPacking.setHeightUnit(packing.getHeightUnit());
+                awbPacking.setMarksnNums(packing.getMarksnNums());
+                awbPacking.setFlashPoint(packing.getFlashPoint());
+                awbPacking.setUndgContact(packing.getUNDGContact());
+                awbPacking.setIsTemperatureControlled(packing.getIsTemperatureControlled());
+                awbPacking.setMinTemp(packing.getMinTemp());
+                awbPacking.setMinTempUnit(packing.getMinTempUnit());
+                awbPacking.setHsCode(packing.getHSCode());
+                awbPacking.setCountryCode(packing.getCountryCode());
+                awbPacking.setGoodsDescription(packing.getGoodsDescription() == null ? null : packing.getGoodsDescription().toUpperCase());
+                awbPacking.setReferenceNumber(packing.getReferenceNumber());
+                awbPacking.setDgClass(packing.getDGClass());
+                awbPacking.setHazardous(packing.getHazardous());
+                awbPacking.setCommodityId(packing.getCommodityId());
+                awbPacking.setNetWeight(packing.getNetWeight());
+                awbPacking.setNetWeightUnit(packing.getNetWeightUnit());
+                awbPacking.setVolumeWeight(packing.getVolumeWeight());
+                awbPacking.setVolumeWeightUnit(packing.getVolumeWeightUnit());
+                awbPacking.setAwbNumber(shipmentDetails.getHouseBill());
+                totalPacksCount += Integer.parseInt(packing.getPacks());
+                awb.getAwbPackingInfo().add(awbPacking);
+            }
+        }
+    }
+    private void updateShipmentPackingFieldToHbl(Packing packing, AwbPackingInfo awbPackingInfo, CreateAwbRequest request, HawbLockSettings hawbLockSettings, MawbLockSettings mawbLockSettings) {
+        if((request.getAwbType().equals(Constants.HAWB) && !hawbLockSettings.getPackingAwbGoodsDescIdLock()) ||
+                (request.getAwbType().equals(Constants.DMAWB) && !mawbLockSettings.getPackingAwbGoodsDescIdLock()))
+
+        if((request.getAwbType().equals(Constants.HAWB) && !hawbLockSettings.getPackingPacksLock()) ||
+                (request.getAwbType().equals(Constants.DMAWB) && !mawbLockSettings.getPackingPacksLock()))
+            awbPackingInfo.setPacks(packing.getPacks());
+        if((request.getAwbType().equals(Constants.HAWB) && !hawbLockSettings.getPackingPacksTypeLock()) ||
+                (request.getAwbType().equals(Constants.DMAWB) && !mawbLockSettings.getPackingPacksTypeLock()))
+            awbPackingInfo.setPacksType(packing.getPacksType());
+        if((request.getAwbType().equals(Constants.HAWB) && !hawbLockSettings.getPackingOriginLock()) ||
+                (request.getAwbType().equals(Constants.DMAWB) && !mawbLockSettings.getPackingOriginLock()))
+            awbPackingInfo.setOrigin(packing.getOrigin());
+        if((request.getAwbType().equals(Constants.HAWB) && !hawbLockSettings.getPackingOrderLock()) ||
+                (request.getAwbType().equals(Constants.DMAWB) && !mawbLockSettings.getPackingOrderLock()))
+            awbPackingInfo.setPackingOrder(packing.getPackingOrder());
+        if((request.getAwbType().equals(Constants.HAWB) && !hawbLockSettings.getPackingLengthLock()) ||
+                (request.getAwbType().equals(Constants.DMAWB) && !mawbLockSettings.getPackingLengthLock()))
+            awbPackingInfo.setLength(packing.getLength());
+        if((request.getAwbType().equals(Constants.HAWB) && !hawbLockSettings.getPackingLengthUnitLock()) ||
+                (request.getAwbType().equals(Constants.DMAWB) && !mawbLockSettings.getPackingLengthUnitLock()))
+            awbPackingInfo.setLengthUnit(packing.getLengthUnit());
+        if((request.getAwbType().equals(Constants.HAWB) && !hawbLockSettings.getPackingWidthLock()) ||
+                (request.getAwbType().equals(Constants.DMAWB) && !mawbLockSettings.getPackingWidthLock()))
+            awbPackingInfo.setWidth(packing.getWidth());
+        if((request.getAwbType().equals(Constants.HAWB) && !hawbLockSettings.getPackingWidthUnitLock()) ||
+                (request.getAwbType().equals(Constants.DMAWB) && !mawbLockSettings.getPackingWidthUnitLock()))
+            awbPackingInfo.setWidthUnit(packing.getWidthUnit());
+        if((request.getAwbType().equals(Constants.HAWB) && !hawbLockSettings.getPackingHeightLock()) ||
+                (request.getAwbType().equals(Constants.DMAWB) && !mawbLockSettings.getPackingHeightLock()))
+            awbPackingInfo.setHeight(packing.getHeight());
+        if((request.getAwbType().equals(Constants.HAWB) && !hawbLockSettings.getPackingHeightUnitLock()) ||
+                (request.getAwbType().equals(Constants.DMAWB) && !mawbLockSettings.getPackingHeightUnitLock()))
+            awbPackingInfo.setHeightUnit(packing.getHeightUnit());
+        if((request.getAwbType().equals(Constants.HAWB) && !hawbLockSettings.getPackingWeightLock()) ||
+                (request.getAwbType().equals(Constants.DMAWB) && !mawbLockSettings.getPackingWeightLock()))
+            awbPackingInfo.setWeight(packing.getWeight());
+        if((request.getAwbType().equals(Constants.HAWB) && !hawbLockSettings.getPackingWeightUnitLock()) ||
+                (request.getAwbType().equals(Constants.DMAWB) && !mawbLockSettings.getPackingWeightUnitLock()))
+            awbPackingInfo.setWeightUnit(packing.getWeightUnit());
+        if((request.getAwbType().equals(Constants.HAWB) && !hawbLockSettings.getPackingVolumeLock()) ||
+                (request.getAwbType().equals(Constants.DMAWB) && !mawbLockSettings.getPackingVolumeLock()))
+            awbPackingInfo.setVolume(packing.getVolume());
+        if((request.getAwbType().equals(Constants.HAWB) && !hawbLockSettings.getPackingVolumeUnitLock()) ||
+                (request.getAwbType().equals(Constants.DMAWB) && !mawbLockSettings.getPackingVolumeUnitLock()))
+            awbPackingInfo.setVolumeUnit(packing.getVolumeUnit());
+        if((request.getAwbType().equals(Constants.HAWB) && !hawbLockSettings.getPackingNetWeightLock()) ||
+                (request.getAwbType().equals(Constants.DMAWB) && !mawbLockSettings.getPackingNetWeightLock()))
+            awbPackingInfo.setNetWeight(packing.getNetWeight());
+        if((request.getAwbType().equals(Constants.HAWB) && !hawbLockSettings.getPackingNetWeightUnitLock()) ||
+                (request.getAwbType().equals(Constants.DMAWB) && !mawbLockSettings.getPackingNetWeightUnitLock()))
+            awbPackingInfo.setNetWeightUnit(packing.getNetWeightUnit());
+        if((request.getAwbType().equals(Constants.HAWB) && !hawbLockSettings.getPackingVolumeWeightLock()) ||
+                (request.getAwbType().equals(Constants.DMAWB) && !mawbLockSettings.getPackingVolumeWeightLock()))
+            awbPackingInfo.setVolumeWeight(packing.getVolumeWeight());
+        if((request.getAwbType().equals(Constants.HAWB) && !hawbLockSettings.getPackingVolumeWeightUnitLock()) ||
+                (request.getAwbType().equals(Constants.DMAWB) && !mawbLockSettings.getPackingVolumeWeightUnitLock()))
+            awbPackingInfo.setVolumeWeightUnit(packing.getVolumeWeightUnit());
+        if((request.getAwbType().equals(Constants.HAWB) && !hawbLockSettings.getPackingMarksnNumsLock()) ||
+                (request.getAwbType().equals(Constants.DMAWB) && !mawbLockSettings.getPackingMarksnNumsLock()))
+            awbPackingInfo.setMarksnNums(packing.getMarksnNums());
+        if((request.getAwbType().equals(Constants.HAWB) && !hawbLockSettings.getPackingCountryCodeLock()) ||
+                (request.getAwbType().equals(Constants.DMAWB) && !mawbLockSettings.getPackingCountryCodeLock()))
+            awbPackingInfo.setCountryCode(packing.getCountryCode());
+        if((request.getAwbType().equals(Constants.HAWB) && !hawbLockSettings.getPackingGoodsDescLock()) ||
+                (request.getAwbType().equals(Constants.DMAWB) && !mawbLockSettings.getPackingGoodsDescLock()))
+            awbPackingInfo.setGoodsDescription(packing.getGoodsDescription() == null ? null : packing.getGoodsDescription().toUpperCase());
+        if((request.getAwbType().equals(Constants.HAWB) && !hawbLockSettings.getPackingReferenceNumberLock()) ||
+                (request.getAwbType().equals(Constants.DMAWB) && !mawbLockSettings.getPackingReferenceNumberLock()))
+            awbPackingInfo.setReferenceNumber(packing.getReferenceNumber());
+        if((request.getAwbType().equals(Constants.HAWB) && !hawbLockSettings.getPackingInspectionsLock()) ||
+                (request.getAwbType().equals(Constants.DMAWB) && !mawbLockSettings.getPackingInspectionsLock()))
+            awbPackingInfo.setInspections(packing.getInspections());
+        if((request.getAwbType().equals(Constants.HAWB) && !hawbLockSettings.getPackingDgClassLock()) ||
+                (request.getAwbType().equals(Constants.DMAWB) && !mawbLockSettings.getPackingDgClassLock()))
+            awbPackingInfo.setDgClass(packing.getDGClass());
+        if((request.getAwbType().equals(Constants.HAWB) && !hawbLockSettings.getPackingDgSubstanceIdLock()) ||
+                (request.getAwbType().equals(Constants.DMAWB) && !mawbLockSettings.getPackingDgSubstanceIdLock()))
+            awbPackingInfo.setDgSubstanceId(packing.getDGSubstanceId());
+        if((request.getAwbType().equals(Constants.HAWB) && !hawbLockSettings.getPackingMinTempLock()) ||
+                (request.getAwbType().equals(Constants.DMAWB) && !mawbLockSettings.getPackingMinTempLock()))
+            awbPackingInfo.setMinTemp(packing.getMinTemp());
+        if((request.getAwbType().equals(Constants.HAWB) && !hawbLockSettings.getPackingMinTempUnitLock()) ||
+                (request.getAwbType().equals(Constants.DMAWB) && !mawbLockSettings.getPackingMinTempUnitLock()))
+            awbPackingInfo.setMinTempUnit(packing.getMinTempUnit());
+        if((request.getAwbType().equals(Constants.HAWB) && !hawbLockSettings.getPackingMaxTempLock()) ||
+                (request.getAwbType().equals(Constants.DMAWB) && !mawbLockSettings.getPackingMaxTempLock()))
+            awbPackingInfo.setMaxTemp(packing.getMaxTemp());
+        if((request.getAwbType().equals(Constants.HAWB) && !hawbLockSettings.getPackingMaxTempUnitLock()) ||
+                (request.getAwbType().equals(Constants.DMAWB) && !mawbLockSettings.getPackingMaxTempUnitLock()))
+            awbPackingInfo.setMaxTempUnit(packing.getMaxTempUnit());
+        if((request.getAwbType().equals(Constants.HAWB) && !hawbLockSettings.getPackingCommodityLock()) ||
+                (request.getAwbType().equals(Constants.DMAWB) && !mawbLockSettings.getPackingCommodityLock()))
+            awbPackingInfo.setCommodityId(packing.getCommodityId());
+        if((request.getAwbType().equals(Constants.HAWB) && !hawbLockSettings.getPackingHsCodeLock()) ||
+                (request.getAwbType().equals(Constants.DMAWB) && !mawbLockSettings.getPackingHsCodeLock()))
+            awbPackingInfo.setHsCode(packing.getHSCode());
+    }
+
+    private void updateShipmentInfoToAwb(ShipmentDetails shipmentDetails, CreateAwbRequest request, Awb awb, HawbLockSettings hawbLockSettings, MawbLockSettings mawbLockSettings) {
+        AwbShipmentInfo awbShipmentInfo = awb.getAwbShipmentInfo();
+        if((request.getAwbType().equals(Constants.HAWB) && !hawbLockSettings.getAwbNumberLock()) ||
+                (request.getAwbType().equals(Constants.DMAWB) && !mawbLockSettings.getAwbNumberLock()))
+            awbShipmentInfo.setAwbNumber(shipmentDetails.getHouseBill());
+        if((request.getAwbType().equals(Constants.HAWB) && !hawbLockSettings.getShipperNameLock()) ||
+                (request.getAwbType().equals(Constants.DMAWB) && !mawbLockSettings.getShipperNameLock())) {
+            var shipperName = StringUtility.convertToString(shipmentDetails.getConsigner().getOrgData().get(PartiesConstants.FULLNAME));
+            awbShipmentInfo.setShipperName(shipperName == null ? shipperName : shipperName.toUpperCase());
+        }
+        if((request.getAwbType().equals(Constants.HAWB) && !hawbLockSettings.getShipperAddressLock()) ||
+                (request.getAwbType().equals(Constants.DMAWB) && !mawbLockSettings.getShipperAddressLock())) {
+            var shipperAddress = AwbUtility.constructAddress(shipmentDetails.getConsigner().getAddressData());
+            awbShipmentInfo.setShipperAddress(shipperAddress == null ? shipperAddress : shipperAddress.toUpperCase());
+        }
+        if((request.getAwbType().equals(Constants.HAWB) && !hawbLockSettings.getConsigneeNameLock()) ||
+                (request.getAwbType().equals(Constants.DMAWB) && !mawbLockSettings.getConsigneeNameLock())) {
+            var consigneeName = StringUtility.convertToString(shipmentDetails.getConsignee().getOrgData().get(PartiesConstants.FULLNAME));
+            awbShipmentInfo.setConsigneeName(consigneeName == null ? consigneeName : consigneeName.toUpperCase());
+        }
+        if((request.getAwbType().equals(Constants.HAWB) && !hawbLockSettings.getConsigneeAddressLock()) ||
+                (request.getAwbType().equals(Constants.DMAWB) && !mawbLockSettings.getConsigneeAddressLock())) {
+            var consigneeAddress = AwbUtility.constructAddress(shipmentDetails.getConsignee().getAddressData());
+            awbShipmentInfo.setConsigneeAddress(consigneeAddress == null ? consigneeAddress : consigneeAddress.toUpperCase());
+        }
+        if((request.getAwbType().equals(Constants.HAWB) && !hawbLockSettings.getAirportOfDepartureLock()) ||
+                (request.getAwbType().equals(Constants.DMAWB) && !mawbLockSettings.getAirportOfDepartureLock()))
+            awbShipmentInfo.setOriginAirport(shipmentDetails.getCarrierDetails().getOriginPort());
+        if((request.getAwbType().equals(Constants.HAWB) && !hawbLockSettings.getAirportOfDestinationLock()) ||
+                (request.getAwbType().equals(Constants.DMAWB) && !mawbLockSettings.getAirportOfDestinationLock()))
+            awbShipmentInfo.setDestinationAirport(shipmentDetails.getCarrierDetails().getDestinationPort());
+        if((request.getAwbType().equals(Constants.HAWB) && !hawbLockSettings.getFirstCarrierLock()) ||
+                (request.getAwbType().equals(Constants.DMAWB) && !mawbLockSettings.getFirstCarrierLock()))
+            awbShipmentInfo.setFirstCarrier(shipmentDetails.getCarrierDetails().getShippingLine());
+        if((request.getAwbType().equals(Constants.HAWB) && !hawbLockSettings.getIataCodeLock()) ||
+                (request.getAwbType().equals(Constants.DMAWB) && !mawbLockSettings.getIataCodeLock()))
+            awbShipmentInfo.setIataCode(userContext.getUser().getAgentIATACode());
+
+
+        for (var orgRow : shipmentDetails.getShipmentAddresses()) {
+            if (orgRow.getType() == Constants.FORWARDING_AGENT) {
+                if((request.getAwbType().equals(Constants.HAWB) && !hawbLockSettings.getIssuingAgentNameLock()) ||
+                        (request.getAwbType().equals(Constants.DMAWB) && !mawbLockSettings.getIssuingAgentNameLock())) {
+                    var issuingAgentName = StringUtility.convertToString(orgRow.getOrgData().get(PartiesConstants.FULLNAME));
+                    awbShipmentInfo.setIssuingAgentName(issuingAgentName == null ? issuingAgentName : issuingAgentName.toUpperCase()); // extract from orgdata
+                }
+                if((request.getAwbType().equals(Constants.HAWB) && !hawbLockSettings.getIssuingAgentAddressLock()) ||
+                        (request.getAwbType().equals(Constants.DMAWB) && !mawbLockSettings.getIssuingAgentAddressLock())) {
+                    var issuingAgentAddress = AwbUtility.constructAddress(orgRow.getAddressData());
+                    awbShipmentInfo.setIssuingAgentAddress(issuingAgentAddress == null ? issuingAgentAddress : issuingAgentAddress.toUpperCase());
+                }
+
+                awbShipmentInfo.setIataCode(StringUtility.isEmpty(awbShipmentInfo.getIataCode())
+                        ? StringUtility.convertToString(shipmentDetails.getConsignee().getOrgData().get(PartiesConstants.AGENT_IATA_CODE))
+                        : awbShipmentInfo.getIataCode());
+                awbShipmentInfo.setAgentCASSCode(StringUtility.isEmpty(awbShipmentInfo.getAgentCASSCode())
+                        ? StringUtility.convertToString(shipmentDetails.getConsignee().getOrgData().get(PartiesConstants.AGENT_CASS_CODE))
+                        : awbShipmentInfo.getAgentCASSCode());
+            }
+        }
+    }
+    private void updateShipmentNotifyPartyinfoToAwb(ShipmentDetails shipmentDetails, CreateAwbRequest request, Awb awb, HawbLockSettings hawbLockSettings, MawbLockSettings mawbLockSettings) {
+        var party = shipmentDetails.getAdditionalDetails().getNotifyParty();
+        boolean createNotifyParty = true;
+        AwbNotifyPartyInfo deleteParty = new AwbNotifyPartyInfo();
+        for(var awbParty: awb.getAwbNotifyPartyInfo()){
+            if(awbParty.getIsShipmentCreated() != null && awbParty.getIsShipmentCreated()){
+                createNotifyParty = false;
+                if(party != null){
+                    if((request.getAwbType().equals(Constants.HAWB) && !hawbLockSettings.getNotifyOrganizationLock()) ||
+                            (request.getAwbType().equals(Constants.DMAWB) && !mawbLockSettings.getNotifyOrganizationLock())) {
+                        var name = StringUtility.convertToString(party.getOrgData().get(PartiesConstants.FULLNAME));
+                        awbParty.setName(name == null ? name : name.toUpperCase());
+                        awbParty.setNotifyOrgId(party.getId());
+                    }
+                    if((request.getAwbType().equals(Constants.HAWB) && !hawbLockSettings.getNotifyOrganizationAddressLock()) ||
+                            (request.getAwbType().equals(Constants.DMAWB) && !mawbLockSettings.getNotifyOrganizationAddressLock())) {
+                        awbParty.setAddress(AwbUtility.constructAddress(party.getAddressData()).toUpperCase());
+                    }
+
+                } else {
+                    deleteParty = awbParty;
+                }
+            }
+        }
+        awb.getAwbNotifyPartyInfo().remove(deleteParty);
+
+        AwbNotifyPartyInfo awbParty = AwbNotifyPartyInfo.builder().build();
+        if (party != null && createNotifyParty) {
+            awbParty.setIsShipmentCreated(true);
+            var name = StringUtility.convertToString(party.getOrgData().get(PartiesConstants.FULLNAME));
+            awbParty.setName(name == null ? name : name.toUpperCase());
+            awbParty.setAddress(AwbUtility.constructAddress(party.getAddressData()).toUpperCase());
+            awbParty.setEntityId(shipmentDetails.getId());
+            awbParty.setEntityType(request.getAwbType());
+            awbParty.setNotifyOrgId(party.getId());
+            awb.getAwbNotifyPartyInfo().add(awbParty);
+        }
+    }
+    private void updateShipmemtRoutingInfoToAwb(ShipmentDetails shipmentDetails, CreateAwbRequest request, Awb awb, HawbLockSettings hawbLockSettings, MawbLockSettings mawbLockSettings) {
+        boolean createRouting = true;
+        AwbRoutingInfo deleteParty = new AwbRoutingInfo();
+        for(var awbRoute: awb.getAwbRoutingInfo()){
+            if(awbRoute.getIsShipmentCreated() != null && awbRoute.getIsShipmentCreated()){
+                createRouting = false;
+                if (shipmentDetails.getCarrierDetails() != null &&
+                        shipmentDetails.getCarrierDetails().getOriginPort() != null &&
+                        shipmentDetails.getCarrierDetails().getDestinationPort() != null) {
+                    if((request.getAwbType().equals(Constants.HAWB) && !hawbLockSettings.getOriginPortLock()) ||
+                            (request.getAwbType().equals(Constants.DMAWB) && !mawbLockSettings.getOriginPortLock())) {
+                        awbRoute.setOriginPortName(shipmentDetails.getCarrierDetails().getOriginPort());
+                    }
+                    if((request.getAwbType().equals(Constants.HAWB) && !hawbLockSettings.getDestinationPortLock()) ||
+                            (request.getAwbType().equals(Constants.DMAWB) && !mawbLockSettings.getDestinationPortLock())) {
+                        awbRoute.setDestinationPortName(shipmentDetails.getCarrierDetails().getDestinationPort());
+                    }
+                    if((request.getAwbType().equals(Constants.HAWB) && !hawbLockSettings.getByCarrierLock()) ||
+                            (request.getAwbType().equals(Constants.DMAWB) && !mawbLockSettings.getByCarrierLock()))
+                        awbRoute.setByCarrier(shipmentDetails.getCarrierDetails().getShippingLine());
+                    if((request.getAwbType().equals(Constants.HAWB) && !hawbLockSettings.getFlightNumberLock()) ||
+                            (request.getAwbType().equals(Constants.DMAWB) && !mawbLockSettings.getFlightNumberLock()))
+                        awbRoute.setFlightNumber(shipmentDetails.getCarrierDetails().getFlightNumber());
+                    if((request.getAwbType().equals(Constants.HAWB) && !hawbLockSettings.getFlightDateLock()) ||
+                            (request.getAwbType().equals(Constants.DMAWB) && !mawbLockSettings.getFlightDateLock())) {
+                        var flightDate = request.getAwbType() == Constants.DMAWB ? shipmentDetails.getCarrierDetails().getEtd() : null;
+                        awbRoute.setFlightDate(flightDate);
+                    }
+                } else {
+                    deleteParty = awbRoute;
+                }
+            }
+        }
+        awb.getAwbRoutingInfo().remove(deleteParty);
+
+        if (shipmentDetails.getCarrierDetails() != null &&
+                shipmentDetails.getCarrierDetails().getOriginPort() != null &&
+                shipmentDetails.getCarrierDetails().getDestinationPort() != null && createRouting
+        ) {
+            var flightDate = request.getAwbType() == Constants.DMAWB ? shipmentDetails.getCarrierDetails().getEtd() : null;
+            AwbRoutingInfo routingInfo = new AwbRoutingInfo();
+            routingInfo.setIsShipmentCreated(true);
+            routingInfo.setOriginPortName(shipmentDetails.getCarrierDetails().getOriginPort());
+            routingInfo.setDestinationPortName(shipmentDetails.getCarrierDetails().getDestinationPort());
+            routingInfo.setByCarrier(shipmentDetails.getCarrierDetails().getShippingLine());
+            routingInfo.setFlightNumber(shipmentDetails.getCarrierDetails().getFlightNumber());
+            routingInfo.setFlightDate(flightDate);
+            routingInfo.setEntityId(shipmentDetails.getId());
+            routingInfo.setEntityType(request.getAwbType());
+            awb.getAwbRoutingInfo().add(routingInfo);
+        }
+    }
+    private void updateAwbGoodsDescriptionInfoFromShipment(ShipmentDetails shipmentDetails, CreateAwbRequest request, Awb awb, HawbLockSettings hawbLockSettings, MawbLockSettings mawbLockSettings) {
+        List<AwbGoodsDescriptionInfo> awbGoodsDescriptionInfoList = new ArrayList<>();
+        if(!awb.getAwbGoodsDescriptionInfo().isEmpty())
+            awbGoodsDescriptionInfoList = awb.getAwbGoodsDescriptionInfo().stream().filter(good -> good.getIsShipmentCreated() != null && good.getIsShipmentCreated()).toList();
+        if(awb.getAwbGoodsDescriptionInfo().isEmpty() || awbGoodsDescriptionInfoList.isEmpty()){
+            AwbGoodsDescriptionInfo awbGoodsDescriptionInfo = new AwbGoodsDescriptionInfo();
+            Integer totalPacksCount = 0;
+            awbGoodsDescriptionInfo.setIsShipmentCreated(true);
+            awbGoodsDescriptionInfo.setEntityId(shipmentDetails.getId());
+            awbGoodsDescriptionInfo.setEntityType(request.getAwbType());
+            awbGoodsDescriptionInfo.setGrossWt(shipmentDetails.getWeight());
+            awbGoodsDescriptionInfo.setGrossWtUnit(shipmentDetails.getWeightUnit());
+
+            awbGoodsDescriptionInfo.setChargeableWt(shipmentDetails.getChargable() != null ?
+                    AwbUtility.roundOffAirShipment((double) shipmentDetails.getChargable().doubleValue()) : null);
+            awbGoodsDescriptionInfo.setGuid(UUID.randomUUID());
+            if(awb.getAwbPackingInfo() != null) {
+                for (var awbPacking: awb.getAwbPackingInfo() ) {
+                    if(awbPacking.getGuid() != null && awbPacking.getAwbGoodsDescriptionInfoGuid() == null) {
+                        awbPacking.setAwbGoodsDescriptionInfoGuid(awbGoodsDescriptionInfo.getGuid());
+                        totalPacksCount += Integer.parseInt(awbPacking.getPacks());
+                        awbGoodsDescriptionInfo.getAwbPackingInfo().add(awbPacking);
+                    }
+                }
+            }
+            awbGoodsDescriptionInfo.setPiecesNo(totalPacksCount);
+            awb.getAwbGoodsDescriptionInfo().add(awbGoodsDescriptionInfo);
+        } else {
+            AwbGoodsDescriptionInfo awbGoodsDescriptionInfo = awbGoodsDescriptionInfoList.get(0);
+            Integer totalPacksCount = 0;
+            if((request.getAwbType().equals(Constants.HAWB) && !hawbLockSettings.getGrossWtLock()) ||
+                    (request.getAwbType().equals(Constants.DMAWB) && !mawbLockSettings.getGrossWtLock()))
+                awbGoodsDescriptionInfo.setGrossWt(shipmentDetails.getWeight());
+            if((request.getAwbType().equals(Constants.HAWB) && !hawbLockSettings.getGrossWtUnitLock()) ||
+                    (request.getAwbType().equals(Constants.DMAWB) && !mawbLockSettings.getGrossWtUnitLock()))
+                awbGoodsDescriptionInfo.setGrossWtUnit(shipmentDetails.getWeightUnit());
+
+            if((request.getAwbType().equals(Constants.HAWB) && !hawbLockSettings.getChargeableWtLock()) ||
+                    (request.getAwbType().equals(Constants.DMAWB) && !mawbLockSettings.getChargeableWtLock())) {
+                awbGoodsDescriptionInfo.setChargeableWt(shipmentDetails.getChargable() != null ?
+                        AwbUtility.roundOffAirShipment((double) shipmentDetails.getChargable().doubleValue()) : null);
+            }
+            if(awb.getAwbPackingInfo() != null) {
+                for (var awbPacking: awb.getAwbPackingInfo() ) {
+                    if(awbPacking.getAwbGoodsDescriptionInfoGuid().equals(awbGoodsDescriptionInfo.getGuid()))
+                        totalPacksCount += Integer.parseInt(awbPacking.getPacks());
+                    if(awbPacking.getGuid() != null && awbPacking.getAwbGoodsDescriptionInfoGuid() == null) {
+                        awbPacking.setAwbGoodsDescriptionInfoGuid(awbGoodsDescriptionInfo.getGuid());
+                        totalPacksCount += Integer.parseInt(awbPacking.getPacks());
+                        awbGoodsDescriptionInfo.getAwbPackingInfo().add(awbPacking);
+                    }
+                }
+            }
+            if((request.getAwbType().equals(Constants.HAWB) && !hawbLockSettings.getPiecesNoLock()) ||
+                    (request.getAwbType().equals(Constants.DMAWB) && !mawbLockSettings.getPiecesNoLock()))
+                awbGoodsDescriptionInfo.setPiecesNo(totalPacksCount);
+
+        }
+    }
+    private void updateAwbCargoInfoFromShipment(ShipmentDetails shipmentDetails, CreateAwbRequest request, Awb awb, HawbLockSettings hawbLockSettings, MawbLockSettings mawbLockSettings) {
+        AwbCargoInfo awbCargoInfo = awb.getAwbCargoInfo();
+        if((request.getAwbType().equals(Constants.HAWB) && !hawbLockSettings.getAccountingInfoLock()) ||
+                (request.getAwbType().equals(Constants.DMAWB) && !mawbLockSettings.getAccountingInfoLock()))
+            awbCargoInfo.setAccountingInfo(awbCargoInfo.getAccountingInfo() == null ? null : awbCargoInfo.getAccountingInfo().toUpperCase());
+        if((request.getAwbType().equals(Constants.HAWB) && !hawbLockSettings.getNtrQtyGoodsLock()) ||
+                (request.getAwbType().equals(Constants.DMAWB) && !mawbLockSettings.getNtrQtyGoodsLock())) {
+            awbCargoInfo.setNtrQtyGoods(AwbUtility.generateNatureAndQuantGoodsField(shipmentDetails.getGoodsDescription(), shipmentDetails.getVolumetricWeight(), awb.getAwbPackingInfo()));
+            awbCargoInfo.setNtrQtyGoods(awbCargoInfo.getNtrQtyGoods() == null ? null : awbCargoInfo.getNtrQtyGoods().toUpperCase());
+        }
+
+        if((request.getAwbType().equals(Constants.HAWB) && !hawbLockSettings.getCustomsValueLock()) ||
+                (request.getAwbType().equals(Constants.DMAWB) && !mawbLockSettings.getCustomsValueLock()))
+            awbCargoInfo.setCustomsValue(new BigDecimal(0.0));
+        if((request.getAwbType().equals(Constants.HAWB) && !hawbLockSettings.getCurrencyLock()) ||
+                (request.getAwbType().equals(Constants.DMAWB) && !mawbLockSettings.getCurrencyLock()))
+            awbCargoInfo.setCurrency(userContext.getUser().getCompanyCurrency());
+        if((request.getAwbType().equals(Constants.HAWB) && !hawbLockSettings.getOtherInfoLock()) ||
+                (request.getAwbType().equals(Constants.DMAWB) && !mawbLockSettings.getOtherInfoLock()))
+            awbCargoInfo.setOtherInfo(awbCargoInfo.getOtherInfo() == null ? null : awbCargoInfo.getOtherInfo().toUpperCase());
+
+        if((request.getAwbType().equals(Constants.HAWB) && !hawbLockSettings.getShippingInformationLock()) ||
+                (request.getAwbType().equals(Constants.DMAWB) && !mawbLockSettings.getShippingInformationLock())) {
+            awbCargoInfo.setShippingInformation(awbCargoInfo.getShippingInformation() == null ? null : awbCargoInfo.getShippingInformation().toUpperCase());
+            awbCargoInfo.setShippingInformationOther(awbCargoInfo.getShippingInformationOther() == null ? null : awbCargoInfo.getShippingInformationOther().toUpperCase());
+        }
+    }
+    private void updateAwbOtherInfoFromShipment(ShipmentDetails shipmentDetails, CreateAwbRequest request, Awb awb, HawbLockSettings hawbLockSettings, MawbLockSettings mawbLockSettings) {
+        AwbOtherInfo awbOtherInfo = awb.getAwbOtherInfo();
+        if((request.getAwbType().equals(Constants.HAWB) && !hawbLockSettings.getShipperLock()) ||
+                (request.getAwbType().equals(Constants.DMAWB) && !mawbLockSettings.getShipperLock())) {
+            var shipperName = StringUtility.convertToString(shipmentDetails.getConsigner().getOrgData().get(PartiesConstants.FULLNAME));
+            awbOtherInfo.setShipper(shipperName == null ? null : shipperName.toUpperCase());
+        }
+        if((request.getAwbType().equals(Constants.HAWB) && !hawbLockSettings.getExecutedOnLock()) ||
+                (request.getAwbType().equals(Constants.DMAWB) && !mawbLockSettings.getExecutedOnLock()))
+            awbOtherInfo.setExecutedOn(jsonHelper.convertValue(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss").format(LocalDateTime.now()), LocalDateTime.class));
+    }
+
+    @Override
+    public ResponseEntity<?> partialAutoUpdateMawb(CommonRequestModel commonRequestModel) {
+        String responseMsg;
+        CreateAwbRequest request = (CreateAwbRequest) commonRequestModel.getData();
+        if (request == null) {
+            log.debug("Request is empty for MAWB Create for Request Id {}", LoggerHelper.getRequestIdFromMDC());
+        }
+
+        if (request.getConsolidationId() == null) {
+            log.error("Consolidation Id can't be null or empty in update MAWB Request");
+            throw new ValidationException("Consolidation Id can't be null or empty in update MAWB Request");
+        }
+
+        List<Awb> awbs = awbDao.findByConsolidationId(request.getConsolidationId());
+        if(awbs.isEmpty()){
+            log.error("No Mawb exist for given Consolidation to update");
+            throw new ValidationException("No Mawb exist for given Consolidation to update");
+        }
+
+        Awb awb = awbs.get(0);
+
+        List<ShipmentSettingsDetails> shipmentSettingsDetailsList = shipmentSettingsDao.getSettingsByTenantIds(List.of(TenantContext.getCurrentTenant()));
+        if(shipmentSettingsDetailsList.isEmpty()){
+            log.error("Failed to fetch Shipment Settings Details");
+            throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+        }
+        ShipmentSettingsDetails shipmentSettingsDetails = shipmentSettingsDetailsList.get(0);
+        try {
+            // fetch consolidation info
+            ConsolidationDetails consolidationDetails = consolidationDetailsDao.findById(request.getConsolidationId()).get();
+            if(shipmentSettingsDetails.getRestrictAWBEdit()){
+                ResetAwbRequest resetAwbRequest = ResetAwbRequest.builder()
+                        .id(awb.getId())
+                        .shipmentId(request.getShipmentId())
+                        .consolidationId(request.getConsolidationId())
+                        .awbType(request.getAwbType())
+                        .resetType(AwbReset.ALL)
+                        .build();
+                return this.reset(CommonRequestModel.buildRequest(resetAwbRequest));
+            } else if(shipmentSettingsDetails.getAutoUpdateShipmentAWB()) {
+                updateMawbFromShipment(request, consolidationDetails, awb, shipmentSettingsDetails);
+                awb = awbDao.save(awb);
+            }
+
+            // map mawb and hawb affter suuccessful save
+            updateLinkHawbMawb(consolidationDetails, awb.getId());
+            log.info("MAWB created successfully for Id {} with Request Id {}", awb.getId(), LoggerHelper.getRequestIdFromMDC());
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+        return ResponseHelper.buildSuccessResponse(convertEntityToDto(awb));
+    }
+
+    private void updateLinkHawbMawb(ConsolidationDetails consolidationDetails, Long mawbId) {
+        List<MawbHawbLink> mawbHawbLinks = mawbHawbLinkDao.findByMawbId(mawbId);
+        Set<Long> linkedHawbIds = new HashSet<>();
+        linkedHawbIds = mawbHawbLinks.stream().map(link -> link.getHawbId()).collect(Collectors.toSet());
+        for (var consoleShipment : consolidationDetails.getShipmentsList()) {
+            if (consoleShipment.getId() != null) {
+                Awb awb = awbDao.findByShipmentId(consoleShipment.getId()).stream().findFirst().get();
+
+                if(awb != null && !linkedHawbIds.contains(awb.getId())) {
+                    MawbHawbLink mawbHawblink = new MawbHawbLink();
+                    mawbHawblink.setHawbId(awb.getId());
+                    mawbHawblink.setMawbId(mawbId);
+                    mawbHawbLinkDao.save(mawbHawblink);
+                }
+            }
+        }
+    }
+
+    private void updateMawbFromShipment(CreateAwbRequest request, ConsolidationDetails consolidationDetails, Awb awb, ShipmentSettingsDetails shipmentSettingsDetails) {
+
+        MawbLockSettings mawbLockSettings = shipmentSettingsDetails.getMawbLockSettings();
+        attachedShipmentDescriptions = new ArrayList<>();
+        totalVolumetricWeightOfAwbPacks = BigDecimal.ZERO;
+        awb.setAwbPackingInfo(updateMawbPackingInfoFromShipment(consolidationDetails));
+        updateMawbShipmentInfoFromShipment(consolidationDetails, request, awb, mawbLockSettings);
+        generateMawbNotifyPartyinfo(consolidationDetails, request, awb, mawbLockSettings);
+        updateMawbRoutingInfoFromShipment(consolidationDetails, request, awb, mawbLockSettings);
+        updateMawbCargoInfoFromShipment(consolidationDetails, request, awb, mawbLockSettings);
+        generateMawbOtherInfo(consolidationDetails, request, awb, mawbLockSettings);
+    }
+    private List<AwbPackingInfo> updateMawbPackingInfoFromShipment(ConsolidationDetails consolidationDetails) {
+        List<AwbPackingInfo> awbPackingList = new ArrayList<>();
+        List<AwbGoodsDescriptionInfo> awbGoodsDescList = new ArrayList<>();
+        List<Long> attachedHawbIds = new ArrayList<>();
+        List<AwbPackingInfo> hawbPacksLinkedToMawb = new ArrayList<>();
+
+        if (consolidationDetails.getShipmentsList().size() > 0) {
+            for (var consoleShipment : consolidationDetails.getShipmentsList()) {
+                if (!StringUtility.isEmpty(consoleShipment.getGoodsDescription())) {
+                    attachedShipmentDescriptions.add(consoleShipment.getGoodsDescription());
+                }
+
+                var awbList = awbDao.findByShipmentId(consoleShipment.getId());
+                if (awbList != null && !awbList.isEmpty()) {
+                    var awb = awbList.stream().findFirst().get();
+                    if (awb.getAwbPackingInfo() != null && awb.getAwbPackingInfo().size() > 0) {
+                        for (var awbPack : awb.getAwbPackingInfo()) {
+                            if (awbPack.getVolume() != null && !StringUtility.isEmpty(awbPack.getVolumeUnit()) &&
+                                    awbPack.getVolumeUnit() == "M3") {
+                                totalVolumetricWeightOfAwbPacks.add(awbPack.getVolume());
+                            }
+                            hawbPacksLinkedToMawb.add(awbPack);
+                        }
+                    }
+                }
+            }
+            Double factor = Constants.FACTOR_VOL_WT;
+            totalVolumetricWeightOfAwbPacks.multiply(new BigDecimal(factor));
+        }
+        return hawbPacksLinkedToMawb;
+    }
+
+    private void updateMawbShipmentInfoFromShipment(ConsolidationDetails consolidationDetails, CreateAwbRequest request, Awb awb, MawbLockSettings mawbLockSettings) {
+        AwbShipmentInfo awbShipmentInfo = awb.getAwbShipmentInfo();
+        // awbShipmentInfo.setShipperName(consolidationDetails.getSendingAgentName()); // missing
+        if(!mawbLockSettings.getFirstCarrierLock())
+            awbShipmentInfo.setFirstCarrier(consolidationDetails.getCarrierDetails().getShippingLine());
+        if(!mawbLockSettings.getShipperAddressLock())
+            awbShipmentInfo.setShipperAddress(consolidationDetails.getSendingAgentFreeTextAddress());
+        // awbShipmentInfo.setConsigneeName(consolidationDetails.getReceivingAgentName()); //missing
+        if(!mawbLockSettings.getConsigneeAddressLock())
+            awbShipmentInfo.setConsigneeAddress(consolidationDetails.getReceivingAgentFreeTextAddress());
+        // awbShipmentInfo.setConsigneeReferenceNumber(consolidationDetails.getReceivingAgentId()); //missing
+        // AwbUtility.getConsolidationForwarderDetails(uow, consolidationRow, awbShipmentInfo, awbOtherInfoRow, awbCargoInfo); TODO
+        // awbShipmentInfo.setOriginAirport(consolidationDetails.setOriginPort()); // missing
+        // awbShipmentInfo.setDestinationAirport(consolidationDetails.setDestinationPort()); // missing
+    }
+
+    private void generateMawbNotifyPartyinfo(ConsolidationDetails consolidationDetails, CreateAwbRequest request, Awb awb, MawbLockSettings mawbLockSettings) {
+        Map<UUID, Parties> consolidationAddressMap = new HashMap<>();
+        if (consolidationDetails.getConsolidationAddresses() != null &&
+                consolidationDetails.getConsolidationAddresses().size() > 0) {
+            for (var party : consolidationDetails.getConsolidationAddresses()) {
+                if (party.getOrgData().get("Type") == "Notify Part 1" ||
+                        party.getOrgData().get("Type") == "Notify Part 2" ||
+                        party.getOrgData().get("Type") == "Notify Part 3") {
+                    consolidationAddressMap.put(party.getGuid(), party);
+                }
+            }
+        }
+        List<AwbNotifyPartyInfo> deleteAwbPartyList = new ArrayList<>();
+        if(awb.getAwbNotifyPartyInfo() != null && !awb.getAwbNotifyPartyInfo().isEmpty()){
+            for (var awbParty: awb.getAwbNotifyPartyInfo()){
+                if(awbParty.getIsShipmentCreated() != null && awbParty.getIsShipmentCreated()){
+                    if(consolidationAddressMap.containsKey(awbParty.getGuid())){
+                        Parties party = consolidationAddressMap.get(awbParty.getGuid());
+                        if(!mawbLockSettings.getNotifyOrganizationLock()) {
+                            var name = StringUtility.convertToString(party.getOrgData().get(PartiesConstants.FULLNAME));
+                            awbParty.setName(name == null ? name : name.toUpperCase());
+                        }
+                        if(!mawbLockSettings.getNotifyOrganizationAddressLock())
+                            awbParty.setAddress(AwbUtility.constructAddress(party.getAddressData()).toUpperCase());
+                        consolidationAddressMap.remove(awbParty.getGuid());
+                    } else {
+                        deleteAwbPartyList.add(awbParty);
+                    }
+                }
+            }
+        }
+        awb.getAwbNotifyPartyInfo().removeAll(deleteAwbPartyList);
+
+        if(!consolidationAddressMap.isEmpty()){
+            for (var party: consolidationAddressMap.values()){
+                AwbNotifyPartyInfo notifyPartyInfo = new AwbNotifyPartyInfo();
+                var name = StringUtility.convertToString(party.getOrgData().get(PartiesConstants.FULLNAME));
+                notifyPartyInfo.setName(name == null ? name : name.toUpperCase());
+                notifyPartyInfo.setAddress(AwbUtility.constructAddress(party.getAddressData()).toUpperCase());
+                notifyPartyInfo.setEntityId(consolidationDetails.getId());
+                notifyPartyInfo.setEntityType(request.getAwbType());
+                notifyPartyInfo.setIsShipmentCreated(true);
+                notifyPartyInfo.setGuid(party.getGuid());
+                // notifyPartyInfo.setAddressId(shipmentNotifyParty.getAddressData()); // field missing: AddressId
+                notifyPartyInfo.setNotifyOrgId(consolidationDetails.getId());
+                awb.getAwbNotifyPartyInfo().add(notifyPartyInfo);
+            }
+        }
+
+    }
+
+    private void updateMawbRoutingInfoFromShipment(ConsolidationDetails consolidationDetails, CreateAwbRequest request, Awb awb, MawbLockSettings mawbLockSettings) {
+        boolean createRouting = true;
+        AwbRoutingInfo deleteParty = new AwbRoutingInfo();
+        for(var awbRoute: awb.getAwbRoutingInfo()){
+            if(awbRoute.getIsShipmentCreated() != null && awbRoute.getIsShipmentCreated()){
+                createRouting = false;
+                if (consolidationDetails.getCarrierDetails() != null &&
+                        consolidationDetails.getCarrierDetails().getOriginPort() != null &&
+                        consolidationDetails.getCarrierDetails().getDestinationPort() != null) {
+                    if(!mawbLockSettings.getOriginPortLock()) {
+                        awbRoute.setOriginPortName(consolidationDetails.getCarrierDetails().getOriginPort());
+                    }
+                    if(!mawbLockSettings.getDestinationPortLock()) {
+                        awbRoute.setDestinationPortName(consolidationDetails.getCarrierDetails().getDestinationPort());
+                    }
+                    if(!mawbLockSettings.getByCarrierLock())
+                        awbRoute.setByCarrier(consolidationDetails.getCarrierDetails().getShippingLine());
+                    if(!mawbLockSettings.getFlightNumberLock())
+                        awbRoute.setFlightNumber(consolidationDetails.getCarrierDetails().getFlightNumber());
+                } else {
+                    deleteParty = awbRoute;
+                }
+            }
+        }
+        awb.getAwbRoutingInfo().remove(deleteParty);
+
+        if (consolidationDetails.getCarrierDetails() != null &&
+                consolidationDetails.getCarrierDetails().getOriginPort() != null &&
+                consolidationDetails.getCarrierDetails().getDestinationPort() != null && createRouting
+        ) {
+            AwbRoutingInfo routingInfo = new AwbRoutingInfo();
+            routingInfo.setIsShipmentCreated(true);
+            routingInfo.setOriginPortName(consolidationDetails.getCarrierDetails().getOriginPort());
+            routingInfo.setDestinationPortName(consolidationDetails.getCarrierDetails().getDestinationPort());
+            routingInfo.setByCarrier(consolidationDetails.getCarrierDetails().getShippingLine());
+            routingInfo.setFlightNumber(consolidationDetails.getCarrierDetails().getFlightNumber());
+            routingInfo.setEntityId(consolidationDetails.getId());
+            routingInfo.setEntityType(request.getAwbType());
+            awb.getAwbRoutingInfo().add(routingInfo);
+        }
+    }
+    private void updateMawbCargoInfoFromShipment(ConsolidationDetails consolidationDetails, CreateAwbRequest request, Awb awb, MawbLockSettings mawbLockSettings) {
+        AwbCargoInfo awbCargoInfo = awb.getAwbCargoInfo();
+        String concatenatedGoodsDesc = ""; //TODO from consoleshipment mapping
+        if (attachedShipmentDescriptions.size() > 0) {
+            concatenatedGoodsDesc = String.join(",", attachedShipmentDescriptions);
+        }
+        if(!mawbLockSettings.getNtrQtyGoodsLock()) {
+            awbCargoInfo.setNtrQtyGoods(AwbUtility.generateNatureAndQuantFieldsForConsolMawb(concatenatedGoodsDesc, totalVolumetricWeightOfAwbPacks, awb.getAwbPackingInfo()));
+            awbCargoInfo.setNtrQtyGoods(awbCargoInfo.getNtrQtyGoods() == null ? null : awbCargoInfo.getNtrQtyGoods().toUpperCase());
+        }
+
+//        awbCargoInfo.setCarriageValue(shipmentDetails.getGoodsValue() != null ? shipmentDetails.getGoodsValue() : new BigDecimal(0.0)); // field missing
+//        awbCargoInfo.setCarriageValue(shipmentDetails.getInsuranceValue() != null ? shipmentDetailsgetInsuranceValue() : new BigDecimal(0.0)); // field missing
+        if(!mawbLockSettings.getCustomsValueLock())
+            awbCargoInfo.setCustomsValue(new BigDecimal(0.0));
+        if(!mawbLockSettings.getCurrencyLock())
+            awbCargoInfo.setCurrency(userContext.getUser().getCompanyCurrency());
+        // awbCargoInfo.setHandlingInfo(getHandlingInfo(MasterListTypes.MAWBGeneration)); // field missing
+        if(!mawbLockSettings.getAccountingInfoLock())
+            awbCargoInfo.setAccountingInfo(awbCargoInfo.getAccountingInfo() == null ? null : awbCargoInfo.getAccountingInfo().toUpperCase());
+        if(!mawbLockSettings.getOtherInfoLock())
+            awbCargoInfo.setOtherInfo(awbCargoInfo.getOtherInfo() == null ? null : awbCargoInfo.getOtherInfo().toUpperCase());
+
+        if(!mawbLockSettings.getShippingInformationLock()) {
+            awbCargoInfo.setShippingInformation(awbCargoInfo.getShippingInformation() == null ? null : awbCargoInfo.getShippingInformation().toUpperCase());
+            awbCargoInfo.setShippingInformationOther(awbCargoInfo.getShippingInformationOther() == null ? null : awbCargoInfo.getShippingInformationOther().toUpperCase());
+        }
+
+    }
+    private void generateMawbOtherInfo(ConsolidationDetails consolidationDetails, CreateAwbRequest request, Awb awb, MawbLockSettings mawbLockSettings) {
+        AwbOtherInfo awbOtherInfo = awb.getAwbOtherInfo();
+        // awbOtherInfo.setShipper(consolidationDetails.getSendingAgentName()); //missing
+        if(!mawbLockSettings.getExecutedOnLock())
+            awbOtherInfo.setExecutedOn(jsonHelper.convertValue(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss").format(LocalDateTime.now()), LocalDateTime.class));
+
+    }
 }

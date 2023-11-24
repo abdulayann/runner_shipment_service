@@ -24,6 +24,7 @@ import com.dpw.runner.shipment.services.dto.request.hbl.HblContainerDto;
 import com.dpw.runner.shipment.services.dto.request.hbl.HblDataDto;
 import com.dpw.runner.shipment.services.dto.response.HblResponse;
 import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entity.enums.HblReset;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
@@ -268,9 +269,19 @@ public class HblService implements IHblService {
             throw new ValidationException(String.format(HblConstants.HBL_NO_DATA_FOUND_SHIPMENT, shipmentDetails.get().getShipmentId()));
 
         Hbl hbl = hbls.get(0);
-        updateHblFromShipment(shipmentDetails.get(), hbl);
-
-        hbl = hblDao.save(hbl);
+        List<ShipmentSettingsDetails> shipmentSettingsDetailsList = shipmentSettingsDao.getSettingsByTenantIds(List.of(TenantContext.getCurrentTenant()));
+        if(shipmentSettingsDetailsList.isEmpty()){
+            log.error("Failed to fetch Shipment Settings Details");
+            throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+        }
+        ShipmentSettingsDetails shipmentSettingsDetails = shipmentSettingsDetailsList.get(0);
+        if(shipmentSettingsDetails.getRestrictBLEdit()) {
+            HblResetRequest resetRequest = HblResetRequest.builder().id(hbl.getId()).resetType(HblReset.ALL).build();
+            return resetHbl(CommonRequestModel.buildRequest(resetRequest));
+        } else if (shipmentSettingsDetails.getAutoUpdateShipmentBL()){
+            updateHblFromShipment(shipmentDetails.get(), hbl, shipmentSettingsDetails);
+            hbl = hblDao.save(hbl);
+        }
 
         try {
             hblSync.sync(hbl);
@@ -282,13 +293,7 @@ public class HblService implements IHblService {
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(hbl));
     }
 
-    private void updateHblFromShipment(ShipmentDetails shipmentDetails, Hbl hbl) {
-        List<ShipmentSettingsDetails> shipmentSettingsDetailsList = shipmentSettingsDao.getSettingsByTenantIds(List.of(TenantContext.getCurrentTenant()));
-        if(shipmentSettingsDetailsList.isEmpty()){
-            log.error("Failed to fetch Shipment Settings Details");
-            throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
-        }
-        ShipmentSettingsDetails shipmentSettingsDetails = shipmentSettingsDetailsList.get(0);
+    private void updateHblFromShipment(ShipmentDetails shipmentDetails, Hbl hbl, ShipmentSettingsDetails shipmentSettingsDetails) {
         updateShipmentToHBL(shipmentDetails, hbl, shipmentSettingsDetails.getHblLockSettings());
         updateShipmentCargoToHBL(shipmentDetails.getPackingList(), hbl, shipmentSettingsDetails.getHblLockSettings());
         updateShipmentContainersToHBL(shipmentDetails.getContainersList(), hbl, shipmentSettingsDetails.getHblLockSettings());
@@ -800,7 +805,7 @@ public class HblService implements IHblService {
         boolean createNotifyParty = true;
         HblPartyDto deleteParty = new HblPartyDto();
         for(var hblParty: hbl.getHblNotifyParty()){
-            if(hblParty.getIsShipmentCreated()){
+            if(hblParty.getIsShipmentCreated() != null && hblParty.getIsShipmentCreated()){
                 createNotifyParty = false;
                 if(party != null){
                     if(!hblLock.getNotifyPartyNameLock())

@@ -24,4 +24,5 @@ public class AwbRoutingInfo {
     private String destinationAirport;
     private String destinationPortName;
     private String originPortName;
+    private Boolean isShipmentCreated;
 }

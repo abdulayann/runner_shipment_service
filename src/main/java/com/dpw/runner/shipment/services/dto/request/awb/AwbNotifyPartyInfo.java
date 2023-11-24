@@ -3,6 +3,8 @@ package com.dpw.runner.shipment.services.dto.request.awb;
 import io.swagger.annotations.ApiModel;
 import lombok.*;
 
+import java.util.UUID;
+
 @Data
 @Builder
 @ApiModel("AWB Notify Party Info Model")
@@ -20,4 +22,6 @@ public class AwbNotifyPartyInfo {
     private String name;
     private String address;
     private Integer addressId;
+    private Boolean isShipmentCreated;
+    private UUID guid;
 }
