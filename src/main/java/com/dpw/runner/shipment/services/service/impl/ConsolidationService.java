@@ -205,6 +205,7 @@ public class ConsolidationService implements IConsolidationService {
             Map.entry("TenantName", "DP WORLD LOGISTICS CANADA INC")
     );
     private Map<String, RunnerEntityMapping> tableNames = Map.ofEntries(
+            Map.entry("id", RunnerEntityMapping.builder().tableName("ConsolidationDetails").dataType(Long.class).build()),
             Map.entry("type", RunnerEntityMapping.builder().tableName("parties").dataType(String.class).build()),
             Map.entry("cutoffDate", RunnerEntityMapping.builder().tableName("allocations").dataType(LocalDateTime.class).build()),
             Map.entry("createdBy", RunnerEntityMapping.builder().tableName("ConsolidationDetails").dataType(String.class).build()),

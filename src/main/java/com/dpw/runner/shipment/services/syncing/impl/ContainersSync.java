@@ -3,7 +3,6 @@ package com.dpw.runner.shipment.services.syncing.impl;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
-import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataSyncResponse;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.Containers;
@@ -14,7 +13,7 @@ import com.dpw.runner.shipment.services.syncing.Entity.ContainerRequestV2;
 import com.dpw.runner.shipment.services.syncing.Entity.V1DataSyncRequest;
 import com.dpw.runner.shipment.services.syncing.constants.SyncingConstants;
 import com.dpw.runner.shipment.services.syncing.interfaces.IContainersSync;
-import com.dpw.runner.shipment.services.utils.V1AuthHelper;
+import com.dpw.runner.shipment.services.utils.EmailServiceUtility;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
@@ -23,7 +22,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.http.HttpEntity;
 import org.springframework.http.ResponseEntity;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.scheduling.annotation.Async;
@@ -62,6 +60,10 @@ public class ContainersSync implements IContainersSync {
     @Autowired
     private IV1Service v1Service;
 
+    @Autowired
+    private EmailServiceUtility emailServiceUtility;
+
+
     private RetryTemplate retryTemplate = RetryTemplate.builder()
             .maxAttempts(3)
             .fixedBackoff(1000)
@@ -76,10 +78,19 @@ public class ContainersSync implements IContainersSync {
         String json = jsonHelper.convertToJson(V1DataSyncRequest.builder().entity(containerRequestV2).module(SyncingConstants.CONTAINERS).build());
         retryTemplate.execute(ctx -> {
             log.info("Current retry : {}", ctx.getRetryCount());
-            if(ctx.getLastThrowable() != null) {
-                log.error("V1 error -> {}",ctx.getLastThrowable().getMessage());
+            if (ctx.getLastThrowable() != null) {
+                log.error("V1 error -> {}", ctx.getLastThrowable().getMessage());
             }
+
             V1DataSyncResponse response_ = v1Service.v1DataSync(json);
+            if (!response_.getIsSuccess()) {
+                try {
+                    emailServiceUtility.sendEmailForSyncEntity(String.valueOf(containerIds.toString()), null,
+                            "Containers", response_.getError().toString());
+                } catch (Exception ex) {
+                    log.error("Not able to send email for sync failure for Containers: " + ex.getMessage());
+                }
+            }
             return ResponseHelper.buildSuccessResponse(response_);
         });
 

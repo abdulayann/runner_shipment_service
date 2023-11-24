@@ -1,6 +1,5 @@
 package com.dpw.runner.shipment.services.syncing.impl;
 
-import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataSyncResponse;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -11,12 +10,11 @@ import com.dpw.runner.shipment.services.syncing.Entity.ContainerRequestV2;
 import com.dpw.runner.shipment.services.syncing.Entity.V1DataSyncRequest;
 import com.dpw.runner.shipment.services.syncing.constants.SyncingConstants;
 import com.dpw.runner.shipment.services.syncing.interfaces.IContainerSync;
-import com.dpw.runner.shipment.services.utils.V1AuthHelper;
+import com.dpw.runner.shipment.services.utils.EmailServiceUtility;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpEntity;
 import org.springframework.http.ResponseEntity;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.scheduling.annotation.Async;
@@ -34,12 +32,18 @@ public class ContainerSync implements IContainerSync {
 
     @Autowired
     ModelMapper modelMapper;
+
     @Autowired
     JsonHelper jsonHelper;
+
     @Autowired
     RestTemplate restTemplate;
+
     @Autowired
     private IV1Service v1Service;
+
+    @Autowired
+    private EmailServiceUtility emailServiceUtility;
 
     private RetryTemplate retryTemplate = RetryTemplate.builder()
             .maxAttempts(3)
@@ -63,6 +67,15 @@ public class ContainerSync implements IContainerSync {
         var resp = retryTemplate.execute(ctx -> {
             log.info("Current retry : {}", ctx.getRetryCount());
             V1DataSyncResponse response_ = v1Service.v1DataSync(finalCs);
+            if (!response_.getIsSuccess()) {
+                try {
+                    emailServiceUtility.sendEmailForSyncEntity(String.valueOf(containers.stream().map(x -> x.getId()).toList().toString()),
+                            String.valueOf(containers.stream().map(x -> x.getGuid()).toList().toString()),
+                            "bulk containers", response_.getError().toString());
+                } catch (Exception ex) {
+                    log.error("Not able to send email for sync failure for bulk containers: " + ex.getMessage());
+                }
+            }
             return ResponseHelper.buildSuccessResponse(response_);
         });
         return ResponseHelper.buildSuccessResponse(resp);
