@@ -58,7 +58,6 @@ public class ResponseHelper {
         return new ResponseEntity<>(runnerResponse, HttpStatus.OK);
     }
 
-
     public static ResponseEntity<?> buildListSuccessResponse(List<IRunnerResponse> data) {
         log.debug("Return Response with data {}", data);
         RunnerListResponse runnerResponse = RunnerListResponse.builder().success(true)
@@ -110,6 +109,7 @@ public class ResponseHelper {
         runnerResponse.setRequestId(LoggerHelper.getRequestIdFromMDC());
         return new ResponseEntity<>(runnerResponse, HttpStatus.OK);
     }
+
 
     public static ResponseEntity<?> buildFileResponse(byte[] bytes, MediaType contentType, String fileName) {
         ByteArrayResource resource = new ByteArrayResource(bytes);
