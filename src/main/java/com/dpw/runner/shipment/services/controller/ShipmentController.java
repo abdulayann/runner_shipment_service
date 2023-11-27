@@ -241,7 +241,7 @@ public class ShipmentController {
     public ResponseEntity<?> syncShipmentToService(@RequestBody @Valid CustomShipmentSyncRequest request){
         String responseMsg = "failure executing :(";
         try {
-            return shipmentReverseSync.reverseSync(CommonRequestModel.buildRequest(request));
+            return shipmentReverseSync.reverseSync(CommonRequestModel.buildRequest(request), true);
         } catch (Exception e){
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : "Error syncing provided Shipment";

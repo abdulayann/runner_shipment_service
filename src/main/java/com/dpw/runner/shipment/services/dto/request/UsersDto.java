@@ -81,5 +81,6 @@ public class UsersDto implements Serializable {
     public Boolean UnicoRelated;
     public String AgentIATACode;
     public String AgentCASSCode;
+    public Integer SyncTenantId;
 
 }

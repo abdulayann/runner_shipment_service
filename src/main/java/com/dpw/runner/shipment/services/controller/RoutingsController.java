@@ -105,7 +105,7 @@ public class RoutingsController {
     public ResponseEntity<?> syncRoutingsToService(@RequestBody @Valid RoutingsRequestV2 request) {
         String responseMsg = "failure executing :(";
         try {
-            return routingsService.V1RoutingsCreateAndUpdate(CommonRequestModel.buildRequest(request));
+            return routingsService.V1RoutingsCreateAndUpdate(CommonRequestModel.buildRequest(request), true);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : "Error syncing provided Routings";

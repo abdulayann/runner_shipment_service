@@ -14,7 +14,7 @@ public interface IPackingService extends ICommonService {
 
     ResponseEntity<?> calculateWeightVolumne(CommonRequestModel commonRequestModel) throws Exception;
 
-    ResponseEntity<?> V1PackingCreateAndUpdate(CommonRequestModel commonRequestModel) throws Exception;
+    ResponseEntity<?> V1PackingCreateAndUpdate(CommonRequestModel commonRequestModel, boolean checkForSync) throws Exception;
 
     ResponseEntity<?> V1BulkPackingCreateAndUpdate(CommonRequestModel commonRequestModel);
     ResponseEntity<?> listPacksToDetach(CommonRequestModel commonRequestModel) throws Exception;
