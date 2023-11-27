@@ -117,15 +117,6 @@ public class BookingIntegrationsUtility {
         }
     }
 
-    public ResponseEntity<?> updateOrgCreditLimitFromBooking(CheckCreditLimitResponse request) {
-        try {
-            var response = v1Service.updateOrgCreditLimitFromBooking(request);
-            return response;
-        } catch (Exception ex) {
-            log.error("Error updating Credit Limit for Org with CustomerIdentifier: {} with error message: {}", request.getAccountNumber(), ex.getMessage());
-            throw ex;
-        }
-    }
 
     private void saveErrorResponse(Long entityId, String entityType, IntegrationType integrationType, Status status, String message) {
         IntegrationResponse response = IntegrationResponse.builder()
