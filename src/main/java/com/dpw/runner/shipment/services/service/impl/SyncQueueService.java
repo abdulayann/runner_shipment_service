@@ -82,6 +82,7 @@ public class SyncQueueService implements ISyncQueueService {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;
             log.error(responseMsg, e);
+            log.error("Request: {} || Error occurred during event: {} exception: {}", LoggerHelper.getRequestIdFromMDC(), "PUSH_SYNC_REQUEST_TO_QUEUE", e.getLocalizedMessage());
             // TODO: Mayank to send email if needed
             return ResponseHelper.buildFailedResponse(responseMsg);
         }
@@ -90,6 +91,7 @@ public class SyncQueueService implements ISyncQueueService {
 
     public ResponseEntity<?> triggerSyncRequest(CommonRequestModel commonRequestModel) {
         TriggerSyncRequest request = (TriggerSyncRequest) commonRequestModel.getData();
+        double _start = System.currentTimeMillis();
         log.error("Request: {} || TRIGGER_SYNC request received with data: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
         if (Objects.isNull(request) || Objects.isNull(request.getModuleType()) || Objects.isNull(request.getTenantIds()) || request.getTenantIds().isEmpty()) {
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
@@ -113,9 +115,10 @@ public class SyncQueueService implements ISyncQueueService {
                                         .id(element.getId()).moduleId(element.getModuleId()).moduleType(element.getModuleType())
                                         .build();
             UserContext.getUser().setSyncTenantId(element.getSyncTenantId());
+            log.info("Request: {} || TRIGGER_SYNC started for Module: {} with data: {}", LoggerHelper.getRequestIdFromMDC(), element.getModuleType(), jsonHelper.convertToJson(element));
+            double _current = System.currentTimeMillis();
 
             try {
-
                 switch (element.getModuleType()) {
                     case SyncingConstants.SHIPMENT:
                         shipmentReverseSync.reverseSync(CommonRequestModel.builder().data(jsonHelper.readFromJson(element.getData(), CustomShipmentSyncRequest.class)).build(), false);
@@ -168,9 +171,11 @@ public class SyncQueueService implements ISyncQueueService {
                 // TODO: Mayank to send email if needed
             }
             UserContext.getUser().setSyncTenantId(null);
+            log.info("Request: {} || TRIGGER_SYNC ended for Module: {} with time taken: {} ms", LoggerHelper.getRequestIdFromMDC(), element.getModuleType(), (System.currentTimeMillis() - _current));
         }
         if (!succeeded.isEmpty())
             syncQueueDao.updateDataInActive(succeeded.stream().map(TriggerSyncResponse.SyncResponse::getId).collect(Collectors.toList()));
+        log.info("Request: {} || TRIGGER_SYNC ended for all Module with total time taken: {} ms", LoggerHelper.getRequestIdFromMDC(), (System.currentTimeMillis() - _start));
 
         return ResponseHelper.buildSuccessResponse(TriggerSyncResponse.builder().succeeded(succeeded).failed(failed).build());
     }
