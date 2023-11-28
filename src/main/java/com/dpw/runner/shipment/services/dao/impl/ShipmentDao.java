@@ -118,7 +118,7 @@ public class ShipmentDao implements IShipmentDao {
     @Override
     public ShipmentDetails update(ShipmentDetails shipmentDetails, boolean fromV1Sync) {
         validateLockStatus(shipmentDetails.getId());
-        Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(shipmentDetails) , Constants.SHIPMENT, LifecycleHooks.ON_UPDATE, false);
+        Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(shipmentDetails) , Constants.SHIPMENT, LifecycleHooks.ON_CREATE, false);
         ShipmentDetails oldShipment = null;
         if(shipmentDetails.getId() != null){
             long id = shipmentDetails.getId();

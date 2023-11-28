@@ -2184,6 +2184,7 @@ public class ShipmentService implements IShipmentService {
             cloneShipmentDetails.setRoutingsList(null);
             cloneShipmentDetails.setShipmentId(null);
             cloneShipmentDetails.setMasterBill(null);
+            cloneShipmentDetails.setConsolidationList(null);
             
             if(Constants.TRANSPORT_MODE_SEA.equals(cloneShipmentDetails.getTransportMode()) && Constants.DIRECTION_EXP.equals(cloneShipmentDetails.getDirection()))
                 cloneShipmentDetails.setHouseBill(generateCustomHouseBL());

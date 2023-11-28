@@ -70,7 +70,7 @@ public class HblReleaseTypeMappingService implements IHblReleaseTypeMappingServi
             HblReleaseTypeMappingListRequest request = (HblReleaseTypeMappingListRequest) commonRequestModel.getData();
             if (request == null || request.getHblId() == null || request.getReleaseType() == null) {
                 log.error("Request is empty for Hbl Release Type retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
-                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                throw new DataRetrievalFailureException("Invalid request for fetching original printed, make sure mandatory fields are available: HBL Id & Release Type");
             }
 
             List<HblReleaseTypeMapping> releaseTypeMappingList = hblReleaseTypeMappingDao.findByReleaseTypeAndHblId(request.getHblId(), request.getReleaseType());
