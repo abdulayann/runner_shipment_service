@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.dao.impl;
 import com.dpw.runner.shipment.services.Kafka.Dto.AwbShipConsoleDto;
 import com.dpw.runner.shipment.services.Kafka.Dto.KafkaResponse;
 import com.dpw.runner.shipment.services.Kafka.Producer.KafkaProducer;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dao.interfaces.IAwbDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
@@ -43,7 +44,7 @@ public class AwbDao implements IAwbDao {
     IConsolidationDetailsDao consolidationDetailsDao;
     @Override
     public Awb save(Awb awbShipmentInfo) {
-        boolean isCreate = false;
+        boolean isCreate = false; // TODO- handle create/update here
         if (awbShipmentInfo.getId() == null) {
             isCreate = true;
         }
@@ -55,6 +56,8 @@ public class AwbDao implements IAwbDao {
     @Async
     private void pushToKafka(Awb awb, boolean isCreate) {
         try {
+            if(awb.getTenantId() == null)
+                awb.setTenantId(TenantContext.getCurrentTenant());
             AwbResponse awbResponse = jsonHelper.convertValue(awb, AwbResponse.class);
             if(awb.getShipmentId() != null && awb.getAwbShipmentInfo().getEntityType().equals(Constants.DMAWB)) {
                 Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(awb.getShipmentId());
@@ -113,7 +116,12 @@ public class AwbDao implements IAwbDao {
 
     @Override
     public List<Awb> saveAll(List<Awb> req) {
-        return awbRepository.saveAll(req);
+        List<Awb> entities = awbRepository.saveAll(req);
+        for (Awb awb: entities)
+        {
+            pushToKafka(awb, false);
+        }
+        return entities;
     }
 
 }

@@ -8,6 +8,8 @@ import org.springframework.http.ResponseEntity;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
@@ -28,7 +30,7 @@ public interface IShipmentService extends ICommonService {
 
     ResponseEntity<?> toggleLock(CommonRequestModel commonRequestModel);
 
-    ResponseEntity<?> completeV1ShipmentCreateAndUpdate(CommonRequestModel commonRequestModel) throws Exception;
+    ResponseEntity<?> completeV1ShipmentCreateAndUpdate(CommonRequestModel commonRequestModel, Map<UUID, String> map) throws Exception;
 
     ResponseEntity<?> cloneShipment(CommonRequestModel commonRequestModel);
     ResponseEntity<?> transportInstructionList(CommonRequestModel commonRequestModel);

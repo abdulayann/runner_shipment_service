@@ -1,6 +1,8 @@
 package com.dpw.runner.shipment.services.syncing.impl;
 
+import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataSyncResponse;
+import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
@@ -38,6 +40,10 @@ public class PackingSync implements IPackingSync {
     RestTemplate restTemplate;
     @Autowired
     private IV1Service v1Service;
+    @Autowired
+    private IContainerDao containerDao;
+    @Autowired
+    private SyncEntityConversionService syncEntityConversionService;
 
     @Autowired
     private EmailServiceUtility emailServiceUtility;
@@ -55,10 +61,12 @@ public class PackingSync implements IPackingSync {
     @Override
     @Async("asyncExecutor")
     public ResponseEntity<?> sync(List<Packing> packings, Long consolidationId, Long shipmentId) {
-        List<PackingRequestV2> requestV2List = new ArrayList<>();
-        for (var packing : packings) {
-            requestV2List.add(modelMapper.map(packing, PackingRequestV2.class));
+        List<PackingRequestV2> requestV2List = null;
+        List<Containers> containersList = new ArrayList<>();
+        if(shipmentId != null) {
+            containersList = containerDao.findByShipmentId(shipmentId);
         }
+        requestV2List = syncEntityConversionService.packingsV2ToV1(packings, containersList);
         BulkPackingRequestV2 packingRequestV2 = BulkPackingRequestV2.builder()
                 .bulkPacking(requestV2List).ConsolidationId(consolidationId).ShipmentId(shipmentId).build();
         String finalCs = jsonHelper.convertToJson(V1DataSyncRequest.builder().entity(packingRequestV2).module(SyncingConstants.BULK_PACKAGES).build());
