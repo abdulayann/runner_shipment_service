@@ -18,10 +18,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Component
 public class ManifestPrintReport extends IReport {
@@ -59,6 +56,7 @@ public class ManifestPrintReport extends IReport {
 
         List<Map<String, Object>> values = jsonHelper.convertValue(dictionary.get(ReportConstants.SHIPMENTS), new TypeReference<List<Map<String, Object>>>() {
         });
+        if (Objects.isNull(values)) values = new ArrayList<>();
         values.forEach(v -> {
             if (v.containsKey(ReportConstants.WEIGHT))
                 v.put(ReportConstants.WEIGHT, addCommas(v.get(ReportConstants.WEIGHT).toString()));
@@ -86,7 +84,16 @@ public class ManifestPrintReport extends IReport {
             dictionary.put(ReportConstants.PCHARGE_UNIT, StringUtil.EMPTY_STRING);
         }
 
-        var totalPackages = consol.getContainersList().stream().map(c -> c.getNoOfPackages()).reduce((a, b) -> a + b).get();
+        var containersList = consol.getContainersList();
+        long totalPackages = 0L;
+        if (containersList != null && !containersList.isEmpty()) {
+          totalPackages =
+              containersList.stream()
+                  .filter(Objects::nonNull) // Filter out null values
+                  .map(c -> c.getNoOfPackages() != null ? c.getNoOfPackages() : 0)
+                  .reduce(Long::sum)
+                  .orElse(0L); // Default value if the stream is empty
+        }
 
         if (totalPackages == 0) {
             dictionary.put(ReportConstants.CONSOL_SHIPMENT_TOTAL_PACKAGES, StringUtils.EMPTY);

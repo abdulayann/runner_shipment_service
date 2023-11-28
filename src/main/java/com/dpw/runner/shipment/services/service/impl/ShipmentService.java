@@ -22,6 +22,8 @@ import com.dpw.runner.shipment.services.dto.ContainerAPIsRequest.ShipmentContain
 import com.dpw.runner.shipment.services.dto.TrackingService.UniversalTrackingPayload;
 import com.dpw.runner.shipment.services.dto.patchRequest.ShipmentPatchRequest;
 import com.dpw.runner.shipment.services.dto.request.*;
+import com.dpw.runner.shipment.services.dto.response.AdditionalDetailResponse;
+import com.dpw.runner.shipment.services.dto.response.CarrierDetailResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentListResponse;
 import com.dpw.runner.shipment.services.dto.v1.request.ShipmentBillingListRequest;
@@ -1126,7 +1128,7 @@ public class ShipmentService implements IShipmentService {
             String responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
-            throw new RuntimeException(e);
+            throw new RuntimeException(e.getMessage());
         }
     }
 
@@ -2309,9 +2311,11 @@ public class ShipmentService implements IShipmentService {
             var tenantSettings = shipmentSettingsDetails.get(0);
             // Populate shipment details on basis of tenant settings
             ShipmentDetailsResponse response = new ShipmentDetailsResponse();
+            response.setAdditionalDetails(new AdditionalDetailResponse());
+            response.setCarrierDetails(new CarrierDetailResponse());
             response.setTransportMode(tenantSettings.getDefaultTransportMode());
-            response.setShipmentType(tenantSettings.getDefaultShipmentType());
-//            response.set(tenantSettings.getDefaultContainerType());
+            response.setDirection(tenantSettings.getDefaultShipmentType());
+            response.setShipmentType(tenantSettings.getDefaultContainerType());
             this.addAllMasterDataInSingleCall(null, response);
 
             return ResponseHelper.buildSuccessResponse(response);
