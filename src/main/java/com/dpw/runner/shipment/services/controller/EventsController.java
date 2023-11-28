@@ -89,7 +89,7 @@ public class EventsController {
     public ResponseEntity<?> syncEventsToService(@RequestBody @Valid EventsRequestV2 request) {
         String responseMsg = "failure executing :(";
         try {
-            return eventService.V1EventsCreateAndUpdate(CommonRequestModel.buildRequest(request));
+            return eventService.V1EventsCreateAndUpdate(CommonRequestModel.buildRequest(request), true);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : "Error syncing provided Events";

@@ -196,7 +196,7 @@ public class ContainerController {
     public ResponseEntity<?> syncContainerToService(@RequestBody @Valid ContainerRequestV2 request){
         String responseMsg = "failure executing :(";
         try {
-            return containerService.V1ContainerCreateAndUpdate(CommonRequestModel.buildRequest(request));
+            return containerService.V1ContainerCreateAndUpdate(CommonRequestModel.buildRequest(request), true);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : "Error syncing provided Container";

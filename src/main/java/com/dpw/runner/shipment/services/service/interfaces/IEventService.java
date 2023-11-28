@@ -5,6 +5,6 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import org.springframework.http.ResponseEntity;
 
 public interface IEventService extends ICommonService {
-    ResponseEntity<?> V1EventsCreateAndUpdate(CommonRequestModel commonRequestModel) throws Exception;
+    ResponseEntity<?> V1EventsCreateAndUpdate(CommonRequestModel commonRequestModel, boolean checkForSync) throws Exception;
 
 }

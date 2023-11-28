@@ -201,7 +201,7 @@ public class ConsolidationController {
     public ResponseEntity<RunnerResponse<ConsolidationDetailsResponse>> createV1Consolidation(@RequestBody @Valid CustomConsolidationRequest request) {
         String responseMsg;
         try {
-            return (ResponseEntity<RunnerResponse<ConsolidationDetailsResponse>>) consolidationReverseSync.reverseSync(CommonRequestModel.buildRequest(request));
+            return (ResponseEntity<RunnerResponse<ConsolidationDetailsResponse>>) consolidationReverseSync.reverseSync(CommonRequestModel.buildRequest(request), true);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;

@@ -4,5 +4,5 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import org.springframework.http.ResponseEntity;
 
 public interface IConsolidationReverseSync {
-    ResponseEntity<?> reverseSync(CommonRequestModel request_);
+    ResponseEntity<?> reverseSync(CommonRequestModel request_, boolean checkForSync);
 }

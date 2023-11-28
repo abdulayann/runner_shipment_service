@@ -7,6 +7,7 @@ import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.config.SyncConfig;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IEventDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
@@ -25,7 +26,9 @@ import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IEventService;
 import com.dpw.runner.shipment.services.syncing.Entity.EventsRequestV2;
+import com.dpw.runner.shipment.services.syncing.constants.SyncingConstants;
 import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
+import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.dpw.runner.shipment.services.utils.V1AuthHelper;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -34,6 +37,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -51,6 +55,7 @@ import org.springframework.web.client.RestTemplate;
 import javax.json.JsonString;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
@@ -83,6 +88,11 @@ public class EventService implements IEventService {
 
     @Autowired
     private RestTemplate restTemplate;
+    @Lazy
+    @Autowired
+    private SyncQueueService syncQueueService;
+    @Autowired
+    private SyncConfig syncConfig;
 
     @Value("${v1service.url.base}${v1.service.url.trackEventDetails}")
     private String TRACK_EVENT_DETAILS_URL;
@@ -308,9 +318,12 @@ public class EventService implements IEventService {
     }
 
     @Override
-    public ResponseEntity<?> V1EventsCreateAndUpdate(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<?> V1EventsCreateAndUpdate(CommonRequestModel commonRequestModel, boolean checkForSync) throws Exception {
         EventsRequestV2 eventsRequestV2 = (EventsRequestV2) commonRequestModel.getData();
         try {
+            if (checkForSync && !Objects.isNull(syncConfig.IS_REVERSE_SYNC_ACTIVE) && !syncConfig.IS_REVERSE_SYNC_ACTIVE) {
+                return syncQueueService.saveSyncRequest(SyncingConstants.EVENTS, StringUtility.convertToString(eventsRequestV2.getGuid()), eventsRequestV2);
+            }
             Optional<Events> existingEvent = eventDao.findByGuid(eventsRequestV2.getGuid());
             Events events = modelMapper.map(eventsRequestV2, Events.class);
             if (existingEvent != null && existingEvent.isPresent()) {
