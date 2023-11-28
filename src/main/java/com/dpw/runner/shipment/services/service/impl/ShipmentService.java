@@ -2299,4 +2299,28 @@ public class ShipmentService implements IShipmentService {
         return res;
     }
 
+    @Override
+    public ResponseEntity<?> getDefaultShipment() {
+        String responseMsg;
+        try {
+            List<ShipmentSettingsDetails> shipmentSettingsDetails = shipmentSettingsDao.getSettingsByTenantIds(List.of(TenantContext.getCurrentTenant()));
+            if(shipmentSettingsDetails == null || shipmentSettingsDetails.size() == 0)
+                throw new RunnerException("Shipment settings empty for current tenant");
+            var tenantSettings = shipmentSettingsDetails.get(0);
+            // Populate shipment details on basis of tenant settings
+            ShipmentDetailsResponse response = new ShipmentDetailsResponse();
+            response.setTransportMode(tenantSettings.getDefaultTransportMode());
+            response.setShipmentType(tenantSettings.getDefaultShipmentType());
+//            response.set(tenantSettings.getDefaultContainerType());
+            this.addAllMasterDataInSingleCall(null, response);
+
+            return ResponseHelper.buildSuccessResponse(response);
+        } catch(Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
 }
