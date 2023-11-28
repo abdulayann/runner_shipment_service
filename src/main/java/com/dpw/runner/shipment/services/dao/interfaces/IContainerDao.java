@@ -29,5 +29,6 @@ public interface IContainerDao {
 
     List<Containers> updateEntityFromShipmentConsole(List<Containers> containersList, Long consolidationId, List<Containers> oldContainers) throws Exception;
     List<Containers> updateEntityFromShipmentV1(List<Containers> containersList, List<Containers> oldContainers) throws Exception;
+    List<Containers> findByShipmentId(Long shipmentId);
 
 }

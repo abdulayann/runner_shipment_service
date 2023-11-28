@@ -12,6 +12,7 @@ import com.dpw.runner.shipment.services.service.impl.SyncQueueService;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
 import com.dpw.runner.shipment.services.service.interfaces.ISyncQueueService;
 import com.dpw.runner.shipment.services.syncing.Entity.CustomShipmentSyncRequest;
+import com.dpw.runner.shipment.services.syncing.Entity.PackingRequestV2;
 import com.dpw.runner.shipment.services.syncing.Entity.PartyRequestV2;
 import com.dpw.runner.shipment.services.syncing.Entity.ShipmentServiceRequestV2;
 import com.dpw.runner.shipment.services.syncing.constants.SyncingConstants;
@@ -24,8 +25,11 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
+import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -83,6 +87,9 @@ public class ShipmentReverseSync implements IShipmentReverseSync {
             mapTruckDriverDetailReverse(cs, sd);
             sd.setRoutingsList(convertToList(cs.getRoutings(), Routings.class));
             sd.setReferenceNumbersList(convertToList(cs.getReferenceNumbers(), ReferenceNumbers.class));
+            Map<UUID, String> map = new HashMap<>();
+            if(cs.getPackings_() != null)
+                map = cs.getPackings_().stream().collect(Collectors.toMap(PackingRequestV2::getGuid, PackingRequestV2::getContainerNumber));
             sd.setPackingList(convertToList(cs.getPackings_(), Packing.class));
             sd.setFileRepoList(convertToList(cs.getDocs_(), FileRepo.class));
             sd.setElDetailsList(convertToList(cs.getELDetails(), ELDetails.class));
@@ -90,7 +97,7 @@ public class ShipmentReverseSync implements IShipmentReverseSync {
             sd.setBookingCarriagesList(convertToList(cs.getBookingCarriages(), BookingCarriage.class));
 
             return shipmentService.completeV1ShipmentCreateAndUpdate(CommonRequestModel.
-                    buildRequest(modelMapper.map(sd, ShipmentRequest.class)));
+                    buildRequest(modelMapper.map(sd, ShipmentRequest.class)), map);
         } catch (Exception e){
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;

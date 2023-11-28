@@ -48,6 +48,8 @@ public class ConsolidationSync implements IConsolidationSync {
 
     @Autowired
     private IV1Service v1Service;
+    @Autowired
+    private SyncEntityConversionService syncEntityConversionService;
 
     @Autowired
     private EmailServiceUtility emailServiceUtility;
@@ -145,15 +147,8 @@ public class ConsolidationSync implements IConsolidationSync {
     private void mapPackings(CustomConsolidationRequest response, ConsolidationDetails request) {
         if(request == null || request.getPackingList() == null)
             return;
-        List<PackingRequestV2> req = request.getPackingList().stream()
-                .map(item -> {
-                    PackingRequestV2 p;
-                    p = modelMapper.map(item, PackingRequestV2.class);
-                    p.setOriginName(item.getOrigin());
-                    return p;
-                })
-                .collect(Collectors.toList());
-        response.setPackingList(req);
+        List<PackingRequestV2> res = syncEntityConversionService.packingsV2ToV1(request.getPackingList(), request.getContainersList());
+        response.setPackingList(res);
     }
 
     private void mapTruckDriverDetail(CustomConsolidationRequest response, ConsolidationDetails request) {

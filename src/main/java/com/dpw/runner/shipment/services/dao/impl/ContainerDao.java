@@ -6,6 +6,7 @@ import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentsContainersMappingDao;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.CustomerBooking;
 import com.dpw.runner.shipment.services.entity.enums.LifecycleHooks;
@@ -48,6 +49,9 @@ public class ContainerDao implements IContainerDao {
 
     @Autowired
     private AuditLogService auditLogService;
+
+    @Autowired
+    private IShipmentsContainersMappingDao shipmentsContainersMappingDao;
 
     @Override
     public Containers save(Containers containers) {
@@ -308,6 +312,14 @@ public class ContainerDao implements IContainerDao {
             log.error(responseMsg, e);
             throw new Exception(e);
         }
+    }
+
+    @Override
+    public List<Containers> findByShipmentId(Long shipmentId) {
+        ListCommonRequest listCommonRequest = constructListCommonRequest("shipmentsList", shipmentId, "CONTAINS");
+        Pair<Specification<Containers>, Pageable> pair = fetchData(listCommonRequest, Containers.class);
+        Page<Containers> containersPage = findAll(pair.getLeft(), pair.getRight());
+        return containersPage.getContent();
     }
 
 }

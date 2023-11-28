@@ -18,10 +18,6 @@ import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
-import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
-import com.dpw.runner.shipment.services.entity.Containers;
-import com.dpw.runner.shipment.services.entity.Packing;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
@@ -136,7 +132,8 @@ public class PackingService implements IPackingService {
     public void uploadPacking(BulkUploadRequest request) throws Exception {
         List<Packing> packingList = parser.parseCSVFile(request.getFile());
         packingList.stream().forEach(packing -> {
-            packing.setConsolidationId(packing.getConsolidationId());
+            packing.setConsolidationId(request.getConsolidationId());
+            packing.setShipmentId(request.getShipmentId());
         });
         packingDao.saveAll(packingList);
         packingSync.sync(packingList, request.getConsolidationId(), request.getShipmentId());

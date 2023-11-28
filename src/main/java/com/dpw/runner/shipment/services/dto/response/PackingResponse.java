@@ -4,7 +4,6 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import io.swagger.annotations.ApiModel;
 import lombok.Data;
 
-import javax.persistence.Column;
 import java.math.BigDecimal;
 import java.util.Map;
 import java.util.UUID;
@@ -21,7 +20,6 @@ public class PackingResponse implements IRunnerResponse {
     private Integer DGSubstanceId;
     private String packs;
     private String packsType;
-    private String containerNumber;
     private BigDecimal weight;
     private String weightUnit;
     private BigDecimal volume;

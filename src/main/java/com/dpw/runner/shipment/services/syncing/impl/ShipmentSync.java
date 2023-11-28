@@ -55,6 +55,8 @@ public class ShipmentSync implements IShipmentSync {
     @Autowired
     private EmailServiceUtility emailServiceUtility;
 
+    @Autowired
+    private SyncEntityConversionService syncEntityConversionService;
 
     private RetryTemplate retryTemplate = RetryTemplate.builder()
             .maxAttempts(3)
@@ -110,7 +112,7 @@ public class ShipmentSync implements IShipmentSync {
         mapTruckDriverDetail(cs, sd);
         cs.setRoutings(convertToList(sd.getRoutingsList(), RoutingsRequestV2.class));
         cs.setReferenceNumbers(convertToList(sd.getReferenceNumbersList(), ReferenceNumbersRequestV2.class));
-        cs.setPackings_(convertToList(sd.getPackingList(), PackingRequestV2.class));
+        cs.setPackings_(syncEntityConversionService.packingsV2ToV1(sd.getPackingList(), sd.getContainersList()));
         cs.setDocs_(convertToList(sd.getFileRepoList(), FileRepoRequestV2.class));
         cs.setELDetails(convertToList(sd.getElDetailsList(), ElDetailsRequestV2.class));
 
