@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.utils;
 
+import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
@@ -11,8 +12,8 @@ import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.CustomerBookingResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentListResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.WareHouseResponse;
 import com.dpw.runner.shipment.services.entity.CarrierDetails;
+import com.dpw.runner.shipment.services.dto.v1.response.WareHouseResponse;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
@@ -47,15 +48,14 @@ public class MasterDataUtils{
     private JsonHelper jsonHelper;
 
     @Autowired
-    private ModelMapper modelMapper;
-
-    @Autowired
-    private CommonUtils commonUtils;
-
-    @Autowired
     CacheManager cacheManager;
     @Autowired
     CustomKeyGenerator keyGenerator;
+    @Autowired
+    private ModelMapper modelMapper;
+    @Autowired
+    private CommonUtils commonUtils;
+
     public Map<String, String> carrierMasterData (IRunnerResponse entityPayload, Class baseClass) {
         if (Objects.isNull(entityPayload))
             return null;
@@ -1057,7 +1057,7 @@ public class MasterDataUtils{
         fieldNameMainKeyMap.put(code, fieldNameKeyMap);
         return requests;
     }
-    
+
     public Map<String, EntityTransferCurrency> fetchInCurrencyList(List<String> requests) {
         Map<String, EntityTransferCurrency> keyMasterDataMap = new HashMap<>();
         if(requests.size() > 0) {
