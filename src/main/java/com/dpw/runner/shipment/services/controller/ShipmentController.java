@@ -318,6 +318,16 @@ public class ShipmentController {
         }
     }
 
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.DEFAULT_SHIPMENT_GENERATED_SUCCESSFULLY)})
+    @GetMapping(ApiConstants.API_DEFAULT_SHIPMENT)
+    public ResponseEntity<?> retrieveByOrderId() {
+        try {
+            return (ResponseEntity<RunnerResponse<ShipmentDetailsResponse>>) shipmentService.getDefaultShipment();
+        } catch (Exception e) {
+            return ResponseHelper.buildFailedResponse(e.getMessage());
+        }
+    }
+
     @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.CREATE_SUCCESSFUL)})
     @GetMapping(ShipmentConstants.GENERATE_CUSTOM_HOUSE_BL)
     public ResponseEntity<?> generateCustomHouseBLNumber() {
