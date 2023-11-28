@@ -1,7 +1,6 @@
 trigger: none
 pool:
-  name: Cargoes Logistics Prod
-
+  name: Cargoes Runner
 name: $(Build.SourceBranchName)_$(Rev:r)
 
 variables:
