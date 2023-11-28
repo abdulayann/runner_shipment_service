@@ -6,7 +6,6 @@ import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IShipmentsContainersMappingDao;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.CustomerBooking;
 import com.dpw.runner.shipment.services.entity.enums.LifecycleHooks;
@@ -49,9 +48,6 @@ public class ContainerDao implements IContainerDao {
 
     @Autowired
     private AuditLogService auditLogService;
-
-    @Autowired
-    private IShipmentsContainersMappingDao shipmentsContainersMappingDao;
 
     @Override
     public Containers save(Containers containers) {

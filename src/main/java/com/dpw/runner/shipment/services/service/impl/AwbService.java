@@ -17,9 +17,7 @@ import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.request.AwbRequest;
 import com.dpw.runner.shipment.services.dto.request.CreateAwbRequest;
 import com.dpw.runner.shipment.services.dto.request.ResetAwbRequest;
-import com.dpw.runner.shipment.services.dto.request.HblPartyDto;
 import com.dpw.runner.shipment.services.dto.request.awb.*;
-import com.dpw.runner.shipment.services.dto.request.hbl.HblCargoDto;
 import com.dpw.runner.shipment.services.dto.response.AwbResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.AwbReset;
@@ -867,6 +865,9 @@ public class AwbService implements IAwbService {
     }
 
     private List<AwbPackingInfo> generateAwbPackingInfo(ShipmentDetails shipmentDetails, List<Packing> packings) {
+        Map<Long, String> map = new HashMap<>();
+        if(shipmentDetails.getContainersList() != null && shipmentDetails.getContainersList().size() > 0)
+            map = shipmentDetails.getContainersList().stream().collect(Collectors.toMap(Containers::getId, Containers::getContainerNumber));
         if (packings != null && packings.size() > 0) {
             List<AwbPackingInfo> awbPackingList = new ArrayList<>();
             // Integer totalPacks = 0;
@@ -877,7 +878,8 @@ public class AwbService implements IAwbService {
                 awbPacking.setDgSubstanceId(packing.getDGSubstanceId());
                 awbPacking.setPacks(packing.getPacks());
                 awbPacking.setPacksType(packing.getPacksType());
-                awbPacking.setContainerNumber(packing.getContainerNumber());
+                if(packing.getContainerId() != null && map.containsKey(packing.getContainerId()))
+                    awbPacking.setContainerNumber(map.get(packing.getContainerId()));
                 awbPacking.setWeight(packing.getWeight());
                 awbPacking.setWeightUnit(packing.getWeightUnit());
                 awbPacking.setVolume(packing.getVolume());
@@ -1185,6 +1187,9 @@ public class AwbService implements IAwbService {
         }
 
         awb.getAwbPackingInfo().removeAll(deletedList);
+        Map<Long, String> map = new HashMap<>();
+        if(shipmentDetails.getContainersList() != null && shipmentDetails.getContainersList().size() > 0)
+            map = shipmentDetails.getContainersList().stream().collect(Collectors.toMap(Containers::getId, Containers::getContainerNumber));
 
         if(!packMap.isEmpty()) {
             for (var packing: packMap.values()) {
@@ -1194,7 +1199,8 @@ public class AwbService implements IAwbService {
                 awbPacking.setDgSubstanceId(packing.getDGSubstanceId());
                 awbPacking.setPacks(packing.getPacks());
                 awbPacking.setPacksType(packing.getPacksType());
-                awbPacking.setContainerNumber(packing.getContainerNumber());
+                if(packing.getContainerId() != null && map.containsKey(packing.getContainerId()))
+                    awbPacking.setContainerNumber(map.get(packing.getContainerId()));
                 awbPacking.setWeight(packing.getWeight());
                 awbPacking.setWeightUnit(packing.getWeightUnit());
                 awbPacking.setVolume(packing.getVolume());
