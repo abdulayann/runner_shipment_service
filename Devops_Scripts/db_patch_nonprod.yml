@@ -79,4 +79,4 @@ steps:
         echo "***** Neither SQLFile nor env variable can be empty*****"
         exit 1
       fi
-    displayName: Run psql
+  displayName: Run psql
