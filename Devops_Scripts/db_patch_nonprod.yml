@@ -1,0 +1,82 @@
+trigger: none
+pool:
+  name: Cargoes Runner
+
+name: $(Build.SourceBranchName)_$(Rev:r)
+
+
+variables:
+- group: cargoesrunner-nonprod-secrets
+- name: ServerName
+  value: 'psql-cargoesrunner-nonprod.postgres.database.azure.com'
+- name: DevDatabase
+  value: 'shipment_service_dev'
+- name: QaDatabase
+  value: 'shipment_service_qa'
+- name: StagingDatabase
+  value: 'shipment_service_stg'
+- name: DemoDatabase
+  value: 'shipment_service_demo'
+
+steps:
+
+- script: |
+    if [[ ! -z "$(SQLFile)" && ! -z "$(ENV)" ]]; then
+        if [ $(ENV) = 'dev' ]; then
+            echo "Running DB Patch in Dev"
+            export PGPASSWORD='$(Runner-Shipment-service-Dev-DB-User-Pswd-NonProd-Secret)'
+            psql -h $(ServerName) -U $(Runner-Shipment-service-Dev-DB-UserId-NonProd-Secret) -d $(DevDatabase) -a -f DBPatch/$(SQLFile)  > temp.log 2>&1
+            exit_code=$?
+            echo $exit_code
+        elif [ $(ENV) = 'QA' ]; then
+            echo "Running DB Patch in QA"
+            export PGPASSWORD='$(Runner-Shipment-service-QA-DB-User-Pswd-NonProd-Secret)'
+            psql -h $(ServerName) -U $(Runner-Shipment-service-QA-DB-UserId-NonProd-Secret) -d $(QaDatabase) -a -f DBPatch/$(SQLFile)  > temp.log 2>&1
+            exit_code=$?
+            echo $exit_code
+        elif [ $(ENV) = 'Staging' ]; then
+            echo "Running DB Patch in Staging"
+            export PGPASSWORD='$(Runner-Shipment-service-Staging-DB-User-Pswd-NonProd-Secret)'
+            psql -h $(ServerName) -U $(Runner-Shipment-service-Staging-DB-UserId-NonProd-Secret) -d $(StagingDatabase) -a -f DBPatch/$(SQLFile)  > temp.log 2>&1
+            exit_code=$?
+            echo $exit_code
+        elif [ $(ENV) = 'demo' ]; then
+            echo "Running DB Patch in demo"
+            export PGPASSWORD='$(Runner-Shipment-service-Demo-DB-User-Pswd-NonProd-Secret)'
+            psql -h $(ServerName) -U $(Runner-Shipment-service-Demo-DB-UserId-NonProd-Secret) -d $(DemoDatabase) -a -f DBPatch/$(SQLFile)  > temp.log 2>&1
+            exit_code=$?
+            echo $exit_code
+
+        else
+            echo "****** Incorrect Environment Name ******"
+            exit 1
+        fi
+
+        echo "***************************************Output Log Start**********************************************"
+        cat temp.log
+        echo "***************************************Output Log End************************************************"
+
+        if grep -q 'ERROR:' temp.log; then
+            exit_code=3  # Set your own exit code for SQL errors
+        fi
+            
+        if [ $exit_code -eq 0 ]; then
+            echo "***** psql executed successfully *****"
+        elif [ $exit_code -eq 1 ]; then
+            echo "***** fatal error *****"
+            exit 1
+        elif [ $exit_code -eq 2 ]; then
+            echo "***** server connection error *****"
+            exit 1
+        elif [ $exit_code -eq 3 ]; then
+            echo "**** There are errors in the script.Please check log file *****"
+            exit 1
+        else
+            echo "***** psql encountered an error *****"
+            exit 1
+        fi  
+    else
+        echo "***** Neither SQLFile nor env variable can be empty*****"
+        exit 1
+      fi
+  displayName: Run psql
