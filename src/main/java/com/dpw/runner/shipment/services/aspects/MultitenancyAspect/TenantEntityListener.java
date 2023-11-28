@@ -1,7 +1,6 @@
 package com.dpw.runner.shipment.services.aspects.MultitenancyAspect;
 
 
-import com.dpw.runner.shipment.services.aspects.PermissionsValidationAspect.PermissionsContext;
 import com.dpw.runner.shipment.services.commons.constants.Permissions;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -45,6 +44,9 @@ public class TenantEntityListener {
                 ((MultiTenancy) object).setTenantId(tenantId);
             else
                 ((MultiTenancy) object).setTenantId(TenantContext.getCurrentTenant());
+
+            if(tenantId == null)
+                tenantId = TenantContext.getCurrentTenant();
 
             if(! permissions.containsKey(Permissions.tenantSuperAdmin) && !Objects.equals(TenantContext.getCurrentTenant(), tenantId))
                 throw new RuntimeException("Authorization has been denied for this request, tenantId mismatch");
