@@ -22,6 +22,7 @@ import com.dpw.runner.shipment.services.dto.ContainerAPIsRequest.ShipmentContain
 import com.dpw.runner.shipment.services.dto.TrackingService.UniversalTrackingPayload;
 import com.dpw.runner.shipment.services.dto.patchRequest.ShipmentPatchRequest;
 import com.dpw.runner.shipment.services.dto.request.*;
+import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.AdditionalDetailResponse;
 import com.dpw.runner.shipment.services.dto.response.CarrierDetailResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
@@ -2268,14 +2269,66 @@ public class ShipmentService implements IShipmentService {
         }
     }
 
+    @Override
+    public ResponseEntity<?> getShipmentForConsol(Long id) {
+        ShipmentDetailsResponse response;
+        var consolResponse = consolidationDetailsDao.findById(id);
+
+        if (consolResponse.isEmpty())
+            throw new DataRetrievalFailureException("Failed to fetch the Consolidation with id " + id);
+
+        var consol = modelMapper.map(consolResponse.get(), ConsolidationDetailsResponse.class);
+
+        response = ShipmentDetailsResponse.builder()
+                .additionalTerms(consol.getAdditionalTerms())
+                .transportMode(consol.getTransportMode())
+                .shipmentType(consol.getShipmentType())
+                .paymentTerms(consol.getPayment())
+                .isDomestic(consol.getIsDomestic())
+                .additionalTerms(consol.getAdditionalTerms())
+                .weight(consol.getAllocations() != null ? consol.getAllocations().getWeight() : null)
+                .weightUnit(consol.getAllocations().getWeightUnit())
+                .volume(consol.getAllocations().getVolume())
+                .volumeUnit(consol.getAllocations().getVolumeUnit())
+                .chargable(consol.getAllocations().getChargable())
+                .chargeableUnit(consol.getAllocations().getChargeableUnit())
+                .noOfPacks(consol.getPackingList().stream().map(c -> Integer.valueOf(c.getPacks())).reduce((a, b) -> a + b).get())
+                .innerPacks(consol.getPackingList().stream().map(c -> Integer.valueOf(c.getInnerPacksCount().toString())).reduce((a, b) -> a + b).get())
+                .marksNum(consol.getMarksnNums())
+                .isLocked(consol.getIsLocked())
+                .lockedBy(consol.getLockedBy())
+                .bookingNumber(consol.getBookingNumber())
+                .sourceTenantId(consol.getSourceTenantId())
+                .documentationPartner(consol.getDocumentationPartner())
+                .triangulationPartner(consol.getTriangulationPartner())
+                .receivingBranch(consol.getReceivingBranch())
+                .intraBranch(consol.isIntraBranch())
+                .carrierDetails(consol.getCarrierDetails())
+                .truckDriverDetails(consol.getTruckDriverDetails())
+                .routingsList(consol.getRoutingsList())
+                .referenceNumbersList(consol.getReferenceNumbersList())
+                .packingList(consol.getPackingList())
+                .fileRepoList(consol.getFileRepoList())
+                .eventsList(consol.getEventsList())
+                .jobsList(consol.getJobsList())
+                .containersList(consol.getContainersList())
+                .masterData(consol.getMasterData())
+                .unlocationData(consol.getUnlocationData())
+                .currenciesMasterData(consol.getCurrenciesMasterData())
+                .tenantIdsData(consol.tenantIdsData)
+                .build();
+
+        return ResponseHelper.buildSuccessResponse(response);
+    }
+
     private String generateCustomHouseBL() {
         String res = null;
         List<ShipmentSettingsDetails> shipmentSettingsDetailsList = shipmentSettingsDao.getSettingsByTenantIds(List.of(TenantContext.getCurrentTenant()));
         ShipmentSettingsDetails tenantSetting = null;
-        if(shipmentSettingsDetailsList.get(0) != null)
+        if (shipmentSettingsDetailsList.get(0) != null)
             tenantSetting = shipmentSettingsDetailsList.get(0);
 
-        if(tenantSetting.getRestrictHblGen() && tenantSetting.getCustomisedSequence()) {
+        if (tenantSetting.getRestrictHblGen() && tenantSetting.getCustomisedSequence()) {
             // generate via Product Identifier Utility
             // res = someMethod();
         }

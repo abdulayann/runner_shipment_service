@@ -16,15 +16,13 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
-import com.dpw.runner.shipment.services.dto.ContainerAPIsRequest.*;
+import com.dpw.runner.shipment.services.dto.ContainerAPIsRequest.ConsoleCalculationsRequest;
+import com.dpw.runner.shipment.services.dto.ContainerAPIsRequest.ConsoleCalculationsResponse;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
 import com.dpw.runner.shipment.services.dto.TrackingService.UniversalTrackingPayload;
 import com.dpw.runner.shipment.services.dto.patchRequest.ConsolidationPatchRequest;
 import com.dpw.runner.shipment.services.dto.request.*;
-import com.dpw.runner.shipment.services.dto.response.AchievedQuantitiesResponse;
-import com.dpw.runner.shipment.services.dto.response.AllocationsResponse;
-import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.ConsolidationListResponse;
+import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.v1.request.ConsoleBookingListRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.ConsoleBookingListResponse;
 import com.dpw.runner.shipment.services.entity.*;
@@ -2058,14 +2056,56 @@ public class ConsolidationService implements IConsolidationService {
                 if(universalEventsPayload != null) {
                     trackingPayloads.add(universalEventsPayload);
                     var jsonBody = jsonHelper.convertToJson(trackingPayloads);
-                    trackingServiceAdapter.publishUpdatesToTrackingServiceQueue(jsonBody,true);
+                    trackingServiceAdapter.publishUpdatesToTrackingServiceQueue(jsonBody, true);
                 }
             }
             KafkaResponse kafkaResponse = producer.getKafkaResponse(consolidationDetails, isCreate);
             producer.produceToKafka(jsonHelper.convertToJson(kafkaResponse), senderQueue, UUID.randomUUID().toString());
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             log.error(e.getMessage());
         }
+    }
+
+    @Override
+    public ResponseEntity<?> getConsolForShipment(Long id) {
+        ConsolidationDetailsResponse response;
+        var shipmentResponse = shipmentDao.findById(id);
+
+        if (shipmentResponse.isEmpty())
+            throw new DataRetrievalFailureException("Failed to fetch the shipment with id " + id);
+
+        var shipment = modelMapper.map(shipmentResponse.get(), ShipmentDetailsResponse.class);
+
+        response = ConsolidationDetailsResponse.builder()
+                .additionalTerms(shipment.getAdditionalTerms())
+                .transportMode(shipment.getTransportMode())
+                .shipmentType(shipment.getShipmentType())
+                .isDomestic(shipment.getIsDomestic())
+                .additionalTerms(shipment.getAdditionalTerms())
+                .marksnNums(shipment.getMarksNum())
+                .isLocked(shipment.getIsLocked())
+                .lockedBy(shipment.getLockedBy())
+                .bookingNumber(shipment.getBookingNumber())
+                .sourceTenantId(shipment.getSourceTenantId())
+                .documentationPartner(shipment.getDocumentationPartner())
+                .triangulationPartner(shipment.getTriangulationPartner())
+                .receivingBranch(shipment.getReceivingBranch())
+                .intraBranch(shipment.isIntraBranch())
+                .carrierDetails(shipment.getCarrierDetails())
+                .truckDriverDetails(shipment.getTruckDriverDetails())
+                .routingsList(shipment.getRoutingsList())
+                .referenceNumbersList(shipment.getReferenceNumbersList())
+                .packingList(shipment.getPackingList())
+                .fileRepoList(shipment.getFileRepoList())
+                .eventsList(shipment.getEventsList())
+                .jobsList(shipment.getJobsList())
+                .containersList(shipment.getContainersList())
+                .masterData(shipment.getMasterData())
+                .unlocationData(shipment.getUnlocationData())
+                .currenciesMasterData(shipment.getCurrenciesMasterData())
+                .tenantIdsData(shipment.tenantIdsData)
+                .build();
+
+        return ResponseHelper.buildSuccessResponse(response);
     }
 }

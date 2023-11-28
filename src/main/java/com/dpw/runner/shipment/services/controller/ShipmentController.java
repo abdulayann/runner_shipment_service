@@ -334,4 +334,14 @@ public class ShipmentController {
         }
     }
 
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.IMPORT_SUCCESSFUL)})
+    @GetMapping(ShipmentConstants.IMPORT_CONSOLIDATION)
+    public ResponseEntity<?> getShipmentForConsol(@ApiParam(value = ShipmentConstants.CONSOLIDATION_ID, required = true) @RequestParam Long id) {
+        try {
+            return (ResponseEntity<RunnerResponse<String>>) shipmentService.getShipmentForConsol(id);
+        } catch (Exception e) {
+            return ResponseHelper.buildFailedResponse(e.getMessage());
+        }
+    }
+
 }

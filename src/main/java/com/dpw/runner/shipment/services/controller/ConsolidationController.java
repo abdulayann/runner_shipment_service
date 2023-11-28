@@ -239,4 +239,14 @@ public class ConsolidationController {
             log.error(responseMsg, e);
         }
     }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ConsolidationConstants.IMPORT_SUCCESSFUL)})
+    @GetMapping(ConsolidationConstants.IMPORT_SHIPMENT)
+    public ResponseEntity<?> getShipmentForConsol(@ApiParam(value = ConsolidationConstants.CONSOLIDATION_ID, required = true) @RequestParam Long id) {
+        try {
+            return (ResponseEntity<RunnerResponse<String>>) consolidationService.getConsolForShipment(id);
+        } catch (Exception e) {
+            return ResponseHelper.buildFailedResponse(e.getMessage());
+        }
+    }
 }
