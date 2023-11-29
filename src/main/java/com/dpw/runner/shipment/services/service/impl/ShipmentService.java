@@ -1787,6 +1787,7 @@ public class ShipmentService implements IShipmentService {
             shipmentDetails.setLockedBy(currentUser);
         }
         shipmentDetails = shipmentDao.save(shipmentDetails, false);
+        shipmentSync.sync(shipmentDetails);
         afterSave(shipmentDetails, false);
         return ResponseHelper.buildSuccessResponse();
     }
