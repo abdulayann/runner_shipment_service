@@ -23,7 +23,7 @@ public class EmailServiceUtility {
 
     List<String> emailIds = List.of("chirag.bansal@dpworld.com", "mayank.gupta@dpworld.com",
             "wasim.jafar@dpworld.com", "abhishek.goyal@dpworld.com", "pardeep.malik@dpworld.com",
-            "abhimanyu.chauhan@dpworld.com");
+            "abhimanyu.chauhan@dpworld.com", "tanishq.malhotra@dpworld.com");
 
     public void sendEmail(String body, String subject, List<String> emailIds, File file, String fileName) throws MessagingException, IOException {
 
