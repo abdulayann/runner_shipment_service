@@ -37,6 +37,6 @@ public class ShipmentConstants {
     public static final String ORDER_ID = "Order Id";
     public static final String GENERATE_CUSTOM_HOUSE_BL = "/generate/customHouseBl";
     public static final String IMPORT_CONSOLIDATION = "/import-consolidation";
-}
+
     public static final String DEFAULT_SHIPMENT_GENERATED_SUCCESSFULLY = "Default shipment generated successfully";
  }

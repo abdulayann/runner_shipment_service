@@ -40,5 +40,5 @@ public interface IConsolidationService extends ICommonService{
 
     void generateConsolidationNumber(ConsolidationDetails consolidationDetails);
 
-    ResponseEntity<?> getConsolForShipment(Long id);
+    ResponseEntity<?> getShipmentFromConsol(Long consolidationId);
 }
