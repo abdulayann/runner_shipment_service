@@ -254,7 +254,7 @@ public class MasterDataUtils{
             });
             fieldNameKeyMap.forEach((key, value) -> {
                 if(keyUnlocationDataMap.containsKey(value)) {
-                    fieldNameUnlocationDataMap.put(key, keyUnlocationDataMap.get(value).LocCode + " " + keyUnlocationDataMap.get(value).NameWoDiacritics);
+                    fieldNameUnlocationDataMap.put(key, keyUnlocationDataMap.get(value).LocationsReferenceGUID + " " + keyUnlocationDataMap.get(value).NameWoDiacritics);
                     fieldNameUnlocationDataMap.put(key + "_country", keyUnlocationDataMap.get(value).Country);
                 }
             });
@@ -673,7 +673,7 @@ public class MasterDataUtils{
 
         fieldNameKeyMap.forEach((key, value) -> {
             if(keyMasterDataMap.containsKey(value)) {
-                fieldNameMasterDataMap.put(key, keyMasterDataMap.get(value).LocCode + " " + keyMasterDataMap.get(value).NameWoDiacritics);
+                fieldNameMasterDataMap.put(key, keyMasterDataMap.get(value).LocationsReferenceGUID + " " + keyMasterDataMap.get(value).NameWoDiacritics);
                 fieldNameMasterDataMap.put(key + "_country", keyMasterDataMap.get(value).Country);
             }
         });

@@ -11,6 +11,7 @@ import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.*;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
@@ -174,7 +175,7 @@ public abstract class IReport {
         UnlocationsResponse pol = null, pod = null, origin = null, destination = null, paidPlace = null, placeOfIssue = null, placeOfSupply = null;
 
         List<Object> criteria = Arrays.asList(
-                Arrays.asList("LocCode"),
+                Arrays.asList(EntityTransferConstants.LOCATION_SERVICE_GUID),
                 "=",
                 shipment.getCarrierDetails().getOriginPort()
         );
@@ -185,7 +186,7 @@ public abstract class IReport {
             pol = unlocationsResponse.get(0);
 
         criteria = Arrays.asList(
-                Arrays.asList("LocCode"),
+                Arrays.asList(EntityTransferConstants.LOCATION_SERVICE_GUID),
                 "=",
                 shipment.getCarrierDetails().getDestinationPort()
         );
@@ -196,7 +197,7 @@ public abstract class IReport {
             pod = unlocationsResponse.get(0);
 
         criteria = Arrays.asList(
-                Arrays.asList("LocCode"),
+                Arrays.asList(EntityTransferConstants.LOCATION_SERVICE_GUID),
                 "=",
                 shipment.getCarrierDetails().getOrigin()
         );
@@ -207,7 +208,7 @@ public abstract class IReport {
             origin = unlocationsResponse.get(0);
 
         criteria = Arrays.asList(
-                Arrays.asList("LocCode"),
+                Arrays.asList(EntityTransferConstants.LOCATION_SERVICE_GUID),
                 "=",
                 shipment.getCarrierDetails().getDestination()
         );
@@ -218,7 +219,7 @@ public abstract class IReport {
             destination = unlocationsResponse.get(0);
 
         criteria = Arrays.asList(
-                Arrays.asList("LocCode"),
+                Arrays.asList(EntityTransferConstants.LOCATION_SERVICE_GUID),
                 "=",
                 additionalDetails.getPaidPlace()
         );
@@ -229,7 +230,7 @@ public abstract class IReport {
             paidPlace = unlocationsResponse.get(0);
 
         criteria = Arrays.asList(
-                Arrays.asList("LocCode"),
+                Arrays.asList(EntityTransferConstants.LOCATION_SERVICE_GUID),
                 "=",
                 additionalDetails.getPlaceOfIssue()
         );
@@ -240,7 +241,7 @@ public abstract class IReport {
             placeOfIssue = unlocationsResponse.get(0);
 
         criteria = Arrays.asList(
-                Arrays.asList("LocCode"),
+                Arrays.asList(EntityTransferConstants.LOCATION_SERVICE_GUID),
                 "=",
                 additionalDetails.getPlaceOfSupply()
         );
@@ -528,7 +529,7 @@ public abstract class IReport {
         UnlocationsResponse lastForeignPort = null;
         if (arrivalDetails != null) {
             List<Object> criteria = Arrays.asList(
-                    Arrays.asList("LocCode"),
+                    Arrays.asList(EntityTransferConstants.LOCATION_SERVICE_GUID),
                     "=",
                     arrivalDetails.getLastForeignPort()
             );
@@ -937,7 +938,7 @@ public abstract class IReport {
         if(UNLocCode == null || UNLocCode.isEmpty())
             return null;
         List <Object> criteria = Arrays.asList(
-                Arrays.asList("LocCode"),
+                Arrays.asList(EntityTransferConstants.LOCATION_SERVICE_GUID),
                 "=",
                 UNLocCode
         );
