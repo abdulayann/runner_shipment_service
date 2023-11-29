@@ -22,7 +22,6 @@ import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.masterdata.response.VesselsResponse;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.StringUtility;
-import com.fasterxml.jackson.core.type.TypeReference;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -94,7 +93,7 @@ public class HblReport extends IReport{
 
         UnlocationsResponse paidPlace = null;
         List<Object> criteria = Arrays.asList(
-                Arrays.asList("LocCode"),
+                Arrays.asList("LocationsReferenceGUID"),
                 "=",
                 hblModel.shipment.getAdditionalDetails().getPaidPlace()
         );
@@ -110,7 +109,7 @@ public class HblReport extends IReport{
 
         // IssuePlace master data
         criteria = Arrays.asList(
-                Arrays.asList("LocCode"),
+                Arrays.asList("LocationsReferenceGUID"),
                 "=",
                 hblModel.shipment.getAdditionalDetails().getPlaceOfIssue()
         );
@@ -124,7 +123,7 @@ public class HblReport extends IReport{
 
         // polPort
         criteria = Arrays.asList(
-                Arrays.asList("LocCode"),
+                Arrays.asList("LocationsReferenceGUID"),
                 "=",
                 hblModel.shipment.getCarrierDetails().getOriginPort()
         );
@@ -137,7 +136,7 @@ public class HblReport extends IReport{
 
         // podPort
         criteria = Arrays.asList(
-                Arrays.asList("LocCode"),
+                Arrays.asList("LocationsReferenceGUID"),
                 "=",
                 hblModel.shipment.getCarrierDetails().getDestinationPort()
         );

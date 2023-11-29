@@ -177,7 +177,7 @@ public class ReportHelper {
         if(UNLocCode == null || UNLocCode.isEmpty())
             return null;
         List <Object> criteria = Arrays.asList(
-                Arrays.asList("LocCode"),
+                Arrays.asList("LocationsReferenceGUID"),
                 "=",
                 UNLocCode
         );
@@ -339,7 +339,7 @@ public class ReportHelper {
             return locationMap;
         if (locCodes.size() > 0) {
             List<Object> criteria = Arrays.asList(
-                    List.of("LocCode"),
+                    List.of("LocationsReferenceGUID"),
                     "In",
                     List.of(locCodes)
             );

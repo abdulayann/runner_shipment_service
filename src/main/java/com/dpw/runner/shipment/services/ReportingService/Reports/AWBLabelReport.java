@@ -88,7 +88,7 @@ public class AWBLabelReport extends IReport{
         dictionary.put(ReportConstants.HAWB_NUMBER, awbLabelModel.shipment.getHouseBill());
 
         List<Object>  criteria = Arrays.asList(
-                Arrays.asList("LocCode"),
+                Arrays.asList("LocationsReferenceGUID"),
                 "=",
                 awbLabelModel.shipment.getCarrierDetails().getDestination()
         );

@@ -252,7 +252,7 @@ public class MasterDataUtils{
             });
             fieldNameKeyMap.forEach((key, value) -> {
                 if(keyUnlocationDataMap.containsKey(value)) {
-                    fieldNameUnlocationDataMap.put(key, keyUnlocationDataMap.get(value).LocCode + " " + keyUnlocationDataMap.get(value).NameWoDiacritics);
+                    fieldNameUnlocationDataMap.put(key, keyUnlocationDataMap.get(value).LocationsReferenceGUID + " " + keyUnlocationDataMap.get(value).NameWoDiacritics);
                     fieldNameUnlocationDataMap.put(key + "_country", keyUnlocationDataMap.get(value).Country);
                 }
             });
@@ -659,7 +659,7 @@ public class MasterDataUtils{
                 return keyMasterDataMap;
 
             unLocationsList.forEach(location -> {
-                keyMasterDataMap.put(onField.equals(EntityTransferConstants.UNLOCATION_CODE) ? location.LocCode : location.LocationsReferenceGUID, location);
+                keyMasterDataMap.put(onField.equals(EntityTransferConstants.UNLOCATION_CODE) ? location.LocationsReferenceGUID : location.LocationsReferenceGUID, location);
             });
         }
         return keyMasterDataMap;
@@ -671,7 +671,7 @@ public class MasterDataUtils{
 
         fieldNameKeyMap.forEach((key, value) -> {
             if(keyMasterDataMap.containsKey(value)) {
-                fieldNameMasterDataMap.put(key, keyMasterDataMap.get(value).LocCode + " " + keyMasterDataMap.get(value).NameWoDiacritics);
+                fieldNameMasterDataMap.put(key, keyMasterDataMap.get(value).LocationsReferenceGUID + " " + keyMasterDataMap.get(value).NameWoDiacritics);
                 fieldNameMasterDataMap.put(key + "_country", keyMasterDataMap.get(value).Country);
             }
         });
@@ -988,7 +988,7 @@ public class MasterDataUtils{
                 switch (masterDataType) {
                     case CacheConstants.UNLOCATIONS:
                         EntityTransferUnLocations object = (EntityTransferUnLocations) cache.get();
-                        fieldNameMasterDataMap.put(key, object.LocCode + " " + object.NameWoDiacritics);
+                        fieldNameMasterDataMap.put(key, object.LocationsReferenceGUID + " " + object.NameWoDiacritics);
                         fieldNameMasterDataMap.put(key + "_country", object.Country);
                         break;
                     case CacheConstants.CONTAINER_TYPE:
