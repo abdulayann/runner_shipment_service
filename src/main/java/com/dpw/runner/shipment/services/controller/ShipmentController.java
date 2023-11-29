@@ -11,6 +11,7 @@ import com.dpw.runner.shipment.services.dto.ContainerAPIsRequest.ShipmentContain
 import com.dpw.runner.shipment.services.dto.patchRequest.ShipmentPatchRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
 import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
+import com.dpw.runner.shipment.services.dto.response.GenerateCustomHblResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentListResponse;
 import com.dpw.runner.shipment.services.dto.v1.request.TIListRequest;
@@ -306,32 +307,20 @@ public class ShipmentController {
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.RETRIEVE_BY_ORDER_ID_SUCCESSFUL)})
     @GetMapping(ApiConstants.API_RETRIEVE_BY_ORDER_ID)
-    public ResponseEntity<?> retrieveByOrderId(@ApiParam(value = ShipmentConstants.ORDER_ID, required = true) @RequestParam String orderId) {
-        try {
+    public ResponseEntity<RunnerResponse<ShipmentDetailsResponse>> retrieveByOrderId(@ApiParam(value = ShipmentConstants.ORDER_ID, required = true) @RequestParam String orderId) {
             return (ResponseEntity<RunnerResponse<ShipmentDetailsResponse>>) shipmentService.retrieveByOrderId(orderId);
-        } catch (Exception e) {
-            return ResponseHelper.buildFailedResponse(e.getMessage());
-        }
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.DEFAULT_SHIPMENT_GENERATED_SUCCESSFULLY)})
     @GetMapping(ApiConstants.API_DEFAULT_SHIPMENT)
-    public ResponseEntity<?> retrieveByOrderId() {
-        try {
+    public ResponseEntity<RunnerResponse<ShipmentDetailsResponse>> getDefaultShipment() {
             return (ResponseEntity<RunnerResponse<ShipmentDetailsResponse>>) shipmentService.getDefaultShipment();
-        } catch (Exception e) {
-            return ResponseHelper.buildFailedResponse(e.getMessage());
-        }
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.CREATE_SUCCESSFUL)})
     @GetMapping(ShipmentConstants.GENERATE_CUSTOM_HOUSE_BL)
-    public ResponseEntity<?> generateCustomHouseBLNumber() {
-        try {
-            return (ResponseEntity<RunnerResponse<String>>) shipmentService.generateCustomHouseBLNumber();
-        } catch (Exception e) {
-            return ResponseHelper.buildFailedResponse(e.getMessage());
-        }
+    public ResponseEntity<RunnerResponse<GenerateCustomHblResponse>> generateCustomHouseBLNumber() {
+            return (ResponseEntity<RunnerResponse<GenerateCustomHblResponse>>) shipmentService.generateCustomHouseBLNumber();
     }
 
 }
