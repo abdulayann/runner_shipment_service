@@ -37,10 +37,10 @@ public class RoutingsRequestV2 implements IRunnerRequest {
     public Long Leg;
     @JsonProperty("Mode")
     public String Mode;
-    @JsonProperty("PolId")
-    public Integer PolId;
-    @JsonProperty("PodId")
-    public Integer PodId;
+    @JsonProperty("Pol")
+    public String Pol;
+    @JsonProperty("Pod")
+    public String Pod;
     @JsonProperty("RouteLegId")
     public Long RouteLegId;
     @JsonProperty("RoutingStatus")
