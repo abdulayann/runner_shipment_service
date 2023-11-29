@@ -63,4 +63,5 @@ public class CustomerBookingRequest extends CommonRequest implements IRunnerRequ
     private Boolean isConsigneeAddressFreeText;
     private Boolean isCustomerAddressFreeText;
     private Boolean isNotifyPartyAddressFreeText;
+    private LocalDateTime shipmentCreatedDate;
 }

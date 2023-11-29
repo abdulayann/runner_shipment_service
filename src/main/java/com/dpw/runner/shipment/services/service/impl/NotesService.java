@@ -64,8 +64,8 @@ public class NotesService implements INotesService {
                     AuditLogMetaData.builder()
                             .newData(notes)
                             .prevData(null)
-                            .parent(Notes.class.getSimpleName())
-                            .parentId(notes.getId())
+                            .parent(request.getEntityType())
+                            .parentId(request.getId())
                             .operation(DBOperationType.CREATE.name()).build()
             );
 
@@ -108,8 +108,8 @@ public class NotesService implements INotesService {
                     AuditLogMetaData.builder()
                             .newData(notes)
                             .prevData(jsonHelper.readFromJson(oldEntityJsonString, Notes.class))
-                            .parent(Notes.class.getSimpleName())
-                            .parentId(notes.getId())
+                            .parent(request.getEntityType())
+                            .parentId(request.getEntityId())
                             .operation(DBOperationType.UPDATE.name()).build()
             );
             log.info("Updated the Notes details for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
@@ -187,7 +187,8 @@ public class NotesService implements INotesService {
                 log.debug("Notes is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
-
+            String parent = note.get().getEntityType();
+            Long parentId = note.get().getEntityId();
             String oldEntityJsonString = jsonHelper.convertToJson(note.get());
             notesDao.delete(note.get());
 
@@ -196,8 +197,8 @@ public class NotesService implements INotesService {
                     AuditLogMetaData.builder()
                             .newData(null)
                             .prevData(jsonHelper.readFromJson(oldEntityJsonString, Notes.class))
-                            .parent(Notes.class.getSimpleName())
-                            .parentId(note.get().getId())
+                            .parent(parent)
+                            .parentId(parentId)
                             .operation(DBOperationType.DELETE.name()).build()
             );
             log.info("Deleted notes for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
