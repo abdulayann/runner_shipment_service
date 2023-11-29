@@ -319,6 +319,7 @@ public class CustomerBookingService implements ICustomerBookingService {
             if (!Objects.isNull(shipmentCreationResponse) && !Objects.isNull(shipmentCreationResponse.getShipmentId())) {
                 customerBooking.setShipmentId(shipmentCreationResponse.getShipmentId());
                 customerBooking.setShipmentEntityId(shipmentCreationResponse.getEntityId());
+                customerBooking.setShipmentCreatedDate(LocalDateTime.now());
                 customerBooking = customerBookingDao.save(customerBooking);
             }
         }
@@ -617,35 +618,10 @@ public class CustomerBookingService implements ICustomerBookingService {
         if (request.getPackingList() != null) {
             List<PlatformToRunnerCustomerBookingResponse.ReferenceNumbersGuidMapResponse> referenceNumbersGuidMapResponses = new ArrayList<>();
             request.getPackingList().forEach(pack -> {
-                pack.setLengthUnit(Constants.METRE);
-                pack.setWidthUnit(Constants.METRE);
-                pack.setHeightUnit(Constants.METRE);
+                pack.setLengthUnit(pack.getDimensionUnit());
+                pack.setWidthUnit(pack.getDimensionUnit());
+                pack.setHeightUnit(pack.getDimensionUnit());
                 pack.setIsDimension(true);
-                try {
-                    if (pack.getDimensionUnit() != null && !pack.getDimensionUnit().equals(Constants.METRE)) {
-                        pack.setLength(BigDecimal.valueOf(
-                                UnitConversionUtility.convertUnit(Constants.LENGTH, pack.getLength(), pack.getDimensionUnit(), Constants.METRE)
-                                        .doubleValue()));
-                        pack.setWidth(BigDecimal.valueOf(
-                                UnitConversionUtility.convertUnit(Constants.LENGTH, pack.getWidth(), pack.getDimensionUnit(), Constants.METRE)
-                                        .doubleValue()));
-                        pack.setHeight(BigDecimal.valueOf(
-                                UnitConversionUtility.convertUnit(Constants.LENGTH, pack.getHeight(), pack.getDimensionUnit(), Constants.METRE)
-                                        .doubleValue()));
-                        pack.setDimensionUnit(Constants.METRE);
-                    }
-                    if (pack.getWeightUnit() != null && !pack.getWeightUnit().equals(Constants.WEIGHT_UNIT_KG)) {
-                        pack.setWeight(BigDecimal.valueOf(
-                                UnitConversionUtility.convertUnit(Constants.MASS, pack.getWeight(), pack.getWeightUnit(), Constants.WEIGHT_UNIT_KG)
-                                        .doubleValue()));
-                        pack.setWeightUnit(Constants.WEIGHT_UNIT_KG);
-                    }
-                    pack.setVolume(pack.getLength().multiply(pack.getWidth()).multiply(pack.getHeight()));
-                    pack.setVolumeUnit(Constants.VOLUME_UNIT_M3);
-                } catch (Exception ex) {
-                    String message = "ERROR Exception thrown while converting units";
-                    log.error("ERROR Converting units");
-                }
                 if (pack.getGuid() == null)
                     pack.setGuid(UUID.randomUUID());
                 referenceNumbersGuidMapResponses.add(PlatformToRunnerCustomerBookingResponse.ReferenceNumbersGuidMapResponse.builder()
