@@ -22,10 +22,7 @@ import com.dpw.runner.shipment.services.dto.ContainerAPIsRequest.ShipmentContain
 import com.dpw.runner.shipment.services.dto.TrackingService.UniversalTrackingPayload;
 import com.dpw.runner.shipment.services.dto.patchRequest.ShipmentPatchRequest;
 import com.dpw.runner.shipment.services.dto.request.*;
-import com.dpw.runner.shipment.services.dto.response.AdditionalDetailResponse;
-import com.dpw.runner.shipment.services.dto.response.CarrierDetailResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentListResponse;
+import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.v1.request.ShipmentBillingListRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TIListRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.WayBillNumberFilterRequest;
@@ -1787,6 +1784,7 @@ public class ShipmentService implements IShipmentService {
             shipmentDetails.setLockedBy(currentUser);
         }
         shipmentDetails = shipmentDao.save(shipmentDetails, false);
+        shipmentSync.sync(shipmentDetails);
         afterSave(shipmentDetails, false);
         return ResponseHelper.buildSuccessResponse();
     }
@@ -2262,7 +2260,7 @@ public class ShipmentService implements IShipmentService {
     @Override
     public ResponseEntity<?> generateCustomHouseBLNumber() {
         try {
-            return ResponseHelper.buildSuccessResponse(generateCustomHouseBL());
+            return ResponseHelper.buildSuccessResponse(GenerateCustomHblResponse.builder().hblNumber(generateCustomHouseBL()).build());
         } catch (Exception e) {
             throw new RunnerException(e.getMessage());
         }

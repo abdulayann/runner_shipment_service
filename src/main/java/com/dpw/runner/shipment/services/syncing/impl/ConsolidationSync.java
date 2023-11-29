@@ -175,6 +175,7 @@ public class ConsolidationSync implements IConsolidationSync {
         response.setDestinationPortName(request.getCarrierDetails().getDestinationPort());
         response.setFirstLoadString(request.getCarrierDetails().getOrigin());
         response.setOriginPortName(request.getCarrierDetails().getOriginPort());
+        response.setCarrier(request.getCarrierDetails().getShippingLine());
     }
 
     private void mapAchievedQuantities(CustomConsolidationRequest response, ConsolidationDetails request) {
