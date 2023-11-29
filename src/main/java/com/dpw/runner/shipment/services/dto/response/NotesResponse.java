@@ -27,4 +27,6 @@ public class NotesResponse implements IRunnerResponse {
     private String insertUserDisplayName;
     private Boolean isPublic;
     private Boolean isActive;
+    private String label;
+    private String assignedTo;
 }
