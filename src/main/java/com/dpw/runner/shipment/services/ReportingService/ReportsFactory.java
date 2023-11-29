@@ -10,6 +10,8 @@ public class ReportsFactory {
     @Autowired
     private ArrivalNoticeReport arrivalNoticeReport;
     @Autowired
+    private ShippingInstructionReport shippingInstructionReport;
+    @Autowired
     private BookingConfirmationReport bookingConfirmationReport;
     @Autowired
     private DeliveryOrderReport deliveryOrderReport;
@@ -36,11 +38,11 @@ public class ReportsFactory {
     @Autowired
     private ShippingRequestAirReport shippingRequestAirReport;
     @Autowired
-    PickupOrderReport pickupOrderReport;
+    private PickupOrderReport pickupOrderReport;
     @Autowired
-    ProofOfDeliveryReport proofOfDeliveryReport;
+    private ProofOfDeliveryReport proofOfDeliveryReport;
     @Autowired
-    PackingListReport packingListReport;
+    private PackingListReport packingListReport;
     @Autowired
     private ShipmentCANReport shipmentCANReport;
     @Autowired
@@ -106,6 +108,8 @@ public class ReportsFactory {
                 return manifestPrintReport;
             case ReportConstants.CONTAINER_MANIFEST_PRINT:
                 return containerManifestPrint;
+            case ReportConstants.SHIPPING_INSTRUCTION:
+                return shippingInstructionReport;
         }
         return null;
     }
