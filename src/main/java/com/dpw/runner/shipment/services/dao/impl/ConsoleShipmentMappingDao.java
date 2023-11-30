@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
 import com.dpw.runner.shipment.services.repository.interfaces.IConsoleShipmentsMappingRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 
@@ -16,6 +17,10 @@ public class ConsoleShipmentMappingDao implements IConsoleShipmentMappingDao {
     @Override
     public List<ConsoleShipmentMapping> findByConsolidationId(Long consolidationId) {
         return consoleShipmentsMappingRepository.findByConsolidationId(consolidationId);
+    }
+
+    private void deleteByConsolidationIdAndShipmentIdIn(Long consolidationId, List<Long> shipmentIds) {
+        consoleShipmentsMappingRepository.deleteByConsolidationIdAndShipmentIdIn(consolidationId, shipmentIds);
     }
 
     @Override
@@ -54,25 +59,10 @@ public class ConsoleShipmentMappingDao implements IConsoleShipmentMappingDao {
     }
 
     @Override
+    @Transactional
     public List<Long> detachShipments(Long consolidationId, List<Long> shipIds) {
-        List<ConsoleShipmentMapping> mappings = findByConsolidationId(consolidationId);
-        HashSet<Long> shipmentIds = new HashSet<>(shipIds);
-        List<Long> removedShipmentIds = new ArrayList<>();
-        List<ConsoleShipmentMapping> deleteMappings = new ArrayList<>();
-        if (mappings != null && mappings.size() > 0) {
-            for (ConsoleShipmentMapping consoleShipmentMapping : mappings) {
-                if (shipmentIds.contains(consoleShipmentMapping.getShipmentId())) {
-                    removedShipmentIds.add(consoleShipmentMapping.getShipmentId());
-                    deleteMappings.add(consoleShipmentMapping);
-                }
-            }
-        }
-        if (!deleteMappings.isEmpty()) {
-            for (ConsoleShipmentMapping consoleShipmentMapping : deleteMappings) {
-                delete(consoleShipmentMapping);
-            }
-        }
-        return removedShipmentIds;
+        deleteByConsolidationIdAndShipmentIdIn(consolidationId, shipIds);
+        return shipIds;
     }
 
     @Override
