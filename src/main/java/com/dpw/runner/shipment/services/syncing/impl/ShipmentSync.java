@@ -68,7 +68,6 @@ public class ShipmentSync implements IShipmentSync {
     private String SHIPMENT_V1_SYNC_URL;
 
     @Override
-    @Async
     public ResponseEntity<?> sync(ShipmentDetails sd) {
         CustomShipmentSyncRequest temp = new CustomShipmentSyncRequest();
 
@@ -127,6 +126,7 @@ public class ShipmentSync implements IShipmentSync {
         return callSync(finalCs, cs, sd.getId(), sd.getGuid());
     }
 
+    @Async
     public ResponseEntity<?> callSync(String finalCs, CustomShipmentSyncRequest cs, Long id, UUID guid) {
 
         retryTemplate.execute(ctx -> {
