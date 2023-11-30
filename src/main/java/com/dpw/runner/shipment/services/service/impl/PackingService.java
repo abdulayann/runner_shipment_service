@@ -35,6 +35,7 @@ import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
@@ -95,6 +96,9 @@ public class PackingService implements IPackingService {
     private SyncQueueService syncQueueService;
     @Autowired
     private SyncConfig syncConfig;
+
+    @Value("${spring.profiles.active}")
+    private String currentEnvironment;
 
     private final CSVParsingUtil<Packing> parser = new CSVParsingUtil<>(Packing.class);
 
@@ -166,7 +170,7 @@ public class PackingService implements IPackingService {
         LocalDateTime currentTime = LocalDateTime.now();
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
         String timestamp = currentTime.format(formatter);
-        String filenameWithTimestamp = "Packings_" + timestamp + ".xlsx";
+        String filenameWithTimestamp = "Packings_" + currentEnvironment + "_" + timestamp + ".xlsx";
 
         response.setContentType("text/csv");
         response.setHeader("Content-Disposition", "attachment; filename=" + filenameWithTimestamp);
