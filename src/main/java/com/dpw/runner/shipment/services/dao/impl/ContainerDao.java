@@ -318,4 +318,9 @@ public class ContainerDao implements IContainerDao {
         return containersPage.getContent();
     }
 
+    @Override
+    public List<Containers> findByConsolidationId(Long consolidationId) {
+        return containerRepository.findByConsolidationId(consolidationId);
+    }
+
 }

@@ -8,6 +8,7 @@ import com.dpw.runner.shipment.services.entity.CarrierDetails;
 import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
 import com.dpw.runner.shipment.services.entity.Parties;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.enums.Ownership;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
@@ -216,6 +217,19 @@ public class ShipmentSync implements IShipmentSync {
         cs.setReceivingForwarderParty(mapPartyObject(sd.getAdditionalDetails().getReceivingForwarder()));
         cs.setSendingForwarderParty(mapPartyObject(sd.getAdditionalDetails().getSendingForwarder()));
         cs.setTraderOrSupplierParty(mapPartyObject(sd.getAdditionalDetails().getTraderOrSupplier()));
+        if(sd.getAdditionalDetails().getAndesStatus() != null)
+            cs.setAndesStatusString(String.valueOf(sd.getAdditionalDetails().getAndesStatus().getValue()));
+        if(sd.getAdditionalDetails().getOwnership() != null) {
+            cs.setOwnershipString(String.valueOf(sd.getAdditionalDetails().getOwnership().getValue()));
+            if(sd.getAdditionalDetails().getOwnership().equals(Ownership.SELF))
+                cs.setOwnershipName(sd.getAdditionalDetails().getOwnershipName());
+            else
+                cs.setOwnershipParty(mapPartyObject(sd.getAdditionalDetails().getOwnershipOrg()));
+        }
+        if(sd.getAdditionalDetails().getPassedBy() != null)
+            cs.setPassedByString(String.valueOf(sd.getAdditionalDetails().getPassedBy().getValue()));
+        cs.setBoedate(sd.getAdditionalDetails().getBOEDate());
+        cs.setBoenumber(sd.getAdditionalDetails().getBOENumber());
     }
 
     private void mapShipmentServices(CustomShipmentSyncRequest cs, ShipmentDetails sd) {
