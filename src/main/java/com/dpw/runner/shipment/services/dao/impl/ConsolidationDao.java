@@ -80,7 +80,7 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
 
     @Override
     public ConsolidationDetails update(ConsolidationDetails consolidationDetails, boolean fromV1Sync) {
-        Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(consolidationDetails) , Constants.CONSOLIDATION, LifecycleHooks.ON_UPDATE, false);
+        Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(consolidationDetails) , Constants.CONSOLIDATION, LifecycleHooks.ON_CREATE, false);
         validateLockStatus(consolidationDetails.getId());
         ConsolidationDetails oldConsole = null;
         if(consolidationDetails.getId() != null) {
