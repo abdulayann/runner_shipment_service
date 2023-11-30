@@ -33,13 +33,24 @@ public interface IShipmentService extends ICommonService {
     ResponseEntity<?> completeV1ShipmentCreateAndUpdate(CommonRequestModel commonRequestModel, Map<UUID, String> map) throws Exception;
 
     ResponseEntity<?> cloneShipment(CommonRequestModel commonRequestModel);
+
     ResponseEntity<?> transportInstructionList(CommonRequestModel commonRequestModel);
+
     ResponseEntity<?> containerListForTI(CommonRequestModel commonRequestModel);
+
     void afterSave(ShipmentDetails shipmentDetails, boolean isCreate);
+
     ResponseEntity<?> fullShipmentsList(CommonRequestModel commonRequestModel);
+
     ResponseEntity<?> createShipmentInV2(CustomerBookingRequest customerBookingRequest) throws Exception;
+
     ResponseEntity<?> assignShipmentContainers(CommonRequestModel commonRequestModel);
+
     ResponseEntity<?> retrieveByOrderId(String orderId);
+
     ResponseEntity<?> generateCustomHouseBLNumber();
+
+    ResponseEntity<?> getConsolFromShipment(Long shipmentId);
+
     ResponseEntity<?> getDefaultShipment();
 }

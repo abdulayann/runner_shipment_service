@@ -323,4 +323,14 @@ public class ShipmentController {
             return (ResponseEntity<RunnerResponse<GenerateCustomHblResponse>>) shipmentService.generateCustomHouseBLNumber();
     }
 
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.IMPORT_SUCCESSFUL)})
+    @GetMapping(ShipmentConstants.IMPORT_CONSOLIDATION)
+    public ResponseEntity<?> getConsolFromShipment(@ApiParam(value = ShipmentConstants.CONSOLIDATION_ID, required = true) @RequestParam Long id) {
+        try {
+            return (ResponseEntity<RunnerResponse>) shipmentService.getConsolFromShipment(id);
+        } catch (Exception e) {
+            return ResponseHelper.buildFailedResponse(e.getMessage());
+        }
+    }
+
 }

@@ -16,15 +16,14 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
-import com.dpw.runner.shipment.services.dto.ContainerAPIsRequest.*;
+import com.dpw.runner.shipment.services.dto.ContainerAPIsRequest.ConsoleCalculationsRequest;
+import com.dpw.runner.shipment.services.dto.ContainerAPIsRequest.ConsoleCalculationsResponse;
+import com.dpw.runner.shipment.services.dto.ContainerAPIsRequest.ShipmentGridChangeResponse;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
 import com.dpw.runner.shipment.services.dto.TrackingService.UniversalTrackingPayload;
 import com.dpw.runner.shipment.services.dto.patchRequest.ConsolidationPatchRequest;
 import com.dpw.runner.shipment.services.dto.request.*;
-import com.dpw.runner.shipment.services.dto.response.AchievedQuantitiesResponse;
-import com.dpw.runner.shipment.services.dto.response.AllocationsResponse;
-import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.ConsolidationListResponse;
+import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.v1.request.ConsoleBookingListRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.ConsoleBookingListResponse;
 import com.dpw.runner.shipment.services.entity.*;
@@ -2059,14 +2058,94 @@ public class ConsolidationService implements IConsolidationService {
                 if(universalEventsPayload != null) {
                     trackingPayloads.add(universalEventsPayload);
                     var jsonBody = jsonHelper.convertToJson(trackingPayloads);
-                    trackingServiceAdapter.publishUpdatesToTrackingServiceQueue(jsonBody,true);
+                    trackingServiceAdapter.publishUpdatesToTrackingServiceQueue(jsonBody, true);
                 }
             }
             KafkaResponse kafkaResponse = producer.getKafkaResponse(consolidationDetails, isCreate);
             producer.produceToKafka(jsonHelper.convertToJson(kafkaResponse), senderQueue, UUID.randomUUID().toString());
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             log.error(e.getMessage());
         }
+    }
+
+    @Override
+    public ResponseEntity<?> getShipmentFromConsol(Long consolidationId) {
+        ShipmentDetailsResponse shipment;
+        var consolidationResponse = shipmentDao.findById(consolidationId);
+
+        if (consolidationResponse.isEmpty())
+            throw new DataRetrievalFailureException("Failed to fetch the consolidation with id " + consolidationId);
+
+        var consolidation = modelMapper.map(consolidationResponse.get(), ConsolidationDetailsResponse.class);
+
+        var origin = consolidation.getCarrierDetails() != null ? consolidation.getCarrierDetails().getOrigin() : null;
+        var destination = consolidation.getCarrierDetails() != null ? consolidation.getCarrierDetails().getDestination() : null;
+        var voyage = consolidation.getCarrierDetails() != null ? consolidation.getCarrierDetails().getVoyage() : null;
+        var vessel = consolidation.getCarrierDetails() != null ? consolidation.getCarrierDetails().getVessel() : null;
+        var aircrafType = consolidation.getCarrierDetails() != null ? consolidation.getCarrierDetails().getAircraftType() : null;
+        var eta = consolidation.getCarrierDetails() != null ? consolidation.getCarrierDetails().getEta() : null;
+        var etd = consolidation.getCarrierDetails() != null ? consolidation.getCarrierDetails().getEtd() : null;
+        var ata = consolidation.getCarrierDetails() != null ? consolidation.getCarrierDetails().getAta() : null;
+        var atd = consolidation.getCarrierDetails() != null ? consolidation.getCarrierDetails().getAtd() : null;
+        var consolAllocation = consolidation.getAllocations();
+        var consolCarrier = consolidation.getCarrierDetails();
+        shipment = ShipmentDetailsResponse.builder()
+                .transportMode(consolidation.getTransportMode())
+                .bookingNumber(consolidation.getBookingNumber())
+                .consolidationList(List.of(modelMapper.map(consolidation, ConsolidationListResponse.class)))
+                .shipmentType(consolidation.getShipmentType())
+                .additionalDetails(AdditionalDetailResponse.builder()
+                        .SMTPIGMDate(consolidation.getSmtpigmDate())
+                        .SMTPIGMNumber(consolidation.getSmtpigmNumber())
+                        .inwardDateAndTime(consolidation.getInwardDateAndTime())
+                        .releaseType(consolidation.getReleaseType())
+                        .warehouseId(consolidation.getWarehouseId())
+                        .isInland(consolidation.getIsInland())
+                        .original(consolidation.getOriginal())
+                        .IGMFileNo(consolidation.getIgmFileNo())
+                        .IGMFileDate(consolidation.getIgmFileDate())
+                        .IGMInwardDate(consolidation.getIgmInwardDate())
+                        .copy(consolidation.getCopy())
+                        .customDeclType(consolidation.getDeclarationType())
+                        .build())
+                .carrierDetails(CarrierDetailResponse.builder()
+                        .ata(ata)
+                        .eta(eta)
+                        .atd(atd)
+                        .etd(etd)
+                        .origin(origin)
+                        .vessel(vessel)
+                        .shippingLine(consolCarrier != null ? consolCarrier.getShippingLine() : null)
+                        .voyage(voyage)
+                        .aircraftType(aircrafType)
+                        .destination(destination)
+                        .flightNumber(consolCarrier != null ? consolCarrier.getFlightNumber() : null)
+                        .build())
+                .weight(consolAllocation != null ? consolAllocation.getWeight() : null)
+                .weightUnit(consolAllocation != null ? consolAllocation.getWeightUnit() : null)
+                .volume(consolAllocation != null ? consolAllocation.getVolume() : null)
+                .volumeUnit(consolAllocation != null ? consolAllocation.getVolumeUnit() : null)
+                .chargable(consolAllocation != null ? consolAllocation.getChargable() : null)
+                .chargeableUnit(consolAllocation != null ? consolAllocation.getChargeableUnit() : null)
+                .paymentTerms(consolidation.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && consolidation.getShipmentType().equals("EXP")
+                        ? consolidation.getPayment() : null)
+                .masterBill(consolidation.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) ? consolidation.getMawb() : consolidation.getBol())
+                .build();
+
+        if (consolidation.getConsolidationAddresses() != null) {
+            consolidation.getConsolidationAddresses().stream().forEach(party -> {
+                if (party.getType().equals("NP1")) {
+                    shipment.getAdditionalDetails().setNotifyParty(
+                            PartiesResponse.builder()
+                                    .orgCode(party.getOrgCode())
+                                    .addressCode(party.getAddressCode())
+                                    .build());
+                }
+            });
+        }
+
+        shipment.setShipmentType(Constants.SHIPMENT_TYPE_STD);
+
+        return ResponseHelper.buildSuccessResponse(shipment);
     }
 }

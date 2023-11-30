@@ -2266,14 +2266,99 @@ public class ShipmentService implements IShipmentService {
         }
     }
 
+    @Override
+    public ResponseEntity<?> getConsolFromShipment(Long shipmentId) {
+        ConsolidationDetailsResponse consol;
+        var shipmentRes = shipmentDao.findById(shipmentId);
+
+        if (shipmentRes.isEmpty())
+            throw new DataRetrievalFailureException("Failed to fetch the ShipmentId with id " + shipmentId);
+
+        var shipment = modelMapper.map(shipmentRes.get(), ShipmentDetailsResponse.class);
+
+        var additionalDetails = shipment.getAdditionalDetails();
+        var shipmentCarrierDetails = shipment.getCarrierDetails();
+        var tenantSettings = shipmentSettingsDao.findByTenantId(TenantContext.getCurrentTenant());
+        if (tenantSettings.isEmpty())
+            throw new DataRetrievalFailureException("Failed to fetch the shipment settings for tenant id " + TenantContext.getCurrentTenant());
+
+        boolean isPayment = tenantSettings.get().getShipmentLite()
+                && shipment.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)
+                && shipment.getDirection().equals(Constants.DIRECTION_EXP);
+
+        boolean isMawb = tenantSettings.get().getShipmentLite()
+                && shipment.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)
+                && shipment.getShipmentType().equals(Constants.SHIPMENT_TYPE_DRT);
+
+
+        RoutingsResponse customRouting = RoutingsResponse.builder()
+                .leg(1L)
+                .pod(shipmentCarrierDetails != null ? shipmentCarrierDetails.getDestination() : null)
+                .pol(shipmentCarrierDetails != null ? shipmentCarrierDetails.getOrigin() : null)
+                .routingStatus(Constants.ROUTING_CFD)
+                .mode(shipment.getTransportMode())
+                .vesselName(shipmentCarrierDetails != null ? shipmentCarrierDetails.getVessel() : null)
+                .voyage(shipmentCarrierDetails != null ? shipmentCarrierDetails.getVoyage() : null)
+                .eta(shipmentCarrierDetails != null ? shipmentCarrierDetails.getEta() : null)
+                .etd(shipmentCarrierDetails != null ? shipmentCarrierDetails.getEtd() : null)
+                .build();
+
+        consol = ConsolidationDetailsResponse.builder()
+                .consolidationType(Constants.SHIPMENT_TYPE_DRT)
+                .transportMode(shipment.getTransportMode())
+                .containerCategory(shipment.getShipmentType())
+                .declarationType(additionalDetails != null ? additionalDetails.getCustomDeclType() : null)
+                .carrierDetails(CarrierDetailResponse.builder()
+                        .vessel(shipmentCarrierDetails != null ? shipmentCarrierDetails.getVessel() : null)
+                        .originPort(shipmentCarrierDetails != null ? shipmentCarrierDetails.getOriginPort() : null)
+                        .destinationPort(shipmentCarrierDetails != null ? shipmentCarrierDetails.getDestinationPort() : null)
+                        .eta(shipmentCarrierDetails != null ? shipmentCarrierDetails.getEta() : null)
+                        .etd(shipmentCarrierDetails != null ? shipmentCarrierDetails.getEtd() : null)
+                        .ata(shipmentCarrierDetails != null ? shipmentCarrierDetails.getAta() : null)
+                        .atd(shipmentCarrierDetails != null ? shipmentCarrierDetails.getAtd() : null)
+                        .aircraftType(shipmentCarrierDetails != null ? shipmentCarrierDetails.getAircraftType() : null)
+                        .flightNumber(shipmentCarrierDetails != null ? shipmentCarrierDetails.getFlightNumber() : null)
+                        .shippingLine(shipmentCarrierDetails != null ? shipmentCarrierDetails.getShippingLine() : null) // carrier
+                        .voyage(shipmentCarrierDetails != null ? shipmentCarrierDetails.getVoyage() : null)
+                        .build())
+                .releaseType(additionalDetails != null ? additionalDetails.getReleaseType() : null)
+                .original(additionalDetails != null ? additionalDetails.getOriginal() : null)
+                .copy(additionalDetails != null ? additionalDetails.getCopy() : null)
+                .allocations(AllocationsResponse.builder()
+//                        .weight(shipment.getWeight()) // commented just like the v1 code
+                        .weightUnit(shipment.getWeightUnit())
+//                        .volume(shipment.getVolume())
+                        .volumeUnit(shipment.getVolumeUnit())
+//                        .chargable(shipment.getChargable())
+                        .chargeableUnit(shipment.getChargeableUnit())
+                        .build())
+                .shipmentType(shipment.getShipmentType())
+                .igmFileDate(additionalDetails != null ? additionalDetails.getIGMFileDate() : null)
+                .igmFileNo(additionalDetails != null ? additionalDetails.getIGMFileNo() : null)
+                .smtpigmDate(additionalDetails != null ? additionalDetails.getSMTPIGMDate() : null)
+                .smtpigmNumber(additionalDetails != null ? additionalDetails.getSMTPIGMNumber() : null)
+                .igmInwardDate(additionalDetails != null ? additionalDetails.getIGMInwardDate() : null)
+                .inwardDateAndTime(additionalDetails != null ? additionalDetails.getInwardDateAndTime() : null)
+                .warehouseId(additionalDetails != null ? additionalDetails.getWarehouseId() : null)
+                .bol(shipment.getMasterBill())
+                .referenceNumber(shipment.getBookingReference())
+                .payment(isPayment ? shipment.getPaymentTerms() : null)
+                .routingsList(List.of(customRouting))
+                .mawb(isMawb ? shipment.getMasterBill() : null)
+                .isLinked(true)
+                .build();
+
+        return ResponseHelper.buildSuccessResponse(consol);
+    }
+
     private String generateCustomHouseBL() {
         String res = null;
         List<ShipmentSettingsDetails> shipmentSettingsDetailsList = shipmentSettingsDao.getSettingsByTenantIds(List.of(TenantContext.getCurrentTenant()));
         ShipmentSettingsDetails tenantSetting = null;
-        if(shipmentSettingsDetailsList.get(0) != null)
+        if (shipmentSettingsDetailsList.get(0) != null)
             tenantSetting = shipmentSettingsDetailsList.get(0);
 
-        if(tenantSetting.getRestrictHblGen() && tenantSetting.getCustomisedSequence()) {
+        if (tenantSetting.getRestrictHblGen() && tenantSetting.getCustomisedSequence()) {
             // generate via Product Identifier Utility
             // res = someMethod();
         }

@@ -6,6 +6,8 @@ public class ShipmentConstants {
     public static final String CREATE_SUCCESSFUL = "Successful Shipment Data Creation";
 
     public static final String UPDATE_SUCCESSFUL = "Successful Shipment Data Update";
+    public static final String IMPORT_SUCCESSFUL = "Import Successful";
+    public static final String IMPORT_SHIPMENT = "/import";
 
     public static final String LIST_SUCCESSFUL = "Successful Shipment List Retrieval";
 
@@ -17,6 +19,7 @@ public class ShipmentConstants {
     public static final String RETRIEVE_BY_ID_SUCCESSFUL = "Successful Shipment Data Retrieval By Id";
 
     public static final String SHIPMENT_ID = "Shipment Id";
+    public static final String CONSOLIDATION_ID = "Consolidation Id";
 
     public static final String RESPONSE_CONTAINER_LIST = "List";
 
@@ -33,5 +36,7 @@ public class ShipmentConstants {
     public static final String RETRIEVE_BY_ORDER_ID_SUCCESSFUL = "Successful Shipment Data Retrieval By Order Id";
     public static final String ORDER_ID = "Order Id";
     public static final String GENERATE_CUSTOM_HOUSE_BL = "/generate/customHouseBl";
+    public static final String IMPORT_CONSOLIDATION = "/import-consolidation";
+
     public static final String DEFAULT_SHIPMENT_GENERATED_SUCCESSFULLY = "Default shipment generated successfully";
  }
