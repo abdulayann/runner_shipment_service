@@ -59,6 +59,8 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
@@ -204,7 +206,7 @@ public class ContainerService implements IContainerService {
         }
 
         if (request.getConsolidationId() != null) {
-            ListCommonRequest req2 = constructListCommonRequest("consolidation_id", request.getConsolidationId(), "=");
+            ListCommonRequest req2 = constructListCommonRequest("consolidationId", Long.valueOf(request.getConsolidationId()), "=");
             Pair<Specification<Containers>, Pageable> pair = fetchData(req2, Containers.class);
             Page<Containers> containers = containerDao.findAll(pair.getLeft(), pair.getRight());
             List<Containers> containersList = containers.getContent();
@@ -214,9 +216,13 @@ public class ContainerService implements IContainerService {
                 result = result.stream().filter(result::contains).collect(Collectors.toList());
             }
         }
+        LocalDateTime currentTime = LocalDateTime.now();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
+        String timestamp = currentTime.format(formatter);
+        String filenameWithTimestamp = "Containers_" + timestamp + ".xlsx";
 
         response.setContentType("text/csv");
-        response.setHeader("Content-Disposition", "attachment; filename=\"containers.csv\"");
+        response.setHeader("Content-Disposition", "attachment; filename=" + filenameWithTimestamp);
 
         try (PrintWriter writer = response.getWriter()) {
             writer.println(parser.generateCSVHeaderForContainer());
@@ -240,9 +246,13 @@ public class ContainerService implements IContainerService {
                 result = result.stream().filter(result::contains).collect(Collectors.toList());
             }
         }
+        LocalDateTime currentTime = LocalDateTime.now();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
+        String timestamp = currentTime.format(formatter);
+        String filenameWithTimestamp = "ContainerEvents_" + timestamp + ".xlsx";
 
         response.setContentType("text/csv");
-        response.setHeader("Content-Disposition", "attachment; filename=\"consolidation_events.csv\"");
+        response.setHeader("Content-Disposition", "attachment; filename=" + filenameWithTimestamp);
 
         try (PrintWriter writer = response.getWriter()) {
             writer.println(parser.generateCSVHeaderForEvent());

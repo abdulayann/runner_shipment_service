@@ -75,6 +75,7 @@ import java.io.OutputStream;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -2026,8 +2027,13 @@ public class ConsolidationService implements IConsolidationService {
             offset += achievedQuantities.size();
         }
 
+        LocalDateTime currentTime = LocalDateTime.now();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
+        String timestamp = currentTime.format(formatter);
+        String filenameWithTimestamp = "Consolidations_" + timestamp + ".xlsx";
+
         response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-        response.setHeader("Content-Disposition", "attachment; filename=consolidationList.xlsx");
+        response.setHeader("Content-Disposition", "attachment; filename=" + filenameWithTimestamp);
 
         try (OutputStream outputStream = response.getOutputStream()) {
             workbook.write(outputStream);
