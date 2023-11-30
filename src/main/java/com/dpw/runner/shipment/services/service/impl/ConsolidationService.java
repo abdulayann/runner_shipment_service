@@ -16,15 +16,14 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
-import com.dpw.runner.shipment.services.dto.ContainerAPIsRequest.*;
+import com.dpw.runner.shipment.services.dto.ContainerAPIsRequest.ConsoleCalculationsRequest;
+import com.dpw.runner.shipment.services.dto.ContainerAPIsRequest.ConsoleCalculationsResponse;
+import com.dpw.runner.shipment.services.dto.ContainerAPIsRequest.ShipmentGridChangeResponse;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
 import com.dpw.runner.shipment.services.dto.TrackingService.UniversalTrackingPayload;
 import com.dpw.runner.shipment.services.dto.patchRequest.ConsolidationPatchRequest;
 import com.dpw.runner.shipment.services.dto.request.*;
-import com.dpw.runner.shipment.services.dto.response.AchievedQuantitiesResponse;
-import com.dpw.runner.shipment.services.dto.response.AllocationsResponse;
-import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.ConsolidationListResponse;
+import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.v1.request.ConsoleBookingListRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.ConsoleBookingListResponse;
 import com.dpw.runner.shipment.services.entity.*;
@@ -76,6 +75,7 @@ import java.io.OutputStream;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -1009,7 +1009,7 @@ public class ConsolidationService implements IConsolidationService {
         try {
             ConsolidationDetails consolidationDetails = getConsoleForCalculations((ConsoleCalculationsRequest) commonRequestModel.getData());
             consolidationDetails = calculateConsolUtilization(consolidationDetails);
-            ConsoleCalculationsResponse response = getConsolecalculationsResponse(consolidationDetails);
+            ConsoleCalculationsResponse response = getConsoleCalculationsResponse(consolidationDetails);
             return ResponseHelper.buildSuccessResponse(response);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -1028,7 +1028,7 @@ public class ConsolidationService implements IConsolidationService {
         return consolidationDetails;
     }
 
-    private ConsoleCalculationsResponse getConsolecalculationsResponse(ConsolidationDetails consolidationDetails) {
+    private ConsoleCalculationsResponse getConsoleCalculationsResponse(ConsolidationDetails consolidationDetails) {
         ConsoleCalculationsResponse response = new ConsoleCalculationsResponse();
         response.setAllocations(jsonHelper.convertValue(consolidationDetails.getAllocations(), AllocationsResponse.class));
         response.setAchievedQuantities(jsonHelper.convertValue(consolidationDetails.getAchievedQuantities(), AchievedQuantitiesResponse.class));
@@ -1051,7 +1051,7 @@ public class ConsolidationService implements IConsolidationService {
                 consolidationDetails.getAchievedQuantities().setConsolidatedVolumeUnit(consolidationDetails.getAllocations().getVolumeUnit());
             }
             consolidationDetails = calculateConsolUtilization(consolidationDetails);
-            ConsoleCalculationsResponse response = getConsolecalculationsResponse(consolidationDetails);
+            ConsoleCalculationsResponse response = getConsoleCalculationsResponse(consolidationDetails);
             return ResponseHelper.buildSuccessResponse(response);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -1093,7 +1093,7 @@ public class ConsolidationService implements IConsolidationService {
                 }
                 consolidationDetails.getAllocations().setChargeableUnit(vwOb.getChargeableUnit());
             }
-            ConsoleCalculationsResponse response = getConsolecalculationsResponse(consolidationDetails);
+            ConsoleCalculationsResponse response = getConsoleCalculationsResponse(consolidationDetails);
             return ResponseHelper.buildSuccessResponse(response);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -1156,13 +1156,19 @@ public class ConsolidationService implements IConsolidationService {
     public ResponseEntity<?> calculateAchievedValues(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
+            ShipmentGridChangeResponse response = new ShipmentGridChangeResponse();
             Long consolidationId = commonRequestModel.getId();
             ConsolidationDetails consolidationDetails = consolidationDetailsDao.findById(consolidationId).get();
             if (consolidationDetails.getOverride() != null && consolidationDetails.getOverride()) {
                 return ResponseHelper.buildSuccessResponse(convertToClass(consolidationDetails, ConsolidationDetailsResponse.class));
             }
-            String weightChargeableUnit = Constants.WEIGHT_UNIT_KG; // TODO- Actually fetch from tenant Settings
-            String volumeChargeableUnit = Constants.VOLUME_UNIT_M3; // TODO- Actually fetch from tenant Settings
+            ShipmentSettingsDetails shipmentSettingsDetails = shipmentSettingsDao.getSettingsByTenantIds(List.of(TenantContext.getCurrentTenant())).get(0);
+            String weightChargeableUnit = Constants.WEIGHT_UNIT_KG;
+            if(!IsStringNullOrEmpty(shipmentSettingsDetails.getWeightChargeableUnit()))
+                weightChargeableUnit = shipmentSettingsDetails.getWeightChargeableUnit();
+            String volumeChargeableUnit = Constants.VOLUME_UNIT_M3;
+            if(!IsStringNullOrEmpty(shipmentSettingsDetails.getVolumeChargeableUnit()))
+                volumeChargeableUnit = shipmentSettingsDetails.getVolumeChargeableUnit();
             BigDecimal sumWeight = new BigDecimal(0);
             BigDecimal sumVolume = new BigDecimal(0);
             if (consolidationDetails.getShipmentsList() != null && !consolidationDetails.getShipmentsList().isEmpty()) {
@@ -1170,10 +1176,10 @@ public class ConsolidationService implements IConsolidationService {
                     sumWeight = sumWeight.add(new BigDecimal(convertUnit(Constants.MASS, shipmentDetails.getWeight(), shipmentDetails.getWeightUnit(), weightChargeableUnit).toString()));
                     sumVolume = sumVolume.add(new BigDecimal(convertUnit(Constants.VOLUME, shipmentDetails.getVolume(), shipmentDetails.getVolumeUnit(), volumeChargeableUnit).toString()));
                 }
-                consolidationDetails.getAllocations().setShipmentsCount(consolidationDetails.getShipmentsList().size());
+                response.setSummaryShipmentsCount(consolidationDetails.getShipmentsList().size());
             }
             else {
-                consolidationDetails.getAllocations().setShipmentsCount(0);
+                response.setSummaryShipmentsCount(0);
             }
             consolidationDetails.getAchievedQuantities().setConsolidatedWeight(sumWeight);
             consolidationDetails.getAchievedQuantities().setConsolidatedWeightUnit(weightChargeableUnit);
@@ -1187,7 +1193,7 @@ public class ConsolidationService implements IConsolidationService {
             String weightUnit = consolidationDetails.getAllocations().getWeightUnit();
             BigDecimal volume = consolidationDetails.getAllocations().getVolume();
             String volumeUnit = consolidationDetails.getAllocations().getVolumeUnit();
-            VolumeWeightChargeable vwOb = calculateVolumeWeight(consolidationDetails, transportMode, weightUnit, volumeUnit, weight, volume);
+            VolumeWeightChargeable vwOb = calculateVolumeWeight(consolidationDetails, transportMode, weightChargeableUnit, volumeChargeableUnit, sumWeight, sumVolume);
 
             consolidationDetails.getAchievedQuantities().setConsolidationChargeQuantity(vwOb.getChargeable());
             consolidationDetails.getAchievedQuantities().setConsolidationChargeQuantityUnit(vwOb.getChargeableUnit());
@@ -1200,7 +1206,11 @@ public class ConsolidationService implements IConsolidationService {
             consolidationDetails.getAchievedQuantities().setWeightVolume(vwOb.getVolumeWeight());
             consolidationDetails.getAchievedQuantities().setWeightVolumeUnit(vwOb.getVolumeWeightUnit());
             consolidationDetails.getAllocations().setChargeableUnit(vwOb.getChargeableUnit());
-            ConsoleCalculationsResponse response = getConsolecalculationsResponse(consolidationDetails);
+
+            response.setAllocations(jsonHelper.convertValue(consolidationDetails.getAllocations(), AllocationsResponse.class));
+            response.setAchievedQuantities(jsonHelper.convertValue(consolidationDetails.getAchievedQuantities(), AchievedQuantitiesResponse.class));
+            response.setSummaryWeight(sumWeight.toString() + " " + weightChargeableUnit);
+            response.setSummaryVolume(sumVolume.toString() + " " + volumeChargeableUnit);
             return ResponseHelper.buildSuccessResponse(response);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -1683,6 +1693,7 @@ public class ConsolidationService implements IConsolidationService {
             consolidationDetails.setLockedBy(currentUser);
         }
         consolidationDetails = consolidationDetailsDao.save(consolidationDetails, false);
+        consolidationSync.sync(consolidationDetails);
         afterSave(consolidationDetails, false);
 
         return ResponseHelper.buildSuccessResponse();
@@ -2017,8 +2028,13 @@ public class ConsolidationService implements IConsolidationService {
             offset += achievedQuantities.size();
         }
 
+        LocalDateTime currentTime = LocalDateTime.now();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
+        String timestamp = currentTime.format(formatter);
+        String filenameWithTimestamp = "Consolidations_" + timestamp + ".xlsx";
+
         response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-        response.setHeader("Content-Disposition", "attachment; filename=consolidationList.xlsx");
+        response.setHeader("Content-Disposition", "attachment; filename=" + filenameWithTimestamp);
 
         try (OutputStream outputStream = response.getOutputStream()) {
             workbook.write(outputStream);
@@ -2030,6 +2046,8 @@ public class ConsolidationService implements IConsolidationService {
     public void afterSave(ConsolidationDetails consolidationDetails, boolean isCreate)
     {
         try {
+            if(consolidationDetails.getTenantId() == null)
+                consolidationDetails.setTenantId(TenantContext.getCurrentTenant());
             if(trackingServiceAdapter.checkIfConsolContainersExist(consolidationDetails) || trackingServiceAdapter.checkIfAwbExists(consolidationDetails)) {
                 UniversalTrackingPayload _utPayload = trackingServiceAdapter.mapConsoleDataToTrackingServiceData(consolidationDetails);
                 List<UniversalTrackingPayload> trackingPayloads = new ArrayList<>();
@@ -2046,14 +2064,94 @@ public class ConsolidationService implements IConsolidationService {
                 if(universalEventsPayload != null) {
                     trackingPayloads.add(universalEventsPayload);
                     var jsonBody = jsonHelper.convertToJson(trackingPayloads);
-                    trackingServiceAdapter.publishUpdatesToTrackingServiceQueue(jsonBody,true);
+                    trackingServiceAdapter.publishUpdatesToTrackingServiceQueue(jsonBody, true);
                 }
             }
             KafkaResponse kafkaResponse = producer.getKafkaResponse(consolidationDetails, isCreate);
             producer.produceToKafka(jsonHelper.convertToJson(kafkaResponse), senderQueue, UUID.randomUUID().toString());
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             log.error(e.getMessage());
         }
+    }
+
+    @Override
+    public ResponseEntity<?> getShipmentFromConsol(Long consolidationId) {
+        ShipmentDetailsResponse shipment;
+        var consolidationResponse = shipmentDao.findById(consolidationId);
+
+        if (consolidationResponse.isEmpty())
+            throw new DataRetrievalFailureException("Failed to fetch the consolidation with id " + consolidationId);
+
+        var consolidation = modelMapper.map(consolidationResponse.get(), ConsolidationDetailsResponse.class);
+
+        var origin = consolidation.getCarrierDetails() != null ? consolidation.getCarrierDetails().getOrigin() : null;
+        var destination = consolidation.getCarrierDetails() != null ? consolidation.getCarrierDetails().getDestination() : null;
+        var voyage = consolidation.getCarrierDetails() != null ? consolidation.getCarrierDetails().getVoyage() : null;
+        var vessel = consolidation.getCarrierDetails() != null ? consolidation.getCarrierDetails().getVessel() : null;
+        var aircrafType = consolidation.getCarrierDetails() != null ? consolidation.getCarrierDetails().getAircraftType() : null;
+        var eta = consolidation.getCarrierDetails() != null ? consolidation.getCarrierDetails().getEta() : null;
+        var etd = consolidation.getCarrierDetails() != null ? consolidation.getCarrierDetails().getEtd() : null;
+        var ata = consolidation.getCarrierDetails() != null ? consolidation.getCarrierDetails().getAta() : null;
+        var atd = consolidation.getCarrierDetails() != null ? consolidation.getCarrierDetails().getAtd() : null;
+        var consolAllocation = consolidation.getAllocations();
+        var consolCarrier = consolidation.getCarrierDetails();
+        shipment = ShipmentDetailsResponse.builder()
+                .transportMode(consolidation.getTransportMode())
+                .bookingNumber(consolidation.getBookingNumber())
+                .consolidationList(List.of(modelMapper.map(consolidation, ConsolidationListResponse.class)))
+                .shipmentType(consolidation.getShipmentType())
+                .additionalDetails(AdditionalDetailResponse.builder()
+                        .SMTPIGMDate(consolidation.getSmtpigmDate())
+                        .SMTPIGMNumber(consolidation.getSmtpigmNumber())
+                        .inwardDateAndTime(consolidation.getInwardDateAndTime())
+                        .releaseType(consolidation.getReleaseType())
+                        .warehouseId(consolidation.getWarehouseId())
+                        .isInland(consolidation.getIsInland())
+                        .original(consolidation.getOriginal())
+                        .IGMFileNo(consolidation.getIgmFileNo())
+                        .IGMFileDate(consolidation.getIgmFileDate())
+                        .IGMInwardDate(consolidation.getIgmInwardDate())
+                        .copy(consolidation.getCopy())
+                        .customDeclType(consolidation.getDeclarationType())
+                        .build())
+                .carrierDetails(CarrierDetailResponse.builder()
+                        .ata(ata)
+                        .eta(eta)
+                        .atd(atd)
+                        .etd(etd)
+                        .origin(origin)
+                        .vessel(vessel)
+                        .shippingLine(consolCarrier != null ? consolCarrier.getShippingLine() : null)
+                        .voyage(voyage)
+                        .aircraftType(aircrafType)
+                        .destination(destination)
+                        .flightNumber(consolCarrier != null ? consolCarrier.getFlightNumber() : null)
+                        .build())
+                .weight(consolAllocation != null ? consolAllocation.getWeight() : null)
+                .weightUnit(consolAllocation != null ? consolAllocation.getWeightUnit() : null)
+                .volume(consolAllocation != null ? consolAllocation.getVolume() : null)
+                .volumeUnit(consolAllocation != null ? consolAllocation.getVolumeUnit() : null)
+                .chargable(consolAllocation != null ? consolAllocation.getChargable() : null)
+                .chargeableUnit(consolAllocation != null ? consolAllocation.getChargeableUnit() : null)
+                .paymentTerms(consolidation.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && consolidation.getShipmentType().equals("EXP")
+                        ? consolidation.getPayment() : null)
+                .masterBill(consolidation.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) ? consolidation.getMawb() : consolidation.getBol())
+                .build();
+
+        if (consolidation.getConsolidationAddresses() != null) {
+            consolidation.getConsolidationAddresses().stream().forEach(party -> {
+                if (party.getType().equals("NP1")) {
+                    shipment.getAdditionalDetails().setNotifyParty(
+                            PartiesResponse.builder()
+                                    .orgCode(party.getOrgCode())
+                                    .addressCode(party.getAddressCode())
+                                    .build());
+                }
+            });
+        }
+
+        shipment.setShipmentType(Constants.SHIPMENT_TYPE_STD);
+
+        return ResponseHelper.buildSuccessResponse(shipment);
     }
 }

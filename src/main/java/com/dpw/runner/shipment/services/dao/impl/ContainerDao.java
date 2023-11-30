@@ -310,4 +310,12 @@ public class ContainerDao implements IContainerDao {
         }
     }
 
+    @Override
+    public List<Containers> findByShipmentId(Long shipmentId) {
+        ListCommonRequest listCommonRequest = constructListCommonRequest("shipmentsList", shipmentId, "CONTAINS");
+        Pair<Specification<Containers>, Pageable> pair = fetchData(listCommonRequest, Containers.class);
+        Page<Containers> containersPage = findAll(pair.getLeft(), pair.getRight());
+        return containersPage.getContent();
+    }
+
 }

@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.service.impl;
 import com.dpw.runner.shipment.services.adapters.interfaces.ICRPServiceAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.IFusionServiceAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.INPMServiceAdapter;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.RequestAuthContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
@@ -21,6 +22,7 @@ import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.BookingSource;
 import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
 import com.dpw.runner.shipment.services.entitytransfer.dto.*;
+import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
 import com.dpw.runner.shipment.services.exception.exceptions.CRPException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -31,10 +33,14 @@ import com.dpw.runner.shipment.services.masterdata.factory.MasterDataFactory;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.service.interfaces.ICustomerBookingService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
-import com.dpw.runner.shipment.services.utils.*;
+import com.dpw.runner.shipment.services.utils.BookingIntegrationsUtility;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
+import com.dpw.runner.shipment.services.utils.MasterDataUtils;
+import com.dpw.runner.shipment.services.utils.UnitConversionUtility;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
+import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
@@ -59,6 +65,7 @@ import static com.dpw.runner.shipment.services.utils.CommonUtils.convertToEntity
 @Service
 @Slf4j
 public class CustomerBookingService implements ICustomerBookingService {
+    ExecutorService executorService = Executors.newFixedThreadPool(10);
     @Autowired
     private ModelMapper modelMapper;
 
@@ -321,6 +328,7 @@ public class CustomerBookingService implements ICustomerBookingService {
                     bookingIntegrationsUtility.createShipmentInV1(customerBooking, false, true, shipmentResponse.getGuid());
                     customerBooking.setShipmentId(shipmentResponse.getShipmentId());
                     customerBooking.setShipmentEntityId(shipmentResponse.getId().toString());
+                    customerBooking.setShipmentCreatedDate(LocalDateTime.now());
                     customerBooking = customerBookingDao.save(customerBooking);
                 }
             }
@@ -330,6 +338,7 @@ public class CustomerBookingService implements ICustomerBookingService {
                 if (!Objects.isNull(shipmentCreationResponse) && !Objects.isNull(shipmentCreationResponse.getShipmentId())) {
                     customerBooking.setShipmentId(shipmentCreationResponse.getShipmentId());
                     customerBooking.setShipmentEntityId(shipmentCreationResponse.getEntityId());
+                    customerBooking.setShipmentCreatedDate(LocalDateTime.now());
                     customerBooking = customerBookingDao.save(customerBooking);
                 }
             }
@@ -424,6 +433,7 @@ public class CustomerBookingService implements ICustomerBookingService {
     public ResponseEntity<?> retrieveById(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
+            double _start = System.currentTimeMillis();
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
             if (request == null) {
                 log.error("Request is empty for Booking retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
@@ -437,12 +447,16 @@ public class CustomerBookingService implements ICustomerBookingService {
                 log.debug("Booking Details is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
+            double current = System.currentTimeMillis();
             log.info("Booking details fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
+            log.info("Time taken to fetch booking details from db: {} Request Id {}", current - _start, LoggerHelper.getRequestIdFromMDC());
             CustomerBookingResponse customerBookingResponse = jsonHelper.convertValue(customerBooking.get(), CustomerBookingResponse.class);
+            double _next = System.currentTimeMillis();
+            log.info("Time taken to fetch details from db: {} Request Id {}", _next - current, LoggerHelper.getRequestIdFromMDC());
+            if (_next - current > 200)
+                log.info(" RequestId: {} || {} for event: {} Actual time taken: {} ms",LoggerHelper.getRequestIdFromMDC(), LoggerEvent.MORE_TIME_TAKEN, LoggerEvent.BOOKING_FETCH_JSON_CONVERTER, _next - current);
             createCustomerBookingResponse(customerBooking.get(), customerBookingResponse);
-            if(request.getIncludeColumns()==null||request.getIncludeColumns().size()==0)
             return ResponseHelper.buildSuccessResponse(customerBookingResponse);
-            else return ResponseHelper.buildSuccessResponse(PartialFetchUtils.fetchPartialListData(customerBookingResponse,request.getIncludeColumns()));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;
@@ -624,35 +638,10 @@ public class CustomerBookingService implements ICustomerBookingService {
         if (request.getPackingList() != null) {
             List<PlatformToRunnerCustomerBookingResponse.ReferenceNumbersGuidMapResponse> referenceNumbersGuidMapResponses = new ArrayList<>();
             request.getPackingList().forEach(pack -> {
-                pack.setLengthUnit(Constants.METRE);
-                pack.setWidthUnit(Constants.METRE);
-                pack.setHeightUnit(Constants.METRE);
+                pack.setLengthUnit(pack.getDimensionUnit());
+                pack.setWidthUnit(pack.getDimensionUnit());
+                pack.setHeightUnit(pack.getDimensionUnit());
                 pack.setIsDimension(true);
-                try {
-                    if (pack.getDimensionUnit() != null && !pack.getDimensionUnit().equals(Constants.METRE)) {
-                        pack.setLength(BigDecimal.valueOf(
-                                UnitConversionUtility.convertUnit(Constants.LENGTH, pack.getLength(), pack.getDimensionUnit(), Constants.METRE)
-                                        .doubleValue()));
-                        pack.setWidth(BigDecimal.valueOf(
-                                UnitConversionUtility.convertUnit(Constants.LENGTH, pack.getWidth(), pack.getDimensionUnit(), Constants.METRE)
-                                        .doubleValue()));
-                        pack.setHeight(BigDecimal.valueOf(
-                                UnitConversionUtility.convertUnit(Constants.LENGTH, pack.getHeight(), pack.getDimensionUnit(), Constants.METRE)
-                                        .doubleValue()));
-                        pack.setDimensionUnit(Constants.METRE);
-                    }
-                    if (pack.getWeightUnit() != null && !pack.getWeightUnit().equals(Constants.WEIGHT_UNIT_KG)) {
-                        pack.setWeight(BigDecimal.valueOf(
-                                UnitConversionUtility.convertUnit(Constants.MASS, pack.getWeight(), pack.getWeightUnit(), Constants.WEIGHT_UNIT_KG)
-                                        .doubleValue()));
-                        pack.setWeightUnit(Constants.WEIGHT_UNIT_KG);
-                    }
-                    pack.setVolume(pack.getLength().multiply(pack.getWidth()).multiply(pack.getHeight()));
-                    pack.setVolumeUnit(Constants.VOLUME_UNIT_M3);
-                } catch (Exception ex) {
-                    String message = "ERROR Exception thrown while converting units";
-                    log.error("ERROR Converting units");
-                }
                 if (pack.getGuid() == null)
                     pack.setGuid(UUID.randomUUID());
                 referenceNumbersGuidMapResponses.add(PlatformToRunnerCustomerBookingResponse.ReferenceNumbersGuidMapResponse.builder()
@@ -1044,7 +1033,7 @@ public class CustomerBookingService implements ICustomerBookingService {
                         .contract_state(contractStatus)
                         .source(CustomerBookingConstants.RUNNER)
                         .source_type(CustomerBookingConstants.RUNNER)
-                        .business_info(UpdateContractRequest.BusinessInfo.builder().product_name("FCL").build())
+                        .business_info(UpdateContractRequest.BusinessInfo.builder().product_name(current.getCargoType()).build())
                         .loads_info(loadInfoRequestList)
                         .is_alteration(isAlteration)
                         .build();
@@ -1135,22 +1124,31 @@ public class CustomerBookingService implements ICustomerBookingService {
      * @param customerBookingResponse
      */
     private void createCustomerBookingResponse(CustomerBooking customerBooking, CustomerBookingResponse customerBookingResponse) {
-        ExecutorService executorService = Executors.newFixedThreadPool(10);
         try {
             double _start = System.currentTimeMillis();
-            var masterListFuture = CompletableFuture.runAsync(() -> this.addAllMasterDataInSingleCall(customerBooking, customerBookingResponse), executorService);
-            var unLocationsFuture = CompletableFuture.runAsync(() -> this.addAllLocationDataInSingleCall(customerBooking, customerBookingResponse), executorService);
-            var vesselsFuture = CompletableFuture.runAsync(() -> this.addAllVesselDataInSingleCall(customerBooking, customerBookingResponse), executorService);
-            var carrierFuture = CompletableFuture.runAsync(() -> this.addAllCarrierDataInSingleCall(customerBooking, customerBookingResponse), executorService);
-            var containerTypeFuture = CompletableFuture.runAsync(() -> this.addAllContainerTypesInSingleCall(customerBooking, customerBookingResponse), executorService);
-            var chargeTypeFuture = CompletableFuture.runAsync(() -> this.addAllChargeTypesInSingleCall(customerBooking, customerBookingResponse), executorService);
+            var masterListFuture = CompletableFuture.runAsync(withMdc(() -> this.addAllMasterDataInSingleCall(customerBooking, customerBookingResponse)), executorService);
+            var unLocationsFuture = CompletableFuture.runAsync(withMdc(() -> this.addAllLocationDataInSingleCall(customerBooking, customerBookingResponse)), executorService);
+            var vesselsFuture = CompletableFuture.runAsync(withMdc(() -> this.addAllVesselDataInSingleCall(customerBooking, customerBookingResponse)), executorService);
+            var carrierFuture = CompletableFuture.runAsync(withMdc(() -> this.addAllCarrierDataInSingleCall(customerBooking, customerBookingResponse)), executorService);
+            var containerTypeFuture = CompletableFuture.runAsync(withMdc(() -> this.addAllContainerTypesInSingleCall(customerBooking, customerBookingResponse)), executorService);
+            var chargeTypeFuture = CompletableFuture.runAsync(withMdc(() -> this.addAllChargeTypesInSingleCall(customerBooking, customerBookingResponse)), executorService);
             CompletableFuture.allOf(masterListFuture, unLocationsFuture, vesselsFuture, carrierFuture, containerTypeFuture, chargeTypeFuture).join();
-            log.info("Time taken to fetch Master-data from V1: {} ms.", (System.currentTimeMillis() - _start));
+            double _timeTaken = System.currentTimeMillis() - _start;
+            log.info("Time taken to fetch Master-data from V1: {} ms. || RequestId: {}", _timeTaken, LoggerHelper.getRequestIdFromMDC());
+            if (_timeTaken > 300)
+                log.info(" RequestId: {} || {} for event: {} Actual time taken: {} ms",LoggerHelper.getRequestIdFromMDC(), LoggerEvent.MORE_TIME_TAKEN, LoggerEvent.BOOKING_COMPLETE_MASTER_DATA_FETCH, _timeTaken);
         } catch (Exception ex) {
             log.error("Exception during fetching master data in retrieve API for booking number: {} with exception: {}", customerBooking.getBookingNumber(), ex.getMessage());
-        } finally {
-            executorService.shutdown();
         }
+    }
+    public Runnable withMdc(Runnable runnable) {
+        Map<String, String> mdc = MDC.getCopyOfContextMap();
+        String token = RequestAuthContext.getAuthToken();
+        return () -> {
+            MDC.setContextMap(mdc);
+            RequestAuthContext.setAuthToken(token);
+            runnable.run();
+        };
     }
 
     private void populateTotalRevenueDetails(CustomerBooking customerBooking, CustomerBookingRequest request) {
@@ -1164,7 +1162,7 @@ public class CustomerBookingService implements ICustomerBookingService {
         customerBooking.setTotalRevenue(totalRevenue);
     }
 
-    @Async
+//    @Async
     private CompletableFuture<ResponseEntity<?>> addAllMasterDataInSingleCall(CustomerBooking customerBooking, CustomerBookingResponse customerBookingResponse) {
         // Preprocessing
         Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
@@ -1192,7 +1190,7 @@ public class CustomerBookingService implements ICustomerBookingService {
         return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(keyMasterDataMap));
     }
 
-    @Async
+//    @Async
     private CompletableFuture<ResponseEntity<?>> addAllLocationDataInSingleCall(CustomerBooking customerBooking, CustomerBookingResponse customerBookingResponse) {
         // Preprocessing
         Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
@@ -1213,7 +1211,7 @@ public class CustomerBookingService implements ICustomerBookingService {
         return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(keyMasterDataMap));
     }
 
-    @Async
+//    @Async
     private CompletableFuture<ResponseEntity<?>> addAllChargeTypesInSingleCall(CustomerBooking customerBooking, CustomerBookingResponse customerBookingResponse) {
         Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
         List<String> chargeTypes = new ArrayList<>();
@@ -1228,7 +1226,7 @@ public class CustomerBookingService implements ICustomerBookingService {
 
         return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(v1Data));
     }
-    @Async
+//    @Async
     private CompletableFuture<ResponseEntity<?>> addAllContainerTypesInSingleCall(CustomerBooking customerBooking, CustomerBookingResponse customerBookingResponse) {
         Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
         List<String> containerTypes = new ArrayList<>();
@@ -1244,7 +1242,7 @@ public class CustomerBookingService implements ICustomerBookingService {
         return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(v1Data));
     }
 
-    @Async
+//    @Async
     private CompletableFuture<ResponseEntity<?>> addAllVesselDataInSingleCall(CustomerBooking customerBooking, CustomerBookingResponse customerBookingResponse) {
         if (!Objects.isNull(customerBookingResponse.getCarrierDetails())) {
             Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
@@ -1256,7 +1254,7 @@ public class CustomerBookingService implements ICustomerBookingService {
         return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(Arrays.asList()));
     }
 
-    @Async
+//    @Async
     private CompletableFuture<ResponseEntity<?>> addAllCarrierDataInSingleCall(CustomerBooking customerBooking, CustomerBookingResponse customerBookingResponse) {
         if (!Objects.isNull(customerBookingResponse.getCarrierDetails())) {
             Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();

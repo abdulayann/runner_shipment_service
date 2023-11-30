@@ -6,6 +6,7 @@ import com.dpw.runner.shipment.services.commons.constants.PackingConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.config.SyncConfig;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IPackingDao;
@@ -17,10 +18,6 @@ import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
-import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
-import com.dpw.runner.shipment.services.entity.Containers;
-import com.dpw.runner.shipment.services.entity.Packing;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
@@ -28,14 +25,17 @@ import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingService;
 import com.dpw.runner.shipment.services.syncing.Entity.BulkPackingRequestV2;
 import com.dpw.runner.shipment.services.syncing.Entity.PackingRequestV2;
+import com.dpw.runner.shipment.services.syncing.constants.SyncingConstants;
 import com.dpw.runner.shipment.services.syncing.impl.PackingSync;
 import com.dpw.runner.shipment.services.utils.CSVParsingUtil;
+import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.dpw.runner.shipment.services.utils.UnitConversionUtility;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -49,8 +49,11 @@ import org.springframework.transaction.interceptor.TransactionAspectSupport;
 import javax.servlet.http.HttpServletResponse;
 import java.io.PrintWriter;
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
@@ -87,6 +90,11 @@ public class PackingService implements IPackingService {
 
     @Autowired
     private PackingSync packingSync;
+    @Lazy
+    @Autowired
+    private SyncQueueService syncQueueService;
+    @Autowired
+    private SyncConfig syncConfig;
 
     private final CSVParsingUtil<Packing> parser = new CSVParsingUtil<>(Packing.class);
 
@@ -126,7 +134,8 @@ public class PackingService implements IPackingService {
     public void uploadPacking(BulkUploadRequest request) throws Exception {
         List<Packing> packingList = parser.parseCSVFile(request.getFile());
         packingList.stream().forEach(packing -> {
-            packing.setConsolidationId(packing.getConsolidationId());
+            packing.setConsolidationId(request.getConsolidationId());
+            packing.setShipmentId(request.getShipmentId());
         });
         packingDao.saveAll(packingList);
         packingSync.sync(packingList, request.getConsolidationId(), request.getShipmentId());
@@ -136,7 +145,7 @@ public class PackingService implements IPackingService {
     public void downloadPacking(HttpServletResponse response, BulkDownloadRequest request) throws Exception {
         List<Packing> result = new ArrayList<>();
         if (request.getShipmentId() != null) {
-            ListCommonRequest req = constructListCommonRequest("shipment_id", request.getShipmentId(), "=");
+            ListCommonRequest req = constructListCommonRequest("shipmentId", Long.valueOf(request.getShipmentId()), "=");
             Pair<Specification<Packing>, Pageable> pair = fetchData(req, Packing.class);
             Page<Packing> packings = packingDao.findAll(pair.getLeft(), pair.getRight());
             List<Packing> packingList = packings.getContent();
@@ -144,7 +153,7 @@ public class PackingService implements IPackingService {
         }
 
         if (request.getConsolidationId() != null) {
-            ListCommonRequest req2 = constructListCommonRequest("consolidation_id", request.getConsolidationId(), "=");
+            ListCommonRequest req2 = constructListCommonRequest("consolidationId", Long.valueOf(request.getConsolidationId()), "=");
             Pair<Specification<Packing>, Pageable> pair = fetchData(req2, Packing.class);
             Page<Packing> packings = packingDao.findAll(pair.getLeft(), pair.getRight());
             List<Packing> packingList = packings.getContent();
@@ -154,8 +163,13 @@ public class PackingService implements IPackingService {
                 result = result.stream().filter(result::contains).collect(Collectors.toList());
             }
         }
+        LocalDateTime currentTime = LocalDateTime.now();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
+        String timestamp = currentTime.format(formatter);
+        String filenameWithTimestamp = "Packings_" + timestamp + ".xlsx";
+
         response.setContentType("text/csv");
-        response.setHeader("Content-Disposition", "attachment; filename=\"packings.csv\"");
+        response.setHeader("Content-Disposition", "attachment; filename=" + filenameWithTimestamp);
 
         try (PrintWriter writer = response.getWriter()) {
             writer.println(parser.generateCSVHeaderForContainer());
@@ -371,9 +385,12 @@ public class PackingService implements IPackingService {
     }
 
     @Override
-    public ResponseEntity<?> V1PackingCreateAndUpdate(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<?> V1PackingCreateAndUpdate(CommonRequestModel commonRequestModel, boolean checkForSync) throws Exception {
         PackingRequestV2 packingRequestV2 = (PackingRequestV2) commonRequestModel.getData();
         try {
+            if (checkForSync && !Objects.isNull(syncConfig.IS_REVERSE_SYNC_ACTIVE) && !syncConfig.IS_REVERSE_SYNC_ACTIVE) {
+                return syncQueueService.saveSyncRequest(SyncingConstants.PACKAGES, StringUtility.convertToString(packingRequestV2.getGuid()), packingRequestV2);
+            }
             Optional<Packing> existingPacking = packingDao.findByGuid(packingRequestV2.getGuid());
             Packing packing = modelMapper.map(packingRequestV2, Packing.class);
             if (existingPacking != null && existingPacking.isPresent()) {
@@ -412,7 +429,7 @@ public class PackingService implements IPackingService {
             for (PackingRequestV2 containerRequest : bulkContainerRequest.getBulkPacking())
                 responses.add(this.V1PackingCreateAndUpdate(CommonRequestModel.builder()
                         .data(containerRequest)
-                        .build()));
+                        .build(), true));
             return ResponseHelper.buildSuccessResponse(responses);
         } catch (Exception e) {
             String responseMsg = e.getMessage() != null ? e.getMessage()

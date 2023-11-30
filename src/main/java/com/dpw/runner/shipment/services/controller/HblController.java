@@ -111,7 +111,7 @@ public class HblController {
     public ResponseEntity<RunnerResponse<HblResponse>> saveV1Hbl(@RequestBody @Valid HblRequestV2 request) {
         String responseMsg;
         try {
-            return (ResponseEntity<RunnerResponse<HblResponse>>) hblService.saveV1Hbl(CommonRequestModel.buildRequest(request));
+            return (ResponseEntity<RunnerResponse<HblResponse>>) hblService.saveV1Hbl(CommonRequestModel.buildRequest(request), true);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;

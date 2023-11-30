@@ -116,7 +116,7 @@ public class ReportService implements IReportService {
             isNeutralPrint = reportRequest.getPrintType().equalsIgnoreCase(ReportConstants.NEUTRAL);
         }
         boolean reportingNewFlow = false;
-        Map<String, Object> dataRetrived = null;
+        Map<String, Object> dataRetrived = new HashMap<>();
         boolean newFlowSuccess = false;
         if (reportingNewFlow || ReportConstants.NEW_TEMPLATE_FLOW.contains(reportRequest.getReportInfo())) {
             try {

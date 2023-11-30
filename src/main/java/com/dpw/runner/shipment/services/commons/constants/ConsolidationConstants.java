@@ -23,4 +23,6 @@ public class ConsolidationConstants {
 
     public static final String CONSOLIDATION_CALCULATION_SUCCESSFUL = "Successful Required Calculation";
     public static final String CONSOLIDATION_V1_CREATE = "/createV1Consolidation";
+    public static final String IMPORT_SHIPMENT = "/import-shipment";
+    public static final String IMPORT_SUCCESSFUL = "Import Consolidation Successful";
 }

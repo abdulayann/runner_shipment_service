@@ -12,13 +12,12 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerPartialListResponse;
+import com.dpw.runner.shipment.services.config.SyncConfig;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.request.AwbRequest;
 import com.dpw.runner.shipment.services.dto.request.CreateAwbRequest;
 import com.dpw.runner.shipment.services.dto.request.ResetAwbRequest;
-import com.dpw.runner.shipment.services.dto.request.HblPartyDto;
 import com.dpw.runner.shipment.services.dto.request.awb.*;
-import com.dpw.runner.shipment.services.dto.request.hbl.HblCargoDto;
 import com.dpw.runner.shipment.services.dto.response.AwbResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.AwbReset;
@@ -29,12 +28,14 @@ import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IAwbService;
 import com.dpw.runner.shipment.services.syncing.Entity.AwbRequestV2;
+import com.dpw.runner.shipment.services.syncing.constants.SyncingConstants;
 import com.dpw.runner.shipment.services.syncing.interfaces.IAwbSync;
 import com.dpw.runner.shipment.services.utils.*;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -93,6 +94,11 @@ public class AwbService implements IAwbService {
 
     @Autowired
     private UnitConversionUtility unitConversionUtility;
+    @Lazy
+    @Autowired
+    private SyncQueueService syncQueueService;
+    @Autowired
+    private SyncConfig syncConfig;
 
     @Autowired
     IAwbSync awbSync;
@@ -859,6 +865,9 @@ public class AwbService implements IAwbService {
     }
 
     private List<AwbPackingInfo> generateAwbPackingInfo(ShipmentDetails shipmentDetails, List<Packing> packings) {
+        Map<Long, String> map = new HashMap<>();
+        if(shipmentDetails.getContainersList() != null && shipmentDetails.getContainersList().size() > 0)
+            map = shipmentDetails.getContainersList().stream().collect(Collectors.toMap(Containers::getId, Containers::getContainerNumber));
         if (packings != null && packings.size() > 0) {
             List<AwbPackingInfo> awbPackingList = new ArrayList<>();
             // Integer totalPacks = 0;
@@ -869,7 +878,8 @@ public class AwbService implements IAwbService {
                 awbPacking.setDgSubstanceId(packing.getDGSubstanceId());
                 awbPacking.setPacks(packing.getPacks());
                 awbPacking.setPacksType(packing.getPacksType());
-                awbPacking.setContainerNumber(packing.getContainerNumber());
+                if(packing.getContainerId() != null && map.containsKey(packing.getContainerId()))
+                    awbPacking.setContainerNumber(map.get(packing.getContainerId()));
                 awbPacking.setWeight(packing.getWeight());
                 awbPacking.setWeightUnit(packing.getWeightUnit());
                 awbPacking.setVolume(packing.getVolume());
@@ -911,7 +921,7 @@ public class AwbService implements IAwbService {
         return null;
     }
 
-    public ResponseEntity<?> createV1Awb(CommonRequestModel commonRequestModel){
+    public ResponseEntity<?> createV1Awb(CommonRequestModel commonRequestModel, boolean checkForSync){
         try{
             AwbRequestV2 request = (AwbRequestV2) commonRequestModel.getData();
 
@@ -936,7 +946,9 @@ public class AwbService implements IAwbService {
             else {
                 throw new RunnerException("Shipment/Consolidation not present, Please create that first !");
             }
-
+            if (checkForSync && !Objects.isNull(syncConfig.IS_REVERSE_SYNC_ACTIVE) && !syncConfig.IS_REVERSE_SYNC_ACTIVE) {
+                return syncQueueService.saveSyncRequest(SyncingConstants.AWB, StringUtility.convertToString(entityId), request);
+            }
             setEntityId(awb, entityId);
             if(existingAwb.isEmpty()){
                 // SAVE
@@ -1175,6 +1187,9 @@ public class AwbService implements IAwbService {
         }
 
         awb.getAwbPackingInfo().removeAll(deletedList);
+        Map<Long, String> map = new HashMap<>();
+        if(shipmentDetails.getContainersList() != null && shipmentDetails.getContainersList().size() > 0)
+            map = shipmentDetails.getContainersList().stream().collect(Collectors.toMap(Containers::getId, Containers::getContainerNumber));
 
         if(!packMap.isEmpty()) {
             for (var packing: packMap.values()) {
@@ -1184,7 +1199,8 @@ public class AwbService implements IAwbService {
                 awbPacking.setDgSubstanceId(packing.getDGSubstanceId());
                 awbPacking.setPacks(packing.getPacks());
                 awbPacking.setPacksType(packing.getPacksType());
-                awbPacking.setContainerNumber(packing.getContainerNumber());
+                if(packing.getContainerId() != null && map.containsKey(packing.getContainerId()))
+                    awbPacking.setContainerNumber(map.get(packing.getContainerId()));
                 awbPacking.setWeight(packing.getWeight());
                 awbPacking.setWeightUnit(packing.getWeightUnit());
                 awbPacking.setVolume(packing.getVolume());

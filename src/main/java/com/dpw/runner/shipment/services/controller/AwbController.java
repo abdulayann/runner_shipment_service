@@ -142,7 +142,7 @@ public class AwbController {
     public ResponseEntity<RunnerResponse<AwbResponse>> createV1Awb(@RequestBody @Valid AwbRequest request) {
         String responseMsg;
         try {
-            return (ResponseEntity<RunnerResponse<AwbResponse>>) awbService.createV1Awb(CommonRequestModel.buildRequest(request));
+            return (ResponseEntity<RunnerResponse<AwbResponse>>) awbService.createV1Awb(CommonRequestModel.buildRequest(request), true);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;

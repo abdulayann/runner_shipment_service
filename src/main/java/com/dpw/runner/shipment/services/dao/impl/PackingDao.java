@@ -6,6 +6,7 @@ import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IPackingDao;
+import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.CustomerBooking;
 import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.entity.enums.LifecycleHooks;
@@ -30,6 +31,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 
 @Repository
@@ -430,7 +432,7 @@ public class PackingDao implements IPackingDao {
         saveEntityFromContainer(packings.getContent(), null);
     }
 
-    public List<Packing> updateEntityFromShipment(List<Packing> packingList, Long shipmentId, List<Packing> oldEntityList) throws Exception {
+    public List<Packing> updateEntityFromShipment(List<Packing> packingList, Long shipmentId, List<Packing> oldEntityList, List<Containers> containers, Map<UUID, String> packMap) throws Exception {
         String responseMsg;
         List<Packing> responsePackings = new ArrayList<>();
         Map<UUID, Packing> packingMap = new HashMap<>();
@@ -442,6 +444,10 @@ public class PackingDao implements IPackingDao {
         }
         try {
             Packing oldEntity;
+            Map<String, Long> contMap = new HashMap<>();
+            if(containers != null) {
+                contMap = containers.stream().collect(Collectors.toMap(Containers::getContainerNumber, Containers::getId));
+            }
             List<Packing> packingRequestList = new ArrayList<>();
             if (packingList != null && packingList.size() != 0) {
                 for (Packing request : packingList) {
@@ -450,6 +456,8 @@ public class PackingDao implements IPackingDao {
                         packingMap.remove(oldEntity.getGuid());
                         request.setId(oldEntity.getId());
                     }
+                    if(packMap.containsKey(request.getGuid()) && !IsStringNullOrEmpty(packMap.get(request.getGuid())) && contMap.containsKey(packMap.get(request.getGuid())))
+                        request.setContainerId(contMap.get(packMap.get(request.getGuid())));
                     packingRequestList.add(request);
                 }
                 responsePackings = saveEntityFromShipment(packingRequestList, shipmentId);

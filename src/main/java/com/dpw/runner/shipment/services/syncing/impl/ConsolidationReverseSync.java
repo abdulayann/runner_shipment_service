@@ -2,21 +2,28 @@ package com.dpw.runner.shipment.services.syncing.impl;
 
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
+import com.dpw.runner.shipment.services.config.SyncConfig;
 import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.entity.enums.Ownership;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import com.dpw.runner.shipment.services.service.impl.SyncQueueService;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationService;
 import com.dpw.runner.shipment.services.syncing.Entity.ArrivalDepartureDetails;
 import com.dpw.runner.shipment.services.syncing.Entity.CustomConsolidationRequest;
+import com.dpw.runner.shipment.services.syncing.constants.SyncingConstants;
 import com.dpw.runner.shipment.services.syncing.interfaces.IConsolidationReverseSync;
+import com.dpw.runner.shipment.services.utils.StringUtility;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
@@ -28,13 +35,21 @@ public class ConsolidationReverseSync implements IConsolidationReverseSync {
 
     @Autowired
     private IConsolidationService consolidationService;
+    @Lazy
+    @Autowired
+    private SyncQueueService syncQueueService;
+    @Autowired
+    private SyncConfig syncConfig;
 
     @Override
-    public ResponseEntity<?> reverseSync(CommonRequestModel request_) {
+    public ResponseEntity<?> reverseSync(CommonRequestModel request_, boolean checkForSync) {
         CustomConsolidationRequest request = (CustomConsolidationRequest) request_.getData();
         ConsolidationDetailsRequest response = new ConsolidationDetailsRequest();
         String responseMsg;
         try {
+            if (checkForSync && !Objects.isNull(syncConfig.IS_REVERSE_SYNC_ACTIVE) && !syncConfig.IS_REVERSE_SYNC_ACTIVE) {
+                return syncQueueService.saveSyncRequest(SyncingConstants.CONSOLIDATION, StringUtility.convertToString(request.getGuid()), request);
+            }
             response = modelMapper.map(request, ConsolidationDetailsRequest.class);
 
             response.setLockedBy(request.getLockedByUser());
@@ -139,6 +154,7 @@ public class ConsolidationReverseSync implements IConsolidationReverseSync {
         response.getCarrierDetails().setDestinationPort(request.getDestinationPortName());
         response.getCarrierDetails().setOrigin(request.getFirstLoadString());
         response.getCarrierDetails().setOriginPort(request.getOriginPortName());
+        response.getCarrierDetails().setShippingLine(request.getCarrier());
         response.getCarrierDetails().setGuid(null);
         response.getCarrierDetails().setId(null);
     }

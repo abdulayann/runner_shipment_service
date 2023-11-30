@@ -7,6 +7,7 @@ import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.config.SyncConfig;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IRoutingsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
@@ -21,12 +22,15 @@ import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IRoutingsService;
 import com.dpw.runner.shipment.services.syncing.Entity.RoutingsRequestV2;
+import com.dpw.runner.shipment.services.syncing.constants.SyncingConstants;
 import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
+import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -37,6 +41,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.interceptor.TransactionAspectSupport;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
@@ -66,6 +71,11 @@ public class RoutingsService implements IRoutingsService {
 
     @Autowired
     private ObjectMapper objectMapper;
+    @Lazy
+    @Autowired
+    private SyncQueueService syncQueueService;
+    @Autowired
+    private SyncConfig syncConfig;
 
     @Override
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
@@ -277,9 +287,12 @@ public class RoutingsService implements IRoutingsService {
     }
 
     @Override
-    public ResponseEntity<?> V1RoutingsCreateAndUpdate(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<?> V1RoutingsCreateAndUpdate(CommonRequestModel commonRequestModel, boolean checkForSync) throws Exception {
         RoutingsRequestV2 routingsRequestV2 = (RoutingsRequestV2) commonRequestModel.getData();
         try {
+            if (checkForSync && !Objects.isNull(syncConfig.IS_REVERSE_SYNC_ACTIVE) && !syncConfig.IS_REVERSE_SYNC_ACTIVE) {
+                return syncQueueService.saveSyncRequest(SyncingConstants.ROUTINGS, StringUtility.convertToString(routingsRequestV2.getGuid()), routingsRequestV2);
+            }
             Optional<Routings> existingRouting = routingsDao.findByGuid(routingsRequestV2.getGuid());
             Routings routings = modelMapper.map(routingsRequestV2, Routings.class);
             if (existingRouting != null && existingRouting.isPresent()) {

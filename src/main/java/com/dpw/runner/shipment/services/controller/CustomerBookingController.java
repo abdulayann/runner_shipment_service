@@ -13,7 +13,9 @@ import com.dpw.runner.shipment.services.dto.request.platformBooking.PlatformToRu
 import com.dpw.runner.shipment.services.dto.request.crp.CRPListRequest;
 import com.dpw.runner.shipment.services.dto.request.crp.CRPRetrieveRequest;
 import com.dpw.runner.shipment.services.dto.response.CustomerBookingResponse;
+import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.ICustomerBookingService;
 import com.dpw.runner.shipment.services.utils.ExcludeTimeZone;
@@ -137,9 +139,14 @@ public class CustomerBookingController {
     @ApiResponses(value = {@ApiResponse(code = 200, message = CustomerBookingConstants.RETRIEVE_BY_ID_SUCCESSFUL)})
     @GetMapping(ApiConstants.API_RETRIEVE_BY_ID)
     @PreAuthorize("hasAuthority('" + Permissions.customerBookingView + "')")
-    public ResponseEntity<RunnerResponse<CustomerBookingResponse>> retrieveById(@ApiParam(value = CustomerBookingConstants.BOOKING_ID, required = true) @RequestParam Long id, @RequestParam(name = "includeColumns", required = false) List<String> includeColumns) {
-        CommonGetRequest request = CommonGetRequest.builder().id(id).includeColumns(includeColumns).build();
-        return (ResponseEntity<RunnerResponse<CustomerBookingResponse>>) customerBookingService.retrieveById(CommonRequestModel.buildRequest(request));
+    public ResponseEntity<RunnerResponse<CustomerBookingResponse>> retrieveById(@ApiParam(value = CustomerBookingConstants.BOOKING_ID, required = true) @RequestParam Long id) {
+        double _start = System.currentTimeMillis();
+        CommonGetRequest request = CommonGetRequest.builder().id(id).build();
+        ResponseEntity<RunnerResponse<CustomerBookingResponse>> response = (ResponseEntity<RunnerResponse<CustomerBookingResponse>>) customerBookingService.retrieveById(CommonRequestModel.buildRequest(request));
+        double _timeTaken = System.currentTimeMillis() - _start;
+        if (_timeTaken > 500)
+            log.info(" RequestId: {} || {} for event: {} Actual time taken: {} ms",LoggerHelper.getRequestIdFromMDC(), LoggerEvent.MORE_TIME_TAKEN, LoggerEvent.BOOKING_RETRIEVAL, _timeTaken);
+        return response;
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = CustomerBookingConstants.UPDATE_SUCCESSFUL, response = RunnerResponse.class)})

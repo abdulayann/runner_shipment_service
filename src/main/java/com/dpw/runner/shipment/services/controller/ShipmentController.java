@@ -1,10 +1,6 @@
 package com.dpw.runner.shipment.services.controller;
 
 import com.dpw.runner.shipment.services.adapters.impl.OrderManagementAdapter;
-import com.dpw.runner.shipment.services.commons.constants.ApiConstants;
-import com.dpw.runner.shipment.services.commons.constants.Constants;
-import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
-import com.dpw.runner.shipment.services.commons.constants.ShipmentConstants;
 import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
@@ -13,8 +9,10 @@ import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.ContainerAPIsRequest.ShipmentContainerAssignRequest;
 import com.dpw.runner.shipment.services.dto.patchRequest.ShipmentPatchRequest;
+import com.dpw.runner.shipment.services.dto.request.AttachListShipmentRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
 import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
+import com.dpw.runner.shipment.services.dto.response.GenerateCustomHblResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentListResponse;
 import com.dpw.runner.shipment.services.dto.v1.request.TIListRequest;
@@ -35,11 +33,11 @@ import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.retry.support.RetryTemplate;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
+import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
@@ -201,7 +199,7 @@ public class ShipmentController {
         String responseMsg;
         try {
             ShipmentRequest req = jsonHelper.convertValue(request, ShipmentRequest.class);
-            return (ResponseEntity<RunnerResponse<ShipmentDetailsResponse>>) shipmentService.completeV1ShipmentCreateAndUpdate(CommonRequestModel.buildRequest(req));
+            return (ResponseEntity<RunnerResponse<ShipmentDetailsResponse>>) shipmentService.completeV1ShipmentCreateAndUpdate(CommonRequestModel.buildRequest(req), new HashMap<>());
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
@@ -241,7 +239,7 @@ public class ShipmentController {
     public ResponseEntity<?> syncShipmentToService(@RequestBody @Valid CustomShipmentSyncRequest request){
         String responseMsg = "failure executing :(";
         try {
-            return shipmentReverseSync.reverseSync(CommonRequestModel.buildRequest(request));
+            return shipmentReverseSync.reverseSync(CommonRequestModel.buildRequest(request), true);
         } catch (Exception e){
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : "Error syncing provided Shipment";
@@ -310,19 +308,37 @@ public class ShipmentController {
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.RETRIEVE_BY_ORDER_ID_SUCCESSFUL)})
     @GetMapping(ApiConstants.API_RETRIEVE_BY_ORDER_ID)
-    public ResponseEntity<?> retrieveByOrderId(@ApiParam(value = ShipmentConstants.ORDER_ID, required = true) @RequestParam String orderId) {
-        try {
+    public ResponseEntity<RunnerResponse<ShipmentDetailsResponse>> retrieveByOrderId(@ApiParam(value = ShipmentConstants.ORDER_ID, required = true) @RequestParam String orderId) {
             return (ResponseEntity<RunnerResponse<ShipmentDetailsResponse>>) shipmentService.retrieveByOrderId(orderId);
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.DEFAULT_SHIPMENT_GENERATED_SUCCESSFULLY)})
+    @GetMapping(ApiConstants.API_DEFAULT_SHIPMENT)
+    public ResponseEntity<RunnerResponse<ShipmentDetailsResponse>> getDefaultShipment() {
+            return (ResponseEntity<RunnerResponse<ShipmentDetailsResponse>>) shipmentService.getDefaultShipment();
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.CREATE_SUCCESSFUL)})
+    @GetMapping(ShipmentConstants.GENERATE_CUSTOM_HOUSE_BL)
+    public ResponseEntity<RunnerResponse<GenerateCustomHblResponse>> generateCustomHouseBLNumber() {
+            return (ResponseEntity<RunnerResponse<GenerateCustomHblResponse>>) shipmentService.generateCustomHouseBLNumber();
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.IMPORT_SUCCESSFUL)})
+    @GetMapping(ShipmentConstants.IMPORT_CONSOLIDATION)
+    public ResponseEntity<?> getConsolFromShipment(@ApiParam(value = ShipmentConstants.CONSOLIDATION_ID, required = true) @RequestParam Long id) {
+        try {
+            return (ResponseEntity<RunnerResponse>) shipmentService.getConsolFromShipment(id);
         } catch (Exception e) {
             return ResponseHelper.buildFailedResponse(e.getMessage());
         }
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.CREATE_SUCCESSFUL)})
-    @GetMapping(ShipmentConstants.GENERATE_CUSTOM_HOUSE_BL)
-    public ResponseEntity<?> generateCustomHouseBLNumber() {
+    @ApiResponses(value = {@ApiResponse(code = 200, message = "Successful Shipment Details Data List Retrieval", responseContainer = "List")})
+    @PostMapping(value = "/attach-list-shipment")
+    public ResponseEntity<?> attachListShipment(@Valid @RequestBody @NonNull AttachListShipmentRequest request) {
         try {
-            return (ResponseEntity<RunnerResponse<String>>) shipmentService.generateCustomHouseBLNumber();
+        return (ResponseEntity<RunnerListResponse<ShipmentListResponse>>) shipmentService.attachListShipment(CommonRequestModel.buildRequest(request));
         } catch (Exception e) {
             return ResponseHelper.buildFailedResponse(e.getMessage());
         }

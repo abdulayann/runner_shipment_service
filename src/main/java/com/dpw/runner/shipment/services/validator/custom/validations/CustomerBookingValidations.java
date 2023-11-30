@@ -47,7 +47,7 @@ public class CustomerBookingValidations {
         if ((Objects.isNull(entity.getConsignee()) || Objects.isNull(entity.getConsignee().getOrgCode()) || Objects.isNull(entity.getConsignee().getAddressCode())) && !Objects.equals(entity.getDirection(),Constants.DIRECTION_EXP))
             throw new MandatoryFieldException(String.format(CustomerBookingConstants.MANDATORY_FIELD, "Consignee detail"));
 
-        if (Objects.isNull(entity.getConsignor()) || Objects.isNull(entity.getConsignor().getOrgCode()) || Objects.isNull(entity.getConsignor().getAddressCode()))
+        if ((Objects.isNull(entity.getConsignor()) || Objects.isNull(entity.getConsignor().getOrgCode()) || Objects.isNull(entity.getConsignor().getAddressCode())) && !Objects.equals(entity.getDirection(), Constants.DIRECTION_IMP))
             throw new MandatoryFieldException(String.format(CustomerBookingConstants.MANDATORY_FIELD, "Consignor detail"));
 
         if (Objects.isNull(entity.getServiceMode()))

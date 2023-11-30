@@ -102,7 +102,7 @@ public class ELDetailsController {
     public ResponseEntity<?> syncElDetailsToService(@RequestBody @Valid ElDetailsRequestV2 request) {
         String responseMsg = "failure executing :(";
         try {
-            return elDetailsService.V1ELDetailsCreateAndUpdate(CommonRequestModel.buildRequest(request));
+            return elDetailsService.V1ELDetailsCreateAndUpdate(CommonRequestModel.buildRequest(request), true);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : "Error syncing provided ELDetails";

@@ -2,11 +2,13 @@ package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.Kafka.Dto.KafkaResponse;
 import com.dpw.runner.shipment.services.Kafka.Producer.KafkaProducer;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.config.SyncConfig;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.ContainerAPIsRequest.ContainerAssignRequest;
 import com.dpw.runner.shipment.services.dto.ContainerAPIsRequest.ContainerNumberCheckResponse;
@@ -24,8 +26,10 @@ import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerService;
 import com.dpw.runner.shipment.services.syncing.Entity.BulkContainerRequestV2;
 import com.dpw.runner.shipment.services.syncing.Entity.ContainerRequestV2;
+import com.dpw.runner.shipment.services.syncing.constants.SyncingConstants;
 import com.dpw.runner.shipment.services.syncing.impl.ContainerSync;
 import com.dpw.runner.shipment.services.utils.CSVParsingUtil;
+import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
@@ -37,6 +41,7 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -54,10 +59,9 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
@@ -105,6 +109,11 @@ public class ContainerService implements IContainerService {
 
     @Value("${containersKafka.queue}")
     private String senderQueue;
+    @Lazy
+    @Autowired
+    private SyncQueueService syncQueueService;
+    @Autowired
+    private SyncConfig syncConfig;
 
     @Transactional
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
@@ -197,7 +206,7 @@ public class ContainerService implements IContainerService {
         }
 
         if (request.getConsolidationId() != null) {
-            ListCommonRequest req2 = constructListCommonRequest("consolidation_id", request.getConsolidationId(), "=");
+            ListCommonRequest req2 = constructListCommonRequest("consolidationId", Long.valueOf(request.getConsolidationId()), "=");
             Pair<Specification<Containers>, Pageable> pair = fetchData(req2, Containers.class);
             Page<Containers> containers = containerDao.findAll(pair.getLeft(), pair.getRight());
             List<Containers> containersList = containers.getContent();
@@ -207,9 +216,13 @@ public class ContainerService implements IContainerService {
                 result = result.stream().filter(result::contains).collect(Collectors.toList());
             }
         }
+        LocalDateTime currentTime = LocalDateTime.now();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
+        String timestamp = currentTime.format(formatter);
+        String filenameWithTimestamp = "Containers_" + timestamp + ".xlsx";
 
         response.setContentType("text/csv");
-        response.setHeader("Content-Disposition", "attachment; filename=\"containers.csv\"");
+        response.setHeader("Content-Disposition", "attachment; filename=" + filenameWithTimestamp);
 
         try (PrintWriter writer = response.getWriter()) {
             writer.println(parser.generateCSVHeaderForContainer());
@@ -233,9 +246,13 @@ public class ContainerService implements IContainerService {
                 result = result.stream().filter(result::contains).collect(Collectors.toList());
             }
         }
+        LocalDateTime currentTime = LocalDateTime.now();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
+        String timestamp = currentTime.format(formatter);
+        String filenameWithTimestamp = "ContainerEvents_" + timestamp + ".xlsx";
 
         response.setContentType("text/csv");
-        response.setHeader("Content-Disposition", "attachment; filename=\"consolidation_events.csv\"");
+        response.setHeader("Content-Disposition", "attachment; filename=" + filenameWithTimestamp);
 
         try (PrintWriter writer = response.getWriter()) {
             writer.println(parser.generateCSVHeaderForEvent());
@@ -741,6 +758,8 @@ public class ContainerService implements IContainerService {
 
     public void afterSave(Containers containers, boolean isCreate) {
         try {
+            if(containers.getTenantId() == null)
+                containers.setTenantId(TenantContext.getCurrentTenant());
             KafkaResponse kafkaResponse = producer.getKafkaResponse(containers, isCreate);
             producer.produceToKafka(jsonHelper.convertToJson(kafkaResponse), senderQueue, UUID.randomUUID().toString());
         } catch (Exception e) {
@@ -761,9 +780,12 @@ public class ContainerService implements IContainerService {
      */
     
     @Override
-    public ResponseEntity<?> V1ContainerCreateAndUpdate(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<?> V1ContainerCreateAndUpdate(CommonRequestModel commonRequestModel, boolean checkForSync) throws Exception {
         ContainerRequestV2 containerRequest = (ContainerRequestV2) commonRequestModel.getData();
         try {
+            if (checkForSync && !Objects.isNull(syncConfig.IS_REVERSE_SYNC_ACTIVE) && !syncConfig.IS_REVERSE_SYNC_ACTIVE) {
+                return syncQueueService.saveSyncRequest(SyncingConstants.CONTAINERS, StringUtility.convertToString(containerRequest.getGuid()), containerRequest);
+            }
             List<Containers> existingCont = containerDao.findByGuid(containerRequest.getGuid());
             Containers containers = modelMapper.map(containerRequest, Containers.class);
             List<Long> shipIds = null;
@@ -820,7 +842,7 @@ public class ContainerService implements IContainerService {
             for (ContainerRequestV2 containerRequest : bulkContainerRequest.getBulkContainers())
                 responses.add(this.V1ContainerCreateAndUpdate(CommonRequestModel.builder()
                         .data(containerRequest)
-                        .build()));
+                        .build(), true));
             return ResponseHelper.buildSuccessResponse(responses);
         } catch (Exception e) {
             String responseMsg = e.getMessage() != null ? e.getMessage()

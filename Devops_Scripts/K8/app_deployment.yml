@@ -33,3 +33,10 @@ spec:
           envFrom:
             - configMapRef:
                 name: runner-shipment-service-cm
+          readinessProbe:
+            httpGet:
+              path: /shipment-service/actuator/health
+              port: 8080
+            initialDelaySeconds: 60
+            periodSeconds: 10
+            timeoutSeconds: 10

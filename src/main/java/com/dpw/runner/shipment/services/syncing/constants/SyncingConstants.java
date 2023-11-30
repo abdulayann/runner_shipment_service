@@ -10,4 +10,10 @@ public class SyncingConstants {
     public static final String BULK_CONTAINERS = "BULK_CONTAINERS";
     public static final String BULK_PACKAGES = "BULK_PACKAGES";
     public static final String CONTAINERS = "CONTAINERS";
+    public static final String PACKAGES = "PACKAGES";
+    public static final String ROUTINGS = "ROUTINGS";
+    public static final String EL_DETAILS = "EL_DETAILS";
+    public static final String EVENTS = "EVENTS";
+    public static final String PICKUP_DELIVERY = "PICKUP_DELIVERY";
+    public static final String ALL = "ALL";
 }

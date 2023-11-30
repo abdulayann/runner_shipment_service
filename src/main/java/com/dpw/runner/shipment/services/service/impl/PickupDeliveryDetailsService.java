@@ -8,6 +8,7 @@ import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.config.SyncConfig;
 import com.dpw.runner.shipment.services.dao.interfaces.IPickupDeliveryDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.request.PickupDeliveryDetailsRequest;
@@ -21,11 +22,14 @@ import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IPickupDeliveryDetailsService;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
 import com.dpw.runner.shipment.services.syncing.Entity.PickupDeliveryDetailsRequestV2;
+import com.dpw.runner.shipment.services.syncing.constants.SyncingConstants;
 import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
+import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -38,6 +42,7 @@ import org.springframework.transaction.interceptor.TransactionAspectSupport;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
@@ -64,6 +69,11 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
 
     @Autowired
     private IShipmentService shipmentService;
+    @Lazy
+    @Autowired
+    private SyncQueueService syncQueueService;
+    @Autowired
+    private SyncConfig syncConfig;
 
     @Transactional
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
@@ -261,12 +271,15 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
     }
 
     @Override
-    public ResponseEntity<?> V1PickupDeliveryCreateAndUpdate(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<?> V1PickupDeliveryCreateAndUpdate(CommonRequestModel commonRequestModel, boolean checkForSync) throws Exception {
         PickupDeliveryDetailsRequestV2 pickupDeliveryDetailsRequestV2 = (PickupDeliveryDetailsRequestV2) commonRequestModel.getData();
         if(pickupDeliveryDetailsRequestV2 == null || pickupDeliveryDetailsRequestV2.getShipmentGuid() == null) {
             throw new Exception("Request guid is null");
         }
         try {
+            if (checkForSync && !Objects.isNull(syncConfig.IS_REVERSE_SYNC_ACTIVE) && !syncConfig.IS_REVERSE_SYNC_ACTIVE) {
+                return syncQueueService.saveSyncRequest(SyncingConstants.PICKUP_DELIVERY, StringUtility.convertToString(pickupDeliveryDetailsRequestV2.getShipmentGuid()), pickupDeliveryDetailsRequestV2);
+            }
             Optional<ShipmentDetails> existingShipment = shipmentDao.findByGuid(pickupDeliveryDetailsRequestV2.getShipmentGuid());
             if(existingShipment == null || existingShipment.get() == null) {
                 log.debug("Shipment Details is null for Guid {} with Request Id {}", pickupDeliveryDetailsRequestV2.getShipmentGuid(), LoggerHelper.getRequestIdFromMDC());

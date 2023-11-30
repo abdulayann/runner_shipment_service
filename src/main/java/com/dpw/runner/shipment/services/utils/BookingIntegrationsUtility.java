@@ -91,7 +91,18 @@ public class BookingIntegrationsUtility {
             this.saveErrorResponse(customerBooking.getId(), Constants.BOOKING, IntegrationType.V1_SHIPMENT_CREATION, Status.SUCCESS, "SAVED SUCESSFULLY");
             return response;
         } catch (Exception ex) {
-            log.error("Booking Creation error from Platform for booking number: {} with error message: {}", customerBooking.getBookingNumber(), ex.getMessage());
+            this.saveErrorResponse(customerBooking.getId(), Constants.BOOKING, IntegrationType.V1_SHIPMENT_CREATION, Status.FAILED, ex.getLocalizedMessage());
+            log.error("Booking Creation error from V1 for booking number: {} with error message: {}", customerBooking.getBookingNumber(), ex.getMessage());
+            throw ex;
+        }
+    }
+
+    public ResponseEntity<?> updateOrgCreditLimitFromBooking(CheckCreditLimitResponse request) {
+        try {
+            var response = v1Service.updateOrgCreditLimitFromBooking(request);
+            return response;
+        } catch (Exception ex) {
+            log.error("Error updating Credit Limit for Org with CustomerIdentifier: {} with error message: {}", request.getAccountNumber(), ex.getMessage());
             throw ex;
         }
     }
@@ -106,15 +117,6 @@ public class BookingIntegrationsUtility {
         }
     }
 
-    public ResponseEntity<?> updateOrgCreditLimitFromBooking(CheckCreditLimitResponse request) {
-        try {
-            var response = v1Service.updateOrgCreditLimitFromBooking(request);
-            return response;
-        } catch (Exception ex) {
-            log.error("Error updating Credit Limit for Org with CustomerIdentifier: {} with error message: {}", request.getAccountNumber(), ex.getMessage());
-            throw ex;
-        }
-    }
 
     private void saveErrorResponse(Long entityId, String entityType, IntegrationType integrationType, Status status, String message) {
         IntegrationResponse response = IntegrationResponse.builder()

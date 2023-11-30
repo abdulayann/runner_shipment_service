@@ -1,7 +1,6 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper;
-import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.CarrierDetailModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
@@ -11,6 +10,7 @@ import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.config.SyncConfig;
 import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IHblDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
@@ -32,6 +32,7 @@ import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.service.interfaces.IHblService;
 import com.dpw.runner.shipment.services.syncing.Entity.HblRequestV2;
+import com.dpw.runner.shipment.services.syncing.constants.SyncingConstants;
 import com.dpw.runner.shipment.services.syncing.interfaces.IHblSync;
 import com.dpw.runner.shipment.services.utils.AwbUtility;
 import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
@@ -40,6 +41,7 @@ import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -71,6 +73,11 @@ public class HblService implements IHblService {
     IContainerDao containerDao;
     @Autowired
     IShipmentSettingsDao shipmentSettingsDao;
+    @Lazy
+    @Autowired
+    private SyncQueueService syncQueueService;
+    @Autowired
+    private SyncConfig syncConfig;
 
     private RetryTemplate retryTemplate = RetryTemplate.builder()
             .maxAttempts(3)
@@ -214,7 +221,7 @@ public class HblService implements IHblService {
                     isContainerWithoutNumberOrNoContainer = true;
                 if (isContainerWithoutNumberOrNoContainer) {
                     hbl.setHblContainer(mapShipmentContainersToHBL(containersList));
-                    hbl.setHblCargo(mapShipmentCargoToHBL(packings));
+                    hbl.setHblCargo(mapShipmentCargoToHBL(packings, containersList));
                     hbl = hblDao.save(hbl);
                     try {
                         hblSync.sync(hbl);
@@ -295,7 +302,7 @@ public class HblService implements IHblService {
 
     private void updateHblFromShipment(ShipmentDetails shipmentDetails, Hbl hbl, ShipmentSettingsDetails shipmentSettingsDetails) {
         updateShipmentToHBL(shipmentDetails, hbl, shipmentSettingsDetails.getHblLockSettings());
-        updateShipmentCargoToHBL(shipmentDetails.getPackingList(), hbl, shipmentSettingsDetails.getHblLockSettings());
+        updateShipmentCargoToHBL(shipmentDetails.getPackingList(), hbl, shipmentSettingsDetails.getHblLockSettings(), shipmentDetails.getContainersList());
         updateShipmentContainersToHBL(shipmentDetails.getContainersList(), hbl, shipmentSettingsDetails.getHblLockSettings());
         updateShipmentPartiesToHBL(shipmentDetails.getAdditionalDetails() != null ? shipmentDetails.getAdditionalDetails().getNotifyParty() : null, hbl, shipmentSettingsDetails.getHblLockSettings());
 
@@ -331,7 +338,7 @@ public class HblService implements IHblService {
                 break;
 
             case HBL_CARGOES:
-                hbl.setHblCargo(mapShipmentCargoToHBL(shipmentDetails.get().getPackingList()));
+                hbl.setHblCargo(mapShipmentCargoToHBL(shipmentDetails.get().getPackingList(), shipmentDetails.get().getContainersList()));
                 break;
 
             case HBL_CONTAINERS:
@@ -357,7 +364,7 @@ public class HblService implements IHblService {
 
     private Hbl getDefaultHblFromShipment(ShipmentDetails shipmentDetails) {
         HblDataDto hblData = mapShipmentToHBL(shipmentDetails);
-        List<HblCargoDto> hblCargos = mapShipmentCargoToHBL(shipmentDetails.getPackingList());
+        List<HblCargoDto> hblCargos = mapShipmentCargoToHBL(shipmentDetails.getPackingList(), shipmentDetails.getContainersList());
         List<HblContainerDto> hblContainers = mapShipmentContainersToHBL(shipmentDetails.getContainersList());
         List<HblPartyDto> hblParties = mapShipmentPartiesToHBL(shipmentDetails.getAdditionalDetails() != null ? shipmentDetails.getAdditionalDetails().getNotifyParty() : null);
 
@@ -511,12 +518,17 @@ public class HblService implements IHblService {
 
     }
 
-    private List<HblCargoDto> mapShipmentCargoToHBL(List<Packing> packings) {
+    private List<HblCargoDto> mapShipmentCargoToHBL(List<Packing> packings, List<Containers> containers) {
         List<HblCargoDto> hblCargoes = new ArrayList<>();
+        Map<Long, String> map = new HashMap<>();
+        if(containers != null && containers.size() > 0)
+            map = containers.stream().collect(Collectors.toMap(Containers::getId, Containers::getContainerNumber));
+        Map<Long, String> finalMap = map;
         packings.forEach(pack -> {
             HblCargoDto cargo = HblCargoDto.builder().build();
             cargo.setGuid(pack.getGuid());
-            cargo.setBlContainerContainerNumber(pack.getContainerNumber());
+            if(pack.getContainerId() != null && finalMap.containsKey(pack.getContainerId()))
+                cargo.setBlContainerContainerNumber(finalMap.get(pack.getContainerId()));
             cargo.setCargoDesc(pack.getGoodsDescription());
             cargo.setCargoGrossVolume(pack.getVolume());
             cargo.setCargoGrossVolumeUnit(pack.getVolumeUnit());
@@ -547,7 +559,7 @@ public class HblService implements IHblService {
     }
 
     @Override
-    public ResponseEntity<?> saveV1Hbl(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<?> saveV1Hbl(CommonRequestModel commonRequestModel, boolean checkForSync) throws Exception {
         String responseMsg;
         HblRequestV2 request = (HblRequestV2) commonRequestModel.getData();
         if(request == null) {
@@ -557,6 +569,9 @@ public class HblService implements IHblService {
         if(request.getShipmentGuid() == null) {
             log.error("Request Id and Shipment Guid is null for Hbl update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+        }
+        if (checkForSync && !Objects.isNull(syncConfig.IS_REVERSE_SYNC_ACTIVE) && !syncConfig.IS_REVERSE_SYNC_ACTIVE) {
+            return syncQueueService.saveSyncRequest(SyncingConstants.HBL, StringUtility.convertToString(request.getShipmentGuid()), request);
         }
 
         ListCommonRequest listCommonRequest = constructListCommonRequest("guid", request.getShipmentGuid(), "=");
@@ -682,15 +697,23 @@ public class HblService implements IHblService {
         }
 
     }
-    private void updateShipmentCargoToHBL(List<Packing> packings, Hbl hbl, HblLockSettings hblLock) {
+    private void updateShipmentCargoToHBL(List<Packing> packings, Hbl hbl, HblLockSettings hblLock, List<Containers> containers) {
         Map<UUID, Packing> packMap = new HashMap<>();
         packings.forEach(pack -> {
             packMap.put(pack.getGuid(), pack);
         });
         List<HblCargoDto> deletedList = new ArrayList<>();
+        Map<Long, String> map = new HashMap<>();
+        if(containers != null && containers.size() > 0)
+            map = containers.stream().collect(Collectors.toMap(Containers::getId, Containers::getContainerNumber));
+        Map<Long, String> finalMap = map;
         hbl.getHblCargo().forEach(cargo -> {
             if(packMap.containsKey(cargo.getGuid())){
-                updateShipmentCargoFieldToHbl(packMap.get(cargo.getGuid()), cargo, hblLock);
+                String containerNumber = null;
+                Packing packing = packMap.get(cargo.getGuid());
+                if(packing != null && packing.getContainerId() != null && finalMap.containsKey(packing.getContainerId()))
+                    containerNumber = finalMap.get(packing.getContainerId());
+                updateShipmentCargoFieldToHbl(packing, cargo, hblLock, containerNumber);
                 packMap.remove(cargo.getGuid());
             }else {
                 deletedList.add(cargo);
@@ -701,7 +724,8 @@ public class HblService implements IHblService {
         packMap.forEach((guid, pack) -> {
             HblCargoDto cargo = HblCargoDto.builder().build();
             cargo.setGuid(pack.getGuid());
-            cargo.setBlContainerContainerNumber(pack.getContainerNumber());
+            if(pack.getContainerId() != null && finalMap.containsKey(pack.getContainerId()))
+                cargo.setBlContainerContainerNumber(finalMap.get(pack.getContainerId()));
             cargo.setCargoDesc(pack.getGoodsDescription());
             cargo.setCargoGrossVolume(pack.getVolume());
             cargo.setCargoGrossVolumeUnit(pack.getVolumeUnit());
@@ -716,9 +740,9 @@ public class HblService implements IHblService {
         });
     }
 
-    private void updateShipmentCargoFieldToHbl(Packing pack, HblCargoDto cargo, HblLockSettings hblLock) {
+    private void updateShipmentCargoFieldToHbl(Packing pack, HblCargoDto cargo, HblLockSettings hblLock, String containerNumber) {
         if(!hblLock.getBlContainerIdLock())
-            cargo.setBlContainerContainerNumber(pack.getContainerNumber());
+            cargo.setBlContainerContainerNumber(containerNumber);
         if(!hblLock.getCargoDescriptionLock())
             cargo.setCargoDesc(pack.getGoodsDescription());
         if(!hblLock.getCargoGrossVolumeLock())
