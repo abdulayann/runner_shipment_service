@@ -49,6 +49,8 @@ import org.springframework.transaction.interceptor.TransactionAspectSupport;
 import javax.servlet.http.HttpServletResponse;
 import java.io.PrintWriter;
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -143,7 +145,7 @@ public class PackingService implements IPackingService {
     public void downloadPacking(HttpServletResponse response, BulkDownloadRequest request) throws Exception {
         List<Packing> result = new ArrayList<>();
         if (request.getShipmentId() != null) {
-            ListCommonRequest req = constructListCommonRequest("shipment_id", request.getShipmentId(), "=");
+            ListCommonRequest req = constructListCommonRequest("shipmentId", Long.valueOf(request.getShipmentId()), "=");
             Pair<Specification<Packing>, Pageable> pair = fetchData(req, Packing.class);
             Page<Packing> packings = packingDao.findAll(pair.getLeft(), pair.getRight());
             List<Packing> packingList = packings.getContent();
@@ -151,7 +153,7 @@ public class PackingService implements IPackingService {
         }
 
         if (request.getConsolidationId() != null) {
-            ListCommonRequest req2 = constructListCommonRequest("consolidation_id", request.getConsolidationId(), "=");
+            ListCommonRequest req2 = constructListCommonRequest("consolidationId", Long.valueOf(request.getConsolidationId()), "=");
             Pair<Specification<Packing>, Pageable> pair = fetchData(req2, Packing.class);
             Page<Packing> packings = packingDao.findAll(pair.getLeft(), pair.getRight());
             List<Packing> packingList = packings.getContent();
@@ -161,8 +163,13 @@ public class PackingService implements IPackingService {
                 result = result.stream().filter(result::contains).collect(Collectors.toList());
             }
         }
+        LocalDateTime currentTime = LocalDateTime.now();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
+        String timestamp = currentTime.format(formatter);
+        String filenameWithTimestamp = "Packings_" + timestamp + ".xlsx";
+
         response.setContentType("text/csv");
-        response.setHeader("Content-Disposition", "attachment; filename=\"packings.csv\"");
+        response.setHeader("Content-Disposition", "attachment; filename=" + filenameWithTimestamp);
 
         try (PrintWriter writer = response.getWriter()) {
             writer.println(parser.generateCSVHeaderForContainer());
