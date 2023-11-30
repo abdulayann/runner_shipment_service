@@ -72,35 +72,45 @@ public class PreAlertReport extends IReport {
             consignee = getOrgAddressWithPhoneEmail(preAlertModel.shipmentDetails.getConsignee());
         }
         List<String> notify = new ArrayList<>();
-        if(preAlertModel.shipmentDetails.getAdditionalDetails().getNotifyParty() != null) {
+        if (preAlertModel.shipmentDetails.getAdditionalDetails().getNotifyParty() != null) {
             notify = getOrgAddressWithPhoneEmail(preAlertModel.shipmentDetails.getAdditionalDetails().getNotifyParty());
         }
-        if(preAlertModel.shipmentDetails.getClient().getAddressData() != null && getValueFromMap(preAlertModel.shipmentDetails.getClient().getAddressData(),ReportConstants.COMPANY_NAME) != null)
-        {
-            dictionary.put(ReportConstants.CLIENT_NAME, getValueFromMap(preAlertModel.shipmentDetails.getClient().getAddressData(),ReportConstants.COMPANY_NAME));
+        if (preAlertModel.shipmentDetails.getClient().getAddressData() != null && getValueFromMap(preAlertModel.shipmentDetails.getClient().getAddressData(), ReportConstants.COMPANY_NAME) != null) {
+            dictionary.put(ReportConstants.CLIENT_NAME, getValueFromMap(preAlertModel.shipmentDetails.getClient().getAddressData(), ReportConstants.COMPANY_NAME));
         }
-        if(preAlertModel.shipmentDetails.getConsigner().getOrgData() != null && getValueFromMap(preAlertModel.shipmentDetails.getConsigner().getOrgData(), ReportConstants.FULL_NAME) != null) {
+        if (preAlertModel.shipmentDetails.getConsigner() != null &&
+                preAlertModel.shipmentDetails.getConsigner().getOrgData() != null &&
+                getValueFromMap(preAlertModel.shipmentDetails.getConsigner().getOrgData(), ReportConstants.FULL_NAME) != null) {
             String consignerFullName = getValueFromMap(preAlertModel.shipmentDetails.getConsigner().getOrgData(), ReportConstants.FULL_NAME);
             dictionary.put(ReportConstants.CONSIGNER, consignerFullName);
             dictionary.put(ReportConstants.CONSIGNER_AIR, getCompleteNameAndAddress(consignerFullName, consigner));
         }
-        if(preAlertModel.shipmentDetails.getConsignee().getOrgData() != null && getValueFromMap(preAlertModel.shipmentDetails.getConsignee().getOrgData(), ReportConstants.FULL_NAME) != null) {
+        if (preAlertModel.shipmentDetails.getConsignee() != null &&
+                preAlertModel.shipmentDetails.getConsignee().getOrgData() != null &&
+                getValueFromMap(preAlertModel.shipmentDetails.getConsignee().getOrgData(), ReportConstants.FULL_NAME) != null) {
             String consigneeFullName = getValueFromMap(preAlertModel.shipmentDetails.getConsignee().getOrgData(), ReportConstants.FULL_NAME);
             dictionary.put(ReportConstants.CONSIGNEE, consigneeFullName);
             dictionary.put(ReportConstants.CONSIGNEE_AIR, getCompleteNameAndAddress(consigneeFullName, consignee));
         }
-        if(preAlertModel.shipmentDetails.getAdditionalDetails().getNotifyParty().getOrgData() != null && getValueFromMap(preAlertModel.shipmentDetails.getAdditionalDetails().getNotifyParty().getOrgData(), ReportConstants.FULL_NAME) != null) {
+        if (preAlertModel.shipmentDetails.getAdditionalDetails() != null &&
+                preAlertModel.shipmentDetails.getAdditionalDetails().getNotifyParty() != null &&
+                preAlertModel.shipmentDetails.getAdditionalDetails().getNotifyParty().getOrgData() != null &&
+                getValueFromMap(preAlertModel.shipmentDetails.getAdditionalDetails().getNotifyParty().getOrgData(), ReportConstants.FULL_NAME) != null) {
             String notifyFullName = getValueFromMap(preAlertModel.shipmentDetails.getAdditionalDetails().getNotifyParty().getOrgData(), ReportConstants.FULL_NAME);
             dictionary.put(ReportConstants.NOTIFY_PARTY_AIR, getCompleteNameAndAddress(notifyFullName, notify));
         }
         dictionary.put(ReportConstants.NOTIFY_PARTY, notify);
-        dictionary.put(ReportConstants.CONSIGNER_ADDRESS, getAddressList(ReportHelper.getValueFromMap(preAlertModel.shipmentDetails.getConsigner().getAddressData(), ReportConstants.ADDRESS1)));
-        dictionary.put(ReportConstants.CONSIGNEE_ADDRESS, getAddressList(ReportHelper.getValueFromMap(preAlertModel.shipmentDetails.getConsignee().getAddressData(), ReportConstants.ADDRESS1)));
-        dictionary.put(ReportConstants.NOTIFY_PARTY_ADDRESS, getAddressList(ReportHelper.getValueFromMap(preAlertModel.shipmentDetails.getAdditionalDetails().getNotifyParty().getAddressData(), ReportConstants.ADDRESS1)));
+        dictionary.put(ReportConstants.CONSIGNER_ADDRESS, getAddressList(ReportHelper.getValueFromMap(preAlertModel.shipmentDetails.getConsigner() != null ?
+                preAlertModel.shipmentDetails.getConsigner().getAddressData() : null, ReportConstants.ADDRESS1)));
+        dictionary.put(ReportConstants.CONSIGNEE_ADDRESS, getAddressList(ReportHelper.getValueFromMap(preAlertModel.shipmentDetails.getConsignee() != null ?
+                preAlertModel.shipmentDetails.getConsignee().getAddressData() : null, ReportConstants.ADDRESS1)));
+        dictionary.put(ReportConstants.NOTIFY_PARTY_ADDRESS, getAddressList(ReportHelper.getValueFromMap(preAlertModel.shipmentDetails.getAdditionalDetails() != null
+                && preAlertModel.shipmentDetails.getAdditionalDetails().getNotifyParty() != null ?
+                preAlertModel.shipmentDetails.getAdditionalDetails().getNotifyParty().getAddressData() : null, ReportConstants.ADDRESS1)));
         List<String> tenantsDataList = getListOfStrings(preAlertModel.tenantDetails.tenantName, preAlertModel.tenantDetails.address1, preAlertModel.tenantDetails.address2,
                 preAlertModel.tenantDetails.city, preAlertModel.tenantDetails.state, preAlertModel.tenantDetails.zipPostCode, preAlertModel.tenantDetails.country,
                 preAlertModel.tenantDetails.email, preAlertModel.tenantDetails.websiteUrl, preAlertModel.tenantDetails.phone);
-        if(tenantsDataList != null)
+        if (tenantsDataList != null)
             dictionary.put(ReportConstants.TENANT, tenantsDataList);
         dictionary.put(ReportConstants.no_OF_PACKAGES, preAlertModel.shipmentDetails.getNoOfPacks());
         dictionary.put(ReportConstants.NO_OF_PACKAGES_WORD, preAlertModel.noofpackages_word);
@@ -111,41 +121,39 @@ public class PreAlertReport extends IReport {
         dictionary.put(ReportConstants.CONSIGNEE_FREETEXT, consignee);
         dictionary.put(ReportConstants.CONSIGNER_FREETEXT, consigner);
         List<String> deliveryAgent = new ArrayList<>();
-        if(preAlertModel.shipmentDetails.getDeliveryDetails() != null && preAlertModel.shipmentDetails.getDeliveryDetails().getAgentDetail() != null) {
+        if (preAlertModel.shipmentDetails.getDeliveryDetails() != null && preAlertModel.shipmentDetails.getDeliveryDetails().getAgentDetail() != null) {
             deliveryAgent = getOrgAddressWithPhoneEmail(preAlertModel.shipmentDetails.getDeliveryDetails().getAgentDetail());
-            if(preAlertModel.shipmentDetails.getDeliveryDetails().getAgentDetail().getOrgData() != null) {
+            if (preAlertModel.shipmentDetails.getDeliveryDetails().getAgentDetail().getOrgData() != null) {
                 Map<String, Object> partyOrg = preAlertModel.shipmentDetails.getDeliveryDetails().getAgentDetail().getOrgData();
-                if(getValueFromMap(partyOrg, ReportConstants.FULL_NAME) != null) {
+                if (getValueFromMap(partyOrg, ReportConstants.FULL_NAME) != null) {
                     deliveryAgent.add(0, getValueFromMap(partyOrg, ReportConstants.FULL_NAME));
                 }
             }
             dictionary.put(ReportConstants.DELIVERY_AGENT, deliveryAgent);
         }
-        if(preAlertModel.shipmentDetails.getCarrierDetails().getEtd() != null) {
+        if (preAlertModel.shipmentDetails.getCarrierDetails() != null) {
             dictionary.put(ReportConstants.ETD, IReport.ConvertToDPWDateFormat(preAlertModel.shipmentDetails.getCarrierDetails().getEtd()));
         }
-        if(preAlertModel.shipmentDetails.getCarrierDetails().getEta() != null) {
+        if (preAlertModel.shipmentDetails.getCarrierDetails() != null) {
             dictionary.put(ReportConstants.ETA, IReport.ConvertToDPWDateFormat(preAlertModel.shipmentDetails.getCarrierDetails().getEta()));
         }
         dictionary.put(ReportConstants.SHIPMENT_CONTAINERS, preAlertModel.shipmentContainers);
         dictionary.put(ReportConstants.CONTAINER_COUNT_BY_CODE, getCountByContainerTypeCode(preAlertModel.shipmentContainers));
-        if(preAlertModel.shipmentDetails.getCarrierDetails().getOrigin() != null) {
+        if (preAlertModel.shipmentDetails.getCarrierDetails() != null) {
             UnlocationsResponse origin = getUNLocRow(preAlertModel.shipmentDetails.getCarrierDetails().getOrigin());
-            if(origin != null && origin.getIataCode() != null)
+            if (origin != null && origin.getIataCode() != null)
                 dictionary.put(ReportConstants.ORIGIN, origin.getIataCode());
             else
                 dictionary.put(ReportConstants.ORIGIN, null);
-        }
-        else
+        } else
             dictionary.put(ReportConstants.ORIGIN, null);
-        if(preAlertModel.shipmentDetails.getCarrierDetails().getDestination() != null) {
+        if (preAlertModel.shipmentDetails.getCarrierDetails() != null) {
             UnlocationsResponse destination = getUNLocRow(preAlertModel.shipmentDetails.getCarrierDetails().getDestination());
-            if(destination != null && destination.getIataCode() != null)
+            if (destination != null && destination.getIataCode() != null)
                 dictionary.put(ReportConstants.DESTINATION, destination.getIataCode());
             else
                 dictionary.put(ReportConstants.DESTINATION, null);
-        }
-        else
+        } else
             dictionary.put(ReportConstants.DESTINATION, null);
         dictionary.put(JOB_NO, preAlertModel.shipmentDetails.getShipmentId());
         dictionary.put(AIRLINE, preAlertModel.shipmentDetails.getCarrierDetails().getShippingLine());
@@ -164,27 +172,27 @@ public class PreAlertReport extends IReport {
         if(preAlertModel.shipmentDetails.getWeight() != null)
             dictionary.put(ReportConstants.TOTAL_WEIGHT_, String.format("%s %s", twoDecimalPlacesFormatDecimal(preAlertModel.shipmentDetails.getWeight()), preAlertModel.shipmentDetails.getWeightUnit()));
         dictionary.put(ReportConstants.TOTAL_PCS, preAlertModel.noofpackages_word);
-        if(preAlertModel.shipmentDetails.getCarrierDetails().getOriginPort() != null) {
+        if (preAlertModel.shipmentDetails.getCarrierDetails() != null) {
             UnlocationsResponse pol = getUNLocRow(preAlertModel.shipmentDetails.getCarrierDetails().getOriginPort());
             dictionary.put(ReportConstants.PORT_OF_DEPARTURE, pol.getPortName());
             dictionary.put(ReportConstants.PORT_OF_DEPARTURE_COUNTRY, pol.getCountry());
         }
-        if(preAlertModel.shipmentDetails.getCarrierDetails().getDestinationPort() != null) {
+        if (preAlertModel.shipmentDetails.getCarrierDetails() != null) {
             UnlocationsResponse pod = getUNLocRow(preAlertModel.shipmentDetails.getCarrierDetails().getDestinationPort());
             dictionary.put(ReportConstants.PORT_OF_ARRIVAL, pod.getPortName());
             dictionary.put(ReportConstants.PORT_OF_ARRIVAL_COUNTRY, pod.getCountry());
         }
-        if(preAlertModel.shipmentDetails.getCarrierDetails().getOrigin() != null) {
+        if (preAlertModel.shipmentDetails.getCarrierDetails() != null) {
             UnlocationsResponse origin = getUNLocRow(preAlertModel.shipmentDetails.getCarrierDetails().getOrigin());
-            if(origin != null)
+            if (origin != null)
                 dictionary.put(ReportConstants.PLACE_oF_RECEIPT, origin.getName());
         }
-        if(preAlertModel.shipmentDetails.getCarrierDetails().getDestination() != null) {
+        if (preAlertModel.shipmentDetails.getCarrierDetails() != null) {
             UnlocationsResponse destination = getUNLocRow(preAlertModel.shipmentDetails.getCarrierDetails().getDestination());
-            if(destination != null)
+            if (destination != null)
                 dictionary.put(ReportConstants.PLACE_oF_DELIVERY, destination.getName());
         }
-        if(preAlertModel.consolidationDetails != null && preAlertModel.consolidationDetails.getPayment() != null)
+        if (preAlertModel.consolidationDetails != null && preAlertModel.consolidationDetails.getPayment() != null)
             dictionary.put(ReportConstants.PPCC, preAlertModel.consolidationDetails.getPayment());
         else
             dictionary.put(ReportConstants.PPCC, null);
