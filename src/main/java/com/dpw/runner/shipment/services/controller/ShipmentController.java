@@ -9,6 +9,7 @@ import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.ContainerAPIsRequest.ShipmentContainerAssignRequest;
 import com.dpw.runner.shipment.services.dto.patchRequest.ShipmentPatchRequest;
+import com.dpw.runner.shipment.services.dto.request.AttachListShipmentRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
 import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.GenerateCustomHblResponse;
@@ -328,6 +329,16 @@ public class ShipmentController {
     public ResponseEntity<?> getConsolFromShipment(@ApiParam(value = ShipmentConstants.CONSOLIDATION_ID, required = true) @RequestParam Long id) {
         try {
             return (ResponseEntity<RunnerResponse>) shipmentService.getConsolFromShipment(id);
+        } catch (Exception e) {
+            return ResponseHelper.buildFailedResponse(e.getMessage());
+        }
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = "Successful Shipment Details Data List Retrieval", responseContainer = "List")})
+    @PostMapping(value = "/attach-list-shipment")
+    public ResponseEntity<?> attachListShipment(@Valid @RequestBody @NonNull AttachListShipmentRequest request) {
+        try {
+        return (ResponseEntity<RunnerListResponse<ShipmentListResponse>>) shipmentService.attachListShipment(CommonRequestModel.buildRequest(request));
         } catch (Exception e) {
             return ResponseHelper.buildFailedResponse(e.getMessage());
         }

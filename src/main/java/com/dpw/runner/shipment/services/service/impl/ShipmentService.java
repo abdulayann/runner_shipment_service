@@ -285,6 +285,8 @@ public class ShipmentService implements IShipmentService {
             Map.entry("voyage", RunnerEntityMapping.builder().tableName("carrierDetails").dataType(String.class).fieldName("voyage").build()),
             Map.entry("origin", RunnerEntityMapping.builder().tableName("carrierDetails").dataType(String.class).fieldName("origin").build()),
             Map.entry("destination", RunnerEntityMapping.builder().tableName("carrierDetails").dataType(String.class).fieldName("destination").build()),
+            Map.entry("originPort", RunnerEntityMapping.builder().tableName("carrierDetails").dataType(String.class).fieldName("originPort").build()),
+            Map.entry("destinationPort", RunnerEntityMapping.builder().tableName("carrierDetails").dataType(String.class).fieldName("destinationPort").build()),
             Map.entry("eta", RunnerEntityMapping.builder().tableName("carrierDetails").dataType(LocalDateTime.class).fieldName("eta").build()),
             Map.entry("etd", RunnerEntityMapping.builder().tableName("carrierDetails").dataType(LocalDateTime.class).fieldName("etd").build()),
             Map.entry("ata", RunnerEntityMapping.builder().tableName("carrierDetails").dataType(LocalDateTime.class).fieldName("ata").build()),
@@ -315,7 +317,8 @@ public class ShipmentService implements IShipmentService {
             Map.entry("route", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).fieldName("route").build()),
             Map.entry("cargoFinanceBooking", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(Boolean.class).fieldName("cargoFinanceBooking").build()),
             Map.entry("isCmsHBLSent", RunnerEntityMapping.builder().tableName("additionalDetails").dataType(Boolean.class).fieldName("isCmsHBLSent").build()),
-            Map.entry("orderManagementId", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).fieldName("orderManagementId").isContainsText(true).build())
+            Map.entry("orderManagementId", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).fieldName("orderManagementId").isContainsText(true).build()),
+            Map.entry("flightNumber", RunnerEntityMapping.builder().tableName("carrierDetails").dataType(String.class).fieldName("flightNumber").build())
     );
 
     @Override
@@ -2412,6 +2415,153 @@ public class ShipmentService implements IShipmentService {
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(responseMsg);
         }
+    }
+
+    @Override
+    public ResponseEntity<?> attachListShipment(CommonRequestModel commonRequestModel){
+        AttachListShipmentRequest request = (AttachListShipmentRequest) commonRequestModel.getData();
+
+        Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(request.getConsolidationId());
+        if (!consolidationDetails.isPresent()) {
+            log.debug("Consolidation Details is null for Id {} with Request Id {}", request.getConsolidationId(), LoggerHelper.getRequestIdFromMDC());
+            throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+        }
+        request.setIncludeTbls(Arrays.asList("additionalDetails", "client", "consigner", "consignee", "carrierDetails", "pickupDetails", "deliveryDetails"));
+        ListCommonRequest listRequest = setCrieteriaForAttachShipment(request, consolidationDetails.get());
+        Pair<Specification<ShipmentDetails>, Pageable> tuple = fetchData(listRequest, ShipmentDetails.class, tableNames);
+
+        Page<ShipmentDetails> shipmentDetailsPage = shipmentDao.findAll(tuple.getLeft().and(notInMappingTable()), tuple.getRight());
+        return ResponseHelper.buildListSuccessResponse(
+                convertEntityListToDtoList(shipmentDetailsPage.getContent()),
+                shipmentDetailsPage.getTotalPages(),
+                shipmentDetailsPage.getTotalElements());
+    }
+    public static Specification<ShipmentDetails> notInMappingTable() {
+        return (root, query, criteriaBuilder) -> {
+            return criteriaBuilder.isEmpty(root.get("consolidationList"));
+        };
+    }
+
+    private ListCommonRequest setCrieteriaForAttachShipment(AttachListShipmentRequest request, ConsolidationDetails consolidationDetails) {
+        if(request.getFilterCriteria() != null && request.getFilterCriteria().isEmpty()){
+            request.setFilterCriteria(Arrays.asList(FilterCriteria.builder().innerFilter(new ArrayList<>()).build()));
+        }
+        ListCommonRequest defaultRequest;
+        defaultRequest = CommonUtils.andCriteria("transportMode", consolidationDetails.getTransportMode(), "=", request);
+        if(!Objects.isNull(consolidationDetails.getCarrierDetails().getOriginPort()))
+            CommonUtils.andCriteria("originPort", consolidationDetails.getCarrierDetails().getOriginPort(), "=", defaultRequest);
+        else
+            CommonUtils.andCriteria("originPort", "", "ISNULL", defaultRequest);
+        if(!Objects.isNull(consolidationDetails.getCarrierDetails().getDestinationPort()))
+            CommonUtils.andCriteria("destinationPort", consolidationDetails.getCarrierDetails().getDestinationPort(), "=", defaultRequest);
+        else
+            CommonUtils.andCriteria("destinationPort", "", "ISNULL", defaultRequest);
+        if(!Objects.isNull(consolidationDetails.getShipmentType()))
+            CommonUtils.andCriteria("direction", consolidationDetails.getShipmentType(), "=", defaultRequest);
+        else
+            CommonUtils.andCriteria("direction", "", "ISNULL", defaultRequest);
+        CommonUtils.andCriteria("status", 2, "!=", defaultRequest);
+        CommonUtils.andCriteria("status", 3, "!=", defaultRequest);
+        List<FilterCriteria> criterias = defaultRequest.getFilterCriteria();
+        List<FilterCriteria> innerFilters = criterias.get(0).getInnerFilter();
+        Criteria criteria = Criteria.builder().fieldName("transportMode").operator("!=").value(Constants.TRANSPORT_MODE_AIR).build();
+        FilterCriteria filterCriteria = FilterCriteria.builder().criteria(criteria).build();
+        List<FilterCriteria> innerFilers1 = new ArrayList<>();
+        innerFilers1.add(filterCriteria);
+        criteria = Criteria.builder().fieldName("jobType").operator("!=").value(Constants.SHIPMENT_TYPE_DRT).build();
+        filterCriteria = FilterCriteria.builder().criteria(criteria).logicOperator("or").build();
+        innerFilers1.add(filterCriteria);
+        criteria = Criteria.builder().fieldName("jobType").operator("ISNULL").build();
+        filterCriteria = FilterCriteria.builder().criteria(criteria).logicOperator("or").build();
+        innerFilers1.add(filterCriteria);
+        filterCriteria = FilterCriteria.builder().logicOperator("and").innerFilter(innerFilers1).build();
+        innerFilters.add(filterCriteria);
+
+        if(request.getEtaMatch()){
+            innerFilers1 = new ArrayList<>();
+            if(!Objects.isNull(consolidationDetails.getCarrierDetails().getEta()))
+                criteria = Criteria.builder().fieldName("eta").operator("=").value(consolidationDetails.getCarrierDetails().getEta()).build();
+            else
+                criteria = Criteria.builder().fieldName("eta").operator("ISNULL").build();
+            filterCriteria = FilterCriteria.builder().criteria(criteria).build();
+            innerFilers1.add(filterCriteria);
+            criteria = Criteria.builder().fieldName("eta").operator("ISNULL").build();
+            filterCriteria = FilterCriteria.builder().criteria(criteria).logicOperator("or").build();
+            innerFilers1.add(filterCriteria);
+            filterCriteria = FilterCriteria.builder().logicOperator("and").innerFilter(innerFilers1).build();
+            innerFilters.add(filterCriteria);
+        }
+        if(request.getEtdMatch()){
+            innerFilers1 = new ArrayList<>();
+            if(!Objects.isNull(consolidationDetails.getCarrierDetails().getEtd()))
+                criteria = Criteria.builder().fieldName("etd").operator("=").value(consolidationDetails.getCarrierDetails().getEtd()).build();
+            else
+                criteria = Criteria.builder().fieldName("etd").operator("ISNULL").build();
+            filterCriteria = FilterCriteria.builder().criteria(criteria).build();
+            innerFilers1.add(filterCriteria);
+            criteria = Criteria.builder().fieldName("etd").operator("ISNULL").build();
+            filterCriteria = FilterCriteria.builder().criteria(criteria).logicOperator("or").build();
+            innerFilers1.add(filterCriteria);
+            filterCriteria = FilterCriteria.builder().logicOperator("and").innerFilter(innerFilers1).build();
+            innerFilters.add(filterCriteria);
+        }
+        if(request.getScheduleMatch()){
+            if(consolidationDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)){
+                innerFilers1 = new ArrayList<>();
+                if(!Objects.isNull(consolidationDetails.getCarrierDetails().getFlightNumber()))
+                    criteria = Criteria.builder().fieldName("flightNumber").operator("=").value(consolidationDetails.getCarrierDetails().getFlightNumber()).build();
+                else
+                    criteria = Criteria.builder().fieldName("flightNumber").operator("ISNULL").build();
+                filterCriteria = FilterCriteria.builder().criteria(criteria).build();
+                innerFilers1.add(filterCriteria);
+                criteria = Criteria.builder().fieldName("flightNumber").operator("ISNULL").build();
+                filterCriteria = FilterCriteria.builder().criteria(criteria).logicOperator("or").build();
+                innerFilers1.add(filterCriteria);
+                filterCriteria = FilterCriteria.builder().logicOperator("and").innerFilter(innerFilers1).build();
+                innerFilters.add(filterCriteria);
+
+                innerFilers1 = new ArrayList<>();
+                if(!Objects.isNull(consolidationDetails.getCarrierDetails().getShippingLine()))
+                    criteria = Criteria.builder().fieldName("shippingLine").operator("=").value(consolidationDetails.getCarrierDetails().getShippingLine()).build();
+                else
+                    criteria = Criteria.builder().fieldName("shippingLine").operator("ISNULL").build();
+                filterCriteria = FilterCriteria.builder().criteria(criteria).build();
+                innerFilers1.add(filterCriteria);
+                criteria = Criteria.builder().fieldName("shippingLine").operator("ISNULL").build();
+                filterCriteria = FilterCriteria.builder().criteria(criteria).logicOperator("or").build();
+                innerFilers1.add(filterCriteria);
+                filterCriteria = FilterCriteria.builder().logicOperator("and").innerFilter(innerFilers1).build();
+                innerFilters.add(filterCriteria);
+            }
+            else if(consolidationDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_SEA)){
+                innerFilers1 = new ArrayList<>();
+                if(!Objects.isNull(consolidationDetails.getCarrierDetails().getVessel()))
+                    criteria = Criteria.builder().fieldName("vessel").operator("=").value(consolidationDetails.getCarrierDetails().getVessel()).build();
+                else
+                    criteria = Criteria.builder().fieldName("vessel").operator("ISNULL").build();
+                filterCriteria = FilterCriteria.builder().criteria(criteria).build();
+                innerFilers1.add(filterCriteria);
+                criteria = Criteria.builder().fieldName("vessel").operator("ISNULL").build();
+                filterCriteria = FilterCriteria.builder().criteria(criteria).logicOperator("or").build();
+                innerFilers1.add(filterCriteria);
+                filterCriteria = FilterCriteria.builder().logicOperator("and").innerFilter(innerFilers1).build();
+                innerFilters.add(filterCriteria);
+
+                innerFilers1 = new ArrayList<>();
+                if(!Objects.isNull(consolidationDetails.getCarrierDetails().getVoyage()))
+                    criteria = Criteria.builder().fieldName("voyage").operator("=").value(consolidationDetails.getCarrierDetails().getVoyage()).build();
+                else
+                    criteria = Criteria.builder().fieldName("voyage").operator("ISNULL").build();
+                filterCriteria = FilterCriteria.builder().criteria(criteria).build();
+                innerFilers1.add(filterCriteria);
+                criteria = Criteria.builder().fieldName("voyage").operator("ISNULL").build();
+                filterCriteria = FilterCriteria.builder().criteria(criteria).logicOperator("or").build();
+                innerFilers1.add(filterCriteria);
+                filterCriteria = FilterCriteria.builder().logicOperator("and").innerFilter(innerFilers1).build();
+                innerFilters.add(filterCriteria);
+            }
+        }
+        return defaultRequest;
     }
 
 }

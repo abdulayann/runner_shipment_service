@@ -53,4 +53,5 @@ public interface IShipmentService extends ICommonService {
     ResponseEntity<?> getConsolFromShipment(Long shipmentId);
 
     ResponseEntity<?> getDefaultShipment();
+    ResponseEntity<?> attachListShipment(CommonRequestModel commonRequestModel);
 }
