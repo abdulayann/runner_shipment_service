@@ -53,26 +53,31 @@ public class CustomsInstructionsReport extends IReport{
         JsonDateFormat(dictionary);
         List<String> consigner = getOrgAddress(customsInstructionsModel.shipmentDetails.getConsigner());
         List<String> consignee = getOrgAddress(customsInstructionsModel.shipmentDetails.getConsignee());
-        List<String> exportBroker = getOrgAddress(customsInstructionsModel.shipmentDetails.getAdditionalDetails().getExportBroker());
-        List<String> importBroker = getOrgAddress(customsInstructionsModel.shipmentDetails.getAdditionalDetails().getImportBroker());
+        List<String> exportBroker = getOrgAddress(customsInstructionsModel.shipmentDetails.getAdditionalDetails() != null ?
+                customsInstructionsModel.shipmentDetails.getAdditionalDetails().getExportBroker() : null);
+        List<String> importBroker = getOrgAddress(customsInstructionsModel.shipmentDetails.getAdditionalDetails() != null ?
+                customsInstructionsModel.shipmentDetails.getAdditionalDetails().getImportBroker() : null);
         dictionary.put(ReportConstants.CONSIGNER, consigner);
         dictionary.put(ReportConstants.CONSIGNEE, consignee);
         dictionary.put(ReportConstants.CONSIGNEE_FREETEXT, consignee);
         dictionary.put(ReportConstants.CONSIGNER_FREETEXT, consigner);
-        dictionary.put(ReportConstants.CONSIGNER_ADDRESS, getAddressList(ReportHelper.getValueFromMap(customsInstructionsModel.shipmentDetails.getConsigner().getAddressData(), ReportConstants.ADDRESS1)));
-        dictionary.put(ReportConstants.CONSIGNEE_ADDRESS, getAddressList(ReportHelper.getValueFromMap(customsInstructionsModel.shipmentDetails.getConsignee().getAddressData(), ReportConstants.ADDRESS1)));
+        dictionary.put(ReportConstants.CONSIGNER_ADDRESS, getAddressList(ReportHelper.getValueFromMap(customsInstructionsModel.shipmentDetails.getConsigner() != null ?
+                customsInstructionsModel.shipmentDetails.getConsigner().getAddressData() : null, ReportConstants.ADDRESS1)));
+        dictionary.put(ReportConstants.CONSIGNEE_ADDRESS, getAddressList(ReportHelper.getValueFromMap(customsInstructionsModel.shipmentDetails.getConsignee() != null ?
+                customsInstructionsModel.shipmentDetails.getConsignee().getAddressData() : null, ReportConstants.ADDRESS1)));
         dictionary.put(ReportConstants.EXPORT_BROKER, exportBroker);
         dictionary.put(ReportConstants.IMPORT_BROKER, importBroker);
-        dictionary.put(ReportConstants.VESSEL_NAME, customsInstructionsModel.shipmentDetails.getCarrierDetails().getVessel());
+        dictionary.put(ReportConstants.VESSEL_NAME, customsInstructionsModel.shipmentDetails.getCarrierDetails() != null ?
+                customsInstructionsModel.shipmentDetails.getCarrierDetails().getVessel() : null);
         // TODO- Logo Path
-        if(customsInstructionsModel.shipmentDetails.getPackingList() != null && customsInstructionsModel.shipmentDetails.getPackingList().size() > 0) {
+        if (customsInstructionsModel.shipmentDetails.getPackingList() != null && customsInstructionsModel.shipmentDetails.getPackingList().size() > 0) {
             dictionary.put(ReportConstants.HAS_PACKAGES, true);
         }
-        if(customsInstructionsModel.shipmentDetails.getCarrierDetails().getEtd() != null)
+        if (customsInstructionsModel.shipmentDetails.getCarrierDetails() != null)
             dictionary.put(ReportConstants.ETD, ConvertToDPWDateFormat(customsInstructionsModel.shipmentDetails.getCarrierDetails().getEtd()));
-        if(customsInstructionsModel.shipmentDetails.getCarrierDetails().getEta() != null)
+        if (customsInstructionsModel.shipmentDetails.getCarrierDetails() != null)
             dictionary.put(ReportConstants.ETA, ConvertToDPWDateFormat(customsInstructionsModel.shipmentDetails.getCarrierDetails().getEta()));
-        if(customsInstructionsModel.shipmentDetails.getAdditionalDetails().getDateOfIssue() != null)
+        if (customsInstructionsModel.shipmentDetails.getAdditionalDetails() != null)
             dictionary.put(ReportConstants.DATE_OF_ISSUE, ConvertToDPWDateFormat(customsInstructionsModel.shipmentDetails.getAdditionalDetails().getDateOfIssue()));
         return dictionary;
     }

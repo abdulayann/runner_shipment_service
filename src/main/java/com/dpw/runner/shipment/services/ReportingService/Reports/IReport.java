@@ -1008,7 +1008,8 @@ public abstract class IReport {
                     )).toList();
             shipmentContainer.consigneeAddressFreeText = getPartyAddress(shipment.getConsignee());
             shipmentContainer.consignerAddressFreeText = getPartyAddress(shipment.getConsigner());
-            shipmentContainer.notifyPartyAddressFreeText = getPartyAddress(shipment.getAdditionalDetails().getNotifyParty());
+            if (shipment.getAdditionalDetails() != null)
+                shipmentContainer.notifyPartyAddressFreeText = getPartyAddress(shipment.getAdditionalDetails().getNotifyParty());
 
             shipmentContainers.add(shipmentContainer);
         }

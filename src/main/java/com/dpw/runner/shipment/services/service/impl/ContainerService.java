@@ -115,6 +115,9 @@ public class ContainerService implements IContainerService {
     @Autowired
     private SyncConfig syncConfig;
 
+    @Value("${spring.profiles.active}")
+    private String currentEnvironment;
+
     @Transactional
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
         String responseMsg;
@@ -219,7 +222,7 @@ public class ContainerService implements IContainerService {
         LocalDateTime currentTime = LocalDateTime.now();
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
         String timestamp = currentTime.format(formatter);
-        String filenameWithTimestamp = "Containers_" + timestamp + ".xlsx";
+        String filenameWithTimestamp = "Containers_" + currentEnvironment + "_" + timestamp + ".xlsx";
 
         response.setContentType("text/csv");
         response.setHeader("Content-Disposition", "attachment; filename=" + filenameWithTimestamp);
@@ -249,7 +252,7 @@ public class ContainerService implements IContainerService {
         LocalDateTime currentTime = LocalDateTime.now();
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
         String timestamp = currentTime.format(formatter);
-        String filenameWithTimestamp = "ContainerEvents_" + timestamp + ".xlsx";
+        String filenameWithTimestamp = "ContainerEvents_" + currentEnvironment + "_" + timestamp + ".xlsx";
 
         response.setContentType("text/csv");
         response.setHeader("Content-Disposition", "attachment; filename=" + filenameWithTimestamp);
@@ -905,8 +908,13 @@ public class ContainerService implements IContainerService {
             itemRow.createCell(offset + 7).setCellValue(bookingNum);
         }
 
+        LocalDateTime currentTime = LocalDateTime.now();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
+        String timestamp = currentTime.format(formatter);
+        String filenameWithTimestamp = "ContainerList_" + currentEnvironment + "_" + timestamp + ".xlsx";
+
         response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-        response.setHeader("Content-Disposition", "attachment; filename=containerList.xlsx");
+        response.setHeader("Content-Disposition", "attachment; filename=" + filenameWithTimestamp);
 
         try (OutputStream outputStream = response.getOutputStream()) {
             workbook.write(outputStream);

@@ -46,7 +46,7 @@ public class ShippingInstructionReport extends IReport{
 
         PartiesModel consignerParty = model.getShipment().getConsigner();
         PartiesModel consigneeParty = model.getShipment().getConsignee();
-        PartiesModel notifyParty = model.getShipment().getAdditionalDetails().getNotifyParty();
+        PartiesModel notifyParty = model.getShipment().getAdditionalDetails() != null ? model.getShipment().getAdditionalDetails().getNotifyParty() : null;
 
         List<String> consigner = getOrgAddressWithPhoneEmail(consignerParty);
         if(consignerParty.getOrgData().get(FULL_NAME) != null) {
