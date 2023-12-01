@@ -38,4 +38,7 @@ public interface IContainerService extends ICommonService {
 
     ResponseEntity<?> V1BulkContainerCreateAndUpdate(CommonRequestModel commonRequestModel);
     ResponseEntity<?> validateContainerNumber(String containerNumber);
+
+    ResponseEntity<?> getContainers(CommonRequestModel commonRequestModel);
+
 }
