@@ -8,6 +8,7 @@ import com.dpw.runner.shipment.services.dto.ContainerAPIsRequest.ContainerAssign
 import com.dpw.runner.shipment.services.dto.ContainerAPIsRequest.ContainerPackAssignDetachRequest;
 import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
 import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
+import com.dpw.runner.shipment.services.dto.response.EventsResponse;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerService;
@@ -220,5 +221,11 @@ public class ContainerController {
             log.error(responseMsg, e);
         }
         return ResponseHelper.buildFailedResponse(responseMsg);
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = EventConstants.EVENT_LIST_SUCCESS)})
+    @PostMapping(ContainerConstants.GET_CONTAINERS)
+    public ResponseEntity<RunnerListResponse<EventsResponse>> list(@RequestBody @Valid ListCommonRequest listCommonRequest) {
+        return (ResponseEntity<RunnerListResponse<EventsResponse>>) containerService.getContainers(CommonRequestModel.buildRequest(listCommonRequest));
     }
 }

@@ -15,6 +15,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.springframework.data.jpa.domain.Specification.where;
 
@@ -319,6 +320,10 @@ public class DbAccessHelper {
                         "%" + ((String) input.getValue()).toLowerCase() + "%");
 
             case "IN":
+                if (dataType.isAssignableFrom(UUID.class) && input.getValue() != null && input.getValue() instanceof List) {
+                    List<UUID> querySet = ((List<?>) input.getValue()).stream().map(i -> UUID.fromString((String) i)).collect(Collectors.toList());
+                    return criteriaBuilder.in(path.get(fieldName)).value(querySet);
+                }
                 return criteriaBuilder.in(path.get(fieldName))
                         .value(input.getValue());
             case "CONTAINS":

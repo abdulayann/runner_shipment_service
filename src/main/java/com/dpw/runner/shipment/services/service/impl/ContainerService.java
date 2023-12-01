@@ -31,6 +31,7 @@ import com.dpw.runner.shipment.services.syncing.impl.ContainerSync;
 import com.dpw.runner.shipment.services.utils.CSVParsingUtil;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nimbusds.jose.util.Container;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.Cell;
@@ -742,6 +743,31 @@ public class ContainerService implements IContainerService {
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(responseMsg);
         }
+    }
+
+    @Override
+    public ResponseEntity<?> getContainers(CommonRequestModel commonRequestModel) {
+        String responseMsg;
+        try {
+            ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
+            if (request == null) {
+                log.error("Request is empty for container list with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            }
+            // construct specifications for filter request
+            Pair<Specification<Containers>, Pageable> tuple = fetchData(request, Containers.class);
+            Page<Containers> containersPage = containerDao.findAll(tuple.getLeft(), tuple.getRight());
+            log.info("Event list retrieved successfully for Request Id {} ", LoggerHelper.getRequestIdFromMDC());
+            return ResponseHelper.buildListSuccessResponse(
+                    convertEntityListToDtoList(containersPage.getContent()),
+                    containersPage.getTotalPages(),
+                    containersPage.getTotalElements());
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+
     }
 
     private List<Integer> assignEquivalentNumberValue() {
