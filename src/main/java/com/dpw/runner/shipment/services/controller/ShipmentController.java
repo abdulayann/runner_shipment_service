@@ -11,10 +11,7 @@ import com.dpw.runner.shipment.services.dto.ContainerAPIsRequest.ShipmentContain
 import com.dpw.runner.shipment.services.dto.patchRequest.ShipmentPatchRequest;
 import com.dpw.runner.shipment.services.dto.request.AttachListShipmentRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
-import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
-import com.dpw.runner.shipment.services.dto.response.GenerateCustomHblResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentListResponse;
+import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.v1.request.TIListRequest;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -342,6 +339,12 @@ public class ShipmentController {
         } catch (Exception e) {
             return ResponseHelper.buildFailedResponse(e.getMessage());
         }
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.CREATE_SUCCESSFUL)})
+    @GetMapping(ApiConstants.GET_MASTER_DATA_MAPPING)
+    public ResponseEntity<RunnerResponse<List<MasterDataDescriptionResponse>>> getMasterDataDescriptioinMapping() {
+        return (ResponseEntity<RunnerResponse<List<MasterDataDescriptionResponse>>>) shipmentService.getMasterDataMappings();
     }
 
 }
