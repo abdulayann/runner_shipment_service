@@ -321,7 +321,12 @@ public class DbAccessHelper {
 
             case "IN":
                 if (dataType.isAssignableFrom(UUID.class) && input.getValue() != null && input.getValue() instanceof List) {
-                    List<UUID> querySet = ((List<?>) input.getValue()).stream().map(i -> UUID.fromString((String) i)).collect(Collectors.toList());
+                    List<UUID> querySet = ((List<?>) input.getValue()).stream()
+                    .map(i -> {
+                        if(i instanceof String)
+                            return UUID.fromString((String) i);
+                        return (UUID) i;
+                    }).collect(Collectors.toList());
                     return criteriaBuilder.in(path.get(fieldName)).value(querySet);
                 }
                 return criteriaBuilder.in(path.get(fieldName))
