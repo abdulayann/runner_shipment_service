@@ -2428,9 +2428,36 @@ public class ShipmentService implements IShipmentService {
             response.setTransportMode(tenantSettings.getDefaultTransportMode());
             response.setDirection(tenantSettings.getDefaultShipmentType());
             response.setShipmentType(tenantSettings.getDefaultContainerType());
+
+            response.setVolumeUnit(tenantSettings.getVolumeChargeableUnit());
+            response.setWeightUnit(tenantSettings.getWeightChargeableUnit());
+
+            response.setCreatedBy(UserContext.getUser().getUsername());
+
             this.addAllMasterDataInSingleCall(null, response);
 
             return ResponseHelper.buildSuccessResponse(response);
+        } catch(Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
+    @Override
+    public ResponseEntity<?> getMasterDataMappings() {
+        String responseMsg;
+        try {
+            List<MasterDataDescriptionResponse> response = new ArrayList<>();
+
+            //Get current Tenant's setting
+            Optional<ShipmentSettingsDetails> optional = shipmentSettingsDao.findByTenantId(TenantContext.getCurrentTenant());
+            var tenantSetting = optional.get();
+            // get all the master data based on field names of
+            response = masterDataUtils.getMasterDataDescription(tenantSetting);
+
+            return  ResponseHelper.buildSuccessResponse(response);
         } catch(Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;

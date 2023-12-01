@@ -133,4 +133,5 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     private Long orderNumber;
     private String orderManagementId;
     private String orderManagementNumber;
+    private String createdBy;
 }
