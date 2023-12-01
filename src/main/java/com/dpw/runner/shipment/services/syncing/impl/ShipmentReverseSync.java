@@ -5,16 +5,14 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.config.SyncConfig;
 import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
 import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entity.enums.AndesStatus;
 import com.dpw.runner.shipment.services.entity.enums.Ownership;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
-import com.dpw.runner.shipment.services.service.impl.ShipmentService;
 import com.dpw.runner.shipment.services.service.impl.SyncQueueService;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
-import com.dpw.runner.shipment.services.service.interfaces.ISyncQueueService;
 import com.dpw.runner.shipment.services.syncing.Entity.CustomShipmentSyncRequest;
 import com.dpw.runner.shipment.services.syncing.Entity.PackingRequestV2;
 import com.dpw.runner.shipment.services.syncing.Entity.PartyRequestV2;
-import com.dpw.runner.shipment.services.syncing.Entity.ShipmentServiceRequestV2;
 import com.dpw.runner.shipment.services.syncing.constants.SyncingConstants;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentReverseSync;
 import com.dpw.runner.shipment.services.utils.StringUtility;
@@ -25,12 +23,10 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Objects;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
+
+import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
 
 @Service
 @Slf4j
@@ -153,6 +149,19 @@ public class ShipmentReverseSync implements IShipmentReverseSync {
         additionalDetails.setReceivingForwarder(mapPartyObject(cs.getReceivingForwarderParty()));
         additionalDetails.setSendingForwarder(mapPartyObject(cs.getSendingForwarderParty()));
         additionalDetails.setTraderOrSupplier(mapPartyObject(cs.getTraderOrSupplierParty()));
+        if(!IsStringNullOrEmpty(cs.getAndesStatusString()))
+            additionalDetails.setAndesStatus(AndesStatus.valueOf(cs.getAndesStatusString()));
+        if(!IsStringNullOrEmpty(cs.getOwnershipString())) {
+            additionalDetails.setOwnership(Ownership.valueOf(cs.getOwnershipString()));
+            if(additionalDetails.getOwnership().equals(Ownership.SELF))
+                additionalDetails.setOwnershipName(cs.getOwnershipName());
+            else
+                additionalDetails.setOwnershipOrg(mapPartyObject(cs.getOwnershipParty()));
+        }
+        if(!IsStringNullOrEmpty(cs.getPassedByString()))
+            additionalDetails.setPassedBy(Ownership.valueOf(cs.getPassedByString()));
+        additionalDetails.setBOEDate(cs.getBoedate());
+        additionalDetails.setBOENumber(cs.getBoenumber());
         additionalDetails.setGuid(null);
         sd.setAdditionalDetails(additionalDetails);
     }

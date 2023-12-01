@@ -1020,14 +1020,19 @@ public class ShipmentService implements IShipmentService {
         }
 
         List<Long> tempConsolIds = new ArrayList<>();
+        List<Long> removedConsolIds = new ArrayList<>();
 
         List<ConsolidationDetailsRequest> consolidationDetailsRequests = shipmentRequest.getConsolidationList();
         if (consolidationDetailsRequests != null) {
+            Set<Long> oldConsolIds = oldEntity.get().getConsolidationList().stream().map(e -> e.getId()).collect(Collectors.toSet());
             for (ConsolidationDetailsRequest consolidation : consolidationDetailsRequests) {
                 if (consolidation.getId() != null) {
                     tempConsolIds.add(consolidation.getId());
+                    if(oldConsolIds.contains(consolidation.getId()))
+                        oldConsolIds.remove(consolidation.getId());
                 }
             }
+            removedConsolIds = oldConsolIds.stream().toList();
         }
         else
             tempConsolIds = oldEntity.get().getConsolidationList().stream().map(e -> e.getId()).collect(Collectors.toList());
@@ -1040,6 +1045,20 @@ public class ShipmentService implements IShipmentService {
             ShipmentDetails entity = objectMapper.convertValue(shipmentRequest, ShipmentDetails.class);
             entity.setId(oldEntity.get().getId());
             List<Containers> updatedContainers = new ArrayList<>();
+            if(removedConsolIds != null && removedConsolIds.size() > 0) {
+                List<Containers> allConsolConts = new ArrayList<>();
+                for(Long consolidationId: removedConsolIds) {
+                    List<Containers> containersList = containerDao.findByConsolidationId(consolidationId);
+                    if(containersList != null && containersList.size() > 0) {
+                        allConsolConts.addAll(containersList);
+                    }
+                }
+                if(allConsolConts.size() > 0) {
+                    if(containerRequestList == null)
+                        containerRequestList = jsonHelper.convertValueToList(oldEntity.get().getContainersList(), ContainerRequest.class);
+                    containerRequestList.removeIf(obj2 -> allConsolConts.stream().anyMatch(obj1 -> obj1.getId().equals(obj2.getId())));
+                }
+            }
             if (containerRequestList != null) {
                 updatedContainers = containerDao.updateEntityFromShipmentConsole(convertToEntityList(containerRequestList, Containers.class), null);
             } else {

@@ -167,6 +167,20 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
         Set<String> errors = new LinkedHashSet<>();
         ShipmentSettingsDetails shipmentSettingsDetails = shipmentSettingsDao.getSettingsByTenantIds(List.of(TenantContext.getCurrentTenant())).get(0);
 
+        // Container Number can not be repeated
+        if (request.getContainersList() != null && request.getContainersList().size() > 0) {
+            HashSet<String> hashSet = new HashSet<>();
+            for (Containers containers : request.getContainersList()) {
+                if (!IsStringNullOrEmpty(containers.getContainerNumber())) {
+                    if (hashSet.contains(containers.getContainerNumber())) {
+                        errors.add("Container Number cannot be same for two different containers");
+                        break;
+                    } else
+                        hashSet.add(containers.getContainerNumber());
+                }
+            }
+        }
+
         // MBL number must be unique
         if(!IsStringNullOrEmpty(request.getBol())) {
             List<ConsolidationDetails> consolidationDetails = findByBol(request.getBol());

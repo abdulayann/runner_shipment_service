@@ -19,4 +19,5 @@ public interface IContainerRepository extends MultiTenancyRepository<Containers>
         Specification<Containers> spec = (root, criteriaQuery, criteriaBuilder) -> criteriaBuilder.equal(root.get("id"), id);
         return findOne(spec);
     }
+    List<Containers> findByConsolidationId(Long consolidationId);
 }
