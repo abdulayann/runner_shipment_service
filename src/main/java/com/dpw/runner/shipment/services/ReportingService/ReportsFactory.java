@@ -110,6 +110,10 @@ public class ReportsFactory {
                 return containerManifestPrint;
             case ReportConstants.SHIPPING_INSTRUCTION:
                 return shippingInstructionReport;
+            case ReportConstants.SEAWAY_BILL:
+                return hblReport;
+            case ReportConstants.IMPORT_CONSOL_MANIFEST:
+                return manifestConsolReport;
         }
         return null;
     }
