@@ -191,9 +191,6 @@ public class ConsolidationService implements IConsolidationService {
     @Value("${consolidationsKafka.queue}")
     private String senderQueue;
 
-    @Value("${spring.profiles.active}")
-    private String currentEnvironment;
-
     private List<String> TRANSPORT_MODES = Arrays.asList("SEA", "ROAD", "RAIL", "AIR");
     private List<String> SHIPMENT_TYPE = Arrays.asList("FCL", "LCL");
     private List<String> WEIGHT_UNIT = Arrays.asList("KGS", "G", "DT");
@@ -2033,7 +2030,7 @@ public class ConsolidationService implements IConsolidationService {
         LocalDateTime currentTime = LocalDateTime.now();
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
         String timestamp = currentTime.format(formatter);
-        String filenameWithTimestamp = "Consolidations_" + currentEnvironment + "_" + timestamp + ".xlsx";
+        String filenameWithTimestamp = "Consolidations_" + timestamp + ".xlsx";
 
         response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
         response.setHeader("Content-Disposition", "attachment; filename=" + filenameWithTimestamp);

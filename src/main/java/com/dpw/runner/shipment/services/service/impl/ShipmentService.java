@@ -203,9 +203,6 @@ public class ShipmentService implements IShipmentService {
     @Value("${shipmentsKafka.queue}")
     private String senderQueue;
 
-    @Value("${spring.profiles.active}")
-    private String currentEnvironment;
-
     @Autowired
     private KafkaProducer producer;
 
@@ -1285,7 +1282,7 @@ public class ShipmentService implements IShipmentService {
         LocalDateTime currentTime = LocalDateTime.now();
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
         String timestamp = currentTime.format(formatter);
-        String filenameWithTimestamp = "Shipments_" + currentEnvironment + "_" + ".xlsx";
+        String filenameWithTimestamp = "Shipments_" + ".xlsx";
 
         response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
         response.setHeader("Content-Disposition", "attachment; filename=" + filenameWithTimestamp);
