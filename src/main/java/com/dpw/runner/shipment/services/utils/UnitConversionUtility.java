@@ -2,14 +2,11 @@ package com.dpw.runner.shipment.services.utils;
 
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
-import io.micrometer.core.instrument.Metrics;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-import tec.units.ri.quantity.Quantities;
 import tec.units.ri.unit.MetricPrefix;
 import tec.units.ri.unit.Units;
 
-import javax.measure.Quantity;
 import javax.measure.Unit;
 import javax.measure.UnitConverter;
 import java.math.BigDecimal;
@@ -20,6 +17,8 @@ public class UnitConversionUtility {
     public static Number convertUnit(String type, BigDecimal value, String fromUnit, String toUnit) throws Exception {
         String responseMsg;
         try {
+            if(value == null)
+                return 0;
             Unit<?> sourceUnit = getUnitType(type, fromUnit);
             Unit<?> targetUnit = getUnitType(type, toUnit);
             UnitConverter converter = sourceUnit.getConverterToAny(targetUnit);

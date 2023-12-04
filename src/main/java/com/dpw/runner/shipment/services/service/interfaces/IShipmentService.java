@@ -57,4 +57,8 @@ public interface IShipmentService extends ICommonService {
     ResponseEntity<?> attachListShipment(CommonRequestModel commonRequestModel);
 
     ResponseEntity<?> getMasterDataMappings();
+
+    ResponseEntity<?> calculateContainerSummary(CommonRequestModel commonRequestModel) throws Exception;
+    
+    ResponseEntity<?> calculatePackSummary(CommonRequestModel commonRequestModel) throws Exception;
 }

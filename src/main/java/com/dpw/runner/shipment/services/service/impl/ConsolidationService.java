@@ -16,9 +16,7 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
-import com.dpw.runner.shipment.services.dto.ContainerAPIsRequest.ConsoleCalculationsRequest;
-import com.dpw.runner.shipment.services.dto.ContainerAPIsRequest.ConsoleCalculationsResponse;
-import com.dpw.runner.shipment.services.dto.ContainerAPIsRequest.ShipmentGridChangeResponse;
+import com.dpw.runner.shipment.services.dto.ContainerAPIsRequest.*;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
 import com.dpw.runner.shipment.services.dto.TrackingService.UniversalTrackingPayload;
 import com.dpw.runner.shipment.services.dto.patchRequest.ConsolidationPatchRequest;
@@ -40,6 +38,7 @@ import com.dpw.runner.shipment.services.mapper.ConsolidationDetailsMapper;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationService;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerService;
+import com.dpw.runner.shipment.services.service.interfaces.IPackingService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service_bus.AzureServiceBusTopic;
 import com.dpw.runner.shipment.services.service_bus.ISBProperties;
@@ -136,6 +135,9 @@ public class ConsolidationService implements IConsolidationService {
 
     @Autowired
     private IContainerService containerService;
+
+    @Autowired
+    private IPackingService packingService;
 
     @Autowired
     private UserContext userContext;
@@ -1220,6 +1222,38 @@ public class ConsolidationService implements IConsolidationService {
         }
     }
 
+    public ResponseEntity<?> calculateContainerSummary(CommonRequestModel commonRequestModel) throws Exception {
+        String responseMsg;
+        ContainerSummaryRequest request = (ContainerSummaryRequest) commonRequestModel.getData();
+        try {
+            List<Containers> containers = jsonHelper.convertValueToList(request.getContainerRequestList(), Containers.class);
+            ContainerSummary response = containerService.calculateContainerSummary(containers, request.getTransportMode(), request.getContainerCategory());
+            return ResponseHelper.buildSuccessResponse(response);
+        }
+        catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_CALCULATION_ERROR;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
+    public ResponseEntity<?> calculatePackSummary(CommonRequestModel commonRequestModel) throws Exception {
+        String responseMsg;
+        PackSummaryRequest request = (PackSummaryRequest) commonRequestModel.getData();
+        try {
+            List<Packing> packingList = jsonHelper.convertValueToList(request.getPackingRequestList(), Packing.class);
+            PackSummary response = packingService.calculatePackSummary(packingList, request.getTransportMode(), request.getContainerCategory());
+            return ResponseHelper.buildSuccessResponse(response);
+        }
+        catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_CALCULATION_ERROR;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
     public ResponseEntity<?> completeRetrieveById(CommonRequestModel commonRequestModel) throws ExecutionException, InterruptedException {
         try {
             // create common list request for consolidation id
@@ -1439,6 +1473,8 @@ public class ConsolidationService implements IConsolidationService {
 
     private void createConsolidationPayload (ConsolidationDetails consolidationDetails, ConsolidationDetailsResponse consolidationDetailsResponse) {
         try {
+            consolidationDetailsResponse.setContainerSummary(containerService.calculateContainerSummary(consolidationDetails.getContainersList(), consolidationDetails.getTransportMode(), consolidationDetails.getContainerCategory()));
+            consolidationDetailsResponse.setPackSummary(packingService.calculatePackSummary(consolidationDetails.getPackingList(), consolidationDetails.getTransportMode(), consolidationDetails.getContainerCategory()));
             this.addAllMasterDataInSingleCall(consolidationDetails, consolidationDetailsResponse);
             this.addAllUnlocationDataInSingleCall(consolidationDetails, consolidationDetailsResponse);
             this.addAllCarrierDataInSingleCall(consolidationDetails, consolidationDetailsResponse);
