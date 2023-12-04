@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.service.interfaces;
 import com.dpw.runner.shipment.services.commons.requests.BulkDownloadRequest;
 import com.dpw.runner.shipment.services.commons.requests.BulkUploadRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
+import com.dpw.runner.shipment.services.dto.ContainerAPIsRequest.ContainerSummary;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.commons.requests.ExportContainerListRequest;
 import org.springframework.http.ResponseEntity;
@@ -41,4 +42,5 @@ public interface IContainerService extends ICommonService {
 
     ResponseEntity<?> getContainers(CommonRequestModel commonRequestModel);
 
+    ContainerSummary calculateContainerSummary(List<Containers> containersList, String transportMode, String containerCategory) throws Exception;
 }

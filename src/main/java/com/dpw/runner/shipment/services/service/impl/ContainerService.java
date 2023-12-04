@@ -13,6 +13,7 @@ import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.ContainerAPIsRequest.ContainerAssignRequest;
 import com.dpw.runner.shipment.services.dto.ContainerAPIsRequest.ContainerNumberCheckResponse;
 import com.dpw.runner.shipment.services.dto.ContainerAPIsRequest.ContainerPackAssignDetachRequest;
+import com.dpw.runner.shipment.services.dto.ContainerAPIsRequest.ContainerSummary;
 import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
 import com.dpw.runner.shipment.services.dto.request.EventsRequest;
 import com.dpw.runner.shipment.services.dto.request.PackingRequest;
@@ -31,7 +32,6 @@ import com.dpw.runner.shipment.services.syncing.impl.ContainerSync;
 import com.dpw.runner.shipment.services.utils.CSVParsingUtil;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.nimbusds.jose.util.Container;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.Cell;
@@ -115,6 +115,9 @@ public class ContainerService implements IContainerService {
     private SyncQueueService syncQueueService;
     @Autowired
     private SyncConfig syncConfig;
+
+    @Autowired
+    private IShipmentSettingsDao shipmentSettingsDao;
 
     @Transactional
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
@@ -780,6 +783,59 @@ public class ContainerService implements IContainerService {
         }
 
         return eqvNumValue;
+    }
+
+    public ContainerSummary calculateContainerSummary(List<Containers> containersList, String transportMode, String containerCategory) throws Exception {
+        try {
+            double totalWeight = 0;
+            double packageCount = 0;
+            double tareWeight = 0;
+            double totalVolume = 0;
+            double totalContainerCount = 0;
+            double totalPacks = 0;
+            String toWeightUnit = Constants.WEIGHT_UNIT_KG;
+            String toVolumeUnit = Constants.VOLUME_UNIT_M3;
+            ShipmentSettingsDetails shipmentSettingsDetails = shipmentSettingsDao.getSettingsByTenantIds(List.of(TenantContext.getCurrentTenant())).get(0);
+            if(!IsStringNullOrEmpty(shipmentSettingsDetails.getWeightChargeableUnit()))
+                toWeightUnit = shipmentSettingsDetails.getWeightChargeableUnit();
+            if(!IsStringNullOrEmpty(shipmentSettingsDetails.getVolumeChargeableUnit()))
+                toVolumeUnit = shipmentSettingsDetails.getVolumeChargeableUnit();
+            if(containersList != null) {
+                for (Containers containers : containersList) {
+                    double wInDef = convertUnit(Constants.MASS, containers.getGrossWeight(), containers.getGrossWeightUnit(), toWeightUnit).doubleValue();
+                    double tarDef = convertUnit(Constants.MASS, containers.getTareWeight(), containers.getTareWeightUnit(), toWeightUnit).doubleValue();
+                    double volume = convertUnit(Constants.VOLUME, containers.getGrossVolume(), containers.getGrossVolumeUnit(), toVolumeUnit).doubleValue();
+                    totalWeight = totalWeight + wInDef;
+                    tareWeight = tareWeight + tarDef;
+                    if(!IsStringNullOrEmpty(containers.getPacks()))
+                        packageCount = packageCount + Long.parseLong(containers.getPacks());
+                    else
+                        packageCount = packageCount + containers.getNoOfPackages();
+                    totalVolume = totalVolume + volume;
+                    if(containers.getContainerCount() != null)
+                        totalContainerCount = totalContainerCount + containers.getContainerCount();
+                    if(!IsStringNullOrEmpty(containers.getPacks()))
+                        totalPacks = totalPacks + Long.parseLong(containers.getPacks());
+                }
+            }
+            ContainerSummary response = new ContainerSummary();
+            response.setTotalPackages(String.valueOf(packageCount));
+            response.setTotalContainers(String.valueOf(totalContainerCount));
+            response.setTotalWeight(totalWeight + " " + toWeightUnit);
+            response.setTotalTareWeight(tareWeight + " " + toWeightUnit);
+            if(!IsStringNullOrEmpty(transportMode) && transportMode.equals(Constants.TRANSPORT_MODE_SEA) &&
+                    !IsStringNullOrEmpty(containerCategory) && containerCategory.equals(Constants.SHIPMENT_TYPE_LCL)) {
+                double volInM3 = convertUnit(Constants.VOLUME, new BigDecimal(totalVolume), toVolumeUnit, Constants.VOLUME_UNIT_M3).doubleValue();
+                double wtInKg = convertUnit(Constants.MASS, new BigDecimal(totalWeight), toWeightUnit, Constants.WEIGHT_UNIT_KG).doubleValue();
+                double chargeableWeight = Math.max(wtInKg/1000, volInM3);
+                response.setChargeableWeight(chargeableWeight + " " + Constants.VOLUME_UNIT_M3);
+            }
+            response.setTotalContainerVolume(totalVolume + " " + toVolumeUnit);
+            return response;
+        }
+        catch (Exception e) {
+            throw new Exception(e);
+        }
     }
 
     public void afterSave(Containers containers, boolean isCreate) {

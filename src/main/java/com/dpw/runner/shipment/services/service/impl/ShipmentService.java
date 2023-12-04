@@ -18,7 +18,7 @@ import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerPartialListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
-import com.dpw.runner.shipment.services.dto.ContainerAPIsRequest.ShipmentContainerAssignRequest;
+import com.dpw.runner.shipment.services.dto.ContainerAPIsRequest.*;
 import com.dpw.runner.shipment.services.dto.TrackingService.UniversalTrackingPayload;
 import com.dpw.runner.shipment.services.dto.patchRequest.ShipmentPatchRequest;
 import com.dpw.runner.shipment.services.dto.request.*;
@@ -42,9 +42,7 @@ import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.mapper.ShipmentDetailsMapper;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest;
-import com.dpw.runner.shipment.services.service.interfaces.IConsolidationService;
-import com.dpw.runner.shipment.services.service.interfaces.IHblService;
-import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
+import com.dpw.runner.shipment.services.service.interfaces.*;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service_bus.AzureServiceBusTopic;
 import com.dpw.runner.shipment.services.service_bus.ISBProperties;
@@ -118,6 +116,12 @@ public class ShipmentService implements IShipmentService {
 
     @Autowired
     private IPackingDao packingDao;
+
+    @Autowired
+    private IPackingService packingService;
+
+    @Autowired
+    private IContainerService containerService;
 
     @Autowired
     private IBookingCarriageDao bookingCarriageDao;
@@ -2077,10 +2081,44 @@ public class ShipmentService implements IShipmentService {
             return ResponseHelper.buildFailedResponse(responseMsg);
         }
     }
+    
+    public ResponseEntity<?> calculateContainerSummary(CommonRequestModel commonRequestModel) throws Exception {
+        String responseMsg;
+        ContainerSummaryRequest request = (ContainerSummaryRequest) commonRequestModel.getData();
+        try {
+            List<Containers> containers = jsonHelper.convertValueToList(request.getContainerRequestList(), Containers.class);
+            ContainerSummary response = containerService.calculateContainerSummary(containers, request.getTransportMode(), request.getShipmentType());
+            return ResponseHelper.buildSuccessResponse(response);
+        }
+        catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_CALCULATION_ERROR;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
+    public ResponseEntity<?> calculatePackSummary(CommonRequestModel commonRequestModel) throws Exception {
+        String responseMsg;
+        PackSummaryRequest request = (PackSummaryRequest) commonRequestModel.getData();
+        try {
+            List<Packing> packingList = jsonHelper.convertValueToList(request.getPackingRequestList(), Packing.class);
+            PackSummary response = packingService.calculatePackSummary(packingList, request.getTransportMode(), request.getShipmentType());
+            return ResponseHelper.buildSuccessResponse(response);
+        }
+        catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_CALCULATION_ERROR;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
 
 
     private void createShipmentPayload (ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse) {
         try {
+            shipmentDetailsResponse.setPackSummary(packingService.calculatePackSummary(shipmentDetails.getPackingList(), shipmentDetails.getTransportMode(), shipmentDetails.getShipmentType()));
+            shipmentDetailsResponse.setContainerSummary(containerService.calculateContainerSummary(shipmentDetails.getContainersList(), shipmentDetails.getTransportMode(), shipmentDetails.getShipmentType()));
             this.addAllMasterDataInSingleCall(shipmentDetails, shipmentDetailsResponse);
             this.addAllUnlocationDataInSingleCall(shipmentDetails, shipmentDetailsResponse);
             this.addAllCarrierDataInSingleCall(shipmentDetails, shipmentDetailsResponse);
