@@ -2117,8 +2117,6 @@ public class ShipmentService implements IShipmentService {
 
     private void createShipmentPayload (ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse) {
         try {
-            shipmentDetailsResponse.setPackSummary(packingService.calculatePackSummary(shipmentDetails.getPackingList(), shipmentDetails.getTransportMode(), shipmentDetails.getShipmentType()));
-            shipmentDetailsResponse.setContainerSummary(containerService.calculateContainerSummary(shipmentDetails.getContainersList(), shipmentDetails.getTransportMode(), shipmentDetails.getShipmentType()));
             this.addAllMasterDataInSingleCall(shipmentDetails, shipmentDetailsResponse);
             this.addAllUnlocationDataInSingleCall(shipmentDetails, shipmentDetailsResponse);
             this.addAllCarrierDataInSingleCall(shipmentDetails, shipmentDetailsResponse);
@@ -2126,6 +2124,8 @@ public class ShipmentService implements IShipmentService {
             this.addAllCommodityTypesInSingleCall(shipmentDetails, shipmentDetailsResponse);
             this.addAllTenantDataInSingleCall(shipmentDetails, shipmentDetailsResponse);
             this.addAllWarehouseDataInSingleCall(shipmentDetails, shipmentDetailsResponse);
+            shipmentDetailsResponse.setPackSummary(packingService.calculatePackSummary(shipmentDetails.getPackingList(), shipmentDetails.getTransportMode(), shipmentDetails.getShipmentType()));
+            shipmentDetailsResponse.setContainerSummary(containerService.calculateContainerSummary(shipmentDetails.getContainersList(), shipmentDetails.getTransportMode(), shipmentDetails.getShipmentType()));
         }
         catch (Exception ex) {
             log.error("Request: {} || Error occured for event: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), IntegrationType.MASTER_DATA_FETCH_FOR_SHIPMENT_RETRIEVE, ex.getLocalizedMessage());
