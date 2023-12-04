@@ -1,15 +1,15 @@
 trigger: none
 pool:
-  name: Cargoes Logistics Prod
-
+  name: Cargoes Runner
 name: $(Build.SourceBranchName)_$(Rev:r)
 
 variables:
+  - group: cargoesrunner-prod-secrets
   - name: ServerName
     value: 'db-postgres-cargoes-runner-prod.postgres.database.azure.com'
   - name: DatabaseName
     value: 'shipment_service_prod'
-  - group: cargoesrunner-prod-secrets
+
 
 
 steps:
