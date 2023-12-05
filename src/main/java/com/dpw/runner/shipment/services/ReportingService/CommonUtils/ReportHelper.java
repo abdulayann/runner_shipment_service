@@ -13,6 +13,7 @@ import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.math.BigDecimal;
 import java.text.DecimalFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -353,6 +354,13 @@ public class ReportHelper {
             }
         }
         return locationMap;
+    }
+
+    public static String addCommaWithoutDecimal(BigDecimal amount)
+    {
+        if (amount == null) return null;
+        DecimalFormat decimalFormat = new DecimalFormat("#,###");
+        return decimalFormat.format(amount);
     }
 
 }

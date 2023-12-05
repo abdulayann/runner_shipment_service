@@ -61,8 +61,10 @@ public class ReportConstants {
     public static final String ORIGIN_NAME = "OriginName";
     public static final String ORIGIN_COUNTRY = "OriginCountry";
     public static final String ETA = "Eta";
+    public static final String ETA_MDY = "EtaMDY";
     public static final String ETA_CAPS = "ETA";
     public static final String ETD = "Etd";
+    public static final String ETD_MDY = "EtdMDY";
     public static final String ETD_CAPS = "ETD";
     public static final String ATA = "Ata";
     public static final String ATD = "Atd";
@@ -134,6 +136,7 @@ public class ReportConstants {
     public static final String HSN_NUMBER = "HsnNumber";
     public static final String ESTIMATED_READY_FOR_PICKUP = "EstimatedReadyForPickup";
     public static final String DATE_OF_RECEIPT = "DateofReceipt";
+    public static final String DATE_OF_RECEIPT_MDY = "DateofReceiptMDY";
     public static final String DESTINATION_NAME_ = "DestinationName";
     public static final String DESTINATION_COUNTRY = "DestinationCountry";
     public static final String SHIPMENT_CONTAINERS = "ShipmentContainers";
@@ -689,4 +692,7 @@ public class ReportConstants {
     public static final String CONTAINER_MANIFEST_PRINT = "ContainerManifestPrint";
 //    public static final String SERVICE_MODE = "ServiceMode";
 //    public static final String SHIPMENT_PACKS_UNIT_DESC = "ShipmentPacksUnitDescription";
+
+    public static final String SHIPPER = "Shipper";
+    public static final String SHIPPER_WC = "ShipperWC";
 }
