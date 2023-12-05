@@ -125,7 +125,8 @@ public class CustomerBookingService implements ICustomerBookingService {
             Map.entry("bookingDate", RunnerEntityMapping.builder().tableName("CustomerBooking").dataType(LocalDateTime.class).fieldName("bookingDate").build()),
             Map.entry("bookingStatus", RunnerEntityMapping.builder().tableName("CustomerBooking").dataType(BookingStatus.class).fieldName("bookingStatus").build()),
             Map.entry("createdBy", RunnerEntityMapping.builder().tableName("CustomerBooking").dataType(String.class).fieldName("createdBy").build()),
-            Map.entry("contractId", RunnerEntityMapping.builder().tableName("CustomerBooking").dataType(String.class).fieldName("contractId").build())
+            Map.entry("contractId", RunnerEntityMapping.builder().tableName("CustomerBooking").dataType(String.class).fieldName("contractId").build()),
+            Map.entry("shipmentCreatedDate", RunnerEntityMapping.builder().tableName("CustomerBooking").dataType(LocalDateTime.class).fieldName("shipmentCreatedDate").build())
     );
 
 
