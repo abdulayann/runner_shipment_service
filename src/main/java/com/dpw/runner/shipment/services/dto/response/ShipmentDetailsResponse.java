@@ -2,6 +2,8 @@ package com.dpw.runner.shipment.services.dto.response;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.config.CustomLocalDateTimeSerializer;
+import com.dpw.runner.shipment.services.dto.ContainerAPIsRequest.ContainerSummary;
+import com.dpw.runner.shipment.services.dto.ContainerAPIsRequest.PackSummary;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -133,4 +135,7 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     private Long orderNumber;
     private String orderManagementId;
     private String orderManagementNumber;
+    private String createdBy;
+    private ContainerSummary containerSummary;
+    private PackSummary packSummary;
 }

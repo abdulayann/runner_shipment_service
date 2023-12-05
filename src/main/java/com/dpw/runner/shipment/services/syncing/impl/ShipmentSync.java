@@ -8,6 +8,7 @@ import com.dpw.runner.shipment.services.entity.CarrierDetails;
 import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
 import com.dpw.runner.shipment.services.entity.Parties;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.enums.Ownership;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
@@ -68,7 +69,6 @@ public class ShipmentSync implements IShipmentSync {
     private String SHIPMENT_V1_SYNC_URL;
 
     @Override
-    @Async
     public ResponseEntity<?> sync(ShipmentDetails sd) {
         CustomShipmentSyncRequest temp = new CustomShipmentSyncRequest();
 
@@ -123,8 +123,13 @@ public class ShipmentSync implements IShipmentSync {
         cs.setBookingCarriages(convertToList(sd.getBookingCarriagesList(), BookingCarriageRequestV2.class));
         cs.setShipmentId(sd.getShipmentId());
         cs.setGuid(sd.getGuid());
-
         String finalCs = jsonHelper.convertToJson(V1DataSyncRequest.builder().entity(cs).module(SyncingConstants.SHIPMENT).build());
+        return callSync(finalCs, cs, sd.getId(), sd.getGuid());
+    }
+
+    @Async
+    public ResponseEntity<?> callSync(String finalCs, CustomShipmentSyncRequest cs, Long id, UUID guid) {
+
         retryTemplate.execute(ctx -> {
             log.info("Current retry : {}", ctx.getRetryCount());
             if (ctx.getLastThrowable() != null) {
@@ -133,7 +138,7 @@ public class ShipmentSync implements IShipmentSync {
             V1DataSyncResponse response_ = v1Service.v1DataSync(finalCs);
             if (!response_.getIsSuccess()) {
                 try {
-                    emailServiceUtility.sendEmailForSyncEntity(String.valueOf(sd.getId()), String.valueOf(sd.getGuid()),
+                    emailServiceUtility.sendEmailForSyncEntity(String.valueOf(id), String.valueOf(guid),
                             "Shipment Sync", response_.getError().toString());
                 } catch (Exception ex) {
                     log.error("Not able to send email for sync failure for Shipment Sync " + ex.getMessage());
@@ -212,6 +217,19 @@ public class ShipmentSync implements IShipmentSync {
         cs.setReceivingForwarderParty(mapPartyObject(sd.getAdditionalDetails().getReceivingForwarder()));
         cs.setSendingForwarderParty(mapPartyObject(sd.getAdditionalDetails().getSendingForwarder()));
         cs.setTraderOrSupplierParty(mapPartyObject(sd.getAdditionalDetails().getTraderOrSupplier()));
+        if(sd.getAdditionalDetails().getAndesStatus() != null)
+            cs.setAndesStatusString(String.valueOf(sd.getAdditionalDetails().getAndesStatus().getValue()));
+        if(sd.getAdditionalDetails().getOwnership() != null) {
+            cs.setOwnershipString(String.valueOf(sd.getAdditionalDetails().getOwnership().getValue()));
+            if(sd.getAdditionalDetails().getOwnership().equals(Ownership.SELF))
+                cs.setOwnershipName(sd.getAdditionalDetails().getOwnershipName());
+            else
+                cs.setOwnershipParty(mapPartyObject(sd.getAdditionalDetails().getOwnershipOrg()));
+        }
+        if(sd.getAdditionalDetails().getPassedBy() != null)
+            cs.setPassedByString(String.valueOf(sd.getAdditionalDetails().getPassedBy().getValue()));
+        cs.setBoedate(sd.getAdditionalDetails().getBOEDate());
+        cs.setBoenumber(sd.getAdditionalDetails().getBOENumber());
     }
 
     private void mapShipmentServices(CustomShipmentSyncRequest cs, ShipmentDetails sd) {

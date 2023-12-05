@@ -65,7 +65,6 @@ public class ConsolidationSync implements IConsolidationSync {
     private String CONSOLIDATION_V1_SYNC_URL;
 
     @Override
-    @Async
     public ResponseEntity<?> sync(ConsolidationDetails request) {
         CustomConsolidationRequest response = new CustomConsolidationRequest();
 
@@ -98,6 +97,11 @@ public class ConsolidationSync implements IConsolidationSync {
 
         response.setGuid(request.getGuid());
         String consolidationRequest = jsonHelper.convertToJson(V1DataSyncRequest.builder().entity(response).module(SyncingConstants.CONSOLIDATION).build());
+        return callSync(consolidationRequest, response, request.getId(), request.getGuid());
+    }
+
+    @Async
+    private ResponseEntity<?> callSync(String consolidationRequest, CustomConsolidationRequest response, Long id, UUID guid) {
         retryTemplate.execute(ctx -> {
             log.info("Current retry : {}", ctx.getRetryCount());
             if (ctx.getLastThrowable() != null) {
@@ -107,7 +111,7 @@ public class ConsolidationSync implements IConsolidationSync {
             V1DataSyncResponse response_ = v1Service.v1DataSync(consolidationRequest);
             if (!response_.getIsSuccess()) {
                 try {
-                    emailServiceUtility.sendEmailForSyncEntity(String.valueOf(request.getId()), String.valueOf(request.getGuid()),
+                    emailServiceUtility.sendEmailForSyncEntity(String.valueOf(id), String.valueOf(guid),
                             "Consolidation", response_.getError().toString());
                 } catch (Exception ex) {
                     log.error("Not able to send email for sync failure for Consolidation: " + ex.getMessage());
@@ -175,6 +179,7 @@ public class ConsolidationSync implements IConsolidationSync {
         response.setDestinationPortName(request.getCarrierDetails().getDestinationPort());
         response.setFirstLoadString(request.getCarrierDetails().getOrigin());
         response.setOriginPortName(request.getCarrierDetails().getOriginPort());
+        response.setCarrier(request.getCarrierDetails().getShippingLine());
     }
 
     private void mapAchievedQuantities(CustomConsolidationRequest response, ConsolidationDetails request) {

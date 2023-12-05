@@ -8,14 +8,13 @@ import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstant
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
-import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
-import com.dpw.runner.shipment.services.dto.response.CustomerBookingResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentListResponse;
+import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.CarrierDetails;
 import com.dpw.runner.shipment.services.dto.v1.response.WareHouseResponse;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.entitytransfer.dto.*;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -1168,5 +1167,35 @@ public class MasterDataUtils{
             });
         }
         return keyMasterDataMap;
+    }
+
+    public List<MasterDataDescriptionResponse> getMasterDataDescription(ShipmentSettingsDetails tenantSetting) throws Exception {
+        ShipmentSettingsDetailsResponse shipmentSettingsDetailsResponse = jsonHelper.convertValue(tenantSetting, ShipmentSettingsDetailsResponse.class);
+        List<MasterDataDescriptionResponse> res = new ArrayList<>();
+        Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
+
+        List<MasterListRequest> listRequests = new ArrayList<>(createInBulkMasterListRequest(shipmentSettingsDetailsResponse, ShipmentSettingsDetails.class, fieldNameKeyMap, ShipmentSettingsDetails.class.getSimpleName()));
+        Map<String, EntityTransferMasterLists> masterListsMap = fetchInBulkMasterList(listRequests);
+
+        for(Field field : ShipmentSettingsDetails.class.getDeclaredFields()) {
+            if(field.isAnnotationPresent(MasterData.class)) {
+                Field field1 = Class.forName(shipmentSettingsDetailsResponse.getClass().getName()).getDeclaredField(field.getName());
+                field1.setAccessible(true);
+                Object fieldValue = field1.get(shipmentSettingsDetailsResponse);
+                String itemTypeName = field.getDeclaredAnnotation(MasterData.class).type().name();
+                String itemDescription = null;
+                if(fieldValue != null && masterListsMap.get((String) fieldValue + '#' + itemTypeName) != null){
+                    itemDescription = masterListsMap.get((String) fieldValue + '#' + itemTypeName).getItemDescription();
+                }
+                res.add(MasterDataDescriptionResponse.builder()
+                        .fieldName(field.getName())
+                        .fieldValue(fieldValue)
+                        .itemDescription(itemDescription)
+                        .build()
+                );
+            }
+        }
+
+        return res;
     }
 }

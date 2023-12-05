@@ -12,6 +12,7 @@ import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dto.request.HblPartyDto;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.request.hbl.HblContainerDto;
+import com.dpw.runner.shipment.services.dto.request.hbl.HblDataDto;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.Hbl;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -22,7 +23,6 @@ import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.masterdata.response.VesselsResponse;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.StringUtility;
-import com.fasterxml.jackson.core.type.TypeReference;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -217,6 +217,10 @@ public class HblReport extends IReport{
     public Map<String, Object> populateDictionary(IDocumentModel documentModel) {
         HblModel hblModel = (HblModel) documentModel;
         String json = jsonHelper.convertToJson(hblModel.shipment);
+        if(hblModel.blObject == null) {
+            hblModel.blObject = new Hbl();
+            hblModel.blObject.setHblData(new HblDataDto());
+        }
         Map<String, Object> dictionary = jsonHelper.convertJsonToMap(json);
         JsonDateFormat(dictionary);
         if (hblModel.blObject != null) {
@@ -234,7 +238,7 @@ public class HblReport extends IReport{
         dictionary.put(ReportConstants.NoOfPackages, hblModel.noofPackages);
         dictionary.put(ReportConstants.CONTAINER_COUNT_GROUPED, concatGroupedContainerCount(hblModel.containerCountGrouped));
         dictionary.put(ReportConstants.CONTAINER_PACKS_GROUPED, concatGroupedContainerCount(hblModel.containerPacksGrouped));
-        Integer decimalPlaces = hblModel.shipmentSettingsDetails.getDecimalPlaces() == null ? 2 : hblModel.shipmentSettingsDetails.getDecimalPlaces();
+        Integer decimalPlaces = hblModel.shipmentSettingsDetails == null || hblModel.shipmentSettingsDetails.getDecimalPlaces() == null ? 2 : hblModel.shipmentSettingsDetails.getDecimalPlaces();
         dictionary.put(ReportConstants.ContainerWeightWithXSeparated, concatGroupedFieldValues(hblModel.containerWeightGrouped, decimalPlaces));
         dictionary.put(ReportConstants.ContainerVolumeWithXSeparated, concatGroupedFieldValues(hblModel.containerVolumeGrouped, decimalPlaces));
         dictionary.put(ReportConstants.ContainerWeightGrouped, concatGroupedFields(hblModel.containerWeightGrouped, decimalPlaces));
@@ -591,11 +595,12 @@ public class HblReport extends IReport{
             dictionary.put(ATD_DMMY, DateTimeFormatter.ofPattern("dd-MMM-yyyy").format(atd));
         }
 
-        if (hblModel.shipment.getDeliveryDetails().getActualPickupOrDelivery() != null)
+        if (hblModel.shipment.getDeliveryDetails() != null && hblModel.shipment.getDeliveryDetails().getActualPickupOrDelivery() != null)
             dictionary.put(ACTUAL_DELIVERY, DateTimeFormatter.ofPattern(GetDPWDateFormatOrDefault() + " hh:mm tt")
                     .format(hblModel.shipment.getDeliveryDetails().getActualPickupOrDelivery()));
 
-        dictionary.put(SHIPPER_REF_NO, hblModel.shipment.getPickupDetails().getShipperRef());
+        if(hblModel.shipment.getPickupDetails() != null)
+            dictionary.put(SHIPPER_REF_NO, hblModel.shipment.getPickupDetails().getShipperRef());
         MathContext precision = new MathContext(decimalPlaces);
         if (!Objects.isNull(hblModel.shipment.getWeight())) {
             BigDecimal weight = hblModel.shipment.getWeight().round(precision);
@@ -624,7 +629,9 @@ public class HblReport extends IReport{
         dictionary.put(BL_CARGO_TERMS_DESCRIPTION, hblModel.blObject.getHblData().getBlRemarksDescription());
         dictionary.put(BL_REMARKS_DESCRIPTION, hblModel.blObject.getHblData().getBlRemarksDescription());
 
-        PartiesModel deliveryToAddress =  hblModel.shipment.getDeliveryDetails().getDestinationDetail();
+        PartiesModel deliveryToAddress = null;
+        if(hblModel.shipment.getDeliveryDetails() != null)
+            deliveryToAddress = hblModel.shipment.getDeliveryDetails().getDestinationDetail();
         if (deliveryToAddress != null && deliveryToAddress.getAddressData() != null)
         {
             Map<String, Object> addressMap = deliveryToAddress.getAddressData();
@@ -635,7 +642,9 @@ public class HblReport extends IReport{
             dictionary.put("DeliveryTo", deliveryTo);
         }
 
-        PartiesModel deliveryAgentAddress =  hblModel.shipment.getDeliveryDetails().getAgentDetail();
+        PartiesModel deliveryAgentAddress = null;
+        if(hblModel.shipment.getDeliveryDetails() != null)
+            deliveryAgentAddress = hblModel.shipment.getDeliveryDetails().getAgentDetail();
         if (deliveryAgentAddress != null && deliveryAgentAddress.getAddressData() != null)
         {
             Map<String, Object> addressMap = deliveryAgentAddress.getAddressData();
@@ -646,7 +655,9 @@ public class HblReport extends IReport{
             dictionary.put("DeliveryAgent", deliveryAgent);
         }
 
-        PartiesModel deliveryTransportCompany =  hblModel.shipment.getDeliveryDetails().getTransporterDetail();
+        PartiesModel deliveryTransportCompany = null;
+        if(hblModel.shipment.getDeliveryDetails() != null)
+            deliveryTransportCompany = hblModel.shipment.getDeliveryDetails().getTransporterDetail();
         if (deliveryTransportCompany != null && deliveryTransportCompany.getAddressData() != null)
         {
             Map<String, Object> addressMap = deliveryTransportCompany.getAddressData();
@@ -657,7 +668,9 @@ public class HblReport extends IReport{
             dictionary.put("DeliveryTransport", address);
         }
 
-        PartiesModel deliveryCfs =  hblModel.shipment.getDeliveryDetails().getSourceDetail();
+        PartiesModel deliveryCfs = null;
+        if(hblModel.shipment.getDeliveryDetails() != null)
+            deliveryCfs = hblModel.shipment.getDeliveryDetails().getSourceDetail();
         if (deliveryCfs != null && deliveryCfs.getAddressData() != null)
         {
             Map<String, Object> addressMap = deliveryCfs.getAddressData();
@@ -668,7 +681,9 @@ public class HblReport extends IReport{
             dictionary.put("DeliveryCfs", address);
         }
 
-        PartiesModel pickupFrom =  hblModel.shipment.getPickupDetails().getSourceDetail();
+        PartiesModel pickupFrom = null;
+        if(hblModel.shipment.getPickupDetails() != null)
+            pickupFrom = hblModel.shipment.getPickupDetails().getSourceDetail();
         if (pickupFrom != null && pickupFrom.getAddressData() != null)
         {
             Map<String, Object> addressMap = pickupFrom.getAddressData();
@@ -679,7 +694,9 @@ public class HblReport extends IReport{
             dictionary.put("PickupFrom", address);
         }
 
-        PartiesModel pickupTransportCompany = hblModel.shipment.getPickupDetails().getTransporterDetail();
+        PartiesModel pickupTransportCompany = null;
+        if(hblModel.shipment.getPickupDetails() != null)
+            pickupTransportCompany = hblModel.shipment.getPickupDetails().getTransporterDetail();
         if (pickupTransportCompany != null && pickupTransportCompany.getAddressData() != null)
         {
             Map<String, Object> addressMap = pickupTransportCompany.getAddressData();
@@ -690,7 +707,9 @@ public class HblReport extends IReport{
             dictionary.put("PickupTransport", address);
         }
 
-        PartiesModel pickupCfs =  hblModel.shipment.getPickupDetails().getDestinationDetail();
+        PartiesModel pickupCfs = null;
+        if(hblModel.shipment.getPickupDetails() != null)
+            pickupCfs = hblModel.shipment.getPickupDetails().getDestinationDetail();
         if (pickupCfs != null && pickupCfs.getAddressData() != null)
         {
             Map<String, Object> addressMap = pickupCfs.getAddressData();
@@ -781,7 +800,7 @@ public class HblReport extends IReport{
         if(consolidation != null && consolidation.getPayment() != null)
             dictionary.put(PPCC, consolidation.getPayment());
 
-        if(hblModel.shipment.getPickupDetails().getActualPickupOrDelivery() != null)
+        if(hblModel.shipment.getPickupDetails() != null && hblModel.shipment.getPickupDetails().getActualPickupOrDelivery() != null)
             dictionary.put(STATUS, CONFIRMED);
         else
             dictionary.put(STATUS, PLANNED);

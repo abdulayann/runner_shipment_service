@@ -7,6 +7,7 @@ import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.BookingCarriageModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ContainerModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ReferenceNumbersModel;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.ReferenceNumbersConstants;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -45,6 +46,7 @@ public class BookingConfirmationReport extends IReport{
     public IDocumentModel getDocumentModel(Long id) {
         BookingConfirmationModel bookingConfirmationModel = new BookingConfirmationModel();
         bookingConfirmationModel.shipment = getShipment(id);
+        bookingConfirmationModel.user = UserContext.getUser();
         if(bookingConfirmationModel.shipment != null && bookingConfirmationModel.shipment.getConsolidationList() != null && !bookingConfirmationModel.shipment.getConsolidationList().isEmpty())
         {
             bookingConfirmationModel.consolidation = bookingConfirmationModel.shipment.getConsolidationList().get(0);

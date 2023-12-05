@@ -2,6 +2,8 @@ package com.dpw.runner.shipment.services.entity;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.entity.enums.GenerationType;
+import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
+import com.dpw.runner.shipment.services.utils.MasterData;
 import lombok.*;
 import lombok.experimental.Accessors;
 import org.hibernate.annotations.SQLDelete;
@@ -130,23 +132,28 @@ public class ShipmentSettingsDetails extends MultiTenancy {
     private String dpwDateFormat;
 
     @Column(name = "weight_chargeable_unit")
+    @MasterData(type = MasterDataType.WEIGHT_UNIT)
     private String weightChargeableUnit;
 
+    @MasterData(type = MasterDataType.VOLUME_UNIT)
     @Column(name = "volume_chargeable_unit")
     private String volumeChargeableUnit;
 
     @Column(name = "measurement_chargeable_unit")
     private String measurementChargeableUnit;
 
+    @MasterData(type = MasterDataType.TEMPERATURE_UNIT)
     @Column(name = "temperature_unit")
     private String temperatureUnit;
 
+    @MasterData(type = MasterDataType.TRANSPORT_MODE)
     @Column(name = "default_transport_mode")
     private String defaultTransportMode;
 
     @Column(name = "default_container_type")
     private String defaultContainerType;
 
+    @MasterData(type = MasterDataType.SHIPMENT_TYPE)
     @Column(name = "default_shipment_type")
     private String defaultShipmentType;
 

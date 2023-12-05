@@ -261,6 +261,8 @@ public class CustomShipmentSyncRequest implements IRunnerRequest, IRunnerRespons
     private String OwnershipString;
     @JsonProperty("OwnershipName")
     private String OwnershipName;
+    @JsonProperty("OwnershipParty")
+    private PartyRequestV2 OwnershipParty;
     @JsonProperty("PassedByString")
     private String PassedByString;
     @JsonProperty("PassedByPerson")

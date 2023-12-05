@@ -447,8 +447,8 @@ public class ValidatorUtility {
 
                             // Comparison of Date-time fields
                             case STRING:
-                                if (!jsonMap.containsKey(compareWith) && isValidaDateTime(jsonObject.getString(at)) && isValidaDateTime(jsonObject.getString(compareWith))
-                                        && !isValidDateComparison(jsonObject.getString(at), jsonObject.getString(compareWith), Operators.LESSER_THAN_EQUALS)) {
+                                if (jsonMap.containsKey(compareWith) && isValidaDateTime(jsonObject.getString(at)) && isValidaDateTime(String.valueOf(jsonMap.get(compareWith)))
+                                        && !isValidDateComparison(jsonObject.getString(at), String.valueOf(jsonMap.get(compareWith)), Operators.LESSER_THAN_EQUALS)) {
                                     errors.add(String.format(ErrorConstants.INVALID_COMPARISION_VALIDATION, at, compareWith));
                                 }
                                 break;
@@ -483,8 +483,8 @@ public class ValidatorUtility {
 
                             // Comparison of Date-time fields
                             case STRING:
-                                if (!jsonMap.containsKey(compareWith) && isValidaDateTime(jsonObject.getString(at)) && isValidaDateTime(jsonObject.getString(compareWith))
-                                        && !isValidDateComparison(jsonObject.getString(at), jsonObject.getString(compareWith), Operators.GREATER_THAN_EQUALS)) {
+                                if (jsonMap.containsKey(compareWith) && isValidaDateTime(jsonObject.getString(at)) && isValidaDateTime(StringUtility.convertToString(jsonMap.get(compareWith)))
+                                        && !isValidDateComparison(jsonObject.getString(at), String.valueOf(jsonMap.get(compareWith)), Operators.GREATER_THAN_EQUALS)) {
                                     errors.add(String.format(ErrorConstants.INVALID_COMPARISION_VALIDATION, at, compareWith));
                                 }
                                 break;

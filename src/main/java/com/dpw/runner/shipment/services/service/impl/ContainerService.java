@@ -13,6 +13,7 @@ import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.ContainerAPIsRequest.ContainerAssignRequest;
 import com.dpw.runner.shipment.services.dto.ContainerAPIsRequest.ContainerNumberCheckResponse;
 import com.dpw.runner.shipment.services.dto.ContainerAPIsRequest.ContainerPackAssignDetachRequest;
+import com.dpw.runner.shipment.services.dto.ContainerAPIsRequest.ContainerSummary;
 import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
 import com.dpw.runner.shipment.services.dto.request.EventsRequest;
 import com.dpw.runner.shipment.services.dto.request.PackingRequest;
@@ -59,6 +60,8 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
@@ -112,6 +115,9 @@ public class ContainerService implements IContainerService {
     private SyncQueueService syncQueueService;
     @Autowired
     private SyncConfig syncConfig;
+
+    @Autowired
+    private IShipmentSettingsDao shipmentSettingsDao;
 
     @Transactional
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
@@ -204,7 +210,7 @@ public class ContainerService implements IContainerService {
         }
 
         if (request.getConsolidationId() != null) {
-            ListCommonRequest req2 = constructListCommonRequest("consolidation_id", request.getConsolidationId(), "=");
+            ListCommonRequest req2 = constructListCommonRequest("consolidationId", Long.valueOf(request.getConsolidationId()), "=");
             Pair<Specification<Containers>, Pageable> pair = fetchData(req2, Containers.class);
             Page<Containers> containers = containerDao.findAll(pair.getLeft(), pair.getRight());
             List<Containers> containersList = containers.getContent();
@@ -214,9 +220,13 @@ public class ContainerService implements IContainerService {
                 result = result.stream().filter(result::contains).collect(Collectors.toList());
             }
         }
+        LocalDateTime currentTime = LocalDateTime.now();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
+        String timestamp = currentTime.format(formatter);
+        String filenameWithTimestamp = "Containers_" + timestamp + ".xlsx";
 
         response.setContentType("text/csv");
-        response.setHeader("Content-Disposition", "attachment; filename=\"containers.csv\"");
+        response.setHeader("Content-Disposition", "attachment; filename=" + filenameWithTimestamp);
 
         try (PrintWriter writer = response.getWriter()) {
             writer.println(parser.generateCSVHeaderForContainer());
@@ -240,9 +250,13 @@ public class ContainerService implements IContainerService {
                 result = result.stream().filter(result::contains).collect(Collectors.toList());
             }
         }
+        LocalDateTime currentTime = LocalDateTime.now();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
+        String timestamp = currentTime.format(formatter);
+        String filenameWithTimestamp = "ContainerEvents_" + timestamp + ".xlsx";
 
         response.setContentType("text/csv");
-        response.setHeader("Content-Disposition", "attachment; filename=\"consolidation_events.csv\"");
+        response.setHeader("Content-Disposition", "attachment; filename=" + filenameWithTimestamp);
 
         try (PrintWriter writer = response.getWriter()) {
             writer.println(parser.generateCSVHeaderForEvent());
@@ -731,6 +745,31 @@ public class ContainerService implements IContainerService {
         }
     }
 
+    @Override
+    public ResponseEntity<?> getContainers(CommonRequestModel commonRequestModel) {
+        String responseMsg;
+        try {
+            ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
+            if (request == null) {
+                log.error("Request is empty for container list with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            }
+            // construct specifications for filter request
+            Pair<Specification<Containers>, Pageable> tuple = fetchData(request, Containers.class);
+            Page<Containers> containersPage = containerDao.findAll(tuple.getLeft(), tuple.getRight());
+            log.info("Event list retrieved successfully for Request Id {} ", LoggerHelper.getRequestIdFromMDC());
+            return ResponseHelper.buildListSuccessResponse(
+                    convertEntityListToDtoList(containersPage.getContent()),
+                    containersPage.getTotalPages(),
+                    containersPage.getTotalElements());
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+
+    }
+
     private List<Integer> assignEquivalentNumberValue() {
         List<Integer> eqvNumValue = new ArrayList<>();
         int val = 10;
@@ -744,6 +783,62 @@ public class ContainerService implements IContainerService {
         }
 
         return eqvNumValue;
+    }
+
+    public ContainerSummary calculateContainerSummary(List<Containers> containersList, String transportMode, String containerCategory) throws Exception {
+        try {
+            double totalWeight = 0;
+            double packageCount = 0;
+            double tareWeight = 0;
+            double totalVolume = 0;
+            double totalContainerCount = 0;
+            double totalPacks = 0;
+            String toWeightUnit = Constants.WEIGHT_UNIT_KG;
+            String toVolumeUnit = Constants.VOLUME_UNIT_M3;
+            ShipmentSettingsDetails shipmentSettingsDetails = shipmentSettingsDao.getSettingsByTenantIds(List.of(TenantContext.getCurrentTenant())).get(0);
+            if(!IsStringNullOrEmpty(shipmentSettingsDetails.getWeightChargeableUnit()))
+                toWeightUnit = shipmentSettingsDetails.getWeightChargeableUnit();
+            if(!IsStringNullOrEmpty(shipmentSettingsDetails.getVolumeChargeableUnit()))
+                toVolumeUnit = shipmentSettingsDetails.getVolumeChargeableUnit();
+            if(containersList != null) {
+                for (Containers containers : containersList) {
+                    double wInDef = convertUnit(Constants.MASS, containers.getGrossWeight(), containers.getGrossWeightUnit(), toWeightUnit).doubleValue();
+                    double tarDef = convertUnit(Constants.MASS, containers.getTareWeight(), containers.getTareWeightUnit(), toWeightUnit).doubleValue();
+                    double volume = convertUnit(Constants.VOLUME, containers.getGrossVolume(), containers.getGrossVolumeUnit(), toVolumeUnit).doubleValue();
+                    totalWeight = totalWeight + wInDef;
+                    tareWeight = tareWeight + tarDef;
+                    double noOfPackages = 0;
+                    if(containers.getNoOfPackages() != null)
+                        noOfPackages = containers.getNoOfPackages().doubleValue();
+                    if(!IsStringNullOrEmpty(containers.getPacks()))
+                        packageCount = packageCount + Long.parseLong(containers.getPacks());
+                    else
+                        packageCount = packageCount + noOfPackages;
+                    totalVolume = totalVolume + volume;
+                    if(containers.getContainerCount() != null)
+                        totalContainerCount = totalContainerCount + containers.getContainerCount();
+                    if(!IsStringNullOrEmpty(containers.getPacks()))
+                        totalPacks = totalPacks + Long.parseLong(containers.getPacks());
+                }
+            }
+            ContainerSummary response = new ContainerSummary();
+            response.setTotalPackages(String.valueOf(packageCount));
+            response.setTotalContainers(String.valueOf(totalContainerCount));
+            response.setTotalWeight(totalWeight + " " + toWeightUnit);
+            response.setTotalTareWeight(tareWeight + " " + toWeightUnit);
+            if(!IsStringNullOrEmpty(transportMode) && transportMode.equals(Constants.TRANSPORT_MODE_SEA) &&
+                    !IsStringNullOrEmpty(containerCategory) && containerCategory.equals(Constants.SHIPMENT_TYPE_LCL)) {
+                double volInM3 = convertUnit(Constants.VOLUME, new BigDecimal(totalVolume), toVolumeUnit, Constants.VOLUME_UNIT_M3).doubleValue();
+                double wtInKg = convertUnit(Constants.MASS, new BigDecimal(totalWeight), toWeightUnit, Constants.WEIGHT_UNIT_KG).doubleValue();
+                double chargeableWeight = Math.max(wtInKg/1000, volInM3);
+                response.setChargeableWeight(chargeableWeight + " " + Constants.VOLUME_UNIT_M3);
+            }
+            response.setTotalContainerVolume(totalVolume + " " + toVolumeUnit);
+            return response;
+        }
+        catch (Exception e) {
+            throw new Exception(e);
+        }
     }
 
     public void afterSave(Containers containers, boolean isCreate) {
@@ -895,8 +990,13 @@ public class ContainerService implements IContainerService {
             itemRow.createCell(offset + 7).setCellValue(bookingNum);
         }
 
+        LocalDateTime currentTime = LocalDateTime.now();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
+        String timestamp = currentTime.format(formatter);
+        String filenameWithTimestamp = "ContainerList_" + timestamp + ".xlsx";
+
         response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-        response.setHeader("Content-Disposition", "attachment; filename=containerList.xlsx");
+        response.setHeader("Content-Disposition", "attachment; filename=" + filenameWithTimestamp);
 
         try (OutputStream outputStream = response.getOutputStream()) {
             workbook.write(outputStream);

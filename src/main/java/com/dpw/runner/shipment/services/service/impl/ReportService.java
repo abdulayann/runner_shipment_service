@@ -550,8 +550,8 @@ public class ReportService implements IReportService {
             }
             DocPages page = GetTemplateId(tenant, admin, key, hblType, objectType,
                     printType, frontTemplateCode, backTemplateCode, isOriginalPrinted, transportMode, multiTemplateCode);
-            if(Strings.isNullOrEmpty(page.getFirstPageId()) && Strings.isNullOrEmpty(page.getMainPageId()) && Strings.isNullOrEmpty(page.getBackPrintId())){
-                throw new ValidationException("Please upload template in branch settings for: "+ key);
+            if (page != null && Strings.isNullOrEmpty(page.getFirstPageId()) && Strings.isNullOrEmpty(page.getMainPageId()) && Strings.isNullOrEmpty(page.getBackPrintId())) {
+                throw new ValidationException("Please upload template in branch settings for: " + key);
             }
             return page;
 

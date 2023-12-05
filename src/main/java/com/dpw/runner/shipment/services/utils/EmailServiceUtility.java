@@ -9,6 +9,7 @@ import javax.mail.*;
 import javax.mail.internet.*;
 import java.io.File;
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @SuppressWarnings("ALL")
@@ -21,9 +22,11 @@ public class EmailServiceUtility {
     @Value("${aws_from}")
     private String from;
 
+    @Value("${spring.profiles.active}")
+    private String currentEnvironment;
     List<String> emailIds = List.of("chirag.bansal@dpworld.com", "mayank.gupta@dpworld.com",
             "wasim.jafar@dpworld.com", "abhishek.goyal@dpworld.com", "pardeep.malik@dpworld.com",
-            "abhimanyu.chauhan@dpworld.com");
+            "abhimanyu.chauhan@dpworld.com", "tanishq.malhotra@dpworld.com");
 
     public void sendEmail(String body, String subject, List<String> emailIds, File file, String fileName) throws MessagingException, IOException {
 
@@ -70,7 +73,7 @@ public class EmailServiceUtility {
     }
 
     public void sendEmailForSyncEntity(String id, String guid, String entity, String error) throws MessagingException, IOException {
-        String sub = "ERROR in Syncing Entity : " + entity;
+        String sub = "ERROR in Syncing Entity : " + entity + " in ENV : " + currentEnvironment + " DateTime " + LocalDateTime.now();
         this.sendEmailDefault("ERROR in Syncing Entity : " + entity + "\n id : " + id + " guid : " + guid + "\n" + "Error Message: " + error, sub);
     }
 

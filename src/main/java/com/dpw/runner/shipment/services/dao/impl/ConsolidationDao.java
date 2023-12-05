@@ -80,7 +80,7 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
 
     @Override
     public ConsolidationDetails update(ConsolidationDetails consolidationDetails, boolean fromV1Sync) {
-        Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(consolidationDetails) , Constants.CONSOLIDATION, LifecycleHooks.ON_UPDATE, false);
+        Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(consolidationDetails) , Constants.CONSOLIDATION, LifecycleHooks.ON_CREATE, false);
         validateLockStatus(consolidationDetails.getId());
         ConsolidationDetails oldConsole = null;
         if(consolidationDetails.getId() != null) {
@@ -166,6 +166,20 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
     private Set<String> applyConsolidationValidations(ConsolidationDetails request, ConsolidationDetails oldEntity) {
         Set<String> errors = new LinkedHashSet<>();
         ShipmentSettingsDetails shipmentSettingsDetails = shipmentSettingsDao.getSettingsByTenantIds(List.of(TenantContext.getCurrentTenant())).get(0);
+
+        // Container Number can not be repeated
+        if (request.getContainersList() != null && request.getContainersList().size() > 0) {
+            HashSet<String> hashSet = new HashSet<>();
+            for (Containers containers : request.getContainersList()) {
+                if (!IsStringNullOrEmpty(containers.getContainerNumber())) {
+                    if (hashSet.contains(containers.getContainerNumber())) {
+                        errors.add("Container Number cannot be same for two different containers");
+                        break;
+                    } else
+                        hashSet.add(containers.getContainerNumber());
+                }
+            }
+        }
 
         // MBL number must be unique
         if(!IsStringNullOrEmpty(request.getBol())) {

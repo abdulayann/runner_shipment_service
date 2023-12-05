@@ -195,4 +195,7 @@ public class CustomerBooking extends MultiTenancy {
 
     @Column(name = "total_revenue")
     private BigDecimal totalRevenue;
+
+    @Column(name = "shipment_created_date")
+    private LocalDateTime shipmentCreatedDate;
 }

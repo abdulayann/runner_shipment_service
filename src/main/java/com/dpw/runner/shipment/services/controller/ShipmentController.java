@@ -7,12 +7,11 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
-import com.dpw.runner.shipment.services.dto.ContainerAPIsRequest.ShipmentContainerAssignRequest;
+import com.dpw.runner.shipment.services.dto.ContainerAPIsRequest.*;
 import com.dpw.runner.shipment.services.dto.patchRequest.ShipmentPatchRequest;
+import com.dpw.runner.shipment.services.dto.request.AttachListShipmentRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
-import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentListResponse;
+import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.v1.request.TIListRequest;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -212,6 +211,36 @@ public class ShipmentController {
         return (ResponseEntity<RunnerListResponse<ContainerResponse>>) shipmentService.assignShipmentContainers(CommonRequestModel.buildRequest(shipmentContainerAssignRequest));
     }
 
+    @ApiResponses(value = { @ApiResponse(code = 200, message = ContainerConstants.CONTAINER_CALCULATION_SUCCESSFUL) })
+    @PostMapping(ApiConstants.CALCULATE_CONTAINER_SUMMARY)
+    public ResponseEntity<RunnerResponse<ContainerSummary>> calculateContainerSummary(@RequestBody ContainerSummaryRequest containerSummaryRequest) {
+        String responseMsg;
+        try {
+            return (ResponseEntity<RunnerResponse<ContainerSummary>>) shipmentService.calculateContainerSummary(CommonRequestModel.buildRequest(containerSummaryRequest));
+        }
+        catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_CALCULATION_ERROR;
+            log.error(responseMsg, e);
+        }
+        return (ResponseEntity<RunnerResponse<ContainerSummary>>) ResponseHelper.buildFailedResponse(responseMsg);
+    }
+
+    @ApiResponses(value = { @ApiResponse(code = 200, message = ContainerConstants.CONTAINER_CALCULATION_SUCCESSFUL) })
+    @PostMapping(ApiConstants.CALCULATE_PACK_SUMMARY)
+    public ResponseEntity<RunnerResponse<PackSummary>> calculatePackSummary(@RequestBody PackSummaryRequest packSummaryRequest) {
+        String responseMsg;
+        try {
+            return (ResponseEntity<RunnerResponse<PackSummary>>) shipmentService.calculatePackSummary(CommonRequestModel.buildRequest(packSummaryRequest));
+        }
+        catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_CALCULATION_ERROR;
+            log.error(responseMsg, e);
+        }
+        return (ResponseEntity<RunnerResponse<PackSummary>>) ResponseHelper.buildFailedResponse(responseMsg);
+    }
+
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = ShipmentConstants.CREATE_SUCCESSFUL),
             @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
@@ -306,32 +335,46 @@ public class ShipmentController {
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.RETRIEVE_BY_ORDER_ID_SUCCESSFUL)})
     @GetMapping(ApiConstants.API_RETRIEVE_BY_ORDER_ID)
-    public ResponseEntity<?> retrieveByOrderId(@ApiParam(value = ShipmentConstants.ORDER_ID, required = true) @RequestParam String orderId) {
-        try {
+    public ResponseEntity<RunnerResponse<ShipmentDetailsResponse>> retrieveByOrderId(@ApiParam(value = ShipmentConstants.ORDER_ID, required = true) @RequestParam String orderId) {
             return (ResponseEntity<RunnerResponse<ShipmentDetailsResponse>>) shipmentService.retrieveByOrderId(orderId);
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.DEFAULT_SHIPMENT_GENERATED_SUCCESSFULLY)})
+    @GetMapping(ApiConstants.API_DEFAULT_SHIPMENT)
+    public ResponseEntity<RunnerResponse<ShipmentDetailsResponse>> getDefaultShipment() {
+            return (ResponseEntity<RunnerResponse<ShipmentDetailsResponse>>) shipmentService.getDefaultShipment();
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.CREATE_SUCCESSFUL)})
+    @GetMapping(ShipmentConstants.GENERATE_CUSTOM_HOUSE_BL)
+    public ResponseEntity<RunnerResponse<GenerateCustomHblResponse>> generateCustomHouseBLNumber() {
+            return (ResponseEntity<RunnerResponse<GenerateCustomHblResponse>>) shipmentService.generateCustomHouseBLNumber();
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.IMPORT_SUCCESSFUL)})
+    @GetMapping(ShipmentConstants.IMPORT_CONSOLIDATION)
+    public ResponseEntity<?> getConsolFromShipment(@ApiParam(value = ShipmentConstants.CONSOLIDATION_ID, required = true) @RequestParam Long id) {
+        try {
+            return (ResponseEntity<RunnerResponse>) shipmentService.getConsolFromShipment(id);
         } catch (Exception e) {
             return ResponseHelper.buildFailedResponse(e.getMessage());
         }
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.DEFAULT_SHIPMENT_GENERATED_SUCCESSFULLY)})
-    @GetMapping(ApiConstants.API_DEFAULT_SHIPMENT)
-    public ResponseEntity<?> retrieveByOrderId() {
+    @ApiResponses(value = {@ApiResponse(code = 200, message = "Successful Shipment Details Data List Retrieval", responseContainer = "List")})
+    @PostMapping(value = "/attach-list-shipment")
+    public ResponseEntity<?> attachListShipment(@Valid @RequestBody @NonNull AttachListShipmentRequest request) {
         try {
-            return (ResponseEntity<RunnerResponse<ShipmentDetailsResponse>>) shipmentService.getDefaultShipment();
+        return (ResponseEntity<RunnerListResponse<ShipmentListResponse>>) shipmentService.attachListShipment(CommonRequestModel.buildRequest(request));
         } catch (Exception e) {
             return ResponseHelper.buildFailedResponse(e.getMessage());
         }
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.CREATE_SUCCESSFUL)})
-    @GetMapping(ShipmentConstants.GENERATE_CUSTOM_HOUSE_BL)
-    public ResponseEntity<?> generateCustomHouseBLNumber() {
-        try {
-            return (ResponseEntity<RunnerResponse<String>>) shipmentService.generateCustomHouseBLNumber();
-        } catch (Exception e) {
-            return ResponseHelper.buildFailedResponse(e.getMessage());
-        }
+    @GetMapping(ApiConstants.GET_MASTER_DATA_MAPPING)
+    public ResponseEntity<RunnerResponse<List<MasterDataDescriptionResponse>>> getMasterDataDescriptioinMapping() {
+        return (ResponseEntity<RunnerResponse<List<MasterDataDescriptionResponse>>>) shipmentService.getMasterDataMappings();
     }
 
 }

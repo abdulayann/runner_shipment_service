@@ -9,4 +9,6 @@ public class AwbShipConsoleDto {
     private String shipmentId;
     private String consolidationNumber;
     private LocalDateTime createdAt;
+    private Integer tenantId;
+    private String updatedBy;
 }

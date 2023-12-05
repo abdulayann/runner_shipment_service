@@ -59,4 +59,7 @@ public class ApiConstants {
     public static final String API_RETRIEVE_BY_ORDER_ID = "retrieve/orderId";
     public static final String BULK_SYNC = "/bulk-sync";
     public static final String API_DEFAULT_SHIPMENT = "/getDefaultShipment";
+    public static final String GET_MASTER_DATA_MAPPING = "/get/masterDataMapping";
+    public static final String CALCULATE_CONTAINER_SUMMARY = "/container/summary";
+    public static final String CALCULATE_PACK_SUMMARY = "/pack/summary";
 }
