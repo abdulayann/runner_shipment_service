@@ -140,6 +140,7 @@ public class ShipmentSettingsDetails extends MultiTenancy {
     private String volumeChargeableUnit;
 
     @Column(name = "measurement_chargeable_unit")
+    @MasterData(type = MasterDataType.DIMENSION_UNIT)
     private String measurementChargeableUnit;
 
     @MasterData(type = MasterDataType.TEMPERATURE_UNIT)
