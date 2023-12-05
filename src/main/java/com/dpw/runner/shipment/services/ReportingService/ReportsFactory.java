@@ -59,6 +59,9 @@ public class ReportsFactory {
     @Autowired
     private ContainerManifestPrint containerManifestPrint;
 
+    @Autowired
+    private SeawayBillReport seawayBillReport;
+
     public IReport getReport(String key) {
         switch (key) {
             case ReportConstants.ARRIVAL_NOTICE:
@@ -111,7 +114,7 @@ public class ReportsFactory {
             case ReportConstants.SHIPPING_INSTRUCTION:
                 return shippingInstructionReport;
             case ReportConstants.SEAWAY_BILL:
-                return hblReport;
+                return seawayBillReport;
             case ReportConstants.IMPORT_CONSOL_MANIFEST:
                 return manifestConsolReport;
         }

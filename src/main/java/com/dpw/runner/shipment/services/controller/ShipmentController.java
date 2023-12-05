@@ -373,7 +373,7 @@ public class ShipmentController {
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.CREATE_SUCCESSFUL)})
     @GetMapping(ApiConstants.GET_MASTER_DATA_MAPPING)
-    public ResponseEntity<RunnerResponse<List<MasterDataDescriptionResponse>>> getMasterDataDescriptioinMapping() {
+    public ResponseEntity<RunnerResponse<List<MasterDataDescriptionResponse>>> getMasterDataDescriptionMapping() {
         return (ResponseEntity<RunnerResponse<List<MasterDataDescriptionResponse>>>) shipmentService.getMasterDataMappings();
     }
 

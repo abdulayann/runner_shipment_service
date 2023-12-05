@@ -965,6 +965,12 @@ public class ConsolidationService implements IConsolidationService {
                 List<Parties> updatedFileRepos = partiesDao.updateEntityFromOtherEntity(convertToEntityList(consolidationAddressRequest, Parties.class), id, Constants.CONSOLIDATION_ADDRESSES);
                 entity.setConsolidationAddresses(updatedFileRepos);
             }
+            // Propagate master bill from console to all the attached shipments
+            String masterBill = entity.getBol();
+            if(masterBill != null && !masterBill.equals(oldEntity.get().getBol())) {
+                List<ShipmentDetails> shipments = entity.getShipmentsList() != null ? entity.getShipmentsList() : Collections.emptyList();
+                shipments.stream().forEach(i -> i.setMasterBill(masterBill));
+            }
             try {
                 consolidationSync.sync(entity);
             } catch (Exception e){
