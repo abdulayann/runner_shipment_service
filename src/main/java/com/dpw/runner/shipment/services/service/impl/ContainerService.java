@@ -807,10 +807,13 @@ public class ContainerService implements IContainerService {
                     double volume = convertUnit(Constants.VOLUME, containers.getGrossVolume(), containers.getGrossVolumeUnit(), toVolumeUnit).doubleValue();
                     totalWeight = totalWeight + wInDef;
                     tareWeight = tareWeight + tarDef;
+                    double noOfPackages = 0;
+                    if(containers.getNoOfPackages() != null)
+                        noOfPackages = containers.getNoOfPackages().doubleValue();
                     if(!IsStringNullOrEmpty(containers.getPacks()))
                         packageCount = packageCount + Long.parseLong(containers.getPacks());
                     else
-                        packageCount = packageCount + containers.getNoOfPackages();
+                        packageCount = packageCount + noOfPackages;
                     totalVolume = totalVolume + volume;
                     if(containers.getContainerCount() != null)
                         totalContainerCount = totalContainerCount + containers.getContainerCount();

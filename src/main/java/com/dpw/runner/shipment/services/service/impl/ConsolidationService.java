@@ -1473,8 +1473,6 @@ public class ConsolidationService implements IConsolidationService {
 
     private void createConsolidationPayload (ConsolidationDetails consolidationDetails, ConsolidationDetailsResponse consolidationDetailsResponse) {
         try {
-            consolidationDetailsResponse.setContainerSummary(containerService.calculateContainerSummary(consolidationDetails.getContainersList(), consolidationDetails.getTransportMode(), consolidationDetails.getContainerCategory()));
-            consolidationDetailsResponse.setPackSummary(packingService.calculatePackSummary(consolidationDetails.getPackingList(), consolidationDetails.getTransportMode(), consolidationDetails.getContainerCategory()));
             this.addAllMasterDataInSingleCall(consolidationDetails, consolidationDetailsResponse);
             this.addAllUnlocationDataInSingleCall(consolidationDetails, consolidationDetailsResponse);
             this.addAllCarrierDataInSingleCall(consolidationDetails, consolidationDetailsResponse);
@@ -1482,6 +1480,8 @@ public class ConsolidationService implements IConsolidationService {
             this.addAllCommodityTypesInSingleCall(consolidationDetails,consolidationDetailsResponse);
             this.addAllTenantDataInSingleCall(consolidationDetails, consolidationDetailsResponse);
             this.addAllWarehouseDataInSingleCall(consolidationDetails, consolidationDetailsResponse);
+            consolidationDetailsResponse.setContainerSummary(containerService.calculateContainerSummary(consolidationDetails.getContainersList(), consolidationDetails.getTransportMode(), consolidationDetails.getContainerCategory()));
+            consolidationDetailsResponse.setPackSummary(packingService.calculatePackSummary(consolidationDetails.getPackingList(), consolidationDetails.getTransportMode(), consolidationDetails.getContainerCategory()));
         }  catch (Exception ex) {
             log.error("Request: {} || Error occured for event: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), IntegrationType.MASTER_DATA_FETCH_FOR_CONSOLIDATION_RETRIEVE, ex.getLocalizedMessage());
         }
