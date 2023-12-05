@@ -1,10 +1,14 @@
 package com.dpw.runner.shipment.services.DocumentService;
 
+import com.dpw.runner.shipment.services.commons.constants.ShipmentSettingsConstants;
 import com.dpw.runner.shipment.services.dto.request.TemplateUploadRequest;
 import com.dpw.runner.shipment.services.dto.response.TemplateUploadResponse;
 import com.dpw.runner.shipment.services.dto.response.UploadDocumentResponse;
+import com.dpw.runner.shipment.services.helpers.LoggerHelper;
+import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.*;
 import org.springframework.stereotype.Component;
 import org.springframework.util.LinkedMultiValueMap;
@@ -136,6 +140,44 @@ public class DocumentService {
 
         ResponseEntity<?> response = restTemplate.exchange(url, HttpMethod.POST, request, byte[].class);
 
+        return response;
+    }
+
+    public byte[] DownloadTemplate(String templateId) throws Exception {
+        String url = templateBaseUrl+templateId+"/download";
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("x-api-key", templatexApiKey);
+        headers.setContentType(MediaType.TEXT_PLAIN);
+
+        HttpEntity<Object> request = new HttpEntity<Object>(headers);
+
+        ResponseEntity<byte[]> response = restTemplate.exchange(url, HttpMethod.GET, request, byte[].class);
+        if(response.getStatusCode() != HttpStatus.OK){
+            LoggerHelper.error("Error While Downloading Template From Document Service");
+            String responseMsg = ShipmentSettingsConstants.DOWNLOAD_TEMPLATE_FAILED + " : " + response.getBody();
+            throw new Exception(responseMsg);
+        }
+        return response.getBody();
+    }
+
+    public ResponseEntity<UploadDocumentResponse> PostDocument(ByteArrayResource file, String path) throws Exception{
+
+        String url = BaseUrl+UploadFileUrl;
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+        headers.add("x-api-key", xApikey);
+        headers.add("X-DPW-ApplicationId", applicationId);
+
+        MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+        body.set("organizationId", organizationId);
+        body.set("file", file);
+        body.set("path", path);
+
+        HttpEntity<Object> request = new HttpEntity<Object>(body, headers);
+
+        ResponseEntity<UploadDocumentResponse> response = restTemplate.postForEntity(url, request, UploadDocumentResponse.class);
         return response;
     }
 }

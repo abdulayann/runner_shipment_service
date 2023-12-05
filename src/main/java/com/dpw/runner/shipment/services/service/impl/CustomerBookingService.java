@@ -21,14 +21,15 @@ import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.BookingSource;
 import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
-import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
 import com.dpw.runner.shipment.services.entitytransfer.dto.*;
+import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
 import com.dpw.runner.shipment.services.exception.exceptions.CRPException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest;
+import com.dpw.runner.shipment.services.masterdata.factory.MasterDataFactory;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.service.interfaces.ICustomerBookingService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
@@ -110,6 +111,8 @@ public class CustomerBookingService implements ICustomerBookingService {
     private AuditLogService auditLogService;
     @Autowired
     private IV1Service v1Service;
+    @Autowired
+    private MasterDataFactory masterDataFactory;
 
     private static final Map<String, String> loadTypeMap = Map.of("SEA", "LCL", "AIR", "LSE");
 
@@ -315,12 +318,29 @@ public class CustomerBookingService implements ICustomerBookingService {
             customerBooking.setBookingCharges(bookingCharges);
         }
         if (Objects.equals(customerBooking.getBookingStatus(), BookingStatus.READY_FOR_SHIPMENT)) {
-            V1ShipmentCreationResponse shipmentCreationResponse = jsonHelper.convertValue(bookingIntegrationsUtility.createShipmentInV1(customerBooking).getBody(), V1ShipmentCreationResponse.class);
-            if (!Objects.isNull(shipmentCreationResponse) && !Objects.isNull(shipmentCreationResponse.getShipmentId())) {
-                customerBooking.setShipmentId(shipmentCreationResponse.getShipmentId());
-                customerBooking.setShipmentEntityId(shipmentCreationResponse.getEntityId());
-                customerBooking.setShipmentCreatedDate(LocalDateTime.now());
-                customerBooking = customerBookingDao.save(customerBooking);
+            DependentServiceResponse dependentServiceResponse = masterDataFactory.getMasterDataService().retrieveTenantSettings();
+            V1TenantSettingsResponse tenantSettingsResponse = modelMapper.map(dependentServiceResponse.getData(), V1TenantSettingsResponse.class);
+            Boolean isShipmentV2 = tenantSettingsResponse.getShipmentServiceV2Enabled();
+            if(isShipmentV2)
+            {
+                ShipmentDetailsResponse shipmentResponse = (ShipmentDetailsResponse) bookingIntegrationsUtility.createShipmentInV2(request).getBody();
+                if(shipmentResponse != null) {
+                    bookingIntegrationsUtility.createShipmentInV1(customerBooking, false, true, shipmentResponse.getGuid());
+                    customerBooking.setShipmentId(shipmentResponse.getShipmentId());
+                    customerBooking.setShipmentEntityId(shipmentResponse.getId().toString());
+                    customerBooking.setShipmentCreatedDate(LocalDateTime.now());
+                    customerBooking = customerBookingDao.save(customerBooking);
+                }
+            }
+            else
+            {
+                V1ShipmentCreationResponse shipmentCreationResponse = jsonHelper.convertValue(bookingIntegrationsUtility.createShipmentInV1(customerBooking, true, true, null).getBody(), V1ShipmentCreationResponse.class);
+                if (!Objects.isNull(shipmentCreationResponse) && !Objects.isNull(shipmentCreationResponse.getShipmentId())) {
+                    customerBooking.setShipmentId(shipmentCreationResponse.getShipmentId());
+                    customerBooking.setShipmentEntityId(shipmentCreationResponse.getEntityId());
+                    customerBooking.setShipmentCreatedDate(LocalDateTime.now());
+                    customerBooking = customerBookingDao.save(customerBooking);
+                }
             }
         }
         auditLogService.addAuditLog(
@@ -971,7 +991,7 @@ public class CustomerBookingService implements ICustomerBookingService {
             CustomerBookingResponse response = modelMapper.map(customerBooking, CustomerBookingResponse.class);
             responseList.add(response);
         });
-        masterDataUtils.setLocationData(responseList);
+        masterDataUtils.setLocationData(responseList, EntityTransferConstants.LOCATION_SERVICE_GUID);
         return responseList;
     }
 
@@ -1142,7 +1162,7 @@ public class CustomerBookingService implements ICustomerBookingService {
         customerBooking.setTotalRevenue(totalRevenue);
     }
 
-    @Async
+//    @Async
     private CompletableFuture<ResponseEntity<?>> addAllMasterDataInSingleCall(CustomerBooking customerBooking, CustomerBookingResponse customerBookingResponse) {
         // Preprocessing
         Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
@@ -1170,7 +1190,7 @@ public class CustomerBookingService implements ICustomerBookingService {
         return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(keyMasterDataMap));
     }
 
-    @Async
+//    @Async
     private CompletableFuture<ResponseEntity<?>> addAllLocationDataInSingleCall(CustomerBooking customerBooking, CustomerBookingResponse customerBookingResponse) {
         // Preprocessing
         Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
@@ -1191,7 +1211,7 @@ public class CustomerBookingService implements ICustomerBookingService {
         return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(keyMasterDataMap));
     }
 
-    @Async
+//    @Async
     private CompletableFuture<ResponseEntity<?>> addAllChargeTypesInSingleCall(CustomerBooking customerBooking, CustomerBookingResponse customerBookingResponse) {
         Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
         List<String> chargeTypes = new ArrayList<>();
@@ -1206,7 +1226,7 @@ public class CustomerBookingService implements ICustomerBookingService {
 
         return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(v1Data));
     }
-    @Async
+//    @Async
     private CompletableFuture<ResponseEntity<?>> addAllContainerTypesInSingleCall(CustomerBooking customerBooking, CustomerBookingResponse customerBookingResponse) {
         Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
         List<String> containerTypes = new ArrayList<>();
@@ -1222,7 +1242,7 @@ public class CustomerBookingService implements ICustomerBookingService {
         return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(v1Data));
     }
 
-    @Async
+//    @Async
     private CompletableFuture<ResponseEntity<?>> addAllVesselDataInSingleCall(CustomerBooking customerBooking, CustomerBookingResponse customerBookingResponse) {
         if (!Objects.isNull(customerBookingResponse.getCarrierDetails())) {
             Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
@@ -1234,7 +1254,7 @@ public class CustomerBookingService implements ICustomerBookingService {
         return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(Arrays.asList()));
     }
 
-    @Async
+//    @Async
     private CompletableFuture<ResponseEntity<?>> addAllCarrierDataInSingleCall(CustomerBooking customerBooking, CustomerBookingResponse customerBookingResponse) {
         if (!Objects.isNull(customerBookingResponse.getCarrierDetails())) {
             Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();

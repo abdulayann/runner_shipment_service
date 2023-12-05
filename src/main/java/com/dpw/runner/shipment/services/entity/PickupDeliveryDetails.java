@@ -1,17 +1,17 @@
 package com.dpw.runner.shipment.services.entity;
 
-import javax.persistence.*;
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.util.List;
-
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import lombok.*;
 import lombok.experimental.Accessors;
 import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Where;
+
+import javax.persistence.*;
+import javax.validation.constraints.Size;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 
 @Entity
 @Setter
@@ -114,6 +114,7 @@ public class PickupDeliveryDetails extends MultiTenancy {
     private LocalTime storageChargeDuration;
 
     @Column(name = "ucr_reference")
+    @Size(max = 50, message = "max size is 50 for ucr_reference")
     public String ucrReference;
 
     @Column(name = "empty_truck_in_date")
@@ -121,4 +122,7 @@ public class PickupDeliveryDetails extends MultiTenancy {
 
     @Column(name = "loaded_truck_gate_out_date")
     public LocalDateTime loadedTruckGateOutDate;
+
+    @Column(name = "pickup_delivery_instruction")
+    public String pickupDeliveryInstruction;
 }

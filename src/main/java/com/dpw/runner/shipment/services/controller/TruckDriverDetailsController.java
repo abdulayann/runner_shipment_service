@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.controller;
 
 import com.dpw.runner.shipment.services.commons.constants.ApiConstants;
+import com.dpw.runner.shipment.services.commons.constants.ShipmentSettingsConstants;
 import com.dpw.runner.shipment.services.commons.constants.TruckDriverDetailsConstants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
@@ -9,9 +10,11 @@ import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.TruckDriverDetailsRequest;
+import com.dpw.runner.shipment.services.dto.response.ShipmentSettingsDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.TruckDriverDetailsResponse;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.impl.TruckDriverDetailsService;
+import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import lombok.extern.slf4j.Slf4j;
@@ -21,6 +24,8 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import javax.validation.Valid;
+
+import java.util.List;
 
 import static com.dpw.runner.shipment.services.commons.constants.Constants.NO_DATA;
 
@@ -74,8 +79,8 @@ public class TruckDriverDetailsController {
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = TruckDriverDetailsConstants.TRUCK_DRIVER_DETAILS_RETRIEVE_BY_ID_SUCCESSFUL)})
     @GetMapping(ApiConstants.API_RETRIEVE_BY_ID)
-    public ResponseEntity retrieve(@RequestParam @NonNull Long id) {
-        CommonGetRequest request = CommonGetRequest.builder().id(id).build();
+    public ResponseEntity retrieve(@RequestParam @NonNull Long id, @RequestParam(name = "includeColumns", required = false) List<String> includeColumns) {
+        CommonGetRequest request = CommonGetRequest.builder().id(id).includeColumns(includeColumns).build();
         return (ResponseEntity<RunnerResponse<TruckDriverDetailsResponse>>) truckDriverDetailsService.retrieveById(CommonRequestModel.buildRequest(request));
     }
 

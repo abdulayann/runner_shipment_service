@@ -10,21 +10,14 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IAdditionalDetailDao;
 import com.dpw.runner.shipment.services.dto.request.AdditionalDetailRequest;
 import com.dpw.runner.shipment.services.dto.response.AdditionalDetailResponse;
-import com.dpw.runner.shipment.services.entity.AchievedQuantities;
 import com.dpw.runner.shipment.services.entity.AdditionalDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
-import com.dpw.runner.shipment.services.entity.AdditionalDetails;
-import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
-import com.dpw.runner.shipment.services.helpers.JsonHelper;
-import com.dpw.runner.shipment.services.helpers.LoggerHelper;
-import com.dpw.runner.shipment.services.entity.AdditionalDetails;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IAdditionalDetailService;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
-import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
@@ -35,7 +28,9 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
@@ -110,6 +105,10 @@ public class AdditionalDetailService implements IAdditionalDetailService {
 
         AdditionalDetails additionalDetails = convertRequestToEntity(request);
         additionalDetails.setId(oldEntity.get().getId());
+
+        if(additionalDetails.getGuid() != null && !oldEntity.get().getGuid().equals(additionalDetails.getGuid())) {
+            throw new RunnerException("Provided GUID doesn't match with the existing one !");
+        }
         try {
             String oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
             additionalDetails = additionalDetailDao.save(additionalDetails);

@@ -1,22 +1,20 @@
 package com.dpw.runner.shipment.services.controller;
 
-import com.dpw.runner.shipment.services.commons.constants.ApiConstants;
-import com.dpw.runner.shipment.services.commons.constants.ContainerConstants;
-import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
-import com.dpw.runner.shipment.services.commons.constants.PackingConstants;
+import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.requests.BulkDownloadRequest;
 import com.dpw.runner.shipment.services.commons.requests.BulkUploadRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
-import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
 import com.dpw.runner.shipment.services.dto.request.PackingRequest;
 import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.PackingResponse;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingService;
+import com.dpw.runner.shipment.services.syncing.Entity.BulkPackingRequestV2;
+import com.dpw.runner.shipment.services.syncing.Entity.PackingRequestV2;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import lombok.extern.slf4j.Slf4j;
@@ -24,7 +22,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
@@ -121,8 +118,59 @@ public class PackingController {
     }
 
     @PostMapping("/calculate-weight-volumne")
-    public ResponseEntity<RunnerResponse<ContainerResponse>> calculateWeightVolume(@RequestBody PackingRequest packingRequest) throws Exception{
+    public ResponseEntity<RunnerResponse<ContainerResponse>> calculateWeightVolume(@RequestBody PackingRequest packingRequest) throws Exception {
         String responseMsg;
         return (ResponseEntity<RunnerResponse<ContainerResponse>>) packingService.calculateWeightVolumne(CommonRequestModel.buildRequest(packingRequest));
+    }
+
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = PackingConstants.PACKING_LIST_SUCCESSFUL),
+            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
+    })
+    @PostMapping(ApiConstants.API_LIST_PACKS_TO_DETACH)
+    public ResponseEntity<?> listPacksToDetach(@RequestParam @Valid Long containerId) {
+        String responseMsg = "failure executing :(";
+        try {
+            return packingService.listPacksToDetach(CommonRequestModel.buildRequest(containerId));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : "Error listing packings";
+            log.error(responseMsg, e);
+        }
+        return ResponseHelper.buildFailedResponse(responseMsg);
+    }
+
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = ShipmentConstants.SHIPMENT_SYNC_SUCCESSFUL),
+            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
+    })
+    @PostMapping(ApiConstants.SYNC)
+    public ResponseEntity<?> syncPackingToService(@RequestBody @Valid PackingRequestV2 request) {
+        String responseMsg = "failure executing :(";
+        try {
+            return packingService.V1PackingCreateAndUpdate(CommonRequestModel.buildRequest(request), true);
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : "Error syncing provided Packings";
+            log.error(responseMsg, e);
+        }
+        return ResponseHelper.buildFailedResponse(responseMsg);
+    }
+
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = ShipmentConstants.SHIPMENT_SYNC_SUCCESSFUL),
+            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
+    })
+    @PostMapping(ApiConstants.BULK_SYNC)
+    public ResponseEntity<?> syncBulkPackingToService(@RequestBody @Valid BulkPackingRequestV2 request) {
+        String responseMsg = "failure executing :(";
+        try {
+            return packingService.V1BulkPackingCreateAndUpdate(CommonRequestModel.buildRequest(request));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : "Error syncing provided Container";
+            log.error(responseMsg, e);
+        }
+        return ResponseHelper.buildFailedResponse(responseMsg);
     }
 }

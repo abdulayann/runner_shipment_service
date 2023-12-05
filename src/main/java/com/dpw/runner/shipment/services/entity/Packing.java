@@ -1,7 +1,5 @@
 package com.dpw.runner.shipment.services.entity;
 
-import javax.persistence.*;
-
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
@@ -11,6 +9,11 @@ import lombok.*;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Where;
 
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.JoinColumn;
+import javax.persistence.Table;
+import javax.validation.constraints.Size;
 import java.math.BigDecimal;
 
 @Entity
@@ -45,9 +48,6 @@ public class Packing extends MultiTenancy {
     @Column(name = "packs_type")
     @MasterData(type = MasterDataType.PACKS_UNIT)
     private String packsType;
-
-    @Column(name = "container_number")
-    private String containerNumber;
 
     @Column(name = "weight")
     private BigDecimal weight;
@@ -144,7 +144,7 @@ public class Packing extends MultiTenancy {
 
     @Column(name = "commodity_id")
     @DedicatedMasterData(type = Constants.COMMODITY_TYPE_MASTER_DATA)
-    private Long commodityId;
+    private Long commodityId; // TODO- remove this because commodity code already exists with name "commodity"
 
     @Column(name = "net_weight")
     private BigDecimal netWeight;
@@ -203,6 +203,10 @@ public class Packing extends MultiTenancy {
 
     @Column(name = "is_contract_enforced")
     private Boolean isContractEnforced;
+
+    @Column(name = "handling_info")
+    @Size(max=2500, message = "max size is 2500 for handling_info")
+    private String handlingInfo;
 
     @Column(name = "contract_enforced_quantity_limit")
     private Long contractEnforcedQuantityLimit;

@@ -27,7 +27,7 @@ public class BaseEntity implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    @Column(name = "guid", columnDefinition = "uuid")
+    @Column(name = "guid", columnDefinition = "uuid", updatable = false)
     @ColumnDefault("random_uuid()")
     private UUID guid;
 

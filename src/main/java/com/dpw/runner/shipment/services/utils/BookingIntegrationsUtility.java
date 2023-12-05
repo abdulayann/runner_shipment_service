@@ -7,6 +7,7 @@ import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.dao.interfaces.ICustomerBookingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IIntegrationResponseDao;
+import com.dpw.runner.shipment.services.dto.request.CustomerBookingRequest;
 import com.dpw.runner.shipment.services.dto.request.platform.*;
 import com.dpw.runner.shipment.services.dto.response.CheckCreditLimitResponse;
 import com.dpw.runner.shipment.services.entity.*;
@@ -15,11 +16,11 @@ import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.entity.enums.Status;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferChargeType;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.EnableAsync;
@@ -49,6 +50,8 @@ public class BookingIntegrationsUtility {
     private ICustomerBookingDao customerBookingDao;
     @Autowired
     private IIntegrationResponseDao integrationResponseDao;
+    @Autowired
+    private IShipmentService shipmentService;
 
     private Map<BookingStatus, String> platformStatusMap = Map.ofEntries(
             Map.entry(BookingStatus.CANCELLED, "CANCELLED"),
@@ -82,9 +85,9 @@ public class BookingIntegrationsUtility {
     }
 
 
-    public ResponseEntity<?> createShipmentInV1(CustomerBooking customerBooking) {
+    public ResponseEntity<?> createShipmentInV1(CustomerBooking customerBooking, boolean isShipmentEnabled, boolean isBillingEnabled, UUID shipmentGuid) {
         try {
-            var response = v1Service.createBooking(customerBooking);
+            var response = v1Service.createBooking(customerBooking, isShipmentEnabled, isBillingEnabled, shipmentGuid);
             this.saveErrorResponse(customerBooking.getId(), Constants.BOOKING, IntegrationType.V1_SHIPMENT_CREATION, Status.SUCCESS, "SAVED SUCESSFULLY");
             return response;
         } catch (Exception ex) {
@@ -103,6 +106,17 @@ public class BookingIntegrationsUtility {
             throw ex;
         }
     }
+
+    public ResponseEntity<?> createShipmentInV2(CustomerBookingRequest customerBookingRequest) throws Exception {
+        try {
+            var response = shipmentService.createShipmentInV2(customerBookingRequest);
+            return response;
+        } catch (Exception ex) {
+            log.error("Shipment Creation failed for booking number {} with error message: {}", customerBookingRequest.getBookingNumber(), ex.getMessage());
+            throw ex;
+        }
+    }
+
 
     private void saveErrorResponse(Long entityId, String entityType, IntegrationType integrationType, Status status, String message) {
         IntegrationResponse response = IntegrationResponse.builder()

@@ -10,7 +10,7 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 public class AwbSpecialHandlingCodesMappingInfo {
-    private Integer entityId;
+    private Long entityId;
     private String entityType;
-    private Integer shcId;
+    private String shcId;
 }

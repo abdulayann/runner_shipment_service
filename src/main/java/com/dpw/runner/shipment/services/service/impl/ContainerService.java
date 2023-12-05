@@ -1,53 +1,73 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import com.dpw.runner.shipment.services.Kafka.Dto.KafkaResponse;
+import com.dpw.runner.shipment.services.Kafka.Producer.KafkaProducer;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IEventDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IPackingDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IShipmentsContainersMappingDao;
+import com.dpw.runner.shipment.services.config.SyncConfig;
+import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.ContainerAPIsRequest.ContainerAssignRequest;
+import com.dpw.runner.shipment.services.dto.ContainerAPIsRequest.ContainerNumberCheckResponse;
 import com.dpw.runner.shipment.services.dto.ContainerAPIsRequest.ContainerPackAssignDetachRequest;
+import com.dpw.runner.shipment.services.dto.ContainerAPIsRequest.ContainerSummary;
 import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
 import com.dpw.runner.shipment.services.dto.request.EventsRequest;
 import com.dpw.runner.shipment.services.dto.request.PackingRequest;
 import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.JobResponse;
 import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerService;
+import com.dpw.runner.shipment.services.syncing.Entity.BulkContainerRequestV2;
+import com.dpw.runner.shipment.services.syncing.Entity.ContainerRequestV2;
+import com.dpw.runner.shipment.services.syncing.constants.SyncingConstants;
+import com.dpw.runner.shipment.services.syncing.impl.ContainerSync;
 import com.dpw.runner.shipment.services.utils.CSVParsingUtil;
+import com.dpw.runner.shipment.services.utils.StringUtility;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.interceptor.TransactionAspectSupport;
 import org.springframework.web.bind.annotation.ModelAttribute;
 
 import javax.servlet.http.HttpServletResponse;
+import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.convertToEntityList;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.*;
 import static com.dpw.runner.shipment.services.utils.StringUtility.isNotEmpty;
 import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
 
@@ -61,15 +81,43 @@ public class ContainerService implements IContainerService {
     private JsonHelper jsonHelper;
     @Autowired
     IShipmentsContainersMappingDao shipmentsContainersMappingDao;
+    @Autowired
+    private ObjectMapper objectMapper;
+    @Autowired
+
+    private ModelMapper modelMapper;
     private final CSVParsingUtil<Containers> parser = new CSVParsingUtil<>(Containers.class);
 
     @Autowired
     IEventDao eventDao;
     @Autowired
     private IPackingDao packingDao;
+    @Autowired
+    private IConsolidationDetailsDao consolidationDetailsDao;
+    @Autowired
+    private IShipmentDao shipmentDao;
+
+    @Autowired
+    private ContainerSync containerSync;
 
     @Autowired
     private AuditLogService auditLogService;
+    @Autowired
+    private ICustomerBookingDao customerBookingDao;
+
+    @Autowired
+    private KafkaProducer producer;
+
+    @Value("${containersKafka.queue}")
+    private String senderQueue;
+    @Lazy
+    @Autowired
+    private SyncQueueService syncQueueService;
+    @Autowired
+    private SyncConfig syncConfig;
+
+    @Autowired
+    private IShipmentSettingsDao shipmentSettingsDao;
 
     @Transactional
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
@@ -103,6 +151,7 @@ public class ContainerService implements IContainerService {
                             .operation(DBOperationType.CREATE.name()).build()
             );
             log.info("Container Details Saved Successfully for Id {} with Request Id {}", container.getId(), LoggerHelper.getRequestIdFromMDC());
+            afterSave(container, true);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
@@ -121,6 +170,24 @@ public class ContainerService implements IContainerService {
         containersList = containerDao.saveAll(containersList);
         if (request.getShipmentId() != null) {
             containersList.stream().forEach(container -> {
+                shipmentsContainersMappingDao.updateShipmentsMappings(container.getId(), List.of(request.getShipmentId()));
+            });
+        }
+        containerSync.sync(containersList, request.getConsolidationId(), request.getShipmentId());
+        afterSaveList(containersList, true);
+    }
+
+    @Override
+    public void uploadContainerEvents(BulkUploadRequest request) throws Exception {
+        List<Events> eventsList = parser.parseCSVFileEvents(request.getFile());
+        eventsList = eventsList.stream().map(c -> {
+            c.setEntityId(request.getConsolidationId());
+            c.setEntityType("CONSOLIDATION");
+            return c;
+        }).collect(Collectors.toList());
+        eventsList = eventDao.saveAll(eventsList);
+        if (request.getShipmentId() != null) {
+            eventsList.stream().forEach(container -> {
                 shipmentsContainersMappingDao.updateShipmentsMappings(container.getId(), List.of(request.getShipmentId()));
             });
         }
@@ -143,7 +210,7 @@ public class ContainerService implements IContainerService {
         }
 
         if (request.getConsolidationId() != null) {
-            ListCommonRequest req2 = constructListCommonRequest("consolidation_id", request.getConsolidationId(), "=");
+            ListCommonRequest req2 = constructListCommonRequest("consolidationId", Long.valueOf(request.getConsolidationId()), "=");
             Pair<Specification<Containers>, Pageable> pair = fetchData(req2, Containers.class);
             Page<Containers> containers = containerDao.findAll(pair.getLeft(), pair.getRight());
             List<Containers> containersList = containers.getContent();
@@ -153,14 +220,48 @@ public class ContainerService implements IContainerService {
                 result = result.stream().filter(result::contains).collect(Collectors.toList());
             }
         }
+        LocalDateTime currentTime = LocalDateTime.now();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
+        String timestamp = currentTime.format(formatter);
+        String filenameWithTimestamp = "Containers_" + timestamp + ".xlsx";
 
         response.setContentType("text/csv");
-        response.setHeader("Content-Disposition", "attachment; filename=\"containers.csv\"");
+        response.setHeader("Content-Disposition", "attachment; filename=" + filenameWithTimestamp);
 
         try (PrintWriter writer = response.getWriter()) {
-            writer.println(parser.generateCSVHeader());
+            writer.println(parser.generateCSVHeaderForContainer());
             for (Containers container : result) {
                 writer.println(parser.formatContainerAsCSVLine(container));
+            }
+        }
+    }
+
+    @Override
+    public void downloadContainerEvents(HttpServletResponse response, BulkDownloadRequest request) throws Exception {
+        List<Events> result = new ArrayList<>();
+        if (request.getConsolidationId() != null) {
+            ListCommonRequest req2 = constructListRequestFromEntityId(Long.valueOf(request.getConsolidationId()), "CONSOLIDATION");
+            Pair<Specification<Events>, Pageable> pair = fetchData(req2, Events.class);
+            Page<Events> containerEventsPage = eventDao.findAll(pair.getLeft(), pair.getRight());
+            List<Events> containerEvents = containerEventsPage.getContent();
+            if (result.isEmpty()) {
+                result.addAll(containerEvents);
+            } else {
+                result = result.stream().filter(result::contains).collect(Collectors.toList());
+            }
+        }
+        LocalDateTime currentTime = LocalDateTime.now();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
+        String timestamp = currentTime.format(formatter);
+        String filenameWithTimestamp = "ContainerEvents_" + timestamp + ".xlsx";
+
+        response.setContentType("text/csv");
+        response.setHeader("Content-Disposition", "attachment; filename=" + filenameWithTimestamp);
+
+        try (PrintWriter writer = response.getWriter()) {
+            writer.println(parser.generateCSVHeaderForEvent());
+            for (Events event : result) {
+                writer.println(parser.formatEventAsCSVLine(event));
             }
         }
     }
@@ -178,6 +279,7 @@ public class ContainerService implements IContainerService {
                 }
             }
             Containers entity = containerDao.save(containers);
+            afterSave(entity, false);
             return ResponseHelper.buildSuccessResponse(jsonHelper.convertValue(entity, ContainerResponse.class));
         }
 
@@ -196,7 +298,7 @@ public class ContainerService implements IContainerService {
             log.debug("Request Id is null for Container Update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
         }
         long id = request.getId();
-
+        Optional<Containers> oldEntity = containerDao.findById(id);
         List<Long> updatedPackIds = new ArrayList<>();
         List<PackingRequest> updatedPackingRequest = new ArrayList<>();
         List<PackingRequest> packingRequestList = request.getPacksList();
@@ -219,11 +321,29 @@ public class ContainerService implements IContainerService {
 
         request.setPacksList(updatedPackingRequest);
 
+
+
         Containers containers = convertRequestToEntity(request);
+
+        if(containers.getGuid() != null && !oldEntity.get().getGuid().equals(containers.getGuid())) {
+            throw new RunnerException("Provided GUID doesn't match with the existing one !");
+        }
         List<EventsRequest> eventsRequestList = request.getEventsList();
         try {
 
+            String oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
             containers = containerDao.save(containers);
+
+            // audit logs
+            auditLogService.addAuditLog(
+                    AuditLogMetaData.builder()
+                            .newData(containers)
+                            .prevData(jsonHelper.readFromJson(oldEntityJsonString, Containers.class))
+                            .parent(Containers.class.getSimpleName())
+                            .parentId(containers.getId())
+                            .operation(DBOperationType.UPDATE.name()).build()
+            );
+
             if (packingRequestList != null) {
                 packingDao.removeContainerFromPacking(convertToEntityList(packingRequestList, Packing.class), id, updatedPackIds);
                 packingDao.insertContainerInPacking(convertToEntityList(packingRequestWithEmptyContainerId, Packing.class), id);
@@ -234,6 +354,7 @@ public class ContainerService implements IContainerService {
                         convertToEntityList(eventsRequestList, Events.class), containers.getId(), Constants.CONTAINER);
                 containers.setEventsList(events);
             }
+            afterSave(containers, false);
             log.info("Updated the container details for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -247,13 +368,14 @@ public class ContainerService implements IContainerService {
     public ResponseEntity<?> list(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
-            ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
+            CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
             if (request == null) {
                 log.error("Request is empty for Containers List with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
-            // construct specifications for filter request
-            Pair<Specification<Containers>, Pageable> tuple = fetchData(request, Containers.class);
-            Page<Containers> containersPage = containerDao.findAll(tuple.getLeft(), tuple.getRight());
+            ListCommonRequest listCommonRequest = constructListCommonRequest("shipmentsList", request.getId(), "CONTAINS");
+            Pair<Specification<Containers>, Pageable> pair = fetchData(listCommonRequest, Containers.class);
+            Page<Containers> containersPage = containerDao.findAll(pair.getLeft(), pair.getRight());
+
             log.info("Container detail list retrieved successfully for Request Id {} ", LoggerHelper.getRequestIdFromMDC());
             return ResponseHelper.buildListSuccessResponse(
                     convertEntityListToDtoList(containersPage.getContent()),
@@ -311,7 +433,19 @@ public class ContainerService implements IContainerService {
         }
         try {
             packingDao.deleteEntityFromContainer(id);
+            String oldEntityJsonString = jsonHelper.convertToJson(container.get());
             containerDao.delete(container.get());
+
+            // audit logs
+            auditLogService.addAuditLog(
+                    AuditLogMetaData.builder()
+                            .newData(null)
+                            .prevData(jsonHelper.readFromJson(oldEntityJsonString, Containers.class))
+                            .parent(Containers.class.getSimpleName())
+                            .parentId(container.get().getId())
+                            .operation(DBOperationType.DELETE.name()).build()
+            );
+
             log.info("Deleted container for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -352,12 +486,12 @@ public class ContainerService implements IContainerService {
 
     private Containers changeAchievedUnit(Containers container) throws Exception{
         try {
-            if(container.getAchievedVolumeUnit() != container.getAllocatedVolumeUnit()) {
+            if(!IsStringNullOrEmpty(container.getAchievedVolumeUnit()) && !IsStringNullOrEmpty(container.getAllocatedVolumeUnit()) && !container.getAchievedVolumeUnit().equals(container.getAllocatedVolumeUnit())) {
                 BigDecimal val = new BigDecimal(convertUnit(Constants.VOLUME, container.getAchievedVolume(), container.getAchievedVolumeUnit(), container.getAllocatedVolumeUnit()).toString());
                 container.setAchievedVolume(val);
                 container.setAchievedVolumeUnit(container.getAllocatedVolumeUnit());
             }
-            if(container.getAchievedWeightUnit() != container.getAllocatedWeightUnit()) {
+            if(!IsStringNullOrEmpty(container.getAchievedWeightUnit()) && !IsStringNullOrEmpty(container.getAllocatedWeightUnit()) && !container.getAchievedWeightUnit().equals(container.getAllocatedWeightUnit())) {
                 BigDecimal val = new BigDecimal(convertUnit(Constants.MASS, container.getAchievedWeight(), container.getAchievedWeightUnit(), container.getAllocatedWeightUnit()).toString());
                 container.setAchievedWeight(val);
                 container.setAchievedWeightUnit(container.getAllocatedWeightUnit());
@@ -388,26 +522,56 @@ public class ContainerService implements IContainerService {
     public ResponseEntity<?> calculateAchievedQuantity_onPackAssign(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
-            ContainerPackAssignDetachRequest containerPackAssignDetachRequest = (ContainerPackAssignDetachRequest) commonRequestModel.getData();
-            List<Packing> packingList = convertToEntityList(containerPackAssignDetachRequest.getPackingRequestList(), Packing.class);
-            Containers container = convertRequestToEntity(containerPackAssignDetachRequest.getContainer());
-            container = changeAchievedUnit(container);
-            for(Packing packing: packingList) {
-                if(packing.getWeight() != null && !packing.getWeightUnit().isEmpty()) {
-                    BigDecimal val = new BigDecimal(convertUnit(Constants.MASS, packing.getWeight(), packing.getWeightUnit(), container.getAchievedWeightUnit()).toString());
-                    container.setAchievedWeight(container.getAchievedWeight().add(val));
-                    container.setWeightUtilization(((container.getAchievedWeight().divide(container.getAllocatedWeight())).multiply(new BigDecimal(100))).toString());
-                }
-                if(packing.getVolume() != null && !packing.getVolumeUnit().isEmpty()) {
-                    BigDecimal val = new BigDecimal(convertUnit(Constants.VOLUME, packing.getVolume(), packing.getVolumeUnit(), container.getAchievedVolumeUnit()).toString());
-                    container.setAchievedVolume(container.getAchievedVolume().add(val));
-                    container.setVolumeUtilization(((container.getAchievedVolume().divide(container.getAllocatedVolume())).multiply(new BigDecimal(100))).toString());
+            ContainerPackAssignDetachRequest request = (ContainerPackAssignDetachRequest) commonRequestModel.getData();
+
+            Optional<Containers> containersOptional = containerDao.findById(request.getContainerId());
+            if(containersOptional.isPresent()) {
+                Containers container = containersOptional.get();
+                changeAchievedUnit(container);
+                ListCommonRequest listCommonRequest = constructListCommonRequest("id", request.getPacksId(), "IN");
+                Pair<Specification<Packing>, Pageable> pair = fetchData(listCommonRequest, Packing.class);
+                Page<Packing> packings = packingDao.findAll(pair.getLeft(), pair.getRight());
+                if(!packings.isEmpty() && packings.get().findAny().isPresent()) {
+                    List<Packing> packingList = packings.stream().toList();
+                    for(Packing packing: packingList) {
+                        if(packing.getWeight() != null && !packing.getWeightUnit().isEmpty() && !IsStringNullOrEmpty(container.getAchievedWeightUnit())) {
+                            BigDecimal val = new BigDecimal(convertUnit(Constants.MASS, packing.getWeight(), packing.getWeightUnit(), container.getAchievedWeightUnit()).toString());
+                            container.setAchievedWeight(container.getAchievedWeight().add(val));
+                            container.setWeightUtilization(((container.getAchievedWeight().divide(container.getAllocatedWeight())).multiply(new BigDecimal(100))).toString());
+                        }
+                        if(packing.getVolume() != null && !packing.getVolumeUnit().isEmpty() && !IsStringNullOrEmpty(container.getAchievedVolumeUnit())) {
+                            BigDecimal val = new BigDecimal(convertUnit(Constants.VOLUME, packing.getVolume(), packing.getVolumeUnit(), container.getAchievedVolumeUnit()).toString());
+                            container.setAchievedVolume(container.getAchievedVolume().add(val));
+                            container.setVolumeUtilization(((container.getAchievedVolume().divide(container.getAllocatedVolume())).multiply(new BigDecimal(100))).toString());
+                        }
+                    }
+                    return assignContainers(packingList, container, request.getShipmentId());
                 }
             }
-            return ResponseHelper.buildSuccessResponse(convertEntityToDto(container));
+            responseMsg = "Data not available for provided request";
+            throw new DataRetrievalFailureException(responseMsg);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_CALCULATION_ERROR;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
+    public ResponseEntity<?> assignContainers(List<Packing> packingList, Containers container, Long shipmentId) {
+        String responseMsg;
+        try {
+            shipmentsContainersMappingDao.assignShipments(container.getId(), List.of(shipmentId));
+            Containers containers = containerDao.save(jsonHelper.convertValue(container, Containers.class));
+            for (Packing packing: packingList) {
+                packing.setContainerId(container.getId());
+            }
+            packingDao.saveAll(packingList);
+            afterSave(containers, false);
+            return ResponseHelper.buildSuccessResponse(convertEntityToDto(containers));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(responseMsg);
         }
@@ -417,23 +581,35 @@ public class ContainerService implements IContainerService {
     public ResponseEntity<?> calculateAchievedQuantity_onPackDetach(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
-            ContainerPackAssignDetachRequest containerPackAssignDetachRequest = (ContainerPackAssignDetachRequest) commonRequestModel.getData();
-            List<Packing> packingList = convertToEntityList(containerPackAssignDetachRequest.getPackingRequestList(), Packing.class);
-            Containers container = convertRequestToEntity(containerPackAssignDetachRequest.getContainer());
-            container = changeAchievedUnit(container);
-            for(Packing packing: packingList) {
-                if(packing.getWeight() != null && !packing.getWeightUnit().isEmpty()) {
-                    BigDecimal val = new BigDecimal(convertUnit(Constants.MASS, packing.getWeight(), packing.getWeightUnit(), container.getAchievedWeightUnit()).toString());
-                    container.setAchievedWeight(container.getAchievedWeight().subtract(val));
-                    container.setWeightUtilization(((container.getAchievedWeight().divide(container.getAllocatedWeight())).multiply(new BigDecimal(100))).toString());
-                }
-                if(packing.getVolume() != null && !packing.getVolumeUnit().isEmpty()) {
-                    BigDecimal val = new BigDecimal(convertUnit(Constants.VOLUME, packing.getVolume(), packing.getVolumeUnit(), container.getAchievedVolumeUnit()).toString());
-                    container.setAchievedVolume(container.getAchievedVolume().subtract(val));
-                    container.setVolumeUtilization(((container.getAchievedVolume().divide(container.getAllocatedVolume())).multiply(new BigDecimal(100))).toString());
+            ContainerPackAssignDetachRequest request = (ContainerPackAssignDetachRequest) commonRequestModel.getData();
+
+            Optional<Containers> containersOptional = containerDao.findById(request.getContainerId());
+            if(containersOptional.isPresent()) {
+                Containers container = containersOptional.get();
+                changeAchievedUnit(container);
+                ListCommonRequest listCommonRequest = constructListCommonRequest("id", request.getPacksId(), "IN");
+                Pair<Specification<Packing>, Pageable> pair = fetchData(listCommonRequest, Packing.class);
+                Page<Packing> packings = packingDao.findAll(pair.getLeft(), pair.getRight());
+                if(!packings.isEmpty() && packings.get().findAny().isPresent())
+                {
+                    List<Packing> packingList = packings.stream().toList();
+                    for(Packing packing: packingList) {
+                        if(packing.getWeight() != null && !packing.getWeightUnit().isEmpty() && !IsStringNullOrEmpty(container.getAchievedWeightUnit())) {
+                            BigDecimal val = new BigDecimal(convertUnit(Constants.MASS, packing.getWeight(), packing.getWeightUnit(), container.getAchievedWeightUnit()).toString());
+                            container.setAchievedWeight(container.getAchievedWeight().subtract(val));
+                            container.setWeightUtilization(((container.getAchievedWeight().divide(container.getAllocatedWeight())).multiply(new BigDecimal(100))).toString());
+                        }
+                        if(packing.getVolume() != null && !packing.getVolumeUnit().isEmpty() && !IsStringNullOrEmpty(container.getAchievedVolumeUnit())) {
+                            BigDecimal val = new BigDecimal(convertUnit(Constants.VOLUME, packing.getVolume(), packing.getVolumeUnit(), container.getAchievedVolumeUnit()).toString());
+                            container.setAchievedVolume(container.getAchievedVolume().subtract(val));
+                            container.setVolumeUtilization(((container.getAchievedVolume().divide(container.getAllocatedVolume())).multiply(new BigDecimal(100))).toString());
+                        }
+                    }
+                    return detachContainer(packingList, container, request.getShipmentId());
                 }
             }
-            return ResponseHelper.buildSuccessResponse(convertEntityToDto(container));
+            responseMsg = "Data not available for provided request";
+            throw new DataRetrievalFailureException(responseMsg);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_CALCULATION_ERROR;
@@ -442,10 +618,29 @@ public class ContainerService implements IContainerService {
         }
     }
 
+    public ResponseEntity<?> detachContainer(List<Packing> packingList, Containers container, Long shipmentId) {
+        String responseMsg;
+        try {
+            shipmentsContainersMappingDao.detachShipments(container.getId(), List.of(shipmentId));
+            Containers containers = containerDao.save(jsonHelper.convertValue(container, Containers.class));
+            for (Packing packing: packingList) {
+                packing.setContainerId(null);
+            }
+            packingDao.saveAll(packingList);
+            afterSave(containers, false);
+            return ResponseHelper.buildSuccessResponse(convertEntityToDto(containers));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
     @Override
     public ResponseEntity<?> getContainersForSelection(CommonRequestModel commonRequestModel) {
         String responseMsg;
-        Boolean lclAndSeaOrRoadFlag = true; // TODO- Remove this and fetch from tenant Settings and Shipment Data
+        Boolean lclAndSeaOrRoadFlag = false; // TODO- Remove this and fetch from tenant Settings and Shipment Data
         Boolean IsConsolidatorFlag = true; // TODO- Remove this and fetch from tenant Settings
         List<Containers> containersList = new ArrayList<>();
         try {
@@ -478,7 +673,10 @@ public class ContainerService implements IContainerService {
                     }
                 }
             }
-            containers = new PageImpl<>(containersList);
+            if(containerAssignRequest.getTake() != null)
+                containers = new PageImpl<>(containersList.subList(0, Math.min(containerAssignRequest.getTake(), containersList.size())), PageRequest.of(0, containerAssignRequest.getTake()), containersList.size());
+            else
+                containers = new PageImpl<>(containersList);
             return ResponseHelper.buildListSuccessResponse(
                     convertEntityListToDtoList(containers.getContent()),
                     containers.getTotalPages(),
@@ -490,6 +688,341 @@ public class ContainerService implements IContainerService {
             return ResponseHelper.buildFailedResponse(responseMsg);
         }
     }
+
+    @Override
+    public ResponseEntity<?> validateContainerNumber(String containerNumber) {
+        String responseMsg;
+        try {
+            ContainerNumberCheckResponse response = new ContainerNumberCheckResponse();
+            response.setLastDigit(-1);
+            if (containerNumber.length() != 10 && containerNumber.length() != 11) {
+                response.setSuccess(false);
+                return ResponseHelper.buildSuccessResponse(response);
+            }
+            for (int i = 0; i < 4; i++) {
+                if ((int) containerNumber.charAt(i) < 65 || (int) containerNumber.charAt(i) > 90) {
+                    response.setSuccess(false);
+                    return ResponseHelper.buildSuccessResponse(response);
+                }
+            }
+            for (int i = 4; i < 10; i++) {
+                if ((int) containerNumber.charAt(i) < 48 || (int) containerNumber.charAt(i) > 57) {
+                    response.setSuccess(false);
+                    return ResponseHelper.buildSuccessResponse(response);
+                }
+            }
+            if (containerNumber.length() == 11) {
+                if ((int) containerNumber.charAt(10) < 48 || (int) containerNumber.charAt(10) > 57) {
+                    response.setSuccess(false);
+                    return ResponseHelper.buildSuccessResponse(response);
+                }
+            }
+            List<Integer> eqvNumValue = assignEquivalentNumberValue();
+            int expandedVal = 0;
+            for (int i = 0; i < 4; i++) {
+                expandedVal = expandedVal + (int) Math.pow(2, i) * eqvNumValue.get((int) containerNumber.charAt(i) - 65);
+            }
+            for (int i = 4; i < 10; i++) {
+                expandedVal = expandedVal + (int) Math.pow(2, i) * ((int) containerNumber.charAt(i) - 48);
+            }
+            int checkDigit = expandedVal % 11;
+            if (checkDigit == 10)
+                checkDigit = 0;
+            if (containerNumber.length() == 11) {
+                if (checkDigit != (int) containerNumber.charAt(10) - 48) {
+                    response.setSuccess(false);
+                    response.setLastDigit(-2);
+                    return ResponseHelper.buildSuccessResponse(response);
+                }
+            } else response.setLastDigit(checkDigit);
+            response.setSuccess(true);
+            return ResponseHelper.buildSuccessResponse(response);
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_INVALID_REQUEST_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
+    @Override
+    public ResponseEntity<?> getContainers(CommonRequestModel commonRequestModel) {
+        String responseMsg;
+        try {
+            ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
+            if (request == null) {
+                log.error("Request is empty for container list with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            }
+            // construct specifications for filter request
+            Pair<Specification<Containers>, Pageable> tuple = fetchData(request, Containers.class);
+            Page<Containers> containersPage = containerDao.findAll(tuple.getLeft(), tuple.getRight());
+            log.info("Event list retrieved successfully for Request Id {} ", LoggerHelper.getRequestIdFromMDC());
+            return ResponseHelper.buildListSuccessResponse(
+                    convertEntityListToDtoList(containersPage.getContent()),
+                    containersPage.getTotalPages(),
+                    containersPage.getTotalElements());
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+
+    }
+
+    private List<Integer> assignEquivalentNumberValue() {
+        List<Integer> eqvNumValue = new ArrayList<>();
+        int val = 10;
+
+        for (int i = 0; i < 26; i++) {
+            if (val % 11 == 0)
+                val++;
+
+            eqvNumValue.add(val);
+            val++;
+        }
+
+        return eqvNumValue;
+    }
+
+    public ContainerSummary calculateContainerSummary(List<Containers> containersList, String transportMode, String containerCategory) throws Exception {
+        try {
+            double totalWeight = 0;
+            double packageCount = 0;
+            double tareWeight = 0;
+            double totalVolume = 0;
+            double totalContainerCount = 0;
+            double totalPacks = 0;
+            String toWeightUnit = Constants.WEIGHT_UNIT_KG;
+            String toVolumeUnit = Constants.VOLUME_UNIT_M3;
+            ShipmentSettingsDetails shipmentSettingsDetails = shipmentSettingsDao.getSettingsByTenantIds(List.of(TenantContext.getCurrentTenant())).get(0);
+            if(!IsStringNullOrEmpty(shipmentSettingsDetails.getWeightChargeableUnit()))
+                toWeightUnit = shipmentSettingsDetails.getWeightChargeableUnit();
+            if(!IsStringNullOrEmpty(shipmentSettingsDetails.getVolumeChargeableUnit()))
+                toVolumeUnit = shipmentSettingsDetails.getVolumeChargeableUnit();
+            if(containersList != null) {
+                for (Containers containers : containersList) {
+                    double wInDef = convertUnit(Constants.MASS, containers.getGrossWeight(), containers.getGrossWeightUnit(), toWeightUnit).doubleValue();
+                    double tarDef = convertUnit(Constants.MASS, containers.getTareWeight(), containers.getTareWeightUnit(), toWeightUnit).doubleValue();
+                    double volume = convertUnit(Constants.VOLUME, containers.getGrossVolume(), containers.getGrossVolumeUnit(), toVolumeUnit).doubleValue();
+                    totalWeight = totalWeight + wInDef;
+                    tareWeight = tareWeight + tarDef;
+                    double noOfPackages = 0;
+                    if(containers.getNoOfPackages() != null)
+                        noOfPackages = containers.getNoOfPackages().doubleValue();
+                    if(!IsStringNullOrEmpty(containers.getPacks()))
+                        packageCount = packageCount + Long.parseLong(containers.getPacks());
+                    else
+                        packageCount = packageCount + noOfPackages;
+                    totalVolume = totalVolume + volume;
+                    if(containers.getContainerCount() != null)
+                        totalContainerCount = totalContainerCount + containers.getContainerCount();
+                    if(!IsStringNullOrEmpty(containers.getPacks()))
+                        totalPacks = totalPacks + Long.parseLong(containers.getPacks());
+                }
+            }
+            ContainerSummary response = new ContainerSummary();
+            response.setTotalPackages(String.valueOf(packageCount));
+            response.setTotalContainers(String.valueOf(totalContainerCount));
+            response.setTotalWeight(totalWeight + " " + toWeightUnit);
+            response.setTotalTareWeight(tareWeight + " " + toWeightUnit);
+            if(!IsStringNullOrEmpty(transportMode) && transportMode.equals(Constants.TRANSPORT_MODE_SEA) &&
+                    !IsStringNullOrEmpty(containerCategory) && containerCategory.equals(Constants.SHIPMENT_TYPE_LCL)) {
+                double volInM3 = convertUnit(Constants.VOLUME, new BigDecimal(totalVolume), toVolumeUnit, Constants.VOLUME_UNIT_M3).doubleValue();
+                double wtInKg = convertUnit(Constants.MASS, new BigDecimal(totalWeight), toWeightUnit, Constants.WEIGHT_UNIT_KG).doubleValue();
+                double chargeableWeight = Math.max(wtInKg/1000, volInM3);
+                response.setChargeableWeight(chargeableWeight + " " + Constants.VOLUME_UNIT_M3);
+            }
+            response.setTotalContainerVolume(totalVolume + " " + toVolumeUnit);
+            return response;
+        }
+        catch (Exception e) {
+            throw new Exception(e);
+        }
+    }
+
+    public void afterSave(Containers containers, boolean isCreate) {
+        try {
+            if(containers.getTenantId() == null)
+                containers.setTenantId(TenantContext.getCurrentTenant());
+            KafkaResponse kafkaResponse = producer.getKafkaResponse(containers, isCreate);
+            producer.produceToKafka(jsonHelper.convertToJson(kafkaResponse), senderQueue, UUID.randomUUID().toString());
+        } catch (Exception e) {
+            log.error("Error pushing container to kafka");
+        }
+    }
+
+    public void afterSaveList(List<Containers> containers, boolean isCreate) {
+        if(containers != null && containers.size() > 0) {
+            for (Containers container : containers) {
+                afterSave(container, isCreate);
+            }
+        }
+    }
+
+    /**
+     * V1 -> V2 sync
+     */
+    
+    @Override
+    public ResponseEntity<?> V1ContainerCreateAndUpdate(CommonRequestModel commonRequestModel, boolean checkForSync) throws Exception {
+        ContainerRequestV2 containerRequest = (ContainerRequestV2) commonRequestModel.getData();
+        try {
+            if (checkForSync && !Objects.isNull(syncConfig.IS_REVERSE_SYNC_ACTIVE) && !syncConfig.IS_REVERSE_SYNC_ACTIVE) {
+                return syncQueueService.saveSyncRequest(SyncingConstants.CONTAINERS, StringUtility.convertToString(containerRequest.getGuid()), containerRequest);
+            }
+            List<Containers> existingCont = containerDao.findByGuid(containerRequest.getGuid());
+            Containers containers = modelMapper.map(containerRequest, Containers.class);
+            List<Long> shipIds = null;
+            boolean isCreate = true;
+            if (existingCont != null && existingCont.size() > 0) {
+                if (existingCont != null && existingCont.size() > 0) {
+                    containers.setId(existingCont.get(0).getId());
+                    containers.setConsolidationId(existingCont.get(0).getConsolidationId());
+                } else {
+                    if (containerRequest.getConsolidationGuid() != null) {
+                        isCreate = false;
+                    }
+                }
+            } else {
+                if (containerRequest.getConsolidationGuid() != null) {
+                    Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findByGuid(containerRequest.getConsolidationGuid());
+                    if (!consolidationDetails.isEmpty() && consolidationDetails.get() != null) {
+                        containers.setConsolidationId(consolidationDetails.get().getId());
+                    }
+                }
+                if (containerRequest.getShipmentGuids() != null && containerRequest.getShipmentGuids().size() > 0) {
+                    ListCommonRequest listCommonRequest = constructListCommonRequest("guid", containerRequest.getShipmentGuids(), "IN");
+                    Pair<Specification<ShipmentDetails>, Pageable> pair = fetchData(listCommonRequest, ShipmentDetails.class);
+                    Page<ShipmentDetails> shipmentDetails = shipmentDao.findAll(pair.getLeft(), pair.getRight());
+                    if (shipmentDetails.get() != null && shipmentDetails.get().count() > 0) {
+                        shipIds = shipmentDetails.get().map(e -> e.getId()).collect(Collectors.toList());
+                    }
+                }
+            }
+            containers = containerDao.save(containers);
+            afterSave(containers, isCreate);
+            if (shipIds != null) {
+                shipmentsContainersMappingDao.assignShipments(containers.getId(), shipIds);
+            }
+            ContainerResponse response = objectMapper.convertValue(containers, ContainerResponse.class);
+            return ResponseHelper.buildSuccessResponse(response);
+        } catch (Exception e) {
+            String responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * Create bulk containers from V1 in V2
+     */
+    @Override
+    public ResponseEntity<?> V1BulkContainerCreateAndUpdate(CommonRequestModel commonRequestModel) {
+        BulkContainerRequestV2 bulkContainerRequest = (BulkContainerRequestV2) commonRequestModel.getData();
+        try {
+            List<ResponseEntity<?>> responses = new ArrayList<>();
+            for (ContainerRequestV2 containerRequest : bulkContainerRequest.getBulkContainers())
+                responses.add(this.V1ContainerCreateAndUpdate(CommonRequestModel.builder()
+                        .data(containerRequest)
+                        .build(), true));
+            return ResponseHelper.buildSuccessResponse(responses);
+        } catch (Exception e) {
+            String responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public void exportContainers(HttpServletResponse response, ExportContainerListRequest request) throws Exception {
+        List<ShipmentsContainersMapping> mappings;
+        Optional<ConsolidationDetails> consol = null;
+        List<IRunnerResponse> containersList = null;
+        if (request.getConsolidationId() != null) {
+            consol = consolidationDetailsDao.findById(Long.valueOf(request.getConsolidationId()));
+
+            if (consol.isEmpty())
+                throw new RuntimeException("Consolidation does not exist, pls save the consol first");
+
+            if (consol.get().getContainersList().isEmpty())
+                throw new RuntimeException("No containers found attached to consoliation");
+
+            List<Containers> containers = consol.get().getContainersList();
+            if (containers == null || containers.isEmpty()) {
+                throw new RuntimeException("No containers present for this consol");
+            }
+            containersList = convertEntityListToDtoList(containers);
+
+        } else {
+            throw new RuntimeException("Consolidation does not exist, pls save the consol first");
+        }
+
+        Workbook workbook = new XSSFWorkbook();
+        Sheet sheet = workbook.createSheet("ContainersList");
+        makeHeadersInSheet(sheet, consol);
+
+        for (int i = 0; i < containersList.size(); i++) {
+            Row itemRow = sheet.createRow(i + 1);
+            ContainerResponse container = (ContainerResponse) containersList.get(i);
+            var consolBasicValues = parser.getAllAttributeValuesAsListContainer(container);
+            int offset = 0;
+            for (int j = 0; j < consolBasicValues.size(); j++)
+                itemRow.createCell(offset + j).setCellValue(consolBasicValues.get(j));
+            offset += consolBasicValues.size();
+
+            itemRow.createCell(offset + 0).setCellValue(consol.get().getBol());
+            itemRow.createCell(offset + 1).setCellValue(0);
+            itemRow.createCell(offset + 2).setCellValue(0);
+            itemRow.createCell(offset + 3).setCellValue(request.getFreeTimeNoOfDaysDetention());
+            itemRow.createCell(offset + 4).setCellValue(request.getFreeTimeNoOfDaysStorage());
+            itemRow.createCell(offset + 5).setCellValue(consol.get().getCarrierDetails().getVoyage());
+
+            var booking = customerBookingDao.findById(container.getBookingId());
+            var bookingNum = booking.isPresent() ? booking.get().getBookingNumber() : "";
+            var bookingDate = booking.isPresent() ? booking.get().getBookingDate() : null;
+
+            itemRow.createCell(offset + 6).setCellValue(bookingDate);
+            itemRow.createCell(offset + 7).setCellValue(bookingNum);
+        }
+
+        LocalDateTime currentTime = LocalDateTime.now();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
+        String timestamp = currentTime.format(formatter);
+        String filenameWithTimestamp = "ContainerList_" + timestamp + ".xlsx";
+
+        response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+        response.setHeader("Content-Disposition", "attachment; filename=" + filenameWithTimestamp);
+
+        try (OutputStream outputStream = response.getOutputStream()) {
+            workbook.write(outputStream);
+        }
+
+    }
+
+    private void makeHeadersInSheet(Sheet sheet, Optional<ConsolidationDetails> consol) {
+//        Row preHeaderRow = sheet.createRow(0);
+        Row headerRow = sheet.createRow(0);
+        List<String> containerHeader = parser.getHeadersForContainer();
+        for (int i = 0; i < containerHeader.size(); i++) {
+            Cell cell = headerRow.createCell(i);
+            cell.setCellValue(containerHeader.get(i));
+        }
+
+        containerHeader.add("bol");
+        containerHeader.add("NoOfDays (Detention)");
+        containerHeader.add("NoOfDays (Storage)");
+        containerHeader.add("FreeTimeNoOfDays (Storage)");
+        containerHeader.add("FreeTimeNoOfDays (Detention)");
+        containerHeader.add("Voyage");
+        containerHeader.add("Booking Date");
+        containerHeader.add("Booking Number");
+    }
+
 
     private IRunnerResponse convertEntityToDto(Containers container) {
         return jsonHelper.convertValue(container, ContainerResponse.class);

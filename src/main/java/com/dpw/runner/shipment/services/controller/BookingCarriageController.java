@@ -14,16 +14,26 @@ import com.dpw.runner.shipment.services.dto.request.BookingCarriageRequest;
 import com.dpw.runner.shipment.services.dto.response.BookingCarriageResponse;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IBookingCarriageService;
+import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.bohnman.squiggly.Squiggly;
+import com.github.bohnman.squiggly.context.provider.SquigglyContextProvider;
+import com.github.bohnman.squiggly.filter.SquigglyPropertyFilter;
+import com.github.bohnman.squiggly.util.SquigglyUtils;
 import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
+import org.hibernate.resource.beans.container.spi.AbstractCdiBeanContainer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+
 import javax.validation.Valid;
+import java.util.List;
+
 
 @SuppressWarnings("ALL")
 @RestController
@@ -68,12 +78,11 @@ public class BookingCarriageController {
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = BookingCarriageConstants.BOOKING_CARRIAGE_RETRIEVE_BY_ID_SUCCESSFUL)})
     @GetMapping(ApiConstants.API_RETRIEVE_BY_ID)
-    public ResponseEntity<RunnerResponse<BookingCarriageResponse>> retrieveById(@ApiParam(value = BookingCarriageConstants.BOOKING_CARRIAGE_ID, required = true) @RequestParam Long id) {
-        CommonGetRequest request = CommonGetRequest.builder().id(id).build();
+    public ResponseEntity<RunnerResponse<BookingCarriageResponse>> retrieveById(@ApiParam(value = BookingCarriageConstants.BOOKING_CARRIAGE_ID, required = true) @RequestParam Long id,@RequestParam(name = "includeColumns", required = false) List<String> includeColumns) {
+        CommonGetRequest request = CommonGetRequest.builder().id(id).includeColumns(includeColumns).build();
         return (ResponseEntity<RunnerResponse<BookingCarriageResponse>>) bookingCarriageService.retrieveById(CommonRequestModel.buildRequest(request));
     }
-
-    @ApiResponses(value = {@ApiResponse(code = 200, message = BookingCarriageConstants.BOOKING_CARRIAGE_UPDATE_SUCCESSFUL, response = RunnerResponse.class)})
+        @ApiResponses(value = {@ApiResponse(code = 200, message = BookingCarriageConstants.BOOKING_CARRIAGE_UPDATE_SUCCESSFUL, response = RunnerResponse.class)})
     @PutMapping(ApiConstants.API_UPDATE)
     public ResponseEntity<RunnerResponse> update(@RequestBody @Valid BookingCarriageRequest request) {
         String responseMsg;

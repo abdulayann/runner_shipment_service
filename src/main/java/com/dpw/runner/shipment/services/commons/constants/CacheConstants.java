@@ -17,4 +17,8 @@ public class CacheConstants {
     public static final String MASTER_LIST = "MasterLists";
     public static final String VESSELS = "Vessels";
     public static final String CARRIER = "Carriers";
+    public static final String CURRENCIES = "Currencies";
+    public static final String COMMODITY = "Commodity";
+    public static final String TENANTS = "Tenants";
+    public static final String WAREHOUSES = "WareHouses";
 }

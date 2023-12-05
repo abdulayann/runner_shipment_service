@@ -286,6 +286,21 @@ public class MapperMasterDataImpl implements IMasterDataService {
     }
 
     @Override
+    public DependentServiceResponse fetchUnlocationOriginAndDestinationList(Object request) {
+        return null;
+    }
+
+    @Override
+    public DependentServiceResponse fetchListUnlocationTransportModeBased(Object request) {
+        return null;
+    }
+
+    @Override
+    public DependentServiceResponse fetchActivityMaster(Object request) {
+        return null;
+    }
+
+    @Override
     public DependentServiceResponse importFlightSchedules(Object request) {
         return null;
     }
@@ -306,6 +321,32 @@ public class MapperMasterDataImpl implements IMasterDataService {
     }
 
     @Override
-    public DependentServiceResponse retrieveTenantSettings() {return null; }
+    public DependentServiceResponse retrieveTenantSettings() {
+        return null;
+    }
 
+    @Override
+    public DependentServiceResponse retrieveTenant() {
+        return null;
+    }
+
+    @Override
+    public DependentServiceResponse fetchMultipleMasterData(Object request) {
+        return null;
+    }
+
+    @Override
+    public DependentServiceResponse fetchOwnType(Object request) {
+        return null;
+    }
+
+    @Override
+    public DependentServiceResponse fetchCarrierFilterList(Object request) {
+        return null;
+    }
+
+    @Override
+    public DependentServiceResponse fetchGetTemplateMainPage(Object request) {
+        return null;
+    }
 }

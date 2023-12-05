@@ -8,4 +8,7 @@ public interface IEntityTransferService {
     ResponseEntity<?> sendConsolidation(CommonRequestModel commonRequestModel);
     ResponseEntity<?> importShipment(CommonRequestModel commonRequestModel) throws Exception;
     ResponseEntity<?> importConsolidation(CommonRequestModel commonRequestModel);
+    ResponseEntity<?> sendConsolidationValidation(CommonRequestModel commonRequestModel);
+    ResponseEntity<?> sendShipmentValidation(CommonRequestModel commonRequestModel);
+    ResponseEntity<?> checkTaskExist(CommonRequestModel commonRequestModel);
 }

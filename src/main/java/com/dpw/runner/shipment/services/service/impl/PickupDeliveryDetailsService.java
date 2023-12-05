@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
@@ -7,19 +8,28 @@ import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.config.SyncConfig;
 import com.dpw.runner.shipment.services.dao.interfaces.IPickupDeliveryDetailsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.request.PickupDeliveryDetailsRequest;
 import com.dpw.runner.shipment.services.dto.response.PickupDeliveryDetailsResponse;
-import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.entity.PickupDeliveryDetails;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IPickupDeliveryDetailsService;
+import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
+import com.dpw.runner.shipment.services.syncing.Entity.PickupDeliveryDetailsRequestV2;
+import com.dpw.runner.shipment.services.syncing.constants.SyncingConstants;
+import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
+import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -28,9 +38,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.interceptor.TransactionAspectSupport;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
@@ -48,6 +60,20 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
 
     @Autowired
     private AuditLogService auditLogService;
+
+    @Autowired
+    private IShipmentDao shipmentDao;
+
+    @Autowired
+    private ModelMapper modelMapper;
+
+    @Autowired
+    private IShipmentService shipmentService;
+    @Lazy
+    @Autowired
+    private SyncQueueService syncQueueService;
+    @Autowired
+    private SyncConfig syncConfig;
 
     @Transactional
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
@@ -100,6 +126,9 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
 
         PickupDeliveryDetails pickupDeliveryDetails = convertRequestToEntity(request);
         pickupDeliveryDetails.setId(oldEntity.get().getId());
+        if(pickupDeliveryDetails.getGuid() != null && !oldEntity.get().getGuid().equals(pickupDeliveryDetails.getGuid())) {
+            throw new RunnerException("Provided GUID doesn't match with the existing one !");
+        }
         try {
             String oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
             pickupDeliveryDetails = pickupDeliveryDetailsDao.save(pickupDeliveryDetails);
@@ -230,7 +259,9 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
             }
             log.info("Pickup Delivery details fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
             PickupDeliveryDetailsResponse response = convertEntityToDto(pickupDeliveryDetails.get());
+            if(request.getIncludeColumns()==null||request.getIncludeColumns().size()==0)
             return ResponseHelper.buildSuccessResponse(response);
+            else return ResponseHelper.buildSuccessResponse(PartialFetchUtils.fetchPartialListData(response, request.getIncludeColumns()));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;
@@ -239,6 +270,50 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
         }
     }
 
+    @Override
+    public ResponseEntity<?> V1PickupDeliveryCreateAndUpdate(CommonRequestModel commonRequestModel, boolean checkForSync) throws Exception {
+        PickupDeliveryDetailsRequestV2 pickupDeliveryDetailsRequestV2 = (PickupDeliveryDetailsRequestV2) commonRequestModel.getData();
+        if(pickupDeliveryDetailsRequestV2 == null || pickupDeliveryDetailsRequestV2.getShipmentGuid() == null) {
+            throw new Exception("Request guid is null");
+        }
+        try {
+            if (checkForSync && !Objects.isNull(syncConfig.IS_REVERSE_SYNC_ACTIVE) && !syncConfig.IS_REVERSE_SYNC_ACTIVE) {
+                return syncQueueService.saveSyncRequest(SyncingConstants.PICKUP_DELIVERY, StringUtility.convertToString(pickupDeliveryDetailsRequestV2.getShipmentGuid()), pickupDeliveryDetailsRequestV2);
+            }
+            Optional<ShipmentDetails> existingShipment = shipmentDao.findByGuid(pickupDeliveryDetailsRequestV2.getShipmentGuid());
+            if(existingShipment == null || existingShipment.get() == null) {
+                log.debug("Shipment Details is null for Guid {} with Request Id {}", pickupDeliveryDetailsRequestV2.getShipmentGuid(), LoggerHelper.getRequestIdFromMDC());
+                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+            }
+            PickupDeliveryDetails pickupDeliveryDetails = modelMapper.map(pickupDeliveryDetailsRequestV2, PickupDeliveryDetails.class);
+            ShipmentDetails oldShipment = existingShipment.get();
+
+            if(pickupDeliveryDetailsRequestV2.getType().equals(Constants.PICK_UP))
+                oldShipment.setPickupDetails(pickupDeliveryDetails);
+            else if(pickupDeliveryDetailsRequestV2.getType().equals(Constants.DELIVERY))
+                oldShipment.setDeliveryDetails(pickupDeliveryDetails);
+            else {
+                log.debug("Type provided is not correct");
+                throw new Exception();
+            }
+
+            oldShipment = shipmentDao.save(oldShipment, true);
+            shipmentService.afterSave(oldShipment, false);
+            PickupDeliveryDetailsResponse pickupDeliveryDetailsResponse = new PickupDeliveryDetailsResponse();
+            if(pickupDeliveryDetailsRequestV2.getType().equals(Constants.PICK_UP))
+                pickupDeliveryDetailsResponse = jsonHelper.convertValue(oldShipment.getPickupDetails(), PickupDeliveryDetailsResponse.class);
+            else if(pickupDeliveryDetailsRequestV2.getType().equals(Constants.DELIVERY))
+                pickupDeliveryDetailsResponse = jsonHelper.convertValue(oldShipment.getDeliveryDetails(), PickupDeliveryDetailsResponse.class);
+
+            return ResponseHelper.buildSuccessResponse(pickupDeliveryDetailsResponse);
+        } catch (Exception e) {
+            String responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+            throw new RuntimeException(e);
+        }
+    }
 
     private PickupDeliveryDetailsResponse convertEntityToDto(PickupDeliveryDetails pickupDeliveryDetails) {
         return jsonHelper.convertValue(pickupDeliveryDetails, PickupDeliveryDetailsResponse.class);

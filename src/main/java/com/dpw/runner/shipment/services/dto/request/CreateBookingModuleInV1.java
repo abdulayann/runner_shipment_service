@@ -17,6 +17,7 @@ public class CreateBookingModuleInV1 {
 
     private Boolean IsP100Booking = true;
     private BookingEntity Entity;
+    private String ShipmentGuid;
 
     @Data
     @Builder
@@ -58,6 +59,7 @@ public class CreateBookingModuleInV1 {
         private String ServiceMode;
         private Boolean IsShipmentCreateEnabled;
         private Boolean IsConsolidationCreateEnabled;
+        private Boolean IsBillCreateEnabled;
         private String BookingType;
         private String Status;
         private String FmcTlcId;

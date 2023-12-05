@@ -1,6 +1,9 @@
 package com.dpw.runner.shipment.services.controller;
 
-import com.dpw.runner.shipment.services.commons.constants.*;
+import com.dpw.runner.shipment.services.commons.constants.ApiConstants;
+import com.dpw.runner.shipment.services.commons.constants.AwbConstants;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
@@ -8,7 +11,9 @@ import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.AwbRequest;
 import com.dpw.runner.shipment.services.dto.request.CreateAwbRequest;
+import com.dpw.runner.shipment.services.dto.request.ResetAwbRequest;
 import com.dpw.runner.shipment.services.dto.response.AwbResponse;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IAwbService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -21,6 +26,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
+import java.util.List;
+
 
 @SuppressWarnings("ALL")
 @RestController
@@ -28,15 +35,26 @@ import javax.validation.Valid;
 @Slf4j
 public class AwbController {
     @Autowired
-    private IAwbService awbervice;
+    private IAwbService awbService;
     @Autowired
     ObjectMapper objectMapper;
 
+    @Autowired
+    private JsonHelper jsonHelper;
     @ApiResponses(value = {@ApiResponse(code = 200, message = AwbConstants.AWB_LIST_SUCCESSFUL, responseContainer = AwbConstants.RESPONSE_CONTAINER_LIST)})
     @PostMapping(ApiConstants.API_LIST)
-    public ResponseEntity<RunnerListResponse<AwbResponse>> list(@RequestBody @Valid ListCommonRequest listCommonRequest) {
-        return (ResponseEntity<RunnerListResponse<AwbResponse>>) awbervice.list(CommonRequestModel.buildRequest(listCommonRequest));
+    public ResponseEntity<?> list(@RequestBody @Valid ListCommonRequest listCommonRequest) {
+
+        try {
+            return (ResponseEntity<RunnerListResponse<AwbResponse>>) awbService.list(CommonRequestModel.buildRequest(listCommonRequest));
+        } catch (Exception ex) {
+            System.out.println(ex.toString());
+        }
+        return ResponseEntity.ok(null);
+
     }
+
+
 
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = AwbConstants.AWB_CREATE_SUCCESSFUL),
@@ -46,7 +64,7 @@ public class AwbController {
     public ResponseEntity<RunnerResponse<AwbResponse>> createAwb(@RequestBody @Valid CreateAwbRequest request) {
         String responseMsg;
         try {
-            return (ResponseEntity<RunnerResponse<AwbResponse>>) awbervice.createAwb(CommonRequestModel.buildRequest(request));
+            return (ResponseEntity<RunnerResponse<AwbResponse>>) awbService.createAwb(CommonRequestModel.buildRequest(request));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
@@ -60,7 +78,7 @@ public class AwbController {
     public ResponseEntity<RunnerResponse> updateAwbDetails(@RequestBody @Valid AwbRequest request) {
         String responseMsg;
         try {
-            return (ResponseEntity<RunnerResponse>) awbervice.updateAwb(CommonRequestModel.buildRequest(request));
+            return (ResponseEntity<RunnerResponse>) awbService.updateAwb(CommonRequestModel.buildRequest(request));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
@@ -71,9 +89,15 @@ public class AwbController {
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = AwbConstants.AWB_RETRIEVE_BY_ID_SUCCESSFUL)})
     @GetMapping("/retrieve/id")
-    public ResponseEntity<RunnerResponse<AwbResponse>> retrieveById(@ApiParam(value = AwbConstants.AWB_ID, required = true) @RequestParam Long id) {
-        CommonGetRequest request = CommonGetRequest.builder().id(id).build();
-        return (ResponseEntity<RunnerResponse<AwbResponse>>) awbervice.retrieveById(CommonRequestModel.buildRequest(request));
+    public ResponseEntity<RunnerResponse<AwbResponse>> retrieveById(@ApiParam(value = AwbConstants.AWB_ID, required = true) @RequestParam Long id, @RequestParam(name = "includeColumns", required = false) List<String> includeColumns) {
+        CommonGetRequest request = CommonGetRequest.builder().id(id).includeColumns(includeColumns).build();
+        return (ResponseEntity<RunnerResponse<AwbResponse>>) awbService.retrieveById(CommonRequestModel.buildRequest(request));
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = AwbConstants.AWB_RETRIEVE_BY_ID_SUCCESSFUL)})
+    @GetMapping("/customRetrieve")
+    public ResponseEntity<RunnerResponse<AwbResponse>> retrieveByIssuingAgentName(@ApiParam(value = AwbConstants.AWB_NUMBER, required = true) @RequestParam List<String> awbNumber, @ApiParam(value = AwbConstants.ISSUING_AGENT_NAME, required = true) @RequestParam String issuingAgentName) {
+        return (ResponseEntity<RunnerResponse<AwbResponse>>) awbService.customAwbRetrieve(awbNumber, issuingAgentName);
     }
 
     @ApiResponses(value = {
@@ -84,7 +108,7 @@ public class AwbController {
     public ResponseEntity<RunnerResponse<AwbResponse>> createMawb(@RequestBody @Valid CreateAwbRequest request) {
         String responseMsg;
         try {
-            return (ResponseEntity<RunnerResponse<AwbResponse>>) awbervice.createMawb(CommonRequestModel.buildRequest(request));
+            return (ResponseEntity<RunnerResponse<AwbResponse>>) awbService.createMawb(CommonRequestModel.buildRequest(request));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
@@ -101,7 +125,74 @@ public class AwbController {
     public ResponseEntity<RunnerResponse<AwbResponse>> updateGoodsAndPacksForMawb(@RequestBody @Valid CreateAwbRequest request) {
         String responseMsg;
         try {
-            return (ResponseEntity<RunnerResponse<AwbResponse>>) awbervice.updateGoodsAndPacksForMawb(CommonRequestModel.buildRequest(request));
+            return (ResponseEntity<RunnerResponse<AwbResponse>>) awbService.updateGoodsAndPacksForMawb(CommonRequestModel.buildRequest(request));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+        }
+        return (ResponseEntity<RunnerResponse<AwbResponse>>) ResponseHelper.buildFailedResponse(responseMsg);
+    }
+
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = AwbConstants.AWB_SYNC_SUCCESSFUL),
+            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
+    })
+    @PostMapping("/createV1Awb")
+    public ResponseEntity<RunnerResponse<AwbResponse>> createV1Awb(@RequestBody @Valid AwbRequest request) {
+        String responseMsg;
+        try {
+            return (ResponseEntity<RunnerResponse<AwbResponse>>) awbService.createV1Awb(CommonRequestModel.buildRequest(request), true);
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+        }
+        return (ResponseEntity<RunnerResponse<AwbResponse>>) ResponseHelper.buildFailedResponse(responseMsg);
+    }
+
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = AwbConstants.AWB_SYNC_SUCCESSFUL),
+            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
+    })
+    @PostMapping("/reset")
+    public ResponseEntity<RunnerResponse<AwbResponse>> reset(@RequestBody @Valid ResetAwbRequest request) {
+        String responseMsg;
+        try {
+            return (ResponseEntity<RunnerResponse<AwbResponse>>) awbService.reset(CommonRequestModel.buildRequest(request));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+        }
+        return (ResponseEntity<RunnerResponse<AwbResponse>>) ResponseHelper.buildFailedResponse(responseMsg);
+    }
+
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = AwbConstants.AWB_UPDATE_SUCCESSFUL),
+            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
+    })
+    @PostMapping("/partial-update-awb")
+    public ResponseEntity<RunnerResponse<AwbResponse>> partialAutoUpdateAwb(@RequestBody @Valid CreateAwbRequest request) {
+        String responseMsg;
+        try {
+            return (ResponseEntity<RunnerResponse<AwbResponse>>) awbService.partialAutoUpdateAwb(CommonRequestModel.buildRequest(request));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+        }
+        return (ResponseEntity<RunnerResponse<AwbResponse>>) ResponseHelper.buildFailedResponse(responseMsg);
+    }
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = AwbConstants.AWB_UPDATE_SUCCESSFUL),
+            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
+    })
+    @PostMapping("/partial-update-mawb")
+    public ResponseEntity<RunnerResponse<AwbResponse>> partialAutoUpdateMawb(@RequestBody @Valid CreateAwbRequest request) {
+        String responseMsg;
+        try {
+            return (ResponseEntity<RunnerResponse<AwbResponse>>) awbService.partialAutoUpdateMawb(CommonRequestModel.buildRequest(request));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;

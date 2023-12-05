@@ -3,7 +3,8 @@ package com.dpw.runner.shipment.services.entity.enums;
 public enum GenerationType {
 
     Random(0, "Generation Type Random"),
-    Serial(1, "Generation Type Serial");
+    Serial(1, "Generation Type Serial"),
+    Regex(2, "Generation Type Regex");
 
 
     private final int value;

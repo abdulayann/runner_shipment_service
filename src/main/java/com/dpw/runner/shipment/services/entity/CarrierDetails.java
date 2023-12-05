@@ -8,13 +8,15 @@ import com.dpw.runner.shipment.services.utils.MasterData;
 import com.dpw.runner.shipment.services.utils.UnlocationData;
 import lombok.*;
 import lombok.experimental.Accessors;
-import org.hibernate.annotations.GenerationTime;
+import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Where;
 
-import javax.persistence.*;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.Table;
+import javax.validation.constraints.Size;
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 @Entity
 @Setter
@@ -27,10 +29,11 @@ import java.util.UUID;
 @Builder
 @SQLDelete(sql = "UPDATE carrier_details SET is_deleted = true WHERE id=?")
 @Where(clause = "is_deleted = false")
+@BatchSize(size = 50)
 public class CarrierDetails extends MultiTenancy {
 
     private static final long serialVersionUID = 190794279984274725L;
-
+    @Size(max=64, message = "max size is 64 for shipping line" )
     @Column(name = "shipping_line")
     @DedicatedMasterData(type = Constants.CARRIER_MASTER_DATA)
     private String shippingLine;
@@ -45,26 +48,32 @@ public class CarrierDetails extends MultiTenancy {
     @Column(name = "flight_number")
     private String flightNumber;
 
+    @Size(max=20, message = "max size is 20 for aircraft_type")
     @Column(name = "aircraft_type")
     @MasterData(type = MasterDataType.AIRCRAFT_TYPE)
     private String aircraftType;
 
+    @Size(max=20, message = "max size is 20 for aircraft_type")
     @Column(name = "aircraft_registration")
     private String aircraftRegistration;
 
     @Column(name = "truck_ref_number")
     private String truckRefNumber;
 
+    @Size(max=10, message = "max size is 10 for journey_number")
     @Column(name = "journey_number")
     private String journeyNumber;
 
+    @Size(max=10, message = "max size is 10 for journey_ref_number")
     @Column(name = "journey_ref_number")
     private String journeyRefNumber;
 
+    @Size(max=100, message = "max size is 100 for origin")
     @Column(name = "origin")
     @UnlocationData
     private String origin;
 
+    @Size(max=100, message = "max size is 100 for destination")
     @Column(name = "destination")
     @UnlocationData
     private String destination;
@@ -88,4 +97,7 @@ public class CarrierDetails extends MultiTenancy {
 
     @Column(name = "atd")
     private LocalDateTime atd;
+
+    @Column(name = "vessel_berthing_date")
+    private LocalDateTime vesselBerthingDate;
 }

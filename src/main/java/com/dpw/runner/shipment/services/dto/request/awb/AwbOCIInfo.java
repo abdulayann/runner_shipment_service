@@ -12,7 +12,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 public class AwbOCIInfo {
-    private Integer entityId;
+    private Long entityId;
     private String entityType;
     private Integer informationIdentifier;
     private Integer tradeIdentificationCode;

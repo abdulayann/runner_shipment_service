@@ -9,9 +9,11 @@ import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.JobRequest;
 import com.dpw.runner.shipment.services.dto.response.BookingCarriageResponse;
 import com.dpw.runner.shipment.services.dto.response.EventsResponse;
+import com.dpw.runner.shipment.services.dto.response.HblResponse;
 import com.dpw.runner.shipment.services.dto.response.JobResponse;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IJobService;
+import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
 import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
@@ -21,6 +23,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
+import java.util.List;
 
 @Slf4j
 @SuppressWarnings("ALL")
@@ -57,8 +60,8 @@ public class JobController {
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = EventConstants.EVENTS_RETRIEVE_BY_ID_SUCCESSFUL)})
     @GetMapping(ApiConstants.API_RETRIEVE_BY_ID)
-    public ResponseEntity<RunnerResponse<EventsResponse>> retrieveById(@ApiParam(value = JobConstants.JOB_ID, required = true) @RequestParam Long id) {
-        CommonGetRequest request = CommonGetRequest.builder().id(id).build();
+    public ResponseEntity<RunnerResponse<EventsResponse>> retrieveById(@ApiParam(value = JobConstants.JOB_ID, required = true) @RequestParam Long id, @RequestParam(name = "includeColumns", required = false) List<String> includeColumns) {
+        CommonGetRequest request = CommonGetRequest.builder().id(id).includeColumns(includeColumns).build();
         return (ResponseEntity<RunnerResponse<EventsResponse>>) jobService.retrieveById(CommonRequestModel.buildRequest(request));
     }
 

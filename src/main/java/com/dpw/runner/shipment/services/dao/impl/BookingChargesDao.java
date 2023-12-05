@@ -108,10 +108,8 @@ public class BookingChargesDao implements IBookingChargesDao {
                                         .parentId(entityId)
                                         .operation(DBOperationType.DELETE.name()).build()
                         );
-                    } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException | InvocationTargetException e) {
+                    } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException | InvocationTargetException | NoSuchMethodException e) {
                         log.error(e.getMessage());
-                    } catch (NoSuchMethodException e) {
-                        throw new RuntimeException(e);
                     }
                 }
             });

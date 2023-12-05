@@ -10,15 +10,15 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IReferenceNumbersDao;
 import com.dpw.runner.shipment.services.dto.request.ReferenceNumbersRequest;
 import com.dpw.runner.shipment.services.dto.response.ReferenceNumbersResponse;
-import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.entity.ReferenceNumbers;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IReferenceNumbersService;
+import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
-import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
@@ -29,16 +29,12 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.*;
-import java.util.concurrent.CompletableFuture;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
-import java.util.stream.Collectors;
+import java.util.concurrent.CompletableFuture;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 
 @SuppressWarnings("ALL")
 @Service
@@ -105,6 +101,9 @@ public class ReferenceNumbersService implements IReferenceNumbersService {
 
         ReferenceNumbers referenceNumbers = convertRequestToEntity(request);
         referenceNumbers.setId(oldEntity.get().getId());
+        if(referenceNumbers.getGuid() != null && !oldEntity.get().getGuid().equals(referenceNumbers.getGuid())) {
+            throw new RunnerException("Provided GUID doesn't match with the existing one !");
+        }
         try {
             String oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
             referenceNumbers = referenceNumbersDao.save(referenceNumbers);
@@ -235,7 +234,9 @@ public class ReferenceNumbersService implements IReferenceNumbersService {
             }
             log.info("Reference Number details fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
             ReferenceNumbersResponse response = convertEntityToDto(referenceNumbers.get());
+            if(request.getIncludeColumns()==null||request.getIncludeColumns().size()==0)
             return ResponseHelper.buildSuccessResponse(response);
+            else return ResponseHelper.buildSuccessResponse(PartialFetchUtils.fetchPartialListData(response, request.getIncludeColumns()));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;

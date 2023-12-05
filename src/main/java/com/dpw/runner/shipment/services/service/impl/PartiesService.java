@@ -13,12 +13,17 @@ import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
 import com.dpw.runner.shipment.services.entity.Notes;
 import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.entity.Parties;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IPartiesDetailsService;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
+import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
+import com.google.common.base.Throwables;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang.exception.ExceptionUtils;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
@@ -100,6 +105,9 @@ public class PartiesService implements IPartiesDetailsService {
 
         Parties parties = convertRequestToPartiesDetailsEntity(request);
         parties.setId(oldEntity.get().getId());
+        if(parties.getGuid() != null && !oldEntity.get().getGuid().equals(parties.getGuid())) {
+            throw new RunnerException("Provided GUID doesn't match with the existing one !");
+        }
         try {
             String oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
             parties = partiesDao.save(parties);
@@ -115,7 +123,8 @@ public class PartiesService implements IPartiesDetailsService {
             );
             log.info("Updated the Parties details for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
         } catch (Exception e) {
-            responseMsg = e.getMessage() != null ? e.getMessage()
+            responseMsg = CommonUtils.getErrorResponseMessage(e, Parties.class);
+            responseMsg = !responseMsg.isEmpty() ? responseMsg
                     : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(responseMsg);
@@ -229,7 +238,9 @@ public class PartiesService implements IPartiesDetailsService {
             }
             log.info("Parties details fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
             PartiesResponse response = convertEntityToDto(notes.get());
+            if(request.getIncludeColumns()==null||request.getIncludeColumns().size()==0)
             return ResponseHelper.buildSuccessResponse(response);
+            else return ResponseHelper.buildSuccessResponse(PartialFetchUtils.fetchPartialListData(response, request.getIncludeColumns()));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;

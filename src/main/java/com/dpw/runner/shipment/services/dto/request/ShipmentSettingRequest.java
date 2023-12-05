@@ -148,4 +148,10 @@ public class ShipmentSettingRequest extends CommonRequest implements IRunnerRequ
     private List<ProductSequenceConfigRequest> productSequenceConfig;
     private HawbLockSettingsRequest hawbLockSettings;
     private MawbLockSettingsRequest mawbLockSettings;
+    private Integer hblMultipleOriginalApproval;
+    private Boolean hblApprovalFlow;
+    private Boolean isShipmentLevelContainer;
+    private Boolean restrictBlRelease;
+    private Integer restrictBlApprovalRole;
+    private Boolean eManifest;
 }

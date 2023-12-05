@@ -23,8 +23,9 @@ public class UsersDto implements Serializable {
     public String Email;
     public Boolean IsAdmin;;
     public Integer TenantId;
+    public String Code; //Tenant Code
+    public String CompanyCode;
     public String TenantDisplayName;
-    public String Code;
     public String TenantLogo;
     public String TenantPrintLogo;
     public String TenantCountryCode;
@@ -80,5 +81,6 @@ public class UsersDto implements Serializable {
     public Boolean UnicoRelated;
     public String AgentIATACode;
     public String AgentCASSCode;
+    public Integer SyncTenantId;
 
 }

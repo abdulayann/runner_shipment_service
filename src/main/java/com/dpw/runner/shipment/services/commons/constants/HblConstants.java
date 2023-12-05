@@ -19,6 +19,7 @@ public class HblConstants {
     /** API Constants */
     public static final String API_RETRIEVE_BY_SHIPMENT_ID = "/retrieve/shipment";
     public static final String API_GENERATE_HBL = "/generate";
+    public static final String API_PARTIAL_UPDATE = "/partial-update";
     public static final String API_RESET_HBL = "/reset";
 
 

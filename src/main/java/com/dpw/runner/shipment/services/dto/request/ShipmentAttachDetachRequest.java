@@ -1,6 +1,5 @@
 package com.dpw.runner.shipment.services.dto.request;
 
-import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -13,7 +12,7 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ShipmentAttachDetachRequest extends CommonRequest implements IRunnerRequest {
+public class ShipmentAttachDetachRequest implements IRunnerRequest {
     private Long id;
     private List<Long> shipmentIds;
 }

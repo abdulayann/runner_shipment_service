@@ -1,0 +1,9 @@
+ALTER TABLE shipment_details
+    ADD COLUMN IF NOT EXISTS flight_status VARCHAR(255),
+    ADD COLUMN IF NOT EXISTS contains_hazardous BOOLEAN default false,
+    ADD COLUMN IF NOT EXISTS fmc_tlc_id VARCHAR(255),
+    ADD COLUMN IF NOT EXISTS commodity VARCHAR(255);
+
+
+ALTER TABLE CONTAINERS
+    ADD COLUMN IF NOT EXISTS own_type VARCHAR(255);

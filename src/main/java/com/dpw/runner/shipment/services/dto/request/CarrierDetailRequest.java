@@ -41,4 +41,5 @@ public class CarrierDetailRequest implements IRunnerRequest {
     private Long shipmentId;
     private String originPort;
     private String destinationPort;
+    private LocalDateTime vesselBerthingDate;
 }

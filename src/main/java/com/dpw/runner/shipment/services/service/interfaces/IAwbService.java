@@ -3,6 +3,8 @@ package com.dpw.runner.shipment.services.service.interfaces;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import org.springframework.http.ResponseEntity;
 
+import java.util.List;
+
 public interface IAwbService {
     ResponseEntity<?> createAwb(CommonRequestModel commonRequestModel);
     ResponseEntity<?> updateAwb(CommonRequestModel commonRequestModel);
@@ -10,4 +12,11 @@ public interface IAwbService {
     ResponseEntity<?> createMawb(CommonRequestModel commonRequestModel);
     ResponseEntity<?> updateGoodsAndPacksForMawb(CommonRequestModel commonRequestModel);
     ResponseEntity<?> retrieveById(CommonRequestModel commonRequestModel);
+    ResponseEntity<?> createV1Awb(CommonRequestModel commonRequestModel, boolean checkForSync);
+
+    ResponseEntity<?> customAwbRetrieve(List<String> awbNumber, String issuingAgentName);
+
+    ResponseEntity<?> reset(CommonRequestModel commonRequestModel);
+    ResponseEntity<?> partialAutoUpdateAwb(CommonRequestModel commonRequestModel);
+    ResponseEntity<?> partialAutoUpdateMawb(CommonRequestModel commonRequestModel);
 }

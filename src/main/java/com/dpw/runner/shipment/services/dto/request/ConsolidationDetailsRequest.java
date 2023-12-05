@@ -24,9 +24,6 @@ public class ConsolidationDetailsRequest extends CommonRequest implements IRunne
     private String mawb;
     private String serviceLevel;
     private String payment;
-    private String firstLoad;
-    private String lastDischarge;
-    private String bookingType;
     private String declarationType;
     private String deliveryMode;
     private Boolean isLinked;
@@ -79,12 +76,12 @@ public class ConsolidationDetailsRequest extends CommonRequest implements IRunne
     private LocalDateTime doIssueDate;
     private Long bondedWarehouseId;
     private Long warehouseId;
-    private long sourceTenantId;
+    private Long sourceTenantId;
     private String ediTransactionId;
-    private long triangulationPartner;
-    private long receivingBranch;
+    private Long triangulationPartner;
+    private Long receivingBranch;
     private boolean intraBranch;
-    private long documentationPartner;
+    private Long documentationPartner;
     private Boolean isReceivingAgentFreeTextAddress;
     private String receivingAgentFreeTextAddress;
     private Boolean isSendingAgentFreeTextAddress;
@@ -111,4 +108,5 @@ public class ConsolidationDetailsRequest extends CommonRequest implements IRunne
     private List<ShipmentRequest> shipmentsList;
     private List<Long> shipmentIds;
     private List<PartiesRequest> consolidationAddresses;
+    private String carrierBookingRef;
 }

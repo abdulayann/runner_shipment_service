@@ -8,9 +8,12 @@ import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.ELDetailsRequest;
 import com.dpw.runner.shipment.services.dto.request.ElNumbersRequest;
+import com.dpw.runner.shipment.services.dto.response.CustomerBookingResponse;
 import com.dpw.runner.shipment.services.dto.response.ELDetailsResponse;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.impl.ELDetailsService;
+import com.dpw.runner.shipment.services.syncing.Entity.ElDetailsRequestV2;
+import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import lombok.extern.slf4j.Slf4j;
@@ -20,6 +23,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import javax.validation.Valid;
+import java.util.List;
 
 @RestController
 @RequestMapping(ELDetailsConstants.ELDETAILS_API_HANDLE)
@@ -71,8 +75,8 @@ public class ELDetailsController {
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = ELDetailsConstants.ELDETAILS_RETRIEVE_BY_ID_SUCCESSFUL)})
     @GetMapping(ApiConstants.API_RETRIEVE_BY_ID)
-    public ResponseEntity retrieve(@RequestParam @NonNull Long id) {
-        CommonGetRequest request = CommonGetRequest.builder().id(id).build();
+    public ResponseEntity retrieve(@RequestParam @NonNull Long id, @RequestParam(name = "includeColumns", required = false) List<String> includeColumns) {
+        CommonGetRequest request = CommonGetRequest.builder().id(id).includeColumns(includeColumns).build();
         return (ResponseEntity<RunnerResponse<ELDetailsResponse>>) elDetailsService.retrieveById(CommonRequestModel.buildRequest(request));
     }
 
@@ -88,5 +92,22 @@ public class ELDetailsController {
     @PostMapping("/validateElNumber")
     public ResponseEntity validateElNumber(@RequestBody ElNumbersRequest request) {
         return elDetailsService.validateElNumber(CommonRequestModel.buildRequest(request));
+    }
+
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = ShipmentConstants.SHIPMENT_SYNC_SUCCESSFUL),
+            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
+    })
+    @PostMapping(ApiConstants.SYNC)
+    public ResponseEntity<?> syncElDetailsToService(@RequestBody @Valid ElDetailsRequestV2 request) {
+        String responseMsg = "failure executing :(";
+        try {
+            return elDetailsService.V1ELDetailsCreateAndUpdate(CommonRequestModel.buildRequest(request), true);
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : "Error syncing provided ELDetails";
+            log.error(responseMsg, e);
+        }
+        return ResponseHelper.buildFailedResponse(responseMsg);
     }
 }

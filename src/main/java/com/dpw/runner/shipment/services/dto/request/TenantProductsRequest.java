@@ -6,6 +6,8 @@ import com.dpw.runner.shipment.services.entity.enums.ProductType;
 import io.swagger.annotations.ApiModel;
 import lombok.*;
 
+import java.util.List;
+
 @Getter
 @Setter
 @ApiModel("Tenant Products Request Model")
@@ -22,4 +24,5 @@ public class TenantProductsRequest extends CommonRequest implements IRunnerReque
     private Boolean enabled;
     private Boolean enableGrouping;
     private Long shipmentSettingsId;
+    private List<String> transportModes;
 }

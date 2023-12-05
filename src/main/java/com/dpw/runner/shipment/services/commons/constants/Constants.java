@@ -30,6 +30,7 @@ public class Constants {
     public static final String TENANT_SETTINGS = "TENANT_SETTINGS";
     public static final String ROUTING = "ROUTING";
     public static final String PACKING = "PACKING";
+    public static final String MPK = "MPK";
     public static final String CONTAINER = "CONTAINER";
     public static final String CARRIAGE = "CARRIAGE";
     public static final String EVENTS = "EVENTS";
@@ -77,6 +78,9 @@ public class Constants {
     public static final String TOKEN = "Authorization";
 
     public static final String DMAWB = "DMAWB";
+    public static final String HAWB = "HAWB";
+    public static final String MAWB = "MAWB";
+    public static final String MBL = "MBL";
 
     public static final String FORWARDING_AGENT = "Forwarding Agent";
 
@@ -94,6 +98,7 @@ public class Constants {
     public static final String OWNERSHIP = "OwnerShip";
 
     public static final String SERVICE = "Service";
+    public static final String TI_TEMPLATE_TYPE = "TransportInstructionTemplateType";
 
     /**
      * Events
@@ -105,6 +110,7 @@ public class Constants {
     public static final String AMSEDI = "AMSEDI";
 
     public static final String COMMODITY_TYPE_MASTER_DATA = "CommodityType";
+    public static final String WARE_HOUSE_DATA = "WareHouse";
     public static final String CONTAINER_TYPE_MASTER_DATA = "ContainerType";
     public static final String CURRENCY_MASTER_DATA = "Currency";
     public static final String VESSEL_MASTER_DATA = "Vessel";
@@ -117,10 +123,33 @@ public class Constants {
 
     public static final String CONSOLIDATION_TYPE_AGT = "AGT";
 
+    public static final String AGENT_PREFIX = "A";
+    public static final String CARRIER_PREFIX = "C";
+
+    public static final String CARGO_RUNNER = "CargoRunner";
+
+    public static final String Shipments = "[Shipments]";
+    public static final String Consolidations = "[Consolidations]";
+
+    public static final String IMP = "IMP";
+    public static final String SHIPMENT_TYPE_DRT = "DRT";
 
     public static final String METRIC_TON = "MT";
     public static final String METRE = "M";
     public static final String CENTI = "CM";
     public static final String DECI = "DM";
     public static final String INCH = "IN";
+    public static final String SHIPMENT_ADDRESSES = "SHIPMENT_ADDRESSES";
+    public static final String CONSOLIDATION_ADDRESSES = "CONSOLIDATION_ADDRESSES";
+    public static final String PICK_UP = "Pickup";
+    public static final String DELIVERY = "Delivery";
+    public static final String SHIPMENT_ID_PREFIX = "SHP000";
+
+    // Source
+    public static final String API = "API";
+    public static final String KAFKA_EVENT_CREATE = "create";
+    public static final String KAFKA_EVENT_UPDATE = "update";
+    public static final String ROUTING_CFD = "CFD";
+    public static final String SHIPMENT_TYPE_STD = "STD";
+    public static final String SYSTEM = "System";
 }
