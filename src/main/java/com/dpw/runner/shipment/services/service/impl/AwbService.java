@@ -170,6 +170,7 @@ public class AwbService implements IAwbService {
 
 
         Awb awb = convertRequestToEntity(request);
+        awb.setAwbNumber(awb.getAwbShipmentInfo().getAwbNumber());
         try {
             String oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
             updateAwbOtherChargesInfo(awb.getAwbOtherChargesInfo());
