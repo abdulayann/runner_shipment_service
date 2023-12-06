@@ -64,6 +64,10 @@ public class HblReport extends IReport{
         }
         Map<String, HblContainerDto> hblContainerDtoMap = new HashMap<>();
         hblModel.blObject = getHbl(id);
+        if(hblModel.blObject == null) {
+            hblModel.blObject = new Hbl();
+            hblModel.blObject.setHblData(new HblDataDto());
+        }
         hblModel.commonContainers = new ArrayList<>();
         if(hblModel.blObject.getHblContainer() != null)
         {

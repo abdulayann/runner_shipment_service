@@ -1068,6 +1068,7 @@ public class ShipmentService implements IShipmentService {
             entity.setContainersList(updatedContainers);
 
             String oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
+            updateMasterBill(entity, oldEntity.get().getMasterBill());
             entity = shipmentDao.update(entity, false);
             try {
                 // audit logs
@@ -1716,6 +1717,7 @@ public class ShipmentService implements IShipmentService {
         try {
             ShipmentDetails entity = oldEntity.get();
             shipmentDetailsMapper.update(shipmentRequest, entity);
+            updateMasterBill(entity, oldEntity.get().getMasterBill());
             entity.setId(oldEntity.get().getId());
             List<Containers> updatedContainers = null;
             if (containerRequestList != null) {
@@ -2466,7 +2468,8 @@ public class ShipmentService implements IShipmentService {
 
             response.setVolumeUnit(tenantSettings.getVolumeChargeableUnit());
             response.setWeightUnit(tenantSettings.getWeightChargeableUnit());
-
+            response.setStatus(0);
+            response.setSource(Constants.SYSTEM);
             response.setCreatedBy(UserContext.getUser().getUsername());
 
             this.addAllMasterDataInSingleCall(null, response);
@@ -2646,6 +2649,25 @@ public class ShipmentService implements IShipmentService {
             }
         }
         return defaultRequest;
+    }
+
+    /**
+     * MBL update, propagate the new value to the attached console and its linked shipments
+     * @param shipment
+     * @param oldMasterBill
+     */
+    private void updateMasterBill(ShipmentDetails shipment, String oldMasterBill) {
+        var masterBill = shipment.getMasterBill();
+        if(masterBill != null && !masterBill.equals(oldMasterBill)) {
+            List<ConsolidationDetails> consolidationList = shipment.getConsolidationList();
+            var linkedConsol = (consolidationList != null && consolidationList.size() > 0) ? consolidationList.get(0) : null;
+            if(linkedConsol != null) {
+                linkedConsol.setBol(masterBill);
+                var updatedShipments = linkedConsol.getShipmentsList().stream().map(i -> i.setMasterBill(masterBill)).toList();
+                linkedConsol.setShipmentsList(updatedShipments);
+                consolidationDetailsDao.save(linkedConsol, false);
+            }
+        }
     }
 
 }
