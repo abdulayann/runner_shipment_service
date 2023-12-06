@@ -329,6 +329,11 @@ public class DbAccessHelper {
                     }).collect(Collectors.toList());
                     return criteriaBuilder.in(path.get(fieldName)).value(querySet);
                 }
+                if(dataType.isAssignableFrom(Long.class) && input.getValue() != null && input.getValue() instanceof List) {
+                    List<Long> querySet = ((List<?>) input.getValue()).stream()
+                            .map(i -> Long.valueOf(String.valueOf(i))).collect(Collectors.toList());
+                    return criteriaBuilder.in(path.get(fieldName)).value(querySet);
+                }
                 return criteriaBuilder.in(path.get(fieldName))
                         .value(input.getValue());
             case "CONTAINS":
