@@ -11,11 +11,18 @@ import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dao.impl.ShipmentSettingsDao;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.masterdata.response.ArObjectResponse;
+import com.dpw.runner.shipment.services.masterdata.response.BillChargesResponse;
+import com.dpw.runner.shipment.services.masterdata.response.BillingResponse;
+import com.dpw.runner.shipment.services.masterdata.response.ChargeTypesResponse;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.math.BigDecimal;
+import java.text.DecimalFormat;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -168,8 +175,79 @@ public class FreightCertificationReport extends IReport{
                 }
             }
         }
-        // TODO- Data from billing service
 
+        List<BillingResponse> billingsList = getBillingData(freightCertificationModel.shipmentDetails.getGuid());
+        LocalDateTime lastDate = LocalDateTime.MIN;
+        double totalAmount = 0;
+        String currency = null;
+        if(billingsList != null && billingsList.size() > 0) {
+            for (BillingResponse bill: billingsList) {
+                List<ArObjectResponse> arObjectsList = getArObjectData(bill.getGuid());
+                if(arObjectsList != null && arObjectsList.size() > 0) {
+                    for (ArObjectResponse arObject: arObjectsList) {
+                        if(arObject.getInvoiceDate() != null && arObject.getInvoiceDate().isAfter(lastDate))
+                            lastDate = arObject.getInvoiceDate();
+                    }
+                }
+                List<BillChargesResponse> billChargesList = getBillChargesData(bill.getGuid());
+                boolean currencyFlag = false;
+                if(billChargesList != null && billChargesList.size() > 0) {
+                    for (BillChargesResponse billCharge: billChargesList) {
+                        ChargeTypesResponse chargeTypesResponse = getChargeTypesData(billCharge.getChargeTypeId());
+                        if(chargeTypesResponse != null && chargeTypesResponse.getServices().equals("Freight")) {
+                            if(billCharge.getOverseasSellAmount() != null) {
+                                if (currency == null) {
+                                    currency = billCharge.getOverseasSellCurrency();
+                                    totalAmount = totalAmount + billCharge.getOverseasSellAmount().doubleValue();
+                                } else if (!billCharge.getOverseasSellCurrency().equals(currency)) {
+                                    currencyFlag = true;
+                                    break;
+                                }
+                                else
+                                    totalAmount = totalAmount + billCharge.getOverseasSellAmount().doubleValue();
+                            }
+                        }
+                    }
+                    if (currencyFlag) {
+                        totalAmount = 0;
+                        currency = null;
+                        for (BillChargesResponse billCharge: billChargesList) {
+                            ChargeTypesResponse chargeTypesResponse = getChargeTypesData(billCharge.getChargeTypeId());
+                            if(chargeTypesResponse != null && chargeTypesResponse.getServices().equals("Freight")) {
+                                if(billCharge.getLocalSellAmount() != null) {
+                                    if (currency == null) {
+                                        currency = billCharge.getLocalSellCurrency();
+                                    }
+                                    totalAmount = totalAmount + billCharge.getLocalSellAmount().doubleValue();
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        DecimalFormat decimalFormat = new DecimalFormat("0.00");
+        if(!lastDate.equals(LocalDateTime.MIN))
+            dictionary.put(INVOICE_DATE, lastDate.format(DateTimeFormatter.ofPattern("dd MMM yyyy")));
+        else
+            dictionary.put(INVOICE_DATE, null);
+        if(dictionary.containsKey(FREIGHT_OVERSEAS) && dictionary.get(FREIGHT_OVERSEAS) != null) {
+            BigDecimal tempVar = new BigDecimal(dictionary.get(FREIGHT_OVERSEAS).toString());
+            dictionary.put(FREIGHT_OVERSEAS, decimalFormat.format(tempVar));
+        }
+        else {
+            dictionary.put(FREIGHT_OVERSEAS, null);
+            dictionary.put(FREIGHT_OVERSEAS_CURRENCY, null);
+        }
+        if(totalAmount != 0) {
+            String strTotalAmount = decimalFormat.format(totalAmount);
+            dictionary.put(TOTAL_AMOUNT, strTotalAmount);
+            dictionary.put(TOTAL_AMOUNT_CURRENCY, currency);
+        }
+        else {
+            dictionary.put(TOTAL_AMOUNT, null);
+            dictionary.put(TOTAL_AMOUNT_CURRENCY, null);
+        }
         return dictionary;
     }
 }

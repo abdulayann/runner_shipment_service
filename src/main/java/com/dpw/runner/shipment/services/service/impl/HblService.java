@@ -196,8 +196,9 @@ public class HblService implements IHblService {
             return ResponseHelper.buildSuccessResponse(PartialFetchUtils.fetchPartialListData(convertEntityToDto(hbl.get()),request.getIncludeColumns()));
     }
 
-    public void checkAllContainerAssigned(Long shipmentId, List<Containers> containersList, List<Packing> packings) {
+    public Hbl checkAllContainerAssigned(Long shipmentId, List<Containers> containersList, List<Packing> packings) {
         boolean allContainerAssigned = true;
+        Hbl hbl = null;
         for(Containers container: containersList) {
             if(container.getContainerNumber() == null || container.getContainerNumber().isEmpty()) {
                 allContainerAssigned = false;
@@ -207,7 +208,7 @@ public class HblService implements IHblService {
         if(allContainerAssigned) {
             List<Hbl> hbls = hblDao.findByShipmentId(shipmentId);
             if(hbls.size() > 0) {
-                Hbl hbl = hbls.get(0);
+                hbl = hbls.get(0);
                 boolean isContainerWithoutNumberOrNoContainer = false;
                 if(hbl.getHblContainer() != null && hbl.getHblContainer().size() > 0) {
                     for(HblContainerDto hblContainerDto: hbl.getHblContainer()) {
@@ -223,37 +224,38 @@ public class HblService implements IHblService {
                     hbl.setHblContainer(mapShipmentContainersToHBL(containersList));
                     hbl.setHblCargo(mapShipmentCargoToHBL(packings, containersList));
                     hbl = hblDao.save(hbl);
-                    try {
-                        hblSync.sync(hbl);
-                    }
-                    catch (Exception e) {
-                        log.error("Error performing sync on hbl entity, {}", e);
-                    }
                 }
             }
             else {
                 List<ShipmentSettingsDetails> shipmentSettingsDetails = shipmentSettingsDao.getSettingsByTenantIds(List.of(TenantContext.getCurrentTenant()));
                 if(shipmentSettingsDetails.size() > 0 && (shipmentSettingsDetails.get(0).getRestrictHblGen() == null || !shipmentSettingsDetails.get(0).getRestrictHblGen())) {
-                    generateHBL(CommonRequestModel.buildRequest(HblGenerateRequest.builder().shipmentId(shipmentId).build()));
+                    hbl = getHblFromShipmentId(shipmentId);
                 }
             }
         }
+        return hbl;
+    }
+
+    private Hbl getHblFromShipmentId(Long shipmentId) {
+        Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(shipmentId);
+        if (shipmentDetails.isEmpty())
+            throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+
+        List<Hbl> hbls = hblDao.findByShipmentId(shipmentId);
+        if (! hbls.isEmpty())
+            throw new ValidationException(String.format(HblConstants.HBL_DATA_FOUND, shipmentDetails.get().getShipmentId()));
+
+        Hbl hbl = getDefaultHblFromShipment(shipmentDetails.get());
+        
+        hbl = hblDao.save(hbl);
+        return hbl;
     }
 
     @Override
     public ResponseEntity<?> generateHBL(CommonRequestModel commonRequestModel) {
         HblGenerateRequest request = (HblGenerateRequest) commonRequestModel.getData();
-        Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(request.getShipmentId());
-        if (shipmentDetails.isEmpty())
-            throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
-
-        List<Hbl> hbls = hblDao.findByShipmentId(request.getShipmentId());
-        if (! hbls.isEmpty())
-            throw new ValidationException(String.format(HblConstants.HBL_DATA_FOUND, shipmentDetails.get().getShipmentId()));
-
-        Hbl hbl = getDefaultHblFromShipment(shipmentDetails.get());
-
-        hbl = hblDao.save(hbl);
+        
+        Hbl hbl = getHblFromShipmentId(request.getShipmentId());
 
         try {
             hblSync.sync(hbl);

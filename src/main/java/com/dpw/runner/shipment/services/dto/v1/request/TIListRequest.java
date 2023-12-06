@@ -8,4 +8,5 @@ import java.util.UUID;
 @Data
 public class TIListRequest implements IRunnerRequest {
     private UUID shipmentGuid;
+    private String containsText;
 }

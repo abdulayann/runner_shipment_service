@@ -22,4 +22,5 @@ public class V1TenantSettingsResponse {
     private boolean GSTTaxAutoCalculation;
     private Boolean BillingServiceV2Enabled;
     private Boolean ShipmentServiceV2Enabled;
+    private Boolean UseV2ScreenForBillCharges;
 }

@@ -11,11 +11,14 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
 public class ShipmentModel {
+    @JsonProperty("Guid")
+    private UUID guid;
     @JsonProperty("AdditionalDetails")
     private AdditionalDetailModel additionalDetails;
     @JsonProperty("AdditionalTerms")

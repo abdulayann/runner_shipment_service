@@ -143,6 +143,9 @@ public interface IV1Service {
     HblTaskCreationResponse createTaskforHBL(Object request);
     ShipmentBillingListResponse fetchShipmentBillingData(Object request);
     V1DataResponse fetchRolesList(Object request);
+    V1DataResponse fetchBillingList(Object request);
+    V1DataResponse fetchBillChargesList(Object request);
+    V1DataResponse fetchArObjectList(Object request);
     V1DataSyncResponse v1DataSync(Object request);
 
     String getMaxShipmentId();
