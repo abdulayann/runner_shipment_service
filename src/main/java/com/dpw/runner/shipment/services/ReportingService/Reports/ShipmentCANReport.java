@@ -7,7 +7,10 @@ import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentCANModel
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PartiesModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.entity.enums.MeasurementBasis;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.masterdata.response.BillChargesResponse;
+import com.dpw.runner.shipment.services.masterdata.response.BillingResponse;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -50,7 +53,7 @@ public class ShipmentCANReport extends IReport {
     public Map<String, Object> populateDictionary(IDocumentModel documentModel) {
         ShipmentCANModel shipmentCANModel = (ShipmentCANModel) documentModel;
         Map<String, Object> dictionary = hblReport.getData(shipmentCANModel.shipmentDetails.getId());
-        // List<BillCharges> billChargesList = new ArrayList<>();
+        List<BillChargesResponse> allBillCharges = new ArrayList<>();
         TaxPair<String, String> tax1 = new TaxPair<>("TaxType1", "0");
         TaxPair<String, String> tax2 = new TaxPair<>("TaxType2", "0");
         TaxPair<String, String> tax3 = new TaxPair<>("TaxType3", "0");
@@ -66,7 +69,27 @@ public class ShipmentCANReport extends IReport {
         double taxValue1 = 0.0;
         double taxValue2 = 0.0;
         double taxValue3 = 0.0;
-        // TODO- billRows fetch and calculate tax values
+        List<BillingResponse> billingsList = getBillingData(shipmentCANModel.shipmentDetails.getGuid());
+        if(billingsList != null && billingsList.size() > 0) {
+            for (BillingResponse bill: billingsList) {
+                List<BillChargesResponse> billChargesList = getBillChargesData(bill.getGuid());
+                if(billChargesList != null && billChargesList.size() > 0) {
+                    for (BillChargesResponse billCharge : billChargesList) {
+                        allBillCharges.add(billCharge);
+                        BigDecimal overseasSellAmount = billCharge.getOverseasSellAmount() != null ? billCharge.getOverseasSellAmount() : BigDecimal.ZERO;
+                        BigDecimal overseasTax = billCharge.getOverseasTax() != null ? billCharge.getOverseasTax() : BigDecimal.ZERO;
+                        totalBillAmount = totalBillAmount + overseasSellAmount.doubleValue() + overseasTax.doubleValue();
+                        totalTax = totalTax + overseasTax.doubleValue();
+
+                        BigDecimal exchRate = billCharge.getSellExchange() != null ? billCharge.getSellExchange() : BigDecimal.ZERO;
+                        taxValue0 = taxValue0 + (billCharge.getTaxType1() != null ? billCharge.getTaxType1() : BigDecimal.ZERO).multiply(exchRate).doubleValue();
+                        taxValue1 = taxValue1 + (billCharge.getTaxType2() != null ? billCharge.getTaxType2() : BigDecimal.ZERO).multiply(exchRate).doubleValue();
+                        taxValue2 = taxValue2 + (billCharge.getTaxType3() != null ? billCharge.getTaxType3() : BigDecimal.ZERO).multiply(exchRate).doubleValue();
+                        taxValue3 = taxValue3 + (billCharge.getTaxType4() != null ? billCharge.getTaxType4() : BigDecimal.ZERO).multiply(exchRate).doubleValue();
+                    }
+                }
+            }
+        }
         if(shipmentCANModel.tenantSettingsResponse != null && shipmentCANModel.tenantSettingsResponse.isGSTTaxAutoCalculation()) {
             for (TaxPair<String, String> tax : taxes) {
                 if(tax.getTaxType() == "TaxType1")
@@ -183,7 +206,53 @@ public class ShipmentCANReport extends IReport {
         if(shipmentCANModel.consolidationModel != null && shipmentCANModel.consolidationModel.getPayment() != null) {
             dictionary.put(FREIGHT, shipmentCANModel.consolidationModel.getPayment());
         }
-        // TODO- Bill charges and taxes/amounts calculations...
+        if(allBillCharges.size() > 0) {
+            List<Map<String, Object>> billChargesDict = new ArrayList<>();
+            for (BillChargesResponse billChargesResponse : allBillCharges) {
+                String billChargeJson = jsonHelper.convertToJson(billChargesResponse);
+                billChargesDict.add(jsonHelper.convertJsonToMap(billChargeJson));
+            }
+            for (Map<String, Object> v: billChargesDict) {
+                v.put(TOTAL_AMOUNT, v.containsKey(OVERSEAS_SELL_AMOUNT) && v.get(OVERSEAS_SELL_AMOUNT) != null ? new BigDecimal(v.get(OVERSEAS_SELL_AMOUNT).toString()) : 0);
+                v.put(TOTAL_AMOUNT, new BigDecimal(v.get(TOTAL_AMOUNT).toString()).add(v.containsKey(OVERSEAS_TAX) && v.get(OVERSEAS_TAX) != null ? new BigDecimal(v.get(OVERSEAS_TAX).toString()) : BigDecimal.ZERO));
+                if(shipmentCANModel.tenantSettingsResponse != null && (shipmentCANModel.tenantSettingsResponse.getUseV2ScreenForBillCharges())) {
+                    if (v.containsKey(REVENUE_MEASUREMENT_BASIS) && v.get(REVENUE_MEASUREMENT_BASIS) != null) {
+                        v.put(REVENUE_MEASUREMENT_UNIT, MeasurementBasis.getByValue(Integer.parseInt(v.get(REVENUE_MEASUREMENT_BASIS).toString())));
+                    }
+                    if (v.containsKey(REVENUE_CALCULATED_VALUE) && v.get(REVENUE_CALCULATED_VALUE) != null) {
+                        String[] split = v.get(REVENUE_CALCULATED_VALUE).toString().split(" ");
+                        BigDecimal count = BigDecimal.ONE;
+                        if (split != null && !split[0].equals("null"))
+                            count = new BigDecimal(split[0]);
+                        v.put(REVENUE_TOTAL_UNIT_COUNT, twoDecimalPlacesFormatDecimal(count));
+                    }
+                }
+                else if(v.containsKey(MEASUREMENT_BASIS) && v.get(MEASUREMENT_BASIS) != null) {
+                    v.put(MEASUREMENT_UNIT, MeasurementBasis.getByValue(Integer.parseInt(v.get(MEASUREMENT_BASIS).toString())));
+                    if(v.containsKey(CALCULATED_VALUE) && v.get(CALCULATED_VALUE) != null) {
+                        String[] split = v.get(CALCULATED_VALUE).toString().split(" ");
+                        BigDecimal count = BigDecimal.ONE;
+                        if (split != null && !split[0].equals("null"))
+                            count = new BigDecimal(split[0]);
+                        v.put(TOTAL_UNIT_COUNT, twoDecimalPlacesFormatDecimal(count));
+                    }
+                }
+
+                if(v.containsKey(SELL_EXCHANGE) && v.get(SELL_EXCHANGE) != null)
+                    v.put(SELL_EXCHANGE, twoDecimalPlacesFormat(v.get(SELL_EXCHANGE).toString()));
+                if(v.containsKey(CURRENT_SELL_RATE) && v.get(CURRENT_SELL_RATE) != null)
+                    v.put(CURRENT_SELL_RATE, twoDecimalPlacesFormat(v.get(CURRENT_SELL_RATE).toString()));
+                if(v.containsKey(OVERSEAS_SELL_AMOUNT) && v.get(OVERSEAS_SELL_AMOUNT) != null)
+                    v.put(OVERSEAS_SELL_AMOUNT, twoDecimalPlacesFormat(v.get(OVERSEAS_SELL_AMOUNT).toString()));
+                if(v.containsKey(OVERSEAS_TAX) && v.get(OVERSEAS_TAX) != null)
+                    v.put(OVERSEAS_TAX, twoDecimalPlacesFormat(v.get(OVERSEAS_TAX).toString()));
+                if(v.containsKey(TAX_PERCENTAGE) && v.get(TAX_PERCENTAGE) != null)
+                    v.put(TAX_PERCENTAGE, twoDecimalPlacesFormat(v.get(TAX_PERCENTAGE).toString()));
+                if(v.containsKey(TOTAL_AMOUNT) && v.get(TOTAL_AMOUNT) != null)
+                    v.put(TOTAL_AMOUNT, twoDecimalPlacesFormat(v.get(TOTAL_AMOUNT).toString()));
+            }
+            dictionary.put(BILL_CHARGES, billChargesDict);
+        }
         dictionary.put(ReportConstants.TOTAL_BILL_AMOUNT, twoDecimalPlacesFormatDecimal(BigDecimal.valueOf(totalBillAmount)));
         dictionary.put(TAXES, taxes);
         dictionary.put(TOTAL_TAX_AMOUNT, twoDecimalPlacesFormatDecimal(BigDecimal.valueOf(totalTax)));

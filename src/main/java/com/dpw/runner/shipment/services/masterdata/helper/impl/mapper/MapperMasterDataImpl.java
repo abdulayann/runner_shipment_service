@@ -349,4 +349,24 @@ public class MapperMasterDataImpl implements IMasterDataService {
     public DependentServiceResponse fetchGetTemplateMainPage(Object request) {
         return null;
     }
+
+    @Override
+    public DependentServiceResponse fetchBillingList(Object request) {
+        return null;
+    }
+
+    @Override
+    public DependentServiceResponse fetchBillChargesList(Object request) {
+        return null;
+    }
+
+    @Override
+    public DependentServiceResponse fetchArObjectList(Object request) {
+        return null;
+    }
+
+    @Override
+    public DependentServiceResponse fetchChargeType(Object request) {
+        return null;
+    }
 }

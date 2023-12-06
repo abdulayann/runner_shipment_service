@@ -3,15 +3,12 @@ package com.dpw.runner.shipment.services.service.v1.impl;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
 import com.dpw.runner.shipment.services.dto.response.CheckCreditLimitResponse;
-import com.dpw.runner.shipment.services.dto.v1.request.CreateConsolidationTaskRequest;
-import com.dpw.runner.shipment.services.dto.v1.request.CreateShipmentTaskRequest;
-import com.dpw.runner.shipment.services.dto.response.CheckCreditLimitResponse;
 import com.dpw.runner.shipment.services.dto.v1.request.*;
 import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.CustomerBooking;
 import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
-import com.dpw.runner.shipment.services.entitytransfer.dto.response.CheckTaskExistResponse;
 import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
+import com.dpw.runner.shipment.services.entitytransfer.dto.response.CheckTaskExistResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.UnAuthorizedException;
 import com.dpw.runner.shipment.services.exception.exceptions.V1ServiceException;
 import com.dpw.runner.shipment.services.exception.response.V1ErrorResponse;
@@ -272,6 +269,12 @@ public class V1ServiceImpl implements IV1Service {
     private String HBL_TASK_CREATION;
     @Value("${v1service.url.base}${v1service.url.roleList}")
     private String ROLES_LIST;
+    @Value("${v1service.url.base}${v1service.url.billingData}")
+    private String BILLING_LIST;
+    @Value("${v1service.url.base}${v1service.url.billChargesData}")
+    private String BILL_CHARGES_LIST;
+    @Value("${v1service.url.base}${v1service.url.arObjectData}")
+    private String AR_OBJECT_LIST;
     @Value("${v1service.url.base}${v1service.url.dataSync}")
     private String DATA_SYNC_URL;
     @Value("${v1service.url.base}${v1service.url.getMaxShipmentId}")
@@ -1626,6 +1629,69 @@ public class V1ServiceImpl implements IV1Service {
             tiDataResponse = this.restTemplate.postForEntity(this.ROLES_LIST, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in fetchRolesList() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) tiDataResponse.getBody();
+        } catch (HttpStatusCodeException var6) {
+            if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
+                throw new UnAuthorizedException("UnAuthorizedException");
+            } else {
+                throw new V1ServiceException(var6.getMessage());
+            }
+        } catch (Exception var7) {
+            throw new V1ServiceException(var7.getMessage());
+        }
+    }
+
+    @Override
+    public V1DataResponse fetchBillingList(Object request) {
+        ResponseEntity billingDataResponse = null;
+
+        try {
+            long time = System.currentTimeMillis();
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            billingDataResponse = this.restTemplate.postForEntity(this.BILLING_LIST, entity, V1DataResponse.class, new Object[0]);
+            log.info("Token time taken in fetchRolesList() function " + (System.currentTimeMillis() - time));
+            return (V1DataResponse) billingDataResponse.getBody();
+        } catch (HttpStatusCodeException var6) {
+            if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
+                throw new UnAuthorizedException("UnAuthorizedException");
+            } else {
+                throw new V1ServiceException(var6.getMessage());
+            }
+        } catch (Exception var7) {
+            throw new V1ServiceException(var7.getMessage());
+        }
+    }
+
+    @Override
+    public V1DataResponse fetchBillChargesList(Object request) {
+        ResponseEntity billChargesDataResponse = null;
+
+        try {
+            long time = System.currentTimeMillis();
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            billChargesDataResponse = this.restTemplate.postForEntity(this.BILL_CHARGES_LIST, entity, V1DataResponse.class, new Object[0]);
+            log.info("Token time taken in fetchRolesList() function " + (System.currentTimeMillis() - time));
+            return (V1DataResponse) billChargesDataResponse.getBody();
+        } catch (HttpStatusCodeException var6) {
+            if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
+                throw new UnAuthorizedException("UnAuthorizedException");
+            } else {
+                throw new V1ServiceException(var6.getMessage());
+            }
+        } catch (Exception var7) {
+            throw new V1ServiceException(var7.getMessage());
+        }
+    }
+
+    @Override
+    public V1DataResponse fetchArObjectList(Object request) {
+        ResponseEntity arObjectDataResponse = null;
+
+        try {
+            long time = System.currentTimeMillis();
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            arObjectDataResponse = this.restTemplate.postForEntity(this.AR_OBJECT_LIST, entity, V1DataResponse.class, new Object[0]);
+            log.info("Token time taken in fetchRolesList() function " + (System.currentTimeMillis() - time));
+            return (V1DataResponse) arObjectDataResponse.getBody();
         } catch (HttpStatusCodeException var6) {
             if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
                 throw new UnAuthorizedException("UnAuthorizedException");

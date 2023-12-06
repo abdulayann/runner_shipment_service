@@ -49,6 +49,7 @@ import com.dpw.runner.shipment.services.service_bus.ISBProperties;
 import com.dpw.runner.shipment.services.service_bus.SBUtilsImpl;
 import com.dpw.runner.shipment.services.syncing.impl.ShipmentSync;
 import com.dpw.runner.shipment.services.syncing.interfaces.IConsolidationSync;
+import com.dpw.runner.shipment.services.syncing.interfaces.IHblSync;
 import com.dpw.runner.shipment.services.utils.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.util.Pair;
@@ -218,6 +219,9 @@ public class ShipmentService implements IShipmentService {
 
     @Autowired
     private GetNextNumberHelper getNextNumberHelper;
+
+    @Autowired
+    private IHblSync hblSync;
 
     private ShipmentDetails currentShipment;
 
@@ -578,7 +582,11 @@ public class ShipmentService implements IShipmentService {
         }
 
         try {
-
+            
+            List<ShipmentSettingsDetails> shipmentSettingsDetailsList = shipmentSettingsDao.getSettingsByTenantIds(List.of(TenantContext.getCurrentTenant()));
+            ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
+            if(shipmentSettingsDetailsList.size() > 0)
+                shipmentSettingsDetails = shipmentSettingsDetailsList.get(0);
 //            if (request.getConsolidationList() != null) {
 //                List<ConsolidationDetailsRequest> consolRequest = request.getConsolidationList();
 //                List<ConsolidationDetails> consolList = consolidationDetailsDao.saveAll(commonUtils.convertToCreateEntityList(consolRequest, ConsolidationDetails.class));
@@ -643,21 +651,35 @@ public class ShipmentService implements IShipmentService {
             if (shipmentAddressRequest != null)
                 shipmentDetails.setShipmentAddresses(partiesDao.saveEntityFromOtherEntity(commonUtils.convertToCreateEntityList(shipmentAddressRequest, Parties.class), shipmentId, Constants.SHIPMENT_ADDRESSES));
 
+            Hbl hbl = null;
+            ConsolidationDetails consolidationDetails = null;
+            if(updatedContainers.size() > 0) {
+                hbl = hblService.checkAllContainerAssigned(shipmentId, updatedContainers, updatedPackings);
+                if((tempConsolIds == null || tempConsolIds.size() == 0) && (shipmentSettingsDetails.getIsShipmentLevelContainer() == null || !shipmentSettingsDetails.getIsShipmentLevelContainer())) {
+                    consolidationDetails = createConsolidation(shipmentDetails, updatedContainers);
+                }
+            }
+            afterSave(shipmentDetails, true);
             try {
                 shipmentSync.sync(shipmentDetails);
             } catch (Exception e){
                 log.error("Error performing sync on shipment entity, {}", e);
             }
-
-            if(updatedContainers.size() > 0) {
-                hblService.checkAllContainerAssigned(shipmentId, updatedContainers, updatedPackings);
-                if(tempConsolIds == null || tempConsolIds.size() == 0) {
-                    createConsolidation(shipmentDetails, updatedContainers);
+            if(hbl != null) {
+                try {
+                    hblSync.sync(hbl);
+                }
+                catch (Exception e) {
+                    log.error("Error performing sync on hbl entity, {}", e);
                 }
             }
-            afterSave(shipmentDetails, true);
-//            EventMessage eventMessage = EventMessage.builder().messageType(Constants.SERVICE).entity(Constants.SHIPMENT).request(shipmentDetails).build();
-//            sbUtils.sendMessagesToTopic(isbProperties, azureServiceBusTopic.getTopic(), Arrays.asList(new ServiceBusMessage(jsonHelper.convertToJsonIncludeNulls(eventMessage))));
+            if(consolidationDetails != null) {
+                try {
+                    consolidationSync.sync(consolidationDetails);
+                } catch (Exception e) {
+                    log.error("Error performing sync on consol entity, {}", e);
+                }
+            }
 
             // audit logs
             auditLogService.addAuditLog(
@@ -1133,18 +1155,35 @@ public class ShipmentService implements IShipmentService {
                 entity.setShipmentAddresses(updatedParties);
             }
 
+            Hbl hbl = null;
+            ConsolidationDetails consolidationDetails = null;
+            if(updatedContainers.size() > 0) {
+                hbl = hblService.checkAllContainerAssigned(id, updatedContainers, updatedPackings);
+                if((tempConsolIds == null || tempConsolIds.size() == 0) && (shipmentSettingsDetails.getIsShipmentLevelContainer() == null || !shipmentSettingsDetails.getIsShipmentLevelContainer())) {
+                    consolidationDetails = createConsolidation(entity, updatedContainers);
+                }
+            }
+            afterSave(entity, false);
             try {
                 shipmentSync.sync(entity);
             } catch (Exception e){
                 log.error("Error performing sync on shipment entity, {}", e);
             }
-            if(updatedContainers.size() > 0) {
-                hblService.checkAllContainerAssigned(id, updatedContainers, updatedPackings);
-                if((tempConsolIds == null || tempConsolIds.size() == 0) && (shipmentSettingsDetails.getIsShipmentLevelContainer() == null || !shipmentSettingsDetails.getIsShipmentLevelContainer())) {
-                    createConsolidation(entity, updatedContainers);
+            if(hbl != null) {
+                try {
+                    hblSync.sync(hbl);
+                }
+                catch (Exception e) {
+                    log.error("Error performing sync on hbl entity, {}", e);
                 }
             }
-            afterSave(entity, false);
+            if(consolidationDetails != null) {
+                try {
+                    consolidationSync.sync(consolidationDetails);
+                } catch (Exception e) {
+                    log.error("Error performing sync on consol entity, {}", e);
+                }
+            }
             ShipmentDetailsResponse response = shipmentDetailsMapper.map(entity);
             return ResponseHelper.buildSuccessResponse(response);
         } catch (Exception e) {
@@ -1188,14 +1227,14 @@ public class ShipmentService implements IShipmentService {
         }
     }
 
-    public void createConsolidation(ShipmentDetails shipmentDetails, List<Containers> containers) {
+    public ConsolidationDetails createConsolidation(ShipmentDetails shipmentDetails, List<Containers> containers) {
         List<ShipmentSettingsDetails> shipmentSettingsDetails = shipmentSettingsDao.getSettingsByTenantIds(List.of(TenantContext.getCurrentTenant()));
         ShipmentSettingsDetails shipmentSettings = null;
         if(shipmentSettingsDetails != null && shipmentSettingsDetails.size() > 0)
             shipmentSettings = shipmentSettingsDetails.get(0);
         else {
             log.error("Not able to create consolidation, Shipment Settings not available in current tenant");
-            return;
+            return null;
         }
         if(shipmentSettings.getShipConsolidationContainerEnabled()) {
             ConsolidationDetails consolidationDetails = new ConsolidationDetails();
@@ -1239,12 +1278,9 @@ public class ShipmentService implements IShipmentService {
             consolidationDetails.setContainersList(containers);
             attachConsolidations(shipmentDetails.getId(), List.of(id));
             consolidationService.afterSave(consolidationDetails, true);
-            try {
-                consolidationSync.sync(consolidationDetails);
-            } catch (Exception e) {
-                log.error("Error performing sync on consol entity, {}", e);
-            }
+            return consolidationDetails;
         }
+        return null;
     }
 
     @Override
