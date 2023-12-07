@@ -6,6 +6,7 @@ import lombok.Data;
 import java.util.UUID;
 
 @Data
-public class TIListRequest implements IRunnerRequest {
+public class TIContainerListRequest implements IRunnerRequest {
     private UUID shipmentGuid;
+    private String containsText;
 }

@@ -101,4 +101,5 @@ public class ContainerResponse implements IRunnerResponse {
     private Long contractEnforcedQuantityLimit;
     private String ownType;
     private String handlingInfo;
+    private Map<String, String> textFieldData;
 }

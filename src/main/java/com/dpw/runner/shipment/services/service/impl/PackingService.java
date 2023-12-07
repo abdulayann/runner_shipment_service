@@ -9,7 +9,7 @@ import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.config.SyncConfig;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
-import com.dpw.runner.shipment.services.dto.ContainerAPIsRequest.PackSummary;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryResponse;
 import com.dpw.runner.shipment.services.dto.request.PackingRequest;
 import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.PackingResponse;
@@ -376,9 +376,9 @@ public class PackingService implements IPackingService {
         return ResponseHelper.buildListSuccessResponse(finalContainers);
     }
 
-    public PackSummary calculatePackSummary(List<Packing> packingList, String transportMode, String containerCategory) throws Exception {
+    public PackSummaryResponse calculatePackSummary(List<Packing> packingList, String transportMode, String containerCategory) throws Exception {
         try {
-            PackSummary response = new PackSummary();
+            PackSummaryResponse response = new PackSummaryResponse();
             double totalWeight = 0;
             String packsCount = "";
             double volumeWeight = 0;

@@ -7,11 +7,12 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
-import com.dpw.runner.shipment.services.dto.ContainerAPIsRequest.*;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.*;
 import com.dpw.runner.shipment.services.dto.patchRequest.ShipmentPatchRequest;
 import com.dpw.runner.shipment.services.dto.request.AttachListShipmentRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
 import com.dpw.runner.shipment.services.dto.response.*;
+import com.dpw.runner.shipment.services.dto.v1.request.TIContainerListRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TIListRequest;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -205,40 +206,55 @@ public class ShipmentController {
         return (ResponseEntity<RunnerResponse<ShipmentDetailsResponse>>) ResponseHelper.buildFailedResponse(responseMsg);
     }
 
-    @ApiResponses(value = { @ApiResponse(code = 200, message = ContainerConstants.CONTAINER_CALCULATION_SUCCESSFUL) })
+    @ApiResponses(value = { @ApiResponse(code = 200, message = ContainerConstants.CALCULATION_SUCCESSFUL) })
     @PostMapping(ApiConstants.API_ASSIGN_SHIPMENT_CONTAINERS)
     public ResponseEntity<RunnerListResponse<ContainerResponse>> assignShipmentContainers(@RequestBody ShipmentContainerAssignRequest shipmentContainerAssignRequest) {
         return (ResponseEntity<RunnerListResponse<ContainerResponse>>) shipmentService.assignShipmentContainers(CommonRequestModel.buildRequest(shipmentContainerAssignRequest));
     }
 
-    @ApiResponses(value = { @ApiResponse(code = 200, message = ContainerConstants.CONTAINER_CALCULATION_SUCCESSFUL) })
+    @ApiResponses(value = { @ApiResponse(code = 200, message = ContainerConstants.CALCULATION_SUCCESSFUL) })
     @PostMapping(ApiConstants.CALCULATE_CONTAINER_SUMMARY)
-    public ResponseEntity<RunnerResponse<ContainerSummary>> calculateContainerSummary(@RequestBody ContainerSummaryRequest containerSummaryRequest) {
+    public ResponseEntity<RunnerResponse<ContainerSummaryResponse>> calculateContainerSummary(@RequestBody CalculateContainerSummaryRequest calculateContainerSummaryRequest) {
         String responseMsg;
         try {
-            return (ResponseEntity<RunnerResponse<ContainerSummary>>) shipmentService.calculateContainerSummary(CommonRequestModel.buildRequest(containerSummaryRequest));
+            return (ResponseEntity<RunnerResponse<ContainerSummaryResponse>>) shipmentService.calculateContainerSummary(CommonRequestModel.buildRequest(calculateContainerSummaryRequest));
         }
         catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_CALCULATION_ERROR;
             log.error(responseMsg, e);
         }
-        return (ResponseEntity<RunnerResponse<ContainerSummary>>) ResponseHelper.buildFailedResponse(responseMsg);
+        return (ResponseEntity<RunnerResponse<ContainerSummaryResponse>>) ResponseHelper.buildFailedResponse(responseMsg);
     }
 
-    @ApiResponses(value = { @ApiResponse(code = 200, message = ContainerConstants.CONTAINER_CALCULATION_SUCCESSFUL) })
+    @ApiResponses(value = { @ApiResponse(code = 200, message = ContainerConstants.CALCULATION_SUCCESSFUL) })
     @PostMapping(ApiConstants.CALCULATE_PACK_SUMMARY)
-    public ResponseEntity<RunnerResponse<PackSummary>> calculatePackSummary(@RequestBody PackSummaryRequest packSummaryRequest) {
+    public ResponseEntity<RunnerResponse<PackSummaryResponse>> calculatePackSummary(@RequestBody CalculatePackSummaryRequest calculatePackSummaryRequest) {
         String responseMsg;
         try {
-            return (ResponseEntity<RunnerResponse<PackSummary>>) shipmentService.calculatePackSummary(CommonRequestModel.buildRequest(packSummaryRequest));
+            return (ResponseEntity<RunnerResponse<PackSummaryResponse>>) shipmentService.calculatePackSummary(CommonRequestModel.buildRequest(calculatePackSummaryRequest));
         }
         catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_CALCULATION_ERROR;
             log.error(responseMsg, e);
         }
-        return (ResponseEntity<RunnerResponse<PackSummary>>) ResponseHelper.buildFailedResponse(responseMsg);
+        return (ResponseEntity<RunnerResponse<PackSummaryResponse>>) ResponseHelper.buildFailedResponse(responseMsg);
+    }
+
+    @ApiResponses(value = { @ApiResponse(code = 200, message = ContainerConstants.CALCULATION_SUCCESSFUL) })
+    @PostMapping(ApiConstants.CALCULATE_AUTO_UPDATE_WT_VOL_SHIPMENT)
+    public ResponseEntity<RunnerResponse<AutoUpdateWtVolResponse>> calculateAutoUpdateWtVolInShipment(@RequestBody AutoUpdateWtVolRequest autoUpdateWtVolRequest) {
+        String responseMsg;
+        try {
+            return (ResponseEntity<RunnerResponse<AutoUpdateWtVolResponse>>) shipmentService.calculateAutoUpdateWtVolInShipment(CommonRequestModel.buildRequest(autoUpdateWtVolRequest));
+        }
+        catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_CALCULATION_ERROR;
+            log.error(responseMsg, e);
+        }
+        return (ResponseEntity<RunnerResponse<AutoUpdateWtVolResponse>>) ResponseHelper.buildFailedResponse(responseMsg);
     }
 
     @ApiResponses(value = {
@@ -304,7 +320,7 @@ public class ShipmentController {
             @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
     })
     @PostMapping(ApiConstants.LIST_CONTAINER_FOR_TI)
-    public ResponseEntity<?> listContainersForTI(@RequestBody @Valid TIListRequest request) {
+    public ResponseEntity<?> listContainersForTI(@RequestBody @Valid TIContainerListRequest request) {
         String responseMsg = "failure executing :(";
         try {
             return shipmentService.containerListForTI(CommonRequestModel.buildRequest(request));

@@ -10,10 +10,10 @@ import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.config.SyncConfig;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
-import com.dpw.runner.shipment.services.dto.ContainerAPIsRequest.ContainerAssignRequest;
-import com.dpw.runner.shipment.services.dto.ContainerAPIsRequest.ContainerNumberCheckResponse;
-import com.dpw.runner.shipment.services.dto.ContainerAPIsRequest.ContainerPackAssignDetachRequest;
-import com.dpw.runner.shipment.services.dto.ContainerAPIsRequest.ContainerSummary;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerAssignRequest;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerNumberCheckResponse;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerPackAssignDetachRequest;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerSummaryResponse;
 import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
 import com.dpw.runner.shipment.services.dto.request.EventsRequest;
 import com.dpw.runner.shipment.services.dto.request.PackingRequest;
@@ -787,7 +787,7 @@ public class ContainerService implements IContainerService {
         return eqvNumValue;
     }
 
-    public ContainerSummary calculateContainerSummary(List<Containers> containersList, String transportMode, String containerCategory) throws Exception {
+    public ContainerSummaryResponse calculateContainerSummary(List<Containers> containersList, String transportMode, String containerCategory) throws Exception {
         try {
             double totalWeight = 0;
             double packageCount = 0;
@@ -823,7 +823,7 @@ public class ContainerService implements IContainerService {
                         totalPacks = totalPacks + Long.parseLong(containers.getPacks());
                 }
             }
-            ContainerSummary response = new ContainerSummary();
+            ContainerSummaryResponse response = new ContainerSummaryResponse();
             response.setTotalPackages(String.valueOf(packageCount));
             response.setTotalContainers(String.valueOf(totalContainerCount));
             response.setTotalWeight(totalWeight + " " + toWeightUnit);
