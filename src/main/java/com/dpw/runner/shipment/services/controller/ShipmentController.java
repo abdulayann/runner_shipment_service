@@ -18,8 +18,8 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
 import com.dpw.runner.shipment.services.syncing.Entity.CustomShipmentSyncRequest;
-import com.dpw.runner.shipment.services.syncing.impl.ShipmentSync;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentReverseSync;
+import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
@@ -51,7 +51,7 @@ public class ShipmentController {
     @Autowired
     private IShipmentService shipmentService;
     @Autowired
-    ShipmentSync shipmentSync;
+    IShipmentSync shipmentSync;
     @Autowired
     IShipmentReverseSync shipmentReverseSync;
     @Autowired
