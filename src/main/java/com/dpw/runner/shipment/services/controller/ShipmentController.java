@@ -1,6 +1,6 @@
 package com.dpw.runner.shipment.services.controller;
 
-import com.dpw.runner.shipment.services.adapters.impl.OrderManagementAdapter;
+import com.dpw.runner.shipment.services.adapters.interfaces.IOrderManagementAdapter;
 import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
@@ -61,7 +61,7 @@ public class ShipmentController {
     @Autowired
     ObjectMapper objectMapper;
     @Autowired
-    OrderManagementAdapter orderManagementAdapter;
+    IOrderManagementAdapter orderManagementAdapter;
 
 
 

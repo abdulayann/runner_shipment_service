@@ -49,9 +49,9 @@ public class SyncQueueService implements ISyncQueueService {
     @Autowired
     private IPackingService packingService;
     @Autowired
-    private RoutingsService routingsService;
+    private IRoutingsService routingsService;
     @Autowired
-    private ELDetailsService elDetailsService;
+    private IELDetailsService elDetailsService;
     @Autowired
     private IEventService eventService;
     @Autowired
