@@ -1736,7 +1736,7 @@ public class ConsolidationService implements IConsolidationService {
             consolidationDetails.setLockedBy(currentUser);
         }
         consolidationDetails = consolidationDetailsDao.save(consolidationDetails, false);
-        consolidationSync.sync(consolidationDetails);
+        consolidationSync.syncLockStatus(consolidationDetails);
         afterSave(consolidationDetails, false);
 
         return ResponseHelper.buildSuccessResponse();

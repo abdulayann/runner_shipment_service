@@ -3,7 +3,9 @@ package com.dpw.runner.shipment.services.syncing.constants;
 public class SyncingConstants {
 
     public static final String SHIPMENT = "SHIPMENT";
+    public static final String SHIPMENT_LOCK = "SHIPMENT_LOCK";
     public static final String CONSOLIDATION = "CONSOLIDATION";
+    public static final String CONSOLIDATION_LOCK = "CONSOLIDATION_LOCK";
     public static final String HBL = "HBL";
     public static final String TENANT_SETTINGS = "TENANT_SETTINGS";
     public static final String AWB = "AWB";

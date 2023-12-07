@@ -100,6 +100,28 @@ public class ConsolidationSync implements IConsolidationSync {
         return callSync(consolidationRequest, response, request.getId(), request.getGuid());
     }
 
+    @Override
+    public void syncLockStatus(ConsolidationDetails consolidationDetails) {
+        LockSyncRequest lockSyncRequest = LockSyncRequest.builder().guid(consolidationDetails.getGuid()).lockStatus(consolidationDetails.getIsLocked()).build();
+        String finalCs = jsonHelper.convertToJson(V1DataSyncRequest.builder().entity(lockSyncRequest).module(SyncingConstants.CONSOLIDATION_LOCK).build());
+        retryTemplate.execute(ctx -> {
+            log.info("Current retry : {}", ctx.getRetryCount());
+            if (ctx.getLastThrowable() != null) {
+                log.error("V1 error -> {}", ctx.getLastThrowable().getMessage());
+            }
+            V1DataSyncResponse response_ = v1Service.v1DataSync(finalCs);
+            if (!response_.getIsSuccess()) {
+                try {
+                    emailServiceUtility.sendEmailForSyncEntity(String.valueOf(consolidationDetails.getId()), String.valueOf(consolidationDetails.getGuid()),
+                            "Consolidation Lock Sync", response_.getError().toString());
+                } catch (Exception ex) {
+                    log.error("Not able to send email for sync failure for Shipment Sync " + ex.getMessage());
+                }
+            }
+            return ResponseHelper.buildSuccessResponse(response_);
+        });
+    }
+
     @Async
     private ResponseEntity<?> callSync(String consolidationRequest, CustomConsolidationRequest response, Long id, UUID guid) {
         retryTemplate.execute(ctx -> {
