@@ -4,8 +4,8 @@ import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
-import com.dpw.runner.shipment.services.dto.ContainerAPIsRequest.ContainerAssignRequest;
-import com.dpw.runner.shipment.services.dto.ContainerAPIsRequest.ContainerPackAssignDetachRequest;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerAssignRequest;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerPackAssignDetachRequest;
 import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
 import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.EventsResponse;
@@ -141,13 +141,13 @@ public class ContainerController {
         return (ResponseEntity<RunnerListResponse<ContainerResponse>>) containerService.getContainersForSelection(CommonRequestModel.buildRequest(containerAssignRequest));
     }
 
-    @ApiResponses(value = { @ApiResponse(code = 200, message = ContainerConstants.CONTAINER_CALCULATION_SUCCESSFUL) })
+    @ApiResponses(value = { @ApiResponse(code = 200, message = ContainerConstants.CALCULATION_SUCCESSFUL) })
     @PostMapping(ApiConstants.API_CHANGE_UNIT_ALLOCATED_ACHIEVED)
     public ResponseEntity<RunnerListResponse<ContainerResponse>> calculateAchieved_AllocatedForSameUnit(@RequestBody ContainerRequest containerRequest) {
         return (ResponseEntity<RunnerListResponse<ContainerResponse>>) containerService.calculateAchieved_AllocatedForSameUnit(CommonRequestModel.buildRequest(containerRequest));
     }
 
-    @ApiResponses(value = { @ApiResponse(code = 200, message = ContainerConstants.CONTAINER_CALCULATION_SUCCESSFUL) })
+    @ApiResponses(value = { @ApiResponse(code = 200, message = ContainerConstants.CALCULATION_SUCCESSFUL) })
     @PostMapping(ApiConstants.API_CALCULATE_ACHIEVED_PACK_ASSIGN)
     public ResponseEntity<RunnerListResponse<ContainerResponse>> calculateAchievedOnPackAssign(@RequestBody ContainerPackAssignDetachRequest containerPackAssignDetachRequest) {
         return (ResponseEntity<RunnerListResponse<ContainerResponse>>) containerService.calculateAchievedQuantity_onPackAssign(CommonRequestModel.buildRequest(containerPackAssignDetachRequest));
