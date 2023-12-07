@@ -779,9 +779,8 @@ public class ReportService implements IReportService {
 //                            row.SeaShippingInstructionMainPage, null, row.SeaShippingInstructionMainPage == null ? false : true);
 //        }
 
-//        return setDocPages(null,
-//                row.getShipmentIn == null ? adminRow.ShipmentInstruction : row.ShipmentInstruction, null, row.ShipmentInstruction == null ? false : true);
-        return null;
+        return setDocPages(null,
+                row.getShippingInstruction() == null ? adminRow.getShippingInstruction() : row.getShippingInstruction(), null, row.getShippingInstruction() == null ? false : true, null, null, null);
     }
 
     private String getSerialCount(int copyNumber, int totalCopies){
