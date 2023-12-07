@@ -42,7 +42,7 @@ import com.dpw.runner.shipment.services.service.interfaces.IPackingService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service_bus.AzureServiceBusTopic;
 import com.dpw.runner.shipment.services.service_bus.ISBProperties;
-import com.dpw.runner.shipment.services.service_bus.SBUtilsImpl;
+import com.dpw.runner.shipment.services.service_bus.ISBUtils;
 import com.dpw.runner.shipment.services.syncing.interfaces.IConsolidationSync;
 import com.dpw.runner.shipment.services.utils.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -149,7 +149,7 @@ public class ConsolidationService implements IConsolidationService {
     private IShipmentSettingsDao shipmentSettingsDao;
 
     @Autowired
-    private SBUtilsImpl sbUtils;
+    private ISBUtils sbUtils;
 
     @Autowired
     private ISBProperties isbProperties;
