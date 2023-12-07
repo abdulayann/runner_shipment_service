@@ -20,6 +20,7 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IELDetailsService;
+import com.dpw.runner.shipment.services.service.interfaces.ISyncQueueService;
 import com.dpw.runner.shipment.services.syncing.Entity.ElDetailsRequestV2;
 import com.dpw.runner.shipment.services.syncing.constants.SyncingConstants;
 import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
@@ -70,7 +71,7 @@ public class ELDetailsService implements IELDetailsService {
     private IShipmentDao shipmentDao;
     @Lazy
     @Autowired
-    private SyncQueueService syncQueueService;
+    private ISyncQueueService syncQueueService;
     @Autowired
     private SyncConfig syncConfig;
 

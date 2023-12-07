@@ -21,6 +21,7 @@ import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IPickupDeliveryDetailsService;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
+import com.dpw.runner.shipment.services.service.interfaces.ISyncQueueService;
 import com.dpw.runner.shipment.services.syncing.Entity.PickupDeliveryDetailsRequestV2;
 import com.dpw.runner.shipment.services.syncing.constants.SyncingConstants;
 import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
@@ -71,7 +72,7 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
     private IShipmentService shipmentService;
     @Lazy
     @Autowired
-    private SyncQueueService syncQueueService;
+    private ISyncQueueService syncQueueService;
     @Autowired
     private SyncConfig syncConfig;
 

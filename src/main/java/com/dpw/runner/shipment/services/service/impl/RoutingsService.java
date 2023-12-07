@@ -21,6 +21,7 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IRoutingsService;
+import com.dpw.runner.shipment.services.service.interfaces.ISyncQueueService;
 import com.dpw.runner.shipment.services.syncing.Entity.RoutingsRequestV2;
 import com.dpw.runner.shipment.services.syncing.constants.SyncingConstants;
 import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
@@ -73,7 +74,7 @@ public class RoutingsService implements IRoutingsService {
     private ObjectMapper objectMapper;
     @Lazy
     @Autowired
-    private SyncQueueService syncQueueService;
+    private ISyncQueueService syncQueueService;
     @Autowired
     private SyncConfig syncConfig;
 
