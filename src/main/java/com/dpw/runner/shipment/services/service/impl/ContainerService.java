@@ -29,7 +29,7 @@ import com.dpw.runner.shipment.services.service.interfaces.ISyncQueueService;
 import com.dpw.runner.shipment.services.syncing.Entity.BulkContainerRequestV2;
 import com.dpw.runner.shipment.services.syncing.Entity.ContainerRequestV2;
 import com.dpw.runner.shipment.services.syncing.constants.SyncingConstants;
-import com.dpw.runner.shipment.services.syncing.impl.ContainerSync;
+import com.dpw.runner.shipment.services.syncing.interfaces.IContainerSync;
 import com.dpw.runner.shipment.services.utils.CSVParsingUtil;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -99,7 +99,7 @@ public class ContainerService implements IContainerService {
     private IShipmentDao shipmentDao;
 
     @Autowired
-    private ContainerSync containerSync;
+    private IContainerSync containerSync;
 
     @Autowired
     private AuditLogService auditLogService;

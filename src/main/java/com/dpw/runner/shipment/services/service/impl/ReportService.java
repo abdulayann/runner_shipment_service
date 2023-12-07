@@ -13,7 +13,6 @@ import com.dpw.runner.shipment.services.commons.constants.EventConstants;
 import com.dpw.runner.shipment.services.commons.enums.MawbPrintFor;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
-import com.dpw.runner.shipment.services.dao.impl.ShipmentSettingsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.document.request.documentmanager.DocumentManagerSaveFileRequest;
 import com.dpw.runner.shipment.services.document.service.IDocumentManagerService;
@@ -68,7 +67,7 @@ public class ReportService implements IReportService {
     private JsonHelper jsonHelper;
     
     @Autowired
-    private ShipmentSettingsDao shipmentSettingsDao;
+    private IShipmentSettingsDao shipmentSettingsDao;
 
     @Autowired
     private IHblTermsConditionTemplateDao hblTermsConditionTemplateDao;

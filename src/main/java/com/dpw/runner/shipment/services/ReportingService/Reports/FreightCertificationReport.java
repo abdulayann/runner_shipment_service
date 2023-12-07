@@ -8,7 +8,7 @@ import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.Co
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PartiesModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
-import com.dpw.runner.shipment.services.dao.impl.ShipmentSettingsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.response.ArObjectResponse;
@@ -40,7 +40,7 @@ public class FreightCertificationReport extends IReport{
     private ModelMapper modelMapper;
 
     @Autowired
-    private ShipmentSettingsDao shipmentSettingsDao;
+    private IShipmentSettingsDao shipmentSettingsDao;
 
     @Override
     public Map<String, Object> getData(Long id) {
