@@ -1028,7 +1028,7 @@ public class ShipmentService implements IShipmentService {
             return ResponseHelper.buildFailedResponse(responseMsg);
         }
     }
-    
+
     private AutoUpdateWtVolResponse calculateShipmentWV(AutoUpdateWtVolRequest request) throws Exception {
         AutoUpdateWtVolResponse response = jsonHelper.convertValue(request, AutoUpdateWtVolResponse.class);
         List<Packing> packingList = jsonHelper.convertValueToList(request.getPackingList(), Packing.class);
@@ -2122,7 +2122,7 @@ public class ShipmentService implements IShipmentService {
             shipmentDetails.setLockedBy(currentUser);
         }
         shipmentDetails = shipmentDao.save(shipmentDetails, false);
-        shipmentSync.sync(shipmentDetails);
+        shipmentSync.syncLockStatus(shipmentDetails);
         afterSave(shipmentDetails, false);
         return ResponseHelper.buildSuccessResponse();
     }
