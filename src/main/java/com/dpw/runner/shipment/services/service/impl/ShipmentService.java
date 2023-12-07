@@ -47,9 +47,9 @@ import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service_bus.AzureServiceBusTopic;
 import com.dpw.runner.shipment.services.service_bus.ISBProperties;
 import com.dpw.runner.shipment.services.service_bus.ISBUtils;
-import com.dpw.runner.shipment.services.syncing.impl.ShipmentSync;
 import com.dpw.runner.shipment.services.syncing.interfaces.IConsolidationSync;
 import com.dpw.runner.shipment.services.syncing.interfaces.IHblSync;
+import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
 import com.dpw.runner.shipment.services.utils.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.util.Pair;
@@ -189,7 +189,7 @@ public class ShipmentService implements IShipmentService {
     @Autowired
     private AuditLogService auditLogService;
     @Autowired
-    ShipmentSync shipmentSync;
+    IShipmentSync shipmentSync;
     @Autowired
     IHblService hblService;
     @Autowired
