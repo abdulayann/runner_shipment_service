@@ -121,7 +121,7 @@ public class ShippingInstructionReport extends IReport{
         String unitOfTotalWeight = null;
         boolean breakFlagForWeight = false;
 
-        if(model.getShipment().getPackingList() != null){
+        if(model.getShipment().getPackingList() != null  && model.getShipment().getPackingList().size() > 0){
             String packingJson = jsonHelper.convertToJson(model.getShipment().getPackingList());
             var values = jsonHelper.convertValue(packingJson, new TypeReference<List<Map<String, Object>>>() {});
             for(var v : values){
