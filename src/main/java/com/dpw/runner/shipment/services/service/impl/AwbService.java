@@ -1023,9 +1023,12 @@ public class AwbService implements IAwbService {
         awbSync.sync(entity);
     }
 
-    public ResponseEntity<?> customAwbRetrieve(List<String> awbNumber, String issuingAgentName) {
+    public ResponseEntity<?> customAwbRetrieve(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
+            CustomAwbRetrieveRequest request = (CustomAwbRetrieveRequest) commonRequestModel.getData();
+            List<String> awbNumber = request.getAwbNumber();
+            String issuingAgentName = request.getIssuingAgent();
             List<Awb> awbs = new ArrayList<>();
             if (awbNumber == null && issuingAgentName == null)
                 log.error("Request is empty for AWB retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());

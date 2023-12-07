@@ -14,7 +14,7 @@ public interface IAwbService {
     ResponseEntity<?> retrieveById(CommonRequestModel commonRequestModel);
     ResponseEntity<?> createV1Awb(CommonRequestModel commonRequestModel, boolean checkForSync);
 
-    ResponseEntity<?> customAwbRetrieve(List<String> awbNumber, String issuingAgentName);
+    ResponseEntity<?> customAwbRetrieve(CommonRequestModel commonRequestModel);
 
     ResponseEntity<?> reset(CommonRequestModel commonRequestModel);
     ResponseEntity<?> partialAutoUpdateAwb(CommonRequestModel commonRequestModel);

@@ -12,6 +12,7 @@ import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.AwbRequest;
 import com.dpw.runner.shipment.services.dto.request.CreateAwbRequest;
 import com.dpw.runner.shipment.services.dto.request.ResetAwbRequest;
+import com.dpw.runner.shipment.services.dto.request.awb.CustomAwbRetrieveRequest;
 import com.dpw.runner.shipment.services.dto.response.AwbResponse;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
@@ -95,9 +96,9 @@ public class AwbController {
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = AwbConstants.AWB_RETRIEVE_BY_ID_SUCCESSFUL)})
-    @GetMapping("/customRetrieve")
-    public ResponseEntity<RunnerResponse<AwbResponse>> retrieveByIssuingAgentName(@ApiParam(value = AwbConstants.AWB_NUMBER, required = true) @RequestParam List<String> awbNumber, @ApiParam(value = AwbConstants.ISSUING_AGENT_NAME, required = true) @RequestParam String issuingAgentName) {
-        return (ResponseEntity<RunnerResponse<AwbResponse>>) awbService.customAwbRetrieve(awbNumber, issuingAgentName);
+    @PostMapping("/customRetrieve")
+    public ResponseEntity<RunnerListResponse<AwbResponse>> retrieveByIssuingAgentName(@RequestBody CustomAwbRetrieveRequest request) {
+        return (ResponseEntity<RunnerListResponse<AwbResponse>>) awbService.customAwbRetrieve(CommonRequestModel.buildRequest(request));
     }
 
     @ApiResponses(value = {
