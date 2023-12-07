@@ -46,7 +46,7 @@ import com.dpw.runner.shipment.services.service.interfaces.*;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service_bus.AzureServiceBusTopic;
 import com.dpw.runner.shipment.services.service_bus.ISBProperties;
-import com.dpw.runner.shipment.services.service_bus.SBUtilsImpl;
+import com.dpw.runner.shipment.services.service_bus.ISBUtils;
 import com.dpw.runner.shipment.services.syncing.impl.ShipmentSync;
 import com.dpw.runner.shipment.services.syncing.interfaces.IConsolidationSync;
 import com.dpw.runner.shipment.services.syncing.interfaces.IHblSync;
@@ -176,7 +176,7 @@ public class ShipmentService implements IShipmentService {
     private IConsolidationService consolidationService;
 
     @Autowired
-    private SBUtilsImpl sbUtils;
+    private ISBUtils sbUtils;
 
     @Autowired
     private ISBProperties isbProperties;

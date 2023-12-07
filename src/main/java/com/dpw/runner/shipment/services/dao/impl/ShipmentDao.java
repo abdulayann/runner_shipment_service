@@ -20,7 +20,7 @@ import com.dpw.runner.shipment.services.repository.interfaces.IShipmentRepositor
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service_bus.AzureServiceBusTopic;
 import com.dpw.runner.shipment.services.service_bus.ISBProperties;
-import com.dpw.runner.shipment.services.service_bus.SBUtilsImpl;
+import com.dpw.runner.shipment.services.service_bus.ISBUtils;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.dpw.runner.shipment.services.validator.ValidatorUtility;
@@ -53,7 +53,7 @@ public class ShipmentDao implements IShipmentDao {
     private JsonHelper jsonHelper;
 
     @Autowired
-    private SBUtilsImpl sbUtils;
+    private ISBUtils sbUtils;
 
     @Autowired
     private ISBProperties isbProperties;
