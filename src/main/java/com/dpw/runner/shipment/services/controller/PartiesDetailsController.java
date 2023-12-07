@@ -13,7 +13,7 @@ import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
 import com.dpw.runner.shipment.services.dto.response.JobResponse;
 import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
-import com.dpw.runner.shipment.services.service.impl.PartiesService;
+import com.dpw.runner.shipment.services.service.interfaces.IPartiesDetailsService;
 import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
@@ -35,7 +35,7 @@ import static com.dpw.runner.shipment.services.commons.constants.Constants.NO_DA
 public class PartiesDetailsController {
 
     @Autowired
-    private PartiesService partiesService;
+    private IPartiesDetailsService partiesService;
 
     @PostMapping(ApiConstants.API_CREATE)
     @ApiResponses(value = {

@@ -8,12 +8,10 @@ import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.ELDetailsRequest;
 import com.dpw.runner.shipment.services.dto.request.ElNumbersRequest;
-import com.dpw.runner.shipment.services.dto.response.CustomerBookingResponse;
 import com.dpw.runner.shipment.services.dto.response.ELDetailsResponse;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
-import com.dpw.runner.shipment.services.service.impl.ELDetailsService;
+import com.dpw.runner.shipment.services.service.interfaces.IELDetailsService;
 import com.dpw.runner.shipment.services.syncing.Entity.ElDetailsRequestV2;
-import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import lombok.extern.slf4j.Slf4j;
@@ -31,7 +29,7 @@ import java.util.List;
 public class ELDetailsController {
 
     @Autowired
-    private ELDetailsService elDetailsService;
+    private IELDetailsService elDetailsService;
 
     @PostMapping(ApiConstants.API_CREATE)
     @ApiResponses(value = {

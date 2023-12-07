@@ -24,6 +24,7 @@ import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerService;
 import com.dpw.runner.shipment.services.service.interfaces.ISyncQueueService;
 import com.dpw.runner.shipment.services.syncing.Entity.BulkContainerRequestV2;
@@ -102,7 +103,7 @@ public class ContainerService implements IContainerService {
     private IContainerSync containerSync;
 
     @Autowired
-    private AuditLogService auditLogService;
+    private IAuditLogService auditLogService;
     @Autowired
     private ICustomerBookingDao customerBookingDao;
 

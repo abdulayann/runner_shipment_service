@@ -12,7 +12,7 @@ import com.dpw.runner.shipment.services.dto.response.JobResponse;
 import com.dpw.runner.shipment.services.dto.response.RoutingsResponse;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
-import com.dpw.runner.shipment.services.service.impl.RoutingsService;
+import com.dpw.runner.shipment.services.service.interfaces.IRoutingsService;
 import com.dpw.runner.shipment.services.syncing.Entity.ElDetailsRequestV2;
 import com.dpw.runner.shipment.services.syncing.Entity.RoutingsRequestV2;
 import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
@@ -36,7 +36,7 @@ import static com.dpw.runner.shipment.services.commons.constants.Constants.NO_DA
 public class RoutingsController {
 
     @Autowired
-    private RoutingsService routingsService;
+    private IRoutingsService routingsService;
 
     @Autowired
     JsonHelper jsonHelper;

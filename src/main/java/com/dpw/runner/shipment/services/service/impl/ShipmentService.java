@@ -3,7 +3,7 @@ package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.Kafka.Dto.KafkaResponse;
 import com.dpw.runner.shipment.services.Kafka.Producer.KafkaProducer;
-import com.dpw.runner.shipment.services.adapters.impl.OrderManagementAdapter;
+import com.dpw.runner.shipment.services.adapters.interfaces.IOrderManagementAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.ITrackingServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
@@ -187,7 +187,7 @@ public class ShipmentService implements IShipmentService {
     private MasterDataUtils masterDataUtils;
 
     @Autowired
-    private AuditLogService auditLogService;
+    private IAuditLogService auditLogService;
     @Autowired
     IShipmentSync shipmentSync;
     @Autowired
@@ -203,7 +203,7 @@ public class ShipmentService implements IShipmentService {
     private ISequenceIncrementorDao sequenceIncrementorDao;
 
     @Autowired
-    private OrderManagementAdapter orderManagementAdapter;
+    private IOrderManagementAdapter orderManagementAdapter;
 
     @Value("${shipmentsKafka.queue}")
     private String senderQueue;
