@@ -72,11 +72,11 @@ public class ShipmentModel {
     @JsonProperty("FinanceClosedOn")
     private LocalDateTime financeClosedOn;
     @JsonProperty("FreightLocal")
-    private Integer freightLocal;
+    private BigDecimal freightLocal;
     @JsonProperty("FreightLocalCurrency")
     private String freightLocalCurrency;
     @JsonProperty("FreightOverseas")
-    private Integer freightOverseas;
+    private BigDecimal freightOverseas;
     @JsonProperty("FreightOverseasCurrency")
     private String freightOverseasCurrency;
     @JsonProperty("GoodsDescription")
