@@ -2294,7 +2294,8 @@ public class ShipmentService implements IShipmentService {
 
             CommonRequestModel requestModel = CommonRequestModel.buildRequest(cloneShipmentDetails);
             log.info("Shipment details cloning started for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
-            return this.create(requestModel);
+            ShipmentDetailsResponse response = jsonHelper.convertValue(cloneShipmentDetails, ShipmentDetailsResponse.class);
+            return ResponseHelper.buildSuccessResponse(response);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;
@@ -2509,6 +2510,9 @@ public class ShipmentService implements IShipmentService {
             response.setStatus(0);
             response.setSource(Constants.SYSTEM);
             response.setCreatedBy(UserContext.getUser().getUsername());
+
+            if(Constants.TRANSPORT_MODE_SEA.equals(response.getTransportMode()) && Constants.DIRECTION_EXP.equals(response.getDirection()))
+                response.setHouseBill(generateCustomHouseBL());
 
             this.addAllMasterDataInSingleCall(null, response);
 
