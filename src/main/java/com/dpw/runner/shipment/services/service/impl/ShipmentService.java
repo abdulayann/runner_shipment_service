@@ -597,7 +597,7 @@ public class ShipmentService implements IShipmentService {
 //            }
             List<PackingRequest> packingRequest = request.getPackingList();
             List<ContainerRequest> containerRequest = request.getContainersList();
-            if(shipmentDetails.getContainerAutoWeightVolumeUpdate() && packingRequest != null) {
+            if(shipmentDetails.getContainerAutoWeightVolumeUpdate() != null && shipmentDetails.getContainerAutoWeightVolumeUpdate().booleanValue() && packingRequest != null) {
                 containerRequest = calculateAutoContainerWeightAndVolume(containerRequest, packingRequest);
             }
             List<Containers> updatedContainers = new ArrayList<>();
@@ -1048,7 +1048,9 @@ public class ShipmentService implements IShipmentService {
             response = calculateVW(request, response, true);
             response.setPackSummary(packingService.calculatePackSummary(packingList, request.getTransportMode(), request.getShipmentType()));
         }
-        if(true && request.getTransportMode().equals(Constants.TRANSPORT_MODE_SEA)) { // TODO- add P100 flag condition here instead of true
+        V1RetrieveResponse v1RetrieveResponse = v1Service.retrieveTenantSettings();
+        V1TenantSettingsResponse v1TenantSettingsResponse = modelMapper.map(v1RetrieveResponse.getEntity(), V1TenantSettingsResponse.class);
+        if(v1TenantSettingsResponse.getP100Branch() && request.getTransportMode().equals(Constants.TRANSPORT_MODE_SEA)) {
             response = calculatePacksAndPacksUnitFromContainer(response, containersList);
         }
         return response;
@@ -1340,7 +1342,7 @@ public class ShipmentService implements IShipmentService {
                     containerRequestList.removeIf(obj2 -> allConsolConts.stream().anyMatch(obj1 -> obj1.getId().equals(obj2.getId())));
                 }
             }
-            if(entity.getContainerAutoWeightVolumeUpdate() && packingRequestList != null) {
+            if(entity.getContainerAutoWeightVolumeUpdate() != null && entity.getContainerAutoWeightVolumeUpdate().booleanValue() && packingRequestList != null) {
                 if(containerRequestList == null)
                     containerRequestList = jsonHelper.convertValueToList(oldEntity.get().getContainersList(), ContainerRequest.class);
                 containerRequestList = calculateAutoContainerWeightAndVolume(containerRequestList, packingRequestList);
@@ -2538,7 +2540,7 @@ public class ShipmentService implements IShipmentService {
         if(containers != null)
             map = containers.stream().collect(Collectors.toMap(cont -> cont.getId(), cont -> cont.getContainerNumber()));
         Map<Long, Map<String, String>> contMap = new HashMap<>();
-        boolean flag = shipmentDetailsResponse.getContainerAutoWeightVolumeUpdate();
+        boolean flag = shipmentDetailsResponse.getContainerAutoWeightVolumeUpdate() != null && shipmentDetailsResponse.getContainerAutoWeightVolumeUpdate().booleanValue();
         if(packings != null && packings.size() > 0) {
             for (PackingResponse pack : packings) {
                 if(pack.getContainerId() != null) {

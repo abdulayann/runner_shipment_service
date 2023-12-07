@@ -9,4 +9,6 @@ import java.util.UUID;
 public class BillingResponse {
     @JsonProperty("Guid")
     private UUID guid;
+    @JsonProperty("Remarks")
+    private String remarks;
 }
