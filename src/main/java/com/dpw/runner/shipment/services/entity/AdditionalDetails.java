@@ -135,6 +135,7 @@ public class AdditionalDetails extends MultiTenancy {
     private Long warehouseId;
 
     @Column(name = "activity_type")
+    @DedicatedMasterData(type = Constants.ACTIVITY_TYPE)
     private String activityType;
 
     @Column(name = "hsn_number")

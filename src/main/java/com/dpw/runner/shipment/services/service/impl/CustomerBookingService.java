@@ -31,6 +31,7 @@ import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest;
 import com.dpw.runner.shipment.services.masterdata.factory.MasterDataFactory;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
+import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.ICustomerBookingService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.BookingIntegrationsUtility;
@@ -108,7 +109,7 @@ public class CustomerBookingService implements ICustomerBookingService {
     @Autowired
     private ICRPServiceAdapter crpServiceAdapter;
     @Autowired
-    private AuditLogService auditLogService;
+    private IAuditLogService auditLogService;
     @Autowired
     private IV1Service v1Service;
     @Autowired

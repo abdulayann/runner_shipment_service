@@ -96,6 +96,7 @@ public class ShipmentDetails extends MultiTenancy {
     private String consolRef;
 
     @Column(name = "sales_agent")
+    @DedicatedMasterData(type = Constants.SALES_AGENT)
     private Long salesAgent;
 
     @Column(name = "payment_terms")
@@ -201,13 +202,13 @@ public class ShipmentDetails extends MultiTenancy {
     private String innerPackUnit;
 
     @Column(name = "freight_local")
-    private Integer freightLocal;
+    private BigDecimal freightLocal;
 
     @Column(name = "freightLocal_Currency")
     private String freightLocalCurrency;
 
     @Column(name = "freight_overseas")
-    private Integer freightOverseas;
+    private BigDecimal freightOverseas;
 
     @Column(name = "freightOverseas_Currency")
     @DedicatedMasterData(type = Constants.CURRENCY_MASTER_DATA)
@@ -354,6 +355,7 @@ public class ShipmentDetails extends MultiTenancy {
 
     @Column(name = "job_status")
     @Size(max=3, message = "max size is 3 for job_status")
+    @MasterData(type = MasterDataType.BILL_JOBS)
     private String jobStatus;
 
     @Column(name = "entry_ref_no")

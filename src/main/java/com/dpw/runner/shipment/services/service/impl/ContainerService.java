@@ -10,10 +10,10 @@ import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.config.SyncConfig;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
-import com.dpw.runner.shipment.services.dto.ContainerAPIsRequest.ContainerAssignRequest;
-import com.dpw.runner.shipment.services.dto.ContainerAPIsRequest.ContainerNumberCheckResponse;
-import com.dpw.runner.shipment.services.dto.ContainerAPIsRequest.ContainerPackAssignDetachRequest;
-import com.dpw.runner.shipment.services.dto.ContainerAPIsRequest.ContainerSummary;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerAssignRequest;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerNumberCheckResponse;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerPackAssignDetachRequest;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerSummaryResponse;
 import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
 import com.dpw.runner.shipment.services.dto.request.EventsRequest;
 import com.dpw.runner.shipment.services.dto.request.PackingRequest;
@@ -24,11 +24,13 @@ import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerService;
+import com.dpw.runner.shipment.services.service.interfaces.ISyncQueueService;
 import com.dpw.runner.shipment.services.syncing.Entity.BulkContainerRequestV2;
 import com.dpw.runner.shipment.services.syncing.Entity.ContainerRequestV2;
 import com.dpw.runner.shipment.services.syncing.constants.SyncingConstants;
-import com.dpw.runner.shipment.services.syncing.impl.ContainerSync;
+import com.dpw.runner.shipment.services.syncing.interfaces.IContainerSync;
 import com.dpw.runner.shipment.services.utils.CSVParsingUtil;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -98,10 +100,10 @@ public class ContainerService implements IContainerService {
     private IShipmentDao shipmentDao;
 
     @Autowired
-    private ContainerSync containerSync;
+    private IContainerSync containerSync;
 
     @Autowired
-    private AuditLogService auditLogService;
+    private IAuditLogService auditLogService;
     @Autowired
     private ICustomerBookingDao customerBookingDao;
 
@@ -112,7 +114,7 @@ public class ContainerService implements IContainerService {
     private String senderQueue;
     @Lazy
     @Autowired
-    private SyncQueueService syncQueueService;
+    private ISyncQueueService syncQueueService;
     @Autowired
     private SyncConfig syncConfig;
 
@@ -785,7 +787,7 @@ public class ContainerService implements IContainerService {
         return eqvNumValue;
     }
 
-    public ContainerSummary calculateContainerSummary(List<Containers> containersList, String transportMode, String containerCategory) throws Exception {
+    public ContainerSummaryResponse calculateContainerSummary(List<Containers> containersList, String transportMode, String containerCategory) throws Exception {
         try {
             double totalWeight = 0;
             double packageCount = 0;
@@ -821,7 +823,7 @@ public class ContainerService implements IContainerService {
                         totalPacks = totalPacks + Long.parseLong(containers.getPacks());
                 }
             }
-            ContainerSummary response = new ContainerSummary();
+            ContainerSummaryResponse response = new ContainerSummaryResponse();
             response.setTotalPackages(String.valueOf(packageCount));
             response.setTotalContainers(String.valueOf(totalContainerCount));
             response.setTotalWeight(totalWeight + " " + toWeightUnit);

@@ -61,4 +61,5 @@ public interface IShipmentService extends ICommonService {
     ResponseEntity<?> calculateContainerSummary(CommonRequestModel commonRequestModel) throws Exception;
     
     ResponseEntity<?> calculatePackSummary(CommonRequestModel commonRequestModel) throws Exception;
+    ResponseEntity<?> calculateAutoUpdateWtVolInShipment(CommonRequestModel commonRequestModel) throws Exception;
 }

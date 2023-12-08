@@ -26,7 +26,9 @@ import com.dpw.runner.shipment.services.exception.exceptions.ValidationException
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.IAwbService;
+import com.dpw.runner.shipment.services.service.interfaces.ISyncQueueService;
 import com.dpw.runner.shipment.services.syncing.Entity.AwbRequestV2;
 import com.dpw.runner.shipment.services.syncing.constants.SyncingConstants;
 import com.dpw.runner.shipment.services.syncing.interfaces.IAwbSync;
@@ -81,7 +83,7 @@ public class AwbService implements IAwbService {
     private UserContext userContext;
 
     @Autowired
-    private AuditLogService auditLogService;
+    private IAuditLogService auditLogService;
 
     @Autowired
     private RetryTemplate retryTemplate;
@@ -96,7 +98,7 @@ public class AwbService implements IAwbService {
     private UnitConversionUtility unitConversionUtility;
     @Lazy
     @Autowired
-    private SyncQueueService syncQueueService;
+    private ISyncQueueService syncQueueService;
     @Autowired
     private SyncConfig syncConfig;
 
@@ -170,6 +172,7 @@ public class AwbService implements IAwbService {
 
 
         Awb awb = convertRequestToEntity(request);
+        awb.setAwbNumber(awb.getAwbShipmentInfo().getAwbNumber());
         try {
             String oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
             updateAwbOtherChargesInfo(awb.getAwbOtherChargesInfo());
@@ -1021,9 +1024,12 @@ public class AwbService implements IAwbService {
         awbSync.sync(entity);
     }
 
-    public ResponseEntity<?> customAwbRetrieve(List<String> awbNumber, String issuingAgentName) {
+    public ResponseEntity<?> customAwbRetrieve(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
+            CustomAwbRetrieveRequest request = (CustomAwbRetrieveRequest) commonRequestModel.getData();
+            List<String> awbNumber = request.getAwbNumber();
+            String issuingAgentName = request.getIssuingAgent();
             List<Awb> awbs = new ArrayList<>();
             if (awbNumber == null && issuingAgentName == null)
                 log.error("Request is empty for AWB retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());

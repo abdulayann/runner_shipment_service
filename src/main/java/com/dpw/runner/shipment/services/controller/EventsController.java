@@ -9,7 +9,7 @@ import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.dto.request.EventsRequest;
 import com.dpw.runner.shipment.services.dto.response.EventsResponse;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
-import com.dpw.runner.shipment.services.service.impl.EventService;
+import com.dpw.runner.shipment.services.service.interfaces.IEventService;
 import com.dpw.runner.shipment.services.syncing.Entity.EventsRequestV2;
 import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
@@ -28,7 +28,7 @@ import java.util.List;
 @Slf4j
 public class EventsController {
     @Autowired
-    private EventService eventService;
+    private IEventService eventService;
 
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = EventConstants.EVENT_CREATE_SUCCESS),

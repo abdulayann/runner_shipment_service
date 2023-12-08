@@ -16,7 +16,7 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
-import com.dpw.runner.shipment.services.dto.ContainerAPIsRequest.*;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.*;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
 import com.dpw.runner.shipment.services.dto.TrackingService.UniversalTrackingPayload;
 import com.dpw.runner.shipment.services.dto.patchRequest.ConsolidationPatchRequest;
@@ -36,13 +36,14 @@ import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.mapper.ConsolidationDetailsMapper;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest;
+import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationService;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerService;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service_bus.AzureServiceBusTopic;
 import com.dpw.runner.shipment.services.service_bus.ISBProperties;
-import com.dpw.runner.shipment.services.service_bus.SBUtilsImpl;
+import com.dpw.runner.shipment.services.service_bus.ISBUtils;
 import com.dpw.runner.shipment.services.syncing.interfaces.IConsolidationSync;
 import com.dpw.runner.shipment.services.utils.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -149,7 +150,7 @@ public class ConsolidationService implements IConsolidationService {
     private IShipmentSettingsDao shipmentSettingsDao;
 
     @Autowired
-    private SBUtilsImpl sbUtils;
+    private ISBUtils sbUtils;
 
     @Autowired
     private ISBProperties isbProperties;
@@ -161,7 +162,7 @@ public class ConsolidationService implements IConsolidationService {
     private IConsolidationSync consolidationSync;
 
     @Autowired
-    private AuditLogService auditLogService;
+    private IAuditLogService auditLogService;
 
     @Autowired
     private IShipmentsContainersMappingDao shipmentsContainersMappingDao;
@@ -1080,7 +1081,7 @@ public class ConsolidationService implements IConsolidationService {
             BigDecimal volume = consolidationDetails.getAllocations().getVolume();
             String volumeUnit = consolidationDetails.getAllocations().getVolumeUnit();
             if (weightUnit != null && volumeUnit != null) {
-                VolumeWeightChargeable vwOb = calculateVolumeWeight(consolidationDetails, transportMode, weightUnit, volumeUnit, weight, volume);
+                VolumeWeightChargeable vwOb = calculateVolumeWeight(transportMode, weightUnit, volumeUnit, weight, volume);
                 consolidationDetails.getAllocations().setChargable(vwOb.getChargeable());
                 if (transportMode == Constants.TRANSPORT_MODE_AIR) {
                     BigDecimal charge = consolidationDetails.getAllocations().getChargable();
@@ -1097,7 +1098,7 @@ public class ConsolidationService implements IConsolidationService {
                     volume = new BigDecimal(convertUnit(Constants.VOLUME, volume, volumeUnit, Constants.VOLUME_UNIT_M3).toString());
                     weight = new BigDecimal(convertUnit(Constants.MASS, weight, weightUnit, Constants.WEIGHT_UNIT_KG).toString());
                     consolidationDetails.getAllocations().setChargable(weight.divide(new BigDecimal("1000")).max(volume));
-                    vwOb = calculateVolumeWeight(consolidationDetails, transportMode, Constants.WEIGHT_UNIT_KG, Constants.VOLUME_UNIT_M3, weight, volume);
+                    vwOb = calculateVolumeWeight(transportMode, Constants.WEIGHT_UNIT_KG, Constants.VOLUME_UNIT_M3, weight, volume);
                 }
                 consolidationDetails.getAllocations().setChargeableUnit(vwOb.getChargeableUnit());
             }
@@ -1111,7 +1112,7 @@ public class ConsolidationService implements IConsolidationService {
         }
     }
 
-    private VolumeWeightChargeable calculateVolumeWeight(ConsolidationDetails consolidationDetails, String transportMode, String weightUnit, String volumeUnit, BigDecimal weight, BigDecimal volume) throws Exception {
+    public VolumeWeightChargeable calculateVolumeWeight(String transportMode, String weightUnit, String volumeUnit, BigDecimal weight, BigDecimal volume) throws Exception {
         String responseMsg;
         try {
             VolumeWeightChargeable vwOb = new VolumeWeightChargeable();
@@ -1201,7 +1202,7 @@ public class ConsolidationService implements IConsolidationService {
             String weightUnit = consolidationDetails.getAllocations().getWeightUnit();
             BigDecimal volume = consolidationDetails.getAllocations().getVolume();
             String volumeUnit = consolidationDetails.getAllocations().getVolumeUnit();
-            VolumeWeightChargeable vwOb = calculateVolumeWeight(consolidationDetails, transportMode, weightChargeableUnit, volumeChargeableUnit, sumWeight, sumVolume);
+            VolumeWeightChargeable vwOb = calculateVolumeWeight(transportMode, weightChargeableUnit, volumeChargeableUnit, sumWeight, sumVolume);
 
             consolidationDetails.getAchievedQuantities().setConsolidationChargeQuantity(vwOb.getChargeable());
             consolidationDetails.getAchievedQuantities().setConsolidationChargeQuantityUnit(vwOb.getChargeableUnit());
@@ -1230,10 +1231,10 @@ public class ConsolidationService implements IConsolidationService {
 
     public ResponseEntity<?> calculateContainerSummary(CommonRequestModel commonRequestModel) throws Exception {
         String responseMsg;
-        ContainerSummaryRequest request = (ContainerSummaryRequest) commonRequestModel.getData();
+        CalculateContainerSummaryRequest request = (CalculateContainerSummaryRequest) commonRequestModel.getData();
         try {
             List<Containers> containers = jsonHelper.convertValueToList(request.getContainerRequestList(), Containers.class);
-            ContainerSummary response = containerService.calculateContainerSummary(containers, request.getTransportMode(), request.getContainerCategory());
+            ContainerSummaryResponse response = containerService.calculateContainerSummary(containers, request.getTransportMode(), request.getContainerCategory());
             return ResponseHelper.buildSuccessResponse(response);
         }
         catch (Exception e) {
@@ -1246,10 +1247,10 @@ public class ConsolidationService implements IConsolidationService {
 
     public ResponseEntity<?> calculatePackSummary(CommonRequestModel commonRequestModel) throws Exception {
         String responseMsg;
-        PackSummaryRequest request = (PackSummaryRequest) commonRequestModel.getData();
+        CalculatePackSummaryRequest request = (CalculatePackSummaryRequest) commonRequestModel.getData();
         try {
             List<Packing> packingList = jsonHelper.convertValueToList(request.getPackingRequestList(), Packing.class);
-            PackSummary response = packingService.calculatePackSummary(packingList, request.getTransportMode(), request.getContainerCategory());
+            PackSummaryResponse response = packingService.calculatePackSummary(packingList, request.getTransportMode(), request.getContainerCategory());
             return ResponseHelper.buildSuccessResponse(response);
         }
         catch (Exception e) {
@@ -1727,7 +1728,7 @@ public class ConsolidationService implements IConsolidationService {
         String lockingUser = consolidationDetails.getLockedBy();
         String currentUser = userContext.getUser().getUsername();
 
-        if (consolidationDetails.getIsLocked()) {
+        if (consolidationDetails.getIsLocked() != null && consolidationDetails.getIsLocked()) {
             if (lockingUser != null && lockingUser.equals(currentUser))
                 consolidationDetails.setIsLocked(false);
         } else {
@@ -1735,7 +1736,7 @@ public class ConsolidationService implements IConsolidationService {
             consolidationDetails.setLockedBy(currentUser);
         }
         consolidationDetails = consolidationDetailsDao.save(consolidationDetails, false);
-        consolidationSync.sync(consolidationDetails);
+        consolidationSync.syncLockStatus(consolidationDetails);
         afterSave(consolidationDetails, false);
 
         return ResponseHelper.buildSuccessResponse();

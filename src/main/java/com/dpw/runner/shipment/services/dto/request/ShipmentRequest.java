@@ -43,9 +43,9 @@ public class ShipmentRequest extends CommonRequest implements IRunnerRequest {
     private List<FileRepoRequest> fileRepoList;
     private String financeClosedBy;
     private LocalDateTime financeClosedOn;
-    private Integer freightLocal;
+    private BigDecimal freightLocal;
     private String freightLocalCurrency;
-    private Integer freightOverseas;
+    private BigDecimal freightOverseas;
     private String freightOverseasCurrency;
     private String goodsDescription;
     private String houseBill;

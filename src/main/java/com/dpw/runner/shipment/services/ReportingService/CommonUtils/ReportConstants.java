@@ -251,10 +251,25 @@ public class ReportConstants {
             AR Object Fields
         */
     public static final String INVOICE_NUMBER = "InvoiceNumber";
+    public static final String BILL_CHARGES = "BillCharges";
+    public static final String OVERSEAS_TAX = "OverseasTax";
+    public static final String REVENUE_MEASUREMENT_BASIS = "RevenueMeasurementBasis";
+    public static final String REVENUE_MEASUREMENT_UNIT = "RevenueMeasurementUnit";
+    public static final String REVENUE_CALCULATED_VALUE = "RevenueCalculatedValue";
+    public static final String REVENUE_TOTAL_UNIT_COUNT = "RevenueTotalUnitCount";
+    public static final String MEASUREMENT_BASIS = "MeasurementBasis";
+    public static final String MEASUREMENT_UNIT = "MeasurementUnit";
+    public static final String CALCULATED_VALUE = "CalculatedValue";
+    public static final String TOTAL_UNIT_COUNT = "TotalUnitCount";
+    public static final String SELL_EXCHANGE = "SellExchange";
+    public static final String CURRENT_SELL_RATE = "CurrentSellRate";
+    public static final String TAX_PERCENTAGE = "TaxPercentage";
+    public static final String BILL_REMARKS = "BillRemarks";
     public static final String BILLCHARGES_LOCAL_SUM = "BillChargesLocalSum";
     public static final String BILLCHARGES_LOCAL_TAX_SUM = "BillChargesLocalTaxSum";
     public static final String BILLCHARGES_OVERSEAS_SUM = "BillChargesOverseasSum";
     public static final String INVOICE_CURRENCY = "InvoiceCurrency";
+    public static final String OVERSEAS_SELL_AMOUNT = "OverseasSellAmount";
     public static final String TOTAL_BILL_AMOUNT_WORDS_LOCAL = "TotalbillamountWordsLocal";
     public static final String TOTAL_BILL_AMOUNT_WORDS_OVERSEAS = "TotalbillamountWordsOverseas";
     public static final String TOTAL_BILL_AMOUNT = "TotalBillAmount";
@@ -376,8 +391,9 @@ public class ReportConstants {
     public static final String COPY_AS_AGREED = "copyAsAgreed";
     public static final String HAS_CHARGES = "hasCharges";
     public static final String CHARGES = "Charges";
+    public static final String CHARGES_SMALL = "charges";
     public static final String COPY_CHARGES = "copyCharges";
-    public static final String BILL_REMARKS = "BillRemark";
+    public static final String BILL_REMARK = "BillRemark";
 
     public static final String Cargo_Total_Information = "BillRemark";
     public static final String PP_REVENUE_TOTAL = "PrepaidRevenueTotal";
@@ -520,6 +536,7 @@ public class ReportConstants {
     public static final String TOtAl_PIECES = "TotalPieces";
     public static final String PACKING_LIST_FAT = "PackingListFAT";
     public static final String TOTAL_AMOUNT = "TotalAmount";
+    public static final String TOTAL_AMOUNT_CURRENCY = "TotalAmountCurrency";
     public static final String RATE_CHARGE = "RateCharge";
     public static final String CHARGEABLE_WT = "ChargeableWt";
     public static final String GROSS_WT = "GrossWt";
@@ -695,4 +712,5 @@ public class ReportConstants {
 
     public static final String SHIPPER = "Shipper";
     public static final String SHIPPER_WC = "ShipperWC";
+    public static final String INVOICE_DATE = "InvoiceDate";
 }

@@ -2,8 +2,8 @@ package com.dpw.runner.shipment.services.dto.response;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.config.CustomLocalDateTimeSerializer;
-import com.dpw.runner.shipment.services.dto.ContainerAPIsRequest.ContainerSummary;
-import com.dpw.runner.shipment.services.dto.ContainerAPIsRequest.PackSummary;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerSummaryResponse;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryResponse;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -14,6 +14,7 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -58,12 +59,12 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     private String packsUnit;
     private Integer innerPacks;
     private String innerPackUnit;
-    private Integer freightLocal;
+    private BigDecimal freightLocal;
     private String freightLocalCurrency;
-    private Integer freightOverseas;
+    private BigDecimal freightOverseas;
     private String freightOverseasCurrency;
-    private boolean autoUpdateWtVol;
-    private boolean containerAutoWeightVolumeUpdate;
+    private Boolean autoUpdateWtVol;
+    private Boolean containerAutoWeightVolumeUpdate;
     private String marksNum;
     private String entryDetail;
     private Boolean isLocked;
@@ -136,6 +137,14 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     private String orderManagementId;
     private String orderManagementNumber;
     private String createdBy;
-    private ContainerSummary containerSummary;
-    private PackSummary packSummary;
+    private ContainerSummaryResponse containerSummary;
+    private PackSummaryResponse packSummary;
+    public Map<String, String> textData;
+
+    public void addTextData(Map<String, String> dataMap) {
+        if(textData == null) {
+            textData = new HashMap<>();
+        }
+        textData.putAll(dataMap);
+    }
 }

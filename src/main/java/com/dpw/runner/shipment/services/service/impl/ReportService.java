@@ -13,7 +13,6 @@ import com.dpw.runner.shipment.services.commons.constants.EventConstants;
 import com.dpw.runner.shipment.services.commons.enums.MawbPrintFor;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
-import com.dpw.runner.shipment.services.dao.impl.ShipmentSettingsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.document.request.documentmanager.DocumentManagerSaveFileRequest;
 import com.dpw.runner.shipment.services.document.service.IDocumentManagerService;
@@ -68,7 +67,7 @@ public class ReportService implements IReportService {
     private JsonHelper jsonHelper;
     
     @Autowired
-    private ShipmentSettingsDao shipmentSettingsDao;
+    private IShipmentSettingsDao shipmentSettingsDao;
 
     @Autowired
     private IHblTermsConditionTemplateDao hblTermsConditionTemplateDao;
@@ -779,9 +778,8 @@ public class ReportService implements IReportService {
 //                            row.SeaShippingInstructionMainPage, null, row.SeaShippingInstructionMainPage == null ? false : true);
 //        }
 
-//        return setDocPages(null,
-//                row.getShipmentIn == null ? adminRow.ShipmentInstruction : row.ShipmentInstruction, null, row.ShipmentInstruction == null ? false : true);
-        return null;
+        return setDocPages(null,
+                row.getShippingInstruction() == null ? adminRow.getShippingInstruction() : row.getShippingInstruction(), null, row.getShippingInstruction() == null ? false : true, null, null, null);
     }
 
     private String getSerialCount(int copyNumber, int totalCopies){

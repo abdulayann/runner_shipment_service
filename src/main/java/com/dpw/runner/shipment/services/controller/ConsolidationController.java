@@ -6,7 +6,7 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
-import com.dpw.runner.shipment.services.dto.ContainerAPIsRequest.*;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.*;
 import com.dpw.runner.shipment.services.dto.patchRequest.ShipmentPatchRequest;
 import com.dpw.runner.shipment.services.dto.request.ConsolidationDetailsRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentAttachDetachRequest;
@@ -153,7 +153,7 @@ public class ConsolidationController {
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = ConsolidationConstants.LOCK_TOGGLE_SUCCESSFUL)})
     @GetMapping(ApiConstants.TOGGLE_LOCK)
-    public ResponseEntity<RunnerResponse> toggleLock(@ApiParam(value = ShipmentConstants.SHIPMENT_ID, required = true) @RequestParam Long id) {
+    public ResponseEntity<RunnerResponse> toggleLock(@ApiParam(value = ShipmentConstants.CONSOLIDATION_ID, required = true) @RequestParam Long id) {
         CommonGetRequest request = CommonGetRequest.builder().id(id).build();
         return (ResponseEntity<RunnerResponse>) consolidationService.toggleLock(CommonRequestModel.buildRequest(request));
     }
@@ -193,34 +193,34 @@ public class ConsolidationController {
         return (ResponseEntity<RunnerResponse>) consolidationService.detachShipments(request.getId(), request.getShipmentIds());
     }
 
-    @ApiResponses(value = { @ApiResponse(code = 200, message = ContainerConstants.CONTAINER_CALCULATION_SUCCESSFUL) })
+    @ApiResponses(value = { @ApiResponse(code = 200, message = ContainerConstants.CALCULATION_SUCCESSFUL) })
     @PostMapping(ApiConstants.CALCULATE_CONTAINER_SUMMARY)
-    public ResponseEntity<RunnerResponse<ContainerSummary>> calculateContainerSummary(@RequestBody ContainerSummaryRequest containerSummaryRequest) {
+    public ResponseEntity<RunnerResponse<ContainerSummaryResponse>> calculateContainerSummary(@RequestBody CalculateContainerSummaryRequest calculateContainerSummaryRequest) {
         String responseMsg;
         try {
-            return (ResponseEntity<RunnerResponse<ContainerSummary>>) consolidationService.calculateContainerSummary(CommonRequestModel.buildRequest(containerSummaryRequest));
+            return (ResponseEntity<RunnerResponse<ContainerSummaryResponse>>) consolidationService.calculateContainerSummary(CommonRequestModel.buildRequest(calculateContainerSummaryRequest));
         }
         catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_CALCULATION_ERROR;
             log.error(responseMsg, e);
         }
-        return (ResponseEntity<RunnerResponse<ContainerSummary>>) ResponseHelper.buildFailedResponse(responseMsg);
+        return (ResponseEntity<RunnerResponse<ContainerSummaryResponse>>) ResponseHelper.buildFailedResponse(responseMsg);
     }
 
-    @ApiResponses(value = { @ApiResponse(code = 200, message = ContainerConstants.CONTAINER_CALCULATION_SUCCESSFUL) })
+    @ApiResponses(value = { @ApiResponse(code = 200, message = ContainerConstants.CALCULATION_SUCCESSFUL) })
     @PostMapping(ApiConstants.CALCULATE_PACK_SUMMARY)
-    public ResponseEntity<RunnerResponse<PackSummary>> calculatePackSummary(@RequestBody PackSummaryRequest packSummaryRequest) {
+    public ResponseEntity<RunnerResponse<PackSummaryResponse>> calculatePackSummary(@RequestBody CalculatePackSummaryRequest calculatePackSummaryRequest) {
         String responseMsg;
         try {
-            return (ResponseEntity<RunnerResponse<PackSummary>>) consolidationService.calculatePackSummary(CommonRequestModel.buildRequest(packSummaryRequest));
+            return (ResponseEntity<RunnerResponse<PackSummaryResponse>>) consolidationService.calculatePackSummary(CommonRequestModel.buildRequest(calculatePackSummaryRequest));
         }
         catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_CALCULATION_ERROR;
             log.error(responseMsg, e);
         }
-        return (ResponseEntity<RunnerResponse<PackSummary>>) ResponseHelper.buildFailedResponse(responseMsg);
+        return (ResponseEntity<RunnerResponse<PackSummaryResponse>>) ResponseHelper.buildFailedResponse(responseMsg);
     }
 
     @ApiResponses(value = {

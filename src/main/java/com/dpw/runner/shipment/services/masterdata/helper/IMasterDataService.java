@@ -120,4 +120,8 @@ public interface IMasterDataService {
 
     DependentServiceResponse fetchCarrierFilterList(Object request);
     DependentServiceResponse fetchGetTemplateMainPage(Object request);
+    DependentServiceResponse fetchBillingList(Object request);
+    DependentServiceResponse fetchBillChargesList(Object request);
+    DependentServiceResponse fetchArObjectList(Object request);
+    DependentServiceResponse fetchChargeType(Object request);
 }

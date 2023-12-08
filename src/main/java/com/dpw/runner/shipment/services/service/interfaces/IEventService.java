@@ -6,5 +6,5 @@ import org.springframework.http.ResponseEntity;
 
 public interface IEventService extends ICommonService {
     ResponseEntity<?> V1EventsCreateAndUpdate(CommonRequestModel commonRequestModel, boolean checkForSync) throws Exception;
-
+    ResponseEntity<?> trackEvents(Long id);
 }

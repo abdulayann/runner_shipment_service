@@ -6,7 +6,7 @@ import com.dpw.runner.shipment.services.dao.interfaces.IPartiesDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.entity.CarrierDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
-import com.dpw.runner.shipment.services.service.impl.ShipmentService;
+import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -34,7 +34,7 @@ public class ShipmentServiceTests {
     private IPartiesDao partiesDao;
 
     @InjectMocks
-    private ShipmentService shipmentService;
+    private IShipmentService shipmentService;
 
     @Test
     public void testCreateTestShipment() {

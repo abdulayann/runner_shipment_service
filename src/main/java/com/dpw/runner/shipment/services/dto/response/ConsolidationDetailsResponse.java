@@ -1,8 +1,8 @@
 package com.dpw.runner.shipment.services.dto.response;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.dto.ContainerAPIsRequest.ContainerSummary;
-import com.dpw.runner.shipment.services.dto.ContainerAPIsRequest.PackSummary;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerSummaryResponse;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryResponse;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -123,6 +123,6 @@ public class ConsolidationDetailsResponse implements IRunnerResponse {
     public Map<String, String> currenciesMasterData;
     public Map<String, String> tenantIdsData;
     public Map<String, String> textData;
-    private ContainerSummary containerSummary;
-    private PackSummary packSummary;
+    private ContainerSummaryResponse containerSummary;
+    private PackSummaryResponse packSummary;
 }

@@ -21,4 +21,6 @@ public class CacheConstants {
     public static final String COMMODITY = "Commodity";
     public static final String TENANTS = "Tenants";
     public static final String WAREHOUSES = "WareHouses";
+    public static final String ACTIVITY_TYPE = "ActivityType";
+    public static final String SALES_AGENT = "SalesAgent";
 }

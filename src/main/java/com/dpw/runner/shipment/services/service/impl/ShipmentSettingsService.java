@@ -21,7 +21,7 @@ import com.dpw.runner.shipment.services.repository.interfaces.IShipmentSettingsR
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentSettingsService;
 import com.dpw.runner.shipment.services.service_bus.AzureServiceBusTopic;
 import com.dpw.runner.shipment.services.service_bus.ISBProperties;
-import com.dpw.runner.shipment.services.service_bus.SBUtilsImpl;
+import com.dpw.runner.shipment.services.service_bus.ISBUtils;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSettingsSync;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
@@ -76,7 +76,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
     @Autowired
     private JsonHelper jsonHelper;
     @Autowired
-    private SBUtilsImpl sbUtils;
+    private ISBUtils sbUtils;
     @Autowired
     private ISBProperties isbProperties;
     @Autowired

@@ -30,6 +30,7 @@ public class SyncEntityConversionService {
                         PackingRequestV2 p;
                         p = modelMapper.map(item, PackingRequestV2.class);
                         p.setOriginName(item.getOrigin());
+                        p.setOrigin(null);
                         if(item.getContainerId() != null && finalMap.containsKey(item.getContainerId()))
                             p.setContainerNumber(finalMap.get(item.getContainerId()));
                         return p;

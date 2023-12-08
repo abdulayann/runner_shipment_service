@@ -11,11 +11,14 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
 public class ShipmentModel {
+    @JsonProperty("Guid")
+    private UUID guid;
     @JsonProperty("AdditionalDetails")
     private AdditionalDetailModel additionalDetails;
     @JsonProperty("AdditionalTerms")
@@ -69,11 +72,11 @@ public class ShipmentModel {
     @JsonProperty("FinanceClosedOn")
     private LocalDateTime financeClosedOn;
     @JsonProperty("FreightLocal")
-    private Integer freightLocal;
+    private BigDecimal freightLocal;
     @JsonProperty("FreightLocalCurrency")
     private String freightLocalCurrency;
     @JsonProperty("FreightOverseas")
-    private Integer freightOverseas;
+    private BigDecimal freightOverseas;
     @JsonProperty("FreightOverseasCurrency")
     private String freightOverseasCurrency;
     @JsonProperty("GoodsDescription")

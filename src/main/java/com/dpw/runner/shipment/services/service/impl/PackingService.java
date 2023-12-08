@@ -9,7 +9,7 @@ import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.config.SyncConfig;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
-import com.dpw.runner.shipment.services.dto.ContainerAPIsRequest.PackSummary;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryResponse;
 import com.dpw.runner.shipment.services.dto.request.PackingRequest;
 import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.PackingResponse;
@@ -18,11 +18,13 @@ import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingService;
+import com.dpw.runner.shipment.services.service.interfaces.ISyncQueueService;
 import com.dpw.runner.shipment.services.syncing.Entity.BulkPackingRequestV2;
 import com.dpw.runner.shipment.services.syncing.Entity.PackingRequestV2;
 import com.dpw.runner.shipment.services.syncing.constants.SyncingConstants;
-import com.dpw.runner.shipment.services.syncing.impl.PackingSync;
+import com.dpw.runner.shipment.services.syncing.interfaces.IPackingSync;
 import com.dpw.runner.shipment.services.utils.CSVParsingUtil;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.dpw.runner.shipment.services.utils.UnitConversionUtility;
@@ -68,7 +70,7 @@ public class PackingService implements IPackingService {
     private JsonHelper jsonHelper;
 
     @Autowired
-    private AuditLogService auditLogService;
+    private IAuditLogService auditLogService;
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -86,10 +88,10 @@ public class PackingService implements IPackingService {
     private IShipmentSettingsDao shipmentSettingsDao;
 
     @Autowired
-    private PackingSync packingSync;
+    private IPackingSync packingSync;
     @Lazy
     @Autowired
-    private SyncQueueService syncQueueService;
+    private ISyncQueueService syncQueueService;
     @Autowired
     private SyncConfig syncConfig;
 
@@ -374,9 +376,9 @@ public class PackingService implements IPackingService {
         return ResponseHelper.buildListSuccessResponse(finalContainers);
     }
 
-    public PackSummary calculatePackSummary(List<Packing> packingList, String transportMode, String containerCategory) throws Exception {
+    public PackSummaryResponse calculatePackSummary(List<Packing> packingList, String transportMode, String containerCategory) throws Exception {
         try {
-            PackSummary response = new PackSummary();
+            PackSummaryResponse response = new PackSummaryResponse();
             double totalWeight = 0;
             String packsCount = "";
             double volumeWeight = 0;

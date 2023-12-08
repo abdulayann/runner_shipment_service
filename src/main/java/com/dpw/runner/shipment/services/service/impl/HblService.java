@@ -31,6 +31,7 @@ import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.service.interfaces.IHblService;
+import com.dpw.runner.shipment.services.service.interfaces.ISyncQueueService;
 import com.dpw.runner.shipment.services.syncing.Entity.HblRequestV2;
 import com.dpw.runner.shipment.services.syncing.constants.SyncingConstants;
 import com.dpw.runner.shipment.services.syncing.interfaces.IHblSync;
@@ -75,7 +76,7 @@ public class HblService implements IHblService {
     IShipmentSettingsDao shipmentSettingsDao;
     @Lazy
     @Autowired
-    private SyncQueueService syncQueueService;
+    private ISyncQueueService syncQueueService;
     @Autowired
     private SyncConfig syncConfig;
 
@@ -196,8 +197,9 @@ public class HblService implements IHblService {
             return ResponseHelper.buildSuccessResponse(PartialFetchUtils.fetchPartialListData(convertEntityToDto(hbl.get()),request.getIncludeColumns()));
     }
 
-    public void checkAllContainerAssigned(Long shipmentId, List<Containers> containersList, List<Packing> packings) {
+    public Hbl checkAllContainerAssigned(Long shipmentId, List<Containers> containersList, List<Packing> packings) {
         boolean allContainerAssigned = true;
+        Hbl hbl = null;
         for(Containers container: containersList) {
             if(container.getContainerNumber() == null || container.getContainerNumber().isEmpty()) {
                 allContainerAssigned = false;
@@ -207,7 +209,7 @@ public class HblService implements IHblService {
         if(allContainerAssigned) {
             List<Hbl> hbls = hblDao.findByShipmentId(shipmentId);
             if(hbls.size() > 0) {
-                Hbl hbl = hbls.get(0);
+                hbl = hbls.get(0);
                 boolean isContainerWithoutNumberOrNoContainer = false;
                 if(hbl.getHblContainer() != null && hbl.getHblContainer().size() > 0) {
                     for(HblContainerDto hblContainerDto: hbl.getHblContainer()) {
@@ -223,37 +225,38 @@ public class HblService implements IHblService {
                     hbl.setHblContainer(mapShipmentContainersToHBL(containersList));
                     hbl.setHblCargo(mapShipmentCargoToHBL(packings, containersList));
                     hbl = hblDao.save(hbl);
-                    try {
-                        hblSync.sync(hbl);
-                    }
-                    catch (Exception e) {
-                        log.error("Error performing sync on hbl entity, {}", e);
-                    }
                 }
             }
             else {
                 List<ShipmentSettingsDetails> shipmentSettingsDetails = shipmentSettingsDao.getSettingsByTenantIds(List.of(TenantContext.getCurrentTenant()));
                 if(shipmentSettingsDetails.size() > 0 && (shipmentSettingsDetails.get(0).getRestrictHblGen() == null || !shipmentSettingsDetails.get(0).getRestrictHblGen())) {
-                    generateHBL(CommonRequestModel.buildRequest(HblGenerateRequest.builder().shipmentId(shipmentId).build()));
+                    hbl = getHblFromShipmentId(shipmentId);
                 }
             }
         }
+        return hbl;
+    }
+
+    private Hbl getHblFromShipmentId(Long shipmentId) {
+        Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(shipmentId);
+        if (shipmentDetails.isEmpty())
+            throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+
+        List<Hbl> hbls = hblDao.findByShipmentId(shipmentId);
+        if (! hbls.isEmpty())
+            throw new ValidationException(String.format(HblConstants.HBL_DATA_FOUND, shipmentDetails.get().getShipmentId()));
+
+        Hbl hbl = getDefaultHblFromShipment(shipmentDetails.get());
+        
+        hbl = hblDao.save(hbl);
+        return hbl;
     }
 
     @Override
     public ResponseEntity<?> generateHBL(CommonRequestModel commonRequestModel) {
         HblGenerateRequest request = (HblGenerateRequest) commonRequestModel.getData();
-        Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(request.getShipmentId());
-        if (shipmentDetails.isEmpty())
-            throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
-
-        List<Hbl> hbls = hblDao.findByShipmentId(request.getShipmentId());
-        if (! hbls.isEmpty())
-            throw new ValidationException(String.format(HblConstants.HBL_DATA_FOUND, shipmentDetails.get().getShipmentId()));
-
-        Hbl hbl = getDefaultHblFromShipment(shipmentDetails.get());
-
-        hbl = hblDao.save(hbl);
+        
+        Hbl hbl = getHblFromShipmentId(request.getShipmentId());
 
         try {
             hblSync.sync(hbl);
@@ -435,12 +438,12 @@ public class HblService implements IHblService {
         hblData.setVersion(1);
         hblData.setOriginOfGoods(additionalDetails.getGoodsCO());
         hblData.setVoyage(carrierDetails.getVoyage());
-        if (!Objects.isNull(additionalDetails.getImportBroker())) {
-            Parties importBroker = additionalDetails.getImportBroker();
-            if (!Objects.isNull(importBroker.getOrgData()) && importBroker.getOrgData().containsKey(PartiesConstants.FULLNAME))
-                hblData.setDeliveryAgent(String.valueOf(importBroker.getOrgData().get(PartiesConstants.FULLNAME)));
-            if (!Objects.isNull(importBroker.getAddressData()) )
-                hblData.setDeliveryAgentAddress(AwbUtility.constructAddress(importBroker.getAddressData()));
+        if (!Objects.isNull(additionalDetails.getExportBroker())) {
+            Parties exportBroker = additionalDetails.getExportBroker();
+            if (!Objects.isNull(exportBroker.getOrgData()) && exportBroker.getOrgData().containsKey(PartiesConstants.FULLNAME))
+                hblData.setDeliveryAgent(String.valueOf(exportBroker.getOrgData().get(PartiesConstants.FULLNAME)));
+            if (!Objects.isNull(exportBroker.getAddressData()) )
+                hblData.setDeliveryAgentAddress(AwbUtility.constructAddress(exportBroker.getAddressData()));
         }
         UnlocationsResponse destination = ReportHelper.getUNLocRow(carrierDetails.getDestination());
         if (!Objects.isNull(destination))

@@ -8,8 +8,8 @@ import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.AndesStatus;
 import com.dpw.runner.shipment.services.entity.enums.Ownership;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
-import com.dpw.runner.shipment.services.service.impl.SyncQueueService;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
+import com.dpw.runner.shipment.services.service.interfaces.ISyncQueueService;
 import com.dpw.runner.shipment.services.syncing.Entity.CustomShipmentSyncRequest;
 import com.dpw.runner.shipment.services.syncing.Entity.PackingRequestV2;
 import com.dpw.runner.shipment.services.syncing.Entity.PartyRequestV2;
@@ -39,7 +39,7 @@ public class ShipmentReverseSync implements IShipmentReverseSync {
     IShipmentService shipmentService;
     @Lazy
     @Autowired
-    SyncQueueService syncQueueService;
+    ISyncQueueService syncQueueService;
     @Autowired
     private SyncConfig syncConfig;
 

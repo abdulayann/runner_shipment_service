@@ -27,8 +27,8 @@ import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.masterdata.factory.MasterDataFactory;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
-import com.dpw.runner.shipment.services.masterdata.response.CommodityResponse;
-import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
+import com.dpw.runner.shipment.services.masterdata.request.ShipmentGuidRequest;
+import com.dpw.runner.shipment.services.masterdata.response.*;
 import com.dpw.runner.shipment.services.repository.interfaces.IAwbRepository;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.nimbusds.jose.util.Pair;
@@ -468,6 +468,47 @@ public abstract class IReport {
         return modelMapper.map(consolidationDetails, ConsolidationModel.class);
     }
 
+    public List<BillingResponse> getBillingData(UUID shipmentGuid) {
+        ShipmentGuidRequest request = new ShipmentGuidRequest();
+        request.setShipmentGuid(shipmentGuid);
+        DependentServiceResponse dependentServiceResponse = masterDataFactory.getMasterDataService().fetchBillingList(request);
+        return jsonHelper.convertValueToList(dependentServiceResponse.getData(), BillingResponse.class);
+    }
+
+    public List<BillChargesResponse> getBillChargesData(UUID billGuid) {
+        List<Object> criteria = new ArrayList<>();
+        criteria.add(Arrays.asList(List.of("BillId"), "=", billGuid));
+        criteria.add("and");
+        criteria.add(Arrays.asList(List.of("IsActive"), "=", 1));
+        CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(criteria).build();
+        DependentServiceResponse dependentServiceResponse = masterDataFactory.getMasterDataService().fetchBillChargesList(commonV1ListRequest);
+        return jsonHelper.convertValueToList(dependentServiceResponse.getData(), BillChargesResponse.class);
+    }
+
+    public List<ArObjectResponse> getArObjectData(UUID billGuid) {
+        List<Object> criteria = new ArrayList<>();
+        criteria.add(Arrays.asList(List.of("BillId"), "=", billGuid));
+        criteria.add("and");
+        criteria.add(Arrays.asList(List.of("IsActive"), "=", 1));
+        CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(criteria).build();
+        DependentServiceResponse dependentServiceResponse = masterDataFactory.getMasterDataService().fetchArObjectList(commonV1ListRequest);
+        return jsonHelper.convertValueToList(dependentServiceResponse.getData(), ArObjectResponse.class);
+    }
+
+    public ChargeTypesResponse getChargeTypesData(Long chargeTypeId) {
+        List<Object> criteria = Arrays.asList(
+                Arrays.asList("Id"),
+                "=",
+                chargeTypeId
+        );
+        CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(criteria).build();
+        DependentServiceResponse dependentServiceResponse = masterDataFactory.getMasterDataService().fetchChargeType(commonV1ListRequest);
+        List<ChargeTypesResponse> chargeTypesResponses = jsonHelper.convertValueToList(dependentServiceResponse.getData(), ChargeTypesResponse.class);
+        if(chargeTypesResponses != null && chargeTypesResponses.size() > 0)
+            return chargeTypesResponses.get(0);
+        return null;
+    }
+
     public Hbl getHbl(Long Id) {
         List<Hbl> hbls = hblDao.findByShipmentId(Id);
         if(hbls != null && !hbls.isEmpty())
@@ -858,6 +899,9 @@ public abstract class IReport {
     }
 
     public String getValueFromMap(Map<String, Object> dataMap, String key) {
+        if (Objects.isNull(dataMap))
+            return null;
+
         Object value = dataMap.get(key);
         if(value == null || ! (value instanceof String)) {
             return null;

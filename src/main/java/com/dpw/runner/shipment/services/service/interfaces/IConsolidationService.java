@@ -1,11 +1,13 @@
 package com.dpw.runner.shipment.services.service.interfaces;
 
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
+import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import org.springframework.http.ResponseEntity;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -45,4 +47,5 @@ public interface IConsolidationService extends ICommonService{
     ResponseEntity<?> calculateContainerSummary(CommonRequestModel commonRequestModel) throws Exception;
 
     ResponseEntity<?> calculatePackSummary(CommonRequestModel commonRequestModel) throws Exception;
+    VolumeWeightChargeable calculateVolumeWeight(String transportMode, String weightUnit, String volumeUnit, BigDecimal weight, BigDecimal volume) throws Exception;
 }

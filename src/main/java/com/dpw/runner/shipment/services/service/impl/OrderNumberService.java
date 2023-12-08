@@ -14,6 +14,7 @@ import com.dpw.runner.shipment.services.entity.OrderNumber;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.IOrderNumberService;
 import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
 import com.nimbusds.jose.util.Pair;
@@ -45,7 +46,7 @@ public class OrderNumberService implements IOrderNumberService {
 
 
     @Autowired
-    private AuditLogService auditLogService;
+    private IAuditLogService auditLogService;
 
     @Override
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {

@@ -6,7 +6,6 @@ import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.dto.request.DenialPartySearchEntityRequest;
 import com.dpw.runner.shipment.services.dto.response.DenialPartySearchResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentListResponse;
-import com.dpw.runner.shipment.services.service.impl.DenialPartyScreeningService;
 import com.dpw.runner.shipment.services.service.interfaces.IDenialPartyScreeningService;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;

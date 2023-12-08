@@ -13,7 +13,7 @@ import com.dpw.runner.shipment.services.dto.request.TruckDriverDetailsRequest;
 import com.dpw.runner.shipment.services.dto.response.ShipmentSettingsDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.TruckDriverDetailsResponse;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
-import com.dpw.runner.shipment.services.service.impl.TruckDriverDetailsService;
+import com.dpw.runner.shipment.services.service.interfaces.ITruckDriverDetailsService;
 import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
@@ -35,7 +35,7 @@ import static com.dpw.runner.shipment.services.commons.constants.Constants.NO_DA
 public class TruckDriverDetailsController {
 
     @Autowired
-    private TruckDriverDetailsService truckDriverDetailsService;
+    private ITruckDriverDetailsService truckDriverDetailsService;
 
     @PostMapping(ApiConstants.API_CREATE)
     @ApiResponses(value = {

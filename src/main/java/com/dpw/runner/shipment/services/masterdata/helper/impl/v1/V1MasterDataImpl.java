@@ -440,4 +440,32 @@ public class V1MasterDataImpl implements IMasterDataService {
                 .data(v1DataResponse.entities).pageSize(v1DataResponse.take).numberOfRecords(v1DataResponse.totalCount).pageNo(v1DataResponse.skip).build();
     }
 
+    @Override
+    public DependentServiceResponse fetchBillingList(Object request) {
+        V1DataResponse v1DataResponse = v1Service.fetchBillingList(request);
+        return DependentServiceResponse.builder().success(true)
+                .data(v1DataResponse.entities).pageSize(v1DataResponse.take).numberOfRecords(v1DataResponse.totalCount).pageNo(v1DataResponse.skip).build();
+    }
+
+    @Override
+    public DependentServiceResponse fetchBillChargesList(Object request) {
+        V1DataResponse v1DataResponse = v1Service.fetchBillChargesList(request);
+        return DependentServiceResponse.builder().success(true)
+                .data(v1DataResponse.entities).pageSize(v1DataResponse.take).numberOfRecords(v1DataResponse.totalCount).pageNo(v1DataResponse.skip).build();
+    }
+
+    @Override
+    public DependentServiceResponse fetchArObjectList(Object request) {
+        V1DataResponse v1DataResponse = v1Service.fetchArObjectList(request);
+        return DependentServiceResponse.builder().success(true)
+                .data(v1DataResponse.entities).pageSize(v1DataResponse.take).numberOfRecords(v1DataResponse.totalCount).pageNo(v1DataResponse.skip).build();
+    }
+
+    @Override
+    public DependentServiceResponse fetchChargeType(Object request) {
+        V1DataResponse v1DataResponse = v1Service.fetchChargeCodeData(request);
+        return DependentServiceResponse.builder().success(true)
+                .data(v1DataResponse.entities).pageSize(v1DataResponse.take).numberOfRecords(v1DataResponse.totalCount).pageNo(v1DataResponse.skip).build();
+    }
+
 }

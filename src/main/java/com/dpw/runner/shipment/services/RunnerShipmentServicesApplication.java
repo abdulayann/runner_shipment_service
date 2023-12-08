@@ -18,7 +18,7 @@ import java.util.TimeZone;
 @SpringBootApplication(scanBasePackages = "com.dpw.runner.shipment.services")
 @Slf4j
 @EnableSwagger2
-@EnableCaching
+@EnableCaching(proxyTargetClass = true)
 @EnableKafka
 public class RunnerShipmentServicesApplication {
 
