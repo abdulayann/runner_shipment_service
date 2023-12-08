@@ -21,7 +21,7 @@ public interface IContainerDao {
 
     void delete(Containers containers);
 
-    List<Containers> updateEntityFromShipmentConsole(List<Containers> containersList, Long consolidationId) throws Exception;
+    List<Containers> updateEntityFromShipmentConsole(List<Containers> containersList, Long consolidationId, Long shipmentId) throws Exception;
 
     List<Containers> updateEntityFromBooking(List<Containers> containersList, Long bookingId) throws Exception;
 

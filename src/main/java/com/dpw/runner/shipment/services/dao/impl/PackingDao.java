@@ -98,7 +98,7 @@ public class PackingDao implements IPackingDao {
                 }
                 responsePackings = saveEntityFromShipment(packingRequestList, shipmentId);
             }
-            deletePackings(hashMap, "Shipment", shipmentId);
+            deletePackings(hashMap, "SHIPMENT", shipmentId);
             return responsePackings;
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -160,7 +160,7 @@ public class PackingDao implements IPackingDao {
                 }
                 responsePackings = saveEntityFromConsole(packingRequestList, consolidationId);
             }
-            deletePackings(hashMap, "Consolidation", consolidationId);
+            deletePackings(hashMap, null, null);
             return responsePackings;
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -220,6 +220,8 @@ public class PackingDao implements IPackingDao {
     public List<Packing> saveEntityFromShipment(List<Packing> packings, Long shipmentId) {
         List<Packing> res = new ArrayList<>();
         for (Packing req : packings) {
+            String oldEntityJsonString = null;
+            String operation = DBOperationType.CREATE.name();
             if (req.getId() != null) {
                 long id = req.getId();
                 Optional<Packing> oldEntity = findById(id);
@@ -229,9 +231,23 @@ public class PackingDao implements IPackingDao {
                 }
                 req.setCreatedAt(oldEntity.get().getCreatedAt());
                 req.setCreatedBy(oldEntity.get().getCreatedBy());
+                oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
+                operation = DBOperationType.UPDATE.name();
             }
             req.setShipmentId(shipmentId);
             req = save(req);
+            try {
+                auditLogService.addAuditLog(
+                        AuditLogMetaData.builder()
+                                .newData(req)
+                                .prevData(oldEntityJsonString != null ? jsonHelper.readFromJson(oldEntityJsonString, Packing.class) : null)
+                                .parent("SHIPMENT")
+                                .parentId(shipmentId)
+                                .operation(operation).build()
+                );
+            } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException | InvocationTargetException | NoSuchMethodException e) {
+                log.error(e.getMessage());
+            }
             res.add(req);
         }
         return res;
@@ -465,7 +481,7 @@ public class PackingDao implements IPackingDao {
             Map<Long, Packing> hashMap = new HashMap<>();
             packingMap.forEach((s, packing) -> hashMap.put(packing.getId(), packing));
 
-            deletePackings(hashMap, null, null);
+            deletePackings(hashMap, "SHIPMENT", shipmentId);
             return responsePackings;
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
