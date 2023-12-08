@@ -101,6 +101,7 @@ public class ConsolidationSync implements IConsolidationSync {
     }
 
     @Override
+    @Async
     public void syncLockStatus(ConsolidationDetails consolidationDetails) {
         LockSyncRequest lockSyncRequest = LockSyncRequest.builder().guid(consolidationDetails.getGuid()).lockStatus(consolidationDetails.getIsLocked()).build();
         String finalCs = jsonHelper.convertToJson(V1DataSyncRequest.builder().entity(lockSyncRequest).module(SyncingConstants.CONSOLIDATION_LOCK).build());

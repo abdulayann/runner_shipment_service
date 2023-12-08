@@ -153,7 +153,7 @@ public class ConsolidationController {
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = ConsolidationConstants.LOCK_TOGGLE_SUCCESSFUL)})
     @GetMapping(ApiConstants.TOGGLE_LOCK)
-    public ResponseEntity<RunnerResponse> toggleLock(@ApiParam(value = ShipmentConstants.SHIPMENT_ID, required = true) @RequestParam Long id) {
+    public ResponseEntity<RunnerResponse> toggleLock(@ApiParam(value = ShipmentConstants.CONSOLIDATION_ID, required = true) @RequestParam Long id) {
         CommonGetRequest request = CommonGetRequest.builder().id(id).build();
         return (ResponseEntity<RunnerResponse>) consolidationService.toggleLock(CommonRequestModel.buildRequest(request));
     }

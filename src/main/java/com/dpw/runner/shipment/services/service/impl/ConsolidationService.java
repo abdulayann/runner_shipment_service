@@ -1728,7 +1728,7 @@ public class ConsolidationService implements IConsolidationService {
         String lockingUser = consolidationDetails.getLockedBy();
         String currentUser = userContext.getUser().getUsername();
 
-        if (consolidationDetails.getIsLocked()) {
+        if (consolidationDetails.getIsLocked() != null && consolidationDetails.getIsLocked()) {
             if (lockingUser != null && lockingUser.equals(currentUser))
                 consolidationDetails.setIsLocked(false);
         } else {
