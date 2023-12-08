@@ -9,6 +9,7 @@ import com.dpw.runner.shipment.services.dao.interfaces.IPackingDao;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.CustomerBooking;
 import com.dpw.runner.shipment.services.entity.Packing;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.enums.LifecycleHooks;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -98,7 +99,7 @@ public class PackingDao implements IPackingDao {
                 }
                 responsePackings = saveEntityFromShipment(packingRequestList, shipmentId);
             }
-            deletePackings(hashMap, "SHIPMENT", shipmentId);
+            deletePackings(hashMap, ShipmentDetails.class.getSimpleName(), shipmentId);
             return responsePackings;
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -241,7 +242,7 @@ public class PackingDao implements IPackingDao {
                         AuditLogMetaData.builder()
                                 .newData(req)
                                 .prevData(oldEntityJsonString != null ? jsonHelper.readFromJson(oldEntityJsonString, Packing.class) : null)
-                                .parent("SHIPMENT")
+                                .parent(ShipmentDetails.class.getSimpleName())
                                 .parentId(shipmentId)
                                 .operation(operation).build()
                 );
@@ -481,7 +482,7 @@ public class PackingDao implements IPackingDao {
             Map<Long, Packing> hashMap = new HashMap<>();
             packingMap.forEach((s, packing) -> hashMap.put(packing.getId(), packing));
 
-            deletePackings(hashMap, "SHIPMENT", shipmentId);
+            deletePackings(hashMap, ShipmentDetails.class.getSimpleName(), shipmentId);
             return responsePackings;
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
