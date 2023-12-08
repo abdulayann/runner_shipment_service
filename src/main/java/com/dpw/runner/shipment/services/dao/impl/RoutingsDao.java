@@ -8,6 +8,7 @@ import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IRoutingsDao;
 import com.dpw.runner.shipment.services.entity.CustomerBooking;
 import com.dpw.runner.shipment.services.entity.Routings;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.enums.LifecycleHooks;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -97,7 +98,7 @@ public class RoutingsDao implements IRoutingsDao {
                 }
                 responseRoutings = saveEntityFromShipment(routingsRequestList, shipmentId);
             }
-            deleteRoutings(hashMap, "SHIPMENT", shipmentId);
+            deleteRoutings(hashMap, ShipmentDetails.class.getSimpleName(), shipmentId);
             return responseRoutings;
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -132,7 +133,7 @@ public class RoutingsDao implements IRoutingsDao {
                         AuditLogMetaData.builder()
                                 .newData(req)
                                 .prevData(oldEntityJsonString != null ? jsonHelper.readFromJson(oldEntityJsonString, Routings.class) : null)
-                                .parent("SHIPMENT")
+                                .parent(ShipmentDetails.class.getSimpleName())
                                 .parentId(shipmentId)
                                 .operation(operation).build()
                 );
