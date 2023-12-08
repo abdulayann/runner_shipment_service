@@ -122,7 +122,7 @@ public class BookingChargesDao implements IBookingChargesDao {
 
     public List<BookingCharges> saveEntityFromBooking(List<BookingCharges> bookingCharges, Long bookingId) {
         List<BookingCharges> res = new ArrayList<>();
-        ListCommonRequest listCommonRequest = constructListCommonRequest("id", bookingCharges.stream().map(BookingCharges::getId).collect(Collectors.toList()), "IN");
+        ListCommonRequest listCommonRequest = constructListCommonRequest("bookingId", bookingId, "=");
         Pair<Specification<BookingCharges>, Pageable> pair = fetchData(listCommonRequest, BookingCharges.class);
         Page<BookingCharges> bookingChargesPage = findAll(pair.getLeft(), pair.getRight());
         Map<Long, BookingCharges> hashMap = bookingChargesPage.stream()
