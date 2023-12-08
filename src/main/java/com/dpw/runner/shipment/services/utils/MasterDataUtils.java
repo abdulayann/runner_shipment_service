@@ -1,6 +1,5 @@
 package com.dpw.runner.shipment.services.utils;
 
-import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
@@ -12,8 +11,8 @@ import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.v1.response.ActivityMasterResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.SalesAgentResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
-import com.dpw.runner.shipment.services.entity.CarrierDetails;
 import com.dpw.runner.shipment.services.dto.v1.response.WareHouseResponse;
+import com.dpw.runner.shipment.services.entity.CarrierDetails;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
@@ -38,6 +37,8 @@ import java.math.BigDecimal;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
+import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
 
 @Slf4j
 @Component
@@ -1099,7 +1100,11 @@ public class MasterDataUtils{
                 try {
                     Field field1 = entityPayload.getClass().getDeclaredField(field.getName());
                     field1.setAccessible(true);
-                    Long tenantId = (Long) field1.get(entityPayload);
+                    Long tenantId = null;
+                    if(field1.get(entityPayload) != null) {
+                        if(!IsStringNullOrEmpty(field1.get(entityPayload).toString()))
+                            tenantId = Long.parseLong(field1.get(entityPayload).toString());
+                    }
                     if(tenantId != null) {
                         Cache.ValueWrapper cacheValue = cache.get(keyGenerator.customCacheKeyForMasterData(CacheConstants.TENANTS, StringUtility.convertToString(tenantId)));
                         if (Objects.isNull(cacheValue)) requests.add(StringUtility.convertToString(tenantId));

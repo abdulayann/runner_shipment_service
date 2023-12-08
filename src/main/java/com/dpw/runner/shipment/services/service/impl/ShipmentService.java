@@ -2505,9 +2505,14 @@ public class ShipmentService implements IShipmentService {
     private void addAllTenantDataInSingleCall (ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse) {
         Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
         List<String> tenantIdList = new ArrayList<>(masterDataUtils.createInBulkTenantsRequest(shipmentDetailsResponse, ShipmentDetails.class, fieldNameKeyMap, ShipmentDetails.class.getSimpleName()));
+        if(!Objects.isNull(shipmentDetailsResponse.getAdditionalDetails()))
+            tenantIdList.addAll(masterDataUtils.createInBulkTenantsRequest(shipmentDetailsResponse.getAdditionalDetails(), AdditionalDetails.class, fieldNameKeyMap, AdditionalDetails.class.getSimpleName()));
+
         Map v1Data = masterDataUtils.fetchInTenantsList(tenantIdList);
         masterDataUtils.pushToCache(v1Data, CacheConstants.TENANTS);
         shipmentDetailsResponse.setTenantIdsData(masterDataUtils.setMasterData(fieldNameKeyMap.get(ShipmentDetails.class.getSimpleName()), CacheConstants.TENANTS));
+        if(!Objects.isNull(shipmentDetailsResponse.getAdditionalDetails()))
+            shipmentDetailsResponse.getAdditionalDetails().setTenantIdsData(masterDataUtils.setMasterData(fieldNameKeyMap.get(AdditionalDetails.class.getSimpleName()), CacheConstants.TENANTS));
     }
 
     private void addAllCurrencyDataInSingleCall (ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse) {

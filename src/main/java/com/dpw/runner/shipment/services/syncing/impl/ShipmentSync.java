@@ -123,6 +123,7 @@ public class ShipmentSync implements IShipmentSync {
         cs.setBookingCarriages(convertToList(sd.getBookingCarriagesList(), BookingCarriageRequestV2.class));
         cs.setShipmentId(sd.getShipmentId());
         cs.setGuid(sd.getGuid());
+        cs.setDescription(sd.getGoodsDescription());
         String finalCs = jsonHelper.convertToJson(V1DataSyncRequest.builder().entity(cs).module(SyncingConstants.SHIPMENT).build());
         return callSync(finalCs, cs, sd.getId(), sd.getGuid());
     }
@@ -253,6 +254,7 @@ public class ShipmentSync implements IShipmentSync {
             cs.setPassedByString(String.valueOf(sd.getAdditionalDetails().getPassedBy().getValue()));
         cs.setBoedate(sd.getAdditionalDetails().getBOEDate());
         cs.setBoenumber(sd.getAdditionalDetails().getBOENumber());
+        cs.setHblDeliveryMode(sd.getAdditionalDetails().getDeliveryMode());
     }
 
     private void mapShipmentServices(CustomShipmentSyncRequest cs, ShipmentDetails sd) {

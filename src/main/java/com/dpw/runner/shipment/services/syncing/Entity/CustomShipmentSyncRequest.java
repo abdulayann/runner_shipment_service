@@ -53,6 +53,8 @@ public class CustomShipmentSyncRequest implements IRunnerRequest, IRunnerRespons
     private String AdditionalTerms;
     @JsonProperty("Description")
     private String Description;
+    @JsonProperty("Commodity")
+    private String Commodity;
 
     @JsonProperty("Volume")
     private BigDecimal Volume;
@@ -459,4 +461,13 @@ public class CustomShipmentSyncRequest implements IRunnerRequest, IRunnerRespons
     //Shipment Addresses
     @JsonProperty("ShipmentAddress")
     private List<PartyRequestV2> shipmentAddresses;
+
+    @JsonProperty("HblDeliveryMode")
+    private String HblDeliveryMode;
+    @JsonProperty("CreatedBy")
+    private String CreatedBy;
+    @JsonProperty("VesselBerthingDate")
+    private LocalDateTime VesselBerthingDate;
+    @JsonProperty("FmcTlcId")
+    private String FmcTlcId;
 }
