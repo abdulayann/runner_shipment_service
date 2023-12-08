@@ -64,7 +64,7 @@ public class NotesService implements INotesService {
                             .newData(notes)
                             .prevData(null)
                             .parent(request.getEntityType())
-                            .parentId(request.getId())
+                            .parentId(request.getEntityId())
                             .operation(DBOperationType.CREATE.name()).build()
             );
 
