@@ -8,6 +8,7 @@ import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.CustomerBooking;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.enums.LifecycleHooks;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -223,7 +224,7 @@ public class ContainerDao implements IContainerDao {
                                     AuditLogMetaData.builder()
                                             .newData(container)
                                             .prevData(oldEntityJsonString != null ? jsonHelper.readFromJson(oldEntityJsonString, Containers.class) : null)
-                                            .parent("SHIPMENT")
+                                            .parent(ShipmentDetails.class.getSimpleName())
                                             .parentId(shipmentId)
                                             .operation(operation).build()
                             );

@@ -619,7 +619,7 @@ public class ShipmentService implements IShipmentService {
                                 AuditLogMetaData.builder()
                                         .newData(container)
                                         .prevData(null)
-                                        .parent("SHIPMENT")
+                                        .parent(ShipmentDetails.class.getSimpleName())
                                         .parentId(shipmentId)
                                         .operation(DBOperationType.CREATE.name()).build()
                         );
