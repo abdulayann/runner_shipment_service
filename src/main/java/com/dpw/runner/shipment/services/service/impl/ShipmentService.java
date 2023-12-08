@@ -899,7 +899,17 @@ public class ShipmentService implements IShipmentService {
     public ResponseEntity<?> createShipmentInV2(CustomerBookingRequest customerBookingRequest) throws Exception
     {
         ConsolidationDetailsRequest consolidationDetailsRequest = ConsolidationDetailsRequest.builder().
-                        carrierDetails(customerBookingRequest.getCarrierDetails()).
+                        carrierDetails(CarrierDetailRequest.builder()
+                                .origin(customerBookingRequest.getCarrierDetails().getOrigin())
+                                .destination(customerBookingRequest.getCarrierDetails().getDestination())
+                                .shippingLine(customerBookingRequest.getCarrierDetails().getShippingLine())
+                                .vessel(customerBookingRequest.getCarrierDetails().getVessel())
+                                .voyage(customerBookingRequest.getCarrierDetails().getVoyage())
+                                .originPort(customerBookingRequest.getCarrierDetails().getOriginPort())
+                                .destinationPort(customerBookingRequest.getCarrierDetails().getDestinationPort())
+                                .flightNumber(customerBookingRequest.getCarrierDetails().getFlightNumber())
+                                .build()
+                        ).
                         consolidationType("STD").
                         transportMode(customerBookingRequest.getTransportType()).
                         containerCategory(customerBookingRequest.getCargoType()).
@@ -923,7 +933,17 @@ public class ShipmentService implements IShipmentService {
         consolidationService.create(CommonRequestModel.buildRequest(consolidationDetailsRequest));
 
         ShipmentRequest shipmentRequest = ShipmentRequest.builder().
-                carrierDetails(customerBookingRequest.getCarrierDetails()).
+                carrierDetails(CarrierDetailRequest.builder()
+                        .origin(customerBookingRequest.getCarrierDetails().getOrigin())
+                        .destination(customerBookingRequest.getCarrierDetails().getDestination())
+                        .shippingLine(customerBookingRequest.getCarrierDetails().getShippingLine())
+                        .vessel(customerBookingRequest.getCarrierDetails().getVessel())
+                        .voyage(customerBookingRequest.getCarrierDetails().getVoyage())
+                        .originPort(customerBookingRequest.getCarrierDetails().getOriginPort())
+                        .destinationPort(customerBookingRequest.getCarrierDetails().getDestinationPort())
+                        .flightNumber(customerBookingRequest.getCarrierDetails().getFlightNumber())
+                        .build()
+                ).
                 contractId(customerBookingRequest.getContractId()).
                 contractType(customerBookingRequest.getContractStatus()).
                 noOfPacks(customerBookingRequest.getQuantity()).
