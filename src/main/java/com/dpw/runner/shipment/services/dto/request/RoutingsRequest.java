@@ -5,7 +5,6 @@ import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import io.swagger.annotations.ApiModel;
 import lombok.*;
 
-import javax.persistence.Column;
 import java.time.LocalDateTime;
 
 @Data
@@ -24,7 +23,7 @@ public class RoutingsRequest extends CommonRequest implements IRunnerRequest {
     private String vesselName;
     private String pol;
     private String pod;
-    private boolean isDomestic;
+    private Boolean isDomestic;
     private LocalDateTime eta;
     private LocalDateTime etd;
     private LocalDateTime ata;

@@ -94,6 +94,7 @@ public class ShipmentDao implements IShipmentDao {
                 shipmentDetails.setConsolidationList(oldEntity.get().getConsolidationList());
             }
             oldShipment = oldEntity.get();
+            shipmentDetails.setCreatedBy(oldShipment.getCreatedBy());
         }
         else {
             if(shipmentDetails.getConsolidationList() == null)
@@ -134,6 +135,7 @@ public class ShipmentDao implements IShipmentDao {
                 shipmentDetails.setConsolidationList(oldEntity.get().getConsolidationList());
             }
             oldShipment = oldEntity.get();
+            shipmentDetails.setCreatedBy(oldShipment.getCreatedBy());
         }
         onSave(shipmentDetails, errors, oldShipment, fromV1Sync);
         return shipmentDetails;
