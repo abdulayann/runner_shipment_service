@@ -97,7 +97,7 @@ public class RoutingsDao implements IRoutingsDao {
                 }
                 responseRoutings = saveEntityFromShipment(routingsRequestList, shipmentId);
             }
-            deleteRoutings(hashMap, "Shipment", shipmentId);
+            deleteRoutings(hashMap, "SHIPMENT", shipmentId);
             return responseRoutings;
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -111,6 +111,8 @@ public class RoutingsDao implements IRoutingsDao {
     public List<Routings> saveEntityFromShipment(List<Routings> routings, Long shipmentId) {
         List<Routings> res = new ArrayList<>();
         for (Routings req : routings) {
+            String oldEntityJsonString = null;
+            String operation = DBOperationType.CREATE.name();
             if (req.getId() != null) {
                 long id = req.getId();
                 Optional<Routings> oldEntity = findById(id);
@@ -120,9 +122,23 @@ public class RoutingsDao implements IRoutingsDao {
                 }
                 req.setCreatedAt(oldEntity.get().getCreatedAt());
                 req.setCreatedBy(oldEntity.get().getCreatedBy());
+                oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
+                operation = DBOperationType.UPDATE.name();
             }
             req.setShipmentId(shipmentId);
             req = save(req);
+            try {
+                auditLogService.addAuditLog(
+                        AuditLogMetaData.builder()
+                                .newData(req)
+                                .prevData(oldEntityJsonString != null ? jsonHelper.readFromJson(oldEntityJsonString, Routings.class) : null)
+                                .parent("SHIPMENT")
+                                .parentId(shipmentId)
+                                .operation(operation).build()
+                );
+            } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException | InvocationTargetException | NoSuchMethodException e) {
+                log.error(e.getMessage());
+            }
             res.add(req);
         }
         return res;
@@ -219,7 +235,7 @@ public class RoutingsDao implements IRoutingsDao {
                 }
                 responseRoutings = saveEntityFromConsole(routingsRequestList, consolidationId);
             }
-            deleteRoutings(hashMap, "Consolidation", consolidationId);
+            deleteRoutings(hashMap, null, null);
             return responseRoutings;
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
