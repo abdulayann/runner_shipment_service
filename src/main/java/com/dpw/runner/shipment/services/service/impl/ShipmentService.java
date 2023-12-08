@@ -2433,6 +2433,7 @@ public class ShipmentService implements IShipmentService {
             this.addAllTenantDataInSingleCall(shipmentDetails, shipmentDetailsResponse);
             this.addAllWarehouseDataInSingleCall(shipmentDetails, shipmentDetailsResponse);
             this.addAllActivityDataInSingleCall(shipmentDetails, shipmentDetailsResponse);
+            this.addAllSalesAgentInSingleCall(shipmentDetails, shipmentDetailsResponse);
             setContainersPacksAutoUpdateData(shipmentDetailsResponse);
             shipmentDetailsResponse.setPackSummary(packingService.calculatePackSummary(shipmentDetails.getPackingList(), shipmentDetails.getTransportMode(), shipmentDetails.getShipmentType()));
             shipmentDetailsResponse.setContainerSummary(containerService.calculateContainerSummary(shipmentDetails.getContainersList(), shipmentDetails.getTransportMode(), shipmentDetails.getShipmentType()));
@@ -2557,7 +2558,7 @@ public class ShipmentService implements IShipmentService {
         Map v1Data = masterDataUtils.fetchInSalesAgentList(salesAgents.stream().toList());
         masterDataUtils.pushToCache(v1Data, CacheConstants.SALES_AGENT);
 
-        if (!Objects.isNull(shipmentDetailsResponse.getAdditionalDetails()))
+        if (!Objects.isNull(shipmentDetailsResponse))
             shipmentDetailsResponse.addTextData(masterDataUtils.setMasterData(fieldNameKeyMap.get(ShipmentDetails.class.getSimpleName()), CacheConstants.SALES_AGENT));
 
     }
