@@ -438,12 +438,12 @@ public class HblService implements IHblService {
         hblData.setVersion(1);
         hblData.setOriginOfGoods(additionalDetails.getGoodsCO());
         hblData.setVoyage(carrierDetails.getVoyage());
-        if (!Objects.isNull(additionalDetails.getImportBroker())) {
-            Parties importBroker = additionalDetails.getImportBroker();
-            if (!Objects.isNull(importBroker.getOrgData()) && importBroker.getOrgData().containsKey(PartiesConstants.FULLNAME))
-                hblData.setDeliveryAgent(String.valueOf(importBroker.getOrgData().get(PartiesConstants.FULLNAME)));
-            if (!Objects.isNull(importBroker.getAddressData()) )
-                hblData.setDeliveryAgentAddress(AwbUtility.constructAddress(importBroker.getAddressData()));
+        if (!Objects.isNull(additionalDetails.getExportBroker())) {
+            Parties exportBroker = additionalDetails.getExportBroker();
+            if (!Objects.isNull(exportBroker.getOrgData()) && exportBroker.getOrgData().containsKey(PartiesConstants.FULLNAME))
+                hblData.setDeliveryAgent(String.valueOf(exportBroker.getOrgData().get(PartiesConstants.FULLNAME)));
+            if (!Objects.isNull(exportBroker.getAddressData()) )
+                hblData.setDeliveryAgentAddress(AwbUtility.constructAddress(exportBroker.getAddressData()));
         }
         UnlocationsResponse destination = ReportHelper.getUNLocRow(carrierDetails.getDestination());
         if (!Objects.isNull(destination))
