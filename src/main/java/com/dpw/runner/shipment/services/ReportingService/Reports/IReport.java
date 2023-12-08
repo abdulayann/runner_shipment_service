@@ -899,6 +899,9 @@ public abstract class IReport {
     }
 
     public String getValueFromMap(Map<String, Object> dataMap, String key) {
+        if (Objects.isNull(dataMap))
+            return null;
+
         Object value = dataMap.get(key);
         if(value == null || ! (value instanceof String)) {
             return null;
