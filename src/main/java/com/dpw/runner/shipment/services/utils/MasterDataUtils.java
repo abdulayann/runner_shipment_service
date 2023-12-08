@@ -10,6 +10,7 @@ import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
 import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.v1.response.ActivityMasterResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.SalesAgentResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.CarrierDetails;
 import com.dpw.runner.shipment.services.dto.v1.response.WareHouseResponse;
@@ -1027,6 +1028,10 @@ public class MasterDataUtils{
                         ActivityMasterResponse object9 = (ActivityMasterResponse) cache.get();
                         fieldNameMasterDataMap.put(key, object9.getActivityCode() + " - " + object9.getActivityName());
                         break;
+                    case CacheConstants.SALES_AGENT:
+                        SalesAgentResponse object10 = (SalesAgentResponse) cache.get();
+                        fieldNameMasterDataMap.put(key, object10.getSalesAgentName());
+                        break;
                 }
 
             }
@@ -1248,5 +1253,51 @@ public class MasterDataUtils{
         }
         fieldNameMainKeyMap.put(code, fieldNameKeyMap);
         return requests;
+    }
+
+    public List<String> createInBulkSalesAgentRequest (IRunnerResponse entityPayload, Class mainClass, Map<String, Map<String, String>> fieldNameMainKeyMap, String code) {
+        List<String> requests = new ArrayList<>();
+        if (Objects.isNull(entityPayload))
+            return requests;
+
+        Map<String, String> fieldNameKeyMap = new HashMap<>();
+        Cache cache = cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA);
+
+        for(Field field : mainClass.getDeclaredFields()) {
+            if (field.isAnnotationPresent(DedicatedMasterData.class) && field.getDeclaredAnnotation(DedicatedMasterData.class).type().equals(Constants.SALES_AGENT))  {
+                try {
+                    Field field1 = entityPayload.getClass().getDeclaredField(field.getName());
+                    field1.setAccessible(true);
+                    Long salesAgentId = (Long) field1.get(entityPayload);
+                    if(salesAgentId != null) {
+                        Cache.ValueWrapper cacheValue = cache.get(keyGenerator.customCacheKeyForMasterData(CacheConstants.SALES_AGENT, StringUtility.convertToString(salesAgentId)));
+                        if (Objects.isNull(cacheValue)) requests.add(StringUtility.convertToString(salesAgentId));
+                        fieldNameKeyMap.put(field.getName(), StringUtility.convertToString(salesAgentId));
+                    }
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }
+        fieldNameMainKeyMap.put(code, fieldNameKeyMap);
+        return requests;
+    }
+
+    public Map<String, SalesAgentResponse> fetchInSalesAgentList(List<String> requests) {
+        Map<String, SalesAgentResponse> keyMasterDataMap = new HashMap<>();
+        if(requests.size() > 0) {
+            log.info("Request: {} || SalesAgentList: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(requests));
+            CommonV1ListRequest request = new CommonV1ListRequest();
+            List<Object> field = new ArrayList<>(List.of(EntityTransferConstants.ID));
+            String operator = Operators.IN.getValue();
+            List<Object> criteria = new ArrayList<>(List.of(field, operator, List.of(requests)));
+            request.setCriteriaRequests(criteria);
+            V1DataResponse response = v1Service.fetchSalesAgentData(request);
+            List<SalesAgentResponse> salesAgentResponseList = commonUtils.convertToList((List<?>) response.entities, SalesAgentResponse.class);
+            salesAgentResponseList.forEach(salesAgentResponse -> {
+                keyMasterDataMap.put(StringUtility.convertToString(salesAgentResponse.getId()), salesAgentResponse);
+            });
+        }
+        return keyMasterDataMap;
     }
 }

@@ -2433,6 +2433,7 @@ public class ShipmentService implements IShipmentService {
             this.addAllTenantDataInSingleCall(shipmentDetails, shipmentDetailsResponse);
             this.addAllWarehouseDataInSingleCall(shipmentDetails, shipmentDetailsResponse);
             this.addAllActivityDataInSingleCall(shipmentDetails, shipmentDetailsResponse);
+            this.addAllSalesAgentInSingleCall(shipmentDetails, shipmentDetailsResponse);
             setContainersPacksAutoUpdateData(shipmentDetailsResponse);
             shipmentDetailsResponse.setPackSummary(packingService.calculatePackSummary(shipmentDetails.getPackingList(), shipmentDetails.getTransportMode(), shipmentDetails.getShipmentType()));
             shipmentDetailsResponse.setContainerSummary(containerService.calculateContainerSummary(shipmentDetails.getContainersList(), shipmentDetails.getTransportMode(), shipmentDetails.getShipmentType()));
@@ -2530,7 +2531,7 @@ public class ShipmentService implements IShipmentService {
         masterDataUtils.pushToCache(v1Data, CacheConstants.WAREHOUSES);
 
         if (!Objects.isNull(shipmentDetailsResponse.getAdditionalDetails()))
-            shipmentDetailsResponse.getAdditionalDetails().setTextData(masterDataUtils.setMasterData(fieldNameKeyMap.get(AdditionalDetails.class.getSimpleName()), CacheConstants.WAREHOUSES));
+            shipmentDetailsResponse.getAdditionalDetails().addTextData(masterDataUtils.setMasterData(fieldNameKeyMap.get(AdditionalDetails.class.getSimpleName()), CacheConstants.WAREHOUSES));
 
     }
 
@@ -2544,7 +2545,21 @@ public class ShipmentService implements IShipmentService {
         masterDataUtils.pushToCache(v1Data, CacheConstants.ACTIVITY_TYPE);
 
         if (!Objects.isNull(shipmentDetailsResponse.getAdditionalDetails()))
-            shipmentDetailsResponse.getAdditionalDetails().setTextData(masterDataUtils.setMasterData(fieldNameKeyMap.get(AdditionalDetails.class.getSimpleName()), CacheConstants.ACTIVITY_TYPE));
+            shipmentDetailsResponse.getAdditionalDetails().addTextData(masterDataUtils.setMasterData(fieldNameKeyMap.get(AdditionalDetails.class.getSimpleName()), CacheConstants.ACTIVITY_TYPE));
+
+    }
+
+    private void addAllSalesAgentInSingleCall (ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse) {
+        Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
+        Set<String> salesAgents = new HashSet<>();
+        if (!Objects.isNull(shipmentDetailsResponse))
+            salesAgents.addAll(masterDataUtils.createInBulkSalesAgentRequest(shipmentDetailsResponse, ShipmentDetails.class, fieldNameKeyMap, ShipmentDetails.class.getSimpleName()) );
+
+        Map v1Data = masterDataUtils.fetchInSalesAgentList(salesAgents.stream().toList());
+        masterDataUtils.pushToCache(v1Data, CacheConstants.SALES_AGENT);
+
+        if (!Objects.isNull(shipmentDetailsResponse))
+            shipmentDetailsResponse.addTextData(masterDataUtils.setMasterData(fieldNameKeyMap.get(ShipmentDetails.class.getSimpleName()), CacheConstants.SALES_AGENT));
 
     }
 

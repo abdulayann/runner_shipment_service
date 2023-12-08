@@ -167,6 +167,7 @@ public class Constants {
     public static final String CHARGE_TYPE_MASTER_DATA = "ChargeType";
     public static final String CUSTOM_CITY = "customCity";
     public static final String ACTIVITY_TYPE = "ActivityType";
+    public static final String SALES_AGENT = "SalesAgent";
 
 
     public static final String DEFAULT_DATE_FORMAT = "MM/dd/yyyy";
