@@ -29,4 +29,6 @@ public class NotesResponse implements IRunnerResponse {
     private Boolean isActive;
     private String label;
     private String assignedTo;
+    private LocalDateTime updatedAt;
+    private String updatedBy;
 }

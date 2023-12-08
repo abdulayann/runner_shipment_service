@@ -192,7 +192,7 @@ public class ContainerDao implements IContainerDao {
         }
     }
 
-    public List<Containers> updateEntityFromShipmentConsole(List<Containers> containersList, Long consolidationId) throws Exception {
+    public List<Containers> updateEntityFromShipmentConsole(List<Containers> containersList, Long consolidationId, Long shipmentId) throws Exception {
         String responseMsg;
         List<Containers> responseContainers = new ArrayList<>();
         try {
@@ -202,6 +202,34 @@ public class ContainerDao implements IContainerDao {
                 if(consolidationId != null) {
                     for (Containers containers: containerList) {
                         containers.setConsolidationId(consolidationId);
+                    }
+                }
+                if(shipmentId != null)
+                {
+                    for (Containers container: containerList) {
+                        String operation = DBOperationType.CREATE.name();
+                        String oldEntityJsonString = null;
+                        if(container.getId() != null)
+                        {
+                            Optional<Containers> oldEntity = this.findById(container.getId());
+                            if(oldEntity.isPresent())
+                            {
+                                operation = DBOperationType.UPDATE.name();
+                                oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
+                            }
+                        }
+                        try {
+                            auditLogService.addAuditLog(
+                                    AuditLogMetaData.builder()
+                                            .newData(container)
+                                            .prevData(oldEntityJsonString != null ? jsonHelper.readFromJson(oldEntityJsonString, Containers.class) : null)
+                                            .parent("SHIPMENT")
+                                            .parentId(shipmentId)
+                                            .operation(operation).build()
+                            );
+                        } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException | InvocationTargetException | NoSuchMethodException e) {
+                            log.error(e.getMessage());
+                        }
                     }
                 }
                 responseContainers = saveAll(containerList);

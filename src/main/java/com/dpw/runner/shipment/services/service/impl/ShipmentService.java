@@ -53,6 +53,7 @@ import com.dpw.runner.shipment.services.syncing.interfaces.IConsolidationSync;
 import com.dpw.runner.shipment.services.syncing.interfaces.IHblSync;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
 import com.dpw.runner.shipment.services.utils.*;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
@@ -79,6 +80,7 @@ import org.springframework.util.StringUtils;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -608,6 +610,24 @@ public class ShipmentService implements IShipmentService {
 
             shipmentDetails = getShipment(shipmentDetails);
             Long shipmentId = shipmentDetails.getId();
+
+            if(shipmentDetails.getContainersList() != null && !shipmentDetails.getContainersList().isEmpty())
+            {
+                for (Containers container: shipmentDetails.getContainersList()) {
+                    try {
+                        auditLogService.addAuditLog(
+                                AuditLogMetaData.builder()
+                                        .newData(container)
+                                        .prevData(null)
+                                        .parent("SHIPMENT")
+                                        .parentId(shipmentId)
+                                        .operation(DBOperationType.CREATE.name()).build()
+                        );
+                    } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException | InvocationTargetException | NoSuchMethodException e) {
+                        log.error(e.getMessage());
+                    }
+                }
+            }
 
 //            attachConsolidations(shipmentId, tempConsolIds);
 
@@ -1348,7 +1368,7 @@ public class ShipmentService implements IShipmentService {
                 containerRequestList = calculateAutoContainerWeightAndVolume(containerRequestList, packingRequestList);
             }
             if (containerRequestList != null) {
-                updatedContainers = containerDao.updateEntityFromShipmentConsole(convertToEntityList(containerRequestList, Containers.class), null);
+                updatedContainers = containerDao.updateEntityFromShipmentConsole(convertToEntityList(containerRequestList, Containers.class), null, id);
             } else {
                 updatedContainers = oldEntity.get().getContainersList();
             }
@@ -2027,7 +2047,7 @@ public class ShipmentService implements IShipmentService {
             entity.setId(oldEntity.get().getId());
             List<Containers> updatedContainers = null;
             if (containerRequestList != null) {
-                updatedContainers = containerDao.updateEntityFromShipmentConsole(convertToEntityList(containerRequestList, Containers.class), null);
+                updatedContainers = containerDao.updateEntityFromShipmentConsole(convertToEntityList(containerRequestList, Containers.class), null, id);
             } else {
                 updatedContainers = oldEntity.get().getContainersList();
             }
