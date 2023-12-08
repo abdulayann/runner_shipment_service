@@ -68,7 +68,7 @@ public class V1ServiceUtil {
                 .RoutingList(createRoutingList(customerBooking.getRoutingList()))
                 .Documents(createDocuments(customerBooking.getFileRepoList()))
                 .Loosecargos(createLooseCarges(customerBooking.getPackingList()))
-                .OrgDetails(createOrgDetails(customerBooking))
+                .OrgDetails(null)
                 .BillCharges(createQuoteCharges(customerBooking.getBookingCharges()))
                 .build();
     }
