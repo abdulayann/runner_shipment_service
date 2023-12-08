@@ -5,7 +5,6 @@ import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PartiesModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShippingInstructionModel;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
-import com.fasterxml.jackson.core.type.TypeReference;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -124,27 +123,28 @@ public class ShippingInstructionReport extends IReport{
         String unitOfTotalWeight = null;
         boolean breakFlagForWeight = false;
 
-        if(model.getShipment().getPackingList() != null  && model.getShipment().getPackingList().size() > 0){
-            String packingJson = jsonHelper.convertToJson(model.getShipment().getPackingList());
-            var values = jsonHelper.convertValue(packingJson, new TypeReference<List<Map<String, Object>>>() {});
-            for(var v : values){
+        if (model.getShipment().getPackingList() != null) {
+//            String packingJson = jsonHelper.convertToJson(model.getShipment().getPackingList());
+//            var values = jsonHelper.convertValue(packingJson, new TypeReference<List<Map<String, Object>>>() {});
+            var values = model.getShipment().getPackingList().stream()
+                    .map(i -> jsonHelper.convertJsonToMap(jsonHelper.convertToJson(i)))
+                    .toList();
+
+            for (var v : values) {
                 totalPacks = sum(totalPacks, Long.parseLong(v.get(PACKS).toString()));
 
-                if(!breakFlagForVolume && v.get(VOLUME) != null && v.get(VOLUME_UNIT) !=null)
-                {
-                    if(unitOfTotalVolume == null) {
+                if (!breakFlagForVolume && v.get(VOLUME) != null && v.get(VOLUME_UNIT) != null) {
+                    if (unitOfTotalVolume == null) {
                         unitOfTotalVolume = v.get(VOLUME_UNIT).toString();
                         totalVolume = totalVolume.add(BigDecimal.valueOf((double) v.get(VOLUME)));
-                    }
-                    else if(!unitOfTotalVolume.equals(v.get(VOLUME_UNIT).toString())) {
+                    } else if (!unitOfTotalVolume.equals(v.get(VOLUME_UNIT).toString())) {
                         totalVolume = BigDecimal.ZERO;
                         breakFlagForVolume = true;
-                    }
-                    else
+                    } else
                         totalVolume = totalVolume.add(BigDecimal.valueOf((double) v.get(VOLUME)));
                 }
 
-                if(!breakFlagForWeight && v.get(WEIGHT) != null && v.get(WEIGHT_UNIT) !=null)
+                if (!breakFlagForWeight && v.get(WEIGHT) != null && v.get(WEIGHT_UNIT) != null)
                 {
                     if(unitOfTotalWeight == null) {
                         unitOfTotalWeight = v.get(WEIGHT_UNIT).toString();

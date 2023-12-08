@@ -50,7 +50,7 @@ public interface IShipmentService extends ICommonService {
 
     ResponseEntity<?> generateCustomHouseBLNumber();
 
-    ResponseEntity<?> getConsolFromShipment(Long shipmentId);
+    ResponseEntity<?> getShipmentFromConsol(Long consolidationId);
 
     ResponseEntity<?> getDefaultShipment();
 
