@@ -30,5 +30,6 @@ public class EntityTransferConstants {
     public static final String CHARGE_CODE = "ChargeCode";
     public static final String TENANT_ID = "TenantId";
     public static final String ID = "Id";
+    public static final String ACTIVITY_CODE = "ActivityCode";
 
 }

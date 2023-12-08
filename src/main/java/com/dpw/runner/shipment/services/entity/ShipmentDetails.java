@@ -354,6 +354,7 @@ public class ShipmentDetails extends MultiTenancy {
 
     @Column(name = "job_status")
     @Size(max=3, message = "max size is 3 for job_status")
+    @MasterData(type = MasterDataType.BILL_JOBS)
     private String jobStatus;
 
     @Column(name = "entry_ref_no")
