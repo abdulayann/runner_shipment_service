@@ -49,15 +49,15 @@ public class ShippingInstructionReport extends IReport{
         PartiesModel notifyParty = model.getShipment().getAdditionalDetails() != null ? model.getShipment().getAdditionalDetails().getNotifyParty() : null;
 
         List<String> consigner = getOrgAddressWithPhoneEmail(consignerParty);
-        if(consignerParty.getOrgData().get(FULL_NAME) != null) {
+        if (consignerParty != null && consignerParty.getOrgData() != null && consignerParty.getOrgData().get(FULL_NAME) != null) {
             consigner.add(0, consignerParty.getOrgData().get(FULL_NAME).toString());
         }
         List<String> consignee = getOrgAddressWithPhoneEmail(consigneeParty);
-        if(consigneeParty.getOrgData().get(FULL_NAME) != null) {
+        if (consigneeParty != null && consigneeParty.getOrgData() != null && consigneeParty.getOrgData().get(FULL_NAME) != null) {
             consignee.add(0, consigneeParty.getOrgData().get(FULL_NAME).toString());
         }
         List<String> notify = getOrgAddressWithPhoneEmail(notifyParty);
-        if(notifyParty.getOrgData().get(FULL_NAME) != null) {
+        if (notifyParty != null && notifyParty.getOrgData() != null && notifyParty.getOrgData().get(FULL_NAME) != null) {
             notify.add(0, notifyParty.getOrgData().get(FULL_NAME).toString());
         }
 
@@ -65,49 +65,52 @@ public class ShippingInstructionReport extends IReport{
         dictionary.put(CONSIGNEE_ADDRESS, consignee);
         dictionary.put(NOTIFY_ADDRESS, notify);
 
-        if(consignerParty.getOrgData().get(CONSIGNER_FREETEXT) != null) {
+        if (consignerParty != null && consignerParty.getOrgData().get(CONSIGNER_FREETEXT) != null) {
             dictionary.put(CONSIGNER_FREETEXT,
                     consignerParty.getOrgData().get(CONSIGNER_FREETEXT));
         } else {
             dictionary.put(CONSIGNER_FREETEXT, consigner);
         }
 
-        if(consigneeParty.getOrgData().get(CONSIGNEE_FREETEXT) != null) {
+        if (consigneeParty != null && consigneeParty.getOrgData().get(CONSIGNEE_FREETEXT) != null) {
             dictionary.put(CONSIGNEE_FREETEXT,
                     consigneeParty.getOrgData().get(CONSIGNEE_FREETEXT));
         } else {
             dictionary.put(CONSIGNEE_FREETEXT, consignee);
         }
 
-        if(notifyParty.getOrgData().get(NOTIFY_PARTY_FREETEXT) != null) {
+        if (notifyParty != null && notifyParty.getOrgData().get(NOTIFY_PARTY_FREETEXT) != null) {
             dictionary.put(NOTIFY_PARTY_FREETEXT,
                     getAddressList(notifyParty.getOrgData().get(NOTIFY_PARTY_FREETEXT).toString()));
         } else {
             dictionary.put(NOTIFY_PARTY_FREETEXT, notify);
         }
-        
+
         dictionary.put(MBL_NUMBER, model.getShipment().getMasterBill());
         dictionary.put(HBL_NUMBER, model.getShipment().getHouseBill());
-        if(model.getShipment().getCarrierDetails().getOrigin() != null){
-            dictionary.put(POR, ReportHelper.getUNLocRow(model.getShipment().getCarrierDetails().getOrigin())
-                    .getNameWoDiacritics());
+        if (model.getShipment() != null && model.getShipment().getCarrierDetails() != null && model.getShipment().getCarrierDetails().getOrigin() != null) {
+            var unlocRow = ReportHelper.getUNLocRow(model.getShipment().getCarrierDetails().getOrigin());
+            dictionary.put(POR, unlocRow != null ? unlocRow
+                    .getNameWoDiacritics() : null);
         }
-        dictionary.put(POL, ReportHelper.getPortDetails(model.getShipment().getCarrierDetails().getOriginPort()));
-        dictionary.put(POD, ReportHelper.getPortDetails(model.getShipment().getCarrierDetails().getDestinationPort()));
-        dictionary.put(POFD, ReportHelper.getPortDetails(model.getShipment().getCarrierDetails().getDestination()));
-        dictionary.put(PO_DELIVERY, ReportHelper.getPortDetails(model.getShipment().getCarrierDetails().getDestinationPort()));
+        if (model.getShipment() != null && model.getShipment().getCarrierDetails() != null) {
+            dictionary.put(POL, ReportHelper.getPortDetails(model.getShipment().getCarrierDetails().getOriginPort()));
+            dictionary.put(POD, ReportHelper.getPortDetails(model.getShipment().getCarrierDetails().getDestinationPort()));
+            dictionary.put(POFD, ReportHelper.getPortDetails(model.getShipment().getCarrierDetails().getDestination()));
+            dictionary.put(PO_DELIVERY, ReportHelper.getPortDetails(model.getShipment().getCarrierDetails().getDestinationPort()));
+            String formatPattern = "dd/MMM/y";
+            dictionary.put(ETD, GenerateFormattedDate(model.getShipment().getCarrierDetails().getEtd(), formatPattern));
+            dictionary.put(ETA, GenerateFormattedDate(model.getShipment().getCarrierDetails().getEta(), formatPattern));
+            dictionary.put(VESSEL_NAME, model.getShipment().getCarrierDetails().getVessel());
+            dictionary.put(VOYAGE, model.getShipment().getCarrierDetails().getVoyage());
+            dictionary.put(FLIGHT_NUMBER, model.getShipment().getCarrierDetails().getFlightNumber());
+        }
         dictionary.put(SERVICE_TYPE, model.getShipment().getTransportMode());
         dictionary.put(PPCC, model.getShipment().getPaymentTerms());
         dictionary.put(CURRENT_DATE, ConvertToDPWDateFormat(LocalDateTime.now()));
 
-        String formatPattern = "dd/MMM/y";
-        dictionary.put(ETD, GenerateFormattedDate(model.getShipment().getCarrierDetails().getEtd(), formatPattern));
-        dictionary.put(ETA, GenerateFormattedDate(model.getShipment().getCarrierDetails().getEta(), formatPattern));
-
 //        dictionary.put(CARRIER, model.getShipment())
-        dictionary.put(VESSEL_NAME, model.getShipment().getCarrierDetails().getVessel());
-        dictionary.put(VOYAGE, model.getShipment().getCarrierDetails().getVoyage());
-        dictionary.put(FLIGHT_NUMBER, model.getShipment().getCarrierDetails().getFlightNumber());
+
         dictionary.put(JOB_NUMBER, model.getShipment().getShipmentId());
         dictionary.put(TRANSPORT_MODE, model.getShipment().getTransportMode());
         dictionary.put(SHIPMENT_TYPE, model.getShipment().getShipmentType());
