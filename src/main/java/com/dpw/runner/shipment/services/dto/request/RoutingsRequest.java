@@ -23,7 +23,7 @@ public class RoutingsRequest extends CommonRequest implements IRunnerRequest {
     private String vesselName;
     private String pol;
     private String pod;
-    private Boolean isDomestic;
+    private boolean isDomestic;
     private LocalDateTime eta;
     private LocalDateTime etd;
     private LocalDateTime ata;

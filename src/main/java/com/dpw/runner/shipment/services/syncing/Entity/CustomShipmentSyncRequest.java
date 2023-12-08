@@ -206,8 +206,6 @@ public class CustomShipmentSyncRequest implements IRunnerRequest, IRunnerRespons
 
     @JsonProperty("DateOfReceipt")
     private LocalDateTime DateOfReceipt;
-    @JsonProperty("DeliveryMode")
-    private String DeliveryMode; // TODO : REMOVE
     @JsonProperty("DraftPrinted")
     private boolean DraftPrinted;
 
