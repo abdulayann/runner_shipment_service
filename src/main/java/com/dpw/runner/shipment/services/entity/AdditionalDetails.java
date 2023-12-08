@@ -6,10 +6,7 @@ import com.dpw.runner.shipment.services.entity.enums.AndesStatus;
 import com.dpw.runner.shipment.services.entity.enums.LGDStatus;
 import com.dpw.runner.shipment.services.entity.enums.Ownership;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
-import com.dpw.runner.shipment.services.utils.DedicatedMasterData;
-import com.dpw.runner.shipment.services.utils.MasterData;
-import com.dpw.runner.shipment.services.utils.OrganizationData;
-import com.dpw.runner.shipment.services.utils.UnlocationData;
+import com.dpw.runner.shipment.services.utils.*;
 import lombok.*;
 import lombok.experimental.Accessors;
 import org.hibernate.annotations.SQLDelete;
@@ -174,6 +171,7 @@ public class AdditionalDetails extends MultiTenancy {
     private Ownership ownership;
 
     @Column(name = "ownership_name")
+    @TenantIdData
     private String ownershipName;
 
     @OneToOne(fetch = FetchType.LAZY, targetEntity = Parties.class, cascade = CascadeType.ALL)

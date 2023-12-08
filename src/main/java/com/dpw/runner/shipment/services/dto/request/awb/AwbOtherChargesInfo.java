@@ -26,4 +26,5 @@ public class AwbOtherChargesInfo {
     private BigDecimal awbChargeCodeDefaultVat;
     private Long v2ChargeId;
     private UUID guid;
+    private UUID chargeTypeGuid;
 }

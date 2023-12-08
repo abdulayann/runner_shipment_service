@@ -91,6 +91,7 @@ public class ShipmentReverseSync implements IShipmentReverseSync {
             sd.setElDetailsList(convertToList(cs.getELDetails(), ELDetails.class));
 
             sd.setBookingCarriagesList(convertToList(cs.getBookingCarriages(), BookingCarriage.class));
+            sd.setGoodsDescription(cs.getDescription());
 
             return shipmentService.completeV1ShipmentCreateAndUpdate(CommonRequestModel.
                     buildRequest(modelMapper.map(sd, ShipmentRequest.class)), map);
@@ -163,6 +164,7 @@ public class ShipmentReverseSync implements IShipmentReverseSync {
         additionalDetails.setBOEDate(cs.getBoedate());
         additionalDetails.setBOENumber(cs.getBoenumber());
         additionalDetails.setGuid(null);
+        additionalDetails.setDeliveryMode(cs.getHblDeliveryMode());
         sd.setAdditionalDetails(additionalDetails);
     }
 

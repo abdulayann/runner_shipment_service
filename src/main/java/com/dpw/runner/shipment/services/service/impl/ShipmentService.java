@@ -928,7 +928,17 @@ public class ShipmentService implements IShipmentService {
     public ResponseEntity<?> createShipmentInV2(CustomerBookingRequest customerBookingRequest) throws Exception
     {
         ConsolidationDetailsRequest consolidationDetailsRequest = ConsolidationDetailsRequest.builder().
-                        carrierDetails(customerBookingRequest.getCarrierDetails()).
+                        carrierDetails(CarrierDetailRequest.builder()
+                                .origin(customerBookingRequest.getCarrierDetails().getOrigin())
+                                .destination(customerBookingRequest.getCarrierDetails().getDestination())
+                                .shippingLine(customerBookingRequest.getCarrierDetails().getShippingLine())
+                                .vessel(customerBookingRequest.getCarrierDetails().getVessel())
+                                .voyage(customerBookingRequest.getCarrierDetails().getVoyage())
+                                .originPort(customerBookingRequest.getCarrierDetails().getOriginPort())
+                                .destinationPort(customerBookingRequest.getCarrierDetails().getDestinationPort())
+                                .flightNumber(customerBookingRequest.getCarrierDetails().getFlightNumber())
+                                .build()
+                        ).
                         consolidationType("STD").
                         transportMode(customerBookingRequest.getTransportType()).
                         containerCategory(customerBookingRequest.getCargoType()).
@@ -952,7 +962,17 @@ public class ShipmentService implements IShipmentService {
         consolidationService.create(CommonRequestModel.buildRequest(consolidationDetailsRequest));
 
         ShipmentRequest shipmentRequest = ShipmentRequest.builder().
-                carrierDetails(customerBookingRequest.getCarrierDetails()).
+                carrierDetails(CarrierDetailRequest.builder()
+                        .origin(customerBookingRequest.getCarrierDetails().getOrigin())
+                        .destination(customerBookingRequest.getCarrierDetails().getDestination())
+                        .shippingLine(customerBookingRequest.getCarrierDetails().getShippingLine())
+                        .vessel(customerBookingRequest.getCarrierDetails().getVessel())
+                        .voyage(customerBookingRequest.getCarrierDetails().getVoyage())
+                        .originPort(customerBookingRequest.getCarrierDetails().getOriginPort())
+                        .destinationPort(customerBookingRequest.getCarrierDetails().getDestinationPort())
+                        .flightNumber(customerBookingRequest.getCarrierDetails().getFlightNumber())
+                        .build()
+                ).
                 contractId(customerBookingRequest.getContractId()).
                 contractType(customerBookingRequest.getContractStatus()).
                 noOfPacks(customerBookingRequest.getQuantity()).
@@ -2505,9 +2525,14 @@ public class ShipmentService implements IShipmentService {
     private void addAllTenantDataInSingleCall (ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse) {
         Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
         List<String> tenantIdList = new ArrayList<>(masterDataUtils.createInBulkTenantsRequest(shipmentDetailsResponse, ShipmentDetails.class, fieldNameKeyMap, ShipmentDetails.class.getSimpleName()));
+        if(!Objects.isNull(shipmentDetailsResponse.getAdditionalDetails()))
+            tenantIdList.addAll(masterDataUtils.createInBulkTenantsRequest(shipmentDetailsResponse.getAdditionalDetails(), AdditionalDetails.class, fieldNameKeyMap, AdditionalDetails.class.getSimpleName()));
+
         Map v1Data = masterDataUtils.fetchInTenantsList(tenantIdList);
         masterDataUtils.pushToCache(v1Data, CacheConstants.TENANTS);
         shipmentDetailsResponse.setTenantIdsData(masterDataUtils.setMasterData(fieldNameKeyMap.get(ShipmentDetails.class.getSimpleName()), CacheConstants.TENANTS));
+        if(!Objects.isNull(shipmentDetailsResponse.getAdditionalDetails()))
+            shipmentDetailsResponse.getAdditionalDetails().setTenantIdsData(masterDataUtils.setMasterData(fieldNameKeyMap.get(AdditionalDetails.class.getSimpleName()), CacheConstants.TENANTS));
     }
 
     private void addAllCurrencyDataInSingleCall (ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse) {
