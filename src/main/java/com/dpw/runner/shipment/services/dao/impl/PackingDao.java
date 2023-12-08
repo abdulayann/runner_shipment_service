@@ -256,7 +256,7 @@ public class PackingDao implements IPackingDao {
 
     public List<Packing> saveEntityFromBooking(List<Packing> packings, Long bookingId) {
         List<Packing> res = new ArrayList<>();
-        ListCommonRequest listCommonRequest = constructListCommonRequest("id", packings.stream().map(Packing::getId).collect(Collectors.toList()), "IN");
+        ListCommonRequest listCommonRequest = constructListCommonRequest("bookingId", bookingId, "=");
         Pair<Specification<Packing>, Pageable> pair = fetchData(listCommonRequest, Packing.class);
         Page<Packing> packingPage = findAll(pair.getLeft(), pair.getRight());
         Map<Long, Packing> hashMap = packingPage.stream()

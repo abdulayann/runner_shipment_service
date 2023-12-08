@@ -128,7 +128,7 @@ public class ContainerDao implements IContainerDao {
 
     public List<Containers> saveEntityFromBooking(List<Containers> containers, Long bookingId) {
         List<Containers> res = new ArrayList<>();
-        ListCommonRequest listCommonRequest = constructListCommonRequest("id", containers.stream().map(Containers::getId).collect(Collectors.toList()), "IN");
+        ListCommonRequest listCommonRequest = constructListCommonRequest("bookingId", bookingId, "=");
         Pair<Specification<Containers>, Pageable> pair = fetchData(listCommonRequest, Containers.class);
         Page<Containers> containersPage = findAll(pair.getLeft(), pair.getRight());
         Map<Long, Containers> hashMap = containersPage.stream()

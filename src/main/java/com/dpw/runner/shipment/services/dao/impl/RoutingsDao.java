@@ -179,7 +179,7 @@ public class RoutingsDao implements IRoutingsDao {
     @Override
     public List<Routings> saveEntityFromBooking(List<Routings> routings, Long bookingId) {
         List<Routings> res = new ArrayList<>();
-        ListCommonRequest listCommonRequest = constructListCommonRequest("id", routings.stream().map(Routings::getId).collect(Collectors.toList()), "IN");
+        ListCommonRequest listCommonRequest = constructListCommonRequest("bookingId", bookingId, "=");
         Pair<Specification<Routings>, Pageable> pair = fetchData(listCommonRequest, Routings.class);
         Page<Routings> routingsPage = findAll(pair.getLeft(), pair.getRight());
         Map<Long, Routings> hashMap = routingsPage.stream()
