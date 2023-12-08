@@ -9,6 +9,7 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
 import com.dpw.runner.shipment.services.dto.response.*;
+import com.dpw.runner.shipment.services.dto.v1.response.ActivityMasterResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.CarrierDetails;
 import com.dpw.runner.shipment.services.dto.v1.response.WareHouseResponse;
@@ -1022,6 +1023,10 @@ public class MasterDataUtils{
                         WareHouseResponse object8 = (WareHouseResponse) cache.get();
                         fieldNameMasterDataMap.put(key, object8.getWarehouseDepotCode() + " - " + object8.getWarehouseDepotName());
                         break;
+                    case CacheConstants.ACTIVITY_TYPE:
+                        ActivityMasterResponse object9 = (ActivityMasterResponse) cache.get();
+                        fieldNameMasterDataMap.put(key, object9.getActivityCode() + " - " + object9.getActivityName());
+                        break;
                 }
 
             }
@@ -1197,5 +1202,51 @@ public class MasterDataUtils{
         }
 
         return res;
+    }
+
+    public Map<String, ActivityMasterResponse> fetchInActivityMasterList(List<String> requests) {
+        Map<String, ActivityMasterResponse> keyMasterDataMap = new HashMap<>();
+        if(requests.size() > 0) {
+            log.info("Request: {} || ActivityTypeList: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(requests));
+            CommonV1ListRequest request = new CommonV1ListRequest();
+            List<Object> field = new ArrayList<>(List.of(EntityTransferConstants.ACTIVITY_CODE));
+            String operator = Operators.IN.getValue();
+            List<Object> criteria = new ArrayList<>(List.of(field, operator, List.of(requests)));
+            request.setCriteriaRequests(criteria);
+            V1DataResponse response = v1Service.fetchActivityMaster(request);
+            List<ActivityMasterResponse> activityMasterResponseList = commonUtils.convertToList((List<?>) response.entities, ActivityMasterResponse.class);
+            activityMasterResponseList.forEach(activityMaster -> {
+                keyMasterDataMap.put(activityMaster.getActivityCode(), activityMaster);
+            });
+        }
+        return keyMasterDataMap;
+    }
+
+    public List<String> createInBulkActivityTypeRequest (IRunnerResponse entityPayload, Class mainClass, Map<String, Map<String, String>> fieldNameMainKeyMap, String code) {
+        List<String> requests = new ArrayList<>();
+        if (Objects.isNull(entityPayload))
+            return requests;
+
+        Map<String, String> fieldNameKeyMap = new HashMap<>();
+        Cache cache = cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA);
+
+        for(Field field : mainClass.getDeclaredFields()) {
+            if (field.isAnnotationPresent(DedicatedMasterData.class) && field.getDeclaredAnnotation(DedicatedMasterData.class).type().equals(Constants.ACTIVITY_TYPE))  {
+                try {
+                    Field field1 = entityPayload.getClass().getDeclaredField(field.getName());
+                    field1.setAccessible(true);
+                    String activityId = (String) field1.get(entityPayload);
+                    if(StringUtility.isNotEmpty(activityId)) {
+                        Cache.ValueWrapper cacheValue = cache.get(keyGenerator.customCacheKeyForMasterData(CacheConstants.ACTIVITY_TYPE, activityId));
+                        if (Objects.isNull(cacheValue)) requests.add(activityId);
+                        fieldNameKeyMap.put(field.getName(), activityId);
+                    }
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }
+        fieldNameMainKeyMap.put(code, fieldNameKeyMap);
+        return requests;
     }
 }

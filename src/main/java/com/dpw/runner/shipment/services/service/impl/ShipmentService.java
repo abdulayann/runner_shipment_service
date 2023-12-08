@@ -2432,6 +2432,7 @@ public class ShipmentService implements IShipmentService {
             this.addAllCommodityTypesInSingleCall(shipmentDetails, shipmentDetailsResponse);
             this.addAllTenantDataInSingleCall(shipmentDetails, shipmentDetailsResponse);
             this.addAllWarehouseDataInSingleCall(shipmentDetails, shipmentDetailsResponse);
+            this.addAllActivityDataInSingleCall(shipmentDetails, shipmentDetailsResponse);
             setContainersPacksAutoUpdateData(shipmentDetailsResponse);
             shipmentDetailsResponse.setPackSummary(packingService.calculatePackSummary(shipmentDetails.getPackingList(), shipmentDetails.getTransportMode(), shipmentDetails.getShipmentType()));
             shipmentDetailsResponse.setContainerSummary(containerService.calculateContainerSummary(shipmentDetails.getContainersList(), shipmentDetails.getTransportMode(), shipmentDetails.getShipmentType()));
@@ -2530,6 +2531,20 @@ public class ShipmentService implements IShipmentService {
 
         if (!Objects.isNull(shipmentDetailsResponse.getAdditionalDetails()))
             shipmentDetailsResponse.getAdditionalDetails().setTextData(masterDataUtils.setMasterData(fieldNameKeyMap.get(AdditionalDetails.class.getSimpleName()), CacheConstants.WAREHOUSES));
+
+    }
+
+    private void addAllActivityDataInSingleCall (ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse) {
+        Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
+        Set<String> activityTypes = new HashSet<>();
+        if (!Objects.isNull(shipmentDetailsResponse.getAdditionalDetails()))
+            activityTypes.addAll(masterDataUtils.createInBulkActivityTypeRequest(shipmentDetailsResponse.getAdditionalDetails(), AdditionalDetails.class, fieldNameKeyMap, AdditionalDetails.class.getSimpleName()) );
+
+        Map v1Data = masterDataUtils.fetchInActivityMasterList(activityTypes.stream().toList());
+        masterDataUtils.pushToCache(v1Data, CacheConstants.ACTIVITY_TYPE);
+
+        if (!Objects.isNull(shipmentDetailsResponse.getAdditionalDetails()))
+            shipmentDetailsResponse.getAdditionalDetails().setTextData(masterDataUtils.setMasterData(fieldNameKeyMap.get(AdditionalDetails.class.getSimpleName()), CacheConstants.ACTIVITY_TYPE));
 
     }
 
