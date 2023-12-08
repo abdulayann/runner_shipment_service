@@ -2530,7 +2530,7 @@ public class ShipmentService implements IShipmentService {
         masterDataUtils.pushToCache(v1Data, CacheConstants.WAREHOUSES);
 
         if (!Objects.isNull(shipmentDetailsResponse.getAdditionalDetails()))
-            shipmentDetailsResponse.getAdditionalDetails().setTextData(masterDataUtils.setMasterData(fieldNameKeyMap.get(AdditionalDetails.class.getSimpleName()), CacheConstants.WAREHOUSES));
+            shipmentDetailsResponse.getAdditionalDetails().addTextData(masterDataUtils.setMasterData(fieldNameKeyMap.get(AdditionalDetails.class.getSimpleName()), CacheConstants.WAREHOUSES));
 
     }
 
@@ -2544,7 +2544,21 @@ public class ShipmentService implements IShipmentService {
         masterDataUtils.pushToCache(v1Data, CacheConstants.ACTIVITY_TYPE);
 
         if (!Objects.isNull(shipmentDetailsResponse.getAdditionalDetails()))
-            shipmentDetailsResponse.getAdditionalDetails().setTextData(masterDataUtils.setMasterData(fieldNameKeyMap.get(AdditionalDetails.class.getSimpleName()), CacheConstants.ACTIVITY_TYPE));
+            shipmentDetailsResponse.getAdditionalDetails().addTextData(masterDataUtils.setMasterData(fieldNameKeyMap.get(AdditionalDetails.class.getSimpleName()), CacheConstants.ACTIVITY_TYPE));
+
+    }
+
+    private void addAllSalesAgentInSingleCall (ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse) {
+        Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
+        Set<String> salesAgents = new HashSet<>();
+        if (!Objects.isNull(shipmentDetailsResponse))
+            salesAgents.addAll(masterDataUtils.createInBulkSalesAgentRequest(shipmentDetailsResponse, ShipmentDetails.class, fieldNameKeyMap, ShipmentDetails.class.getSimpleName()) );
+
+        Map v1Data = masterDataUtils.fetchInSalesAgentList(salesAgents.stream().toList());
+        masterDataUtils.pushToCache(v1Data, CacheConstants.SALES_AGENT);
+
+        if (!Objects.isNull(shipmentDetailsResponse.getAdditionalDetails()))
+            shipmentDetailsResponse.addTextData(masterDataUtils.setMasterData(fieldNameKeyMap.get(ShipmentDetails.class.getSimpleName()), CacheConstants.SALES_AGENT));
 
     }
 

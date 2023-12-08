@@ -13,6 +13,7 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
@@ -131,4 +132,11 @@ public class AdditionalDetailResponse implements IRunnerResponse {
     private String customDeclType;
     private String agentReference;
     public Map<String, String> textData;
+
+    public void addTextData(Map<String, String> dataMap) {
+        if(textData == null) {
+            textData = new HashMap<>();
+        }
+        textData.putAll(dataMap);
+    }
 }
