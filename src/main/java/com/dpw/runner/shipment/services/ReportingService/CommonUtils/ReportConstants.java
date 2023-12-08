@@ -264,6 +264,7 @@ public class ReportConstants {
     public static final String SELL_EXCHANGE = "SellExchange";
     public static final String CURRENT_SELL_RATE = "CurrentSellRate";
     public static final String TAX_PERCENTAGE = "TaxPercentage";
+    public static final String BILL_REMARKS = "BillRemarks";
     public static final String BILLCHARGES_LOCAL_SUM = "BillChargesLocalSum";
     public static final String BILLCHARGES_LOCAL_TAX_SUM = "BillChargesLocalTaxSum";
     public static final String BILLCHARGES_OVERSEAS_SUM = "BillChargesOverseasSum";
@@ -390,8 +391,9 @@ public class ReportConstants {
     public static final String COPY_AS_AGREED = "copyAsAgreed";
     public static final String HAS_CHARGES = "hasCharges";
     public static final String CHARGES = "Charges";
+    public static final String CHARGES_SMALL = "charges";
     public static final String COPY_CHARGES = "copyCharges";
-    public static final String BILL_REMARKS = "BillRemark";
+    public static final String BILL_REMARK = "BillRemark";
 
     public static final String Cargo_Total_Information = "BillRemark";
     public static final String PP_REVENUE_TOTAL = "PrepaidRevenueTotal";

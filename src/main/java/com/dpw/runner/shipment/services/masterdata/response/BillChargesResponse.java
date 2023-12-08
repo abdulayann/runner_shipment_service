@@ -29,4 +29,6 @@ public class BillChargesResponse {
     private BigDecimal taxType3;
     @JsonProperty("TaxType4")
     private BigDecimal taxType4;
+    @JsonProperty("PaymentType")
+    private String paymentType;
 }

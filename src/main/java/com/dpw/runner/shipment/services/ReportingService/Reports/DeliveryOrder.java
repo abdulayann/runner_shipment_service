@@ -1,13 +1,17 @@
 package com.dpw.runner.shipment.services.ReportingService.Reports;
 
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.Map;
 
 public class DeliveryOrder extends IReport {
+
+    @Autowired
+    private HblReport hblReport;
+
     @Override
     public Map<String, Object> getData(Long id) {
-        HblReport hblReport = new HblReport();
         return hblReport.getData(id);
     }
 

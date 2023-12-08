@@ -19,6 +19,8 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.MasterData;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
+import com.dpw.runner.shipment.services.masterdata.response.BillChargesResponse;
+import com.dpw.runner.shipment.services.masterdata.response.BillingResponse;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.masterdata.response.VesselsResponse;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
@@ -199,10 +201,16 @@ public class HblReport extends IReport{
                         hblModel.containerCountGrouped.put(container.getPacksType(), Long.valueOf(container.getPacks()));
                 }
                 if(container.getGrossWeightUnit() != null) {
-                    hblModel.containerWeightGrouped.put(container.getGrossWeightUnit(), hblModel.containerWeightGrouped.containsKey(container.getGrossWeightUnit()) ? hblModel.containerWeightGrouped.get(container.getGrossWeightUnit()) + container.getGrossWeight().longValue() : container.getGrossWeight().longValue());
+                    double grossWeight = 0;
+                    if(container.getGrossWeight() != null)
+                        grossWeight = container.getGrossWeight().doubleValue();
+                    hblModel.containerWeightGrouped.put(container.getGrossWeightUnit(), hblModel.containerWeightGrouped.containsKey(container.getGrossWeightUnit()) ? hblModel.containerWeightGrouped.get(container.getGrossWeightUnit()) + grossWeight : grossWeight);
                 }
                 if(container.getGrossVolumeUnit() != null) {
-                    hblModel.containerVolumeGrouped.put(container.getGrossVolumeUnit(), hblModel.containerWeightGrouped.containsKey(container.getGrossVolumeUnit()) ? hblModel.containerWeightGrouped.get(container.getGrossVolumeUnit()) + container.getGrossVolume().longValue() : container.getGrossVolume().longValue());
+                    double grossVolume = 0;
+                    if(container.getGrossVolume() != null)
+                        grossVolume = container.getGrossVolume().doubleValue();
+                    hblModel.containerVolumeGrouped.put(container.getGrossVolumeUnit(), hblModel.containerWeightGrouped.containsKey(container.getGrossVolumeUnit()) ? hblModel.containerWeightGrouped.get(container.getGrossVolumeUnit()) + grossVolume : grossVolume);
                 }
             }
         }
@@ -239,6 +247,26 @@ public class HblReport extends IReport{
                 dictionary.put(key, value);
             }
         }
+        List<BillingResponse> billingsList = null;
+        try {
+            billingsList = getBillingData(hblModel.shipment.getGuid());
+        }
+        catch (Exception e) { }
+        List<BillChargesResponse> charges = new ArrayList<>();
+        BillingResponse billRow = null;
+        if(billingsList != null && billingsList.size() > 0) {
+            billRow = billingsList.get(0);
+            for(BillingResponse billingResponse : billingsList) {
+                List<BillChargesResponse> billChargesResponses = getBillChargesData(billingResponse.getGuid());
+                if(billChargesResponses != null) {
+                    for (BillChargesResponse charge : billChargesResponses) {
+                        charges.add(charge);
+                    }
+                }
+            }
+        }
+
+
         dictionary.put(ReportConstants.NoOfPackages, hblModel.noofPackages);
         dictionary.put(ReportConstants.CONTAINER_COUNT_GROUPED, concatGroupedContainerCount(hblModel.containerCountGrouped));
         dictionary.put(ReportConstants.CONTAINER_PACKS_GROUPED, concatGroupedContainerCount(hblModel.containerPacksGrouped));
@@ -396,9 +424,9 @@ public class HblReport extends IReport{
         }
         referenceNumber.ifPresent(i -> dictionary.put(CAN_NUMBER, i.getReferenceNumber()));
 
-//        dictionary["BillRemarks"] = billRow != null ? billRow.Remarks : "";
-//        List<BillChargesRow> originalChargesRows = new List<BillChargesRow>();
-//        List<BillChargesRow> copyChargesRows = new List<BillChargesRow>();
+        dictionary.put(ReportConstants.BILL_REMARKS, billRow != null ? billRow.getRemarks() : "");
+        List<BillChargesResponse> originalChargesRows = new ArrayList<>();
+        List<BillChargesResponse> copyChargesRows = new ArrayList<>();
         dictionary.put(AS_AGREED, false);
         dictionary.put(COPY_AS_AGREED, false);
 
@@ -415,20 +443,25 @@ public class HblReport extends IReport{
             dictionary.put(HAS_CHARGES, false);
         } else {
             dictionary.put(HAS_CHARGES, true);
-//            getChargeRows(ref originalChargesRows, ref copyChargesRows, chargesRows, chargesApply);
+            getChargeRows(originalChargesRows, copyChargesRows, charges, chargesApply);
         }
-//        dictionary.put(CHARGES, originalChargesRows);
-//        if(originalChargesRows != null && originalChargesRows.Count > 0)
-//        {
-//            String json = jsonHelper.convertToJson(originalChargesRows);
-//            var values = jsonHelper.convertValue(json, new TypeReference<List<Map<String,Object>>>() {});
-//            values.ForEach(v => {
-//                if(v.get("OverseasSellAmount") != null){
-//                    v.put("OverseasSellAmount", ReportHelper.addCommas(v.get("OverseasSellAmount").toString());
-//                }});
-//            dictionary.put("charges", values);
-//        }
-//        dictionary.put(COPY_CHARGES, copyChargesRows);
+        dictionary.put(CHARGES_SMALL, originalChargesRows);
+
+        if(originalChargesRows != null && originalChargesRows.size() > 0)
+        {
+            List<Map<String, Object>> values = new ArrayList<>();
+            for (BillChargesResponse billChargesResponse : originalChargesRows) {
+                String billChargeJson = jsonHelper.convertToJson(billChargesResponse);
+                values.add(jsonHelper.convertJsonToMap(billChargeJson));
+            }
+            for (Map<String, Object> v: values) {
+                if(v.containsKey(OVERSEAS_SELL_AMOUNT) && v.get(OVERSEAS_SELL_AMOUNT) != null) {
+                    v.put(OVERSEAS_SELL_AMOUNT, addCommas(v.get(OVERSEAS_SELL_AMOUNT).toString()));
+                };
+            }
+            dictionary.put(CHARGES_SMALL, values);
+        }
+        dictionary.put(COPY_CHARGES, copyChargesRows);
 
         if (!Objects.isNull(hblModel.shipment) && !Objects.isNull(hblModel.shipment.getAdditionalDetails()) && !Objects.isNull(hblModel.shipment.getAdditionalDetails().getNotifyParty())) {
             PartiesModel notifyParty = hblModel.shipment.getAdditionalDetails().getNotifyParty();
@@ -926,6 +959,42 @@ public class HblReport extends IReport{
             ));
         }
         return dictionary;
+    }
+
+    private void getChargeRows(List<BillChargesResponse> originalChargesRows, List<BillChargesResponse> copyChargesRows, List<BillChargesResponse> charges, String type) {
+        List<BillChargesResponse> prepaid = charges.stream().filter(x -> x.getPaymentType().equals("PPD")).collect(Collectors.toList());
+        List<BillChargesResponse> collect = charges.stream().filter(x -> x.getPaymentType().equals("CCX")).collect(Collectors.toList());
+
+        switch (type)
+        {
+            case "CPP":
+                copyChargesRows = prepaid;
+                break;
+            case "CAL":
+                copyChargesRows = charges;
+                break;
+
+            case "PPD":
+                originalChargesRows = prepaid;
+                copyChargesRows = prepaid;
+                break;
+
+            case "SHW":
+                originalChargesRows = collect;
+                copyChargesRows = collect;
+                break;
+            case "ALL":
+                originalChargesRows = charges;
+                copyChargesRows = charges;
+                break;
+
+            case "CCL":
+                copyChargesRows = collect;
+                break;
+            default:
+                break;
+
+        }
     }
 
     // isActive Criteria not clear from v1 impl
