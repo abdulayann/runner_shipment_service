@@ -19,6 +19,8 @@ public class ReferenceNumbersRequestV2 {
     public Long ShipmentId;
     @JsonProperty("ReferenceNumber")
     public String ReferenceNumber;
+    @JsonProperty("IsPortalEnable")
+    public Boolean IsPortalEnable;
 //    public String EntityType;
 //    public Long EntityId;
 }

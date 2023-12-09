@@ -60,7 +60,7 @@ public class Routings extends MultiTenancy {
     private String pod;
 
     @Column(name = "is_domestic")
-    private Boolean isDomestic;
+    private boolean isDomestic;
 
     @Column(name = "eta")
     private LocalDateTime eta;
