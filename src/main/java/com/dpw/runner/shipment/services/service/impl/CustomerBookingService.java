@@ -325,7 +325,7 @@ public class CustomerBookingService implements ICustomerBookingService {
             Boolean isShipmentV2 = tenantSettingsResponse.getShipmentServiceV2Enabled();
             if(isShipmentV2)
             {
-                ShipmentDetailsResponse shipmentResponse = (ShipmentDetailsResponse) bookingIntegrationsUtility.createShipmentInV2(request).getBody();
+                ShipmentDetailsResponse shipmentResponse = (ShipmentDetailsResponse) (((RunnerResponse) bookingIntegrationsUtility.createShipmentInV2(request).getBody()).getData());
                 if(shipmentResponse != null) {
                     bookingIntegrationsUtility.createShipmentInV1(customerBooking, false, true, shipmentResponse.getGuid());
                     customerBooking.setShipmentId(shipmentResponse.getShipmentId());
