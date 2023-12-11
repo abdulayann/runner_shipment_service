@@ -927,39 +927,47 @@ public class ShipmentService implements IShipmentService {
     @Transactional
     public ResponseEntity<?> createShipmentInV2(CustomerBookingRequest customerBookingRequest) throws Exception
     {
-        ConsolidationDetailsRequest consolidationDetailsRequest = ConsolidationDetailsRequest.builder().
-                        carrierDetails(CarrierDetailRequest.builder()
-                                .origin(customerBookingRequest.getCarrierDetails().getOrigin())
-                                .destination(customerBookingRequest.getCarrierDetails().getDestination())
-                                .shippingLine(customerBookingRequest.getCarrierDetails().getShippingLine())
-                                .vessel(customerBookingRequest.getCarrierDetails().getVessel())
-                                .voyage(customerBookingRequest.getCarrierDetails().getVoyage())
-                                .originPort(customerBookingRequest.getCarrierDetails().getOriginPort())
-                                .destinationPort(customerBookingRequest.getCarrierDetails().getDestinationPort())
-                                .flightNumber(customerBookingRequest.getCarrierDetails().getFlightNumber())
-                                .build()
-                        ).
-                        consolidationType("STD").
-                        transportMode(customerBookingRequest.getTransportType()).
-                        containerCategory(customerBookingRequest.getCargoType()).
-                        shipmentType(customerBookingRequest.getDirection()).
-                        referenceNumber(customerBookingRequest.getBookingNumber()).
-                        departureDetails(ArrivalDepartureDetailsRequest.builder().
-                                firstForeignPort(customerBookingRequest.getCarrierDetails().getOrigin()).
-                                lastForeignPort(customerBookingRequest.getCarrierDetails().getOrigin()).
-                                type("Departure").
-                                build()
-                        ).
-                        arrivalDetails(ArrivalDepartureDetailsRequest.builder().
-                                firstForeignPort(customerBookingRequest.getCarrierDetails().getDestination()).
-                                lastForeignPort(customerBookingRequest.getCarrierDetails().getDestination()).
-                                type("Arrival").
-                                build()
-                        ).
-                        containersList(customerBookingRequest.getContainersList()).
-                        build();
-
-        consolidationService.create(CommonRequestModel.buildRequest(consolidationDetailsRequest));
+        List<ConsolidationDetailsRequest> consolidationDetails = new ArrayList<>();
+        if(customerBookingRequest.getTransportType() == "FCL")
+        {
+            ConsolidationDetailsRequest consolidationDetailsRequest = ConsolidationDetailsRequest.builder().
+                    carrierDetails(CarrierDetailRequest.builder()
+                            .origin(customerBookingRequest.getCarrierDetails().getOrigin())
+                            .destination(customerBookingRequest.getCarrierDetails().getDestination())
+                            .shippingLine(customerBookingRequest.getCarrierDetails().getShippingLine())
+                            .vessel(customerBookingRequest.getCarrierDetails().getVessel())
+                            .voyage(customerBookingRequest.getCarrierDetails().getVoyage())
+                            .originPort(customerBookingRequest.getCarrierDetails().getOriginPort())
+                            .destinationPort(customerBookingRequest.getCarrierDetails().getDestinationPort())
+                            .flightNumber(customerBookingRequest.getCarrierDetails().getFlightNumber())
+                            .build()
+                    ).
+                    consolidationType("STD").
+                    transportMode(customerBookingRequest.getTransportType()).
+                    containerCategory(customerBookingRequest.getCargoType()).
+                    shipmentType(customerBookingRequest.getDirection()).
+                    referenceNumber(customerBookingRequest.getBookingNumber()).
+                    departureDetails(ArrivalDepartureDetailsRequest.builder().
+                            firstForeignPort(customerBookingRequest.getCarrierDetails().getOrigin()).
+                            lastForeignPort(customerBookingRequest.getCarrierDetails().getOrigin()).
+                            type("Departure").
+                            build()
+                    ).
+                    arrivalDetails(ArrivalDepartureDetailsRequest.builder().
+                            firstForeignPort(customerBookingRequest.getCarrierDetails().getDestination()).
+                            lastForeignPort(customerBookingRequest.getCarrierDetails().getDestination()).
+                            type("Arrival").
+                            build()
+                    ).
+                    containersList(customerBookingRequest.getContainersList()).
+                    build();
+            ResponseEntity<?> consolidationDetailsResponse = consolidationService.create(CommonRequestModel.buildRequest(consolidationDetailsRequest));
+            if(consolidationDetailsResponse != null)
+            {
+                ConsolidationDetailsResponse consolDetailsResponse = (ConsolidationDetailsResponse) (((RunnerResponse)consolidationDetailsResponse.getBody()).getData());
+                consolidationDetails.add(jsonHelper.convertValue(consolDetailsResponse, ConsolidationDetailsRequest.class));
+            }
+        }
 
         ShipmentRequest shipmentRequest = ShipmentRequest.builder().
                 carrierDetails(CarrierDetailRequest.builder()
@@ -998,12 +1006,13 @@ public class ShipmentService implements IShipmentService {
                 jobType("STD").
                 incoterms(customerBookingRequest.getIncoTerms()).
                 serviceType(customerBookingRequest.getServiceMode()).
-                status(1).
+                status(4).
                 fmcTlcId(customerBookingRequest.getFmcTlcId()).
                 containersList(customerBookingRequest.getContainersList()).
                 packingList(customerBookingRequest.getPackingList()).
                 fileRepoList(customerBookingRequest.getFileRepoList()).
                 routingsList(customerBookingRequest.getRoutingList()).
+                consolidationList(customerBookingRequest.getTransportType() == "FCL" ? consolidationDetails : null).
                 build();
 
         return this.create(CommonRequestModel.buildRequest(shipmentRequest));
@@ -2198,7 +2207,7 @@ public class ShipmentService implements IShipmentService {
             if(!shipmentId.isEmpty() && shipments.getTotalElements() == 0)
                 flag = false;
             else {
-                if(shipmentSettingsList.get(0) != null && shipmentSettingsList.get(0).getCustomisedSequence()) {
+                if(shipmentSettingsList != null && shipmentSettingsList.size() != 0 && shipmentSettingsList.get(0) != null && shipmentSettingsList.get(0).getCustomisedSequence()) {
                     try{
                         shipmentId = getCustomizedShipmentProcessNumber(shipmentSettingsList.get(0), ProductProcessTypes.ShipmentNumber);
                     } catch (Exception ignored) {
