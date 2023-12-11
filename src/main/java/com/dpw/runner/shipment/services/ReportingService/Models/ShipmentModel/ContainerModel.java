@@ -70,7 +70,7 @@ public class ContainerModel {
     @JsonProperty("CustomsReleaseCode")
     private String customsReleaseCode;
     @JsonProperty("ContainerStuffingLocation")
-    private Long containerStuffingLocation;
+    private String containerStuffingLocation;
     @JsonProperty("ContainerComments")
     private String containerComments;
     @JsonProperty("GrossVolume")

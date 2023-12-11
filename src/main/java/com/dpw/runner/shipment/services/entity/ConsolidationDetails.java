@@ -364,4 +364,8 @@ public class ConsolidationDetails extends MultiTenancy {
     @Column(name = "carrier_booking_ref")
     @Size(max=64, message = "max size is 64 for carrier_booking_ref")
     private String carrierBookingRef;
+
+    @Column(name = "mode_of_booking")
+    @Size(max = 64, message = "max size is 64 for mode_of_booking")
+    private String modeOfBooking;
 }

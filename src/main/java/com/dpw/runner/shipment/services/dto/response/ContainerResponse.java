@@ -44,7 +44,7 @@ public class ContainerResponse implements IRunnerResponse {
     private String veterinarySealNumber;
     private String customsSealNumber;
     private String customsReleaseCode;
-    private Long containerStuffingLocation;
+    private String containerStuffingLocation;
     private String containerComments;
     private BigDecimal grossVolume;
     private String grossVolumeUnit;

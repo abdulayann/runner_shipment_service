@@ -140,8 +140,14 @@ public enum MasterDataType {
     CONSOLIDATION_CHECK_ORDER(142, "ConsolidationCheckOrder"),
     CONSOL_CHECK_ETD_ETD_THRESHOLD(143,"ConsolcheckETDETDThreshold"),
     AUTO_ATTACH_TRANSPORT(144, "AUTOATTACHTRANSPORT"),
-    COMMODITY_GROUP(145, "CommodityGroup");
-
+    COMMODITY_GROUP(145, "CommodityGroup"),
+    BILL_CHARGES_TEMPLATE(146, "BillChargesTemplate"),
+    MODE_OF_BOOKING(147, "ModeOfBooking"),
+    CARRIER_BOOKING_EVENTS(148, "CarrierBookingEvents"),
+    SI_EVENTS(149, "SIEvents"),
+    VGM_EVENTS(150, "VGM Events"),
+    HAWB_CARRIER_AGENT(151, "HAWBCarrier/Agent"),
+    MAWB_CARRIER_AGENT(152, "MAWBCarrier/Agent");
 
     private int id;
     private String description;

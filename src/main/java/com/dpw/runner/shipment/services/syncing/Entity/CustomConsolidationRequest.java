@@ -516,4 +516,6 @@ public class CustomConsolidationRequest implements IRunnerResponse, IRunnerReque
     //Consolidation Address
     @JsonProperty("ConsolidationAddress")
     private List<PartyRequestV2> consolidationAddresses;
+    @JsonProperty("ModeOfBooking")
+    private String ModeOfBooking;
 }
