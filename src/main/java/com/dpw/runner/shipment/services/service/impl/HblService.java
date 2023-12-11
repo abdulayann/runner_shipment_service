@@ -2,10 +2,7 @@ package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
-import com.dpw.runner.shipment.services.commons.constants.Constants;
-import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
-import com.dpw.runner.shipment.services.commons.constants.HblConstants;
-import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
+import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
@@ -22,9 +19,11 @@ import com.dpw.runner.shipment.services.dto.request.HblResetRequest;
 import com.dpw.runner.shipment.services.dto.request.hbl.HblCargoDto;
 import com.dpw.runner.shipment.services.dto.request.hbl.HblContainerDto;
 import com.dpw.runner.shipment.services.dto.request.hbl.HblDataDto;
+import com.dpw.runner.shipment.services.dto.response.AdditionalDetailResponse;
 import com.dpw.runner.shipment.services.dto.response.HblResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.HblReset;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
@@ -36,6 +35,7 @@ import com.dpw.runner.shipment.services.syncing.Entity.HblRequestV2;
 import com.dpw.runner.shipment.services.syncing.constants.SyncingConstants;
 import com.dpw.runner.shipment.services.syncing.interfaces.IHblSync;
 import com.dpw.runner.shipment.services.utils.AwbUtility;
+import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.nimbusds.jose.util.Pair;
@@ -79,6 +79,8 @@ public class HblService implements IHblService {
     private ISyncQueueService syncQueueService;
     @Autowired
     private SyncConfig syncConfig;
+    @Autowired
+    private MasterDataUtils masterDataUtil;
 
     private RetryTemplate retryTemplate = RetryTemplate.builder()
             .maxAttempts(3)
@@ -414,9 +416,8 @@ public class HblService implements IHblService {
         AdditionalDetails additionalDetails = shipmentDetail.getAdditionalDetails() != null ? shipmentDetail.getAdditionalDetails() : new AdditionalDetails();
         CarrierDetails carrierDetails = shipmentDetail.getCarrierDetails() != null ? shipmentDetail.getCarrierDetails() : new CarrierDetails();
 
-        hblData.setPlaceOfReceipt(StringUtility.convertToString(additionalDetails.getPlaceOfSupply()));
-        hblData.setPortOfLoad(carrierDetails.getOrigin());
-        hblData.setPortOfDischarge(carrierDetails.getDestination());
+        Map<String, EntityTransferUnLocations> v1Data = getUnLocationsData(hblData, additionalDetails, carrierDetails);
+        setUnLocationsData(v1Data, hblData, additionalDetails, carrierDetails, "All");
         hblData.setCargoDescription(shipmentDetail.getGoodsDescription());
         hblData.setMarksAndNumbers(shipmentDetail.getMarksNum());
         hblData.setPackageCount(shipmentDetail.getNoOfPacks());
@@ -446,8 +447,6 @@ public class HblService implements IHblService {
                 hblData.setDeliveryAgentAddress(AwbUtility.constructAddress(exportBroker.getAddressData()));
         }
         UnlocationsResponse destination = ReportHelper.getUNLocRow(carrierDetails.getDestination());
-        if (!Objects.isNull(destination))
-            hblData.setPlaceOfDelivery(destination.getCountry());
         // TODO: This needs to re-visit after incorporating this setting in service
         if (/*Unico HBL*/true) {
             hblData.setTransportType(shipmentDetail.getTransportMode());
@@ -625,13 +624,13 @@ public class HblService implements IHblService {
         AdditionalDetails additionalDetails = shipmentDetail.getAdditionalDetails() != null ? shipmentDetail.getAdditionalDetails() : new AdditionalDetails();
         CarrierDetails carrierDetails = shipmentDetail.getCarrierDetails() != null ? shipmentDetail.getCarrierDetails() : new CarrierDetails();
 
+        Map<String, EntityTransferUnLocations> v1Data = getUnLocationsData(hblData, additionalDetails, carrierDetails);
         if(!hblLock.getPlaceOfReceiptLock())
-            hblData.setPlaceOfReceipt(StringUtility.convertToString(additionalDetails.getPlaceOfSupply()));
+            setUnLocationsData(v1Data, hblData, additionalDetails, carrierDetails, "PlaceOfReceipt");
         if(!hblLock.getPortOfLoadLock())
-            hblData.setPortOfLoad(carrierDetails.getOrigin());
+            setUnLocationsData(v1Data, hblData, additionalDetails, carrierDetails, "PortOfLoad");
         if(!hblLock.getPortOfDischargeLock())
-            hblData.setPortOfDischarge(carrierDetails.getDestination());
-//        hblData.setPlaceOfDelivery(StringUtility.convertToString(additionalDetails.getDe));
+            setUnLocationsData(v1Data, hblData, additionalDetails, carrierDetails, "PortOfDischarge");
         if(!hblLock.getCargoDescriptionLock())
             hblData.setCargoDescription(shipmentDetail.getGoodsDescription());
         if(!hblLock.getMarksAndNumbersLock())
@@ -857,6 +856,61 @@ public class HblService implements IHblService {
             hbl.getHblNotifyParty().add(hblParty);
         }
 
+    }
+
+    private Map<String, EntityTransferUnLocations> getUnLocationsData(HblDataDto hblDataDto, AdditionalDetails additionalDetails, CarrierDetails carrierDetails) {
+        List<String> locCodes = new ArrayList<>();
+
+        if (!Objects.isNull(carrierDetails)) {
+            locCodes.add(carrierDetails.getOriginPort());
+            locCodes.add(carrierDetails.getDestinationPort());
+            locCodes.add(carrierDetails.getDestination());
+        }
+        if (!Objects.isNull(additionalDetails)) {
+            locCodes.add(additionalDetails.getPlaceOfSupply());
+        }
+
+        Map<String, EntityTransferUnLocations> v1Data = masterDataUtil.fetchInBulkUnlocations(locCodes.stream().filter(Objects::nonNull).collect(Collectors.toList()), EntityTransferConstants.LOCATION_SERVICE_GUID);
+        return v1Data;
+    }
+
+    private void setUnLocationsData(Map<String, EntityTransferUnLocations> v1Data, HblDataDto hblDataDto, AdditionalDetails additionalDetails, CarrierDetails carrierDetails, String onField) {
+        switch (onField) {
+            case "PortOfLoad":
+                if (!Objects.isNull(carrierDetails))
+                    hblDataDto.setPortOfLoad(getUnLocationsName(v1Data, carrierDetails.getOriginPort()));
+                break;
+            case "PortOfDischarge":
+                if (!Objects.isNull(carrierDetails))
+                    hblDataDto.setPortOfDischarge(getUnLocationsName(v1Data, carrierDetails.getDestinationPort()));
+                break;
+            case "PlaceOfDelivery":
+                if (!Objects.isNull(carrierDetails))
+                    hblDataDto.setPlaceOfDelivery(getUnLocationsName(v1Data, carrierDetails.getDestination()));
+                break;
+            case "PlaceOfReceipt":
+                if (!Objects.isNull(additionalDetails))
+                    hblDataDto.setPlaceOfReceipt(getUnLocationsName(v1Data, additionalDetails.getPlaceOfSupply()));
+                break;
+            case "All":
+                if (!Objects.isNull(carrierDetails)) {
+                    hblDataDto.setPortOfLoad(getUnLocationsName(v1Data, carrierDetails.getOriginPort()));
+                    hblDataDto.setPortOfDischarge(getUnLocationsName(v1Data, carrierDetails.getDestinationPort()));
+                    hblDataDto.setPlaceOfDelivery(getUnLocationsName(v1Data, carrierDetails.getDestination()));
+                }
+                if (!Objects.isNull(additionalDetails)) {
+                    hblDataDto.setPlaceOfReceipt(getUnLocationsName(v1Data, additionalDetails.getPlaceOfSupply()));
+                }
+                break;
+        }
+
+    }
+
+    private String getUnLocationsName(Map<String, EntityTransferUnLocations> v1Data, String key) {
+        if (Objects.isNull(key) || !v1Data.containsKey(key))
+            return StringUtility.getEmptyString();
+
+        return v1Data.get(key).getPortName();
     }
     
 }
