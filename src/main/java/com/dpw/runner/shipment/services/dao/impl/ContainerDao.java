@@ -209,21 +209,21 @@ public class ContainerDao implements IContainerDao {
                 {
                     for (Containers container: containerList) {
                         String operation = DBOperationType.CREATE.name();
-                        String oldEntityJsonString = null;
+                        Containers oldEntityJson = null;
                         if(container.getId() != null)
                         {
                             Optional<Containers> oldEntity = this.findById(container.getId());
                             if(oldEntity.isPresent())
                             {
                                 operation = DBOperationType.UPDATE.name();
-                                oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
+                                oldEntityJson = jsonHelper.convertValue(oldEntity.get(), Containers.class);
                             }
                         }
                         try {
                             auditLogService.addAuditLog(
                                     AuditLogMetaData.builder()
                                             .newData(container)
-                                            .prevData(oldEntityJsonString != null ? jsonHelper.readFromJson(oldEntityJsonString, Containers.class) : null)
+                                            .prevData(oldEntityJson)
                                             .parent(ShipmentDetails.class.getSimpleName())
                                             .parentId(shipmentId)
                                             .operation(operation).build()

@@ -17,6 +17,7 @@ import com.dpw.runner.shipment.services.dto.v1.request.TIListRequest;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import com.dpw.runner.shipment.services.service.interfaces.IConsolidationService;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
 import com.dpw.runner.shipment.services.syncing.Entity.CustomShipmentSyncRequest;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentReverseSync;
@@ -63,7 +64,8 @@ public class ShipmentController {
     ObjectMapper objectMapper;
     @Autowired
     IOrderManagementAdapter orderManagementAdapter;
-
+    @Autowired
+    IConsolidationService consolidationService;
 
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = "Successful Shipment Details Data List Retrieval", responseContainer = "List")})
@@ -371,7 +373,7 @@ public class ShipmentController {
     @GetMapping(ShipmentConstants.IMPORT_CONSOLIDATION)
     public ResponseEntity<?> getConsolFromShipment(@ApiParam(value = ShipmentConstants.CONSOLIDATION_ID, required = true) @RequestParam Long id) {
         try {
-            return (ResponseEntity<RunnerResponse>) shipmentService.getConsolFromShipment(id);
+            return (ResponseEntity<RunnerResponse>) consolidationService.getConsolFromShipment(id);
         } catch (Exception e) {
             return ResponseHelper.buildFailedResponse(e.getMessage());
         }

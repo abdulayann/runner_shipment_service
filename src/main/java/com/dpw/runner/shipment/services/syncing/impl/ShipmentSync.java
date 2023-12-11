@@ -110,20 +110,19 @@ public class ShipmentSync implements IShipmentSync {
         // assigning child entities not automatically mapped
         // entityID also gets assigned as a part of this mapping
         mapTruckDriverDetail(cs, sd);
-        cs.setRoutings(convertToList(sd.getRoutingsList(), RoutingsRequestV2.class));
+        mapRoutings(cs, sd);
+        mapContainers(cs, sd);
         cs.setReferenceNumbers(convertToList(sd.getReferenceNumbersList(), ReferenceNumbersRequestV2.class));
         cs.setPackings_(syncEntityConversionService.packingsV2ToV1(sd.getPackingList(), sd.getContainersList()));
         cs.setDocs_(convertToList(sd.getFileRepoList(), FileRepoRequestV2.class));
         cs.setELDetails(convertToList(sd.getElDetailsList(), ElDetailsRequestV2.class));
-
-        // Container missing mappings
-        // dgClassString, IsHazardous, MarksnNums
         // PickupAddressJSON and DeliveryAddressJSON (could be renamed for easy mapping)
 
         cs.setBookingCarriages(convertToList(sd.getBookingCarriagesList(), BookingCarriageRequestV2.class));
         cs.setShipmentId(sd.getShipmentId());
         cs.setGuid(sd.getGuid());
         cs.setDescription(sd.getGoodsDescription());
+        cs.setCreatedBy(sd.getCreatedBy());
         String finalCs = jsonHelper.convertToJson(V1DataSyncRequest.builder().entity(cs).module(SyncingConstants.SHIPMENT).build());
         return callSync(finalCs, cs, sd.getId(), sd.getGuid());
     }
@@ -268,6 +267,35 @@ public class ShipmentSync implements IShipmentSync {
                 }
         ).toList();
         cs.setServicesList(res);
+    }
+
+    private void mapRoutings(CustomShipmentSyncRequest cs, ShipmentDetails sd) {
+        if(sd.getRoutingsList() == null)
+            return;
+        List<RoutingsRequestV2> res = sd.getRoutingsList().stream().map(
+                i -> {
+                    var routingsRequestV2 = modelMapper.map(i, RoutingsRequestV2.class);
+                    routingsRequestV2.setIsDomestic(i.isDomestic());
+                    return routingsRequestV2;
+                }
+        ).toList();
+        cs.setRoutings(res);
+    }
+
+    private void mapContainers(CustomShipmentSyncRequest cs, ShipmentDetails sd) {
+        if(sd.getContainersList() == null)
+            return;
+        List<ContainerRequestV2> res = sd.getContainersList().stream().map(
+                i -> {
+                    var containerRequestV2 = modelMapper.map(i, ContainerRequestV2.class);
+                    containerRequestV2.setIsHazardous(i.getHazardous());
+                    containerRequestV2.setDgClassString(i.getDgClass());
+                    containerRequestV2.setMarksnNums(i.getMarksNums());
+                    containerRequestV2.setContainerStuffingLocationName(i.getContainerStuffingLocation());
+                    return containerRequestV2;
+                }
+        ).toList();
+        cs.setContainersList(res);
     }
 
 

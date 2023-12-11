@@ -6,9 +6,7 @@ import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PackingModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PartiesModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ShipmentModel;
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
-import com.fasterxml.jackson.core.type.TypeReference;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -149,17 +147,19 @@ public class ConsolidatedPackingListReport extends IReport {
         }
 
         if(packingList != null) {
-            String packingJson = jsonHelper.convertToJson(packingList);
-            var values = jsonHelper.convertValue(packingJson, new TypeReference<List<Map<String, Object>>>() {});
-            for(var v : values){
+//            String packingJson = jsonHelper.convertToJson(packingList);
+//            var values = jsonHelper.convertValue(packingJson, new TypeReference<List<Map<String, Object>>>() {});
+            var values = packingList.stream()
+                    .map(i -> jsonHelper.convertJsonToMap(jsonHelper.convertToJson(i)))
+                    .toList();
+
+            for (var v : values) {
                 totalPacks = sum(totalPacks, Long.parseLong(v.get(PACKS).toString()));
-                if(!breakFlagForWeight && v.get(WEIGHT) != null && v.get(WEIGHT_UNIT) !=null)
-                {
-                    if(unitOfTotalWeight == null) {
+                if (!breakFlagForWeight && v.get(WEIGHT) != null && v.get(WEIGHT_UNIT) != null) {
+                    if (unitOfTotalWeight == null) {
                         unitOfTotalWeight = v.get(WEIGHT_UNIT).toString();
                         totalWeight = totalWeight.add(BigDecimal.valueOf((double) v.get(WEIGHT)));
-                    }
-                    else if(!unitOfTotalWeight.equals(v.get(WEIGHT_UNIT).toString())) {
+                    } else if (!unitOfTotalWeight.equals(v.get(WEIGHT_UNIT).toString())) {
                         totalWeight = BigDecimal.ZERO;
                         breakFlagForWeight = true;
                     }

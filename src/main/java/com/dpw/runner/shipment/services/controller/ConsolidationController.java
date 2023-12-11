@@ -15,6 +15,7 @@ import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationService;
+import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
 import com.dpw.runner.shipment.services.syncing.Entity.CustomConsolidationRequest;
 import com.dpw.runner.shipment.services.syncing.interfaces.IConsolidationReverseSync;
 import com.dpw.runner.shipment.services.syncing.interfaces.IConsolidationSync;
@@ -46,6 +47,9 @@ public class ConsolidationController {
 
     @Autowired
     private IConsolidationReverseSync consolidationReverseSync;
+
+    @Autowired
+    private IShipmentService shipmentService;
 
     @Autowired
     JsonHelper jsonHelper;
@@ -274,7 +278,7 @@ public class ConsolidationController {
     @GetMapping(ConsolidationConstants.IMPORT_SHIPMENT)
     public ResponseEntity<?> getShipmentFromConsol(@ApiParam(value = ConsolidationConstants.CONSOLIDATION_ID, required = true) @RequestParam Long id) {
         try {
-            return (ResponseEntity<RunnerResponse>) consolidationService.getShipmentFromConsol(id);
+            return (ResponseEntity<RunnerResponse>) shipmentService.getShipmentFromConsol(id);
         } catch (Exception e) {
             return ResponseHelper.buildFailedResponse(e.getMessage());
         }

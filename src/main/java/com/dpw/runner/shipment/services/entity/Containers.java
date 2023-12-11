@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.entity;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.entity.enums.ContainerStatus;
+import com.dpw.runner.shipment.services.utils.UnlocationData;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
@@ -110,7 +111,8 @@ public class Containers extends MultiTenancy {
     private String customsReleaseCode;
 
     @Column(name = "container_stuffing_location")
-    private Long containerStuffingLocation;
+    @UnlocationData
+    private String containerStuffingLocation;
 
     @Column(name = "container_comments")
     private String containerComments;
@@ -280,7 +282,7 @@ public class Containers extends MultiTenancy {
     @JoinTable(name = "shipments_containers_mapping",
             joinColumns = @JoinColumn(name = "container_id"),
             inverseJoinColumns = @JoinColumn(name = "shipment_id"))
-    @JsonIgnoreProperties("containersList")
+    @JsonIgnoreProperties(value = "containersList", allowSetters = true)
     private List<ShipmentDetails> shipmentsList;
 
     @ManyToMany(fetch = FetchType.LAZY,

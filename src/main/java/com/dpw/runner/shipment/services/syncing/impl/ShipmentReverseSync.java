@@ -81,7 +81,7 @@ public class ShipmentReverseSync implements IShipmentReverseSync {
             sd.setConsignee(mapPartyObject(cs.getConsigneeParty()));
 
             mapTruckDriverDetailReverse(cs, sd);
-            sd.setRoutingsList(convertToList(cs.getRoutings(), Routings.class));
+            mapRoutingsReverse(cs, sd);
             sd.setReferenceNumbersList(convertToList(cs.getReferenceNumbers(), ReferenceNumbers.class));
             Map<UUID, String> map = new HashMap<>();
             if(cs.getPackings_() != null)
@@ -179,6 +179,19 @@ public class ShipmentReverseSync implements IShipmentReverseSync {
                 }
         ).toList();
         sd.setServicesList(res);
+    }
+
+    private void mapRoutingsReverse(CustomShipmentSyncRequest cs, ShipmentDetails sd) {
+        if(cs.getRoutings() == null)
+            return;
+        List<Routings> res = cs.getRoutings().stream().map(
+                i -> {
+                    var routings = modelMapper.map(i, Routings.class);
+                    routings.setDomestic(i.getIsDomestic());
+                    return routings;
+                }
+        ).toList();
+        sd.setRoutingsList(res);
     }
 
     private Parties mapPartyObject(PartyRequestV2 sourcePartyObject) {

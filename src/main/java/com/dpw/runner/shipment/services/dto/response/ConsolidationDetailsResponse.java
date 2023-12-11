@@ -125,4 +125,5 @@ public class ConsolidationDetailsResponse implements IRunnerResponse {
     public Map<String, String> textData;
     private ContainerSummaryResponse containerSummary;
     private PackSummaryResponse packSummary;
+    private String modeOfBooking;
 }

@@ -27,7 +27,7 @@ public class RoutingsResponse implements IRunnerResponse {
     private String vesselName;
     private String pol;
     private String pod;
-    private Boolean isDomestic;
+    private boolean isDomestic;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime eta;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)

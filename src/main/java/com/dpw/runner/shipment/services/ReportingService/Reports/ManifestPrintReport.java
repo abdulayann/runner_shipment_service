@@ -10,7 +10,6 @@ import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.Sh
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.nimbusds.jose.util.Pair;
 import io.netty.util.internal.StringUtil;
 import org.apache.commons.lang3.StringUtils;
@@ -54,8 +53,14 @@ public class ManifestPrintReport extends IReport {
         Pair<BigDecimal, String> weightAndUnit = GetTotalWeight(packings);
         Pair<BigDecimal, String> volumeAndUnit = GetTotalVolume(packings);
 
-        List<Map<String, Object>> values = jsonHelper.convertValue(dictionary.get(ReportConstants.SHIPMENTS), new TypeReference<List<Map<String, Object>>>() {
-        });
+        var listShipments = (List<ShipmentModel>) dictionary.get(ReportConstants.SHIPMENTS);
+//        List<Map<String, Object>> values = jsonHelper.convertValue(dictionary.get(ReportConstants.SHIPMENTS), new TypeReference<List<Map<String, Object>>>() {
+//        });
+
+        var values = listShipments.stream()
+                .map(i -> jsonHelper.convertJsonToMap(jsonHelper.convertToJson(i)))
+                .toList();
+
         if (Objects.isNull(values)) values = new ArrayList<>();
         values.forEach(v -> {
             if (v.containsKey(ReportConstants.WEIGHT))
