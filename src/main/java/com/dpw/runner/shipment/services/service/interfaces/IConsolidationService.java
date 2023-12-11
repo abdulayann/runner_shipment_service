@@ -42,7 +42,7 @@ public interface IConsolidationService extends ICommonService{
 
     void generateConsolidationNumber(ConsolidationDetails consolidationDetails);
 
-    ResponseEntity<?> getShipmentFromConsol(Long consolidationId);
+    ResponseEntity<?> getConsolFromShipment(Long shipmentId);
 
     ResponseEntity<?> calculateContainerSummary(CommonRequestModel commonRequestModel) throws Exception;
 

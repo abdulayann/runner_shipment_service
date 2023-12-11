@@ -1478,13 +1478,13 @@ public class ConsolidationService implements IConsolidationService {
         }
     }
 
-    private void createConsolidationPayload (ConsolidationDetails consolidationDetails, ConsolidationDetailsResponse consolidationDetailsResponse) {
+    public void createConsolidationPayload(ConsolidationDetails consolidationDetails, ConsolidationDetailsResponse consolidationDetailsResponse) {
         try {
             this.addAllMasterDataInSingleCall(consolidationDetails, consolidationDetailsResponse);
             this.addAllUnlocationDataInSingleCall(consolidationDetails, consolidationDetailsResponse);
             this.addAllCarrierDataInSingleCall(consolidationDetails, consolidationDetailsResponse);
             this.addAllCurrencyDataInSingleCall(consolidationDetails, consolidationDetailsResponse);
-            this.addAllCommodityTypesInSingleCall(consolidationDetails,consolidationDetailsResponse);
+            this.addAllCommodityTypesInSingleCall(consolidationDetails, consolidationDetailsResponse);
             this.addAllTenantDataInSingleCall(consolidationDetails, consolidationDetailsResponse);
             this.addAllWarehouseDataInSingleCall(consolidationDetails, consolidationDetailsResponse);
             consolidationDetailsResponse.setContainerSummary(containerService.calculateContainerSummary(consolidationDetails.getContainersList(), consolidationDetails.getTransportMode(), consolidationDetails.getContainerCategory()));
@@ -2118,83 +2118,89 @@ public class ConsolidationService implements IConsolidationService {
     }
 
     @Override
-    public ResponseEntity<?> getShipmentFromConsol(Long consolidationId) {
-        ShipmentDetailsResponse shipment;
-        var consolidationResponse = shipmentDao.findById(consolidationId);
+    public ResponseEntity<?> getConsolFromShipment(Long shipmentId) {
+        ConsolidationDetailsResponse consol;
+        Optional<ShipmentDetails> shipmentRes = shipmentDao.findById(shipmentId);
 
-        if (consolidationResponse.isEmpty())
-            throw new DataRetrievalFailureException("Failed to fetch the consolidation with id " + consolidationId);
+        if (shipmentRes.isEmpty())
+            throw new DataRetrievalFailureException("Failed to fetch the ShipmentId with id " + shipmentId);
 
-        var consolidation = modelMapper.map(consolidationResponse.get(), ConsolidationDetailsResponse.class);
+        var shipment = modelMapper.map(shipmentRes.get(), ShipmentDetailsResponse.class);
 
-        var origin = consolidation.getCarrierDetails() != null ? consolidation.getCarrierDetails().getOrigin() : null;
-        var destination = consolidation.getCarrierDetails() != null ? consolidation.getCarrierDetails().getDestination() : null;
-        var voyage = consolidation.getCarrierDetails() != null ? consolidation.getCarrierDetails().getVoyage() : null;
-        var vessel = consolidation.getCarrierDetails() != null ? consolidation.getCarrierDetails().getVessel() : null;
-        var aircrafType = consolidation.getCarrierDetails() != null ? consolidation.getCarrierDetails().getAircraftType() : null;
-        var eta = consolidation.getCarrierDetails() != null ? consolidation.getCarrierDetails().getEta() : null;
-        var etd = consolidation.getCarrierDetails() != null ? consolidation.getCarrierDetails().getEtd() : null;
-        var ata = consolidation.getCarrierDetails() != null ? consolidation.getCarrierDetails().getAta() : null;
-        var atd = consolidation.getCarrierDetails() != null ? consolidation.getCarrierDetails().getAtd() : null;
-        var consolAllocation = consolidation.getAllocations();
-        var consolCarrier = consolidation.getCarrierDetails();
-        shipment = ShipmentDetailsResponse.builder()
-                .transportMode(consolidation.getTransportMode())
-                .bookingNumber(consolidation.getBookingNumber())
-                .consolidationList(List.of(modelMapper.map(consolidation, ConsolidationListResponse.class)))
-                .shipmentType(consolidation.getShipmentType())
-                .additionalDetails(AdditionalDetailResponse.builder()
-                        .SMTPIGMDate(consolidation.getSmtpigmDate())
-                        .SMTPIGMNumber(consolidation.getSmtpigmNumber())
-                        .inwardDateAndTime(consolidation.getInwardDateAndTime())
-                        .releaseType(consolidation.getReleaseType())
-                        .warehouseId(consolidation.getWarehouseId())
-                        .isInland(consolidation.getIsInland())
-                        .original(consolidation.getOriginal())
-                        .IGMFileNo(consolidation.getIgmFileNo())
-                        .IGMFileDate(consolidation.getIgmFileDate())
-                        .IGMInwardDate(consolidation.getIgmInwardDate())
-                        .copy(consolidation.getCopy())
-                        .customDeclType(consolidation.getDeclarationType())
-                        .build())
-                .carrierDetails(CarrierDetailResponse.builder()
-                        .ata(ata)
-                        .eta(eta)
-                        .atd(atd)
-                        .etd(etd)
-                        .origin(origin)
-                        .vessel(vessel)
-                        .shippingLine(consolCarrier != null ? consolCarrier.getShippingLine() : null)
-                        .voyage(voyage)
-                        .aircraftType(aircrafType)
-                        .destination(destination)
-                        .flightNumber(consolCarrier != null ? consolCarrier.getFlightNumber() : null)
-                        .build())
-                .weight(consolAllocation != null ? consolAllocation.getWeight() : null)
-                .weightUnit(consolAllocation != null ? consolAllocation.getWeightUnit() : null)
-                .volume(consolAllocation != null ? consolAllocation.getVolume() : null)
-                .volumeUnit(consolAllocation != null ? consolAllocation.getVolumeUnit() : null)
-                .chargable(consolAllocation != null ? consolAllocation.getChargable() : null)
-                .chargeableUnit(consolAllocation != null ? consolAllocation.getChargeableUnit() : null)
-                .paymentTerms(consolidation.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && consolidation.getShipmentType().equals("EXP")
-                        ? consolidation.getPayment() : null)
-                .masterBill(consolidation.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) ? consolidation.getMawb() : consolidation.getBol())
+        var additionalDetails = shipment.getAdditionalDetails();
+        var shipmentCarrierDetails = shipment.getCarrierDetails();
+        var tenantSettings = shipmentSettingsDao.findByTenantId(TenantContext.getCurrentTenant());
+        if (tenantSettings.isEmpty())
+            throw new DataRetrievalFailureException("Failed to fetch the shipment settings for tenant id " + TenantContext.getCurrentTenant());
+
+        boolean isPayment = tenantSettings.get().getShipmentLite()
+                && shipment.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)
+                && shipment.getDirection().equals(Constants.DIRECTION_EXP);
+
+        boolean isMawb = tenantSettings.get().getShipmentLite()
+                && shipment.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)
+                && shipment.getShipmentType().equals(Constants.SHIPMENT_TYPE_DRT);
+
+
+        RoutingsResponse customRouting = RoutingsResponse.builder()
+                .leg(1L)
+                .pod(shipmentCarrierDetails != null ? shipmentCarrierDetails.getDestination() : null)
+                .pol(shipmentCarrierDetails != null ? shipmentCarrierDetails.getOrigin() : null)
+                .routingStatus(Constants.ROUTING_CFD)
+                .mode(shipment.getTransportMode())
+                .vesselName(shipmentCarrierDetails != null ? shipmentCarrierDetails.getVessel() : null)
+                .voyage(shipmentCarrierDetails != null ? shipmentCarrierDetails.getVoyage() : null)
+                .eta(shipmentCarrierDetails != null ? shipmentCarrierDetails.getEta() : null)
+                .etd(shipmentCarrierDetails != null ? shipmentCarrierDetails.getEtd() : null)
                 .build();
 
-        if (consolidation.getConsolidationAddresses() != null) {
-            consolidation.getConsolidationAddresses().stream().forEach(party -> {
-                if (party.getType().equals("NP1")) {
-                    shipment.getAdditionalDetails().setNotifyParty(
-                            PartiesResponse.builder()
-                                    .orgCode(party.getOrgCode())
-                                    .addressCode(party.getAddressCode())
-                                    .build());
-                }
-            });
-        }
+        consol = ConsolidationDetailsResponse.builder()
+                .consolidationType(Constants.SHIPMENT_TYPE_DRT)
+                .transportMode(shipment.getTransportMode())
+                .containerCategory(shipment.getShipmentType())
+                .declarationType(additionalDetails != null ? additionalDetails.getCustomDeclType() : null)
+                .carrierDetails(CarrierDetailResponse.builder()
+                        .vessel(shipmentCarrierDetails != null ? shipmentCarrierDetails.getVessel() : null)
+                        .originPort(shipmentCarrierDetails != null ? shipmentCarrierDetails.getOriginPort() : null)
+                        .destinationPort(shipmentCarrierDetails != null ? shipmentCarrierDetails.getDestinationPort() : null)
+                        .eta(shipmentCarrierDetails != null ? shipmentCarrierDetails.getEta() : null)
+                        .etd(shipmentCarrierDetails != null ? shipmentCarrierDetails.getEtd() : null)
+                        .ata(shipmentCarrierDetails != null ? shipmentCarrierDetails.getAta() : null)
+                        .atd(shipmentCarrierDetails != null ? shipmentCarrierDetails.getAtd() : null)
+                        .aircraftType(shipmentCarrierDetails != null ? shipmentCarrierDetails.getAircraftType() : null)
+                        .flightNumber(shipmentCarrierDetails != null ? shipmentCarrierDetails.getFlightNumber() : null)
+                        .shippingLine(shipmentCarrierDetails != null ? shipmentCarrierDetails.getShippingLine() : null) // carrier
+                        .voyage(shipmentCarrierDetails != null ? shipmentCarrierDetails.getVoyage() : null)
+                        .build())
+                .releaseType(additionalDetails != null ? additionalDetails.getReleaseType() : null)
+                .original(additionalDetails != null ? additionalDetails.getOriginal() : null)
+                .copy(additionalDetails != null ? additionalDetails.getCopy() : null)
+                .allocations(AllocationsResponse.builder()
+//                        .weight(shipment.getWeight()) // commented just like the v1 code
+                        .weightUnit(shipment.getWeightUnit())
+//                        .volume(shipment.getVolume())
+                        .volumeUnit(shipment.getVolumeUnit())
+//                        .chargable(shipment.getChargable())
+                        .chargeableUnit(shipment.getChargeableUnit())
+                        .build())
+                .shipmentType(shipment.getShipmentType())
+                .igmFileDate(additionalDetails != null ? additionalDetails.getIGMFileDate() : null)
+                .igmFileNo(additionalDetails != null ? additionalDetails.getIGMFileNo() : null)
+                .smtpigmDate(additionalDetails != null ? additionalDetails.getSMTPIGMDate() : null)
+                .smtpigmNumber(additionalDetails != null ? additionalDetails.getSMTPIGMNumber() : null)
+                .igmInwardDate(additionalDetails != null ? additionalDetails.getIGMInwardDate() : null)
+                .inwardDateAndTime(additionalDetails != null ? additionalDetails.getInwardDateAndTime() : null)
+                .warehouseId(additionalDetails != null ? additionalDetails.getWarehouseId() : null)
+                .bol(shipment.getMasterBill())
+                .referenceNumber(shipment.getBookingReference())
+                .payment(isPayment ? shipment.getPaymentTerms() : null)
+                .routingsList(List.of(customRouting))
+                .mawb(isMawb ? shipment.getMasterBill() : null)
+                .isLinked(true)
+                .build();
 
-        shipment.setShipmentType(Constants.SHIPMENT_TYPE_STD);
+        createConsolidationPayload(modelMapper.map(consol, ConsolidationDetails.class), consol);
 
-        return ResponseHelper.buildSuccessResponse(shipment);
+        return ResponseHelper.buildSuccessResponse(consol);
     }
 }

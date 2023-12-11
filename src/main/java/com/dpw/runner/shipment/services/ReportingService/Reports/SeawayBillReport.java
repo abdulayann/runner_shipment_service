@@ -5,16 +5,15 @@ import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.SeawayBillModel;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
-import com.fasterxml.jackson.core.type.TypeReference;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
-import java.util.List;
 import java.util.Map;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.*;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.addCommaWithoutDecimal;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.getOrgAddressWithPhoneEmail;
 
 @Component
 public class SeawayBillReport extends IReport {
@@ -72,8 +71,11 @@ public class SeawayBillReport extends IReport {
 
 
         if (model.shipment.getShipmentContainersList() != null) {
-            String json = jsonHelper.convertToJson(model.shipment.getShipmentContainersList());
-            var values = jsonHelper.convertValue(json, new TypeReference<List<Map<String, Object>>>() {});
+//            String json = jsonHelper.convertToJson(model.shipment.getShipmentContainersList());
+            var values = model.shipment.getShipmentContainersList().stream()
+                    .map(i -> jsonHelper.convertJsonToMap(jsonHelper.convertToJson(i)))
+                    .toList();
+//            var values = jsonHelper.convertValue(json, new TypeReference<List<Map<String, Object>>>() {});
             values.forEach(v -> {
                 if (v.get("GrossWeight") != null && v.get("GrossWeight").toString() != null)
                     v.put("GrossWeight", addCommas(v.get("GrossWeight").toString()));
