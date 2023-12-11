@@ -735,14 +735,22 @@ public class ReportService implements IReportService {
             case ReportConstants.EXPORT_CONSOL_MANIFEST:
                 if (objectType != null && objectType.equalsIgnoreCase(ReportConstants.TRANS_AIR)) {
                     return setDocPages(null,
-                            row.getAirExportConsoleManifest() == null ? adminRow.getAirExportConsoleManifest(): row.getAirExportConsoleManifest(), null, row.getAirExportConsoleManifest() != null, null, null, null);
+                            row.getAirExportConsoleManifest() == null ? adminRow.getAirExportConsoleManifest() : row.getAirExportConsoleManifest(), null, row.getAirExportConsoleManifest() != null, null, null, null);
                 } else {
                     return setDocPages(null,
-                            row.getSeaExportConsoleManifest() == null ? adminRow.getSeaExportConsoleManifest(): row.getSeaExportConsoleManifest(), null, row.getSeaExportConsoleManifest() != null, null, null, null);
+                            row.getSeaExportConsoleManifest() == null ? adminRow.getSeaExportConsoleManifest() : row.getSeaExportConsoleManifest(), null, row.getSeaExportConsoleManifest() != null, null, null, null);
                 }
             case ReportConstants.CSR:
                 return setDocPages(null,
                         row.getCsr() == null ? adminRow.getCsr() : row.getCsr(), null, row.getCsr() != null, null, null, null);
+
+            case ReportConstants.COMMERCIAL_INVOICE:
+                if (objectType != null && objectType.equalsIgnoreCase(ReportConstants.TRANS_AIR))
+                    return setDocPages(null,
+                            row.getCommercialInvMainPageAir() == null ? adminRow.getCommercialInvMainPageAir() : row.getCommercialInvMainPageAir(), null, row.getCommercialInvMainPageAir() != null, null, null, null);
+                else
+                    return setDocPages(null,
+                            row.getCommercialInvMainPage() == null ? adminRow.getCommercialInvMainPageAir() : row.getCommercialInvMainPageAir(), null, row.getCommercialInvMainPage() != null, null, null, null);
         }
 
         return null;
