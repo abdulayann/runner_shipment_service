@@ -91,6 +91,7 @@ public class ConsolidationSync implements IConsolidationSync {
         mapTruckDriverDetail(response, request);
         mapPackings(response, request);
         mapJobs(response, request);
+        mapContainers(response, request);
         response.setDocsList(convertToList(request.getFileRepoList(), FileRepoRequestV2.class));
 
         mapShipmentGuids(response, request);
@@ -192,6 +193,22 @@ public class ConsolidationSync implements IConsolidationSync {
                 })
                 .collect(Collectors.toList());
         response.setTruckDriverDetail(req);
+    }
+
+    private void mapContainers(CustomConsolidationRequest cs, ConsolidationDetails sd) {
+        if(sd.getContainersList() == null)
+            return;
+        List<ContainerRequestV2> res = sd.getContainersList().stream().map(
+                i -> {
+                    var containerRequestV2 = modelMapper.map(i, ContainerRequestV2.class);
+                    containerRequestV2.setIsHazardous(i.getHazardous());
+                    containerRequestV2.setDgClassString(i.getDgClass());
+                    containerRequestV2.setMarksnNums(i.getMarksNums());
+                    containerRequestV2.setContainerStuffingLocationName(i.getContainerStuffingLocation());
+                    return containerRequestV2;
+                }
+        ).toList();
+        cs.setContainersList(res);
     }
 
     private void mapCarrierDetails(CustomConsolidationRequest response, ConsolidationDetails request) {

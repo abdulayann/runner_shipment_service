@@ -109,4 +109,5 @@ public class ConsolidationDetailsRequest extends CommonRequest implements IRunne
     private List<Long> shipmentIds;
     private List<PartiesRequest> consolidationAddresses;
     private String carrierBookingRef;
+    private String modeOfBooking;
 }

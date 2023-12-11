@@ -291,6 +291,7 @@ public class ShipmentSync implements IShipmentSync {
                     containerRequestV2.setIsHazardous(i.getHazardous());
                     containerRequestV2.setDgClassString(i.getDgClass());
                     containerRequestV2.setMarksnNums(i.getMarksNums());
+                    containerRequestV2.setContainerStuffingLocationName(i.getContainerStuffingLocation());
                     return containerRequestV2;
                 }
         ).toList();
