@@ -631,6 +631,8 @@ public class HblService implements IHblService {
             setUnLocationsData(v1Data, hblData, additionalDetails, carrierDetails, "PortOfLoad");
         if(!hblLock.getPortOfDischargeLock())
             setUnLocationsData(v1Data, hblData, additionalDetails, carrierDetails, "PortOfDischarge");
+        if(!hblLock.getPlaceOfDeliveryLock())
+            setUnLocationsData(v1Data, hblData, additionalDetails, carrierDetails, "PlaceOfDelivery");
         if(!hblLock.getCargoDescriptionLock())
             hblData.setCargoDescription(shipmentDetail.getGoodsDescription());
         if(!hblLock.getMarksAndNumbersLock())
