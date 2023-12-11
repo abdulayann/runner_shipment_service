@@ -146,4 +146,5 @@ public class ShipmentSettingsDetailsResponse implements IRunnerResponse {
     private Boolean restrictBlRelease;
     private Integer restrictBlApprovalRole;
     private Boolean eManifest;
+    private String isfFileMainPage;
 }

@@ -277,4 +277,6 @@ public class ShipmentSettingsSyncRequest implements IRunnerRequest {
     private Integer restrictBlApprovalRole;
     @JsonProperty("EManifest")
     private Boolean eManifest;
+    @JsonProperty("ISFFileMainPage")
+    private String ISFFileMainPage;
 }

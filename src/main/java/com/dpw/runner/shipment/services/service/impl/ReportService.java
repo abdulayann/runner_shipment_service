@@ -751,6 +751,9 @@ public class ReportService implements IReportService {
                 else
                     return setDocPages(null,
                             row.getCommercialInvMainPage() == null ? adminRow.getCommercialInvMainPageAir() : row.getCommercialInvMainPageAir(), null, row.getCommercialInvMainPage() != null, null, null, null);
+            case ReportConstants.GENERATE_ISF_FILE:
+                return setDocPages(null,
+                        row.getIsfFileMainPage() == null ? adminRow.getIsfFileMainPage() : row.getIsfFileMainPage(), null, row.getIsfFileMainPage() != null, null, null, null);
         }
 
         return null;

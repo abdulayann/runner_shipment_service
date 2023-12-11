@@ -242,6 +242,11 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
             }
         }
 
+        if((shipmentSettingsDetails.getConsolidationLite() == null || !shipmentSettingsDetails.getConsolidationLite().booleanValue())
+                && IsStringNullOrEmpty(request.getCarrierDetails().getOrigin()) && IsStringNullOrEmpty(request.getCarrierDetails().getDestination())) {
+            errors.add("First load or Last Discharge can not be null.");
+        }
+
         return errors;
     }
 

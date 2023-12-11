@@ -367,5 +367,6 @@ public class ConsolidationDetails extends MultiTenancy {
 
     @Column(name = "mode_of_booking")
     @Size(max = 64, message = "max size is 64 for mode_of_booking")
+    @MasterData(type = MasterDataType.MODE_OF_BOOKING)
     private String modeOfBooking;
 }

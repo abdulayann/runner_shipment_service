@@ -1568,6 +1568,8 @@ public class ShipmentService implements IShipmentService {
             consolidationDetails.setCarrierDetails(jsonHelper.convertValue(shipmentDetails.getCarrierDetails(), CarrierDetails.class));
             consolidationDetails.getCarrierDetails().setId(null);
             consolidationDetails.getCarrierDetails().setGuid(null);
+            consolidationDetails.getCarrierDetails().setOrigin(consolidationDetails.getCarrierDetails().getOriginPort());
+            consolidationDetails.getCarrierDetails().setDestination(consolidationDetails.getCarrierDetails().getDestinationPort());
             consolidationDetails.setShipmentType(shipmentDetails.getDirection());
             consolidationDetails.setContainerCategory(shipmentDetails.getShipmentType());
             consolidationDetails.setIsReceivingAgentFreeTextAddress(false);
