@@ -1020,7 +1020,7 @@ public class ShipmentService implements IShipmentService {
 
     private List<PackingRequest> setContainerIdByNumber(List<Containers> containersList, List<PackingRequest> packingRequests) {
         if(containersList != null) {
-            Map<String, Long> map = containersList.stream().collect(Collectors.toMap(element -> element.getContainerNumber(), element -> element.getId()));
+            Map<String, Long> map = containersList.stream().filter(c -> c.getContainerNumber() != null).collect(Collectors.toMap(element -> element.getContainerNumber(), element -> element.getId()));
             if(packingRequests != null && packingRequests.size() > 0) {
                 for (PackingRequest packingRequest : packingRequests) {
                     if(packingRequest.getContainerId() == null && !IsStringNullOrEmpty(packingRequest.getContainerNumber())) {

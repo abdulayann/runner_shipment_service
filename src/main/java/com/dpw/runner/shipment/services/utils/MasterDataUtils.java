@@ -527,10 +527,10 @@ public class MasterDataUtils{
 
         for(ShipmentDetails shipment : shipmentDetailsList) {
             if(!Objects.isNull(shipment.getContainersList()) && !shipment.getContainersList().isEmpty())
-                shipment.getContainersList().forEach(r -> containerTypes.addAll(createInBulkContainerTypeRequest(jsonHelper.convertValue(jsonHelper.convertToJson(r), ContainerResponse.class), Containers.class, fieldNameKeyMap, Containers.class.getSimpleName() + r.getId() )));
+                shipment.getContainersList().forEach(r -> containerTypes.add(r.getContainerCode()));
         }
 
-        Map v1Data = fetchInBulkContainerTypes(containerTypes.stream().toList());
+        Map v1Data = fetchInBulkContainerTypes(containerTypes.stream().filter(Objects::nonNull).toList());
         pushToCache(v1Data, CacheConstants.CONTAINER_TYPE);
 
         BigDecimal teu;
