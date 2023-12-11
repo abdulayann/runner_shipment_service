@@ -2,8 +2,8 @@ package com.dpw.runner.shipment.services.utils;
 
 import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.entity.Containers;
-import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.entity.Events;
+import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.entity.enums.ContainerStatus;
 import com.opencsv.CSVReader;
 import com.opencsv.exceptions.CsvException;
@@ -204,7 +204,7 @@ public class CSVParsingUtil<T> {
 
         for (Field field : fields) {
             field.setAccessible(true);
-            Object value = field.get(carrierDetailResponse);
+            Object value = carrierDetailResponse == null ? null : field.get(carrierDetailResponse);
             lst.add(value != null ? value.toString() : "");
         }
         return lst;
@@ -224,7 +224,7 @@ public class CSVParsingUtil<T> {
 
         for (Field field : fields) {
             field.setAccessible(true);
-            Object value = field.get(pdResponse);
+            Object value = pdResponse == null ? null : field.get(pdResponse);
             lst.add(value != null ? value.toString() : "");
         }
         return lst;
@@ -251,6 +251,7 @@ public class CSVParsingUtil<T> {
     }
 
     public List<String> getAllAttributeValuesAsList(ShipmentListResponse shipment) throws IllegalAccessException {
+        if (shipment == null) shipment = new ShipmentListResponse();
         Class<?> clazz = shipment.getClass();
         List<Field> fields = Arrays.stream(clazz.getDeclaredFields()).toList();
         Set removedFields = Set.of("client", "consigner", "consignee", "additionalDetails", "carrierDetails", "pickupDetails", "deliveryDetails");
@@ -263,13 +264,14 @@ public class CSVParsingUtil<T> {
 
         for (Field field : fields) {
             field.setAccessible(true);
-            Object value = field.get(shipment);
+            Object value = shipment == null ? null : field.get(shipment);
             lst.add(value != null ? value.toString() : "");
         }
         return lst;
     }
 
     public List<String> getAllAttributeValuesAsListConsol(ConsolidationListResponse response) throws IllegalAccessException {
+        if (response == null) response = new ConsolidationListResponse();
         Class<?> clazz = response.getClass();
         List<Field> fields = Arrays.stream(clazz.getDeclaredFields()).toList();
         Set removedFields = Set.of("sendingAgent", "receivingAgent", "borrowedFrom", "creditor", "coLoadWith", "arrivalDetails", "departureDetails", "carrierDetails", "achievedQuantities", "allocations"); // Parties
@@ -282,13 +284,14 @@ public class CSVParsingUtil<T> {
 
         for (Field field : fields) {
             field.setAccessible(true);
-            Object value = field.get(response);
+            Object value = response == null ? null : field.get(response);
             lst.add(value != null ? value.toString() : "");
         }
         return lst;
     }
 
     public List<String> getAllAttributeValuesAsListForAllocations(AllocationsResponse response) throws IllegalAccessException {
+        if (response == null) response = new AllocationsResponse();
         Class<?> clazz = response.getClass();
         List<Field> fields = Arrays.stream(clazz.getDeclaredFields()).toList();
         Set removedFields = Set.of("id", "guid");
@@ -301,7 +304,7 @@ public class CSVParsingUtil<T> {
 
         for (Field field : fields) {
             field.setAccessible(true);
-            Object value = field.get(response);
+            Object value = response == null ? null : field.get(response);
             lst.add(value != null ? value.toString() : "");
         }
         return lst;
@@ -309,6 +312,7 @@ public class CSVParsingUtil<T> {
 
 
     public List<String> getAllAttributeValuesAsListForAchievedQuantities(AchievedQuantitiesResponse response) throws IllegalAccessException {
+        if (response == null) response = new AchievedQuantitiesResponse();
         Class<?> clazz = response.getClass();
         List<Field> fields = Arrays.stream(clazz.getDeclaredFields()).toList();
         Set removedFields = Set.of("id", "guid");
@@ -321,13 +325,14 @@ public class CSVParsingUtil<T> {
 
         for (Field field : fields) {
             field.setAccessible(true);
-            Object value = field.get(response);
+            Object value = response == null ? null : field.get(response);
             lst.add(value != null ? value.toString() : "");
         }
         return lst;
     }
 
     public List<String> getAllAttributeValuesAsListForArrivalDepartureDetails(ArrivalDepartureDetailsResponse response) throws IllegalAccessException {
+        if (response == null) response = new ArrivalDepartureDetailsResponse();
         Class<?> clazz = response.getClass();
         List<Field> fields = Arrays.stream(clazz.getDeclaredFields()).toList();
         Set removedFields = Set.of("id", "guid");
@@ -340,7 +345,7 @@ public class CSVParsingUtil<T> {
 
         for (Field field : fields) {
             field.setAccessible(true);
-            Object value = field.get(response);
+            Object value = response == null ? null : field.get(response);
             lst.add(value != null ? value.toString() : "");
         }
         return lst;
@@ -362,7 +367,7 @@ public class CSVParsingUtil<T> {
 
         for (Field field : containerFields) {
             field.setAccessible(true);
-            Object value = field.get(response);
+            Object value = response == null ? null : field.get(response);
             lst.add(value != null ? value.toString() : "");
         }
         return lst;
