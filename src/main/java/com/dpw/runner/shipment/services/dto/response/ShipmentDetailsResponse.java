@@ -24,6 +24,8 @@ import java.util.UUID;
 @AllArgsConstructor
 @Data
 public class ShipmentDetailsResponse implements IRunnerResponse {
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
     private Long id;
     private UUID guid;
     private String houseBill;
