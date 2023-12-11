@@ -282,7 +282,7 @@ public class Containers extends MultiTenancy {
     @JoinTable(name = "shipments_containers_mapping",
             joinColumns = @JoinColumn(name = "container_id"),
             inverseJoinColumns = @JoinColumn(name = "shipment_id"))
-    @JsonIgnoreProperties(value = "containersList", allowSetters = true)
+    @JsonIgnoreProperties(value = "containersList")
     private List<ShipmentDetails> shipmentsList;
 
     @ManyToMany(fetch = FetchType.LAZY,
