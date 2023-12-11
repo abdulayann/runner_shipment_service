@@ -406,12 +406,16 @@ public class HblService implements IHblService {
         HblDataDto hblData = HblDataDto.builder().build();
         hblData.setShipmentId(shipmentDetail.getId());
         if(shipmentDetail.getConsigner() != null) {
-            hblData.setConsignorName(StringUtility.convertToString(shipmentDetail.getConsigner().getOrgData().get(PartiesConstants.FULLNAME)) );
-            hblData.setConsignorAddress(constructAddress(shipmentDetail.getConsigner().getAddressData()));
+            if (shipmentDetail.getConsigner().getOrgData() != null)
+                hblData.setConsignorName(StringUtility.convertToString(shipmentDetail.getConsigner().getOrgData().get(PartiesConstants.FULLNAME)) );
+            if (shipmentDetail.getConsigner().getAddressData() != null)
+                hblData.setConsignorAddress(constructAddress(shipmentDetail.getConsigner().getAddressData()));
         }
-        if(shipmentDetail.getConsignee() != null) {
-            hblData.setConsigneeName(StringUtility.convertToString(shipmentDetail.getConsignee().getOrgData().get(PartiesConstants.FULLNAME)));
-            hblData.setConsigneeAddress(constructAddress(shipmentDetail.getConsignee().getAddressData()));
+        if(shipmentDetail.getConsignee() != null ) {
+            if (shipmentDetail.getConsignee().getOrgData() != null)
+                hblData.setConsigneeName(StringUtility.convertToString(shipmentDetail.getConsignee().getOrgData().get(PartiesConstants.FULLNAME)));
+            if (shipmentDetail.getConsignee().getAddressData() != null)
+                hblData.setConsigneeAddress(constructAddress(shipmentDetail.getConsignee().getAddressData()));
         }
         AdditionalDetails additionalDetails = shipmentDetail.getAdditionalDetails() != null ? shipmentDetail.getAdditionalDetails() : new AdditionalDetails();
         CarrierDetails carrierDetails = shipmentDetail.getCarrierDetails() != null ? shipmentDetail.getCarrierDetails() : new CarrierDetails();
