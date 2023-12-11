@@ -1050,9 +1050,9 @@ public class ShipmentService implements IShipmentService {
                                 containers.setGrossVolumeUnit(Constants.VOLUME_UNIT_M3);
                             for (PackingRequest packing : packings) {
                                 if(!IsStringNullOrEmpty(packing.getWeightUnit()))
-                                    totalWeight = totalWeight.add((BigDecimal) convertUnit(Constants.MASS, packing.getWeight(), packing.getWeightUnit(), containers.getGrossWeightUnit()));
+                                    totalWeight = totalWeight.add(new BigDecimal(convertUnit(Constants.MASS, packing.getWeight(), packing.getWeightUnit(), containers.getGrossWeightUnit()).toString()));
                                 if(!IsStringNullOrEmpty(packing.getVolumeUnit()))
-                                    totalVolume = totalVolume.add((BigDecimal) convertUnit(Constants.VOLUME, packing.getVolume(), packing.getVolumeUnit(), containers.getGrossVolumeUnit()));
+                                    totalVolume = totalVolume.add(new BigDecimal(convertUnit(Constants.VOLUME, packing.getVolume(), packing.getVolumeUnit(), containers.getGrossVolumeUnit()).toString()));
                             }
                             containers.setGrossWeight(totalWeight);
                             containers.setGrossVolume(totalVolume);
@@ -1179,7 +1179,9 @@ public class ShipmentService implements IShipmentService {
             };
             String firstPacksType = containersList.get(0).getPacksType();
             boolean isSame = containersList.stream()
-                    .allMatch(container -> container.getPacksType().equals(firstPacksType));
+                    .map(Containers::getPacksType)
+                    .allMatch(packsType -> packsType == null || packsType.equals(firstPacksType));
+
             if (isSame) {
                 packsUnit = firstPacksType;
             } else {
@@ -1201,10 +1203,10 @@ public class ShipmentService implements IShipmentService {
         if(packings != null && packings.size() > 0) {
             for (Packing packing : packings) {
                 if(packing.getWeight() != null && !IsStringNullOrEmpty(packing.getWeightUnit())) {
-                    totalWeight = totalWeight.add((BigDecimal) convertUnit(Constants.MASS, packing.getWeight(), packing.getWeightUnit(), response.getWeightUnit()));
+                    totalWeight = totalWeight.add(new BigDecimal(convertUnit(Constants.MASS, packing.getWeight(), packing.getWeightUnit(), response.getWeightUnit()).toString()));
                 }
                 if(packing.getVolume() != null && !IsStringNullOrEmpty(packing.getVolumeUnit())) {
-                    totalVolume = totalVolume.add((BigDecimal) convertUnit(Constants.VOLUME, packing.getVolume(), packing.getVolumeUnit(), response.getVolumeUnit()));
+                    totalVolume = totalVolume.add(new BigDecimal(convertUnit(Constants.VOLUME, packing.getVolume(), packing.getVolumeUnit(), response.getVolumeUnit()).toString()));
                 }
             }
             response.setWeight(totalWeight);
