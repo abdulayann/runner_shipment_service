@@ -389,7 +389,7 @@ public class ShipmentService implements IShipmentService {
             responseList.add(response);
         });
         try {
-            masterDataUtils.setLocationData(responseList, EntityTransferConstants.UNLOCATION_CODE);
+            masterDataUtils.setLocationData(responseList, EntityTransferConstants.LOCATION_SERVICE_GUID);
             masterDataUtils.setContainerTeuData(lst, responseList);
             setBillingData(lst, responseList);
         }
@@ -2522,7 +2522,7 @@ public class ShipmentService implements IShipmentService {
         if (!Objects.isNull(shipmentDetailsResponse.getAdditionalDetails()))
             locationCodes.addAll((masterDataUtils.createInBulkUnLocationsRequest(shipmentDetailsResponse.getAdditionalDetails(), AdditionalDetails.class, fieldNameKeyMap, AdditionalDetails.class.getSimpleName() )));
         // TODO: This needs to be change to fetch based on LocationServiceGuid once UI is ready
-        Map<String, EntityTransferUnLocations> keyMasterDataMap = masterDataUtils.fetchInBulkUnlocations(locationCodes, EntityTransferConstants.UNLOCATION_CODE);
+        Map<String, EntityTransferUnLocations> keyMasterDataMap = masterDataUtils.fetchInBulkUnlocations(locationCodes, EntityTransferConstants.LOCATION_SERVICE_GUID);
         masterDataUtils.pushToCache(keyMasterDataMap, CacheConstants.UNLOCATIONS);
 
         if (!Objects.isNull(shipmentDetailsResponse.getCarrierDetails()))
