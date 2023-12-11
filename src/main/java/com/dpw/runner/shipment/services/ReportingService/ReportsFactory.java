@@ -88,6 +88,7 @@ public class ReportsFactory {
                 return manifestConsolReport;
             case ReportConstants.IMPORT_SHIPMENT_MANIFEST:
             case ReportConstants.EXPORT_SHIPMENT_MANIFEST:
+            case ReportConstants.GENERATE_ISF_FILE:
                 return manifestShipmentReport;
             case ReportConstants.AWB_LABLE:
                 return awbLabelReport;

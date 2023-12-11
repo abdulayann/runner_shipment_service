@@ -605,6 +605,7 @@ public class ReportConstants {
     public static final String EXPORT_SHIPMENT_MANIFEST = "ExportShipmentManifest";
     public static final String IMPORT_CONSOL_MANIFEST = "ImportConsolManifest";
     public static final String EXPORT_CONSOL_MANIFEST = "ExportConsolManifest";
+    public static final String GENERATE_ISF_FILE = "GenerateISFFile";
     public static final String AWB_NEUTRAL = "AWBNeutral";
     public static final String CARGO_MANIFEST = "CargoManifest";
     public static final String CONSOLIDATED_PACKING_LIST = "ConsolidatedPackingList";

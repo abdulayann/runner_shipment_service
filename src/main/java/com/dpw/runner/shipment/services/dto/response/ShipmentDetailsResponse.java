@@ -147,4 +147,8 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
         }
         textData.putAll(dataMap);
     }
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    private LocalDateTime createdAt;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    private LocalDateTime updatedAt;
 }

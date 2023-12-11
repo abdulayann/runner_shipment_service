@@ -68,6 +68,7 @@ public class ShipmentSettingsSync implements IShipmentSettingsSync {
         syncRequest.setShipmentImportApproverRole(req.getShipmentConsoleImportApproverRole());
         syncRequest.setIsLowMarginApprovalRequired(req.getLowMarginApproval());
         syncRequest.setShipmentInstruction(req.getShippingInstruction());
+        syncRequest.setISFFileMainPage(req.getIsfFileMainPage());
 
         String payload = jsonHelper.convertToJson(V1DataSyncRequest.builder().entity(syncRequest).module(SyncingConstants.TENANT_SETTINGS).build());
         retryTemplate.execute(ctx -> {
