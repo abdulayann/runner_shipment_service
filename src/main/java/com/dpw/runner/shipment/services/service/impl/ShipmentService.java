@@ -1517,6 +1517,13 @@ public class ShipmentService implements IShipmentService {
         try {
             if(shipmentDetails.getTenantId() == null)
                 shipmentDetails.setTenantId(TenantContext.getCurrentTenant());
+            KafkaResponse kafkaResponse = producer.getKafkaResponse(shipmentDetails, isCreate);
+            producer.produceToKafka(jsonHelper.convertToJson(kafkaResponse), senderQueue, UUID.randomUUID().toString());
+        }
+        catch (Exception e) {
+            log.error("Error Producing shipment to kafka, error is due to " + e.getMessage());
+        }
+        try {
             if(shipmentDetails.getStatus() != null && !Objects.equals(shipmentDetails.getStatus(), ShipmentStatus.Completed.getValue()) || shipmentDetails.getStatus() != null && !Objects.equals(shipmentDetails.getStatus(), ShipmentStatus.Cancelled.getValue())) {
                 if (trackingServiceAdapter.checkIfConsolAttached(shipmentDetails)|| (shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && shipmentDetails.getShipmentType().equals(Constants.SHIPMENT_TYPE_DRT) && !Objects.isNull(shipmentDetails.getHouseBill()))) {
                     UniversalTrackingPayload _utPayload = trackingServiceAdapter.mapShipmentDataToTrackingServiceData(shipmentDetails);
@@ -1538,8 +1545,6 @@ public class ShipmentService implements IShipmentService {
                     trackingServiceAdapter.publishUpdatesToTrackingServiceQueue(jsonBody,true);
                 }
             }
-            KafkaResponse kafkaResponse = producer.getKafkaResponse(shipmentDetails, isCreate);
-            producer.produceToKafka(jsonHelper.convertToJson(kafkaResponse), senderQueue, UUID.randomUUID().toString());
         }
         catch (Exception e) {
             log.error(e.getMessage());
