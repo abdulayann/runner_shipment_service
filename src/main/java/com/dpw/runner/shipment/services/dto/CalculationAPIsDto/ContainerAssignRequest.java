@@ -10,4 +10,5 @@ public class ContainerAssignRequest implements IRunnerRequest {
     Long shipmentId;
     Long consolidationId;
     Integer take;
+    String transportMode;
 }
