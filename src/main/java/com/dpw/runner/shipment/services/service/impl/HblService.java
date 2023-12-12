@@ -257,7 +257,9 @@ public class HblService implements IHblService {
     @Override
     public ResponseEntity<?> generateHBL(CommonRequestModel commonRequestModel) {
         HblGenerateRequest request = (HblGenerateRequest) commonRequestModel.getData();
-        
+        List<Containers> containers = containerDao.findByShipmentId(request.getShipmentId()).stream().filter(c -> StringUtility.isEmpty(c.getContainerNumber())).toList();
+        if (!containers.isEmpty())
+            throw new ValidationException("Please assign container number to all the containers before generating the HBL.");
         Hbl hbl = getHblFromShipmentId(request.getShipmentId());
 
         try {
