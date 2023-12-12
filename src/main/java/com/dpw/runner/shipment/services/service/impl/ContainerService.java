@@ -589,25 +589,30 @@ public class ContainerService implements IContainerService {
             if(containersOptional.isPresent()) {
                 Containers container = containersOptional.get();
                 changeAchievedUnit(container);
-                ListCommonRequest listCommonRequest = constructListCommonRequest("id", request.getPacksId(), "IN");
-                Pair<Specification<Packing>, Pageable> pair = fetchData(listCommonRequest, Packing.class);
-                Page<Packing> packings = packingDao.findAll(pair.getLeft(), pair.getRight());
-                if(!packings.isEmpty() && packings.get().findAny().isPresent())
-                {
-                    List<Packing> packingList = packings.stream().toList();
-                    for(Packing packing: packingList) {
-                        if(packing.getWeight() != null && !packing.getWeightUnit().isEmpty() && !IsStringNullOrEmpty(container.getAchievedWeightUnit())) {
-                            BigDecimal val = new BigDecimal(convertUnit(Constants.MASS, packing.getWeight(), packing.getWeightUnit(), container.getAchievedWeightUnit()).toString());
-                            container.setAchievedWeight(container.getAchievedWeight().subtract(val));
-                            container.setWeightUtilization(((container.getAchievedWeight().divide(container.getAllocatedWeight())).multiply(new BigDecimal(100))).toString());
+                if(request.getPacksId() != null && request.getPacksId().size() > 0) {
+                    ListCommonRequest listCommonRequest = constructListCommonRequest("id", request.getPacksId(), "IN");
+                    Pair<Specification<Packing>, Pageable> pair = fetchData(listCommonRequest, Packing.class);
+                    Page<Packing> packings = packingDao.findAll(pair.getLeft(), pair.getRight());
+                    if(!packings.isEmpty() && packings.get().findAny().isPresent())
+                    {
+                        List<Packing> packingList = packings.stream().toList();
+                        for(Packing packing: packingList) {
+                            if(packing.getWeight() != null && !packing.getWeightUnit().isEmpty() && !IsStringNullOrEmpty(container.getAchievedWeightUnit())) {
+                                BigDecimal val = new BigDecimal(convertUnit(Constants.MASS, packing.getWeight(), packing.getWeightUnit(), container.getAchievedWeightUnit()).toString());
+                                container.setAchievedWeight(container.getAchievedWeight().subtract(val));
+                                container.setWeightUtilization(((container.getAchievedWeight().divide(container.getAllocatedWeight())).multiply(new BigDecimal(100))).toString());
+                            }
+                            if(packing.getVolume() != null && !packing.getVolumeUnit().isEmpty() && !IsStringNullOrEmpty(container.getAchievedVolumeUnit())) {
+                                BigDecimal val = new BigDecimal(convertUnit(Constants.VOLUME, packing.getVolume(), packing.getVolumeUnit(), container.getAchievedVolumeUnit()).toString());
+                                container.setAchievedVolume(container.getAchievedVolume().subtract(val));
+                                container.setVolumeUtilization(((container.getAchievedVolume().divide(container.getAllocatedVolume())).multiply(new BigDecimal(100))).toString());
+                            }
                         }
-                        if(packing.getVolume() != null && !packing.getVolumeUnit().isEmpty() && !IsStringNullOrEmpty(container.getAchievedVolumeUnit())) {
-                            BigDecimal val = new BigDecimal(convertUnit(Constants.VOLUME, packing.getVolume(), packing.getVolumeUnit(), container.getAchievedVolumeUnit()).toString());
-                            container.setAchievedVolume(container.getAchievedVolume().subtract(val));
-                            container.setVolumeUtilization(((container.getAchievedVolume().divide(container.getAllocatedVolume())).multiply(new BigDecimal(100))).toString());
-                        }
+                        return detachContainer(packingList, container, request.getShipmentId());
                     }
-                    return detachContainer(packingList, container, request.getShipmentId());
+                }
+                else {
+                    return detachContainer(null, container, request.getShipmentId());
                 }
             }
             responseMsg = "Data not available for provided request";
@@ -625,10 +630,12 @@ public class ContainerService implements IContainerService {
         try {
             shipmentsContainersMappingDao.detachShipments(container.getId(), List.of(shipmentId));
             Containers containers = containerDao.save(jsonHelper.convertValue(container, Containers.class));
-            for (Packing packing: packingList) {
-                packing.setContainerId(null);
+            if(packingList != null && packingList.size() > 0) {
+                for (Packing packing: packingList) {
+                    packing.setContainerId(null);
+                }
+                packingDao.saveAll(packingList);
             }
-            packingDao.saveAll(packingList);
             afterSave(containers, false);
             return ResponseHelper.buildSuccessResponse(convertEntityToDto(containers));
         } catch (Exception e) {
@@ -642,35 +649,63 @@ public class ContainerService implements IContainerService {
     @Override
     public ResponseEntity<?> getContainersForSelection(CommonRequestModel commonRequestModel) {
         String responseMsg;
-        Boolean lclAndSeaOrRoadFlag = false; // TODO- Remove this and fetch from tenant Settings and Shipment Data
-        Boolean IsConsolidatorFlag = true; // TODO- Remove this and fetch from tenant Settings
+        ShipmentSettingsDetails shipmentSettingsDetails = shipmentSettingsDao.getSettingsByTenantIds(List.of(TenantContext.getCurrentTenant())).get(0);
+        boolean lclAndSeaOrRoadFlag = shipmentSettingsDetails.getMultipleShipmentEnabled() != null && shipmentSettingsDetails.getMultipleShipmentEnabled();
+        boolean IsConsolidatorFlag = shipmentSettingsDetails.getIsConsolidator() != null && shipmentSettingsDetails.getIsConsolidator();
         List<Containers> containersList = new ArrayList<>();
         try {
             ContainerAssignRequest containerAssignRequest = (ContainerAssignRequest) commonRequestModel.getData();
             Long shipmentId = containerAssignRequest.getShipmentId();
             Long consolidationId = containerAssignRequest.getConsolidationId();
+            if (lclAndSeaOrRoadFlag) {
+                if(!containerAssignRequest.getTransportMode().equals(Constants.TRANSPORT_MODE_SEA) && !containerAssignRequest.getTransportMode().equals(Constants.TRANSPORT_MODE_ROA)) {
+                    lclAndSeaOrRoadFlag = false;
+                }
+            }
             ListCommonRequest listCommonRequest = constructListCommonRequest("consolidationId", consolidationId, "=");
             Pair<Specification<Containers>, Pageable> pair = fetchData(listCommonRequest, Containers.class);
             Page<Containers> containers = containerDao.findAll(pair.getLeft(), pair.getRight());
+            List<Containers> conts = new ArrayList<>();
             if(lclAndSeaOrRoadFlag) {
                 for (Containers container : containers.getContent()) {
                     List<ShipmentsContainersMapping> shipmentsContainersMappings = shipmentsContainersMappingDao.findByContainerId(container.getId());
-                    if(!shipmentsContainersMappings.stream().map(e -> e.getShipmentId()).collect(Collectors.toList()).contains(shipmentId)) {
+                    if(!shipmentsContainersMappings.stream().map(ShipmentsContainersMapping::getShipmentId).toList().contains(shipmentId)) {
+
                         if(container.getAllocatedWeight() != null && container.getAchievedWeight() != null && container.getAllocatedVolume() != null && container.getAchievedWeight() != null
                            && isNotEmpty(container.getAllocatedWeightUnit()) && isNotEmpty(container.getAllocatedVolumeUnit()) && isNotEmpty(container.getAchievedWeightUnit()) && isNotEmpty(container.getAchievedVolumeUnit())) {
+
                             BigDecimal achievedWeight = new BigDecimal(convertUnit(Constants.MASS, container.getAchievedWeight(), container.getAchievedWeightUnit(), container.getAllocatedWeightUnit()).toString());
                             BigDecimal achievedVolume = new BigDecimal(convertUnit(Constants.VOLUME, container.getAchievedVolume(), container.getAchievedVolumeUnit(), container.getAllocatedVolumeUnit()).toString());
+
                             if(achievedWeight.compareTo(container.getAllocatedWeight()) < 0 && achievedVolume.compareTo(container.getAllocatedVolume()) < 0) {
                                 containersList.add(container);
                             }
+                            else if(!IsConsolidatorFlag) {
+                                conts.add(container);
+                            }
                         }
+                        else
+                            containersList.add(container);
+                    }
+                }
+                if(conts.size() > 0) {
+                    for (Containers x : conts) {
+                        boolean flag = true;
+                        if(x.getShipmentsList() != null && x.getShipmentsList().size() > 0) {
+                            for(ShipmentDetails shipmentDetails : x.getShipmentsList()) {
+                                if(shipmentDetails.getShipmentType().equals(Constants.CARGO_TYPE_FCL))
+                                    flag = false;
+                            }
+                        }
+                        if (flag)
+                            containersList.add(x);
                     }
                 }
             }
             else {
                 for (Containers container : containers.getContent()) {
                     List<ShipmentsContainersMapping> shipmentsContainersMappings = shipmentsContainersMappingDao.findByContainerId(container.getId());
-                    if(!shipmentsContainersMappings.stream().map(e -> e.getShipmentId()).collect(Collectors.toList()).contains(shipmentId)) {
+                    if(!shipmentsContainersMappings.stream().map(ShipmentsContainersMapping::getShipmentId).toList().contains(shipmentId)) {
                         containersList.add(container);
                     }
                 }
