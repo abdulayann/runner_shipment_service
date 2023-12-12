@@ -252,7 +252,7 @@ public class ConsolidationService implements IConsolidationService {
             Map.entry("terminalCutoff", RunnerEntityMapping.builder().tableName("ConsolidationDetails").dataType(LocalDateTime.class).build()),
             Map.entry("verifiedGrossMassCutoff", RunnerEntityMapping.builder().tableName("ConsolidationDetails").dataType(LocalDateTime.class).build()),
             Map.entry("guid", RunnerEntityMapping.builder().tableName("ConsolidationDetails").dataType(UUID.class).fieldName("guid").build()),
-            Map.entry("bol", RunnerEntityMapping.builder().tableName("ConsolidationDetails").dataType(UUID.class).fieldName("bol").build())
+            Map.entry("bol", RunnerEntityMapping.builder().tableName("ConsolidationDetails").dataType(String.class).fieldName("bol").build())
     );
 
     @Override
