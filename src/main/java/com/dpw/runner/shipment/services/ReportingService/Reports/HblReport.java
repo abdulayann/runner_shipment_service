@@ -9,6 +9,7 @@ import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.*;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
 import com.dpw.runner.shipment.services.dto.request.HblPartyDto;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.request.hbl.HblContainerDto;
@@ -100,7 +101,7 @@ public class HblReport extends IReport{
 
         UnlocationsResponse paidPlace = null;
         List<Object> criteria = Arrays.asList(
-                Arrays.asList("LocCode"),
+                Arrays.asList(EntityTransferConstants.LOCATION_SERVICE_GUID),
                 "=",
                 hblModel.shipment.getAdditionalDetails().getPaidPlace()
         );
@@ -116,7 +117,7 @@ public class HblReport extends IReport{
 
         // IssuePlace master data
         criteria = Arrays.asList(
-                Arrays.asList("LocCode"),
+                Arrays.asList(EntityTransferConstants.LOCATION_SERVICE_GUID),
                 "=",
                 hblModel.shipment.getAdditionalDetails().getPlaceOfIssue()
         );
@@ -130,7 +131,7 @@ public class HblReport extends IReport{
 
         // polPort
         criteria = Arrays.asList(
-                Arrays.asList("LocCode"),
+                Arrays.asList(EntityTransferConstants.LOCATION_SERVICE_GUID),
                 "=",
                 hblModel.shipment.getCarrierDetails().getOriginPort()
         );
@@ -143,7 +144,7 @@ public class HblReport extends IReport{
 
         // podPort
         criteria = Arrays.asList(
-                Arrays.asList("LocCode"),
+                Arrays.asList(EntityTransferConstants.LOCATION_SERVICE_GUID),
                 "=",
                 hblModel.shipment.getCarrierDetails().getDestinationPort()
         );

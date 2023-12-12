@@ -389,7 +389,7 @@ public class ShipmentService implements IShipmentService {
             responseList.add(response);
         });
         try {
-            masterDataUtils.setLocationData(responseList, EntityTransferConstants.UNLOCATION_CODE);
+            masterDataUtils.setLocationData(responseList, EntityTransferConstants.LOCATION_SERVICE_GUID);
             masterDataUtils.setContainerTeuData(lst, responseList);
             setBillingData(lst, responseList);
         }
@@ -1020,7 +1020,7 @@ public class ShipmentService implements IShipmentService {
 
     private List<PackingRequest> setContainerIdByNumber(List<Containers> containersList, List<PackingRequest> packingRequests) {
         if(containersList != null) {
-            Map<String, Long> map = containersList.stream().collect(Collectors.toMap(element -> element.getContainerNumber(), element -> element.getId()));
+            Map<String, Long> map = containersList.stream().filter(c -> c.getContainerNumber() != null).collect(Collectors.toMap(element -> element.getContainerNumber(), element -> element.getId()));
             if(packingRequests != null && packingRequests.size() > 0) {
                 for (PackingRequest packingRequest : packingRequests) {
                     if(packingRequest.getContainerId() == null && !IsStringNullOrEmpty(packingRequest.getContainerNumber())) {
@@ -1050,9 +1050,9 @@ public class ShipmentService implements IShipmentService {
                                 containers.setGrossVolumeUnit(Constants.VOLUME_UNIT_M3);
                             for (PackingRequest packing : packings) {
                                 if(!IsStringNullOrEmpty(packing.getWeightUnit()))
-                                    totalWeight = totalWeight.add((BigDecimal) convertUnit(Constants.MASS, packing.getWeight(), packing.getWeightUnit(), containers.getGrossWeightUnit()));
+                                    totalWeight = totalWeight.add(new BigDecimal(convertUnit(Constants.MASS, packing.getWeight(), packing.getWeightUnit(), containers.getGrossWeightUnit()).toString()));
                                 if(!IsStringNullOrEmpty(packing.getVolumeUnit()))
-                                    totalVolume = totalVolume.add((BigDecimal) convertUnit(Constants.VOLUME, packing.getVolume(), packing.getVolumeUnit(), containers.getGrossVolumeUnit()));
+                                    totalVolume = totalVolume.add(new BigDecimal(convertUnit(Constants.VOLUME, packing.getVolume(), packing.getVolumeUnit(), containers.getGrossVolumeUnit()).toString()));
                             }
                             containers.setGrossWeight(totalWeight);
                             containers.setGrossVolume(totalVolume);
@@ -1179,7 +1179,9 @@ public class ShipmentService implements IShipmentService {
             };
             String firstPacksType = containersList.get(0).getPacksType();
             boolean isSame = containersList.stream()
-                    .allMatch(container -> container.getPacksType().equals(firstPacksType));
+                    .map(Containers::getPacksType)
+                    .allMatch(packsType -> packsType == null || packsType.equals(firstPacksType));
+
             if (isSame) {
                 packsUnit = firstPacksType;
             } else {
@@ -1201,10 +1203,10 @@ public class ShipmentService implements IShipmentService {
         if(packings != null && packings.size() > 0) {
             for (Packing packing : packings) {
                 if(packing.getWeight() != null && !IsStringNullOrEmpty(packing.getWeightUnit())) {
-                    totalWeight = totalWeight.add((BigDecimal) convertUnit(Constants.MASS, packing.getWeight(), packing.getWeightUnit(), response.getWeightUnit()));
+                    totalWeight = totalWeight.add(new BigDecimal(convertUnit(Constants.MASS, packing.getWeight(), packing.getWeightUnit(), response.getWeightUnit()).toString()));
                 }
                 if(packing.getVolume() != null && !IsStringNullOrEmpty(packing.getVolumeUnit())) {
-                    totalVolume = totalVolume.add((BigDecimal) convertUnit(Constants.VOLUME, packing.getVolume(), packing.getVolumeUnit(), response.getVolumeUnit()));
+                    totalVolume = totalVolume.add(new BigDecimal(convertUnit(Constants.VOLUME, packing.getVolume(), packing.getVolumeUnit(), response.getVolumeUnit()).toString()));
                 }
             }
             response.setWeight(totalWeight);
@@ -1568,6 +1570,8 @@ public class ShipmentService implements IShipmentService {
             consolidationDetails.setCarrierDetails(jsonHelper.convertValue(shipmentDetails.getCarrierDetails(), CarrierDetails.class));
             consolidationDetails.getCarrierDetails().setId(null);
             consolidationDetails.getCarrierDetails().setGuid(null);
+            consolidationDetails.getCarrierDetails().setOrigin(consolidationDetails.getCarrierDetails().getOriginPort());
+            consolidationDetails.getCarrierDetails().setDestination(consolidationDetails.getCarrierDetails().getDestinationPort());
             consolidationDetails.setShipmentType(shipmentDetails.getDirection());
             consolidationDetails.setContainerCategory(shipmentDetails.getShipmentType());
             consolidationDetails.setIsReceivingAgentFreeTextAddress(false);
@@ -2522,7 +2526,7 @@ public class ShipmentService implements IShipmentService {
         if (!Objects.isNull(shipmentDetailsResponse.getAdditionalDetails()))
             locationCodes.addAll((masterDataUtils.createInBulkUnLocationsRequest(shipmentDetailsResponse.getAdditionalDetails(), AdditionalDetails.class, fieldNameKeyMap, AdditionalDetails.class.getSimpleName() )));
         // TODO: This needs to be change to fetch based on LocationServiceGuid once UI is ready
-        Map<String, EntityTransferUnLocations> keyMasterDataMap = masterDataUtils.fetchInBulkUnlocations(locationCodes, EntityTransferConstants.UNLOCATION_CODE);
+        Map<String, EntityTransferUnLocations> keyMasterDataMap = masterDataUtils.fetchInBulkUnlocations(locationCodes, EntityTransferConstants.LOCATION_SERVICE_GUID);
         masterDataUtils.pushToCache(keyMasterDataMap, CacheConstants.UNLOCATIONS);
 
         if (!Objects.isNull(shipmentDetailsResponse.getCarrierDetails()))

@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.ReportingService.Models.DeliveryOrderMod
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ContainerModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
+import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.MasterData;
@@ -48,7 +49,7 @@ public class DeliveryOrderReport extends IReport{
             if(StringUtility.isNotEmpty(deliveryOrderModel.consolidationDetails.getPlaceOfIssue()))
             {
                 List<Object> criteria = Arrays.asList(
-                        Arrays.asList("LocCode"),
+                        Arrays.asList(EntityTransferConstants.LOCATION_SERVICE_GUID),
                         "=",
                         deliveryOrderModel.consolidationDetails.getPlaceOfIssue()
                 );

@@ -478,4 +478,7 @@ public class ShipmentSettingsDetails extends MultiTenancy {
 
     @Column(name = "e_manifest")
     private Boolean eManifest;
+
+    @Column(name = "isf_file_main_page")
+    private String isfFileMainPage;
 }
