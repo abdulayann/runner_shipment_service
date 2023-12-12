@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.config;
 
 import org.apache.kafka.clients.admin.NewTopic;
+import org.apache.kafka.common.config.TopicConfig;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
@@ -10,12 +11,10 @@ import org.springframework.web.context.support.GenericWebApplicationContext;
 import javax.annotation.PostConstruct;
 
 @Configuration
-public class TopicConfig {
+public class TopicConfigs {
 
     @Autowired
     private GenericWebApplicationContext context;
-
-    private String MIN_IN_SYNC_REPLICAS_CONFIG = "MIN_IN_SYNC_REPLICAS_CONFIG";
 
     @Value("${awbKafka.queue}")
     private String awbKafkaBeanName;
@@ -34,7 +33,7 @@ public class TopicConfig {
         NewTopic awbTopic = TopicBuilder.name(awbKafkaBeanName)
                 .partitions(3)
                 .replicas(1)
-                .config(MIN_IN_SYNC_REPLICAS_CONFIG, String.valueOf(1))
+                .config(TopicConfig.MIN_IN_SYNC_REPLICAS_CONFIG, String.valueOf(1))
                 .compact()
                 .build();
         context.registerBean(awbKafkaBeanName, NewTopic.class, () -> awbTopic);
@@ -42,7 +41,7 @@ public class TopicConfig {
         NewTopic shipmentsKafkaTopic = TopicBuilder.name(shipmentsKafkaBeanName)
                 .partitions(3)
                 .replicas(1)
-                .config(MIN_IN_SYNC_REPLICAS_CONFIG, String.valueOf(1))
+                .config(TopicConfig.MIN_IN_SYNC_REPLICAS_CONFIG, String.valueOf(1))
                 .compact()
                 .build();
         context.registerBean(shipmentsKafkaBeanName, NewTopic.class, () -> shipmentsKafkaTopic);
@@ -50,7 +49,7 @@ public class TopicConfig {
         NewTopic consolidationKafkaTopic = TopicBuilder.name(consolidationKafkaBeanName)
                 .partitions(3)
                 .replicas(1)
-                .config(MIN_IN_SYNC_REPLICAS_CONFIG, String.valueOf(1))
+                .config(TopicConfig.MIN_IN_SYNC_REPLICAS_CONFIG, String.valueOf(1))
                 .compact()
                 .build();
         context.registerBean(consolidationKafkaBeanName, NewTopic.class, () -> consolidationKafkaTopic);
@@ -58,7 +57,7 @@ public class TopicConfig {
         NewTopic containerKafkaTopic = TopicBuilder.name(containerKafkaBeanName)
                 .partitions(3)
                 .replicas(1)
-                .config(MIN_IN_SYNC_REPLICAS_CONFIG, String.valueOf(1))
+                .config(TopicConfig.MIN_IN_SYNC_REPLICAS_CONFIG, String.valueOf(1))
                 .compact()
                 .build();
         context.registerBean(containerKafkaBeanName, NewTopic.class, () -> containerKafkaTopic);
