@@ -82,6 +82,7 @@ public class ShipmentDetails extends MultiTenancy {
     private String jobType;
 
     @Column(name = "service_type")
+    @Size(max=3, message = "max size is 3 for service Type")
     @MasterData(type = MasterDataType.SERVICE_MODE)
     private String serviceType;
 
