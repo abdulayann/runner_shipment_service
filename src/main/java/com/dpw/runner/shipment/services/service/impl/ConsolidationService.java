@@ -251,8 +251,9 @@ public class ConsolidationService implements IConsolidationService {
             Map.entry("shipInstructionCutoff", RunnerEntityMapping.builder().tableName("ConsolidationDetails").dataType(LocalDateTime.class).build()),
             Map.entry("terminalCutoff", RunnerEntityMapping.builder().tableName("ConsolidationDetails").dataType(LocalDateTime.class).build()),
             Map.entry("verifiedGrossMassCutoff", RunnerEntityMapping.builder().tableName("ConsolidationDetails").dataType(LocalDateTime.class).build()),
-            Map.entry("guid", RunnerEntityMapping.builder().tableName("ConsolidationDetails").dataType(UUID.class).fieldName("guid").build())
-            );
+            Map.entry("guid", RunnerEntityMapping.builder().tableName("ConsolidationDetails").dataType(UUID.class).fieldName("guid").build()),
+            Map.entry("bol", RunnerEntityMapping.builder().tableName("ConsolidationDetails").dataType(String.class).fieldName("bol").build())
+    );
 
     @Override
     @Transactional
@@ -2091,6 +2092,13 @@ public class ConsolidationService implements IConsolidationService {
         try {
             if(consolidationDetails.getTenantId() == null)
                 consolidationDetails.setTenantId(TenantContext.getCurrentTenant());
+            KafkaResponse kafkaResponse = producer.getKafkaResponse(consolidationDetails, isCreate);
+            producer.produceToKafka(jsonHelper.convertToJson(kafkaResponse), senderQueue, UUID.randomUUID().toString());
+        }
+        catch (Exception e) {
+            log.error("Error Producing consolidation to kafka, error is due to " + e.getMessage());
+        }
+        try {
             if(trackingServiceAdapter.checkIfConsolContainersExist(consolidationDetails) || trackingServiceAdapter.checkIfAwbExists(consolidationDetails)) {
                 UniversalTrackingPayload _utPayload = trackingServiceAdapter.mapConsoleDataToTrackingServiceData(consolidationDetails);
                 List<UniversalTrackingPayload> trackingPayloads = new ArrayList<>();
@@ -2110,8 +2118,6 @@ public class ConsolidationService implements IConsolidationService {
                     trackingServiceAdapter.publishUpdatesToTrackingServiceQueue(jsonBody, true);
                 }
             }
-            KafkaResponse kafkaResponse = producer.getKafkaResponse(consolidationDetails, isCreate);
-            producer.produceToKafka(jsonHelper.convertToJson(kafkaResponse), senderQueue, UUID.randomUUID().toString());
         } catch (Exception e) {
             log.error(e.getMessage());
         }

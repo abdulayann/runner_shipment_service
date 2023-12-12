@@ -24,7 +24,7 @@ public class KafkaProducer {
         try {
             log.info("request payload to kafka: " + objectMapper.writeValueAsString(payload));
         } catch (JsonProcessingException e) {
-            log.error("Error while converting shipment, unable to convert object to json due to: "+ e.getMessage());
+            log.error("Error while converting data, unable to convert object to json due to: "+ e.getMessage());
         }
         try {
             kafkaTemplate.send(senderQueue, transactionId, payload);
