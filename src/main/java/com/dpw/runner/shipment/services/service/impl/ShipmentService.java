@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.Kafka.Dto.KafkaResponse;
 import com.dpw.runner.shipment.services.Kafka.Producer.KafkaProducer;
+import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.adapters.interfaces.IOrderManagementAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.ITrackingServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
@@ -2933,6 +2934,15 @@ public class ShipmentService implements IShipmentService {
             response.setStatus(0);
             response.setSource(Constants.SYSTEM);
             response.setCreatedBy(UserContext.getUser().getUsername());
+
+            try {
+                log.info("Fetching Tenant Model");
+                TenantModel tenantModel = modelMapper.map(v1Service.retrieveTenant().getEntity(), TenantModel.class);
+                String currencyCode = tenantModel.currencyCode;
+                response.setFreightLocalCurrency(currencyCode);
+            } catch (Exception e){
+                log.error("Failed in fetching tenant data from V1 with error : {}", e);
+            }
 
             if(Constants.TRANSPORT_MODE_SEA.equals(response.getTransportMode()) && Constants.DIRECTION_EXP.equals(response.getDirection()))
                 response.setHouseBill(generateCustomHouseBL());
