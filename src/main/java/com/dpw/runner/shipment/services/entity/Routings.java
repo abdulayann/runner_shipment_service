@@ -104,5 +104,8 @@ public class Routings extends MultiTenancy {
     @Column(name = "carrier")
     @DedicatedMasterData(type = Constants.CARRIER_MASTER_DATA)
     private String carrier;
+
+    @Column(name = "truck_reference_number")
+    private String truckReferenceNumber;
 }
 
