@@ -1779,6 +1779,25 @@ public class ShipmentService implements IShipmentService {
         String responseMsg;
         try {
             ShipmentContainerAssignRequest request = (ShipmentContainerAssignRequest) commonRequestModel.getData();
+            ShipmentSettingsDetails shipmentSettingsDetails = shipmentSettingsDao.getSettingsByTenantIds(List.of(TenantContext.getCurrentTenant())).get(0);
+            ShipmentDetails shipmentDetails = shipmentDao.findById(request.getShipmentId()).get();
+            if(shipmentSettingsDetails.getMultipleShipmentEnabled() && shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_SEA) || shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_ROA)) {
+                ListCommonRequest listCommonRequest = constructListCommonRequest("id", request.getContainerIds(), "IN");
+                Pair<Specification<Containers>, Pageable> pair = fetchData(listCommonRequest, Containers.class);
+                Page<Containers> containers = containerDao.findAll(pair.getLeft(), pair.getRight());
+                if(containers != null && containers.getContent() != null && !containers.getContent().isEmpty()) {
+                    for (Containers container : containers.getContent()) {
+                        boolean isPart = false;
+//                        isPart = container.getIsPart() != null && container.getIsPart().booleanValue(); TODO- add isPart
+                        if(shipmentDetails.getShipmentType().equals(Constants.CARGO_TYPE_FCL) || isPart && container.getShipmentsList() != null && container.getShipmentsList().size() > 0) {
+                            String errorMsg = "This container is already linked to another shipment. Only part Container/Containers are allowed to attach";
+                            if(!isPart)
+                                errorMsg = "Mentioned container " + container.getContainerNumber() + " is already assigned to a Shipment - " + container.getShipmentsList().get(0).getShipmentId() + ". Please check and retry.";
+                            throw new ValidationException(errorMsg);
+                        }
+                    }
+                }
+            }
             shipmentsContainersMappingDao.assignContainers(request.getShipmentId(), request.getContainerIds());
             return ResponseHelper.buildSuccessResponse();
         } catch (Exception e) {
