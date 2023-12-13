@@ -11,6 +11,7 @@ import com.dpw.runner.shipment.services.dto.patchRequest.ShipmentPatchRequest;
 import com.dpw.runner.shipment.services.dto.request.ConsolidationDetailsRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentAttachDetachRequest;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
@@ -164,26 +165,26 @@ public class ConsolidationController {
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = ConsolidationConstants.CONSOLIDATION_CALCULATION_SUCCESSFUL)})
     @PostMapping(ApiConstants.API_CALCULATE_UTILIZATION)
-    public ResponseEntity<RunnerResponse<ConsolidationDetailsResponse>> calculateUtilization(@RequestBody ConsoleCalculationsRequest request) {
-        return (ResponseEntity<RunnerResponse<ConsolidationDetailsResponse>>) consolidationService.calculateUtilization(CommonRequestModel.buildRequest(request));
+    public ResponseEntity<RunnerResponse<ConsoleCalculationsResponse>> calculateUtilization(@RequestBody ConsoleCalculationsRequest request) {
+        return (ResponseEntity<RunnerResponse<ConsoleCalculationsResponse>>) consolidationService.calculateUtilization(CommonRequestModel.buildRequest(request));
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = ConsolidationConstants.CONSOLIDATION_CALCULATION_SUCCESSFUL)})
     @PostMapping(ApiConstants.API_CHANGE_UNIT_ALLOCATED_ACHIEVED)
-    public ResponseEntity<RunnerResponse<ConsolidationDetailsResponse>> calculateAchieved_AllocatedForSameUnit(@RequestBody ConsoleCalculationsRequest request) {
-        return (ResponseEntity<RunnerResponse<ConsolidationDetailsResponse>>) consolidationService.calculateAchieved_AllocatedForSameUnit(CommonRequestModel.buildRequest(request));
+    public ResponseEntity<RunnerResponse<ConsoleCalculationsResponse>> calculateAchieved_AllocatedForSameUnit(@RequestBody ConsoleCalculationsRequest request) {
+        return (ResponseEntity<RunnerResponse<ConsoleCalculationsResponse>>) consolidationService.calculateAchieved_AllocatedForSameUnit(CommonRequestModel.buildRequest(request));
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = ConsolidationConstants.CONSOLIDATION_CALCULATION_SUCCESSFUL)})
     @PostMapping(ApiConstants.API_CALCULATE_CHARGEABLE)
-    public ResponseEntity<RunnerResponse<ConsolidationDetailsResponse>> calculateChargeable(@RequestBody ConsoleCalculationsRequest request) {
-        return (ResponseEntity<RunnerResponse<ConsolidationDetailsResponse>>) consolidationService.calculateChargeable(CommonRequestModel.buildRequest(request));
+    public ResponseEntity<RunnerResponse<ConsoleCalculationsResponse>> calculateChargeable(@RequestBody ConsoleCalculationsRequest request) {
+        return (ResponseEntity<RunnerResponse<ConsoleCalculationsResponse>>) consolidationService.calculateChargeable(CommonRequestModel.buildRequest(request));
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = ConsolidationConstants.CONSOLIDATION_CALCULATION_SUCCESSFUL)})
     @PostMapping(ApiConstants.API_CALCULATE_ACHIEVED_VALUES)
-    public ResponseEntity<RunnerResponse<ConsolidationDetailsResponse>> calculateAchievedValues(@RequestParam Long consolidationId) {
-        return (ResponseEntity<RunnerResponse<ConsolidationDetailsResponse>>) consolidationService.calculateAchievedValues(CommonRequestModel.buildRequest(consolidationId));
+    public ResponseEntity<RunnerResponse<ShipmentGridChangeResponse>> calculateAchievedValues(@RequestParam Long consolidationId) {
+        return (ResponseEntity<RunnerResponse<ShipmentGridChangeResponse>>) consolidationService.calculateAchievedValues(CommonRequestModel.buildRequest(consolidationId));
     }
 
     @PostMapping(ApiConstants.ATTACH_SHIPMENTS)
@@ -225,6 +226,51 @@ public class ConsolidationController {
             log.error(responseMsg, e);
         }
         return (ResponseEntity<RunnerResponse<PackSummaryResponse>>) ResponseHelper.buildFailedResponse(responseMsg);
+    }
+
+    @ApiResponses(value = { @ApiResponse(code = 200, message = ConsolidationConstants.LIST_SUCCESSFUL) })
+    @GetMapping(ApiConstants.LIST_PACKS_FOR_ASSIGN_DETACH)
+    public ResponseEntity<RunnerResponse<ConsolePacksListResponse>> listPacksForAssignDetach(@RequestBody ConsolePacksListRequest request) {
+        String responseMsg;
+        try {
+            return (ResponseEntity<RunnerResponse<ConsolePacksListResponse>>) consolidationService.listPacksForAssignDetach(CommonRequestModel.buildRequest(request));
+        }
+        catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+        }
+        return (ResponseEntity<RunnerResponse<ConsolePacksListResponse>>) ResponseHelper.buildFailedResponse(responseMsg);
+    }
+
+    @ApiResponses(value = { @ApiResponse(code = 200, message = ConsolidationConstants.ASSIGN_SUCCESSFUL) })
+    @PostMapping(ApiConstants.ASSIGN_PACKS_SHIPMENTS)
+    public ResponseEntity<RunnerResponse<ContainerShipmentADInConsoleResponse>> assignPacksAndShipments(@RequestBody ContainerShipmentADInConsoleRequest request) {
+        String responseMsg;
+        try {
+            return (ResponseEntity<RunnerResponse<ContainerShipmentADInConsoleResponse>>) consolidationService.assignPacksAndShipments(CommonRequestModel.buildRequest(request));
+        }
+        catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+        }
+        return (ResponseEntity<RunnerResponse<ContainerShipmentADInConsoleResponse>>) ResponseHelper.buildFailedResponse(responseMsg);
+    }
+
+    @ApiResponses(value = { @ApiResponse(code = 200, message = ConsolidationConstants.DETACH_SUCCESSFUL) })
+    @PostMapping(ApiConstants.DETACH_PACKS_SHIPMENTS)
+    public ResponseEntity<RunnerResponse<ContainerResponse>> detachPacksAndShipments(@RequestBody ContainerShipmentADInConsoleRequest request) {
+        String responseMsg;
+        try {
+            return (ResponseEntity<RunnerResponse<ContainerResponse>>) consolidationService.detachPacksAndShipments(CommonRequestModel.buildRequest(request));
+        }
+        catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+        }
+        return (ResponseEntity<RunnerResponse<ContainerResponse>>) ResponseHelper.buildFailedResponse(responseMsg);
     }
 
     @ApiResponses(value = {

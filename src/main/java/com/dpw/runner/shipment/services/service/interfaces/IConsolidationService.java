@@ -48,4 +48,7 @@ public interface IConsolidationService extends ICommonService{
 
     ResponseEntity<?> calculatePackSummary(CommonRequestModel commonRequestModel) throws Exception;
     VolumeWeightChargeable calculateVolumeWeight(String transportMode, String weightUnit, String volumeUnit, BigDecimal weight, BigDecimal volume) throws Exception;
+    ResponseEntity<?> listPacksForAssignDetach(CommonRequestModel commonRequestModel);
+    ResponseEntity<?> assignPacksAndShipments(CommonRequestModel commonRequestModel);
+    ResponseEntity<?> detachPacksAndShipments(CommonRequestModel commonRequestModel);
 }

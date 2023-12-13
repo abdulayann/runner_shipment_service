@@ -7,7 +7,7 @@ import lombok.Data;
 
 @Data
 public class ConsoleCalculationsRequest implements IRunnerRequest {
-    private Long consolidationId;
+    private Long id;
     private String containerCategory;
     private String transportMode;
     private AchievedQuantitiesRequest achievedQuantities;
