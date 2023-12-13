@@ -995,6 +995,8 @@ public class ConsolidationService implements IConsolidationService {
     private ConsolidationDetails calculateConsolUtilization(ConsolidationDetails consolidationDetails) throws Exception {
         String responseMsg;
         try {
+            if(consolidationDetails.getAllocations() == null)
+                consolidationDetails.setAllocations(new Allocations());
             if (consolidationDetails.getAchievedQuantities().getConsolidatedWeightUnit() != null && consolidationDetails.getAllocations().getWeightUnit() != null) {
                 BigDecimal consolidatedWeight = new BigDecimal(convertUnit(Constants.MASS, consolidationDetails.getAchievedQuantities().getConsolidatedWeight(), consolidationDetails.getAchievedQuantities().getConsolidatedWeightUnit(), Constants.WEIGHT_UNIT_KG).toString());
                 BigDecimal weight = new BigDecimal(convertUnit(Constants.MASS, consolidationDetails.getAllocations().getWeight(), consolidationDetails.getAllocations().getWeightUnit(), Constants.WEIGHT_UNIT_KG).toString());
@@ -1192,6 +1194,8 @@ public class ConsolidationService implements IConsolidationService {
             else {
                 response.setSummaryShipmentsCount(0);
             }
+            if(consolidationDetails.getAchievedQuantities() == null)
+                consolidationDetails.setAchievedQuantities(new AchievedQuantities());
             consolidationDetails.getAchievedQuantities().setConsolidatedWeight(sumWeight);
             consolidationDetails.getAchievedQuantities().setConsolidatedWeightUnit(weightChargeableUnit);
             consolidationDetails.getAchievedQuantities().setConsolidatedVolume(sumVolume);
@@ -1767,10 +1771,20 @@ public class ConsolidationService implements IConsolidationService {
             this.addAllCommodityTypesInSingleCall(consolidationDetails, consolidationDetailsResponse);
             this.addAllTenantDataInSingleCall(consolidationDetails, consolidationDetailsResponse);
             this.addAllWarehouseDataInSingleCall(consolidationDetails, consolidationDetailsResponse);
-            consolidationDetailsResponse.setContainerSummary(containerService.calculateContainerSummary(consolidationDetails.getContainersList(), consolidationDetails.getTransportMode(), consolidationDetails.getContainerCategory()));
-            consolidationDetailsResponse.setPackSummary(packingService.calculatePackSummary(consolidationDetails.getPackingList(), consolidationDetails.getTransportMode(), consolidationDetails.getContainerCategory()));
+            this.calculationsOnRetrieve(consolidationDetails, consolidationDetailsResponse);
         }  catch (Exception ex) {
             log.error("Request: {} || Error occured for event: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), IntegrationType.MASTER_DATA_FETCH_FOR_CONSOLIDATION_RETRIEVE, ex.getLocalizedMessage());
+        }
+    }
+
+    private void calculationsOnRetrieve(ConsolidationDetails consolidationDetails, ConsolidationDetailsResponse consolidationDetailsResponse) {
+        try {
+            consolidationDetailsResponse.setContainerSummary(containerService.calculateContainerSummary(consolidationDetails.getContainersList(), consolidationDetails.getTransportMode(), consolidationDetails.getContainerCategory()));
+            consolidationDetailsResponse.setPackSummary(packingService.calculatePackSummary(consolidationDetails.getPackingList(), consolidationDetails.getTransportMode(), consolidationDetails.getContainerCategory()));
+            calculateChargeable(CommonRequestModel.buildRequest(jsonHelper.convertValue(consolidationDetailsResponse, ConsoleCalculationsRequest.class)));
+        }
+        catch (Exception e) {
+            log.error("Error in calculations while creating console response payload");
         }
     }
 
