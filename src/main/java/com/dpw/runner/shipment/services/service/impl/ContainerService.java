@@ -10,9 +10,9 @@ import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.config.SyncConfig;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
-import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerAssignRequest;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerAssignListRequest;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerNumberCheckResponse;
-import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerPackAssignDetachRequest;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerPackADInShipmentRequest;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerSummaryResponse;
 import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
 import com.dpw.runner.shipment.services.dto.request.EventsRequest;
@@ -491,17 +491,43 @@ public class ContainerService implements IContainerService {
             if(!IsStringNullOrEmpty(container.getAchievedVolumeUnit()) && !IsStringNullOrEmpty(container.getAllocatedVolumeUnit()) && !container.getAchievedVolumeUnit().equals(container.getAllocatedVolumeUnit())) {
                 BigDecimal val = new BigDecimal(convertUnit(Constants.VOLUME, container.getAchievedVolume(), container.getAchievedVolumeUnit(), container.getAllocatedVolumeUnit()).toString());
                 container.setAchievedVolume(val);
-                container.setAchievedVolumeUnit(container.getAllocatedVolumeUnit());
             }
             if(!IsStringNullOrEmpty(container.getAchievedWeightUnit()) && !IsStringNullOrEmpty(container.getAllocatedWeightUnit()) && !container.getAchievedWeightUnit().equals(container.getAllocatedWeightUnit())) {
                 BigDecimal val = new BigDecimal(convertUnit(Constants.MASS, container.getAchievedWeight(), container.getAchievedWeightUnit(), container.getAllocatedWeightUnit()).toString());
                 container.setAchievedWeight(val);
-                container.setAchievedWeightUnit(container.getAllocatedWeightUnit());
             }
+            container.setAchievedVolumeUnit(container.getAllocatedVolumeUnit());
+            container.setAchievedWeightUnit(container.getAllocatedWeightUnit());
+            container = calculateUtilization(container);
             return container;
         } catch (Exception e) {
             throw new Exception(e);
         }
+    }
+
+    @Override
+    public Containers calculateUtilization(Containers container) {
+        if(container.getAchievedVolume() == null)
+            container.setAchievedVolume(BigDecimal.ZERO);
+        if(container.getAchievedWeight() == null)
+            container.setAchievedWeight(BigDecimal.ZERO);
+        if(container.getAllocatedWeight() != null) {
+            if(container.getAchievedWeight().compareTo(container.getAllocatedWeight()) > 0)
+                container.setWeightUtilization("100");
+            else
+                container.setWeightUtilization(((container.getAchievedWeight().divide(container.getAllocatedWeight())).multiply(new BigDecimal(100))).toString());
+        }
+        else
+            container.setWeightUtilization("0");
+        if(container.getAllocatedVolume() != null) {
+            if(container.getAchievedVolume().compareTo(container.getAllocatedVolume()) > 0)
+                container.setVolumeUtilization("100");
+            else
+                container.setVolumeUtilization(((container.getAchievedVolume().divide(container.getAllocatedVolume())).multiply(new BigDecimal(100))).toString());
+        }
+        else
+            container.setVolumeUtilization("0");
+        return container;
     }
 
     @Override
@@ -520,45 +546,45 @@ public class ContainerService implements IContainerService {
         }
     }
 
-    @Override
-    public ResponseEntity<?> calculateAchievedQuantity_onPackAssign(CommonRequestModel commonRequestModel) {
-        String responseMsg;
-        try {
-            ContainerPackAssignDetachRequest request = (ContainerPackAssignDetachRequest) commonRequestModel.getData();
-
-            Optional<Containers> containersOptional = containerDao.findById(request.getContainerId());
-            if(containersOptional.isPresent()) {
-                Containers container = containersOptional.get();
-                changeAchievedUnit(container);
-                ListCommonRequest listCommonRequest = constructListCommonRequest("id", request.getPacksId(), "IN");
-                Pair<Specification<Packing>, Pageable> pair = fetchData(listCommonRequest, Packing.class);
-                Page<Packing> packings = packingDao.findAll(pair.getLeft(), pair.getRight());
-                if(!packings.isEmpty() && packings.get().findAny().isPresent()) {
-                    List<Packing> packingList = packings.stream().toList();
-                    for(Packing packing: packingList) {
-                        if(packing.getWeight() != null && !packing.getWeightUnit().isEmpty() && !IsStringNullOrEmpty(container.getAchievedWeightUnit())) {
-                            BigDecimal val = new BigDecimal(convertUnit(Constants.MASS, packing.getWeight(), packing.getWeightUnit(), container.getAchievedWeightUnit()).toString());
-                            container.setAchievedWeight(container.getAchievedWeight().add(val));
-                            container.setWeightUtilization(((container.getAchievedWeight().divide(container.getAllocatedWeight())).multiply(new BigDecimal(100))).toString());
-                        }
-                        if(packing.getVolume() != null && !packing.getVolumeUnit().isEmpty() && !IsStringNullOrEmpty(container.getAchievedVolumeUnit())) {
-                            BigDecimal val = new BigDecimal(convertUnit(Constants.VOLUME, packing.getVolume(), packing.getVolumeUnit(), container.getAchievedVolumeUnit()).toString());
-                            container.setAchievedVolume(container.getAchievedVolume().add(val));
-                            container.setVolumeUtilization(((container.getAchievedVolume().divide(container.getAllocatedVolume())).multiply(new BigDecimal(100))).toString());
-                        }
-                    }
-                    return assignContainers(packingList, container, request.getShipmentId());
-                }
-            }
-            responseMsg = "Data not available for provided request";
-            throw new DataRetrievalFailureException(responseMsg);
-        } catch (Exception e) {
-            responseMsg = e.getMessage() != null ? e.getMessage()
-                    : DaoConstants.DAO_CALCULATION_ERROR;
-            log.error(responseMsg, e);
-            return ResponseHelper.buildFailedResponse(responseMsg);
-        }
-    }
+//    @Override
+//    public ResponseEntity<?> calculateAchievedQuantity_onPackAssign(CommonRequestModel commonRequestModel) {
+//        String responseMsg;
+//        try {
+//            ContainerPackADInShipmentRequest request = (ContainerPackADInShipmentRequest) commonRequestModel.getData();
+//
+//            Optional<Containers> containersOptional = containerDao.findById(request.getContainerId());
+//            if(containersOptional.isPresent()) {
+//                Containers container = containersOptional.get();
+//                changeAchievedUnit(container);
+//                ListCommonRequest listCommonRequest = constructListCommonRequest("id", request.getPacksId(), "IN");
+//                Pair<Specification<Packing>, Pageable> pair = fetchData(listCommonRequest, Packing.class);
+//                Page<Packing> packings = packingDao.findAll(pair.getLeft(), pair.getRight());
+//                if(!packings.isEmpty() && packings.get().findAny().isPresent()) {
+//                    List<Packing> packingList = packings.stream().toList();
+//                    for(Packing packing: packingList) {
+//                        if(packing.getWeight() != null && !packing.getWeightUnit().isEmpty() && !IsStringNullOrEmpty(container.getAchievedWeightUnit())) {
+//                            BigDecimal val = new BigDecimal(convertUnit(Constants.MASS, packing.getWeight(), packing.getWeightUnit(), container.getAchievedWeightUnit()).toString());
+//                            container.setAchievedWeight(container.getAchievedWeight().add(val));
+//                            container.setWeightUtilization(((container.getAchievedWeight().divide(container.getAllocatedWeight())).multiply(new BigDecimal(100))).toString());
+//                        }
+//                        if(packing.getVolume() != null && !packing.getVolumeUnit().isEmpty() && !IsStringNullOrEmpty(container.getAchievedVolumeUnit())) {
+//                            BigDecimal val = new BigDecimal(convertUnit(Constants.VOLUME, packing.getVolume(), packing.getVolumeUnit(), container.getAchievedVolumeUnit()).toString());
+//                            container.setAchievedVolume(container.getAchievedVolume().add(val));
+//                            container.setVolumeUtilization(((container.getAchievedVolume().divide(container.getAllocatedVolume())).multiply(new BigDecimal(100))).toString());
+//                        }
+//                    }
+//                    return assignContainers(packingList, container, request.getShipmentId());
+//                }
+//            }
+//            responseMsg = "Data not available for provided request";
+//            throw new DataRetrievalFailureException(responseMsg);
+//        } catch (Exception e) {
+//            responseMsg = e.getMessage() != null ? e.getMessage()
+//                    : DaoConstants.DAO_CALCULATION_ERROR;
+//            log.error(responseMsg, e);
+//            return ResponseHelper.buildFailedResponse(responseMsg);
+//        }
+//    }
 
     public ResponseEntity<?> assignContainers(List<Packing> packingList, Containers container, Long shipmentId) {
         String responseMsg;
@@ -583,7 +609,7 @@ public class ContainerService implements IContainerService {
     public ResponseEntity<?> calculateAchievedQuantity_onPackDetach(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
-            ContainerPackAssignDetachRequest request = (ContainerPackAssignDetachRequest) commonRequestModel.getData();
+            ContainerPackADInShipmentRequest request = (ContainerPackADInShipmentRequest) commonRequestModel.getData();
 
             Optional<Containers> containersOptional = containerDao.findById(request.getContainerId());
             if(containersOptional.isPresent()) {
@@ -654,7 +680,7 @@ public class ContainerService implements IContainerService {
         boolean IsConsolidatorFlag = shipmentSettingsDetails.getIsConsolidator() != null && shipmentSettingsDetails.getIsConsolidator();
         List<Containers> containersList = new ArrayList<>();
         try {
-            ContainerAssignRequest containerAssignRequest = (ContainerAssignRequest) commonRequestModel.getData();
+            ContainerAssignListRequest containerAssignRequest = (ContainerAssignListRequest) commonRequestModel.getData();
             Long shipmentId = containerAssignRequest.getShipmentId();
             Long consolidationId = containerAssignRequest.getConsolidationId();
             if (lclAndSeaOrRoadFlag) {

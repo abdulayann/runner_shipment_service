@@ -14,7 +14,7 @@ import java.util.List;
 public interface IContainerService extends ICommonService {
     ResponseEntity<?> calculateAchieved_AllocatedForSameUnit(CommonRequestModel commonRequestModel);
 
-    ResponseEntity<?> calculateAchievedQuantity_onPackAssign(CommonRequestModel commonRequestModel);
+//    ResponseEntity<?> calculateAchievedQuantity_onPackAssign(CommonRequestModel commonRequestModel);
 
     ResponseEntity<?> calculateAchievedQuantity_onPackDetach(CommonRequestModel commonRequestModel);
 
@@ -43,4 +43,5 @@ public interface IContainerService extends ICommonService {
     ResponseEntity<?> getContainers(CommonRequestModel commonRequestModel);
 
     ContainerSummaryResponse calculateContainerSummary(List<Containers> containersList, String transportMode, String containerCategory) throws Exception;
+    Containers calculateUtilization(Containers container);
 }
