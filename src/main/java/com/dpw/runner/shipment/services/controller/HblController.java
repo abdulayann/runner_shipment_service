@@ -108,10 +108,10 @@ public class HblController {
             @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
     })
     @PostMapping(ApiConstants.API_SAVE_FROM_V1)
-    public ResponseEntity<RunnerResponse<HblResponse>> saveV1Hbl(@RequestBody @Valid HblRequestV2 request) {
+    public ResponseEntity<RunnerResponse<HblResponse>> saveV1Hbl(@RequestBody @Valid HblRequestV2 request, @RequestParam(required = false, defaultValue = "true") boolean checkForSync) {
         String responseMsg;
         try {
-            return (ResponseEntity<RunnerResponse<HblResponse>>) hblService.saveV1Hbl(CommonRequestModel.buildRequest(request), true);
+            return (ResponseEntity<RunnerResponse<HblResponse>>) hblService.saveV1Hbl(CommonRequestModel.buildRequest(request), checkForSync);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
