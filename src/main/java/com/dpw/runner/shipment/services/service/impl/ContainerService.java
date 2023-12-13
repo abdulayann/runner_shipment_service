@@ -515,7 +515,7 @@ public class ContainerService implements IContainerService {
             if(container.getAchievedWeight().compareTo(container.getAllocatedWeight()) > 0)
                 container.setWeightUtilization("100");
             else
-                container.setWeightUtilization(((container.getAchievedWeight().divide(container.getAllocatedWeight())).multiply(new BigDecimal(100))).toString());
+                container.setWeightUtilization( String.valueOf((container.getAchievedWeight().divide(container.getAllocatedWeight())).multiply(new BigDecimal(100)).doubleValue()) );
         }
         else
             container.setWeightUtilization("0");
@@ -523,7 +523,7 @@ public class ContainerService implements IContainerService {
             if(container.getAchievedVolume().compareTo(container.getAllocatedVolume()) > 0)
                 container.setVolumeUtilization("100");
             else
-                container.setVolumeUtilization(((container.getAchievedVolume().divide(container.getAllocatedVolume())).multiply(new BigDecimal(100))).toString());
+                container.setVolumeUtilization( String.valueOf((container.getAchievedVolume().divide(container.getAllocatedVolume())).multiply(new BigDecimal(100)).doubleValue()) );
         }
         else
             container.setVolumeUtilization("0");
