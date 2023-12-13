@@ -615,6 +615,7 @@ public class ContainerService implements IContainerService {
             if(containersOptional.isPresent()) {
                 Containers container = containersOptional.get();
                 changeAchievedUnit(container);
+                ShipmentDetails shipmentDetails = shipmentDao.findById(request.getShipmentId()).get();
                 if(request.getPacksId() != null && request.getPacksId().size() > 0) {
                     ListCommonRequest listCommonRequest = constructListCommonRequest("id", request.getPacksId(), "IN");
                     Pair<Specification<Packing>, Pageable> pair = fetchData(listCommonRequest, Packing.class);
@@ -623,21 +624,52 @@ public class ContainerService implements IContainerService {
                     {
                         List<Packing> packingList = packings.stream().toList();
                         for(Packing packing: packingList) {
-                            if(packing.getWeight() != null && !packing.getWeightUnit().isEmpty() && !IsStringNullOrEmpty(container.getAchievedWeightUnit())) {
-                                BigDecimal val = new BigDecimal(convertUnit(Constants.MASS, packing.getWeight(), packing.getWeightUnit(), container.getAchievedWeightUnit()).toString());
-                                container.setAchievedWeight(container.getAchievedWeight().subtract(val));
-                                container.setWeightUtilization( String.valueOf((container.getAchievedWeight().divide(container.getAllocatedWeight())).multiply(new BigDecimal(100)).doubleValue()) );
+                            if(!shipmentDetails.getShipmentType().equals(Constants.CARGO_TYPE_FCL)) {
+                                if(packing.getWeight() != null && !packing.getWeightUnit().isEmpty() && !IsStringNullOrEmpty(container.getAchievedWeightUnit())) {
+                                    BigDecimal val = new BigDecimal(convertUnit(Constants.MASS, packing.getWeight(), packing.getWeightUnit(), container.getAchievedWeightUnit()).toString());
+                                    container.setAchievedWeight(container.getAchievedWeight().subtract(val));
+                                    container.setWeightUtilization( String.valueOf((container.getAchievedWeight().divide(container.getAllocatedWeight())).multiply(new BigDecimal(100)).doubleValue()) );
+                                }
+                                if(packing.getVolume() != null && !packing.getVolumeUnit().isEmpty() && !IsStringNullOrEmpty(container.getAchievedVolumeUnit())) {
+                                    BigDecimal val = new BigDecimal(convertUnit(Constants.VOLUME, packing.getVolume(), packing.getVolumeUnit(), container.getAchievedVolumeUnit()).toString());
+                                    container.setAchievedVolume(container.getAchievedVolume().subtract(val));
+                                    container.setVolumeUtilization( String.valueOf((container.getAchievedVolume().divide(container.getAllocatedVolume())).multiply(new BigDecimal(100)).doubleValue()) );
+                                }
                             }
-                            if(packing.getVolume() != null && !packing.getVolumeUnit().isEmpty() && !IsStringNullOrEmpty(container.getAchievedVolumeUnit())) {
-                                BigDecimal val = new BigDecimal(convertUnit(Constants.VOLUME, packing.getVolume(), packing.getVolumeUnit(), container.getAchievedVolumeUnit()).toString());
-                                container.setAchievedVolume(container.getAchievedVolume().subtract(val));
-                                container.setVolumeUtilization( String.valueOf((container.getAchievedVolume().divide(container.getAllocatedVolume())).multiply(new BigDecimal(100)).doubleValue()) );
+                        }
+                        if(shipmentDetails.getShipmentType().equals(Constants.CARGO_TYPE_FCL)) {
+                            listCommonRequest = constructListCommonRequest("shipmentId", shipmentDetails.getId(), "=");
+                            pair = fetchData(listCommonRequest, Packing.class);
+                            Page<Packing> allPackings = packingDao.findAll(pair.getLeft(), pair.getRight());
+                            boolean removeAllPacks = true;
+                            if(allPackings != null) {
+                                allPackings.getContent();
+                                if (allPackings.getContent().size() > 0) {
+                                    for (Packing packing : allPackings.getContent()) {
+                                        if (!request.getPacksId().contains(packing.getId()) && Objects.equals(packing.getContainerId(), container.getId())) {
+                                            removeAllPacks = false;
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                            if(removeAllPacks) {
+                                container.setAchievedWeight(BigDecimal.ZERO);
+                                container.setAchievedVolume(BigDecimal.ZERO);
+                                container.setWeightUtilization("0");
+                                container.setVolumeUtilization("0");
                             }
                         }
                         return detachContainer(packingList, container, request.getShipmentId());
                     }
                 }
                 else {
+                    if(shipmentDetails.getShipmentType().equals(Constants.CARGO_TYPE_FCL)) {
+                        container.setAchievedWeight(BigDecimal.ZERO);
+                        container.setAchievedVolume(BigDecimal.ZERO);
+                        container.setWeightUtilization("0");
+                        container.setVolumeUtilization("0");
+                    }
                     return detachContainer(null, container, request.getShipmentId());
                 }
             }
