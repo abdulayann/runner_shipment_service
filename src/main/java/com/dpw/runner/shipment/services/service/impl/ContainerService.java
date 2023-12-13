@@ -626,12 +626,12 @@ public class ContainerService implements IContainerService {
                             if(packing.getWeight() != null && !packing.getWeightUnit().isEmpty() && !IsStringNullOrEmpty(container.getAchievedWeightUnit())) {
                                 BigDecimal val = new BigDecimal(convertUnit(Constants.MASS, packing.getWeight(), packing.getWeightUnit(), container.getAchievedWeightUnit()).toString());
                                 container.setAchievedWeight(container.getAchievedWeight().subtract(val));
-                                container.setWeightUtilization(((container.getAchievedWeight().divide(container.getAllocatedWeight())).multiply(new BigDecimal(100))).toString());
+                                container.setWeightUtilization( String.valueOf((container.getAchievedWeight().divide(container.getAllocatedWeight())).multiply(new BigDecimal(100)).doubleValue()) );
                             }
                             if(packing.getVolume() != null && !packing.getVolumeUnit().isEmpty() && !IsStringNullOrEmpty(container.getAchievedVolumeUnit())) {
                                 BigDecimal val = new BigDecimal(convertUnit(Constants.VOLUME, packing.getVolume(), packing.getVolumeUnit(), container.getAchievedVolumeUnit()).toString());
                                 container.setAchievedVolume(container.getAchievedVolume().subtract(val));
-                                container.setVolumeUtilization(((container.getAchievedVolume().divide(container.getAllocatedVolume())).multiply(new BigDecimal(100))).toString());
+                                container.setVolumeUtilization( String.valueOf((container.getAchievedVolume().divide(container.getAllocatedVolume())).multiply(new BigDecimal(100)).doubleValue()) );
                             }
                         }
                         return detachContainer(packingList, container, request.getShipmentId());
