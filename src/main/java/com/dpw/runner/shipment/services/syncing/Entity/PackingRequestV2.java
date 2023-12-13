@@ -117,4 +117,6 @@ public class PackingRequestV2 implements IRunnerRequest {
     private UUID ShipmentGuid;
     @JsonProperty("ConsolidationGuid")
     private UUID ConsolidationGuid;
+    @JsonProperty("HandlingInfo")
+    private String HandlingInfo;
 }
