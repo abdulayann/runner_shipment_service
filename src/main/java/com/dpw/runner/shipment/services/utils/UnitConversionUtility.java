@@ -11,6 +11,8 @@ import javax.measure.Unit;
 import javax.measure.UnitConverter;
 import java.math.BigDecimal;
 
+import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
+
 @Slf4j
 @Component
 public class UnitConversionUtility {
@@ -19,6 +21,9 @@ public class UnitConversionUtility {
         try {
             if(value == null)
                 return 0;
+            if(IsStringNullOrEmpty(fromUnit) || IsStringNullOrEmpty(toUnit)) {
+                return value;
+            }
             Unit<?> sourceUnit = getUnitType(type, fromUnit);
             Unit<?> targetUnit = getUnitType(type, toUnit);
             UnitConverter converter = sourceUnit.getConverterToAny(targetUnit);
