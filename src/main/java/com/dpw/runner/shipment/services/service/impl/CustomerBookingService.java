@@ -792,7 +792,7 @@ public class CustomerBookingService implements ICustomerBookingService {
         if (request.getCustomer() != null) {
             String orgCode = request.getCustomer().getOrgCode();
             String addressCode = request.getCustomer().getAddressCode();
-            transformOrgAndAddressPayload(request.getCustomer(), addressCode, orgCode);
+            bookingIntegrationsUtility.transformOrgAndAddressPayload(request.getCustomer(), addressCode, orgCode);
         }
         if ((Objects.isNull(request.getIsConsignorFreeText()) || request.getIsConsignorFreeText()) && request.getConsignor() != null) {
             transformOrgAndAddressToRawData(request.getConsignor());
@@ -809,12 +809,12 @@ public class CustomerBookingService implements ICustomerBookingService {
                 if (charge.getCreditor() != null) {
                     String orgCode = charge.getCreditor().getOrgCode();
                     String addressCode = charge.getCreditor().getAddressCode();
-                    transformOrgAndAddressPayload(charge.getCreditor(), addressCode, orgCode);
+                    bookingIntegrationsUtility.transformOrgAndAddressPayload(charge.getCreditor(), addressCode, orgCode);
                 }
                 if (charge.getDebtor() != null) {
                     String orgCode = charge.getDebtor().getOrgCode();
                     String addressCode = charge.getDebtor().getAddressCode();
-                    transformOrgAndAddressPayload(charge.getDebtor(), addressCode, orgCode);
+                    bookingIntegrationsUtility.transformOrgAndAddressPayload(charge.getDebtor(), addressCode, orgCode);
                 } else {
                     if (charge.getCreditor() != null)
                         charge.setDebtor(charge.getCreditor());
@@ -862,82 +862,7 @@ public class CustomerBookingService implements ICustomerBookingService {
         partiesRequest.setAddressData(Map.of(PartiesConstants.RAW_DATA, addressString));
     }
 
-    private void transformOrgAndAddressPayload(PartiesRequest request, String addressCode, String orgCode) {
 
-        CRPRetrieveRequest retrieveRequest = CRPRetrieveRequest.builder().searchString(orgCode).build();
-        var response = new CRPRetrieveResponse();
-        try {
-            ResponseEntity<DependentServiceResponse> crpResponse = (ResponseEntity<DependentServiceResponse>) crpServiceAdapter.retrieveCRPService(CommonRequestModel.buildRequest(retrieveRequest));
-            response = modelMapper.map(crpResponse.getBody().getData(), CRPRetrieveResponse.class);
-        } catch (Exception e) {
-            log.error("CRP Retrieve failed due to: " + e.getMessage());
-            throw new CRPException(e.getMessage());
-        }
-        if (response == null) {
-            log.error("No organization exist in CRP with OrgCode: " + orgCode);
-            throw new DataRetrievalFailureException("No organization exist in CRP with OrgCode: " + orgCode);
-        }
-
-        Map<String, Object> orgData = new HashMap<>();
-        Map<String, Object> addressData = new HashMap<>();
-        CRPRetrieveResponse.CRPAddressDetails crpAddressDetails = new CRPRetrieveResponse.CRPAddressDetails();
-        if (response.getCompanyOfficeDetails() != null) {
-            List<CRPRetrieveResponse.CRPAddressDetails> crpAddressDetailsList = response.getCompanyOfficeDetails().stream().filter(x -> Objects.equals(x.getOfficeReference(), addressCode)).collect(Collectors.toList());
-            if (!crpAddressDetailsList.isEmpty())
-                crpAddressDetails = crpAddressDetailsList.get(0);
-        }
-        String customerIdentifier = null;
-        if (response.getCompanyAttributesDetails() != null) {
-            List<CRPRetrieveResponse.CompanyAttributesDetail> companyAttributesDetailList = response.getCompanyAttributesDetails().stream().filter(x -> x.getAttributeNameAttributeValuePair() != null && Objects.equals(x.getAttributeNameAttributeValuePair().getKey(), PartiesConstants.ACCOUNT_ID)).toList();
-            if (!companyAttributesDetailList.isEmpty()) {
-                customerIdentifier = companyAttributesDetailList.get(0).getAttributeNameAttributeValuePair().getValue();
-            }
-        }
-
-        String fusionSiteIdentifier = null;
-        String billableFlag = "";
-        if (response.getCompanyCodeIssuerDetails() != null) {
-            List<CRPRetrieveResponse.CompanyCodeIssuerDetails> companyCodeIssuerDetailsList = response.getCompanyCodeIssuerDetails().stream().filter(x -> Objects.equals(x.getIdentifierValue(), addressCode)).collect(Collectors.toList());
-            if (!companyCodeIssuerDetailsList.isEmpty()) {
-                var fusionSiteIdList = companyCodeIssuerDetailsList.stream().filter(x -> Objects.equals(x.getIdentifierCodeType(), PartiesConstants.FUSION_BILL_TO_SITE_NUMBER) && Objects.equals(x.getIdentifierIssuedBy(), PartiesConstants.FUSION)).collect(Collectors.toList());
-                var billableFlagList = companyCodeIssuerDetailsList.stream().filter(x -> Objects.equals(x.getIdentifierCodeType(), PartiesConstants.BILLABLE_FLAG)).collect(Collectors.toList());
-                if (!fusionSiteIdList.isEmpty())
-                    fusionSiteIdentifier = fusionSiteIdList.get(0).getIdentifierCode();
-                if (!billableFlagList.isEmpty())
-                    billableFlag = billableFlagList.get(0).getIdentifierCode();
-            }
-        }
-
-        orgData.put(PartiesConstants.ORGANIZATION_CODE, response.getCompanyReference());
-        orgData.put(PartiesConstants.FULLNAME, response.getCompanyName());
-        orgData.put(PartiesConstants.ADDRESS1, response.getAddressLine1());
-        orgData.put(PartiesConstants.ADDRESS2, response.getAddressLine2());
-        orgData.put(PartiesConstants.COUNTRY, response.getCountryCode());
-        orgData.put(PartiesConstants.CITY_CODE, response.getCityName());
-        orgData.put(PartiesConstants.STATE, response.getStateName());
-        orgData.put(PartiesConstants.ZIP_POST_CODE, response.getPostalCode());
-        orgData.put(PartiesConstants.MOBILE, response.getContactNumber());
-        orgData.put(PartiesConstants.EMAIL, response.getCompanyEmail());
-        orgData.put(PartiesConstants.ACTIVE_CLIENT, true);
-        orgData.put(PartiesConstants.DEFAULT_ADDRESS_SITE_IDENTIFIER, fusionSiteIdentifier);
-        orgData.put(PartiesConstants.RECEIVABLES, true);     // This is hardcoded to true in case of CRP as asked by product
-        orgData.put(PartiesConstants.CUSTOMER_IDENTIFIER, customerIdentifier);
-
-        request.setOrgData(orgData);
-
-        addressData.put(PartiesConstants.ADDRESS_SHORT_CODE, crpAddressDetails.getOfficeReference());
-        addressData.put(PartiesConstants.COMPANY_NAME, crpAddressDetails.getOfficeName());
-        addressData.put(PartiesConstants.SITE_IDENTIFIER, fusionSiteIdentifier);
-        addressData.put(PartiesConstants.ADDRESS1, crpAddressDetails.getAddress());
-        addressData.put(PartiesConstants.COUNTRY, response.getCountryCode());
-        addressData.put(PartiesConstants.CITY, crpAddressDetails.getCityName());
-        addressData.put(PartiesConstants.STATE, crpAddressDetails.getStateName());
-        addressData.put(PartiesConstants.ZIP_POST_CODE, crpAddressDetails.getPostalCode());
-        addressData.put(PartiesConstants.MOBILE, response.getContactNumber());
-        addressData.put(PartiesConstants.EMAIL, crpAddressDetails.getOfficeEmail());
-
-        request.setAddressData(addressData);
-    }
 
     private CustomerBookingResponse updatePlatformBooking(CustomerBookingRequest request, CustomerBooking oldEntity) throws Exception {
         CustomerBooking customerBooking = jsonHelper.convertValue(request, CustomerBooking.class);
