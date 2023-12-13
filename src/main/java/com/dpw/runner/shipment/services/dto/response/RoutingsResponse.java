@@ -48,6 +48,7 @@ public class RoutingsResponse implements IRunnerResponse {
     private Long vesselId;
     private Long transitDays;
     private String carrier;
+    private String truckReferenceNumber;
     public Map<String, String> unlocationData;
     public Map<String, String> masterData;
     public Map<String, String> carrierMasterData;
