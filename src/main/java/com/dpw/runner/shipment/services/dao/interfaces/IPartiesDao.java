@@ -14,4 +14,7 @@ public interface IPartiesDao {
     Page<Parties> findAll(Specification<Parties> spec, Pageable pageable);
     Optional<Parties> findById(Long id);
     void delete(Parties parties);
+    List<Parties> updateEntityFromOtherEntity(List<Parties> partiesList, Long entityId, String entityType) throws Exception;
+    List<Parties> saveEntityFromOtherEntity(List<Parties> partiesRequests, Long entityId, String entityType);
+    List<Parties> updateEntityFromOtherEntity(List<Parties> partiesList, Long entityId, String entityType, List<Parties> oldEntityList) throws Exception;
 }

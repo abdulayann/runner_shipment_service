@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.io.Serializable;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -14,7 +15,7 @@ import java.util.Map;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class UsersDto {
+public class UsersDto implements Serializable {
 
     private Integer Id;
     public String Username;
@@ -22,8 +23,9 @@ public class UsersDto {
     public String Email;
     public Boolean IsAdmin;;
     public Integer TenantId;
+    public String Code; //Tenant Code
+    public String CompanyCode;
     public String TenantDisplayName;
-    public String Code;
     public String TenantLogo;
     public String TenantPrintLogo;
     public String TenantCountryCode;
@@ -79,5 +81,6 @@ public class UsersDto {
     public Boolean UnicoRelated;
     public String AgentIATACode;
     public String AgentCASSCode;
+    public Integer SyncTenantId;
 
 }

@@ -1,0 +1,49 @@
+trigger: none
+pool:
+  name: Cargoes Runner
+name: $(Build.SourceBranchName)_$(Rev:r)
+
+variables:
+  - group: cargoesrunner-prod-secrets
+  - name: ServerName
+    value: 'db-postgres-cargoes-runner-prod.postgres.database.azure.com'
+  - name: DatabaseName
+    value: 'shipment_service_prod'
+
+
+
+steps:
+  - script: |
+      if [[ ! -z "$(SQLFile)" ]]; then  
+        export PGPASSWORD='$(Runner-Shipment-service-DB-User-Pswd-Prod-Secret)'
+        psql -h $(ServerName) -U "$(Runner-Shipment-service-DB-UserId-Prod-Secret)" -d $(DatabaseName) -a -f DBPatch/$(SQLFile) > temp.log 2>&1
+        exit_code=$?
+        echo $exit_code
+
+        echo "***************************************Output Log Start**********************************************"
+        cat temp.log
+        echo "***************************************Output Log End************************************************"
+
+        if grep -q 'ERROR:' temp.log; then
+          exit_code=3  # Set your own exit code for SQL errors
+        fi
+        if [ $exit_code -eq 0 ]; then
+          echo "***** psql executed successfully *****"
+        elif [ $exit_code -eq 1 ]; then
+          echo "***** fatal error *****"
+          exit 1
+        elif [ $exit_code -eq 2 ]; then
+          echo "***** server connection error *****"
+          exit 1
+        elif [ $exit_code -eq 3 ]; then
+          echo "**** There are errors in the script.Please check log file *****"
+          exit 1
+        else
+          echo "***** psql encountered an error *****"
+          exit 1
+        fi  
+      else
+        echo "***** SQLFile can't be empty*****"
+        exit 1 
+      fi
+    displayName: Run psql

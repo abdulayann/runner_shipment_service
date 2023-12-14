@@ -4,7 +4,11 @@ import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IHblTermsConditionTemplateDao;
 import com.dpw.runner.shipment.services.entity.HblTermsConditionTemplate;
+import com.dpw.runner.shipment.services.entity.enums.TypeOfHblPrint;
 import com.dpw.runner.shipment.services.repository.interfaces.IHblTermsConditionTemplateRepository;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
+import com.dpw.runner.shipment.services.utils.ObjectUtility;
+import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -115,5 +119,19 @@ public class HblTermsConditionTemplateDao implements IHblTermsConditionTemplateD
                     : DaoConstants.DAO_GENERIC_DELETE_EXCEPTION_MSG;
             log.error(responseMsg, e);
         }
+    }
+
+    public HblTermsConditionTemplate getTemplateCode(String templateCode, boolean pageType, String printType)
+    {
+
+        ListCommonRequest listCommonRequest = CommonUtils.andCriteria("templateCode", templateCode, "=", null);
+        CommonUtils.andCriteria("isFrontPrint", pageType, "=", listCommonRequest);
+        CommonUtils.andCriteria("typeOfHblPrint", StringUtility.isNotEmpty(printType) ? printType : TypeOfHblPrint.All.name(), "=", listCommonRequest);
+        Pair<Specification<HblTermsConditionTemplate>, Pageable> pair = fetchData(listCommonRequest, HblTermsConditionTemplate.class);
+        Page<HblTermsConditionTemplate> hblTermsConditionTemplates = findAll(pair.getLeft(), pair.getRight());
+        if(hblTermsConditionTemplates.getContent().size()>0) {
+            return hblTermsConditionTemplates.getContent().get(0);
+        }
+        return null;
     }
 }

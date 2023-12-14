@@ -13,6 +13,7 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 public class EntityTransferOrganizations implements IEntityTranferBaseEntity {
+     public long Id;
     public String OrganizationCode;
     public String OrganizationCategory;
     public String RemoteId;

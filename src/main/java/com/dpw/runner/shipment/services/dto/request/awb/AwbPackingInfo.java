@@ -4,6 +4,7 @@ import io.swagger.annotations.ApiModel;
 import lombok.*;
 
 import java.math.BigDecimal;
+import java.util.UUID;
 
 @Data
 @Builder
@@ -12,6 +13,7 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 @AllArgsConstructor
 public class AwbPackingInfo {
+    private UUID guid;
     private Integer dgGoodsId;
     private Integer dgSubstanceId;
     private String packs;
@@ -38,7 +40,7 @@ public class AwbPackingInfo {
     private Boolean isTemperatureControlled;
     private BigDecimal minTemp;
     private String minTempUnit;
-    private String maxTemp;
+    private BigDecimal maxTemp;
     private String maxTempUnit;
     private String hsCode;
     private String countryCode;
@@ -54,4 +56,5 @@ public class AwbPackingInfo {
     private Integer transportId;
     private String awbNumber;
     private Long mawbGoodsDescId;
+    private UUID awbGoodsDescriptionInfoGuid;
 }

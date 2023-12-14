@@ -4,6 +4,8 @@ import io.swagger.annotations.ApiModel;
 import lombok.*;
 
 import java.math.BigDecimal;
+import java.util.List;
+import java.util.UUID;
 
 @Data
 @Builder
@@ -24,5 +26,8 @@ public class AwbGoodsDescriptionInfo {
     private BigDecimal totalAmount;
     private Integer slaCCode;
     private String hsCode;
+    private UUID guid;
+    private List<AwbPackingInfo> awbPackingInfo;
+    private Boolean isShipmentCreated;
 
 }

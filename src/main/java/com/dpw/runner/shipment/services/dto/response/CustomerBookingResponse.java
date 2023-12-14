@@ -1,8 +1,10 @@
 package com.dpw.runner.shipment.services.dto.response;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.config.CustomLocalDateTimeSerializer;
 import com.dpw.runner.shipment.services.entity.enums.BookingSource;
 import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.swagger.annotations.ApiModel;
 import lombok.*;
 
@@ -33,6 +35,7 @@ public class CustomerBookingResponse implements IRunnerResponse {
     private Boolean isNotifyPartyFreeText;
     private String customerEmail;
     private String bookingNumber;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime bookingDate;
     private String incoTerms;
     private CarrierDetailResponse carrierDetails;
@@ -70,4 +73,6 @@ public class CustomerBookingResponse implements IRunnerResponse {
     private Boolean isConsigneeAddressFreeText;
     private Boolean isCustomerAddressFreeText;
     private Boolean isNotifyPartyAddressFreeText;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    private LocalDateTime shipmentCreatedDate;
 }

@@ -1,18 +1,17 @@
 package com.dpw.runner.shipment.services.controller;
 
-import com.dpw.runner.shipment.services.commons.constants.ApiConstants;
-import com.dpw.runner.shipment.services.commons.constants.Constants;
-import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
-import com.dpw.runner.shipment.services.commons.constants.ViewsConstants;
+import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.ViewsRequest;
+import com.dpw.runner.shipment.services.dto.response.ShipmentSettingsDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.ViewsResponse;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IViewsService;
+import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
 import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
@@ -22,6 +21,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
+import java.util.List;
 
 @SuppressWarnings("ALL")
 @RestController
@@ -63,10 +63,11 @@ public class ViewsController {
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = ViewsConstants.VIEW_RETRIEVE_BY_ID_SUCCESSFUL)})
     @GetMapping(ApiConstants.API_RETRIEVE_BY_ID)
-    public ResponseEntity<RunnerResponse<ViewsResponse>> retrieveById(@ApiParam(value = ViewsConstants.VIEW_ID, required = true) @RequestParam Long id) {
-        CommonGetRequest request = CommonGetRequest.builder().id(id).build();
+    public ResponseEntity<RunnerResponse<ViewsResponse>> retrieveById(@ApiParam(value = ViewsConstants.VIEW_ID, required = true) @RequestParam Long id, @RequestParam(name = "includeColumns", required = false) List<String> includeColumns) {
+        CommonGetRequest request = CommonGetRequest.builder().id(id).includeColumns(includeColumns).build();
         return (ResponseEntity<RunnerResponse<ViewsResponse>>) viewsService.retrieveById(CommonRequestModel.buildRequest(request));
     }
+
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = ViewsConstants.VIEW_UPDATE_SUCCESSFUL, response = RunnerResponse.class)})
     @PutMapping(ApiConstants.API_UPDATE)

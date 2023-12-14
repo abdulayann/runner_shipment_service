@@ -2,14 +2,11 @@ package com.dpw.runner.shipment.services.utils;
 
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
-import io.micrometer.core.instrument.Metrics;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-import tec.units.ri.quantity.Quantities;
 import tec.units.ri.unit.MetricPrefix;
 import tec.units.ri.unit.Units;
 
-import javax.measure.Quantity;
 import javax.measure.Unit;
 import javax.measure.UnitConverter;
 import java.math.BigDecimal;
@@ -20,6 +17,8 @@ public class UnitConversionUtility {
     public static Number convertUnit(String type, BigDecimal value, String fromUnit, String toUnit) throws Exception {
         String responseMsg;
         try {
+            if(value == null)
+                return 0;
             Unit<?> sourceUnit = getUnitType(type, fromUnit);
             Unit<?> targetUnit = getUnitType(type, toUnit);
             UnitConverter converter = sourceUnit.getConverterToAny(targetUnit);
@@ -68,6 +67,41 @@ public class UnitConversionUtility {
                 return Units.GRAM;
             case Constants.METRIC_TON:
                 return MetricPrefix.MEGA(Units.GRAM);
+            case Constants.WEIGHT_UNIT_MG:
+                return Units.GRAM.multiply(0.001);
+            case Constants.WEIGHT_UNIT_UG:
+                return Units.GRAM.multiply(0.000001);
+            case Constants.WEIGHT_UNIT_MC:
+                return Units.GRAM.multiply(0.2);
+            case Constants.WEIGHT_UNIT_HUNDRED_WT_LONG:
+                return Units.GRAM.multiply(50802.35);
+            case Constants.WEIGHT_UNIT_HUNDRED_WT_SHORT:
+                return MetricPrefix.KILO(Units.GRAM).multiply(45.35924);
+            case Constants.WEIGHT_UNIT_LB:
+                return MetricPrefix.KILO(Units.GRAM).multiply(0.4535924);
+            case Constants.WEIGHT_UNIT_LT:
+                return MetricPrefix.KILO(Units.GRAM).multiply(0.3732417);
+            case Constants.WEIGHT_UNIT_OZ:
+                return MetricPrefix.KILO(Units.GRAM).multiply(0.02834952);
+            case Constants.WEIGHT_UNIT_OT:
+                return MetricPrefix.KILO(Units.GRAM).multiply(0.03110348);
+            case Constants.WEIGHT_UNIT_Slug:
+                return MetricPrefix.KILO(Units.GRAM).multiply(14.5939);
+            case Constants.WEIGHT_UNIT_TA:
+                return MetricPrefix.KILO(Units.GRAM).multiply(0.02916667);
+            case Constants.WEIGHT_UNIT_TL:
+                return MetricPrefix.KILO(Units.GRAM).multiply(1016.047);
+            case Constants.WEIGHT_UNIT_TN:
+                return MetricPrefix.KILO(Units.GRAM).multiply(907.1847);
+            case Constants.WEIGHT_UNIT_TM:
+            case Constants.WEIGHT_UNIT_T:
+                return MetricPrefix.KILO(Units.GRAM).multiply(1000);
+            case Constants.WEIGHT_UNIT_HG:
+                return MetricPrefix.KILO(Units.GRAM).multiply(0.10);
+            case Constants.WEIGHT_UNIT_KT:
+                return MetricPrefix.KILO(Units.GRAM).multiply(1000000);
+            case Constants.WEIGHT_UNIT_DT:
+                return MetricPrefix.KILO(Units.GRAM).multiply(100);
             default:
                 throw new IllegalArgumentException(DaoConstants.DAO_UNKNOWN_UNIT + unitSymbol);
         }
@@ -76,9 +110,68 @@ public class UnitConversionUtility {
     private static Unit<?> getVolumeUnitForSymbol(String unitSymbol) {
         switch (unitSymbol) {
             case Constants.VOLUME_UNIT_M3:
+            case Constants.VOLUME_UNIT_Stere:
+            case Constants.VOLUME_UNIT_CBM:
                 return Units.CUBIC_METRE;
             case Constants.VOLUME_UNIT_LITRE:
                 return Units.LITRE;
+            case Constants.VOLUME_UNIT_CC:
+                return Units.CUBIC_METRE.multiply(0.000001);
+            case Constants.VOLUME_UNIT_CM:
+                return Units.CUBIC_METRE.multiply(0.000000001);
+            case Constants.VOLUME_UNIT_AF:
+                return Units.CUBIC_METRE.multiply(1233.482);
+            case Constants.VOLUME_UNIT_Barrel_OIL:
+                return Units.CUBIC_METRE.multiply(0.1589873);
+            case Constants.VOLUME_UNIT_Board_foot:
+                return Units.CUBIC_METRE.multiply(0.002359737);
+            case Constants.VOLUME_UNIT_Bushel_US:
+                return Units.CUBIC_METRE.multiply(0.03523907);
+            case Constants.VOLUME_UNIT_Cup:
+                return Units.CUBIC_METRE.multiply(0.0002365882);
+            case Constants.VOLUME_UNIT_Fluid_OUNCE_US:
+            case Constants.VOLUME_UNIT_Ounce_US_FLD:
+                return Units.CUBIC_METRE.multiply(0.00002957353);
+            case Constants.VOLUME_UNIT_CF:
+                return Units.CUBIC_METRE.multiply(0.02831685);
+            case Constants.VOLUME_UNIT_GI:
+                return Units.CUBIC_METRE.multiply(0.004546087);
+            case Constants.VOLUME_UNIT_GA:
+                return Units.CUBIC_METRE.multiply(0.004404884);
+            case Constants.VOLUME_UNIT_Gallon_US_LIQ:
+                return Units.CUBIC_METRE.multiply(.003785412);
+            case Constants.VOLUME_UNIT_Gill_UK:
+                return Units.CUBIC_METRE.multiply(0.0001420652);
+            case Constants.VOLUME_UNIT_Gill_US:
+                return Units.CUBIC_METRE.multiply(0.0001182941);
+            case Constants.VOLUME_UNIT_CI:
+                return Units.CUBIC_METRE.multiply(0.00001638706);
+            case Constants.VOLUME_UNIT_Liter_OLD:
+                return Units.CUBIC_METRE.multiply(0.001000028);
+            case Constants.VOLUME_UNIT_Ounce_UK_FLD:
+                return Units.CUBIC_METRE.multiply(0.00002841305);
+            case Constants.VOLUME_UNIT_Peck_US:
+                return Units.CUBIC_METRE.multiply(8.8097680E-03);
+            case Constants.VOLUME_UNIT_Pint_US_DRY:
+                return Units.CUBIC_METRE.multiply(0.0005506105);
+            case Constants.VOLUME_UNIT_Pint_US_LIQ:
+                return Units.CUBIC_METRE.multiply(4.7317650E-04);
+            case Constants.VOLUME_UNIT_Quart_US_DRY:
+                return Units.CUBIC_METRE.multiply(0.001101221);
+            case Constants.VOLUME_UNIT_Quart_US_LIQ:
+                return Units.CUBIC_METRE.multiply(9.46353E-04);
+            case Constants.VOLUME_UNIT_Tablespoon:
+                return Units.CUBIC_METRE.multiply(0.00001478676);
+            case Constants.VOLUME_UNIT_Teaspoon:
+                return Units.CUBIC_METRE.multiply(0.000004928922);
+            case Constants.VOLUME_UNIT_TON_REGISTER:
+                return Units.CUBIC_METRE.multiply(2.831685);
+            case Constants.VOLUME_UNIT_CY:
+                return Units.CUBIC_METRE.multiply(0.7645549);
+            case Constants.VOLUME_UNIT_ML:
+                return Units.CUBIC_METRE.multiply(1000);
+            case Constants.VOLUME_UNIT_D3:
+                return Units.CUBIC_METRE.multiply(0.001);
             default:
                 throw new IllegalArgumentException(DaoConstants.DAO_UNKNOWN_UNIT + unitSymbol);
         }

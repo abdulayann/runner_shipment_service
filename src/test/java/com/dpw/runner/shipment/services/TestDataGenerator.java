@@ -4,8 +4,8 @@ import com.dpw.runner.shipment.services.dao.interfaces.ICarrierDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IPartiesDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.request.*;
-import com.dpw.runner.shipment.services.entity.*;
-//import org.openapitools.jackson.nullable.JsonNullable;
+import com.dpw.runner.shipment.services.entity.BookingCarriage;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.mapper.BookingCarriageMapper;
 import com.dpw.runner.shipment.services.mapper.ShipmentDetailsMapper;
 import org.mapstruct.factory.Mappers;
@@ -15,8 +15,6 @@ import org.springframework.stereotype.Component;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
-
-import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 
 @Component
 public class TestDataGenerator {
@@ -83,7 +81,7 @@ public class TestDataGenerator {
                 .additionalTerms("ACJ6O7ZVX2")
                 .build();
         shipmentDetail1.setTenantId(1);
-        shipmentDao.save(shipmentDetail1);
+        shipmentDao.save(shipmentDetail1, false);
         response.add(shipmentDetail1);
 
         //**************END
@@ -105,7 +103,7 @@ public class TestDataGenerator {
                 .build();
         shipmentDetail2.setTenantId(1);
 
-        shipmentDao.save(shipmentDetail2);
+        shipmentDao.save(shipmentDetail2, false);
         response.add(shipmentDetail2);
 
         //*************END
@@ -127,7 +125,7 @@ public class TestDataGenerator {
                 .build();
         shipmentDetail3.setTenantId(1);
 
-        shipmentDao.save(shipmentDetail3);
+        shipmentDao.save(shipmentDetail3, false);
         response.add(shipmentDetail3);
 
         //*************END
@@ -149,7 +147,7 @@ public class TestDataGenerator {
                 .build();
         shipmentDetail4.setTenantId(1);
 
-        shipmentDao.save(shipmentDetail4);
+        shipmentDao.save(shipmentDetail4, false);
         response.add(shipmentDetail4);
 
         //****END
@@ -171,7 +169,7 @@ public class TestDataGenerator {
                 .additionalTerms("ACJ6O7ZVX4")
                 .build();
         shipmentDetail5.setTenantId(1);
-        shipmentDao.save(shipmentDetail5);
+        shipmentDao.save(shipmentDetail5, false);
         response.add(shipmentDetail5);
 
         return response;
@@ -210,7 +208,7 @@ public class TestDataGenerator {
             shipmentRequest1.setConsigner(consigner);
 
             shipmentRequest1.setPackingList(createPackingRequest(new Random().nextInt(10)));
-            shipmentRequest1.setAdditionalDetail(createAdditionalData());
+            shipmentRequest1.setAdditionalDetails(createAdditionalData());
             shipmentRequest1.setBookingCarriagesList(createBookingCarriageRequest(new Random().nextInt(10)));
             shipmentRequest1.setContainersList(createContainerRequest(new Random().nextInt(10)));
             shipmentRequest1.setElDetailsList(createElDetailsRequest(new Random().nextInt(10)));
@@ -234,7 +232,7 @@ public class TestDataGenerator {
             int random = new Random().nextInt(10);
             list.add(ServiceDetailsRequest.builder()
                     .serviceType(SERVICE_TYPES.get(new Random().nextInt(100) % SERVICE_TYPES.size()))
-                    .srvLocation(random)
+//                    .srvLocation(random)
                     .bookingDate(LocalDateTime.now())
                     .serviceCount((long) (random))
                     .completionDate(LocalDateTime.now())

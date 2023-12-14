@@ -11,10 +11,12 @@ import com.dpw.runner.shipment.services.dao.interfaces.IAchievedQuantitiesDao;
 import com.dpw.runner.shipment.services.dto.request.AchievedQuantitiesRequest;
 import com.dpw.runner.shipment.services.dto.response.AchievedQuantitiesResponse;
 import com.dpw.runner.shipment.services.entity.AchievedQuantities;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IAchievedQuantitiesService;
+import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,7 +47,7 @@ public class AchievedQuantitiesService implements IAchievedQuantitiesService {
     private JsonHelper jsonHelper;
 
     @Autowired
-    private AuditLogService auditLogService;
+    private IAuditLogService auditLogService;
 
     @Transactional
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
@@ -98,6 +100,9 @@ public class AchievedQuantitiesService implements IAchievedQuantitiesService {
 
         AchievedQuantities achievedQuantities = convertRequestToAchievedQuantities(request);
         achievedQuantities.setId(oldEntity.get().getId());
+        if(achievedQuantities.getGuid() != null && !oldEntity.get().getGuid().equals(achievedQuantities.getGuid())) {
+            throw new RunnerException("Provided GUID doesn't match with the existing one !");
+        }
         try {
             String oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
             achievedQuantities = achievedQuantitiesDao.save(achievedQuantities);

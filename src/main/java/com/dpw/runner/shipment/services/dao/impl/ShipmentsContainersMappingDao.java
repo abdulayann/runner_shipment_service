@@ -3,16 +3,26 @@ package com.dpw.runner.shipment.services.dao.impl;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentsContainersMappingDao;
 import com.dpw.runner.shipment.services.entity.ShipmentsContainersMapping;
 import com.dpw.runner.shipment.services.repository.interfaces.IShipmentsContainersMappingRepository;
+import com.dpw.runner.shipment.services.syncing.interfaces.IContainersSync;
+import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
 import java.util.*;
 
 @Repository
+@Slf4j
 public class ShipmentsContainersMappingDao implements IShipmentsContainersMappingDao {
 
     @Autowired
     private IShipmentsContainersMappingRepository shipmentsContainersMappingRepository;
+
+    @Autowired
+    IContainersSync containersSync;
+
+    @Autowired
+    IShipmentSync shipmentSync;
 
     @Override
     public List<ShipmentsContainersMapping> findByContainerId(Long containerId) {
@@ -33,14 +43,37 @@ public class ShipmentsContainersMappingDao implements IShipmentsContainersMappin
     }
 
     @Override
+    public void assignContainers(Long shipmentId, List<Long> containerIds) {
+        List<ShipmentsContainersMapping> mappings = findByShipmentId(shipmentId);
+        HashSet<Long> contIds = new HashSet<>(containerIds);
+        if (mappings != null && mappings.size() > 0) {
+            for (ShipmentsContainersMapping shipmentsContainersMappings : mappings) {
+                contIds.remove(shipmentsContainersMappings.getContainerId());
+            }
+        }
+        if (!contIds.isEmpty()) {
+            for (Long id : contIds) {
+                ShipmentsContainersMapping entity = new ShipmentsContainersMapping();
+                entity.setContainerId(id);
+                entity.setShipmentId(shipmentId);
+                save(entity);
+            }
+        }
+        try {
+            shipmentSync.syncById(shipmentId);
+        }
+        catch (Exception e) {
+            log.error("Error syncing containers");
+        }
+    }
+
+    @Override
     public void assignShipments(Long containerId, List<Long> shipIds) {
         List<ShipmentsContainersMapping> mappings = findByContainerId(containerId);
         HashSet<Long> shipmentIds = new HashSet<>(shipIds);
         if (mappings != null && mappings.size() > 0) {
             for (ShipmentsContainersMapping shipmentsContainersMappings : mappings) {
-                if (shipmentIds.contains(shipmentsContainersMappings.getShipmentId())) {
-                    shipmentIds.remove(shipmentsContainersMappings.getShipmentId());
-                }
+                shipmentIds.remove(shipmentsContainersMappings.getShipmentId());
             }
         }
         if (!shipmentIds.isEmpty()) {
@@ -50,6 +83,12 @@ public class ShipmentsContainersMappingDao implements IShipmentsContainersMappin
                 entity.setContainerId(containerId);
                 save(entity);
             }
+        }
+        try {
+            containersSync.sync(List.of(containerId));
+        }
+        catch (Exception e) {
+            log.error("Error syncing containers");
         }
     }
 
@@ -69,6 +108,12 @@ public class ShipmentsContainersMappingDao implements IShipmentsContainersMappin
             for (ShipmentsContainersMapping shipmentsContainersMapping : deleteMappings) {
                 delete(shipmentsContainersMapping);
             }
+        }
+        try {
+            containersSync.sync(List.of(containerId));
+        }
+        catch (Exception e) {
+            log.error("Error syncing containers");
         }
     }
 

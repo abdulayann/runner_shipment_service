@@ -21,7 +21,7 @@ import java.util.stream.Collectors;
 @Component
 @Slf4j
 @SuppressWarnings("InfiniteLoopStatement")
-//@EnableAsync
+@EnableAsync
 public class SBUtilsImpl implements ISBUtils {
 
     @Autowired

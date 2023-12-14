@@ -12,7 +12,7 @@ import com.dpw.runner.shipment.services.entity.enums.LifecycleHooks;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.IBookingChargesRepository;
-import com.dpw.runner.shipment.services.service.impl.AuditLogService;
+import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.validator.ValidatorUtility;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nimbusds.jose.util.Pair;
@@ -24,6 +24,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -44,7 +45,7 @@ public class BookingChargesDao implements IBookingChargesDao {
     private JsonHelper jsonHelper;
 
     @Autowired
-    private AuditLogService auditLogService;
+    private IAuditLogService auditLogService;
 
     @Override
     public BookingCharges save(BookingCharges bookingCharges) {
@@ -107,7 +108,7 @@ public class BookingChargesDao implements IBookingChargesDao {
                                         .parentId(entityId)
                                         .operation(DBOperationType.DELETE.name()).build()
                         );
-                    } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException e) {
+                    } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException | InvocationTargetException | NoSuchMethodException e) {
                         log.error(e.getMessage());
                     }
                 }
@@ -121,7 +122,7 @@ public class BookingChargesDao implements IBookingChargesDao {
 
     public List<BookingCharges> saveEntityFromBooking(List<BookingCharges> bookingCharges, Long bookingId) {
         List<BookingCharges> res = new ArrayList<>();
-        ListCommonRequest listCommonRequest = constructListCommonRequest("id", bookingCharges.stream().map(BookingCharges::getId).collect(Collectors.toList()), "IN");
+        ListCommonRequest listCommonRequest = constructListCommonRequest("bookingId", bookingId, "=");
         Pair<Specification<BookingCharges>, Pageable> pair = fetchData(listCommonRequest, BookingCharges.class);
         Page<BookingCharges> bookingChargesPage = findAll(pair.getLeft(), pair.getRight());
         Map<Long, BookingCharges> hashMap = bookingChargesPage.stream()
@@ -149,7 +150,7 @@ public class BookingChargesDao implements IBookingChargesDao {
                                 .parentId(bookingId)
                                 .operation(operation).build()
                 );
-            } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException e) {
+            } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException | InvocationTargetException | NoSuchMethodException e) {
                 log.error(e.getMessage());
             }
             res.add(req);

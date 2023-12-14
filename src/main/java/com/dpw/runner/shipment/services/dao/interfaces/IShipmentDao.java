@@ -5,17 +5,21 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 public interface IShipmentDao {
-    ShipmentDetails save(ShipmentDetails shipmentDetails);
-    ShipmentDetails update(ShipmentDetails shipmentDetails);
+    ShipmentDetails save(ShipmentDetails shipmentDetails, boolean fromV1Sync);
+    ShipmentDetails update(ShipmentDetails shipmentDetails, boolean fromV1Sync);
     Page<ShipmentDetails> findAll(Specification<ShipmentDetails> spec, Pageable pageable);
     Optional<ShipmentDetails> findById(Long id);
     void delete(ShipmentDetails shipmentDetails);
     List<ShipmentDetails> saveAll(List<ShipmentDetails> shipments);
     Optional<ShipmentDetails> findByGuid(UUID id);
-    Optional<ShipmentDetails> findByHouseBill(String Hbl);
+    List<ShipmentDetails> findByHouseBill(String Hbl);
+    List<ShipmentDetails> findByBookingReference(String Hbl);
+    void updateDateAndStatus(long id, LocalDateTime date, Integer status);
+    Long findMaxId();
 }

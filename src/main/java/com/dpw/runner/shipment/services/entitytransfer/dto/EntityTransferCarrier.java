@@ -3,12 +3,14 @@ package com.dpw.runner.shipment.services.entitytransfer.dto;
 import com.dpw.runner.shipment.services.entitytransfer.common.request.IEntityTranferBaseEntity;
 import lombok.*;
 
+import java.io.Serializable;
+
 @Data
 @ToString
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class EntityTransferCarrier implements IEntityTranferBaseEntity {
+public class EntityTransferCarrier implements IEntityTranferBaseEntity, Serializable {
     public String ItemValue;
     public String ItemDescription;
     public String Email;

@@ -10,15 +10,16 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.ITruckDriverDetailsDao;
 import com.dpw.runner.shipment.services.dto.request.TruckDriverDetailsRequest;
 import com.dpw.runner.shipment.services.dto.response.TruckDriverDetailsResponse;
-import com.dpw.runner.shipment.services.entity.ServiceDetails;
 import com.dpw.runner.shipment.services.entity.TruckDriverDetails;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.ITruckDriverDetailsService;
+import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
-import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
@@ -27,7 +28,6 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -46,7 +46,7 @@ public class TruckDriverDetailsService implements ITruckDriverDetailsService {
     private JsonHelper jsonHelper;
 
     @Autowired
-    private AuditLogService auditLogService;
+    private IAuditLogService auditLogService;
     @Override
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
         String responseMsg;
@@ -98,6 +98,10 @@ public class TruckDriverDetailsService implements ITruckDriverDetailsService {
 
         TruckDriverDetails truckDriverDetails = convertRequestToTruckDriverDetailsEntity(request);
         truckDriverDetails.setId(oldEntity.get().getId());
+
+        if(truckDriverDetails.getGuid() != null && !oldEntity.get().getGuid().equals(truckDriverDetails.getGuid())) {
+            throw new RunnerException("Provided GUID doesn't match with the existing one !");
+        }
         try {
             String oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
             truckDriverDetails = truckDriverDetailsDao.save(truckDriverDetails);
@@ -227,7 +231,9 @@ public class TruckDriverDetailsService implements ITruckDriverDetailsService {
             }
             log.info("Truck Driver Details fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
             TruckDriverDetailsResponse response = convertEntityToDto(notes.get());
+            if(request.getIncludeColumns()==null||request.getIncludeColumns().size()==0)
             return ResponseHelper.buildSuccessResponse(response);
+            else return ResponseHelper.buildSuccessResponse(PartialFetchUtils.fetchPartialListData(response, request.getIncludeColumns()));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;

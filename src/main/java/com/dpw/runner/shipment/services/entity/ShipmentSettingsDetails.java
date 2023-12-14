@@ -2,6 +2,8 @@ package com.dpw.runner.shipment.services.entity;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.entity.enums.GenerationType;
+import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
+import com.dpw.runner.shipment.services.utils.MasterData;
 import lombok.*;
 import lombok.experimental.Accessors;
 import org.hibernate.annotations.SQLDelete;
@@ -47,6 +49,9 @@ public class ShipmentSettingsDetails extends MultiTenancy {
 
     @Column(name = "ship_consolidation_container_enabled")
     private Boolean shipConsolidationContainerEnabled;
+
+    @Column(name = "is_shipment_level_container")
+    private Boolean isShipmentLevelContainer;
 
     @Column(name = "auto_attach_consolidation")
     private Boolean autoAttachConsolidation;
@@ -127,23 +132,29 @@ public class ShipmentSettingsDetails extends MultiTenancy {
     private String dpwDateFormat;
 
     @Column(name = "weight_chargeable_unit")
+    @MasterData(type = MasterDataType.WEIGHT_UNIT)
     private String weightChargeableUnit;
 
+    @MasterData(type = MasterDataType.VOLUME_UNIT)
     @Column(name = "volume_chargeable_unit")
     private String volumeChargeableUnit;
 
     @Column(name = "measurement_chargeable_unit")
+    @MasterData(type = MasterDataType.DIMENSION_UNIT)
     private String measurementChargeableUnit;
 
+    @MasterData(type = MasterDataType.TEMPERATURE_UNIT)
     @Column(name = "temperature_unit")
     private String temperatureUnit;
 
+    @MasterData(type = MasterDataType.TRANSPORT_MODE)
     @Column(name = "default_transport_mode")
     private String defaultTransportMode;
 
     @Column(name = "default_container_type")
     private String defaultContainerType;
 
+    @MasterData(type = MasterDataType.SHIPMENT_TYPE)
     @Column(name = "default_shipment_type")
     private String defaultShipmentType;
 
@@ -416,6 +427,18 @@ public class ShipmentSettingsDetails extends MultiTenancy {
     @Column(name = "unico_bl_object")
     private Boolean unicoBlObject;
 
+    @Column(name = "restrict_bl_edit")
+    private Boolean restrictBLEdit;
+
+    @Column(name = "restrict_awb_edit")
+    private Boolean restrictAWBEdit;
+
+    @Column(name = "auto_update_shipment_awb")
+    private Boolean autoUpdateShipmentAWB;
+
+    @Column(name = "auto_update_shipment_bl")
+    private Boolean autoUpdateShipmentBL;
+
     @OneToOne(targetEntity = HblLockSettings.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "hbl_lock_settings_id", referencedColumnName = "id")
     private HblLockSettings hblLockSettings;
@@ -441,4 +464,21 @@ public class ShipmentSettingsDetails extends MultiTenancy {
     @JoinColumn(name = "mawb_lock_settings_id", referencedColumnName = "id")
     private MawbLockSettings mawbLockSettings;
 
+    @Column(name = "hbl_multiple_original_approval")
+    private Integer hblMultipleOriginalApproval;
+
+    @Column(name = "hbl_approval_flow")
+    private Boolean hblApprovalFlow;
+
+    @Column(name = "restrict_bl_release")
+    private Boolean restrictBlRelease;
+
+    @Column(name = "restrict_bl_approval_role")
+    private Integer restrictBlApprovalRole;
+
+    @Column(name = "e_manifest")
+    private Boolean eManifest;
+
+    @Column(name = "isf_file_main_page")
+    private String isfFileMainPage;
 }

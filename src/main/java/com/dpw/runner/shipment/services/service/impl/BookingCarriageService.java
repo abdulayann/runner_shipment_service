@@ -12,14 +12,16 @@ import com.dpw.runner.shipment.services.dto.patchRequest.BookingCarriagePatchReq
 import com.dpw.runner.shipment.services.dto.request.BookingCarriageRequest;
 import com.dpw.runner.shipment.services.dto.response.BookingCarriageResponse;
 import com.dpw.runner.shipment.services.entity.BookingCarriage;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.mapper.BookingCarriageMapper;
+import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.IBookingCarriageService;
+import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
-import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
@@ -51,7 +53,7 @@ public class BookingCarriageService implements IBookingCarriageService {
     private BookingCarriageMapper bookingCarriageMapper;
 
     @Autowired
-    private AuditLogService auditLogService;
+    private IAuditLogService auditLogService;
 
     @Transactional
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
@@ -104,6 +106,11 @@ public class BookingCarriageService implements IBookingCarriageService {
         }
 
         BookingCarriage bookingCarriage = bookingCarriageMapper.map(request);
+
+        if(bookingCarriage.getGuid() != null && !oldEntity.get().getGuid().equals(bookingCarriage.getGuid())) {
+            throw new RunnerException("Provided GUID doesn't match with the existing one !");
+        }
+
         try {
             String oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
             bookingCarriage = bookingCarriageDao.save(bookingCarriage);
@@ -238,7 +245,11 @@ public class BookingCarriageService implements IBookingCarriageService {
             }
             log.info("Booking carriage fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
             BookingCarriageResponse response = convertEntityToDto(bookingCarriage.get());
-            return ResponseHelper.buildSuccessResponse(response);
+            if(request.getIncludeColumns()==null||request.getIncludeColumns().size()==0){
+                return ResponseHelper.buildSuccessResponse(response);
+            }
+            return ResponseHelper.buildSuccessResponse(PartialFetchUtils.fetchPartialListData(response, request.getIncludeColumns()));
+
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;

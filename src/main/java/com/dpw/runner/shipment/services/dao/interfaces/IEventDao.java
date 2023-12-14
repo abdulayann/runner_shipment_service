@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.dao.interfaces;
 
+import com.dpw.runner.shipment.services.dto.request.CustomAutoEventRequest;
 import com.dpw.runner.shipment.services.entity.Events;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -7,13 +8,26 @@ import org.springframework.data.jpa.domain.Specification;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 public interface IEventDao {
     Events save(Events events);
+
+    List<Events> saveAll(List<Events> eventsList);
+
+    Optional<Events> findByGuid(UUID id);
+
     Page<Events> findAll(Specification<Events> spec, Pageable pageable);
+
     Optional<Events> findById(Long id);
+
     void delete(Events events);
+
     List<Events> updateEntityFromOtherEntity(List<Events> eventsList, Long entityId, String entityType) throws Exception;
+
     List<Events> saveEntityFromOtherEntity(List<Events> events, Long entityId, String entityType);
+
     List<Events> updateEntityFromOtherEntity(List<Events> eventsList, Long entityId, String entityType, List<Events> oldEntityList) throws Exception;
+
+    void autoGenerateEvents(CustomAutoEventRequest request);
 }

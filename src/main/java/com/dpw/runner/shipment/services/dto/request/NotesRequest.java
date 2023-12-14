@@ -23,4 +23,6 @@ public class NotesRequest extends CommonRequest implements IRunnerRequest {
     private String insertUserDisplayName;
     private Boolean isPublic;
     private Boolean isActive;
+    private String label;
+    private String assignedTo;
 }

@@ -10,12 +10,13 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IArrivalDepartureDetailsDao;
 import com.dpw.runner.shipment.services.dto.request.ArrivalDepartureDetailsRequest;
 import com.dpw.runner.shipment.services.dto.response.ArrivalDepartureDetailsResponse;
-import com.dpw.runner.shipment.services.entity.Allocations;
 import com.dpw.runner.shipment.services.entity.ArrivalDepartureDetails;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IArrivalDepartureDetailsService;
+import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,7 +46,7 @@ public class ArrivalDepartureDetailsService implements IArrivalDepartureDetailsS
     private JsonHelper jsonHelper;
 
     @Autowired
-    private AuditLogService auditLogService;
+    private IAuditLogService auditLogService;
 
     @Transactional
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
@@ -99,6 +100,9 @@ public class ArrivalDepartureDetailsService implements IArrivalDepartureDetailsS
 
         ArrivalDepartureDetails arrivalDepartureDetails = convertRequestToArrivalDepartureDetails(request);
         arrivalDepartureDetails.setId(oldEntity.get().getId());
+        if(arrivalDepartureDetails.getGuid() != null && !oldEntity.get().getGuid().equals(arrivalDepartureDetails.getGuid())) {
+            throw new RunnerException("Provided GUID doesn't match with the existing one !");
+        }
         try {
             String oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
             arrivalDepartureDetails = arrivalDepartureDetailsDao.save(arrivalDepartureDetails);

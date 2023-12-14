@@ -38,7 +38,7 @@ public class EntityTransferContainers implements IEntityTranferBaseEntity {
     public String veterinarySealNumber;
     public String customsSealNumber;
     public String customsReleaseCode;
-    public Long containerStuffingLocation;
+    public String containerStuffingLocation;
     public String containerComments;
     public BigDecimal grossVolume;
     public String grossVolumeUnit;

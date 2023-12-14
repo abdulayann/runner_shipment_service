@@ -1,9 +1,6 @@
 package com.dpw.runner.shipment.services.controller;
 
-import com.dpw.runner.shipment.services.commons.constants.ApiConstants;
-import com.dpw.runner.shipment.services.commons.constants.EventConstants;
-import com.dpw.runner.shipment.services.commons.constants.Constants;
-import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
@@ -12,7 +9,8 @@ import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.dto.request.EventsRequest;
 import com.dpw.runner.shipment.services.dto.response.EventsResponse;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
-import com.dpw.runner.shipment.services.service.impl.EventService;
+import com.dpw.runner.shipment.services.service.interfaces.IEventService;
+import com.dpw.runner.shipment.services.syncing.Entity.EventsRequestV2;
 import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
@@ -22,6 +20,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
+import java.util.List;
 
 @SuppressWarnings("ALL")
 @RestController
@@ -29,7 +28,7 @@ import javax.validation.Valid;
 @Slf4j
 public class EventsController {
     @Autowired
-    private EventService eventService;
+    private IEventService eventService;
 
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = EventConstants.EVENT_CREATE_SUCCESS),
@@ -63,8 +62,8 @@ public class EventsController {
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = EventConstants.EVENTS_RETRIEVE_BY_ID_SUCCESSFUL)})
     @GetMapping(ApiConstants.API_RETRIEVE_BY_ID)
-    public ResponseEntity<RunnerResponse<EventsResponse>> retrieveById(@ApiParam(value = EventConstants.EVENT_ID, required = true) @RequestParam Long id) {
-        CommonGetRequest request = CommonGetRequest.builder().id(id).build();
+    public ResponseEntity<RunnerResponse<EventsResponse>> retrieveById(@ApiParam(value = EventConstants.EVENT_ID, required = true) @RequestParam Long id, @RequestParam(name = "includeColumns", required = false) List<String> includeColumns) {
+        CommonGetRequest request = CommonGetRequest.builder().id(id).includeColumns(includeColumns).build();
         return (ResponseEntity<RunnerResponse<EventsResponse>>) eventService.retrieveById(CommonRequestModel.buildRequest(request));
     }
 
@@ -80,5 +79,39 @@ public class EventsController {
             log.error(responseMsg, e);
         }
         return (ResponseEntity<RunnerResponse>) ResponseHelper.buildFailedResponse(responseMsg);
+    }
+
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = ShipmentConstants.SHIPMENT_SYNC_SUCCESSFUL),
+            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
+    })
+    @PostMapping(ApiConstants.SYNC)
+    public ResponseEntity<?> syncEventsToService(@RequestBody @Valid EventsRequestV2 request) {
+        String responseMsg = "failure executing :(";
+        try {
+            return eventService.V1EventsCreateAndUpdate(CommonRequestModel.buildRequest(request), true);
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : "Error syncing provided Events";
+            log.error(responseMsg, e);
+        }
+        return ResponseHelper.buildFailedResponse(responseMsg);
+    }
+
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = EventConstants.TRACK_EVENTS_FETCH_SUCCESSFUL),
+            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
+    })
+    @GetMapping(EventConstants.TRACK_EVENT_DETAILS)
+    public ResponseEntity<?> trackEventDetails(@RequestParam(name = "shipmentId") Long id) {
+        String responseMsg;
+        try {
+            return eventService.trackEvents(id);
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : "Error fetching Events";
+            log.error(responseMsg, e);
+        }
+        return ResponseHelper.buildFailedResponse(responseMsg);
     }
 }

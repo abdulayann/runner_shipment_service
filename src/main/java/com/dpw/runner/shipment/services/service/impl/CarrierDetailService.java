@@ -10,12 +10,14 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.ICarrierDao;
 import com.dpw.runner.shipment.services.dto.request.CarrierDetailRequest;
 import com.dpw.runner.shipment.services.dto.response.CarrierDetailResponse;
-import com.dpw.runner.shipment.services.entity.Allocations;
 import com.dpw.runner.shipment.services.entity.CarrierDetails;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.ICarrierDetailService;
+import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,7 +30,8 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.*;
+import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
@@ -44,7 +47,7 @@ public class CarrierDetailService implements ICarrierDetailService {
     private JsonHelper jsonHelper;
 
     @Autowired
-    private AuditLogService auditLogService;
+    private IAuditLogService auditLogService;
 
     @Transactional
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
@@ -97,6 +100,10 @@ public class CarrierDetailService implements ICarrierDetailService {
 
         CarrierDetails carrierDetails = convertRequestToCarrierDetail(request);
         carrierDetails.setId(oldEntity.get().getId());
+
+        if(carrierDetails.getGuid() != null && !oldEntity.get().getGuid().equals(carrierDetails.getGuid())) {
+            throw new RunnerException("Provided GUID doesn't match with the existing one !");
+        }
         try {
             String oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
             carrierDetails = carrierDao.save(carrierDetails);
@@ -228,7 +235,11 @@ public class CarrierDetailService implements ICarrierDetailService {
             }
             log.info("Carrier Detail fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
             CarrierDetailResponse response = convertEntityToDto(carrierDetail.get());
+            if(request.getIncludeColumns()==null||request.getIncludeColumns().size()==0)
             return ResponseHelper.buildSuccessResponse(response);
+            else{
+                return ResponseHelper.buildSuccessResponse(PartialFetchUtils.fetchPartialListData(response, request.getIncludeColumns()));
+            }
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;

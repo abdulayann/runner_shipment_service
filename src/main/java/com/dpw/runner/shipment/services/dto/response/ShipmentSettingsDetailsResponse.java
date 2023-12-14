@@ -140,4 +140,11 @@ public class ShipmentSettingsDetailsResponse implements IRunnerResponse {
     private List<ProductSequenceConfigResponse> productSequenceConfig;
     private HawbLockSettingsResponse hawbLockSettings;
     private MawbLockSettingsResponse mawbLockSettings;
+    private Integer hblMultipleOriginalApproval;
+    private Boolean hblApprovalFlow;
+    private Boolean isShipmentLevelContainer;
+    private Boolean restrictBlRelease;
+    private Integer restrictBlApprovalRole;
+    private Boolean eManifest;
+    private String isfFileMainPage;
 }

@@ -5,8 +5,11 @@ import com.dpw.runner.shipment.services.adapters.interfaces.IPlatformServiceAdap
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
+import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.ICustomerBookingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IIntegrationResponseDao;
+import com.dpw.runner.shipment.services.dto.request.CustomerBookingRequest;
+import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
 import com.dpw.runner.shipment.services.dto.request.platform.*;
 import com.dpw.runner.shipment.services.dto.response.CheckCreditLimitResponse;
 import com.dpw.runner.shipment.services.entity.*;
@@ -15,11 +18,15 @@ import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.entity.enums.Status;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferChargeType;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.helpers.LoggerHelper;
+import com.dpw.runner.shipment.services.masterdata.factory.MasterDataFactory;
+import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
+import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
+import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.EnableAsync;
@@ -49,6 +56,10 @@ public class BookingIntegrationsUtility {
     private ICustomerBookingDao customerBookingDao;
     @Autowired
     private IIntegrationResponseDao integrationResponseDao;
+    @Autowired
+    private IShipmentService shipmentService;
+    @Autowired
+    private MasterDataFactory masterDataFactory;
 
     private Map<BookingStatus, String> platformStatusMap = Map.ofEntries(
             Map.entry(BookingStatus.CANCELLED, "CANCELLED"),
@@ -82,13 +93,14 @@ public class BookingIntegrationsUtility {
     }
 
 
-    public ResponseEntity<?> createShipmentInV1(CustomerBooking customerBooking) {
+    public ResponseEntity<?> createShipmentInV1(CustomerBooking customerBooking, boolean isShipmentEnabled, boolean isBillingEnabled, UUID shipmentGuid) {
         try {
-            var response = v1Service.createBooking(customerBooking);
+            var response = v1Service.createBooking(customerBooking, isShipmentEnabled, isBillingEnabled, shipmentGuid);
             this.saveErrorResponse(customerBooking.getId(), Constants.BOOKING, IntegrationType.V1_SHIPMENT_CREATION, Status.SUCCESS, "SAVED SUCESSFULLY");
             return response;
         } catch (Exception ex) {
-            log.error("Booking Creation error from Platform for booking number: {} with error message: {}", customerBooking.getBookingNumber(), ex.getMessage());
+            this.saveErrorResponse(customerBooking.getId(), Constants.BOOKING, IntegrationType.V1_SHIPMENT_CREATION, Status.FAILED, ex.getLocalizedMessage());
+            log.error("Booking Creation error from V1 for booking number: {} with error message: {}", customerBooking.getBookingNumber(), ex.getMessage());
             throw ex;
         }
     }
@@ -102,6 +114,17 @@ public class BookingIntegrationsUtility {
             throw ex;
         }
     }
+
+    public ResponseEntity<?> createShipmentInV2(CustomerBookingRequest customerBookingRequest) throws Exception {
+        try {
+            var response = shipmentService.createShipmentInV2(customerBookingRequest);
+            return response;
+        } catch (Exception ex) {
+            log.error("Shipment Creation failed for booking number {} with error message: {}", customerBookingRequest.getBookingNumber(), ex.getMessage());
+            throw ex;
+        }
+    }
+
 
     private void saveErrorResponse(Long entityId, String entityType, IntegrationType integrationType, Status status, String message) {
         IntegrationResponse response = IntegrationResponse.builder()
@@ -266,6 +289,61 @@ public class BookingIntegrationsUtility {
                 .office_id(parties.getAddressCode())
                 .org_name(String.valueOf(parties.getOrgData().get(PartiesConstants.FULLNAME)))
                 .build();
+    }
+
+    public void transformOrgAndAddressPayload(PartiesRequest request, String addressCode, String orgCode) {
+        try {
+            CommonV1ListRequest orgRequest = createCriteriaForTwoFields("OrganizationCode", orgCode, "ActiveClient", Boolean.TRUE);
+            DependentServiceResponse v1OrgResponse = masterDataFactory.getMasterDataService().fetchOrganizationData(orgRequest);
+            if (v1OrgResponse.getData() == null || ((ArrayList)v1OrgResponse.getData()).isEmpty()) {
+                log.error("Request: {} || No organization exist in Runner V1 with OrgCode: {}", LoggerHelper.getRequestIdFromMDC() ,orgCode);
+                throw new DataRetrievalFailureException("No organization exist in Runner V1 with OrgCode: " + orgCode);
+            }
+            Map organizationRow = jsonHelper.convertJsonToMap(jsonHelper.convertToJson(((ArrayList)v1OrgResponse.getData()).get(0)));
+            request.setOrgData(organizationRow);
+
+            CommonV1ListRequest addressRequest = createCriteriaForThreeFields("OrgId", organizationRow.get("Id"), "AddressShortCode", addressCode, "Active", Boolean.TRUE);
+            DependentServiceResponse v1AddressResponse = masterDataFactory.getMasterDataService().addressList(addressRequest);
+            if (v1OrgResponse.getData() == null || ((ArrayList)v1AddressResponse.getData()).isEmpty()) {
+                log.error("Request: {} || No Address exist in Runner V1 with OrgCode: {} with AddressCode: {}", LoggerHelper.getRequestIdFromMDC(), orgCode , addressCode);
+                throw new DataRetrievalFailureException("No Address exist in Runner V1 with OrgCode: " + orgCode + " with AddressCode: " + addressCode);
+            }
+            Map addressRow = jsonHelper.convertJsonToMap(jsonHelper.convertToJson(((ArrayList)v1AddressResponse.getData()).get(0)));
+            request.setAddressData(addressRow);
+        }
+        catch (Exception ex) {
+            log.error("Error occurred during Organization fetch from V1 with exception: {}", ex.getLocalizedMessage());
+            throw new DataRetrievalFailureException(ex.getMessage());
+        }
+
+    }
+
+    private CommonV1ListRequest createCriteriaForTwoFields(String field1, Object value1, String field2, Object value2) {
+        List<Object> criteria1 = new ArrayList<>();
+        List<Object> field1_ = new ArrayList<>(List.of(field1));
+        criteria1.addAll(List.of(field1_, "=", value1));
+
+        List<Object> criteria2 = new ArrayList<>();
+        List<Object> field2_ = new ArrayList<>(List.of(field2));
+        criteria2.addAll(List.of(field2_, "=", value2));
+
+        return CommonV1ListRequest.builder().criteriaRequests(List.of(criteria1, "and", criteria2)).build();
+    }
+
+    private CommonV1ListRequest createCriteriaForThreeFields(String field1, Object value1, String field2, Object value2, String field3, Object value3) {
+        List<Object> criteria1 = new ArrayList<>();
+        List<Object> field1_ = new ArrayList<>(List.of(field1));
+        criteria1.addAll(List.of(field1_, "=", value1));
+
+        List<Object> criteria2 = new ArrayList<>();
+        List<Object> field2_ = new ArrayList<>(List.of(field2));
+        criteria2.addAll(List.of(field2_, "=", value2));
+
+        List<Object> criteria3 = new ArrayList<>();
+        List<Object> field3_ = new ArrayList<>(List.of(field3));
+        criteria3.addAll(List.of(field3_, "=", value3));
+
+        return CommonV1ListRequest.builder().criteriaRequests(List.of(List.of(criteria1, "and", criteria2), "and", criteria3)).build();
     }
 
 

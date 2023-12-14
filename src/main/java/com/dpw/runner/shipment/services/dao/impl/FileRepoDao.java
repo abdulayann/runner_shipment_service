@@ -4,7 +4,6 @@ import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IFileRepoDao;
 import com.dpw.runner.shipment.services.entity.FileRepo;
-import com.dpw.runner.shipment.services.entity.ServiceDetails;
 import com.dpw.runner.shipment.services.repository.interfaces.IFileRepoRepository;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
@@ -94,6 +93,8 @@ public class FileRepoDao implements IFileRepoDao {
                     log.debug("File Repo is null for Id {}", req.getId());
                     throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
                 }
+                req.setCreatedAt(oldEntity.get().getCreatedAt());
+                req.setCreatedBy(oldEntity.get().getCreatedBy());
             }
             req.setEntityId(entityId);
             req.setEntityType(entityType);
@@ -150,5 +151,12 @@ public class FileRepoDao implements IFileRepoDao {
             log.error(responseMsg, e);
             throw new Exception(e);
         }
+    }
+
+    @Override
+    public List<FileRepo> findByList(ListCommonRequest request) {
+        Pair<Specification<FileRepo>, Pageable> tuple = fetchData(request, FileRepo.class);
+        Page<FileRepo> fileRepoPage  = findAll(tuple.getLeft(), tuple.getRight());
+        return fileRepoPage.getContent();
     }
 }

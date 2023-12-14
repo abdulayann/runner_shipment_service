@@ -3,11 +3,13 @@ package com.dpw.runner.shipment.services.entity;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.dpw.runner.shipment.services.entity.enums.CustomerCategoryRates;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.utils.DedicatedMasterData;
 import com.dpw.runner.shipment.services.utils.MasterData;
 import com.dpw.runner.shipment.services.utils.OrganizationData;
+import com.dpw.runner.shipment.services.utils.TenantIdData;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
 import lombok.*;
 import lombok.experimental.Accessors;
@@ -17,7 +19,7 @@ import org.hibernate.annotations.TypeDef;
 import org.hibernate.annotations.Where;
 
 import javax.persistence.*;
-import javax.persistence.Table;
+import javax.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -47,6 +49,7 @@ public class ShipmentDetails extends MultiTenancy {
     private String houseBill;
 
     @Column(name = "transport_mode")
+    @Size(max=4, message = "max size is 4 for transport_mode")
     @MasterData(type = MasterDataType.TRANSPORT_MODE)
     private String transportMode;
 
@@ -55,6 +58,7 @@ public class ShipmentDetails extends MultiTenancy {
     private String direction;
 
     @Column(name = "shipment_type")
+    @Size(max=3, message = "max size is 3 for shipment_type")
     @MasterData(type = MasterDataType.CONTAINER_CATEGORY, cascade = Constants.TRANSPORT_MODE)
     private String shipmentType;
 
@@ -78,10 +82,12 @@ public class ShipmentDetails extends MultiTenancy {
     private String jobType;
 
     @Column(name = "service_type")
+    @Size(max=3, message = "max size is 3 for service Type")
     @MasterData(type = MasterDataType.SERVICE_MODE)
     private String serviceType;
 
     @Column(name = "master_bill")
+    @Size(max=50, message = "max size is 50 for master_bill")
     private String masterBill;
 
     @Column(name = "booking_reference")
@@ -91,6 +97,7 @@ public class ShipmentDetails extends MultiTenancy {
     private String consolRef;
 
     @Column(name = "sales_agent")
+    @DedicatedMasterData(type = Constants.SALES_AGENT)
     private Long salesAgent;
 
     @Column(name = "payment_terms")
@@ -101,6 +108,7 @@ public class ShipmentDetails extends MultiTenancy {
     private String incoterms;
 
     @Column(name = "shipment_id")
+    @Size(max=50, message = "max size is 50 for shipment_id")
     private String shipmentId;
 
     @Column(name = "is_domestic")
@@ -110,6 +118,7 @@ public class ShipmentDetails extends MultiTenancy {
     private String assignedTo;
 
     @Column(name = "additional_terms")
+    @Size(max=2048, message = "max size is 2048 for additional_terms")
     private String additionalTerms;
 
     @Column(name = "goods_description")
@@ -156,6 +165,7 @@ public class ShipmentDetails extends MultiTenancy {
     private BigDecimal volume;
 
     @Column(name = "volume_unit")
+    @Size(max=10, message = "max size is 10 for volume_unit")
     @MasterData(type = MasterDataType.VOLUME_UNIT)
     private String volumeUnit;
 
@@ -193,13 +203,13 @@ public class ShipmentDetails extends MultiTenancy {
     private String innerPackUnit;
 
     @Column(name = "freight_local")
-    private Integer freightLocal;
+    private BigDecimal freightLocal;
 
     @Column(name = "freightLocal_Currency")
     private String freightLocalCurrency;
 
     @Column(name = "freight_overseas")
-    private Integer freightOverseas;
+    private BigDecimal freightOverseas;
 
     @Column(name = "freightOverseas_Currency")
     @DedicatedMasterData(type = Constants.CURRENCY_MASTER_DATA)
@@ -215,6 +225,7 @@ public class ShipmentDetails extends MultiTenancy {
     private String marksNum;
 
     @Column(name = "entry_detail")
+    @Size(max=3, message = "max size is 3 for entry_detail")
     private String entryDetail;
 
     @Column(name = "is_locked")
@@ -241,15 +252,19 @@ public class ShipmentDetails extends MultiTenancy {
     private String route;
 
     @Column(name = "source_tenant_id")
+    @TenantIdData
     private Long sourceTenantId;
 
     @Column(name = "documentation_partner")
+    @TenantIdData
     private Long documentationPartner;
 
     @Column(name = "triangulation_partner")
+    @TenantIdData
     private Long triangulationPartner;
 
     @Column(name = "receiving_branch")
+    @TenantIdData
     private Long receivingBranch;
 
     @Column(name = "intra_branch")
@@ -280,12 +295,14 @@ public class ShipmentDetails extends MultiTenancy {
     public BigDecimal goodsValue;
 
     @Column(name = "goods_value_currency")
+    @Size(max=3, message = "max size is 3 for goods_value_currency")
     public String goodsValueCurrency;
 
     @Column(name = "insurance_value")
     public BigDecimal insuranceValue;
 
     @Column(name = "insurance_value_currency")
+    @Size(max=3, message = "max size is 3 for insurance_value_currency")
     public String InsuranceValueCurrency;
 
     @OneToOne(fetch = FetchType.LAZY, targetEntity = AdditionalDetails.class, cascade = CascadeType.ALL)
@@ -293,8 +310,8 @@ public class ShipmentDetails extends MultiTenancy {
     private AdditionalDetails additionalDetails;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "entityId")
-    @Where(clause = "entity_name = 'shipments'")
-    private List<Logs> logsList;
+    @Where(clause = "entity = 'ShipmentDetails'")
+    private List<AuditLog> logsList;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "entityId")
     @Where(clause = "entity_type = 'SHIPMENT'")
@@ -338,5 +355,44 @@ public class ShipmentDetails extends MultiTenancy {
     private List<Parties> shipmentAddresses;
 
     @Column(name = "job_status")
+    @Size(max=3, message = "max size is 3 for job_status")
+    @MasterData(type = MasterDataType.BILL_JOBS)
     private String jobStatus;
+
+    @Column(name = "entry_ref_no")
+    @Size(max=250, message = "max size is 250 for entry_ref_no")
+    private String entryRefNo;
+
+    @Column(name = "flight_status")
+    private String flightStatus;
+
+    @Column(name = "contains_hazardous")
+    private Boolean containsHazardous;
+
+    @Column(name = "fmc_tlc_id")
+    private String fmcTlcId;
+
+    @Column(name = "commodity")
+    private String commodity;
+
+    @Column(name = "order_number")
+    private Long orderNumber;
+
+    @Column(name = "order_management_id")
+    private String orderManagementId;
+
+    @Column(name = "order_management_number")
+    private String orderManagementNumber;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "customer_category")
+    private CustomerCategoryRates customerCategory;
+
+    @Column(name = "contract_id")
+    @Size(max=64, message = "max size is 64 for contract_id")
+    private String contractId;
+
+    @Column(name = "contract_type")
+    @Size(max=64, message = "max size is 64 for contract_type")
+    private String contractType;
 }

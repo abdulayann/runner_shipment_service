@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.dto.response;
 
+import com.dpw.runner.shipment.services.Kafka.Dto.AwbShipConsoleDto;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.awb.*;
 import lombok.Data;
@@ -11,6 +12,9 @@ import java.util.UUID;
 public class AwbResponse implements IRunnerResponse {
     private Integer id;
     private UUID guid;
+    private String awbNumber;
+    private Long shipmentId;
+    private Long consolidationId;
     private AwbShipmentInfo awbShipmentInfo;
     public List<AwbNotifyPartyInfo> awbNotifyPartyInfo;
     public List<AwbRoutingInfo> awbRoutingInfo;
@@ -22,4 +26,5 @@ public class AwbResponse implements IRunnerResponse {
     public List<AwbGoodsDescriptionInfo> awbGoodsDescriptionInfo;
     public List<AwbPackingInfo> awbPackingInfo;
     public List<AwbSpecialHandlingCodesMappingInfo> awbSpecialHandlingCodesMappings;
+    public AwbShipConsoleDto awbKafkaEntity;
 }

@@ -1,8 +1,7 @@
 package com.dpw.runner.shipment.services.repository.interfaces;
 
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancyRepository;
-import com.nimbusds.jose.util.Pair;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -26,5 +25,10 @@ public interface IShipmentRepository extends MultiTenancyRepository<ShipmentDeta
         Specification<ShipmentDetails> spec = (root, criteriaQuery, criteriaBuilder) -> criteriaBuilder.equal(root.get("guid"), id);
         return findOne(spec);
     }
-    Optional<ShipmentDetails> findByHouseBill(String Hbl);
+    List<ShipmentDetails> findByHouseBill(String Hbl);
+    List<ShipmentDetails> findAllByHouseBill(String Hbl);
+    List<ShipmentDetails> findByBookingReference(String ref);
+
+    @Query(value = "SELECT MAX(c.id) FROM consolidation_details c", nativeQuery = true)
+    Long findMaxId();
 }

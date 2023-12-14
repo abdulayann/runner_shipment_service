@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.dto.request;
 
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import lombok.*;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
@@ -18,4 +19,5 @@ public class UploadDocumentRequest implements IRunnerRequest {
     private String docType;
     private Boolean clientEnabled;
     private String eventCode;
+    private ByteArrayResource fileResource;
 }

@@ -7,9 +7,12 @@ import com.dpw.runner.shipment.services.commons.constants.NPMConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.ListContractRequest;
+import com.dpw.runner.shipment.services.dto.request.npm.NPMAutoSellRequest;
 import com.dpw.runner.shipment.services.dto.request.npm.NPMFetchOffersRequestFromUI;
+import com.dpw.runner.shipment.services.dto.request.npm.NPMImportRatesRequest;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import com.dpw.runner.shipment.services.utils.ExcludeTimeZone;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import lombok.extern.slf4j.Slf4j;
@@ -35,6 +38,7 @@ public class NPMController {
             @ApiResponse(code = 200, message = NPMConstants.CONTRACT_LIST_SUCCESSFUL),
             @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
     })
+    @ExcludeTimeZone
     public ResponseEntity<?> fetchContracts(@RequestBody @Valid ListContractRequest request) {
         String responseMsg;
         ListContractRequest listContractRequest = jsonHelper.convertValue(request, ListContractRequest.class);
@@ -53,6 +57,7 @@ public class NPMController {
             @ApiResponse(code = 200, message = NPMConstants.LIST_SUCCESSFUL),
             @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
     })
+    @ExcludeTimeZone
     public ResponseEntity<?> getNPMOffers(@RequestBody @Valid NPMFetchOffersRequestFromUI request) {
         String responseMsg;
         try {
@@ -70,10 +75,39 @@ public class NPMController {
             @ApiResponse(code = 200, message = NPMConstants.LIST_SUCCESSFUL),
             @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
     })
+    @ExcludeTimeZone
     public ResponseEntity<?> getNPMOffersV8(@RequestBody @Valid NPMFetchOffersRequestFromUI request) {
         String responseMsg;
         try {
             return (ResponseEntity<RunnerResponse>) npmService.fetchOffersV8(CommonRequestModel.buildRequest(request));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+        }
+        return ResponseHelper.buildFailedResponse(responseMsg);
+    }
+
+    @PostMapping("/getAwbAutoSell")
+    @ExcludeTimeZone
+    public ResponseEntity <?> getAwbAutoSell(@RequestBody NPMAutoSellRequest request) {
+        String responseMsg;
+        try {
+            return npmService.awbAutoSell(CommonRequestModel.buildRequest(request));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+        }
+        return ResponseHelper.buildFailedResponse(responseMsg);
+    }
+
+    @PostMapping("/getAwbImportRates")
+    @ExcludeTimeZone
+    public ResponseEntity <?> getAwbImportRates(@RequestBody NPMImportRatesRequest request) {
+        String responseMsg;
+        try {
+            return npmService.awbImportRates(CommonRequestModel.buildRequest(request));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;

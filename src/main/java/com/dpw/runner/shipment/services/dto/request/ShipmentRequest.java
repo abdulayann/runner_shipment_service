@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.dto.request;
 
 import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
+import com.dpw.runner.shipment.services.entity.enums.CustomerCategoryRates;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -16,7 +17,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ShipmentRequest extends CommonRequest implements IRunnerRequest {
-    private AdditionalDetailRequest additionalDetail;
+    private AdditionalDetailRequest additionalDetails;
     private String additionalTerms;
     private String assignedTo;
     private Boolean autoUpdateWtVol;
@@ -42,9 +43,9 @@ public class ShipmentRequest extends CommonRequest implements IRunnerRequest {
     private List<FileRepoRequest> fileRepoList;
     private String financeClosedBy;
     private LocalDateTime financeClosedOn;
-    private Integer freightLocal;
+    private BigDecimal freightLocal;
     private String freightLocalCurrency;
-    private Integer freightOverseas;
+    private BigDecimal freightOverseas;
     private String freightOverseasCurrency;
     private String goodsDescription;
     private String houseBill;
@@ -102,4 +103,16 @@ public class ShipmentRequest extends CommonRequest implements IRunnerRequest {
     public String goodsValueCurrency;
     public BigDecimal insuranceValue;
     public String InsuranceValueCurrency;
+    public String entryRefNo;
+    private List<PartiesRequest> shipmentAddresses;
+    private String flightStatus;
+    private Boolean containsHazardous;
+    private String fmcTlcId;
+    private String commodity;
+    private Long orderNumber;
+    private String orderManagementId;
+    private String orderManagementNumber;
+    private CustomerCategoryRates customerCategory;
+    private String contractId;
+    private String contractType;
 }

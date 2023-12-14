@@ -13,9 +13,9 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 public class AwbOtherChargesInfo {
-    private Integer entityId;
+    private Long entityId;
     private String entityType;
-    private Integer chargeTypeId;
+    private String chargeTypeId;
     private BigDecimal rate;
     private Integer chargeBasis;
     private BigDecimal amount;
@@ -25,4 +25,6 @@ public class AwbOtherChargesInfo {
     private String chargeTypeDescription;
     private BigDecimal awbChargeCodeDefaultVat;
     private Long v2ChargeId;
+    private UUID guid;
+    private UUID chargeTypeGuid;
 }

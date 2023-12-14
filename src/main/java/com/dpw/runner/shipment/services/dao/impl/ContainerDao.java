@@ -8,12 +8,13 @@ import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.CustomerBooking;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.enums.LifecycleHooks;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.IContainerRepository;
-import com.dpw.runner.shipment.services.service.impl.AuditLogService;
+import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.validator.ValidatorUtility;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nimbusds.jose.util.Pair;
@@ -25,6 +26,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -46,7 +48,7 @@ public class ContainerDao implements IContainerDao {
     private JsonHelper jsonHelper;
 
     @Autowired
-    private AuditLogService auditLogService;
+    private IAuditLogService auditLogService;
 
     @Override
     public Containers save(Containers containers) {
@@ -60,6 +62,8 @@ public class ContainerDao implements IContainerDao {
                 log.debug("Container is null for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
+            containers.setCreatedAt(oldEntity.get().getCreatedAt());
+            containers.setCreatedBy(oldEntity.get().getCreatedBy());
             if(containers.getShipmentsList() == null) {
                 containers.setShipmentsList(oldEntity.get().getShipmentsList());
             }
@@ -80,6 +84,11 @@ public class ContainerDao implements IContainerDao {
     @Override
     public Optional<Containers> findById(Long id) {
         return containerRepository.findById(id);
+    }
+
+    @Override
+    public List<Containers> findByGuid(UUID guid) {
+        return containerRepository.findByGuid(guid);
     }
 
     @Override
@@ -119,7 +128,7 @@ public class ContainerDao implements IContainerDao {
 
     public List<Containers> saveEntityFromBooking(List<Containers> containers, Long bookingId) {
         List<Containers> res = new ArrayList<>();
-        ListCommonRequest listCommonRequest = constructListCommonRequest("id", containers.stream().map(Containers::getId).collect(Collectors.toList()), "IN");
+        ListCommonRequest listCommonRequest = constructListCommonRequest("bookingId", bookingId, "=");
         Pair<Specification<Containers>, Pageable> pair = fetchData(listCommonRequest, Containers.class);
         Page<Containers> containersPage = findAll(pair.getLeft(), pair.getRight());
         Map<Long, Containers> hashMap = containersPage.stream()
@@ -147,7 +156,7 @@ public class ContainerDao implements IContainerDao {
                                 .parentId(bookingId)
                                 .operation(operation).build()
                 );
-            } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException e) {
+            } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException | InvocationTargetException | NoSuchMethodException e) {
                 log.error(e.getMessage());
             }
             res.add(req);
@@ -172,7 +181,7 @@ public class ContainerDao implements IContainerDao {
                                         .parentId(entityId)
                                         .operation(DBOperationType.DELETE.name()).build()
                         );
-                    } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException e) {
+                    } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException | InvocationTargetException | NoSuchMethodException e) {
                         log.error(e.getMessage());
                     }
                 }
@@ -184,7 +193,7 @@ public class ContainerDao implements IContainerDao {
         }
     }
 
-    public List<Containers> updateEntityFromShipmentConsole(List<Containers> containersList, Long consolidationId) throws Exception {
+    public List<Containers> updateEntityFromShipmentConsole(List<Containers> containersList, Long consolidationId, Long shipmentId) throws Exception {
         String responseMsg;
         List<Containers> responseContainers = new ArrayList<>();
         try {
@@ -194,6 +203,34 @@ public class ContainerDao implements IContainerDao {
                 if(consolidationId != null) {
                     for (Containers containers: containerList) {
                         containers.setConsolidationId(consolidationId);
+                    }
+                }
+                if(shipmentId != null)
+                {
+                    for (Containers container: containerList) {
+                        String operation = DBOperationType.CREATE.name();
+                        Containers oldEntityJson = null;
+                        if(container.getId() != null)
+                        {
+                            Optional<Containers> oldEntity = this.findById(container.getId());
+                            if(oldEntity.isPresent())
+                            {
+                                operation = DBOperationType.UPDATE.name();
+                                oldEntityJson = jsonHelper.convertValue(oldEntity.get(), Containers.class);
+                            }
+                        }
+                        try {
+                            auditLogService.addAuditLog(
+                                    AuditLogMetaData.builder()
+                                            .newData(container)
+                                            .prevData(oldEntityJson)
+                                            .parent(ShipmentDetails.class.getSimpleName())
+                                            .parentId(shipmentId)
+                                            .operation(operation).build()
+                            );
+                        } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException | InvocationTargetException | NoSuchMethodException e) {
+                            log.error(e.getMessage());
+                        }
                     }
                 }
                 responseContainers = saveAll(containerList);
@@ -254,4 +291,65 @@ public class ContainerDao implements IContainerDao {
             throw new Exception(e);
         }
     }
+
+    @Override
+    public List<Containers> updateEntityFromShipmentV1(List<Containers> containersList, List<Containers> oldEntityList) throws Exception {
+        String responseMsg;
+        List<Containers> responseContainers = new ArrayList<>();
+        Map<UUID, Containers> containersMap = new HashMap<>();
+        if(oldEntityList != null && oldEntityList.size() > 0) {
+            for (Containers containers:
+                    oldEntityList) {
+                containersMap.put(containers.getGuid(), containers);
+            }
+        }
+        Containers oldContainer;
+        try {
+            // TODO- Handle Transactions here
+            if (containersList != null && containersList.size() != 0) {
+                List<Containers> containerList = new ArrayList<>(containersList);
+                for (Containers containers: containerList) {
+                    if(containersMap.containsKey(containers.getGuid())) {
+                        oldContainer = containersMap.get(containers.getGuid());
+                        containers.setId(oldContainer.getId());
+                        containers.setConsolidationId(oldContainer.getConsolidationId());
+                        containers.setShipmentsList(oldContainer.getShipmentsList());
+                    } else {
+                        List<Containers> oldConsolContainer = findByGuid(containers.getGuid());
+                        if(oldConsolContainer.size() > 0) {
+                            containers.setId(oldConsolContainer.get(0).getId());
+                            containers.setConsolidationId(oldConsolContainer.get(0).getConsolidationId());
+                            containers.setShipmentsList(oldConsolContainer.get(0).getShipmentsList());
+                        }
+                        else {
+                            containers.setId(null);
+                            containers.setConsolidationId(null);
+                            containers.setShipmentsList(null);
+                        }
+                    }
+                }
+                responseContainers = saveAll(containerList);
+            }
+            return responseContainers;
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
+            log.error(responseMsg, e);
+            throw new Exception(e);
+        }
+    }
+
+    @Override
+    public List<Containers> findByShipmentId(Long shipmentId) {
+        ListCommonRequest listCommonRequest = constructListCommonRequest("shipmentsList", shipmentId, "CONTAINS");
+        Pair<Specification<Containers>, Pageable> pair = fetchData(listCommonRequest, Containers.class);
+        Page<Containers> containersPage = findAll(pair.getLeft(), pair.getRight());
+        return containersPage.getContent();
+    }
+
+    @Override
+    public List<Containers> findByConsolidationId(Long consolidationId) {
+        return containerRepository.findByConsolidationId(consolidationId);
+    }
+
 }

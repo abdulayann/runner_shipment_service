@@ -12,6 +12,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -39,4 +40,7 @@ public class MawbHawbLinkDao implements IMawbHawbLinkDao {
     public void delete(MawbHawbLink mawbHawbLink) {
         mawbHawbLinkRepository.delete(mawbHawbLink);
     }
+
+    @Override
+    public List<MawbHawbLink> findByMawbId(Long mawbId) { return mawbHawbLinkRepository.findByMawbId(mawbId); }
 }

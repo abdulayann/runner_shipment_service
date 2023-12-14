@@ -10,6 +10,7 @@ public interface IShipmentsContainersMappingDao {
 
     List<ShipmentsContainersMapping> findByShipmentId(Long shipmentId);
 
+    void assignContainers(Long shipmentId, List<Long> containerIds);
     void assignShipments(Long containerId, List<Long> shipIds);
 
     void detachShipments(Long containerId, List<Long> shipIds);

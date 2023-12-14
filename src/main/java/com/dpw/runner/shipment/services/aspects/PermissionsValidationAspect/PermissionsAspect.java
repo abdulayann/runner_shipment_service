@@ -46,14 +46,18 @@ public class PermissionsAspect {
         });
         List<FilterCriteria> criterias = PermissionUtil.generateFilterCriteriaFromPermissions(permissionList);
 
-        FilterCriteria criteria1 = FilterCriteria.builder().innerFilter(listCommonRequest.getFilterCriteria()).build();
-        FilterCriteria criteria2 = FilterCriteria.builder().innerFilter(criterias).build();
-        if(criteria1.getInnerFilter().size() > 0){
-            criteria2.setLogicOperator("AND");
-            listCommonRequest.setFilterCriteria(Arrays.asList(criteria1, criteria2));
+        FilterCriteria criteria1 = null;
+        if(listCommonRequest.getFilterCriteria() != null && listCommonRequest.getFilterCriteria().size() > 1) {
+           criteria1 = FilterCriteria.builder().innerFilter(listCommonRequest.getFilterCriteria()).build();
         }
-        else
-            listCommonRequest.setFilterCriteria(Arrays.asList(criteria2));
+        FilterCriteria criteria2 = FilterCriteria.builder().innerFilter(criterias).build();
+        if(criteria2 != null && (criteria2.getCriteria() != null || (criteria2.getInnerFilter() != null && criteria2.getInnerFilter().size() > 0))) {
+            if (criteria1 != null && criteria1.getInnerFilter().size() > 0) {
+                criteria2.setLogicOperator("AND");
+                listCommonRequest.setFilterCriteria(Arrays.asList(criteria1, criteria2));
+            } else
+                listCommonRequest.setFilterCriteria(Arrays.asList(criteria2));
+        }
     }
 
     private FilterCriteria constructCriteria(String fieldName, Object value, String operator, String logicalOperator) {

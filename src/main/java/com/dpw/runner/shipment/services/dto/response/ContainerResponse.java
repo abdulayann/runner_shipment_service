@@ -1,7 +1,9 @@
 package com.dpw.runner.shipment.services.dto.response;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.config.CustomLocalDateTimeSerializer;
 import com.dpw.runner.shipment.services.entity.enums.ContainerStatus;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.swagger.annotations.ApiModel;
 import lombok.Data;
 import lombok.Setter;
@@ -42,7 +44,7 @@ public class ContainerResponse implements IRunnerResponse {
     private String veterinarySealNumber;
     private String customsSealNumber;
     private String customsReleaseCode;
-    private Long containerStuffingLocation;
+    private String containerStuffingLocation;
     private String containerComments;
     private BigDecimal grossVolume;
     private String grossVolumeUnit;
@@ -52,6 +54,7 @@ public class ContainerResponse implements IRunnerResponse {
     private BigDecimal maxTemp;
     private String maxTempUnit;
     private String hblDeliveryMode;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime allocationDate;
     private String dgClass;
     private Boolean hazardous;
@@ -96,4 +99,7 @@ public class ContainerResponse implements IRunnerResponse {
     public Map<String, String> commodityTypeData;
     public Map<String, String> containerCodeData;
     private Long contractEnforcedQuantityLimit;
+    private String ownType;
+    private String handlingInfo;
+    private Map<String, String> textFieldData;
 }

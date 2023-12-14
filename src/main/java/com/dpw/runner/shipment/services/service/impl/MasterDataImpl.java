@@ -1,9 +1,12 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
+import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.masterdata.factory.MasterDataFactory;
 import com.dpw.runner.shipment.services.service.interfaces.IMasterDataService;
+import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -15,6 +18,8 @@ public class MasterDataImpl implements IMasterDataService {
 
     @Autowired
     private MasterDataFactory masterDataFactory;
+    @Autowired
+    private IV1Service v1Service;
 
     @Override
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
@@ -232,6 +237,16 @@ public class MasterDataImpl implements IMasterDataService {
     }
 
     @Override
+    public ResponseEntity<?> listOwnType(CommonRequestModel commonRequestModel) {
+        return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().fetchOwnType(commonRequestModel.getDependentData()));
+    }
+
+    @Override
+    public ResponseEntity<?> listCarrierFilter(CommonRequestModel commonRequestModel) {
+        return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().fetchCarrierFilterList(commonRequestModel.getDependentData()));
+    }
+
+    @Override
     public ResponseEntity<?> listCousinBranches(CommonRequestModel commonRequestModel) {
         return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().listCousinBranches(commonRequestModel.getDependentData()));
     }
@@ -272,6 +287,21 @@ public class MasterDataImpl implements IMasterDataService {
     }
 
     @Override
+    public ResponseEntity<?> fetchUnlocationOriginAndDestinationList(CommonRequestModel commonRequestModel) {
+        return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().fetchUnlocationOriginAndDestinationList(commonRequestModel.getDependentData()));
+    }
+
+    @Override
+    public ResponseEntity<?> fetchListUnlocationTransportModeBased(CommonRequestModel commonRequestModel) {
+        return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().fetchListUnlocationTransportModeBased(commonRequestModel.getDependentData()));
+    }
+
+    @Override
+    public ResponseEntity<?> fetchActivityMaster(CommonRequestModel commonRequestModel) {
+        return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().fetchActivityMaster(commonRequestModel.getDependentData()));
+    }
+
+    @Override
     public CompletableFuture<ResponseEntity<?>> listAsync(CommonRequestModel commonRequestModel) {
         return null;
     }
@@ -289,5 +319,28 @@ public class MasterDataImpl implements IMasterDataService {
     @Override
     public ResponseEntity<?> retrieveTenantSettings() {
         return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().retrieveTenantSettings());
+    }
+
+    @Override
+    public ResponseEntity<?> retrieveTenant() {
+        return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().retrieveTenant());
+    }
+
+    @Override
+    public ResponseEntity<?> fetchGetTemplateMainPage(CommonRequestModel commonRequestModel) {
+        return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().fetchGetTemplateMainPage(commonRequestModel.getDependentData()));
+    }
+    @Override
+    public ResponseEntity<?> listRoles(CommonRequestModel commonRequestModel) {
+        V1DataResponse v1DataResponse = v1Service.fetchRolesList(commonRequestModel.getDependentData());
+        return ResponseHelper.buildDependentServiceResponse(DependentServiceResponse.builder().success(true)
+                .data(v1DataResponse.entities).pageSize(v1DataResponse.take).numberOfRecords(v1DataResponse.totalCount).pageNo(v1DataResponse.skip).build());
+    }
+
+    @Override
+    public ResponseEntity<?> fetchChargeTypes(CommonRequestModel commonRequestModel) {
+        V1DataResponse v1DataResponse = v1Service.fetchChargeCodeData(commonRequestModel.getDependentData());
+        return ResponseHelper.buildDependentServiceResponse(DependentServiceResponse.builder().success(true)
+                .data(v1DataResponse.entities).pageSize(v1DataResponse.take).numberOfRecords(v1DataResponse.totalCount).pageNo(v1DataResponse.skip).build());
     }
 }

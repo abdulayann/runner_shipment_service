@@ -1,12 +1,16 @@
 package com.dpw.runner.shipment.services.dto.response;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerSummaryResponse;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryResponse;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Builder
@@ -24,9 +28,6 @@ public class ConsolidationDetailsResponse implements IRunnerResponse {
     private String mawb;
     private String serviceLevel;
     private String payment;
-    private String firstLoad;
-    private String lastDischarge;
-    private String bookingType;
     private String declarationType;
     private String deliveryMode;
     private Boolean isLinked;
@@ -79,12 +80,12 @@ public class ConsolidationDetailsResponse implements IRunnerResponse {
     private LocalDateTime doIssueDate;
     private Long bondedWarehouseId;
     private Long warehouseId;
-    private long sourceTenantId;
+    private Long sourceTenantId;
     private String ediTransactionId;
-    private long triangulationPartner;
-    private long receivingBranch;
+    private Long triangulationPartner;
+    private Long receivingBranch;
     private boolean intraBranch;
-    private long documentationPartner;
+    private Long documentationPartner;
     private Boolean isReceivingAgentFreeTextAddress;
     private String receivingAgentFreeTextAddress;
     private Boolean isSendingAgentFreeTextAddress;
@@ -108,4 +109,21 @@ public class ConsolidationDetailsResponse implements IRunnerResponse {
     private List<JobResponse> jobsList;
     private List<EventsResponse> eventsList;
     private List<FileRepoResponse> fileRepoList;
+    private String createdBy;
+    private List<String> houseBills;
+    private List<String> shipmentIds;
+    private String bookingId;
+    private List<PartiesResponse> consolidationAddresses;
+    private String bookingStatus;
+    private String bookingNumber;
+    private LocalDateTime createdAt;
+    private String carrierBookingRef;
+    public Map<String, String> masterData;
+    public Map<String, String> unlocationData;
+    public Map<String, String> currenciesMasterData;
+    public Map<String, String> tenantIdsData;
+    public Map<String, String> textData;
+    private ContainerSummaryResponse containerSummary;
+    private PackSummaryResponse packSummary;
+    private String modeOfBooking;
 }

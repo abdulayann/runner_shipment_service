@@ -1,17 +1,16 @@
 package com.dpw.runner.shipment.services.service.v1;
 
 import com.dpw.runner.shipment.services.dto.response.CheckCreditLimitResponse;
-import com.dpw.runner.shipment.services.dto.v1.request.CreateConsolidationTaskRequest;
-import com.dpw.runner.shipment.services.dto.v1.request.CreateShipmentTaskRequest;
-import com.dpw.runner.shipment.services.dto.v1.response.SendEntityResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.TenantIdResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1RetrieveResponse;
+import com.dpw.runner.shipment.services.dto.v1.request.*;
+import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.CustomerBooking;
+import com.dpw.runner.shipment.services.entitytransfer.dto.response.CheckTaskExistResponse;
 import org.springframework.http.ResponseEntity;
 
+import java.util.UUID;
+
 public interface IV1Service {
-    ResponseEntity<?> createBooking(CustomerBooking customerBooking);
+    ResponseEntity<?> createBooking(CustomerBooking customerBooking, boolean isShipmentEnabled, boolean isBillingEnabled, UUID shipmentGuid);
     ResponseEntity<?> updateOrgCreditLimitFromBooking(CheckCreditLimitResponse request);
 
     V1DataResponse fetchMasterData(Object request);
@@ -119,11 +118,38 @@ public interface IV1Service {
     SendEntityResponse sendConsolidationTask(CreateConsolidationTaskRequest request);
 
     SendEntityResponse sendShipmentTask(CreateShipmentTaskRequest request);
+    SendEntityResponse sendV1ConsolidationTask(CreateV1ConsolidationTaskFromV2Request request);
+    SendEntityResponse sendV1ShipmentTask(CreateV1ShipmentTaskFromV2Request request);
+    CheckTaskExistResponse checkTaskExist(CheckTaskExistV1Request request);
 
     V1DataResponse addressList(Object request);
 
     V1DataResponse tenantNameByTenantId(Object request);
     V1DataResponse fetchChargeCodeData(Object request);
+    V1DataResponse fetchUnlocationOriginAndDestinationList(Object request);
+    V1DataResponse fetchListUnlocationTransportModeBased(Object request);
+    V1DataResponse fetchActivityMaster(Object request);
     V1RetrieveResponse retrieveTenantSettings();
+    V1RetrieveResponse retrieveTenant();
+
+    V1DataResponse fetchOwnType(Object request);
+
+    V1DataResponse fetchCarrierFilterList(Object request);
+    V1DataResponse fetchTransportInstructionList(Object request);
+    V1DataResponse fetchContainersListForTI(Object request);
+    ConsoleBookingListResponse fetchConsolidationBookingData(Object request);
+    GuidsListResponse fetchWayBillNumberFilterGuids(Object request);
+    V1DataResponse fetchGetTemplateMainPage(Object request);
+    HblTaskCreationResponse createTaskforHBL(Object request);
+    ShipmentBillingListResponse fetchShipmentBillingData(Object request);
+    V1DataResponse fetchRolesList(Object request);
+    V1DataResponse fetchBillingList(Object request);
+    V1DataResponse fetchBillChargesList(Object request);
+    V1DataResponse fetchArObjectList(Object request);
+    V1DataSyncResponse v1DataSync(Object request);
+
+    String getMaxShipmentId();
+    String getShipmentSerialNumber();
+    String getMaxConsolidationId();
 
 }

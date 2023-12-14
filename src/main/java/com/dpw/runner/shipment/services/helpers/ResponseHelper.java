@@ -2,8 +2,8 @@ package com.dpw.runner.shipment.services.helpers;
 
 import com.dpw.runner.shipment.services.commons.responses.*;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.http.*;
 
 import java.util.List;
 
@@ -23,6 +23,13 @@ public class ResponseHelper {
     }
 
     public static ResponseEntity<?> buildSuccessResponse(IRunnerResponse data) {
+        log.debug("Return Response with data {}", data);
+        return new ResponseEntity<>(RunnerResponse.builder().success(true)
+                .requestId(LoggerHelper.getRequestIdFromMDC())
+                .data(data).build(), HttpStatus.OK);
+    }
+
+    public static ResponseEntity<?> buildSuccessResponse(Object data) {
         log.debug("Return Response with data {}", data);
         return new ResponseEntity<>(RunnerResponse.builder().success(true)
                 .requestId(LoggerHelper.getRequestIdFromMDC())
@@ -103,11 +110,14 @@ public class ResponseHelper {
         return new ResponseEntity<>(runnerResponse, HttpStatus.OK);
     }
 
-    public static ResponseEntity<?> buildSuccessResponse(Object data) {
-        log.debug("Return Response with data {}", data);
-        return new ResponseEntity<>(RunnerResponse.builder().success(true)
-                .requestId(LoggerHelper.getRequestIdFromMDC())
-                .data(data).build(), HttpStatus.OK);
+
+    public static ResponseEntity<?> buildFileResponse(byte[] bytes, MediaType contentType, String fileName) {
+        ByteArrayResource resource = new ByteArrayResource(bytes);
+        return ResponseEntity.ok()
+                .contentType(contentType)
+                .contentLength(resource.contentLength())
+                .header(HttpHeaders.CONTENT_DISPOSITION,"attachment; filename=\"" + fileName + "\"")
+                .body(resource);
     }
 }
 

@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.dao.interfaces;
 
+import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.entity.FileRepo;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -17,4 +18,5 @@ public interface IFileRepoDao {
     List<FileRepo> updateEntityFromOtherEntity(List<FileRepo> fileRepoList, Long entityId, String entityType) throws Exception;
     List<FileRepo> saveEntityFromOtherEntity(List<FileRepo> fileRepos, Long entityId, String entityType);
     List<FileRepo> updateEntityFromOtherEntity(List<FileRepo> fileRepoList, Long entityId, String entityType, List<FileRepo> oldEntityList) throws Exception;
+    List<FileRepo> findByList(ListCommonRequest request);
 }

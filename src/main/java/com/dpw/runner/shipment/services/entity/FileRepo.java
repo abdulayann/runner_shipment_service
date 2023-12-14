@@ -1,15 +1,15 @@
 package com.dpw.runner.shipment.services.entity;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
-import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import lombok.*;
 import lombok.experimental.Accessors;
-import org.hibernate.annotations.CollectionId;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Where;
 
-import javax.persistence.*;
-import java.util.List;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.Table;
+import javax.validation.constraints.Size;
 
 @Entity
 @Setter
@@ -27,12 +27,15 @@ public class FileRepo extends MultiTenancy {
     private Long entityId;
 
     @Column(name = "entity_type")
+    @Size(max=100, message = "max size is 100 for entity_type")
     private String entityType;
 
     @Column(name = "file_name")
+    @Size(max=512, message = "max size is 512 for file_name")
     private String fileName;
 
     @Column(name = "path")
+    @Size(max=1024, message = "max size is 1024 for path")
     private String path;
 
     @Column(name = "doc_type")

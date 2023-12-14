@@ -7,19 +7,32 @@ import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.config.SyncConfig;
+import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IRoutingsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.request.RoutingsRequest;
 import com.dpw.runner.shipment.services.dto.response.RoutingsResponse;
-import com.dpw.runner.shipment.services.entity.Packing;
+import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.Routings;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.IRoutingsService;
+import com.dpw.runner.shipment.services.service.interfaces.ISyncQueueService;
+import com.dpw.runner.shipment.services.syncing.Entity.RoutingsRequestV2;
+import com.dpw.runner.shipment.services.syncing.constants.SyncingConstants;
+import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
+import com.dpw.runner.shipment.services.utils.StringUtility;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -27,9 +40,10 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.interceptor.TransactionAspectSupport;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
@@ -46,13 +60,30 @@ public class RoutingsService implements IRoutingsService {
     private JsonHelper jsonHelper;
 
     @Autowired
-    private AuditLogService auditLogService;
+    private IAuditLogService auditLogService;
+
+    @Autowired
+    private ModelMapper modelMapper;
+
+    @Autowired
+    private IShipmentDao shipmentDao;
+
+    @Autowired
+    private IConsolidationDetailsDao consolidationDao;
+
+    @Autowired
+    private ObjectMapper objectMapper;
+    @Lazy
+    @Autowired
+    private ISyncQueueService syncQueueService;
+    @Autowired
+    private SyncConfig syncConfig;
 
     @Override
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
         String responseMsg;
         RoutingsRequest request = (RoutingsRequest) commonRequestModel.getData();
-        if(request == null) {
+        if (request == null) {
             log.debug("Request is empty for Routing create with Request Id {}", LoggerHelper.getRequestIdFromMDC());
         }
         Routings routings = convertRequestToRoutingsEntity(request);
@@ -83,11 +114,11 @@ public class RoutingsService implements IRoutingsService {
     public ResponseEntity<?> update(CommonRequestModel commonRequestModel) {
         String responseMsg;
         RoutingsRequest request = (RoutingsRequest) commonRequestModel.getData();
-        if(request == null) {
+        if (request == null) {
             log.debug("Request is empty for Routing update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
         }
 
-        if(request.getId() == null) {
+        if (request.getId() == null) {
             log.debug("Request Id is null for Routing update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
         }
         long id = request.getId();
@@ -99,6 +130,9 @@ public class RoutingsService implements IRoutingsService {
 
         Routings routings = convertRequestToRoutingsEntity(request);
         routings.setId(oldEntity.get().getId());
+        if(routings.getGuid() != null && !oldEntity.get().getGuid().equals(routings.getGuid())) {
+            throw new RunnerException("Provided GUID doesn't match with the existing one !");
+        }
         try {
             String oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
             routings = routingsDao.save(routings);
@@ -127,7 +161,7 @@ public class RoutingsService implements IRoutingsService {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
-            if(request == null) {
+            if (request == null) {
                 log.error("Request is empty for Routing list with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
             Pair<Specification<Routings>, Pageable> tuple = fetchData(request, Routings.class);
@@ -151,13 +185,13 @@ public class RoutingsService implements IRoutingsService {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
-            if(request == null) {
+            if (request == null) {
                 log.error("Request is empty for Routing async list with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
             Pair<Specification<Routings>, Pageable> tuple = fetchData(request, Routings.class);
             Page<Routings> notesPage = routingsDao.findAll(tuple.getLeft(), tuple.getRight());
             log.info("Routing async list retrieved successfully for Request Id {} ", LoggerHelper.getRequestIdFromMDC());
-            return CompletableFuture.completedFuture( ResponseHelper.buildListSuccessResponse(
+            return CompletableFuture.completedFuture(ResponseHelper.buildListSuccessResponse(
                     convertEntityListToDtoList(notesPage.getContent()),
                     notesPage.getTotalPages(),
                     notesPage.getTotalElements()));
@@ -174,10 +208,10 @@ public class RoutingsService implements IRoutingsService {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
-            if(request == null) {
+            if (request == null) {
                 log.debug("Request is empty for Routings delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
-            if(request.getId() == null) {
+            if (request.getId() == null) {
                 log.debug("Request Id is null for Routings delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
             long id = request.getId();
@@ -215,10 +249,10 @@ public class RoutingsService implements IRoutingsService {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
-            if(request == null) {
+            if (request == null) {
                 log.error("Request is empty for Routings retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
-            if(request.getId() == null) {
+            if (request.getId() == null) {
                 log.error("Request Id is null for Routings retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
             long id = request.getId();
@@ -229,7 +263,9 @@ public class RoutingsService implements IRoutingsService {
             }
             log.info("Routings details fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
             RoutingsResponse response = convertEntityToDto(notes.get());
+            if(request.getIncludeColumns()==null||request.getIncludeColumns().size()==0)
             return ResponseHelper.buildSuccessResponse(response);
+            else return ResponseHelper.buildSuccessResponse(PartialFetchUtils.fetchPartialListData(response,request.getIncludeColumns()));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;
@@ -250,5 +286,44 @@ public class RoutingsService implements IRoutingsService {
         return lst.stream()
                 .map(item -> convertEntityToDto(item))
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public ResponseEntity<?> V1RoutingsCreateAndUpdate(CommonRequestModel commonRequestModel, boolean checkForSync) throws Exception {
+        RoutingsRequestV2 routingsRequestV2 = (RoutingsRequestV2) commonRequestModel.getData();
+        try {
+            if (checkForSync && !Objects.isNull(syncConfig.IS_REVERSE_SYNC_ACTIVE) && !syncConfig.IS_REVERSE_SYNC_ACTIVE) {
+                return syncQueueService.saveSyncRequest(SyncingConstants.ROUTINGS, StringUtility.convertToString(routingsRequestV2.getGuid()), routingsRequestV2);
+            }
+            Optional<Routings> existingRouting = routingsDao.findByGuid(routingsRequestV2.getGuid());
+            Routings routings = modelMapper.map(routingsRequestV2, Routings.class);
+            if (existingRouting != null && existingRouting.isPresent()) {
+                routings.setId(existingRouting.get().getId());
+                routings.setConsolidationId(existingRouting.get().getConsolidationId());
+                routings.setShipmentId(existingRouting.get().getShipmentId());
+            } else {
+                if (routingsRequestV2.getEntityType() != null
+                        && routingsRequestV2.getEntityType().equals("Shipment")
+                        && routingsRequestV2.getShipmentGuid() != null) {
+                    Optional<ShipmentDetails> shipmentDetails = shipmentDao.findByGuid(routingsRequestV2.getShipmentGuid());
+                    if (shipmentDetails.isPresent())
+                        routings.setShipmentId(shipmentDetails.get().getId());
+                }
+                if (routingsRequestV2.getConsolidationGuid() != null) {
+                    Optional<ConsolidationDetails> consolidationDetails = consolidationDao.findByGuid(routingsRequestV2.getConsolidationGuid());
+                    if (consolidationDetails.isPresent())
+                        routings.setConsolidationId(consolidationDetails.get().getId());
+                }
+            }
+            routings = routingsDao.save(routings);
+            RoutingsResponse response = objectMapper.convertValue(routings, RoutingsResponse.class);
+            return ResponseHelper.buildSuccessResponse(response);
+        } catch (Exception e) {
+            String responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+            throw new RuntimeException(e);
+        }
     }
 }

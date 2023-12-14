@@ -10,5 +10,6 @@ public interface IHblTermsConditionTemplateDao {
     List<HblTermsConditionTemplate> saveAll(List<HblTermsConditionTemplate> hblTermsConditionTemplateList);
     List<HblTermsConditionTemplate> saveEntityFromSettings(List<HblTermsConditionTemplate> hblTermsConditionTemplateList, Long shipmentSettingsId, Boolean isFrontPrint);
     List<HblTermsConditionTemplate> updateEntityFromSettings(List<HblTermsConditionTemplate> hblTermsConditionTemplateList, Long shipmentSettingsId, Boolean isFrontPrint) throws Exception;
+    HblTermsConditionTemplate getTemplateCode(String templateCode, boolean pageType, String printType);
 
 }

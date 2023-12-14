@@ -1,51 +1,60 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.PackingConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
-import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IPackingDao;
+import com.dpw.runner.shipment.services.config.SyncConfig;
+import com.dpw.runner.shipment.services.dao.interfaces.*;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryResponse;
 import com.dpw.runner.shipment.services.dto.request.PackingRequest;
 import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.PackingResponse;
-import com.dpw.runner.shipment.services.entity.Containers;
-import com.dpw.runner.shipment.services.entity.Jobs;
-import com.dpw.runner.shipment.services.entity.Notes;
-import com.dpw.runner.shipment.services.entity.Packing;
+import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingService;
+import com.dpw.runner.shipment.services.service.interfaces.ISyncQueueService;
+import com.dpw.runner.shipment.services.syncing.Entity.BulkPackingRequestV2;
+import com.dpw.runner.shipment.services.syncing.Entity.PackingRequestV2;
+import com.dpw.runner.shipment.services.syncing.constants.SyncingConstants;
+import com.dpw.runner.shipment.services.syncing.interfaces.IPackingSync;
 import com.dpw.runner.shipment.services.utils.CSVParsingUtil;
+import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.dpw.runner.shipment.services.utils.UnitConversionUtility;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.interceptor.TransactionAspectSupport;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.PrintWriter;
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
 
@@ -61,7 +70,30 @@ public class PackingService implements IPackingService {
     private JsonHelper jsonHelper;
 
     @Autowired
-    private AuditLogService auditLogService;
+    private IAuditLogService auditLogService;
+
+    @Autowired
+    private ObjectMapper objectMapper;
+
+    @Autowired
+    private ModelMapper modelMapper;
+
+    @Autowired
+    private IShipmentDao shipmentDao;
+
+    @Autowired
+    private IConsolidationDetailsDao consolidationDao;
+
+    @Autowired
+    private IShipmentSettingsDao shipmentSettingsDao;
+
+    @Autowired
+    private IPackingSync packingSync;
+    @Lazy
+    @Autowired
+    private ISyncQueueService syncQueueService;
+    @Autowired
+    private SyncConfig syncConfig;
 
     private final CSVParsingUtil<Packing> parser = new CSVParsingUtil<>(Packing.class);
 
@@ -101,16 +133,18 @@ public class PackingService implements IPackingService {
     public void uploadPacking(BulkUploadRequest request) throws Exception {
         List<Packing> packingList = parser.parseCSVFile(request.getFile());
         packingList.stream().forEach(packing -> {
-            packing.setConsolidationId(packing.getConsolidationId());
+            packing.setConsolidationId(request.getConsolidationId());
+            packing.setShipmentId(request.getShipmentId());
         });
         packingDao.saveAll(packingList);
+        packingSync.sync(packingList, request.getConsolidationId(), request.getShipmentId());
     }
 
     @Override
     public void downloadPacking(HttpServletResponse response, BulkDownloadRequest request) throws Exception {
         List<Packing> result = new ArrayList<>();
         if (request.getShipmentId() != null) {
-            ListCommonRequest req = constructListCommonRequest("shipment_id", request.getShipmentId(), "=");
+            ListCommonRequest req = constructListCommonRequest("shipmentId", Long.valueOf(request.getShipmentId()), "=");
             Pair<Specification<Packing>, Pageable> pair = fetchData(req, Packing.class);
             Page<Packing> packings = packingDao.findAll(pair.getLeft(), pair.getRight());
             List<Packing> packingList = packings.getContent();
@@ -118,7 +152,7 @@ public class PackingService implements IPackingService {
         }
 
         if (request.getConsolidationId() != null) {
-            ListCommonRequest req2 = constructListCommonRequest("consolidation_id", request.getConsolidationId(), "=");
+            ListCommonRequest req2 = constructListCommonRequest("consolidationId", Long.valueOf(request.getConsolidationId()), "=");
             Pair<Specification<Packing>, Pageable> pair = fetchData(req2, Packing.class);
             Page<Packing> packings = packingDao.findAll(pair.getLeft(), pair.getRight());
             List<Packing> packingList = packings.getContent();
@@ -128,13 +162,18 @@ public class PackingService implements IPackingService {
                 result = result.stream().filter(result::contains).collect(Collectors.toList());
             }
         }
+        LocalDateTime currentTime = LocalDateTime.now();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
+        String timestamp = currentTime.format(formatter);
+        String filenameWithTimestamp = "Packings_" + timestamp + ".xlsx";
+
         response.setContentType("text/csv");
-        response.setHeader("Content-Disposition", "attachment; filename=\"packings.csv\"");
+        response.setHeader("Content-Disposition", "attachment; filename=" + filenameWithTimestamp);
 
         try (PrintWriter writer = response.getWriter()) {
-            writer.println(parser.generateCSVHeader());
+            writer.println(parser.generateCSVHeaderForContainer());
             for (Packing packing : result) {
-                writer.println(parser.formatContainerAsCSVLine(packing));
+                writer.println(parser.formatPackingAsCSVLine(packing));
             }
         }
     }
@@ -159,6 +198,10 @@ public class PackingService implements IPackingService {
 
         Packing packing = convertRequestToEntity(request);
         packing.setId(oldEntity.get().getId());
+
+        if(packing.getGuid() != null && !oldEntity.get().getGuid().equals(packing.getGuid())) {
+            throw new RunnerException("Provided GUID doesn't match with the existing one !");
+        }
         try {
             String oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
             packing = packingDao.save(packing);
@@ -307,11 +350,11 @@ public class PackingService implements IPackingService {
 
         List<IRunnerResponse> finalContainers = new ArrayList<>();
 
-        if(request.getContainerId() != null) {
+        if (request.getContainerId() != null) {
 
             newContainer = containersDao.findById(request.getContainerId()).get();
 
-            if(request.getId() == null) {
+            if (request.getId() == null) {
                 addWeightVolume(request, newContainer);
                 finalContainers.add(convertEntityToDto(newContainer));
             } else {
@@ -320,10 +363,10 @@ public class PackingService implements IPackingService {
 
                 Containers container = addWeightVolume(request, newContainer);
 
-                if(oldContainer.getId() == newContainer.getId()) {
+                if (oldContainer.getId() == newContainer.getId()) {
                     subtractWeightVolume(container.getAchievedWeight(), newContainer, packing, container.getAchievedVolume(), request);
                 }
-                if(oldContainer.getId() != newContainer.getId()) {
+                if (oldContainer.getId() != newContainer.getId()) {
                     subtractWeightVolume(container.getAchievedWeight(), oldContainer, packing, container.getAchievedVolume(), request);
                     finalContainers.add(convertEntityToDto(oldContainer));
                 }
@@ -331,6 +374,138 @@ public class PackingService implements IPackingService {
             }
         }
         return ResponseHelper.buildListSuccessResponse(finalContainers);
+    }
+
+    public PackSummaryResponse calculatePackSummary(List<Packing> packingList, String transportMode, String containerCategory) throws Exception {
+        try {
+            PackSummaryResponse response = new PackSummaryResponse();
+            double totalWeight = 0;
+            String packsCount = "";
+            double volumeWeight = 0;
+            double volumetricWeight = 0;
+            double chargeableWeight = 0;
+            Map<String, Long> map = new HashMap<>();
+            String toWeightUnit = Constants.WEIGHT_UNIT_KG;
+            String toVolumeUnit = Constants.VOLUME_UNIT_M3;
+            ShipmentSettingsDetails shipmentSettingsDetails = shipmentSettingsDao.getSettingsByTenantIds(List.of(TenantContext.getCurrentTenant())).get(0);
+            if(!IsStringNullOrEmpty(shipmentSettingsDetails.getWeightChargeableUnit()))
+                toWeightUnit = shipmentSettingsDetails.getWeightChargeableUnit();
+            if(!IsStringNullOrEmpty(shipmentSettingsDetails.getVolumeChargeableUnit()))
+                toVolumeUnit = shipmentSettingsDetails.getVolumeChargeableUnit();
+            if(packingList != null) {
+                for (Packing packing: packingList) {
+                    double winDef = convertUnit(Constants.MASS, packing.getWeight(), packing.getWeightUnit(), toWeightUnit).doubleValue();
+                    double volDef = convertUnit(Constants.VOLUME, packing.getVolume(), packing.getVolumeUnit(), toVolumeUnit).doubleValue();
+                    totalWeight = totalWeight + winDef;
+                    volumeWeight = volumeWeight + volDef;
+                    if(!IsStringNullOrEmpty(packing.getPacksType()) && !map.containsKey(packing.getPacksType()))
+                        map.put(packing.getPacksType(), 0L);
+                    if(!IsStringNullOrEmpty(packing.getPacks()) && !IsStringNullOrEmpty(packing.getPacksType()))
+                        map.put(packing.getPacksType(), map.get(packing.getPacksType()) + Long.parseLong(packing.getPacks()));
+                }
+            }
+            volumetricWeight = volumetricWeight * 166.667;
+            chargeableWeight = Math.max(volumetricWeight, totalWeight);
+            List<String> sortedKeys = new ArrayList<>(map.keySet());
+            Collections.sort(sortedKeys);
+            for (int i=0; i<sortedKeys.size(); i++) {
+                Long value = map.get(sortedKeys.get(i));
+                packsCount = packsCount + value.toString() + " " + sortedKeys.get(i);
+                if (i+1 < sortedKeys.size())
+                    packsCount = packsCount + ", ";
+            }
+            response.setTotalPacks(packsCount);
+            response.setTotalPacksWeight(totalWeight + " " + toWeightUnit);
+            response.setTotalPacksVolume(volumeWeight + " " + toVolumeUnit);
+            response.setPacksVolumetricWeight(volumetricWeight + " " + toWeightUnit);
+            String packChargeableWeightUnit = toWeightUnit;
+            if(!IsStringNullOrEmpty(transportMode) && transportMode.equals(Constants.TRANSPORT_MODE_AIR))
+                chargeableWeight = roundOffAirShipment(chargeableWeight);
+            if(!IsStringNullOrEmpty(transportMode) && transportMode.equals(Constants.TRANSPORT_MODE_SEA) &&
+            !IsStringNullOrEmpty(containerCategory) && containerCategory.equals(Constants.SHIPMENT_TYPE_LCL)) {
+                double volInM3 = convertUnit(Constants.VOLUME, new BigDecimal(volumeWeight), toVolumeUnit, Constants.VOLUME_UNIT_M3).doubleValue();
+                double wtInKg = convertUnit(Constants.MASS, new BigDecimal(totalWeight), toWeightUnit, Constants.WEIGHT_UNIT_KG).doubleValue();
+                chargeableWeight = Math.max(wtInKg/1000, volInM3);
+                packChargeableWeightUnit = Constants.VOLUME_UNIT_M3;
+            }
+            response.setPacksChargeableWeight(chargeableWeight + " " + packChargeableWeightUnit);
+            return response;
+        }
+        catch (Exception e) {
+            throw new Exception(e);
+        }
+    }
+
+    private double roundOffAirShipment(double charge) {
+        if (charge - 0.50 <= Math.floor(charge) && charge != Math.floor(charge)) {
+            charge = Math.floor(charge) + 0.5;
+        } else {
+            charge = Math.ceil(charge);
+        }
+        return charge;
+    }
+
+    @Override
+    public ResponseEntity<?> listPacksToDetach(CommonRequestModel commonRequestModel) throws Exception {
+        Long containerId = commonRequestModel.getId();
+        ListCommonRequest listCommonRequest = constructListCommonRequest("containerId", containerId, "=");
+        return list(CommonRequestModel.buildRequest(listCommonRequest));
+    }
+
+    @Override
+    public ResponseEntity<?> V1PackingCreateAndUpdate(CommonRequestModel commonRequestModel, boolean checkForSync) throws Exception {
+        PackingRequestV2 packingRequestV2 = (PackingRequestV2) commonRequestModel.getData();
+        try {
+            if (checkForSync && !Objects.isNull(syncConfig.IS_REVERSE_SYNC_ACTIVE) && !syncConfig.IS_REVERSE_SYNC_ACTIVE) {
+                return syncQueueService.saveSyncRequest(SyncingConstants.PACKAGES, StringUtility.convertToString(packingRequestV2.getGuid()), packingRequestV2);
+            }
+            Optional<Packing> existingPacking = packingDao.findByGuid(packingRequestV2.getGuid());
+            Packing packing = modelMapper.map(packingRequestV2, Packing.class);
+            if (existingPacking != null && existingPacking.isPresent()) {
+                packing.setId(existingPacking.get().getId());
+                packing.setConsolidationId(existingPacking.get().getConsolidationId());
+                packing.setShipmentId(existingPacking.get().getShipmentId());
+            } else {
+                if (packingRequestV2.getShipmentGuid() != null) {
+                    Optional<ShipmentDetails> shipmentDetails = shipmentDao.findByGuid(packingRequestV2.getShipmentGuid());
+                    if (shipmentDetails.isPresent())
+                        packing.setShipmentId(shipmentDetails.get().getId());
+                }
+                if (packingRequestV2.getConsolidationGuid() != null) {
+                    Optional<ConsolidationDetails> consolidationDetails = consolidationDao.findByGuid(packingRequestV2.getConsolidationGuid());
+                    if (consolidationDetails.isPresent())
+                        packing.setConsolidationId(consolidationDetails.get().getId());
+                }
+            }
+            packing = packingDao.save(packing);
+            PackingResponse response = objectMapper.convertValue(packing, PackingResponse.class);
+            return ResponseHelper.buildSuccessResponse(response);
+        } catch (Exception ex) {
+            String responseMsg = ex.getMessage() != null ? ex.getMessage()
+                    : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
+            log.error(responseMsg, ex);
+            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+            throw new RuntimeException(ex);
+        }
+    }
+
+    @Override
+    public ResponseEntity<?> V1BulkPackingCreateAndUpdate(CommonRequestModel commonRequestModel) {
+        BulkPackingRequestV2 bulkContainerRequest = (BulkPackingRequestV2) commonRequestModel.getData();
+        try {
+            List<ResponseEntity<?>> responses = new ArrayList<>();
+            for (PackingRequestV2 containerRequest : bulkContainerRequest.getBulkPacking())
+                responses.add(this.V1PackingCreateAndUpdate(CommonRequestModel.builder()
+                        .data(containerRequest)
+                        .build(), true));
+            return ResponseHelper.buildSuccessResponse(responses);
+        } catch (Exception e) {
+            String responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+            throw new RuntimeException(e);
+        }
     }
 
     private static Containers addWeightVolume(PackingRequest request, Containers newContainer) throws Exception {

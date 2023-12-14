@@ -2,7 +2,6 @@ package com.dpw.runner.shipment.services.entity;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
-import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.utils.DedicatedMasterData;
 import com.dpw.runner.shipment.services.utils.MasterData;
@@ -12,9 +11,11 @@ import lombok.experimental.Accessors;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Where;
 
-import javax.persistence.*;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.Table;
+import javax.validation.constraints.Size;
 import java.time.LocalDateTime;
-import java.util.List;
 
 @Entity
 @Setter
@@ -38,6 +39,7 @@ public class Routings extends MultiTenancy {
     private Long leg;
 
     @Column(name = "mode")
+    @Size(max=4, message = "max size is 4 for mode")
     @MasterData(type = MasterDataType.MODE)
     private String mode;
 
@@ -46,6 +48,7 @@ public class Routings extends MultiTenancy {
     private String routingStatus;
 
     @Column(name = "vessel_name")
+    @Size(max=2048, message = "max size is 2048 for vessel_name")
     private String vesselName;
 
     @Column(name = "pol")

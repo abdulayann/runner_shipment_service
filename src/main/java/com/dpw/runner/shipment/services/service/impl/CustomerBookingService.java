@@ -4,9 +4,6 @@ import com.dpw.runner.shipment.services.adapters.interfaces.ICRPServiceAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.IFusionServiceAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.INPMServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.RequestAuthContext;
-import com.dpw.runner.shipment.services.commons.constants.Constants;
-import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
-import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
@@ -18,30 +15,30 @@ import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.request.crp.CRPRetrieveRequest;
 import com.dpw.runner.shipment.services.dto.request.npm.*;
-import com.dpw.runner.shipment.services.dto.request.npm.HazardousInfoRequest;
 import com.dpw.runner.shipment.services.dto.request.platformBooking.PlatformToRunnerCustomerBookingRequest;
 import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.BookingSource;
 import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
+import com.dpw.runner.shipment.services.entitytransfer.dto.*;
 import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferChargeType;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferContainerType;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
 import com.dpw.runner.shipment.services.exception.exceptions.CRPException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest;
+import com.dpw.runner.shipment.services.masterdata.factory.MasterDataFactory;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
+import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.ICustomerBookingService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
-import com.dpw.runner.shipment.services.utils.*;
+import com.dpw.runner.shipment.services.utils.BookingIntegrationsUtility;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
+import com.dpw.runner.shipment.services.utils.MasterDataUtils;
+import com.dpw.runner.shipment.services.utils.UnitConversionUtility;
 import com.nimbusds.jose.util.Pair;
-import lombok.extern.java.Log;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.slf4j.MDC;
@@ -112,9 +109,11 @@ public class CustomerBookingService implements ICustomerBookingService {
     @Autowired
     private ICRPServiceAdapter crpServiceAdapter;
     @Autowired
-    private AuditLogService auditLogService;
+    private IAuditLogService auditLogService;
     @Autowired
     private IV1Service v1Service;
+    @Autowired
+    private MasterDataFactory masterDataFactory;
 
     private static final Map<String, String> loadTypeMap = Map.of("SEA", "LCL", "AIR", "LSE");
 
@@ -130,7 +129,8 @@ public class CustomerBookingService implements ICustomerBookingService {
             Map.entry("bookingDate", RunnerEntityMapping.builder().tableName("CustomerBooking").dataType(LocalDateTime.class).fieldName("bookingDate").build()),
             Map.entry("bookingStatus", RunnerEntityMapping.builder().tableName("CustomerBooking").dataType(BookingStatus.class).fieldName("bookingStatus").build()),
             Map.entry("createdBy", RunnerEntityMapping.builder().tableName("CustomerBooking").dataType(String.class).fieldName("createdBy").build()),
-            Map.entry("contractId", RunnerEntityMapping.builder().tableName("CustomerBooking").dataType(String.class).fieldName("contractId").build())
+            Map.entry("contractId", RunnerEntityMapping.builder().tableName("CustomerBooking").dataType(String.class).fieldName("contractId").build()),
+            Map.entry("shipmentCreatedDate", RunnerEntityMapping.builder().tableName("CustomerBooking").dataType(LocalDateTime.class).fieldName("shipmentCreatedDate").build())
     );
 
 
@@ -320,11 +320,29 @@ public class CustomerBookingService implements ICustomerBookingService {
             customerBooking.setBookingCharges(bookingCharges);
         }
         if (Objects.equals(customerBooking.getBookingStatus(), BookingStatus.READY_FOR_SHIPMENT)) {
-            V1ShipmentCreationResponse shipmentCreationResponse = jsonHelper.convertValue(bookingIntegrationsUtility.createShipmentInV1(customerBooking).getBody(), V1ShipmentCreationResponse.class);
-            if (!Objects.isNull(shipmentCreationResponse) && !Objects.isNull(shipmentCreationResponse.getShipmentId())) {
-                customerBooking.setShipmentId(shipmentCreationResponse.getShipmentId());
-                customerBooking.setShipmentEntityId(shipmentCreationResponse.getEntityId());
-                customerBooking = customerBookingDao.save(customerBooking);
+            DependentServiceResponse dependentServiceResponse = masterDataFactory.getMasterDataService().retrieveTenantSettings();
+            V1TenantSettingsResponse tenantSettingsResponse = modelMapper.map(dependentServiceResponse.getData(), V1TenantSettingsResponse.class);
+            Boolean isShipmentV2 = tenantSettingsResponse.getShipmentServiceV2Enabled();
+            if(isShipmentV2)
+            {
+                ShipmentDetailsResponse shipmentResponse = (ShipmentDetailsResponse) (((RunnerResponse) bookingIntegrationsUtility.createShipmentInV2(request).getBody()).getData());
+                if(shipmentResponse != null) {
+                    bookingIntegrationsUtility.createShipmentInV1(customerBooking, false, true, shipmentResponse.getGuid());
+                    customerBooking.setShipmentId(shipmentResponse.getShipmentId());
+                    customerBooking.setShipmentEntityId(shipmentResponse.getId().toString());
+                    customerBooking.setShipmentCreatedDate(LocalDateTime.now());
+                    customerBooking = customerBookingDao.save(customerBooking);
+                }
+            }
+            else
+            {
+                V1ShipmentCreationResponse shipmentCreationResponse = jsonHelper.convertValue(bookingIntegrationsUtility.createShipmentInV1(customerBooking, true, true, null).getBody(), V1ShipmentCreationResponse.class);
+                if (!Objects.isNull(shipmentCreationResponse) && !Objects.isNull(shipmentCreationResponse.getShipmentId())) {
+                    customerBooking.setShipmentId(shipmentCreationResponse.getShipmentId());
+                    customerBooking.setShipmentEntityId(shipmentCreationResponse.getEntityId());
+                    customerBooking.setShipmentCreatedDate(LocalDateTime.now());
+                    customerBooking = customerBookingDao.save(customerBooking);
+                }
             }
         }
         auditLogService.addAuditLog(
@@ -475,7 +493,45 @@ public class CustomerBookingService implements ICustomerBookingService {
         }
         CheckCreditBalanceFusionRequest request = CheckCreditBalanceFusionRequest.builder().req_Params(new CheckCreditBalanceFusionRequest.ReqParams()).build();
         if(v1TenantSettingsResponse.getCreditLimitOn() == 0){
-            if(creditLimitRequest == null || creditLimitRequest.getCustomerIdentifierId() == null){
+
+            if(creditLimitRequest != null && creditLimitRequest.getCustomerIdentifierId() == null &&  creditLimitRequest.getClientOrgCode()!=null){
+                CommonV1ListRequest orgRequest = new CommonV1ListRequest();
+                List<Object> orgCriteria = new ArrayList<>();
+                List<Object> orgField = new ArrayList<>(List.of("OrganizationCode"));
+                String op = "=";
+                orgCriteria.addAll(List.of(orgField, op, creditLimitRequest.getClientOrgCode()));
+                orgRequest.setCriteriaRequests(orgCriteria);
+                V1DataResponse orgResponse = v1Service.fetchOrganization(orgRequest);
+                List<EntityTransferOrganizations> orgList = jsonHelper.convertValueToList(orgResponse.entities, EntityTransferOrganizations.class);
+
+
+                long orgId=orgList.get(0).getId();
+                creditLimitRequest.setCustomerIdentifierId(orgList.get(0).getCustomerIdentifier());
+                List<Object> finalCriteria= new ArrayList<>();
+
+
+                CommonV1ListRequest addressReq = new CommonV1ListRequest();
+                List<Object>addressCriteria =new ArrayList<>();
+                List<Object> addressField = new ArrayList<>(List.of("AddressShortCode"));
+                addressCriteria.addAll(List.of(addressField, op, creditLimitRequest.getClientAddressCode()));
+                finalCriteria.add(addressCriteria);
+
+                finalCriteria.add("and");
+
+                List<Object>orgIdCriteria=new ArrayList<>();
+                List<Object> orgIdfield = new ArrayList<>(List.of("OrgId"));
+                orgIdCriteria.add(List.of(orgIdfield, op, orgId));
+                finalCriteria.addAll(orgIdCriteria);
+
+                addressReq.setCriteriaRequests(finalCriteria);
+                V1DataResponse addressResponse = v1Service.addressList(addressReq);
+                List<EntityTransferAddress> addressList = jsonHelper.convertValueToList(addressResponse.entities, EntityTransferAddress.class);
+                creditLimitRequest.setSiteIdentifierId(addressList.get(0).getSiteIdentifier());
+
+
+            }
+
+            if(creditLimitRequest == null || creditLimitRequest.getCustomerIdentifierId() == null) {
                 log.error("CustomerIdentifierId is Required with Request Id {}", LoggerHelper.getRequestIdFromMDC());
                 throw new ValidationException("CustomerIdentifierId is Required for credit check");
             }
@@ -526,6 +582,10 @@ public class CustomerBookingService implements ICustomerBookingService {
         double outstandingAmount = checkCreditBalanceFusionResponse.getData().getCreditDetails().get(0).getOutstandingAmount();
         double overDueAmount = checkCreditBalanceFusionResponse.getData().getCreditDetails().get(0).getOverDue();
         double totalCreditAvailableBalance = (totalCreditLimit - outstandingAmount);
+       var PaymentTerm=checkCreditBalanceFusionResponse.getData().getCreditDetails().get(0).getPaymentTerms();
+       if(PaymentTerm==null||PaymentTerm.isEmpty()){
+           PaymentTerm=CustomerBookingConstants.IMMEDIATE;
+       }
 
         double creditLimitUtilizedPer = totalCreditLimit != 0 ? (outstandingAmount * 100) / totalCreditLimit : 0;
         double overDuePer = totalCreditLimit != 0 ? (overDueAmount * 100) / totalCreditLimit : 0;
@@ -539,7 +599,7 @@ public class CustomerBookingService implements ICustomerBookingService {
                 .totalCreditAvailableBalance(CommonUtils.roundOffToTwoDecimalPlace(totalCreditAvailableBalance))
                 .creditLimitUtilizedPer(CommonUtils.roundOffToTwoDecimalPlace(creditLimitUtilizedPer))
                 .overduePer(CommonUtils.roundOffToTwoDecimalPlace(overDuePer))
-                .paymentTerms(checkCreditBalanceFusionResponse.getData().getCreditDetails().get(0).getPaymentTerms())
+                .paymentTerms(PaymentTerm)
                 .accountNumber(checkCreditBalanceFusionResponse.getData().getCreditDetails().get(0).getAccountNumber())
                 .siteNumber(checkCreditBalanceFusionResponse.getData().getCreditDetails().get(0).getSiteNumber())
                 .build();
@@ -580,35 +640,10 @@ public class CustomerBookingService implements ICustomerBookingService {
         if (request.getPackingList() != null) {
             List<PlatformToRunnerCustomerBookingResponse.ReferenceNumbersGuidMapResponse> referenceNumbersGuidMapResponses = new ArrayList<>();
             request.getPackingList().forEach(pack -> {
-                pack.setLengthUnit(Constants.METRE);
-                pack.setWidthUnit(Constants.METRE);
-                pack.setHeightUnit(Constants.METRE);
+                pack.setLengthUnit(pack.getDimensionUnit());
+                pack.setWidthUnit(pack.getDimensionUnit());
+                pack.setHeightUnit(pack.getDimensionUnit());
                 pack.setIsDimension(true);
-                try {
-                    if (pack.getDimensionUnit() != null && !pack.getDimensionUnit().equals(Constants.METRE)) {
-                        pack.setLength(BigDecimal.valueOf(
-                                UnitConversionUtility.convertUnit(Constants.LENGTH, pack.getLength(), pack.getDimensionUnit(), Constants.METRE)
-                                        .doubleValue()));
-                        pack.setWidth(BigDecimal.valueOf(
-                                UnitConversionUtility.convertUnit(Constants.LENGTH, pack.getWidth(), pack.getDimensionUnit(), Constants.METRE)
-                                        .doubleValue()));
-                        pack.setHeight(BigDecimal.valueOf(
-                                UnitConversionUtility.convertUnit(Constants.LENGTH, pack.getHeight(), pack.getDimensionUnit(), Constants.METRE)
-                                        .doubleValue()));
-                        pack.setDimensionUnit(Constants.METRE);
-                    }
-                    if (pack.getWeightUnit() != null && !pack.getWeightUnit().equals(Constants.WEIGHT_UNIT_KG)) {
-                        pack.setWeight(BigDecimal.valueOf(
-                                UnitConversionUtility.convertUnit(Constants.MASS, pack.getWeight(), pack.getWeightUnit(), Constants.WEIGHT_UNIT_KG)
-                                        .doubleValue()));
-                        pack.setWeightUnit(Constants.WEIGHT_UNIT_KG);
-                    }
-                    pack.setVolume(pack.getLength().multiply(pack.getWidth()).multiply(pack.getHeight()));
-                    pack.setVolumeUnit(Constants.VOLUME_UNIT_M3);
-                } catch (Exception ex) {
-                    String message = "ERROR Exception thrown while converting units";
-                    log.error("ERROR Converting units");
-                }
                 if (pack.getGuid() == null)
                     pack.setGuid(UUID.randomUUID());
                 referenceNumbersGuidMapResponses.add(PlatformToRunnerCustomerBookingResponse.ReferenceNumbersGuidMapResponse.builder()
@@ -757,7 +792,7 @@ public class CustomerBookingService implements ICustomerBookingService {
         if (request.getCustomer() != null) {
             String orgCode = request.getCustomer().getOrgCode();
             String addressCode = request.getCustomer().getAddressCode();
-            transformOrgAndAddressPayload(request.getCustomer(), addressCode, orgCode);
+            bookingIntegrationsUtility.transformOrgAndAddressPayload(request.getCustomer(), addressCode, orgCode);
         }
         if ((Objects.isNull(request.getIsConsignorFreeText()) || request.getIsConsignorFreeText()) && request.getConsignor() != null) {
             transformOrgAndAddressToRawData(request.getConsignor());
@@ -774,12 +809,12 @@ public class CustomerBookingService implements ICustomerBookingService {
                 if (charge.getCreditor() != null) {
                     String orgCode = charge.getCreditor().getOrgCode();
                     String addressCode = charge.getCreditor().getAddressCode();
-                    transformOrgAndAddressPayload(charge.getCreditor(), addressCode, orgCode);
+                    bookingIntegrationsUtility.transformOrgAndAddressPayload(charge.getCreditor(), addressCode, orgCode);
                 }
                 if (charge.getDebtor() != null) {
                     String orgCode = charge.getDebtor().getOrgCode();
                     String addressCode = charge.getDebtor().getAddressCode();
-                    transformOrgAndAddressPayload(charge.getDebtor(), addressCode, orgCode);
+                    bookingIntegrationsUtility.transformOrgAndAddressPayload(charge.getDebtor(), addressCode, orgCode);
                 } else {
                     if (charge.getCreditor() != null)
                         charge.setDebtor(charge.getCreditor());
@@ -827,82 +862,7 @@ public class CustomerBookingService implements ICustomerBookingService {
         partiesRequest.setAddressData(Map.of(PartiesConstants.RAW_DATA, addressString));
     }
 
-    private void transformOrgAndAddressPayload(PartiesRequest request, String addressCode, String orgCode) {
 
-        CRPRetrieveRequest retrieveRequest = CRPRetrieveRequest.builder().searchString(orgCode).build();
-        var response = new CRPRetrieveResponse();
-        try {
-            ResponseEntity<DependentServiceResponse> crpResponse = (ResponseEntity<DependentServiceResponse>) crpServiceAdapter.retrieveCRPService(CommonRequestModel.buildRequest(retrieveRequest));
-            response = modelMapper.map(crpResponse.getBody().getData(), CRPRetrieveResponse.class);
-        } catch (Exception e) {
-            log.error("CRP Retrieve failed due to: " + e.getMessage());
-            throw new CRPException(e.getMessage());
-        }
-        if (response == null) {
-            log.error("No organization exist in CRP with OrgCode: " + orgCode);
-            throw new DataRetrievalFailureException("No organization exist in CRP with OrgCode: " + orgCode);
-        }
-
-        Map<String, Object> orgData = new HashMap<>();
-        Map<String, Object> addressData = new HashMap<>();
-        CRPRetrieveResponse.CRPAddressDetails crpAddressDetails = new CRPRetrieveResponse.CRPAddressDetails();
-        if (response.getCompanyOfficeDetails() != null) {
-            List<CRPRetrieveResponse.CRPAddressDetails> crpAddressDetailsList = response.getCompanyOfficeDetails().stream().filter(x -> Objects.equals(x.getOfficeReference(), addressCode)).collect(Collectors.toList());
-            if (!crpAddressDetailsList.isEmpty())
-                crpAddressDetails = crpAddressDetailsList.get(0);
-        }
-        String customerIdentifier = null;
-        if (response.getCompanyAttributesDetails() != null) {
-            List<CRPRetrieveResponse.CompanyAttributesDetail> companyAttributesDetailList = response.getCompanyAttributesDetails().stream().filter(x -> x.getAttributeNameAttributeValuePair() != null && Objects.equals(x.getAttributeNameAttributeValuePair().getKey(), PartiesConstants.ACCOUNT_ID)).toList();
-            if (!companyAttributesDetailList.isEmpty()) {
-                customerIdentifier = companyAttributesDetailList.get(0).getAttributeNameAttributeValuePair().getValue();
-            }
-        }
-
-        String fusionSiteIdentifier = null;
-        String billableFlag = "";
-        if (response.getCompanyCodeIssuerDetails() != null) {
-            List<CRPRetrieveResponse.CompanyCodeIssuerDetails> companyCodeIssuerDetailsList = response.getCompanyCodeIssuerDetails().stream().filter(x -> Objects.equals(x.getIdentifierValue(), addressCode)).collect(Collectors.toList());
-            if (!companyCodeIssuerDetailsList.isEmpty()) {
-                var fusionSiteIdList = companyCodeIssuerDetailsList.stream().filter(x -> Objects.equals(x.getIdentifierCodeType(), PartiesConstants.FUSION_BILL_TO_SITE_NUMBER) && Objects.equals(x.getIdentifierIssuedBy(), PartiesConstants.FUSION)).collect(Collectors.toList());
-                var billableFlagList = companyCodeIssuerDetailsList.stream().filter(x -> Objects.equals(x.getIdentifierCodeType(), PartiesConstants.BILLABLE_FLAG)).collect(Collectors.toList());
-                if (!fusionSiteIdList.isEmpty())
-                    fusionSiteIdentifier = fusionSiteIdList.get(0).getIdentifierCode();
-                if (!billableFlagList.isEmpty())
-                    billableFlag = billableFlagList.get(0).getIdentifierCode();
-            }
-        }
-
-        orgData.put(PartiesConstants.ORGANIZATION_CODE, response.getCompanyReference());
-        orgData.put(PartiesConstants.FULLNAME, response.getCompanyName());
-        orgData.put(PartiesConstants.ADDRESS1, response.getAddressLine1());
-        orgData.put(PartiesConstants.ADDRESS2, response.getAddressLine2());
-        orgData.put(PartiesConstants.COUNTRY, response.getCountryCode());
-        orgData.put(PartiesConstants.CITY_CODE, response.getCityName());
-        orgData.put(PartiesConstants.STATE, response.getStateName());
-        orgData.put(PartiesConstants.ZIP_POST_CODE, response.getPostalCode());
-        orgData.put(PartiesConstants.MOBILE, response.getContactNumber());
-        orgData.put(PartiesConstants.EMAIL, response.getCompanyEmail());
-        orgData.put(PartiesConstants.ACTIVE_CLIENT, true);
-        orgData.put(PartiesConstants.DEFAULT_ADDRESS_SITE_IDENTIFIER, fusionSiteIdentifier);
-        orgData.put(PartiesConstants.RECEIVABLES, true);     // This is hardcoded to true in case of CRP as asked by product
-        orgData.put(PartiesConstants.CUSTOMER_IDENTIFIER, customerIdentifier);
-
-        request.setOrgData(orgData);
-
-        addressData.put(PartiesConstants.ADDRESS_SHORT_CODE, crpAddressDetails.getOfficeReference());
-        addressData.put(PartiesConstants.COMPANY_NAME, crpAddressDetails.getOfficeName());
-        addressData.put(PartiesConstants.SITE_IDENTIFIER, fusionSiteIdentifier);
-        addressData.put(PartiesConstants.ADDRESS1, crpAddressDetails.getAddress());
-        addressData.put(PartiesConstants.COUNTRY, response.getCountryCode());
-        addressData.put(PartiesConstants.CITY, crpAddressDetails.getCityName());
-        addressData.put(PartiesConstants.STATE, crpAddressDetails.getStateName());
-        addressData.put(PartiesConstants.ZIP_POST_CODE, crpAddressDetails.getPostalCode());
-        addressData.put(PartiesConstants.MOBILE, response.getContactNumber());
-        addressData.put(PartiesConstants.EMAIL, crpAddressDetails.getOfficeEmail());
-
-        request.setAddressData(addressData);
-    }
 
     private CustomerBookingResponse updatePlatformBooking(CustomerBookingRequest request, CustomerBooking oldEntity) throws Exception {
         CustomerBooking customerBooking = jsonHelper.convertValue(request, CustomerBooking.class);
@@ -958,7 +918,7 @@ public class CustomerBookingService implements ICustomerBookingService {
             CustomerBookingResponse response = modelMapper.map(customerBooking, CustomerBookingResponse.class);
             responseList.add(response);
         });
-        masterDataUtils.setLocationData(responseList);
+        masterDataUtils.setLocationData(responseList, EntityTransferConstants.LOCATION_SERVICE_GUID);
         return responseList;
     }
 
@@ -1000,7 +960,7 @@ public class CustomerBookingService implements ICustomerBookingService {
                         .contract_state(contractStatus)
                         .source(CustomerBookingConstants.RUNNER)
                         .source_type(CustomerBookingConstants.RUNNER)
-                        .business_info(UpdateContractRequest.BusinessInfo.builder().product_name("FCL").build())
+                        .business_info(UpdateContractRequest.BusinessInfo.builder().product_name(current.getCargoType()).build())
                         .loads_info(loadInfoRequestList)
                         .is_alteration(isAlteration)
                         .build();
@@ -1129,103 +1089,106 @@ public class CustomerBookingService implements ICustomerBookingService {
         customerBooking.setTotalRevenue(totalRevenue);
     }
 
-    @Async
+//    @Async
     private CompletableFuture<ResponseEntity<?>> addAllMasterDataInSingleCall(CustomerBooking customerBooking, CustomerBookingResponse customerBookingResponse) {
         // Preprocessing
         Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
-        List<MasterListRequest> listRequests = new ArrayList<>(masterDataUtils.createInBulkMasterListRequest(customerBookingResponse, CustomerBooking.class, fieldNameKeyMap, String.valueOf(customerBookingResponse.hashCode())));
+        List<MasterListRequest> listRequests = new ArrayList<>(masterDataUtils.createInBulkMasterListRequest(customerBookingResponse, CustomerBooking.class, fieldNameKeyMap, CustomerBooking.class.getSimpleName() ));
         if (!Objects.isNull(customerBookingResponse.getRoutingList()))
-            customerBookingResponse.getRoutingList().forEach(r -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(r, Routings.class, fieldNameKeyMap, String.valueOf(r.hashCode()))));
+            customerBookingResponse.getRoutingList().forEach(r -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(r, Routings.class, fieldNameKeyMap, Routings.class.getSimpleName() + r.getId() )));
         if (!Objects.isNull(customerBookingResponse.getContainersList()))
-            customerBookingResponse.getContainersList().forEach(c -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(c, Containers.class, fieldNameKeyMap, String.valueOf(c.hashCode()))));
+            customerBookingResponse.getContainersList().forEach(c -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(c, Containers.class, fieldNameKeyMap, Containers.class.getSimpleName() + c.getId() )));
         if (!Objects.isNull(customerBookingResponse.getPackingList()))
-            customerBookingResponse.getPackingList().forEach(c -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(c, Packing.class, fieldNameKeyMap, String.valueOf(c.hashCode()))));
+            customerBookingResponse.getPackingList().forEach(c -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(c, Packing.class, fieldNameKeyMap, Packing.class.getSimpleName() + c.getId() )));
 
         // fetching from V1 in single call
         Map<String, EntityTransferMasterLists> keyMasterDataMap = masterDataUtils.fetchInBulkMasterList(listRequests);
+        masterDataUtils.pushToCache(keyMasterDataMap, CacheConstants.MASTER_LIST);
 
         // Postprocessing
-        customerBookingResponse.setMasterData(masterDataUtils.setInBulkMasterList(fieldNameKeyMap.get(String.valueOf(customerBookingResponse.hashCode())), keyMasterDataMap));
+        customerBookingResponse.setMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(CustomerBooking.class.getSimpleName()), CacheConstants.MASTER_LIST));
         if (!Objects.isNull(customerBookingResponse.getRoutingList()))
-            customerBookingResponse.getRoutingList().forEach(r -> r.setMasterData(masterDataUtils.setInBulkMasterList(fieldNameKeyMap.get(String.valueOf(r.hashCode())), keyMasterDataMap)));
+            customerBookingResponse.getRoutingList().forEach(r -> r.setMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(Routings.class.getSimpleName() + r.getId() ), CacheConstants.MASTER_LIST)));
         if (!Objects.isNull(customerBookingResponse.getContainersList()))
-            customerBookingResponse.getContainersList().forEach(c -> c.setMasterData(masterDataUtils.setInBulkMasterList(fieldNameKeyMap.get(String.valueOf(c.hashCode())), keyMasterDataMap)));
+            customerBookingResponse.getContainersList().forEach(c -> c.setMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(Containers.class.getSimpleName() + c.getId() ), CacheConstants.MASTER_LIST)));
         if (!Objects.isNull(customerBookingResponse.getPackingList()))
-            customerBookingResponse.getPackingList().forEach(c -> c.setMasterData(masterDataUtils.setInBulkMasterList(fieldNameKeyMap.get(String.valueOf(c.hashCode())), keyMasterDataMap)));
+            customerBookingResponse.getPackingList().forEach(c -> c.setMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(Packing.class.getSimpleName() + c.getId() ), CacheConstants.MASTER_LIST)));
 
         return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(keyMasterDataMap));
     }
 
-    @Async
+//    @Async
     private CompletableFuture<ResponseEntity<?>> addAllLocationDataInSingleCall(CustomerBooking customerBooking, CustomerBookingResponse customerBookingResponse) {
         // Preprocessing
         Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
         List<String> locationCodes = new ArrayList<>();
         if (!Objects.isNull(customerBookingResponse.getCarrierDetails()))
-            locationCodes.addAll((masterDataUtils.createInBulkUnLocationsRequest(customerBookingResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, String.valueOf(customerBookingResponse.getCarrierDetails().hashCode()))));
+            locationCodes.addAll((masterDataUtils.createInBulkUnLocationsRequest(customerBookingResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName() )));
         if (!Objects.isNull(customerBookingResponse.getRoutingList()))
-            customerBookingResponse.getRoutingList().forEach(r -> locationCodes.addAll(masterDataUtils.createInBulkUnLocationsRequest(r, Routings.class, fieldNameKeyMap, String.valueOf(r.hashCode()))));
+            customerBookingResponse.getRoutingList().forEach(r -> locationCodes.addAll(masterDataUtils.createInBulkUnLocationsRequest(r, Routings.class, fieldNameKeyMap, Routings.class.getSimpleName() + r.getId() )));
         // fetching from V1 in single call
         Map<String, EntityTransferUnLocations> keyMasterDataMap = masterDataUtils.fetchInBulkUnlocations(locationCodes, EntityTransferConstants.LOCATION_SERVICE_GUID);
+        masterDataUtils.pushToCache(keyMasterDataMap, CacheConstants.UNLOCATIONS);
         // Postprocessing
         if (!Objects.isNull(customerBookingResponse.getCarrierDetails()))
-            customerBookingResponse.getCarrierDetails().setUnlocationData(masterDataUtils.setInBulkUnlocations(fieldNameKeyMap.get(String.valueOf(customerBookingResponse.getCarrierDetails().hashCode())), keyMasterDataMap));
+            customerBookingResponse.getCarrierDetails().setUnlocationData(masterDataUtils.setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName()), CacheConstants.UNLOCATIONS));
         if (!Objects.isNull(customerBookingResponse.getRoutingList()))
-            customerBookingResponse.getRoutingList().forEach(r -> r.setUnlocationData(masterDataUtils.setInBulkUnlocations(fieldNameKeyMap.get(String.valueOf(r.hashCode())), keyMasterDataMap)));
+            customerBookingResponse.getRoutingList().forEach(r -> r.setUnlocationData(masterDataUtils.setMasterData(fieldNameKeyMap.get(Routings.class.getSimpleName() + r.getId()), CacheConstants.UNLOCATIONS)));
 
         return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(keyMasterDataMap));
     }
 
-    private void addDedicatedMasterDataInSingleCall(CustomerBooking customerBooking, CustomerBookingResponse customerBookingResponse) {
-        // TODO - Both carrier & vessel is fetched only once, hence not changing this to bulk
-        if (!Objects.isNull(customerBookingResponse.getCarrierDetails())) {
-            customerBookingResponse.getCarrierDetails().setCarrierMasterData(masterDataUtils.carrierMasterData(customerBookingResponse.getCarrierDetails(), CarrierDetails.class));
-            customerBookingResponse.getCarrierDetails().setVesselsMasterData(masterDataUtils.vesselsMasterData(customerBookingResponse.getCarrierDetails(), CarrierDetails.class));
-        }
-        this.addAllContainerTypesInSingleCall(customerBooking, customerBookingResponse);
-        this.addAllChargeTypesInSingleCall(customerBooking, customerBookingResponse);
-    }
-    @Async
+//    @Async
     private CompletableFuture<ResponseEntity<?>> addAllChargeTypesInSingleCall(CustomerBooking customerBooking, CustomerBookingResponse customerBookingResponse) {
         Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
         List<String> chargeTypes = new ArrayList<>();
 
         if (!Objects.isNull(customerBookingResponse.getBookingCharges()))
-            customerBookingResponse.getBookingCharges().forEach(r -> chargeTypes.addAll(masterDataUtils.createInBulkChargeTypeRequest(r, BookingCharges.class, fieldNameKeyMap, String.valueOf(r.hashCode()))));
+            customerBookingResponse.getBookingCharges().forEach(r -> chargeTypes.addAll(masterDataUtils.createInBulkChargeTypeRequest(r, BookingCharges.class, fieldNameKeyMap, BookingCharges.class.getSimpleName() + r.getId() )));
         Map<String, EntityTransferChargeType> v1Data = masterDataUtils.fetchInBulkChargeTypes(chargeTypes);
+        masterDataUtils.pushToCache(v1Data, CacheConstants.CHARGE_TYPE);
 
         if (!Objects.isNull(customerBookingResponse.getBookingCharges()))
-            customerBookingResponse.getBookingCharges().forEach(r -> r.setChargeTypeMasterData(masterDataUtils.setInBulkChargeTypes(fieldNameKeyMap.get(String.valueOf(r.hashCode())), v1Data)));
+            customerBookingResponse.getBookingCharges().forEach(r -> r.setChargeTypeMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(BookingCharges.class.getSimpleName() + r.getId()), CacheConstants.CHARGE_TYPE)));
 
         return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(v1Data));
     }
-    @Async
+//    @Async
     private CompletableFuture<ResponseEntity<?>> addAllContainerTypesInSingleCall(CustomerBooking customerBooking, CustomerBookingResponse customerBookingResponse) {
         Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
         List<String> containerTypes = new ArrayList<>();
         if (!Objects.isNull(customerBookingResponse.getContainersList()))
-            customerBookingResponse.getContainersList().forEach(r -> containerTypes.addAll(masterDataUtils.createInBulkContainerTypeRequest(r, Containers.class, fieldNameKeyMap, String.valueOf(r.hashCode()))));
+            customerBookingResponse.getContainersList().forEach(r -> containerTypes.addAll(masterDataUtils.createInBulkContainerTypeRequest(r, Containers.class, fieldNameKeyMap, Containers.class.getSimpleName() + r.getId() )));
 
         Map<String, EntityTransferContainerType> v1Data = masterDataUtils.fetchInBulkContainerTypes(containerTypes);
+        masterDataUtils.pushToCache(v1Data, CacheConstants.CONTAINER_TYPE);
 
         if (!Objects.isNull(customerBookingResponse.getContainersList()))
-            customerBookingResponse.getContainersList().forEach(r -> r.setContainerCodeData(masterDataUtils.setInBulkContainerTypes(fieldNameKeyMap.get(String.valueOf(r.hashCode())), v1Data)));
+            customerBookingResponse.getContainersList().forEach(r -> r.setContainerCodeData(masterDataUtils.setMasterData(fieldNameKeyMap.get(Containers.class.getSimpleName() + r.getId()), CacheConstants.CONTAINER_TYPE)));
 
         return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(v1Data));
     }
 
-    @Async
+//    @Async
     private CompletableFuture<ResponseEntity<?>> addAllVesselDataInSingleCall(CustomerBooking customerBooking, CustomerBookingResponse customerBookingResponse) {
         if (!Objects.isNull(customerBookingResponse.getCarrierDetails())) {
-            customerBookingResponse.getCarrierDetails().setVesselsMasterData(masterDataUtils.vesselsMasterData(customerBookingResponse.getCarrierDetails(), CarrierDetails.class));
+            Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
+            List<String> vesselList = new ArrayList<>(masterDataUtils.createInBulkVesselsRequest(customerBookingResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName()));
+            Map v1Data = masterDataUtils.fetchInBulkVessels(vesselList);
+            masterDataUtils.pushToCache(v1Data, CacheConstants.VESSELS);
+            customerBookingResponse.getCarrierDetails().setVesselsMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName()), CacheConstants.VESSELS));
         }
         return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(Arrays.asList()));
     }
 
-    @Async
+//    @Async
     private CompletableFuture<ResponseEntity<?>> addAllCarrierDataInSingleCall(CustomerBooking customerBooking, CustomerBookingResponse customerBookingResponse) {
         if (!Objects.isNull(customerBookingResponse.getCarrierDetails())) {
-            customerBookingResponse.getCarrierDetails().setCarrierMasterData(masterDataUtils.carrierMasterData(customerBookingResponse.getCarrierDetails(), CarrierDetails.class));
+            Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
+            List<String> vesselList = new ArrayList<>(masterDataUtils.createInBulkCarriersRequest(customerBookingResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName()));
+            Map v1Data = masterDataUtils.fetchInBulkCarriers(vesselList);
+            masterDataUtils.pushToCache(v1Data, CacheConstants.CARRIER);
+            customerBookingResponse.getCarrierDetails().setCarrierMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName()), CacheConstants.CARRIER));
         }
         return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(Arrays.asList()));
     }

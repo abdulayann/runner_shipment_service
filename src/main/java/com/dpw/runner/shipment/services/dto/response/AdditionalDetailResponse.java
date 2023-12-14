@@ -1,22 +1,32 @@
 package com.dpw.runner.shipment.services.dto.response;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.config.CustomLocalDateTimeSerializer;
 import com.dpw.runner.shipment.services.entity.enums.AndesStatus;
 import com.dpw.runner.shipment.services.entity.enums.LGDStatus;
 import com.dpw.runner.shipment.services.entity.enums.Ownership;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
 @Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class AdditionalDetailResponse implements IRunnerResponse {
-
     private Long id;
     private UUID guid;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime customsNoIssueDate;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime expiryDate;
     private String inspection;
     private String airwayBillDims;
@@ -38,6 +48,7 @@ public class AdditionalDetailResponse implements IRunnerResponse {
     private String IECode;
     private String branchSINumber;
     private AndesStatus andesStatus;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime andesResponseDate;
     private String andesStatusResponseText;
     private String peruEntryExitPoint;
@@ -48,13 +59,17 @@ public class AdditionalDetailResponse implements IRunnerResponse {
     private Long warehouseId;
     private String activityType;
     private Long hsnNumber;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime IGMFileDate;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime IGMInwardDate;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime inwardDateAndTime;
     private Long lineNumber;
     private Long subLineNumber;
     private Long localLineNumber;
     private String SMTPIGMNumber;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime SMTPIGMDate;
     private Boolean isInland;
     private Ownership ownership;
@@ -68,6 +83,7 @@ public class AdditionalDetailResponse implements IRunnerResponse {
     private BigDecimal freeDays;
     private String customHouse;
     private String supplierInvoiceNumber;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime supplierInvoiceDate;
     private BigDecimal invoiceValue;
     private BigDecimal assessValue;
@@ -78,6 +94,7 @@ public class AdditionalDetailResponse implements IRunnerResponse {
     private String releaseType;
     private String houseBillType;
     private String onBoard;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime onBoardDate;
     private String deliveryMode;
     private Integer original;
@@ -88,10 +105,13 @@ public class AdditionalDetailResponse implements IRunnerResponse {
     private String paidPlace;
     private String placeOfIssue;
     private String placeOfSupply;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime dateOfIssue;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime dateOfReceipt;
     private String goodsCO;
     private String BOENumber;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime BOEDate;
     private Boolean printedOriginal;
     private Boolean WBLPrinted;
@@ -109,4 +129,15 @@ public class AdditionalDetailResponse implements IRunnerResponse {
     private PartiesResponse receivingAgent;
     Map<String, String> masterData;
     Map<String, String> unlocationData;
+    public Map<String, String> tenantIdsData;
+    private String customDeclType;
+    private String agentReference;
+    public Map<String, String> textData;
+
+    public void addTextData(Map<String, String> dataMap) {
+        if(textData == null) {
+            textData = new HashMap<>();
+        }
+        textData.putAll(dataMap);
+    }
 }

@@ -1,9 +1,7 @@
 package com.dpw.runner.shipment.services.controller;
 
-import com.dpw.runner.shipment.services.entitytransfer.dto.request.ImportConsolidationRequest;
-import com.dpw.runner.shipment.services.entitytransfer.dto.request.ImportShipmentRequest;
-import com.dpw.runner.shipment.services.entitytransfer.dto.request.SendConsolidationRequest;
-import com.dpw.runner.shipment.services.entitytransfer.dto.request.SendShipmentRequest;
+import com.dpw.runner.shipment.services.entitytransfer.dto.request.*;
+import com.dpw.runner.shipment.services.entitytransfer.dto.response.CheckTaskExistResponse;
 import com.dpw.runner.shipment.services.entitytransfer.service.interfaces.IEntityTransferService;
 import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
@@ -98,4 +96,56 @@ public class EntityTransferController {
         }
         return ResponseHelper.buildFailedResponse(responseMsg);
     }
+
+    @PostMapping(EntityTransferConstants.SEND_CONSOLIDATION_VALIDATION)
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = EntityTransferConstants.VALIDATION_SUCCESSFUL)
+    })
+    public ResponseEntity<?> sendConsolidationValidation(@RequestBody @Valid ValidateSendConsolidationRequest request) {
+        String responseMsg;
+        try {
+            return (ResponseEntity<RunnerResponse>) entityTransferService.sendConsolidationValidation(CommonRequestModel.buildRequest(request));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+        }
+        return ResponseHelper.buildFailedResponse(responseMsg);
+    }
+
+    @PostMapping(EntityTransferConstants.SEND_SHIPMENT_VALIDATION)
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = EntityTransferConstants.VALIDATION_SUCCESSFUL)
+    })
+    public ResponseEntity<?> sendShipmentValidation(@RequestBody @Valid ValidateSendShipmentRequest request) {
+        String responseMsg;
+        try {
+            return (ResponseEntity<RunnerResponse>) entityTransferService.sendShipmentValidation(CommonRequestModel.buildRequest(request));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+        }
+        return ResponseHelper.buildFailedResponse(responseMsg);
+    }
+
+
+    @PostMapping(EntityTransferConstants.CHECK_TASK_EXIST)
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = EntityTransferConstants.CHECK_TASK_SUCCESSFUL)
+    })
+    public ResponseEntity<?> checkTaskExist(@RequestBody @Valid CheckTaskExistRequest request) {
+        String responseMsg;
+        try {
+            return (ResponseEntity<CheckTaskExistResponse>) entityTransferService.checkTaskExist(CommonRequestModel.buildRequest(request));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+        }
+        return ResponseHelper.buildFailedResponse(responseMsg);
+    }
+
+
+
 }

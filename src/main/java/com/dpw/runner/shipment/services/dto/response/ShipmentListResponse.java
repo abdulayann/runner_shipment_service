@@ -100,4 +100,20 @@ public class ShipmentListResponse implements IRunnerResponse {
     private LocalDateTime customsFilingDate;
     private LocalDateTime amsFilingDate;
     private BigDecimal teuCount;
+    private String shipmentStatus;
+    private String billStatus;
+    private BigDecimal totalEstimatedCost;
+    private BigDecimal totalEstimatedRevenue;
+    private BigDecimal totalEstimatedProfit;
+    private BigDecimal totalEstimatedProfitPercent;
+    private BigDecimal totalCost;
+    private BigDecimal totalRevenue;
+    private BigDecimal totalProfit;
+    private BigDecimal totalProfitPercent;
+    private BigDecimal totalPostedCost;
+    private BigDecimal totalPostedRevenue;
+    private BigDecimal totalPostedProfit;
+    private BigDecimal totalPostedProfitPercent;
+    private String wayBillNumber;
+    private String orderManagementNumber;
 }

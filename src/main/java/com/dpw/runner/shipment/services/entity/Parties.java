@@ -2,17 +2,17 @@ package com.dpw.runner.shipment.services.entity;
 
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
+import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
 import lombok.*;
 import lombok.experimental.Accessors;
 import org.hibernate.annotations.*;
 
-import javax.persistence.*;
 import javax.persistence.Entity;
 import javax.persistence.Table;
-import java.util.List;
+import javax.persistence.*;
+import javax.validation.constraints.Size;
 import java.util.Map;
-import java.util.UUID;
 
 
 @Entity
@@ -45,6 +45,7 @@ public class Parties extends MultiTenancy {
     private String orgCode;
 
     @Column(name = "address_code")
+    @Size(max=100, message = "max limit is 100 for address_code")
     private String addressCode;
 
     @Type(type = "jsonb")
@@ -54,4 +55,20 @@ public class Parties extends MultiTenancy {
     @Type(type = "jsonb")
     @Column(name = "address_data", columnDefinition = "jsonb")
     private Map<String, Object> addressData;
+
+//  @PrePersist
+//  private void beforeSave() {
+//    partiesValidation();
+//  }
+//
+//  @PreUpdate
+//  private void beforeUpdate() {
+//      partiesValidation();
+//  }
+//
+//  private void partiesValidation() throws ValidationException{
+//      if (orgCode == null && addressCode == null && orgData == null && addressData == null)
+//          throw new ValidationException("Party details can't be empty");
+//  }
+
 }

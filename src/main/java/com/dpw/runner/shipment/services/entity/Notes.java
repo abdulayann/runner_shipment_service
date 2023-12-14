@@ -25,6 +25,12 @@ public class Notes extends MultiTenancy {
     @Column(name = "text")
     private String text;
 
+    @Column(name = "label")
+    private String label;
+
+    @Column(name = "assigned_to")
+    private String assignedTo;
+
     @Column(name = "entity_id")
     private Long entityId;
 

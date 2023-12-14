@@ -14,14 +14,15 @@ import java.util.stream.Collectors;
 
 public class V1ServiceUtil {
 
-    public static CreateBookingModuleInV1 createBookingRequestForV1(CustomerBooking customerBooking) {
+    public static CreateBookingModuleInV1 createBookingRequestForV1(CustomerBooking customerBooking, boolean isShipmentEnabled, boolean isBillingEnabled, UUID shipmentGuid) {
         return CreateBookingModuleInV1.builder()
                 .IsP100Booking(Boolean.TRUE)
-                .Entity(createEntity(customerBooking))
+                .Entity(createEntity(customerBooking, isShipmentEnabled, isBillingEnabled))
+                .ShipmentGuid(shipmentGuid != null ? shipmentGuid.toString() : null)
                 .build();
     }
 
-    private static CreateBookingModuleInV1.BookingEntity createEntity(CustomerBooking customerBooking) {
+    private static CreateBookingModuleInV1.BookingEntity createEntity(CustomerBooking customerBooking, boolean isShipmentEnabled, boolean isBillingEnabled) {
         var carrierDetails = Optional.ofNullable(customerBooking.getCarrierDetails());
         return CreateBookingModuleInV1.BookingEntity.builder()
                 .Voyage(customerBooking.getCarrierDetails() != null ? customerBooking.getCarrierDetails().getVoyage() : null)
@@ -57,8 +58,9 @@ public class V1ServiceUtil {
                 .CustomShipmentType(customerBooking.getDirection())
                 .Incoterm(customerBooking.getIncoTerms())
                 .ServiceMode(customerBooking.getServiceMode())
-                .IsShipmentCreateEnabled(Boolean.TRUE)
-                .IsConsolidationCreateEnabled(customerBooking.getCargoType().equals(CustomerBookingConstants.FCL))
+                .IsShipmentCreateEnabled(isShipmentEnabled)
+                .IsConsolidationCreateEnabled(customerBooking.getCargoType().equals(CustomerBookingConstants.FCL) && isShipmentEnabled)
+                .IsBillCreateEnabled(isBillingEnabled)
                 .BookingType(CustomerBookingConstants.ONLINE)
                 .Status(CustomerBookingConstants.ONE)
                 .FmcTlcId(customerBooking.getFmcTlcId())
@@ -66,7 +68,7 @@ public class V1ServiceUtil {
                 .RoutingList(createRoutingList(customerBooking.getRoutingList()))
                 .Documents(createDocuments(customerBooking.getFileRepoList()))
                 .Loosecargos(createLooseCarges(customerBooking.getPackingList()))
-                .OrgDetails(createOrgDetails(customerBooking))
+                .OrgDetails(null)
                 .BillCharges(createQuoteCharges(customerBooking.getBookingCharges()))
                 .build();
     }
@@ -114,6 +116,7 @@ public class V1ServiceUtil {
                         .CreditorCode(bc.getCreditor() != null ? bc.getCreditor().getOrgCode() : null)
                         .DebitorAddressCode(bc.getDebtor() != null ? bc.getDebtor().getAddressCode() : null)
                         .CreditorAddressCode(bc.getCreditor() != null ? bc.getCreditor().getAddressCode() : null)
+                        .PerMeasurementBasis(bc.getMeasurementBasis())
                         .build()).collect(Collectors.toList());
     }
 

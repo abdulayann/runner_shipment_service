@@ -20,7 +20,6 @@ public class PackingResponse implements IRunnerResponse {
     private Integer DGSubstanceId;
     private String packs;
     private String packsType;
-    private String containerNumber;
     private BigDecimal weight;
     private String weightUnit;
     private BigDecimal volume;
@@ -56,6 +55,7 @@ public class PackingResponse implements IRunnerResponse {
     private String volumeWeightUnit;
     private String vinNumber;
     private Long containerId;
+    private String containerNumber;
     private String transportMode;
     private String innerPackageNumber;
     private String innerPackageType;
@@ -71,6 +71,7 @@ public class PackingResponse implements IRunnerResponse {
     public Map<String, String> commodityTypeData;
     private Boolean isDimension;
     private Boolean isContractEnforced;
+    private String handlingInfo;
     private Long contractEnforcedQuantityLimit;
 }
 

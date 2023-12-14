@@ -18,4 +18,10 @@ public class V1TenantSettingsResponse {
     private int CreditLimitOn;
     private Boolean IsGlobalFusionIntegrationEnabled;
     private String BusinessUnitName;
+    private boolean EnableIGMDetails;
+    private boolean GSTTaxAutoCalculation;
+    private Boolean BillingServiceV2Enabled;
+    private Boolean ShipmentServiceV2Enabled;
+    private Boolean UseV2ScreenForBillCharges;
+    private Boolean P100Branch;
 }

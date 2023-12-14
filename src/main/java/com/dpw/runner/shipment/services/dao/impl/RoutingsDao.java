@@ -8,11 +8,12 @@ import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IRoutingsDao;
 import com.dpw.runner.shipment.services.entity.CustomerBooking;
 import com.dpw.runner.shipment.services.entity.Routings;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.enums.LifecycleHooks;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.IRoutingsRepository;
-import com.dpw.runner.shipment.services.service.impl.AuditLogService;
+import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.validator.ValidatorUtility;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nimbusds.jose.util.Pair;
@@ -24,6 +25,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -44,12 +46,12 @@ public class RoutingsDao implements IRoutingsDao {
     private JsonHelper jsonHelper;
 
     @Autowired
-    private AuditLogService auditLogService;
+    private IAuditLogService auditLogService;
 
     @Override
     public Routings save(Routings routings) {
-        Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(routings) , Constants.ROUTING, LifecycleHooks.ON_CREATE, false);
-        if (! errors.isEmpty())
+        Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(routings), Constants.ROUTING, LifecycleHooks.ON_CREATE, false);
+        if (!errors.isEmpty())
             throw new ValidationException(errors.toString());
         return routingsRepository.save(routings);
     }
@@ -62,6 +64,11 @@ public class RoutingsDao implements IRoutingsDao {
     @Override
     public Optional<Routings> findById(Long id) {
         return routingsRepository.findById(id);
+    }
+
+    @Override
+    public Optional<Routings> findByGuid(UUID id) {
+        return routingsRepository.findByGuid(id);
     }
 
     @Override
@@ -91,7 +98,7 @@ public class RoutingsDao implements IRoutingsDao {
                 }
                 responseRoutings = saveEntityFromShipment(routingsRequestList, shipmentId);
             }
-            deleteRoutings(hashMap, "Shipment", shipmentId);
+            deleteRoutings(hashMap, ShipmentDetails.class.getSimpleName(), shipmentId);
             return responseRoutings;
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -104,17 +111,35 @@ public class RoutingsDao implements IRoutingsDao {
     @Override
     public List<Routings> saveEntityFromShipment(List<Routings> routings, Long shipmentId) {
         List<Routings> res = new ArrayList<>();
-        for(Routings req : routings){
-            if(req.getId() != null){
+        for (Routings req : routings) {
+            String oldEntityJsonString = null;
+            String operation = DBOperationType.CREATE.name();
+            if (req.getId() != null) {
                 long id = req.getId();
                 Optional<Routings> oldEntity = findById(id);
                 if (!oldEntity.isPresent()) {
                     log.debug("Routing is null for Id {}", req.getId());
                     throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
                 }
+                req.setCreatedAt(oldEntity.get().getCreatedAt());
+                req.setCreatedBy(oldEntity.get().getCreatedBy());
+                oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
+                operation = DBOperationType.UPDATE.name();
             }
             req.setShipmentId(shipmentId);
             req = save(req);
+            try {
+                auditLogService.addAuditLog(
+                        AuditLogMetaData.builder()
+                                .newData(req)
+                                .prevData(oldEntityJsonString != null ? jsonHelper.readFromJson(oldEntityJsonString, Routings.class) : null)
+                                .parent(ShipmentDetails.class.getSimpleName())
+                                .parentId(shipmentId)
+                                .operation(operation).build()
+                );
+            } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException | InvocationTargetException | NoSuchMethodException e) {
+                log.error(e.getMessage());
+            }
             res.add(req);
         }
         return res;
@@ -154,7 +179,7 @@ public class RoutingsDao implements IRoutingsDao {
     @Override
     public List<Routings> saveEntityFromBooking(List<Routings> routings, Long bookingId) {
         List<Routings> res = new ArrayList<>();
-        ListCommonRequest listCommonRequest = constructListCommonRequest("id", routings.stream().map(Routings::getId).collect(Collectors.toList()), "IN");
+        ListCommonRequest listCommonRequest = constructListCommonRequest("bookingId", bookingId, "=");
         Pair<Specification<Routings>, Pageable> pair = fetchData(listCommonRequest, Routings.class);
         Page<Routings> routingsPage = findAll(pair.getLeft(), pair.getRight());
         Map<Long, Routings> hashMap = routingsPage.stream()
@@ -182,7 +207,7 @@ public class RoutingsDao implements IRoutingsDao {
                                 .parentId(bookingId)
                                 .operation(operation).build()
                 );
-            } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException e) {
+            } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException | InvocationTargetException | NoSuchMethodException e) {
                 log.error(e.getMessage());
             }
             res.add(req);
@@ -211,7 +236,45 @@ public class RoutingsDao implements IRoutingsDao {
                 }
                 responseRoutings = saveEntityFromConsole(routingsRequestList, consolidationId);
             }
-            deleteRoutings(hashMap, "Consolidation", consolidationId);
+            deleteRoutings(hashMap, null, null);
+            return responseRoutings;
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
+            log.error(responseMsg, e);
+            throw new Exception(e);
+        }
+    }
+
+    @Override
+    public List<Routings> updateEntityFromConsole(List<Routings> routingsList, Long consolidationId, List<Routings> oldEntityList) throws Exception {
+        String responseMsg;
+        Map<UUID, Routings> routingMap = new HashMap<>();
+        if (oldEntityList != null && oldEntityList.size() > 0) {
+            for (Routings entity :
+                    oldEntityList) {
+                routingMap.put(entity.getGuid(), entity);
+            }
+        }
+
+        List<Routings> responseRoutings = new ArrayList<>();
+        try {
+            Routings oldEntity;
+            List<Routings> routingsRequestList = new ArrayList<>();
+            if (routingsList != null && routingsList.size() != 0) {
+                for (Routings request : routingsList) {
+                    oldEntity = routingMap.get(request.getGuid());
+                    if (oldEntity != null) {
+                        routingMap.remove(oldEntity.getGuid());
+                        request.setId(oldEntity.getId());
+                    }
+                    routingsRequestList.add(request);
+                }
+                responseRoutings = saveEntityFromConsole(routingsRequestList, consolidationId);
+            }
+            Map<Long, Routings> hashMap = new HashMap<>();
+            routingMap.forEach((s, routings) -> hashMap.put(routings.getId(), routings));
+            deleteRoutings(hashMap, null, null);
             return responseRoutings;
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -224,14 +287,16 @@ public class RoutingsDao implements IRoutingsDao {
     @Override
     public List<Routings> saveEntityFromConsole(List<Routings> routings, Long consolidationId) {
         List<Routings> res = new ArrayList<>();
-        for(Routings req : routings){
-            if(req.getId() != null){
+        for (Routings req : routings) {
+            if (req.getId() != null) {
                 long id = req.getId();
                 Optional<Routings> oldEntity = findById(id);
                 if (!oldEntity.isPresent()) {
                     log.debug("Routing is null for Id {}", req.getId());
                     throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
                 }
+                req.setCreatedAt(oldEntity.get().getCreatedAt());
+                req.setCreatedBy(oldEntity.get().getCreatedBy());
             }
             req.setConsolidationId(consolidationId);
             req = save(req);
@@ -257,7 +322,7 @@ public class RoutingsDao implements IRoutingsDao {
                                         .parentId(entityId)
                                         .operation(DBOperationType.DELETE.name()).build()
                         );
-                    } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException e) {
+                    } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException | InvocationTargetException | NoSuchMethodException e) {
                         log.error(e.getMessage());
                     }
                 }
@@ -273,8 +338,8 @@ public class RoutingsDao implements IRoutingsDao {
     public List<Routings> updateEntityFromShipment(List<Routings> routingsList, Long shipmentId, List<Routings> oldEntityList) throws Exception {
         String responseMsg;
         Map<UUID, Routings> routingMap = new HashMap<>();
-        if(oldEntityList != null && oldEntityList.size() > 0) {
-            for (Routings entity:
+        if (oldEntityList != null && oldEntityList.size() > 0) {
+            for (Routings entity :
                     oldEntityList) {
                 routingMap.put(entity.getGuid(), entity);
             }
@@ -287,7 +352,7 @@ public class RoutingsDao implements IRoutingsDao {
             if (routingsList != null && routingsList.size() != 0) {
                 for (Routings request : routingsList) {
                     oldEntity = routingMap.get(request.getGuid());
-                    if(oldEntity != null) {
+                    if (oldEntity != null) {
                         routingMap.remove(oldEntity.getGuid());
                         request.setId(oldEntity.getId());
                     }

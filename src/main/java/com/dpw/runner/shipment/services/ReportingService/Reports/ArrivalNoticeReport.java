@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.ReportingService.Reports;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.Models.ArrivalNoticeModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ContainerModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -36,7 +37,7 @@ public class ArrivalNoticeReport extends IReport {
         arrivalNoticeModel.containers = new ArrayList<>();
         if(arrivalNoticeModel.shipmentDetails.getContainersList() != null)
         {
-            for(Containers container : arrivalNoticeModel.shipmentDetails.getContainersList())
+            for(ContainerModel container : arrivalNoticeModel.shipmentDetails.getContainersList())
                 arrivalNoticeModel.containers.add(getShipmentContainer(container));
         }
         arrivalNoticeModel.usersDto = UserContext.getUser();

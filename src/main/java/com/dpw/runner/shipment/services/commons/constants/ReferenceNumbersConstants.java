@@ -16,4 +16,7 @@ public class ReferenceNumbersConstants {
     public static final String REFERENCE_NUMBERS_ID = "Reference Numbers Id";
 
     public static final String RESPONSE_CONTAINER_LIST = "List";
+
+    public static final String FEEDER_VESSEL = "Feeder Vessel";
+    public static final String MOTHER_VESSEL = "Mother Vessel";
 }

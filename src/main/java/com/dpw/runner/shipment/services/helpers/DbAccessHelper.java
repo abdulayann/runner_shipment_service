@@ -1,10 +1,6 @@
 package com.dpw.runner.shipment.services.helpers;
 
-import com.dpw.runner.shipment.services.commons.requests.Criteria;
-import com.dpw.runner.shipment.services.commons.requests.FilterCriteria;
-import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
-import com.dpw.runner.shipment.services.commons.requests.SortRequest;
-import com.dpw.runner.shipment.services.commons.requests.RunnerEntityMapping;
+import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.utils.ObjectUtility;
 import com.nimbusds.jose.util.Pair;
 import org.springframework.data.domain.PageRequest;
@@ -31,7 +27,8 @@ public class DbAccessHelper {
         tableNames = tableName;
         Pageable pages;
         globalSearchCriteria(request, tableName);
-        if (request.getSortRequest() != null && request.getFilterCriteria() != null && request.getFilterCriteria().size() == 0) {
+        if (request.getSortRequest() != null && request.getFilterCriteria() != null &&
+                (request.getFilterCriteria().size() == 0  || (request.getFilterCriteria().size() == 1 && request.getFilterCriteria().get(0).getInnerFilter() != null && request.getFilterCriteria().get(0).getInnerFilter().size() == 0))) {
             String _tableName = tableNames.get(request.getSortRequest().getFieldName()).getTableName();
             Sort sortRequest = null;
             if (Objects.equals(_tableName, className.getSimpleName()))
@@ -83,20 +80,25 @@ public class DbAccessHelper {
 
     private static List<FilterCriteria> createCriteriaForGlobalSearch(Map<String, RunnerEntityMapping> tableName, String containsText) {
         List<FilterCriteria> innerFilters = new ArrayList<>();
-        List<RunnerEntityMapping> entityMappingList = tableName.entrySet().stream()
-                        .filter(x -> x.getValue().isContainsText()).map(x -> x.getValue()).collect(Collectors.toList());
-        entityMappingList.forEach(c -> {
-            innerFilters.add(FilterCriteria.builder().logicOperator(innerFilters.isEmpty() ? null : "OR")
-                            .criteria(Criteria.builder().fieldName(c.getFieldName()).value(containsText).operator("LIKE").build()).build());
-
-        });
+        for (String key: tableName.keySet()) {
+            if(tableName.get(key).isContainsText()) {
+                innerFilters.add(FilterCriteria.builder().logicOperator(innerFilters.isEmpty() ? null : "OR")
+                        .criteria(Criteria.builder().fieldName(key).value(containsText).operator("LIKE").build()).build());
+            }
+        }
+//        List<RunnerEntityMapping> entityMappingList = tableName.entrySet().stream()
+//                        .filter(x -> x.getValue().isContainsText()).map(x -> x.getValue()).collect(Collectors.toList());
+//        entityMappingList.forEach(c -> {
+//
+//
+//        });
         return innerFilters.isEmpty() ? null : innerFilters;
     }
 
 
     public static <T> Pair<Specification<T>, Pageable> fetchData(ListCommonRequest request, Class className) {
         Pageable pages;
-        if (request.getSortRequest() != null && request.getFilterCriteria() != null && request.getFilterCriteria().size() == 0) {
+        if (request.getSortRequest() != null && request.getFilterCriteria() != null && (request.getFilterCriteria().size() == 0  || (request.getFilterCriteria().size() == 1 && request.getFilterCriteria().get(0).getInnerFilter() != null))) {
             Sort sortRequest = Sort.by(request.getSortRequest().getFieldName());
             sortRequest = sortRequest.descending();
             pages = PageRequest.of(request.getPageNo() - 1, request.getPageSize(), sortRequest);
@@ -165,7 +167,7 @@ public class DbAccessHelper {
                 if (!query.getResultType().isAssignableFrom(Long.class)) {
                     for (String table : tableName) {
                         Join<Class, T> join = (Join) root.fetch(table, JoinType.LEFT);
-                        query.distinct(true);
+                        //query.distinct(true);
                     }
                 }
                 return criteriaBuilder.conjunction();
@@ -252,6 +254,9 @@ public class DbAccessHelper {
                 if (dataType.isAssignableFrom(String.class)) {
                     return criteriaBuilder.equal(criteriaBuilder.lower(path.get(fieldName)), (((String) input.getValue()).toLowerCase()));
                 }
+                else if (dataType.isAssignableFrom(UUID.class) && input.getValue() instanceof String) {
+                    return criteriaBuilder.equal(path.get(fieldName), UUID.fromString((String) input.getValue()));
+                }
                 else if(dataType.isEnum()) {
                     return criteriaBuilder.equal(path.get(fieldName), getEnum(dataType.getName(), (String) input.getValue()));
                 }
@@ -286,14 +291,58 @@ public class DbAccessHelper {
                     return criteriaBuilder.lessThan(path.get(fieldName), covertStringToLocalDate((String) input.getValue(), "yyyy-MM-dd"));
                 }
                 return criteriaBuilder.lt(path.get(fieldName), (Number) input.getValue());
+            case ">=":
+                if (dataType.isAssignableFrom(String.class)) {
+                    return criteriaBuilder.greaterThanOrEqualTo(path.get(fieldName), (String) input.getValue());
+                }
+                if (dataType.isAssignableFrom(Date.class)) {
+                    return criteriaBuilder.greaterThanOrEqualTo(path.get(fieldName), covertStringToData((String) input.getValue(), "yyyy-MM-dd"));
+                }
+                if (dataType.isAssignableFrom(LocalDateTime.class)) {
+                    return criteriaBuilder.greaterThanOrEqualTo(path.get(fieldName), covertStringToLocalDate((String) input.getValue(), "yyyy-MM-dd"));
+                }
+                return criteriaBuilder.gt(path.get(fieldName), (Number) input.getValue());
+
+            case "<=":
+                if (dataType.isAssignableFrom(String.class)) {
+                    return criteriaBuilder.lessThanOrEqualTo(path.get(fieldName), (String) input.getValue());
+                }
+                if (dataType.isAssignableFrom(Date.class)) {
+                    return criteriaBuilder.lessThanOrEqualTo(path.get(fieldName), covertStringToData((String) input.getValue(), "yyyy-MM-dd"));
+                }
+                if (dataType.isAssignableFrom(LocalDateTime.class)) {
+                    return criteriaBuilder.lessThanOrEqualTo(path.get(fieldName), covertStringToLocalDate((String) input.getValue(), "yyyy-MM-dd"));
+                }
+                return criteriaBuilder.lt(path.get(fieldName), (Number) input.getValue());
 
             case "LIKE":
                 return criteriaBuilder.like(criteriaBuilder.lower(path.get(fieldName)),
                         "%" + ((String) input.getValue()).toLowerCase() + "%");
 
             case "IN":
+                if (dataType.isAssignableFrom(UUID.class) && input.getValue() != null && input.getValue() instanceof List) {
+                    List<UUID> querySet = ((List<?>) input.getValue()).stream()
+                    .map(i -> {
+                        if(i instanceof String)
+                            return UUID.fromString((String) i);
+                        return (UUID) i;
+                    }).collect(Collectors.toList());
+                    return criteriaBuilder.in(path.get(fieldName)).value(querySet);
+                }
+                if(dataType.isAssignableFrom(Long.class) && input.getValue() != null && input.getValue() instanceof List) {
+                    List<Long> querySet = ((List<?>) input.getValue()).stream()
+                            .map(i -> Long.valueOf(String.valueOf(i))).collect(Collectors.toList());
+                    return criteriaBuilder.in(path.get(fieldName)).value(querySet);
+                }
                 return criteriaBuilder.in(path.get(fieldName))
                         .value(input.getValue());
+            case "CONTAINS":
+                if(dataType.isAssignableFrom(List.class))
+                    return criteriaBuilder.isMember(input.getValue(), path.get(fieldName));
+                else
+                    throw new RuntimeException("Criteria not supported yet");
+            case "ISNULL":
+                return criteriaBuilder.isNull(path.get(fieldName));
             default:
                 throw new RuntimeException("Operation not supported yet");
         }
@@ -351,13 +400,11 @@ public class DbAccessHelper {
     }
 
     private static LocalDateTime covertStringToLocalDate(String date, String pattern) {
-
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern(pattern);
-
         try {
             return LocalDate.parse(date, formatter).atStartOfDay();
         } catch (Exception e) {
-            return null;
+            return LocalDateTime.parse(date,DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
         }
     }
 

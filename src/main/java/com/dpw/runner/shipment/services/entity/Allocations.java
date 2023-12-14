@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.utils.MasterData;
 import lombok.*;
 import lombok.experimental.Accessors;
+import org.hibernate.annotations.BatchSize;
 
 import javax.persistence.Entity;
 import javax.persistence.Table;
@@ -22,6 +23,7 @@ import java.util.UUID;
 @AllArgsConstructor
 @Builder
 @Accessors(chain = true)
+@BatchSize(size = 50)
 public class Allocations extends MultiTenancy {
 
     @Column(name = "shipments_count")

@@ -5,5 +5,5 @@ import org.springframework.stereotype.Service;
 
 @Service
 public interface IUserService {
-    UsersDto getUserByToken(String token);
+    UsersDto getUserByToken(String key, String token);
 }
