@@ -259,6 +259,21 @@ public class ShipmentController {
         return (ResponseEntity<RunnerResponse<AutoUpdateWtVolResponse>>) ResponseHelper.buildFailedResponse(responseMsg);
     }
 
+    @ApiResponses(value = { @ApiResponse(code = 200, message = ContainerConstants.CALCULATION_SUCCESSFUL) })
+    @PostMapping(ApiConstants.CALCULATE_WT_VOL_SHIPMENT_ON_CHANGES)
+    public ResponseEntity<RunnerResponse<AutoUpdateWtVolResponse>> calculateWtVolInShipmentOnChanges(@RequestBody AutoUpdateWtVolRequest autoUpdateWtVolRequest) {
+        String responseMsg;
+        try {
+            return (ResponseEntity<RunnerResponse<AutoUpdateWtVolResponse>>) shipmentService.calculateWtVolInShipmentOnChanges(CommonRequestModel.buildRequest(autoUpdateWtVolRequest));
+        }
+        catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_CALCULATION_ERROR;
+            log.error(responseMsg, e);
+        }
+        return (ResponseEntity<RunnerResponse<AutoUpdateWtVolResponse>>) ResponseHelper.buildFailedResponse(responseMsg);
+    }
+
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = ShipmentConstants.CREATE_SUCCESSFUL),
             @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
