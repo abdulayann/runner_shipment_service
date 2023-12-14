@@ -242,6 +242,8 @@ public class ShipmentSync implements IShipmentSync {
         if(sd.getAdditionalDetails() == null)
             return;
         modelMapper.map(sd.getAdditionalDetails(), cs);
+        cs.setDateofIssue(sd.getAdditionalDetails().getDateOfIssue());
+        cs.setDateofReceipt(sd.getAdditionalDetails().getDateOfReceipt());
         cs.setReceivingForwarderParty(mapPartyObject(sd.getAdditionalDetails().getReceivingForwarder()));
         cs.setSendingForwarderParty(mapPartyObject(sd.getAdditionalDetails().getSendingForwarder()));
         cs.setTraderOrSupplierParty(mapPartyObject(sd.getAdditionalDetails().getTraderOrSupplier()));
