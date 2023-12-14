@@ -45,18 +45,20 @@ public class SyncEntityConversionService {
     public List<ContainerRequestV2> containersV2ToV1(List<Containers> containersList) {
         if(containersList != null) {
             List<ContainerRequestV2> res = containersList.stream().map(
-                    i -> {
-                        var containerRequestV2 = modelMapper.map(i, ContainerRequestV2.class);
-                        containerRequestV2.setIsHazardous(i.getHazardous());
-                        containerRequestV2.setDgClassString(i.getDgClass());
-                        containerRequestV2.setMarksnNums(i.getMarksNums());
-                        containerRequestV2.setContainerStuffingLocationName(i.getContainerStuffingLocation());
-                        return containerRequestV2;
-                    }
+                    this::containerV2ToV1
             ).toList();
             return res;
         }
         return new ArrayList<>();
+    }
+
+    public ContainerRequestV2 containerV2ToV1(Containers containers) {
+        var containerRequestV2 = modelMapper.map(containers, ContainerRequestV2.class);
+        containerRequestV2.setIsHazardous(containers.getHazardous());
+        containerRequestV2.setDgClassString(containers.getDgClass());
+        containerRequestV2.setMarksnNums(containers.getMarksNums());
+        containerRequestV2.setContainerStuffingLocationName(containers.getContainerStuffingLocation());
+        return containerRequestV2;
     }
 
     public List<Containers> containersV1ToV2(List<ContainerRequestV2> containersList) {

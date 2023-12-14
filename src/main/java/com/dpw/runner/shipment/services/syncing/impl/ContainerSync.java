@@ -22,7 +22,6 @@ import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @Component
@@ -45,6 +44,9 @@ public class ContainerSync implements IContainerSync {
     @Autowired
     private EmailServiceUtility emailServiceUtility;
 
+    @Autowired
+    private SyncEntityConversionService syncEntityConversionService;
+
     private RetryTemplate retryTemplate = RetryTemplate.builder()
             .maxAttempts(3)
             .fixedBackoff(1000)
@@ -57,10 +59,7 @@ public class ContainerSync implements IContainerSync {
     @Override
     @Async("asyncExecutor")
     public ResponseEntity<?> sync(List<Containers> containers, Long consolidationId, Long shipmentId) {
-        List<ContainerRequestV2> requestV2List = new ArrayList<>();
-        for (var container : containers) {
-            requestV2List.add(modelMapper.map(container, ContainerRequestV2.class));
-        }
+        List<ContainerRequestV2> requestV2List = syncEntityConversionService.containersV2ToV1(containers);
         BulkContainerRequestV2 containerRequestV2 = BulkContainerRequestV2.builder()
                 .bulkContainers(requestV2List).ConsolidationId(consolidationId).ShipmentId(shipmentId).build();
         String finalCs = jsonHelper.convertToJson(V1DataSyncRequest.builder().entity(containerRequestV2).module(SyncingConstants.BULK_CONTAINERS).build());
