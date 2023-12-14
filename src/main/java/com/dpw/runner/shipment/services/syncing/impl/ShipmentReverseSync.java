@@ -165,6 +165,8 @@ public class ShipmentReverseSync implements IShipmentReverseSync {
         additionalDetails.setBOENumber(cs.getBoenumber());
         additionalDetails.setGuid(null);
         additionalDetails.setDeliveryMode(cs.getHblDeliveryMode());
+        additionalDetails.setDateOfIssue(cs.getDateofIssue());
+        additionalDetails.setDateOfReceipt(cs.getDateofReceipt());
         sd.setAdditionalDetails(additionalDetails);
     }
 

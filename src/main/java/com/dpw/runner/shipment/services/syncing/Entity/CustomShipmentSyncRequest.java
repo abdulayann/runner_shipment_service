@@ -204,8 +204,8 @@ public class CustomShipmentSyncRequest implements IRunnerRequest, IRunnerRespons
     @JsonProperty("CustomLocation")
     private String CustomLocation;
 
-    @JsonProperty("DateOfReceipt")
-    private LocalDateTime DateOfReceipt;
+    @JsonProperty("DateofReceipt")
+    private LocalDateTime DateofReceipt;
     @JsonProperty("DraftPrinted")
     private boolean DraftPrinted;
 
