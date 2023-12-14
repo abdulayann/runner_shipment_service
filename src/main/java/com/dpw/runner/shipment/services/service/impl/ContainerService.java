@@ -936,6 +936,7 @@ public class ContainerService implements IContainerService {
                 response.setChargeableWeight(chargeableWeight + " " + Constants.VOLUME_UNIT_M3);
             }
             response.setTotalContainerVolume(totalVolume + " " + toVolumeUnit);
+            response.setSummary("20GP");
             return response;
         }
         catch (Exception e) {
