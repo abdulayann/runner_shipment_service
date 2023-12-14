@@ -225,7 +225,7 @@ public class ContainerService implements IContainerService {
         LocalDateTime currentTime = LocalDateTime.now();
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
         String timestamp = currentTime.format(formatter);
-        String filenameWithTimestamp = "Containers_" + timestamp + ".xlsx";
+        String filenameWithTimestamp = "Containers_" + timestamp + ".csv";
 
         response.setContentType("text/csv");
         response.setHeader("Content-Disposition", "attachment; filename=" + filenameWithTimestamp);
