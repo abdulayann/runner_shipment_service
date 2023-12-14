@@ -320,4 +320,36 @@ public class CommonUtils {
         errorMessage = errors.toString();
         return errorMessage;
     }
+
+    public static String inWords(Long num) {
+        String[] a = {"", "One ", "Two ", "Three ", "Four ", "Five ", "Six ", "Seven ", "Eight ", "Nine ", "Ten ",
+                "Eleven ", "Twelve ", "Thirteen ", "Fourteen ", "Fifteen ", "Sixteen ", "Seventeen ", "Eighteen ",
+                "Nineteen "};
+        String[] b = {"", "", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety"};
+
+        if (num > 999999999) {
+            return "overflow";
+        }
+
+        String numStr = String.format("%09d", num);
+        int[] n = {
+                Integer.parseInt(numStr.substring(0, 2)), // Crore
+                Integer.parseInt(numStr.substring(2, 4)), // Lakh
+                Integer.parseInt(numStr.substring(4, 6)), // Thousand
+                Integer.parseInt(numStr.substring(6, 7)), // Hundred
+                Integer.parseInt(numStr.substring(7, 9))  // Tens and Ones
+        };
+
+        StringBuilder str = new StringBuilder();
+
+        str.append((n[0] != 0) ? (!a[n[0]].equals("") ? a[n[0]] : b[n[0] / 10] + " " + a[n[0] % 10]) + "Crore " : "");
+        str.append((n[1] != 0) ? (!a[n[1]].equals("") ? a[n[1]] : b[n[1] / 10] + " " + a[n[1] % 10]) + "Lakh " : "");
+        str.append((n[2] != 0) ? (!a[n[2]].equals("") ? a[n[2]] : b[n[2] / 10] + " " + a[n[2] % 10]) + "Thousand " : "");
+        str.append((n[3] != 0) ? (!a[n[3]].equals("") ? a[n[3]] : b[n[3] / 10] + " " + a[n[3] % 10]) + "Hundred " : "");
+        str.append((n[4] != 0) ? ((str.length() != 0) ? "and " : "") +
+                (!a[n[4]].equals("") ? a[n[4]] : b[n[4] / 10] + " " + a[n[4] % 10]) + " " : "");
+
+        return str.toString().trim();
+    }
+
 }
