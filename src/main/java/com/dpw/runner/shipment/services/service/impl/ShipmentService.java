@@ -1803,8 +1803,7 @@ public class ShipmentService implements IShipmentService {
                 Page<Containers> containers = containerDao.findAll(pair.getLeft(), pair.getRight());
                 if(containers != null && containers.getContent() != null && !containers.getContent().isEmpty()) {
                     for (Containers container : containers.getContent()) {
-                        boolean isPart = false;
-//                        isPart = container.getIsPart() != null && container.getIsPart().booleanValue(); TODO- add isPart
+                        boolean isPart = container.getIsPart() != null && container.getIsPart().booleanValue();
                         if(shipmentDetails.getShipmentType().equals(Constants.CARGO_TYPE_FCL) || isPart && container.getShipmentsList() != null && container.getShipmentsList().size() > 0) {
                             String errorMsg = "This container is already linked to another shipment. Only part Container/Containers are allowed to attach";
                             if(!isPart)

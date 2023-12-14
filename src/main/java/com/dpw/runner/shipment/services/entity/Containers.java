@@ -306,4 +306,7 @@ public class Containers extends MultiTenancy {
     @Column(name = "handling_info")
     @Size(max=2500, message = "max size is 2500 for handling_info")
     private String handlingInfo;
+
+    @Column(name = "is_part")
+    private Boolean isPart;
 }
