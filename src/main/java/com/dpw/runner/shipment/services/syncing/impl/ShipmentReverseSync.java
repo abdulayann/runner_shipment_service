@@ -42,6 +42,8 @@ public class ShipmentReverseSync implements IShipmentReverseSync {
     ISyncQueueService syncQueueService;
     @Autowired
     private SyncConfig syncConfig;
+    @Autowired
+    private SyncEntityConversionService syncEntityConversionService;
 
     public ResponseEntity<?> reverseSync(CommonRequestModel commonRequestModel, boolean checkForSync) {
         String responseMsg;
@@ -82,6 +84,7 @@ public class ShipmentReverseSync implements IShipmentReverseSync {
 
             mapTruckDriverDetailReverse(cs, sd);
             mapRoutingsReverse(cs, sd);
+            sd.setContainersList(syncEntityConversionService.containersV1ToV2(cs.getContainersList()));
             sd.setReferenceNumbersList(convertToList(cs.getReferenceNumbers(), ReferenceNumbers.class));
             Map<UUID, String> map = new HashMap<>();
             if(cs.getPackings_() != null)
