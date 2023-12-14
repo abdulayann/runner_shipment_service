@@ -20,16 +20,16 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.TransactionSystemException;
 
 import javax.imageio.ImageIO;
+import javax.validation.ConstraintViolation;
+import javax.validation.ConstraintViolationException;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.text.DecimalFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.*;
 import java.util.List;
-import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Component
@@ -311,5 +311,13 @@ public class CommonUtils {
           default -> e.getMessage();
         };
         return responseMessage;
+    }
+
+    public static String getConstrainViolationErrorMessage(Exception e) {
+        String errorMessage = "";
+        Set<ConstraintViolation<?>> set = ((ConstraintViolationException) e).getConstraintViolations();
+        List<String> errors = set.stream().map(i -> String.format("%s : %s",i.getInvalidValue(), i.getMessage())).toList();
+        errorMessage = errors.toString();
+        return errorMessage;
     }
 }
