@@ -39,6 +39,7 @@ public class CSVParsingUtil<T> {
         StringBuilder headerBuilder = new StringBuilder();
         Field[] fields = Containers.class.getDeclaredFields();
         for (Field field : fields) {
+            if (hiddenFields.contains(field.getName())) continue;
             if (headerBuilder.length() > 0) {
                 headerBuilder.append(",");
             }
