@@ -63,6 +63,7 @@ public class ApiConstants {
     public static final String CALCULATE_CONTAINER_SUMMARY = "/container/summary";
     public static final String CALCULATE_PACK_SUMMARY = "/pack/summary";
     public static final String CALCULATE_AUTO_UPDATE_WT_VOL_SHIPMENT = "/calculate/auto";
+    public static final String CALCULATE_WT_VOL_SHIPMENT_ON_CHANGES = "/calculate/changes";
     public static final String LIST_PACKS_FOR_ASSIGN_DETACH = "/list/packs";
     public static final String ASSIGN_PACKS_SHIPMENTS = "/assign/shipments";
     public static final String DETACH_PACKS_SHIPMENTS = "/detach/shipments";

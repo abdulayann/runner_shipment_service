@@ -1079,6 +1079,22 @@ public class ShipmentService implements IShipmentService {
         }
     }
 
+    @Override
+    public ResponseEntity<?> calculateWtVolInShipmentOnChanges(CommonRequestModel commonRequestModel) throws Exception {
+        String responseMsg;
+        try {
+            AutoUpdateWtVolRequest request = (AutoUpdateWtVolRequest) commonRequestModel.getData();
+            AutoUpdateWtVolResponse response = jsonHelper.convertValue(request, AutoUpdateWtVolResponse.class);
+            response = calculateVW(request, response, true);
+            return ResponseHelper.buildSuccessResponse(response);
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_CALCULATION_ERROR;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
     private AutoUpdateWtVolResponse calculateShipmentWV(AutoUpdateWtVolRequest request) throws Exception {
         AutoUpdateWtVolResponse response = jsonHelper.convertValue(request, AutoUpdateWtVolResponse.class);
         List<Packing> packingList = jsonHelper.convertValueToList(request.getPackingList(), Packing.class);
@@ -2472,7 +2488,7 @@ public class ShipmentService implements IShipmentService {
         String responseMsg;
         CalculateContainerSummaryRequest request = (CalculateContainerSummaryRequest) commonRequestModel.getData();
         try {
-            List<Containers> containers = jsonHelper.convertValueToList(request.getContainerRequestList(), Containers.class);
+            List<Containers> containers = jsonHelper.convertValueToList(request.getContainersList(), Containers.class);
             ContainerSummaryResponse response = containerService.calculateContainerSummary(containers, request.getTransportMode(), request.getShipmentType());
             return ResponseHelper.buildSuccessResponse(response);
         }
@@ -2488,7 +2504,7 @@ public class ShipmentService implements IShipmentService {
         String responseMsg;
         CalculatePackSummaryRequest request = (CalculatePackSummaryRequest) commonRequestModel.getData();
         try {
-            List<Packing> packingList = jsonHelper.convertValueToList(request.getPackingRequestList(), Packing.class);
+            List<Packing> packingList = jsonHelper.convertValueToList(request.getPackingList(), Packing.class);
             PackSummaryResponse response = packingService.calculatePackSummary(packingList, request.getTransportMode(), request.getShipmentType());
             return ResponseHelper.buildSuccessResponse(response);
         }

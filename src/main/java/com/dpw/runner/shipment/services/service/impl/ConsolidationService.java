@@ -1255,7 +1255,7 @@ public class ConsolidationService implements IConsolidationService {
         String responseMsg;
         CalculateContainerSummaryRequest request = (CalculateContainerSummaryRequest) commonRequestModel.getData();
         try {
-            List<Containers> containers = jsonHelper.convertValueToList(request.getContainerRequestList(), Containers.class);
+            List<Containers> containers = jsonHelper.convertValueToList(request.getContainersList(), Containers.class);
             ContainerSummaryResponse response = containerService.calculateContainerSummary(containers, request.getTransportMode(), request.getContainerCategory());
             return ResponseHelper.buildSuccessResponse(response);
         }
@@ -1271,7 +1271,7 @@ public class ConsolidationService implements IConsolidationService {
         String responseMsg;
         CalculatePackSummaryRequest request = (CalculatePackSummaryRequest) commonRequestModel.getData();
         try {
-            List<Packing> packingList = jsonHelper.convertValueToList(request.getPackingRequestList(), Packing.class);
+            List<Packing> packingList = jsonHelper.convertValueToList(request.getPackingList(), Packing.class);
             PackSummaryResponse response = packingService.calculatePackSummary(packingList, request.getTransportMode(), request.getContainerCategory());
             return ResponseHelper.buildSuccessResponse(response);
         }
