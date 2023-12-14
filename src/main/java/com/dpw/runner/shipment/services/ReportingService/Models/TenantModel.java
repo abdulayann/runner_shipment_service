@@ -20,4 +20,5 @@ public class TenantModel implements Serializable {
     public String companyRegNumber;
     public boolean IATAAgent;
     public Long tenantId;
+    public String currencyCode;
 }

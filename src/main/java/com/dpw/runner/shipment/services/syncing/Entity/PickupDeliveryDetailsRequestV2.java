@@ -61,10 +61,12 @@ public class PickupDeliveryDetailsRequestV2 implements IRunnerRequest {
     private String StorageChargeUnit;
     @JsonProperty("StorageChargeDuration")
     private LocalTime StorageChargeDuration;
+    @JsonProperty("StorageDate")
+    private LocalDateTime StorageDate;
     @JsonProperty("TransporterDetail")
     private PartyRequestV2 TransporterDetail;
-    @JsonProperty("TruckWeightDuration")
-    private LocalTime TruckWeightDuration;
+    @JsonProperty("TruckWaitDuration")
+    private LocalTime TruckWaitDuration;
     @JsonProperty("TruckWaitTimeChargeUnit")
     private String TruckWaitTimeChargeUnit;
     @JsonProperty("TruckWaitTimeCharge")

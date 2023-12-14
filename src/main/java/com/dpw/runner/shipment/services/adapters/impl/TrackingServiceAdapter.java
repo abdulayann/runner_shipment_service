@@ -5,21 +5,26 @@ import com.dpw.runner.shipment.services.adapters.config.TrackingServiceConfig;
 import com.dpw.runner.shipment.services.adapters.interfaces.ITrackingServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
 import com.dpw.runner.shipment.services.dao.interfaces.IAwbDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
 import com.dpw.runner.shipment.services.dto.TrackingService.UniversalTrackingPayload;
+import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.CarrierMasterData;
 import com.dpw.runner.shipment.services.masterdata.factory.MasterDataFactory;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
+import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
+import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service_bus.ISBProperties;
 import com.dpw.runner.shipment.services.service_bus.ISBUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.kafka.common.protocol.types.Field;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -57,6 +62,9 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
 
     @Autowired
     private ISBUtils sbUtils;
+
+    @Autowired
+    private IV1Service v1Service;
 
 
     @Override
@@ -262,10 +270,11 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
 
     private List<UniversalTrackingPayload.EntityDetail> GetAWBDetailsFromShipment(ShipmentDetails inputShipment) {
         List<UniversalTrackingPayload.EntityDetail> result = new ArrayList<>();
-        Awb awb = awbDao.findByShipmentId(inputShipment.getId()).get(0);
-        result.add(UniversalTrackingPayload.EntityDetail.builder()
+        List<Awb> awbList = awbDao.findByShipmentId(inputShipment.getId());
+        if(awbList != null && awbList.size() > 0)
+            result.add(UniversalTrackingPayload.EntityDetail.builder()
                         .trackingNumber(inputShipment.getHouseBill())
-                        .allocationDate(awb.getCreatedAt().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")))
+                        .allocationDate(awbList.get(0).getCreatedAt().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")))
                 .build());
         return result;
     }
@@ -293,7 +302,7 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
                     .isEmpty(container.getIsEmpty())
                     .isReefer(container.getIsReefer())
                     .isShipperOwned(container.getIsShipperOwned())
-                    // .containerTypeCode(container.ContainerTypeCode) // TODO
+                    .containerTypeCode(container.getContainerCode())
                     .mode(container.getHblDeliveryMode())
                     .containerCount(container.getContainerCount())
                     .descriptionOfGoods(container.getDescriptionOfGoods())
@@ -323,23 +332,33 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
         return carrierMasterData.get(0).getItemDescription();
     }
 
-    private UniversalTrackingPayload.ShipmentDetail getShipmentDetails(ShipmentDetails shipmentsRow) {
-        if(shipmentsRow == null)
+    private UniversalTrackingPayload.ShipmentDetail getShipmentDetails(ShipmentDetails shipmentDetails) {
+        if(shipmentDetails == null)
             return null;
 
-        return UniversalTrackingPayload.ShipmentDetail.builder().build();
-        // TODO map the following properties
-//                .originName(shipmentsRow.OriginName)
-//                .destinationName(shipmentsRow.DestinationName)
-//                .destinationCountry(shipmentsRow.DestinationCountry)
-//                .originPortCode(shipmentsRow.POLCode)
-//                .destinationPortCode(shipmentsRow.PODCode)
-//                .serviceMode(shipmentsRow.ServiceMode)
-//                .estimatedPickupDate(shipmentsRow.EstimatedPickup != null ? ((DateTime)shipmentsRow.EstimatedPickup).Date.ToString("yyyy-MM-dd") : null)
-//                .bookingCreationDate(shipmentsRow.DateofIssue != null ? ((DateTime)shipmentsRow.DateofIssue).Date.ToString("yyyy-MM-dd") : null)
-//                .houseBill(shipmentsRow.getHouseBill())
-//                .shipmentType(shipmentsRow.getDirection()) // Custom_ShipType
-//                .build();
+        UniversalTrackingPayload.ShipmentDetail response = UniversalTrackingPayload.ShipmentDetail.builder()
+                .serviceMode(shipmentDetails.getServiceType())
+//                .estimatedPickupDate(shipmentDetails.EstimatedPickup != null ? ((DateTime)shipmentDetails.EstimatedPickup).Date.ToString("yyyy-MM-dd") : null)
+//                .bookingCreationDate(shipmentDetails.DateofIssue != null ? ((DateTime)shipmentDetails.DateofIssue).Date.ToString("yyyy-MM-dd") : null)
+                .houseBill(shipmentDetails.getHouseBill())
+                .shipmentType(shipmentDetails.getDirection())
+                .build();
+
+        if(shipmentDetails.getCarrierDetails() != null) {
+            CarrierDetails cd = shipmentDetails.getCarrierDetails();
+            Set<String> locationRefGuids = new HashSet<>();
+            locationRefGuids.add(cd.getOrigin());
+            locationRefGuids.add(cd.getDestination());
+            locationRefGuids.add(cd.getOriginPort());
+            locationRefGuids.add(cd.getDestinationPort());
+            Map<String, UnlocationsResponse> unlocationsResponseMap = getLocationData(locationRefGuids);
+            response.setOriginName(unlocationsResponseMap.get(cd.getOrigin()) != null ? unlocationsResponseMap.get(cd.getOrigin()).getName() : null);
+            response.setOriginPortCode(unlocationsResponseMap.get(cd.getOriginPort()) != null ? unlocationsResponseMap.get(cd.getOriginPort()).getLocCode() : null);
+            response.setDestinationName(unlocationsResponseMap.get(cd.getDestination()) != null ? unlocationsResponseMap.get(cd.getDestination()).getName() : null);
+            response.setDestinationCountry(unlocationsResponseMap.get(cd.getDestination()) != null ? unlocationsResponseMap.get(cd.getDestination()).getCountry() : null);
+            response.setDestinationPortCode(unlocationsResponseMap.get(cd.getDestinationPort()) != null ? unlocationsResponseMap.get(cd.getDestinationPort()).getLocCode() : null);
+        }
+        return response;
     }
 
     private UniversalTrackingPayload mapDetailsForTracking(String referenceNumberType, String runnerReferenceNumber, String masterBill, List<UniversalTrackingPayload.ShipmentDetail> shipmentDetail, List<UniversalTrackingPayload.EntityDetail> entityDetail) {
@@ -350,5 +369,27 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
         .entityDetails(entityDetail)
         .masterBill(masterBill)
         .build();
+    }
+
+    private Map<String, UnlocationsResponse> getLocationData(Set<String> locCodes) {
+        Map<String, UnlocationsResponse> locationMap = new HashMap<>();
+        if (locCodes.size() > 0) {
+            List<Object> criteria = Arrays.asList(
+                    Arrays.asList(EntityTransferConstants.LOCATION_SERVICE_GUID),
+                    "In",
+                    Arrays.asList(locCodes)
+            );
+            CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(criteria).build();
+            V1DataResponse v1DataResponse = v1Service.fetchUnlocation(commonV1ListRequest);
+            List<UnlocationsResponse> unlocationsResponse = jsonHelper.convertValueToList(v1DataResponse.entities, UnlocationsResponse.class);
+            if (unlocationsResponse != null && unlocationsResponse.size() > 0) {
+
+                for (UnlocationsResponse unlocation : unlocationsResponse) {
+                    locationMap.put(unlocation.getLocationsReferenceGUID(), unlocation);
+                }
+
+            }
+        }
+        return locationMap;
     }
 }

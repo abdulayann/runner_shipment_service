@@ -123,6 +123,11 @@ public class ShipmentSync implements IShipmentSync {
         cs.setGuid(sd.getGuid());
         cs.setDescription(sd.getGoodsDescription());
         cs.setCreatedBy(sd.getCreatedBy());
+
+        // Manually mapped fields
+        cs.setVolumeWeight(sd.getVolumetricWeight());
+        cs.setWeightVolumeUnit(sd.getVolumetricWeightUnit());
+
         String finalCs = jsonHelper.convertToJson(V1DataSyncRequest.builder().entity(cs).module(SyncingConstants.SHIPMENT).build());
         return callSync(finalCs, cs, sd.getId(), sd.getGuid());
     }

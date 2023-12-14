@@ -7,8 +7,8 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackContainerNumberChangeRequest;
 import com.dpw.runner.shipment.services.dto.request.PackingRequest;
-import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.PackingResponse;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
@@ -118,9 +118,16 @@ public class PackingController {
     }
 
     @PostMapping("/calculate-weight-volumne")
-    public ResponseEntity<RunnerResponse<ContainerResponse>> calculateWeightVolume(@RequestBody PackingRequest packingRequest) throws Exception {
+    public ResponseEntity<?> calculateWeightVolume(@RequestBody PackContainerNumberChangeRequest request) throws Exception {
         String responseMsg;
-        return (ResponseEntity<RunnerResponse<ContainerResponse>>) packingService.calculateWeightVolumne(CommonRequestModel.buildRequest(packingRequest));
+        try {
+            return (ResponseEntity<?>) packingService.calculateWeightVolumne(CommonRequestModel.buildRequest(request));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : "Error in calculations";
+            log.error(responseMsg, e);
+        }
+        return ResponseHelper.buildFailedResponse(responseMsg);
     }
 
     @ApiResponses(value = {

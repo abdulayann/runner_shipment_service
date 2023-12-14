@@ -9,6 +9,7 @@ import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.config.SyncConfig;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackContainerNumberChangeRequest;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryResponse;
 import com.dpw.runner.shipment.services.dto.request.PackingRequest;
 import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
@@ -27,7 +28,6 @@ import com.dpw.runner.shipment.services.syncing.constants.SyncingConstants;
 import com.dpw.runner.shipment.services.syncing.interfaces.IPackingSync;
 import com.dpw.runner.shipment.services.utils.CSVParsingUtil;
 import com.dpw.runner.shipment.services.utils.StringUtility;
-import com.dpw.runner.shipment.services.utils.UnitConversionUtility;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
@@ -345,33 +345,39 @@ public class PackingService implements IPackingService {
 
     @Override
     public ResponseEntity<?> calculateWeightVolumne(CommonRequestModel commonRequestModel) throws Exception {
-        PackingRequest request = (PackingRequest) commonRequestModel.getData();
-        Containers newContainer = null;
-
+        PackContainerNumberChangeRequest request = (PackContainerNumberChangeRequest) commonRequestModel.getData();
         List<IRunnerResponse> finalContainers = new ArrayList<>();
+        ShipmentSettingsDetails shipmentSettingsDetails = shipmentSettingsDao.getSettingsByTenantIds(List.of(TenantContext.getCurrentTenant())).get(0);
+        ShipmentDetails shipmentDetails = shipmentDao.findById(request.getPack().getShipmentId()).get();
+        if(shipmentSettingsDetails.getMultipleShipmentEnabled() != null && shipmentSettingsDetails.getMultipleShipmentEnabled()
+        && !shipmentDetails.getShipmentType().equals(Constants.CARGO_TYPE_FCL)
+                && (shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_SEA) || shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_ROA))) {
 
-        if (request.getContainerId() != null) {
-
-            newContainer = containersDao.findById(request.getContainerId()).get();
-
-            if (request.getId() == null) {
-                addWeightVolume(request, newContainer);
-                finalContainers.add(convertEntityToDto(newContainer));
-            } else {
-                Packing packing = packingDao.findById(request.getId()).get();
-                Containers oldContainer = containersDao.findById(packing.getContainerId()).get();
-
-                Containers container = addWeightVolume(request, newContainer);
-
-                if (oldContainer.getId() == newContainer.getId()) {
-                    subtractWeightVolume(container.getAchievedWeight(), newContainer, packing, container.getAchievedVolume(), request);
-                }
-                if (oldContainer.getId() != newContainer.getId()) {
-                    subtractWeightVolume(container.getAchievedWeight(), oldContainer, packing, container.getAchievedVolume(), request);
-                    finalContainers.add(convertEntityToDto(oldContainer));
-                }
-                finalContainers.add(convertEntityToDto(newContainer));
+            Packing newPacking = jsonHelper.convertValue(request.getPack(), Packing.class);
+            Packing oldPacking = newPacking;
+            if(request.getPack().getId() != null) {
+                oldPacking = packingDao.findById(request.getPack().getId()).get();
             }
+
+            Containers oldContainer = null;
+            if(request.getOldContainerId() != null)
+                oldContainer = containersDao.findById(request.getOldContainerId()).get();
+            Containers newContainer = null;
+            if(request.getNewContainerId() != null)
+                newContainer = containersDao.findById(request.getNewContainerId()).get();
+
+            if(request.getOldContainerId().equals(request.getNewContainerId())) {
+                subtractWeightVolume(oldPacking, newContainer);
+                addWeightVolume(newPacking, newContainer);
+            }
+            else {
+                oldContainer = subtractWeightVolume(oldPacking, oldContainer);
+                newContainer = addWeightVolume(newPacking, newContainer);
+                if(oldContainer != null)
+                    finalContainers.add(jsonHelper.convertValue(oldContainer, ContainerResponse.class));
+            }
+            if(newContainer != null)
+                finalContainers.add(jsonHelper.convertValue(newContainer, ContainerResponse.class));
         }
         return ResponseHelper.buildListSuccessResponse(finalContainers);
     }
@@ -508,24 +514,28 @@ public class PackingService implements IPackingService {
         }
     }
 
-    private static Containers addWeightVolume(PackingRequest request, Containers newContainer) throws Exception {
-        BigDecimal finalWeight = request.getWeight().add(newContainer.getAchievedWeight());
-        BigDecimal finalVolume = request.getVolume().add(newContainer.getAchievedVolume());
-        finalWeight = new BigDecimal(convertUnit(Constants.MASS, finalWeight, newContainer.getAchievedWeightUnit(), request.getWeightUnit()).toString());
-        finalVolume = new BigDecimal(UnitConversionUtility.convertUnit(Constants.VOLUME, finalVolume, newContainer.getAchievedVolumeUnit(), request.getVolumeUnit()).toString());
-        newContainer.setAchievedWeight(finalWeight);
-        newContainer.setAchievedVolume(finalVolume);
+    private static Containers addWeightVolume(Packing request, Containers newContainer) throws Exception {
+        if(newContainer != null && request != null) {
+            BigDecimal finalWeight = (BigDecimal) convertUnit(Constants.MASS, request.getWeight(), request.getWeightUnit(), newContainer.getAchievedWeightUnit());
+            BigDecimal finalVolume = (BigDecimal) convertUnit(Constants.MASS, request.getVolume(), request.getVolumeUnit(), newContainer.getAchievedVolumeUnit());
+            finalWeight = finalWeight.add(newContainer.getAchievedWeight());
+            finalVolume = finalVolume.add(newContainer.getAchievedVolume());
+            newContainer.setAchievedWeight(finalWeight);
+            newContainer.setAchievedVolume(finalVolume);
+        }
         return newContainer;
     }
 
-    private static void subtractWeightVolume(BigDecimal finalWeight, Containers newContainer, Packing packing, BigDecimal finalVolume, PackingRequest request) throws Exception {
-        finalWeight = newContainer.getAchievedWeight().subtract(packing.getWeight());
-        finalVolume = newContainer.getAchievedVolume().subtract(packing.getVolume());
-        finalWeight = new BigDecimal(convertUnit(Constants.MASS, finalWeight, newContainer.getAchievedWeightUnit(), request.getWeightUnit()).toString());
-        finalVolume = new BigDecimal(UnitConversionUtility.convertUnit(Constants.VOLUME, finalVolume, newContainer.getAchievedVolumeUnit(), request.getVolumeUnit()).toString());
-
-        newContainer.setAchievedWeight(finalWeight);
-        newContainer.setAchievedVolume(finalVolume);
+    private static Containers subtractWeightVolume(Packing request, Containers oldContainer) throws Exception {
+        if(oldContainer != null && request != null) {
+            BigDecimal finalWeight = (BigDecimal) convertUnit(Constants.MASS, request.getWeight(), request.getWeightUnit(), oldContainer.getAchievedWeightUnit());
+            BigDecimal finalVolume = (BigDecimal) convertUnit(Constants.MASS, request.getVolume(), request.getVolumeUnit(), oldContainer.getAchievedVolumeUnit());
+            finalWeight = oldContainer.getAchievedWeight().subtract(finalWeight);
+            finalVolume = oldContainer.getAchievedVolume().subtract(finalVolume);
+            oldContainer.setAchievedWeight(finalWeight);
+            oldContainer.setAchievedVolume(finalVolume);
+        }
+        return oldContainer;
     }
 
     private IRunnerResponse convertEntityToDto(Packing packing) {

@@ -37,7 +37,7 @@ public class ApiConstants {
     public static final String TOGGLE_LOCK = "/toggleLock";
     public static final String API_LIST_CONTAINERS_TO_ASSIGN = "/list/containers/assign";
     public static final String API_CHANGE_UNIT_ALLOCATED_ACHIEVED = "/calculate/achieved/unit";
-    public static final String API_CALCULATE_ACHIEVED_PACK_ASSIGN = "/assign/packs";
+//    public static final String API_CALCULATE_ACHIEVED_PACK_ASSIGN = "/assign/packs";
     public static final String API_CALCULATE_ACHIEVED_PACK_DETACH = "/detach/packs";
     public static final String API_VALIDATE_CONTAINER_NUMBER = "/number/validate";
     public static final String API_CALCULATE_UTILIZATION = "/calculate/utilization";
@@ -63,4 +63,7 @@ public class ApiConstants {
     public static final String CALCULATE_CONTAINER_SUMMARY = "/container/summary";
     public static final String CALCULATE_PACK_SUMMARY = "/pack/summary";
     public static final String CALCULATE_AUTO_UPDATE_WT_VOL_SHIPMENT = "/calculate/auto";
+    public static final String LIST_PACKS_FOR_ASSIGN_DETACH = "/list/packs";
+    public static final String ASSIGN_PACKS_SHIPMENTS = "/assign/shipments";
+    public static final String DETACH_PACKS_SHIPMENTS = "/detach/shipments";
 }

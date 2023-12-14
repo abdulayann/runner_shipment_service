@@ -4,10 +4,12 @@ import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.List;
+
 @Getter
 @Setter
-public class ContainerAssignRequest implements IRunnerRequest {
+public class ContainerPackADInShipmentRequest implements IRunnerRequest {
     Long shipmentId;
-    Long consolidationId;
-    Integer take;
+    Long containerId;
+    List<Long> packsId;
 }
