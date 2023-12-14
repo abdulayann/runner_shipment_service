@@ -63,6 +63,9 @@ public class ContainersSync implements IContainersSync {
     @Autowired
     private EmailServiceUtility emailServiceUtility;
 
+    @Autowired
+    private SyncEntityConversionService syncEntityConversionService;
+
 
     private RetryTemplate retryTemplate = RetryTemplate.builder()
             .maxAttempts(3)
@@ -108,7 +111,7 @@ public class ContainersSync implements IContainersSync {
         List<ContainerRequestV2> response = new ArrayList<>();
         if(containers != null && containers.size() > 0) {
             for (Containers item: containers) {
-                ContainerRequestV2 p = modelMapper.map(item, ContainerRequestV2.class);
+                ContainerRequestV2 p = syncEntityConversionService.containerV2ToV1(item);
                 List<UUID> shipmentGuids = new ArrayList<>();
                 if(item.getShipmentsList() != null && item.getShipmentsList().size() > 0) {
                     for (var x : item.getShipmentsList()) {
