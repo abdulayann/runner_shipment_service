@@ -147,7 +147,9 @@ public enum MasterDataType {
     SI_EVENTS(149, "SIEvents"),
     VGM_EVENTS(150, "VGM Events"),
     HAWB_CARRIER_AGENT(151, "HAWBCarrier/Agent"),
-    MAWB_CARRIER_AGENT(152, "MAWBCarrier/Agent");
+    MAWB_CARRIER_AGENT(152, "MAWBCarrier/Agent"),
+    SALES_AGENT_MASTER(1014, "SalesAgentMaster");
+
     private int id;
     private String description;
 
