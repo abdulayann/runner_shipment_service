@@ -36,6 +36,7 @@ import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.entity.enums.ProductProcessTypes;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCommodityType;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferContainerType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
@@ -45,6 +46,7 @@ import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.mapper.ShipmentDetailsMapper;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest;
+import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequestV2;
 import com.dpw.runner.shipment.services.service.interfaces.*;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service_bus.AzureServiceBusTopic;
@@ -88,6 +90,8 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
@@ -98,6 +102,8 @@ import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.conve
 @Service
 @Slf4j
 public class ShipmentService implements IShipmentService {
+
+    ExecutorService executorService = Executors.newFixedThreadPool(10);
     @Autowired
     private ModelMapper modelMapper;
 
@@ -191,6 +197,9 @@ public class ShipmentService implements IShipmentService {
     private AzureServiceBusTopic azureServiceBusTopic;
     @Autowired
     private MasterDataUtils masterDataUtils;
+
+    @Autowired
+    private MasterDataKeyUtils masterDataKeyUtils;
 
     @Autowired
     private IAuditLogService auditLogService;
@@ -2515,18 +2524,62 @@ public class ShipmentService implements IShipmentService {
         }
     }
 
+    @Override
+    public ResponseEntity<?> getAllMasterData(CommonRequestModel commonRequestModel) {
+        String responseMsg;
+        try {
+            Long id = commonRequestModel.getId();
+            Optional<ShipmentDetails> shipmentDetailsOptional = shipmentDao.findById(id);
+            if(shipmentDetailsOptional == null || !shipmentDetailsOptional.isPresent()) {
+                log.debug("Shipment Details is null for Id {}", id);
+                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+            }
+            ShipmentDetails shipmentDetails = shipmentDetailsOptional.get();
+            ShipmentDetailsResponse shipmentDetailsResponse = jsonHelper.convertValue(shipmentDetails, ShipmentDetailsResponse.class);
+            Map<String, Object> response = fetchAllMasterDataByKey(shipmentDetails, shipmentDetailsResponse);
+            return ResponseHelper.buildSuccessResponse(response);
+        }
+        catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_DATA_RETRIEVAL_FAILURE;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
+    public Map<String, Object> fetchAllMasterDataByKey(ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse) {
+        Map<String, Object> masterDataResponse = new HashMap<>();
+        var masterListFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllMasterDataInSingleCall(shipmentDetails, shipmentDetailsResponse, masterDataResponse)), executorService);
+        var unLocationsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllUnlocationDataInSingleCall(shipmentDetails, shipmentDetailsResponse, masterDataResponse)), executorService);
+        var carrierFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllCarrierDataInSingleCall(shipmentDetails, shipmentDetailsResponse, masterDataResponse)), executorService);
+        var currencyFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllCurrencyDataInSingleCall(shipmentDetails, shipmentDetailsResponse, masterDataResponse)), executorService);
+        var commodityTypesFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllCommodityTypesInSingleCall(shipmentDetails, shipmentDetailsResponse, masterDataResponse)), executorService);
+        var tenantDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllTenantDataInSingleCall(shipmentDetails, shipmentDetailsResponse, masterDataResponse)), executorService);
+        var wareHouseDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllWarehouseDataInSingleCall(shipmentDetails, shipmentDetailsResponse, masterDataResponse)), executorService);
+        var activityDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllActivityDataInSingleCall(shipmentDetails, shipmentDetailsResponse, masterDataResponse)), executorService);
+        var salesAgentFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllSalesAgentInSingleCall(shipmentDetails, shipmentDetailsResponse, masterDataResponse)), executorService);
+        var containerTypeFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllContainerTypesInSingleCall(shipmentDetails, shipmentDetailsResponse, masterDataResponse)), executorService);
+        var vesselsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllVesselDataInSingleCall(shipmentDetails, shipmentDetailsResponse, masterDataResponse)), executorService);
+        CompletableFuture.allOf(masterListFuture, unLocationsFuture, carrierFuture, currencyFuture, commodityTypesFuture, tenantDataFuture, wareHouseDataFuture, activityDataFuture, salesAgentFuture,
+                containerTypeFuture).join();
+
+        return masterDataResponse;
+    }
 
     public void createShipmentPayload(ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse) {
         try {
-            this.addAllMasterDataInSingleCall(shipmentDetails, shipmentDetailsResponse);
-            this.addAllUnlocationDataInSingleCall(shipmentDetails, shipmentDetailsResponse);
-            this.addAllCarrierDataInSingleCall(shipmentDetails, shipmentDetailsResponse);
-            this.addAllCurrencyDataInSingleCall(shipmentDetails, shipmentDetailsResponse);
-            this.addAllCommodityTypesInSingleCall(shipmentDetails, shipmentDetailsResponse);
-            this.addAllTenantDataInSingleCall(shipmentDetails, shipmentDetailsResponse);
-            this.addAllWarehouseDataInSingleCall(shipmentDetails, shipmentDetailsResponse);
-            this.addAllActivityDataInSingleCall(shipmentDetails, shipmentDetailsResponse);
-            this.addAllSalesAgentInSingleCall(shipmentDetails, shipmentDetailsResponse);
+            var masterListFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllMasterDataInSingleCall(shipmentDetails, shipmentDetailsResponse, null)), executorService);
+            var unLocationsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllUnlocationDataInSingleCall(shipmentDetails, shipmentDetailsResponse, null)), executorService);
+            var carrierFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllCarrierDataInSingleCall(shipmentDetails, shipmentDetailsResponse, null)), executorService);
+            var currencyFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllCurrencyDataInSingleCall(shipmentDetails, shipmentDetailsResponse, null)), executorService);
+            var commodityTypesFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllCommodityTypesInSingleCall(shipmentDetails, shipmentDetailsResponse, null)), executorService);
+            var tenantDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllTenantDataInSingleCall(shipmentDetails, shipmentDetailsResponse, null)), executorService);
+            var wareHouseDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllWarehouseDataInSingleCall(shipmentDetails, shipmentDetailsResponse, null)), executorService);
+            var activityDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllActivityDataInSingleCall(shipmentDetails, shipmentDetailsResponse, null)), executorService);
+            var salesAgentFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllSalesAgentInSingleCall(shipmentDetails, shipmentDetailsResponse, null)), executorService);
+            var containerTypeFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllContainerTypesInSingleCall(shipmentDetails, shipmentDetailsResponse, null)), executorService);
+            CompletableFuture.allOf(masterListFuture, unLocationsFuture, carrierFuture, currencyFuture, commodityTypesFuture, tenantDataFuture, wareHouseDataFuture, activityDataFuture, salesAgentFuture,
+                    containerTypeFuture).join();
             setContainersPacksAutoUpdateData(shipmentDetailsResponse);
             shipmentDetailsResponse.setPackSummary(packingService.calculatePackSummary(shipmentDetails.getPackingList(), shipmentDetails.getTransportMode(), shipmentDetails.getShipmentType()));
             shipmentDetailsResponse.setContainerSummary(containerService.calculateContainerSummary(shipmentDetails.getContainersList(), shipmentDetails.getTransportMode(), shipmentDetails.getShipmentType()));
@@ -2536,7 +2589,8 @@ public class ShipmentService implements IShipmentService {
         }
 
     }
-    private void addAllMasterDataInSingleCall (ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse) {
+
+    private CompletableFuture<ResponseEntity<?>> addAllMasterDataInSingleCall (ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse, Map<String, Object> masterDataResponse) {
 
         Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
         List<MasterListRequest> listRequests = new ArrayList<>(masterDataUtils.createInBulkMasterListRequest(shipmentDetailsResponse, ShipmentDetails.class, fieldNameKeyMap, ShipmentDetails.class.getSimpleName() ));
@@ -2544,38 +2598,56 @@ public class ShipmentService implements IShipmentService {
             listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(shipmentDetailsResponse.getAdditionalDetails(), AdditionalDetails.class, fieldNameKeyMap, AdditionalDetails.class.getSimpleName() ));
         if (!Objects.isNull(shipmentDetailsResponse.getCarrierDetails()))
             listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(shipmentDetailsResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName() ));
+        if(!Objects.isNull(shipmentDetailsResponse.getRoutingsList()))
+            shipmentDetailsResponse.getRoutingsList().forEach(r -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(r, Routings.class, fieldNameKeyMap, Routings.class.getSimpleName() )));
+        MasterListRequestV2 masterListRequestV2 = new MasterListRequestV2();
+        masterListRequestV2.setMasterListRequests(listRequests);
+        masterListRequestV2.setIncludeCols(Arrays.asList("ItemType", "ItemValue", "ItemDescription", "ValuenDesc", "Cascade"));
 
-        Map<String, EntityTransferMasterLists> keyMasterDataMap = masterDataUtils.fetchInBulkMasterList(listRequests);
+        Map<String, EntityTransferMasterLists> keyMasterDataMap = masterDataUtils.fetchInBulkMasterList(masterListRequestV2);
         masterDataUtils.pushToCache(keyMasterDataMap, CacheConstants.MASTER_LIST);
 
-        shipmentDetailsResponse.setMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(ShipmentDetails.class.getSimpleName()), CacheConstants.MASTER_LIST));
-        if (!Objects.isNull(shipmentDetailsResponse.getAdditionalDetails()))
-            shipmentDetailsResponse.getAdditionalDetails().setMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(AdditionalDetails.class.getSimpleName()), CacheConstants.MASTER_LIST) );
-        if (!Objects.isNull(shipmentDetailsResponse.getCarrierDetails()))
+        if(masterDataResponse == null) {
+            shipmentDetailsResponse.setMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(ShipmentDetails.class.getSimpleName()), CacheConstants.MASTER_LIST));
+            if (!Objects.isNull(shipmentDetailsResponse.getAdditionalDetails()))
+                shipmentDetailsResponse.getAdditionalDetails().setMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(AdditionalDetails.class.getSimpleName()), CacheConstants.MASTER_LIST) );
+            if (!Objects.isNull(shipmentDetailsResponse.getCarrierDetails()))
                 shipmentDetailsResponse.getCarrierDetails().setMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName()), CacheConstants.MASTER_LIST) );
+        }
+        else {
+            masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.MASTER_LIST, masterDataResponse);
+        }
 
+        return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(keyMasterDataMap));
     }
 
-
-
-    private void addAllUnlocationDataInSingleCall (ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse) {
+    private CompletableFuture<ResponseEntity<?>> addAllUnlocationDataInSingleCall (ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse, Map<String, Object> masterDataResponse) {
         Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
         List<String> locationCodes = new ArrayList<>();
         if (!Objects.isNull(shipmentDetailsResponse.getCarrierDetails()))
             locationCodes.addAll((masterDataUtils.createInBulkUnLocationsRequest(shipmentDetailsResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName() )));
         if (!Objects.isNull(shipmentDetailsResponse.getAdditionalDetails()))
             locationCodes.addAll((masterDataUtils.createInBulkUnLocationsRequest(shipmentDetailsResponse.getAdditionalDetails(), AdditionalDetails.class, fieldNameKeyMap, AdditionalDetails.class.getSimpleName() )));
-        // TODO: This needs to be change to fetch based on LocationServiceGuid once UI is ready
+        if(!Objects.isNull(shipmentDetailsResponse.getRoutingsList()))
+            shipmentDetailsResponse.getRoutingsList().forEach(r -> locationCodes.addAll(masterDataUtils.createInBulkUnLocationsRequest(r, Routings.class, fieldNameKeyMap, Routings.class.getSimpleName() )));
+
         Map<String, EntityTransferUnLocations> keyMasterDataMap = masterDataUtils.fetchInBulkUnlocations(locationCodes, EntityTransferConstants.LOCATION_SERVICE_GUID);
         masterDataUtils.pushToCache(keyMasterDataMap, CacheConstants.UNLOCATIONS);
 
-        if (!Objects.isNull(shipmentDetailsResponse.getCarrierDetails()))
-            shipmentDetailsResponse.getCarrierDetails().setUnlocationData(masterDataUtils.setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName()), CacheConstants.UNLOCATIONS));
-        if (!Objects.isNull(shipmentDetailsResponse.getAdditionalDetails()))
-            shipmentDetailsResponse.getAdditionalDetails().setUnlocationData(masterDataUtils.setMasterData(fieldNameKeyMap.get(AdditionalDetails.class.getSimpleName()), CacheConstants.UNLOCATIONS));
+        if(masterDataResponse == null) {
+            if (!Objects.isNull(shipmentDetailsResponse.getCarrierDetails()))
+                shipmentDetailsResponse.getCarrierDetails().setUnlocationData(masterDataUtils.setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName()), CacheConstants.UNLOCATIONS));
+            if (!Objects.isNull(shipmentDetailsResponse.getAdditionalDetails()))
+                shipmentDetailsResponse.getAdditionalDetails().setUnlocationData(masterDataUtils.setMasterData(fieldNameKeyMap.get(AdditionalDetails.class.getSimpleName()), CacheConstants.UNLOCATIONS));
+        }
+        else {
+            masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.UNLOCATIONS, masterDataResponse);
+        }
+
+        return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(keyMasterDataMap));
     }
 
-    private void addAllTenantDataInSingleCall (ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse) {
+    private CompletableFuture<ResponseEntity<?>> addAllTenantDataInSingleCall (ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse, Map<String, Object> masterDataResponse) {
         Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
         List<String> tenantIdList = new ArrayList<>(masterDataUtils.createInBulkTenantsRequest(shipmentDetailsResponse, ShipmentDetails.class, fieldNameKeyMap, ShipmentDetails.class.getSimpleName()));
         if(!Objects.isNull(shipmentDetailsResponse.getAdditionalDetails()))
@@ -2583,30 +2655,58 @@ public class ShipmentService implements IShipmentService {
 
         Map v1Data = masterDataUtils.fetchInTenantsList(tenantIdList);
         masterDataUtils.pushToCache(v1Data, CacheConstants.TENANTS);
-        shipmentDetailsResponse.setTenantIdsData(masterDataUtils.setMasterData(fieldNameKeyMap.get(ShipmentDetails.class.getSimpleName()), CacheConstants.TENANTS));
-        if(!Objects.isNull(shipmentDetailsResponse.getAdditionalDetails()))
-            shipmentDetailsResponse.getAdditionalDetails().setTenantIdsData(masterDataUtils.setMasterData(fieldNameKeyMap.get(AdditionalDetails.class.getSimpleName()), CacheConstants.TENANTS));
+
+        if(masterDataResponse == null) {
+            shipmentDetailsResponse.setTenantIdsData(masterDataUtils.setMasterData(fieldNameKeyMap.get(ShipmentDetails.class.getSimpleName()), CacheConstants.TENANTS));
+            if(!Objects.isNull(shipmentDetailsResponse.getAdditionalDetails()))
+                shipmentDetailsResponse.getAdditionalDetails().setTenantIdsData(masterDataUtils.setMasterData(fieldNameKeyMap.get(AdditionalDetails.class.getSimpleName()), CacheConstants.TENANTS));
+        }
+        else {
+            masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.TENANTS, masterDataResponse);
+        }
+
+        return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(v1Data));
     }
 
-    private void addAllCurrencyDataInSingleCall (ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse) {
+    private CompletableFuture<ResponseEntity<?>> addAllCurrencyDataInSingleCall (ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse, Map<String, Object> masterDataResponse) {
         Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
         List<String> currencyList = new ArrayList<>(masterDataUtils.createInBulkCurrencyRequest(shipmentDetailsResponse, ShipmentDetails.class, fieldNameKeyMap, ShipmentDetails.class.getSimpleName()));
         Map v1Data = masterDataUtils.fetchInCurrencyList(currencyList);
         masterDataUtils.pushToCache(v1Data, CacheConstants.CURRENCIES);
-        shipmentDetailsResponse.setCurrenciesMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(ShipmentDetails.class.getSimpleName()), CacheConstants.CURRENCIES));
+
+        if(masterDataResponse == null) {
+            shipmentDetailsResponse.setCurrenciesMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(ShipmentDetails.class.getSimpleName()), CacheConstants.CURRENCIES));
+        }
+        else {
+            masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.CURRENCIES, masterDataResponse);
+        }
+
+        return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(v1Data));
     }
 
-    private void addAllCarrierDataInSingleCall (ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse) {
+    private CompletableFuture<ResponseEntity<?>> addAllCarrierDataInSingleCall (ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse, Map<String, Object> masterDataResponse) {
         if (!Objects.isNull(shipmentDetailsResponse.getCarrierDetails())) {
             Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
             List<String> carrierList = new ArrayList<>(masterDataUtils.createInBulkCarriersRequest(shipmentDetailsResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName()));
+            if (!Objects.isNull(shipmentDetailsResponse.getRoutingsList()))
+                shipmentDetailsResponse.getRoutingsList().forEach(r -> carrierList.addAll(masterDataUtils.createInBulkCarriersRequest(r, Routings.class, fieldNameKeyMap, Routings.class.getSimpleName() + r.getId() )));
+
             Map v1Data = masterDataUtils.fetchInBulkCarriers(carrierList);
             masterDataUtils.pushToCache(v1Data, CacheConstants.CARRIER);
-            shipmentDetailsResponse.getCarrierDetails().setCarrierMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName()), CacheConstants.CARRIER));
+
+            if(masterDataResponse == null) {
+                shipmentDetailsResponse.getCarrierDetails().setCarrierMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName()), CacheConstants.CARRIER));
+            }
+            else {
+                masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.CARRIER, masterDataResponse);
+            }
+
+            return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(v1Data));
         }
+        return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(Arrays.asList()));
     }
 
-    private void addAllCommodityTypesInSingleCall(ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse) {
+    private CompletableFuture<ResponseEntity<?>> addAllCommodityTypesInSingleCall(ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse, Map<String, Object> masterDataResponse) {
         Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
         Set<String> containerTypes = new HashSet<>();
         if (!Objects.isNull(shipmentDetailsResponse.getContainersList()))
@@ -2615,11 +2715,18 @@ public class ShipmentService implements IShipmentService {
         Map<String, EntityTransferCommodityType> v1Data = masterDataUtils.fetchInBulkCommodityTypes(containerTypes.stream().toList());
         masterDataUtils.pushToCache(v1Data, CacheConstants.COMMODITY);
 
-        if (!Objects.isNull(shipmentDetailsResponse.getContainersList()))
-            shipmentDetailsResponse.getContainersList().forEach(r -> r.setCommodityTypeData(masterDataUtils.setMasterData(fieldNameKeyMap.get(Containers.class.getSimpleName() + r.getId()), CacheConstants.COMMODITY)));
+        if(masterDataResponse == null) {
+            if (!Objects.isNull(shipmentDetailsResponse.getContainersList()))
+                shipmentDetailsResponse.getContainersList().forEach(r -> r.setCommodityTypeData(masterDataUtils.setMasterData(fieldNameKeyMap.get(Containers.class.getSimpleName() + r.getId()), CacheConstants.COMMODITY)));
+        }
+        else {
+            masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.COMMODITY, masterDataResponse);
+        }
+
+        return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(v1Data));
     }
 
-    private void addAllWarehouseDataInSingleCall (ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse) {
+    private CompletableFuture<ResponseEntity<?>> addAllWarehouseDataInSingleCall (ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse, Map<String, Object> masterDataResponse) {
         Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
         Set<String> wareHouseTypes = new HashSet<>();
         if (!Objects.isNull(shipmentDetailsResponse.getAdditionalDetails()))
@@ -2628,12 +2735,18 @@ public class ShipmentService implements IShipmentService {
         Map v1Data = masterDataUtils.fetchInWareHousesList(wareHouseTypes.stream().toList());
         masterDataUtils.pushToCache(v1Data, CacheConstants.WAREHOUSES);
 
-        if (!Objects.isNull(shipmentDetailsResponse.getAdditionalDetails()))
-            shipmentDetailsResponse.getAdditionalDetails().addTextData(masterDataUtils.setMasterData(fieldNameKeyMap.get(AdditionalDetails.class.getSimpleName()), CacheConstants.WAREHOUSES));
+        if(masterDataResponse == null) {
+            if (!Objects.isNull(shipmentDetailsResponse.getAdditionalDetails()))
+                shipmentDetailsResponse.getAdditionalDetails().addTextData(masterDataUtils.setMasterData(fieldNameKeyMap.get(AdditionalDetails.class.getSimpleName()), CacheConstants.WAREHOUSES));
+        }
+        else {
+            masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.WAREHOUSES, masterDataResponse);
+        }
 
+        return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(v1Data));
     }
 
-    private void addAllActivityDataInSingleCall (ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse) {
+    private CompletableFuture<ResponseEntity<?>> addAllActivityDataInSingleCall (ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse, Map<String, Object> masterDataResponse) {
         Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
         Set<String> activityTypes = new HashSet<>();
         if (!Objects.isNull(shipmentDetailsResponse.getAdditionalDetails()))
@@ -2642,12 +2755,18 @@ public class ShipmentService implements IShipmentService {
         Map v1Data = masterDataUtils.fetchInActivityMasterList(activityTypes.stream().toList());
         masterDataUtils.pushToCache(v1Data, CacheConstants.ACTIVITY_TYPE);
 
-        if (!Objects.isNull(shipmentDetailsResponse.getAdditionalDetails()))
-            shipmentDetailsResponse.getAdditionalDetails().addTextData(masterDataUtils.setMasterData(fieldNameKeyMap.get(AdditionalDetails.class.getSimpleName()), CacheConstants.ACTIVITY_TYPE));
+        if(masterDataResponse == null) {
+            if (!Objects.isNull(shipmentDetailsResponse.getAdditionalDetails()))
+                shipmentDetailsResponse.getAdditionalDetails().addTextData(masterDataUtils.setMasterData(fieldNameKeyMap.get(AdditionalDetails.class.getSimpleName()), CacheConstants.ACTIVITY_TYPE));
+        }
+        else {
+            masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.ACTIVITY_TYPE, masterDataResponse);
+        }
 
+        return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(v1Data));
     }
 
-    private void addAllSalesAgentInSingleCall (ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse) {
+    private CompletableFuture<ResponseEntity<?>> addAllSalesAgentInSingleCall (ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse, Map<String, Object> masterDataResponse) {
         Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
         Set<String> salesAgents = new HashSet<>();
         if (!Objects.isNull(shipmentDetailsResponse))
@@ -2656,9 +2775,54 @@ public class ShipmentService implements IShipmentService {
         Map v1Data = masterDataUtils.fetchInSalesAgentList(salesAgents.stream().toList());
         masterDataUtils.pushToCache(v1Data, CacheConstants.SALES_AGENT);
 
-        if (!Objects.isNull(shipmentDetailsResponse))
-            shipmentDetailsResponse.addTextData(masterDataUtils.setMasterData(fieldNameKeyMap.get(ShipmentDetails.class.getSimpleName()), CacheConstants.SALES_AGENT));
+        if(masterDataResponse == null) {
+            if (!Objects.isNull(shipmentDetailsResponse))
+                shipmentDetailsResponse.addTextData(masterDataUtils.setMasterData(fieldNameKeyMap.get(ShipmentDetails.class.getSimpleName()), CacheConstants.SALES_AGENT));
+        }
+        else {
+            masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.SALES_AGENT, masterDataResponse);
+        }
 
+        return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(v1Data));
+    }
+
+    private CompletableFuture<ResponseEntity<?>> addAllContainerTypesInSingleCall(ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse, Map<String, Object> masterDataResponse) {
+        Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
+        List<String> containerTypes = new ArrayList<>();
+        if (!Objects.isNull(shipmentDetailsResponse.getContainersList()))
+            shipmentDetailsResponse.getContainersList().forEach(r -> containerTypes.addAll(masterDataUtils.createInBulkContainerTypeRequest(r, Containers.class, fieldNameKeyMap, Containers.class.getSimpleName() + r.getId() )));
+
+        Map<String, EntityTransferContainerType> v1Data = masterDataUtils.fetchInBulkContainerTypes(containerTypes);
+        masterDataUtils.pushToCache(v1Data, CacheConstants.CONTAINER_TYPE);
+
+        if(masterDataResponse == null) {
+            if (!Objects.isNull(shipmentDetailsResponse.getContainersList()))
+                shipmentDetailsResponse.getContainersList().forEach(r -> r.setContainerCodeData(masterDataUtils.setMasterData(fieldNameKeyMap.get(Containers.class.getSimpleName() + r.getId()), CacheConstants.CONTAINER_TYPE)));
+        }
+        else {
+            masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.CONTAINER_TYPE, masterDataResponse);
+        }
+
+        return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(v1Data));
+    }
+
+    private CompletableFuture<ResponseEntity<?>> addAllVesselDataInSingleCall(ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse, Map<String, Object> masterDataResponse) {
+        Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
+        List<String> vesselList = new ArrayList<>();
+        if (!Objects.isNull(shipmentDetailsResponse.getBookingCarriagesList()))
+            shipmentDetailsResponse.getBookingCarriagesList().forEach(r -> vesselList.addAll(masterDataUtils.createInBulkVesselsRequest(r, BookingCarriage.class, fieldNameKeyMap, BookingCarriage.class.getSimpleName() + r.getId() )));
+
+        Map v1Data = masterDataUtils.fetchInBulkVessels(vesselList);
+        masterDataUtils.pushToCache(v1Data, CacheConstants.VESSELS);
+
+        if(masterDataResponse == null) {
+            shipmentDetailsResponse.getCarrierDetails().setVesselsMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName()), CacheConstants.VESSELS));
+        }
+        else {
+            masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.VESSELS, masterDataResponse);
+        }
+
+        return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(Arrays.asList()));
     }
 
     private void setContainersPacksAutoUpdateData (ShipmentDetailsResponse shipmentDetailsResponse) {
@@ -2981,7 +3145,7 @@ public class ShipmentService implements IShipmentService {
             if(Constants.TRANSPORT_MODE_SEA.equals(response.getTransportMode()) && Constants.DIRECTION_EXP.equals(response.getDirection()))
                 response.setHouseBill(generateCustomHouseBL());
 
-            this.addAllMasterDataInSingleCall(null, response);
+            this.addAllMasterDataInSingleCall(null, response, null);
 
             return ResponseHelper.buildSuccessResponse(response);
         } catch(Exception e) {

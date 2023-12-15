@@ -20,6 +20,7 @@ import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterL
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferOrganizations;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest;
+import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequestV2;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
@@ -762,7 +763,7 @@ public class HawbReport extends IReport{
     }
 
     private Map<String, EntityTransferMasterLists> getMasterData(Set<String> querySet) {
-        List<MasterListRequest> requests = new ArrayList<>();
+        MasterListRequestV2 requests = new MasterListRequestV2();
         Map<String, EntityTransferMasterLists> keyMasterDataMap = new HashMap<>();
         String[] query;
         for(String key: querySet)
@@ -770,9 +771,9 @@ public class HawbReport extends IReport{
             query = key.split("#");
             String itemType = query[0];
             String itemValue = query[1];
-            requests.add(MasterListRequest.builder().ItemType(itemType).ItemValue(itemValue).build());
+            requests.getMasterListRequests().add(MasterListRequest.builder().ItemType(itemType).ItemValue(itemValue).build());
         }
-        if(requests.size() > 0) {
+        if(requests.getMasterListRequests().size() > 0) {
             V1DataResponse response = v1Service.fetchMultipleMasterData(requests);
             List<EntityTransferMasterLists> masterLists = jsonHelper.convertValueToList(response.entities, EntityTransferMasterLists.class);
             masterLists.forEach(masterData -> {

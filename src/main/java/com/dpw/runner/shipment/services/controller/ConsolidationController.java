@@ -329,4 +329,18 @@ public class ConsolidationController {
             return ResponseHelper.buildFailedResponse(e.getMessage());
         }
     }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.MASTER_DATA_RETRIEVE_SUCCESS)})
+    @GetMapping(ApiConstants.GET_ALL_MASTER_DATA)
+    public ResponseEntity<?> getAllMasterData(@RequestParam Long consolidationId) {
+        String responseMsg = "failure executing :(";
+        try {
+            return (ResponseEntity<?>) consolidationService.getAllMasterData(CommonRequestModel.buildRequest(consolidationId));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : "Error retrieving master data";
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(e.getMessage());
+        }
+    }
 }

@@ -67,4 +67,5 @@ public class ApiConstants {
     public static final String LIST_PACKS_FOR_ASSIGN_DETACH = "/list/packs";
     public static final String ASSIGN_PACKS_SHIPMENTS = "/assign/shipments";
     public static final String DETACH_PACKS_SHIPMENTS = "/detach/shipments";
+    public static final String GET_ALL_MASTER_DATA = "/get/master-data";
 }
