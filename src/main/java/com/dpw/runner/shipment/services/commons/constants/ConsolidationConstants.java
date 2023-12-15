@@ -27,4 +27,5 @@ public class ConsolidationConstants {
     public static final String IMPORT_SUCCESSFUL = "Import Consolidation Successful";
     public static final String ASSIGN_SUCCESSFUL = "Assign Shipments Successful";
     public static final String DETACH_SUCCESSFUL = "Detach Shipments Successful";
+    public static final String MASTER_DATA_RETRIEVE_SUCCESS = "Master Data Retrieve Successfully";
 }

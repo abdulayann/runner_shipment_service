@@ -409,4 +409,18 @@ public class ShipmentController {
         return (ResponseEntity<RunnerResponse<List<MasterDataDescriptionResponse>>>) shipmentService.getMasterDataMappings();
     }
 
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.MASTER_DATA_RETRIEVE_SUCCESS)})
+    @GetMapping(ApiConstants.GET_ALL_MASTER_DATA)
+    public ResponseEntity<?> getAllMasterData(@RequestParam Long shipmentId) {
+        String responseMsg = "failure executing :(";
+        try {
+            return (ResponseEntity<?>) shipmentService.getAllMasterData(CommonRequestModel.buildRequest(shipmentId));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : "Error retrieving master data";
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(e.getMessage());
+        }
+    }
+
 }
