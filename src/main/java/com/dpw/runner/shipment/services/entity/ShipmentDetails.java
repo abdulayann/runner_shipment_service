@@ -101,6 +101,7 @@ public class ShipmentDetails extends MultiTenancy {
     private Long salesAgent;
 
     @Column(name = "payment_terms")
+    @MasterData(type = MasterDataType.PAYMENT)
     private String paymentTerms;
 
     @Column(name = "incoterms")
@@ -225,7 +226,8 @@ public class ShipmentDetails extends MultiTenancy {
     private String marksNum;
 
     @Column(name = "entry_detail")
-    @Size(max=3, message = "max size is 3 for entry_detail")
+    @Size(max = 3, message = "max size is 3 for entry_detail")
+    @MasterData(type = MasterDataType.ENTRY_DETAILS)
     private String entryDetail;
 
     @Column(name = "is_locked")
