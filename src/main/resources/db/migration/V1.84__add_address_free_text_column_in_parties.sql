@@ -1,0 +1,2 @@
+ALTER TABLE IF EXISTS parties
+    ADD COLUMN IF NOT EXISTS is_address_free_text BOOLEAN;
