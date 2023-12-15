@@ -180,4 +180,21 @@ public class PackingController {
         }
         return ResponseHelper.buildFailedResponse(responseMsg);
     }
+
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = ShipmentConstants.SHIPMENT_SYNC_SUCCESSFUL),
+            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
+    })
+    @PostMapping(ApiConstants.AUTO_CALCULATE)
+    public ResponseEntity<?> autoCalculate(@RequestBody PackingRequest request) {
+        String responseMsg = "failure executing :(";
+        try {
+            return packingService.autoCalculate(CommonRequestModel.buildRequest(request));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : "Error syncing provided Container";
+            log.error(responseMsg, e);
+        }
+        return ResponseHelper.buildFailedResponse(responseMsg);
+    }
 }
