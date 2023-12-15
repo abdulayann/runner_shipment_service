@@ -2964,7 +2964,7 @@ public class ShipmentService implements IShipmentService {
             response.setStatus(0);
             response.setSource(Constants.SYSTEM);
             response.setCreatedBy(UserContext.getUser().getUsername());
-            response.setCustomerCategoryRates(CustomerCategoryRates.CATEGORY_5);
+            response.setCustomerCategory(CustomerCategoryRates.CATEGORY_5);
 
             try {
                 log.info("Fetching Tenant Model");
