@@ -148,6 +148,7 @@ public class Constants {
 
     public static final String SERVICE = "Service";
     public static final String TI_TEMPLATE_TYPE = "TransportInstructionTemplateType";
+    public static final String  CUSTOMER_CATEGORY_RATES = "CustomerCategoryRates";
 
     /**
      * Events
