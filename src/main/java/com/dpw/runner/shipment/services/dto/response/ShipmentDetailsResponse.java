@@ -153,5 +153,5 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime updatedAt;
 
-    private CustomerCategoryRates customerCategoryRates;
+    private CustomerCategoryRates customerCategory;
 }
