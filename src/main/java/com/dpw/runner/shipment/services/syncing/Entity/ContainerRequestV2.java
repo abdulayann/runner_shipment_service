@@ -170,4 +170,6 @@ public class ContainerRequestV2 implements IRunnerRequest {
     private UUID ConsolidationGuid;
     @JsonProperty("HandlingInfo")
     private String handlingInfo;
+    @JsonProperty("IsPart")
+    private Boolean IsPart;
 }

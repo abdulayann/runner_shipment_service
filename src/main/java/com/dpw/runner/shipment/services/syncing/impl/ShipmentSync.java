@@ -111,7 +111,7 @@ public class ShipmentSync implements IShipmentSync {
         // entityID also gets assigned as a part of this mapping
         mapTruckDriverDetail(cs, sd);
         mapRoutings(cs, sd);
-        mapContainers(cs, sd);
+        cs.setContainersList(syncEntityConversionService.containersV2ToV1(sd.getContainersList()));
         cs.setReferenceNumbers(convertToList(sd.getReferenceNumbersList(), ReferenceNumbersRequestV2.class));
         cs.setPackings_(syncEntityConversionService.packingsV2ToV1(sd.getPackingList(), sd.getContainersList()));
         cs.setDocs_(convertToList(sd.getFileRepoList(), FileRepoRequestV2.class));
@@ -242,6 +242,8 @@ public class ShipmentSync implements IShipmentSync {
         if(sd.getAdditionalDetails() == null)
             return;
         modelMapper.map(sd.getAdditionalDetails(), cs);
+        cs.setDateofIssue(sd.getAdditionalDetails().getDateOfIssue());
+        cs.setDateofReceipt(sd.getAdditionalDetails().getDateOfReceipt());
         cs.setReceivingForwarderParty(mapPartyObject(sd.getAdditionalDetails().getReceivingForwarder()));
         cs.setSendingForwarderParty(mapPartyObject(sd.getAdditionalDetails().getSendingForwarder()));
         cs.setTraderOrSupplierParty(mapPartyObject(sd.getAdditionalDetails().getTraderOrSupplier()));
@@ -286,23 +288,6 @@ public class ShipmentSync implements IShipmentSync {
         ).toList();
         cs.setRoutings(res);
     }
-
-    private void mapContainers(CustomShipmentSyncRequest cs, ShipmentDetails sd) {
-        if(sd.getContainersList() == null)
-            return;
-        List<ContainerRequestV2> res = sd.getContainersList().stream().map(
-                i -> {
-                    var containerRequestV2 = modelMapper.map(i, ContainerRequestV2.class);
-                    containerRequestV2.setIsHazardous(i.getHazardous());
-                    containerRequestV2.setDgClassString(i.getDgClass());
-                    containerRequestV2.setMarksnNums(i.getMarksNums());
-                    containerRequestV2.setContainerStuffingLocationName(i.getContainerStuffingLocation());
-                    return containerRequestV2;
-                }
-        ).toList();
-        cs.setContainersList(res);
-    }
-
 
     private <T,P> List<P> convertToList(final List<T> lst, Class<P> clazz) {
         if(lst == null)

@@ -29,6 +29,7 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest;
+import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequestV2;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.masterdata.factory.MasterDataFactory;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
@@ -262,7 +263,7 @@ public class EntityTransferService implements IEntityTransferService {
     }
 
     private Map<String, EntityTransferMasterLists> addMasterData (IEntityTranferBaseEntity entityPayload, Class mainClass) {
-        List<MasterListRequest> requests = new ArrayList<>();
+        MasterListRequestV2 requests = new MasterListRequestV2();
         Map<String, String> fieldNameKeyMap = new HashMap<>();
         Map<String, EntityTransferMasterLists> keyMasterDataMap = new HashMap<>();
         Map<String, EntityTransferMasterLists> fieldNameMasterDataMap = new HashMap<>();
@@ -286,7 +287,7 @@ public class EntityTransferService implements IEntityTransferService {
                         cascade = (String) field2.get(entityPayload);
                     }
                     if(itemValue != null) {
-                        requests.add(MasterListRequest.builder().ItemType(itemType).ItemValue(itemValue).Cascade(cascade).build());
+                        requests.getMasterListRequests().add(MasterListRequest.builder().ItemType(itemType).ItemValue(itemValue).Cascade(cascade).build());
                         String key = itemValue + '#' + itemType;
                         fieldNameKeyMap.put(field.getName(), key);
                     }
@@ -295,7 +296,7 @@ public class EntityTransferService implements IEntityTransferService {
                 }
             }
         }
-        if(requests.size() > 0) {
+        if(requests.getMasterListRequests().size() > 0) {
             V1DataResponse response = v1Service.fetchMultipleMasterData(requests);
             List<EntityTransferMasterLists> masterLists = jsonHelper.convertValueToList(response.entities, EntityTransferMasterLists.class);
             masterLists.forEach(masterData -> {
@@ -977,14 +978,14 @@ public class EntityTransferService implements IEntityTransferService {
     }
     @Transactional
     private void createMasterData (List<EntityTransferMasterLists> masterData) {
-        List<MasterListRequest> masterListRequest = new ArrayList<>();
+        MasterListRequestV2 masterListRequest = new MasterListRequestV2();
         Set<String> masterDataKey = new HashSet<>();
         masterData.forEach(value -> {
-            masterListRequest.add(MasterListRequest.builder().ItemType(MasterDataType.masterData(value.ItemType).getDescription()).ItemValue(value.ItemValue).Cascade(value.Cascade).build());
+            masterListRequest.getMasterListRequests().add(MasterListRequest.builder().ItemType(MasterDataType.masterData(value.ItemType).getDescription()).ItemValue(value.ItemValue).Cascade(value.Cascade).build());
             String key = MasterDataType.masterData(value.ItemType).getDescription() + '#' + value.getItemValue();
             masterDataKey.add(key);
         });
-        if (masterListRequest.size() > 0) {
+        if (masterListRequest.getMasterListRequests().size() > 0) {
             V1DataResponse response = v1Service.fetchMultipleMasterData(masterListRequest);
             List<EntityTransferMasterLists> masterLists = jsonHelper.convertValueToList(response.entities, EntityTransferMasterLists.class);
             masterLists.forEach(val -> {

@@ -25,6 +25,7 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.CarrierMasterData;
 import com.dpw.runner.shipment.services.masterdata.dto.MasterData;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest;
+import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequestV2;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.masterdata.factory.MasterDataFactory;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
@@ -744,8 +745,8 @@ public abstract class IReport {
     {
         if (StringUtility.isEmpty(ItemValue)) return null;
         MasterListRequest masterListRequest = MasterListRequest.builder().ItemType(type.getDescription()).ItemValue(ItemValue).build();
-        List<MasterListRequest> masterListRequests = new ArrayList<>();
-        masterListRequests.add(masterListRequest);
+        MasterListRequestV2 masterListRequests = new MasterListRequestV2();
+        masterListRequests.getMasterListRequests().add(masterListRequest);
         Object masterDataList = masterDataFactory.getMasterDataService().fetchMultipleMasterData(masterListRequests).getData();
         List<MasterData> masterData = jsonHelper.convertValueToList(masterDataList, MasterData.class);
         if(masterData == null || masterData.isEmpty())

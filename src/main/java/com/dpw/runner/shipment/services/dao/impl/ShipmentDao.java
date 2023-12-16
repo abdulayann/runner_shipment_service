@@ -12,6 +12,7 @@ import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.entity.enums.LifecycleHooks;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
@@ -33,12 +34,12 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
 
+import javax.validation.ConstraintViolationException;
 import java.time.LocalDateTime;
 import java.util.*;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.*;
 
 @Repository
 @Slf4j
@@ -102,7 +103,14 @@ public class ShipmentDao implements IShipmentDao {
             if(shipmentDetails.getContainersList() == null)
                 shipmentDetails.setContainersList(new ArrayList<>());
         }
-        onSave(shipmentDetails, errors, oldShipment, fromV1Sync);
+        try {
+            onSave(shipmentDetails, errors, oldShipment, fromV1Sync);
+        } catch (Exception e){
+            String errorMessage = e.getMessage();
+            if(e.getClass().equals(ConstraintViolationException.class))
+                errorMessage = getConstrainViolationErrorMessage(e);
+            throw new RunnerException(errorMessage);
+        }
         return shipmentDetails;
     }
 

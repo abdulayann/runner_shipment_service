@@ -102,4 +102,5 @@ public class ContainerResponse implements IRunnerResponse {
     private String ownType;
     private String handlingInfo;
     private Map<String, String> textFieldData;
+    private Boolean isPart;
 }
