@@ -36,7 +36,7 @@ public class RoutingsResponse implements IRunnerResponse {
     private LocalDateTime ata;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime atd;
-    private Long consolidation_id;
+    private Long consolidationId;
     private Boolean isLinked;
     private String voyage;
     private String aircraftRegistration;

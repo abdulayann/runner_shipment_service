@@ -8,8 +8,10 @@ import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.*;
 import com.dpw.runner.shipment.services.dto.patchRequest.ShipmentPatchRequest;
+import com.dpw.runner.shipment.services.dto.request.AutoAttachConsolidationRequest;
 import com.dpw.runner.shipment.services.dto.request.ConsolidationDetailsRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentAttachDetachRequest;
+import com.dpw.runner.shipment.services.dto.response.AutoAttachConsolidationResponse;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
@@ -340,6 +342,16 @@ public class ConsolidationController {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : "Error retrieving master data";
             log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(e.getMessage());
+        }
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = "Successful Shipment Details Data List Retrieval")})
+    @PostMapping(value = "/auto-attach-Consolidation")
+    public ResponseEntity<?> getAutoAttachConsolidationDetails(@Valid @RequestBody @NonNull AutoAttachConsolidationRequest request) {
+        try {
+            return (ResponseEntity<RunnerListResponse<AutoAttachConsolidationResponse>>) consolidationService.getAutoAttachConsolidationDetails(CommonRequestModel.buildRequest(request));
+        } catch (Exception e) {
             return ResponseHelper.buildFailedResponse(e.getMessage());
         }
     }
