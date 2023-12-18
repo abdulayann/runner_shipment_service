@@ -1495,10 +1495,10 @@ public class ShipmentService implements IShipmentService {
                 List<Parties> updatedParties = partiesDao.updateEntityFromOtherEntity(convertToEntityList(shipmentAddressList, Parties.class), id, Constants.SHIPMENT_ADDRESSES);
                 entity.setShipmentAddresses(updatedParties);
             }
-            if (shipmentRequest.getReplaceConsoleRoute()){
+            if (shipmentRequest.getReplaceConsoleRoute() != null && shipmentRequest.getReplaceConsoleRoute()){
                 List<ConsolidationDetailsRequest> consoleRequest = shipmentRequest.getConsolidationList();
                 List<Routings> createRoutes = new ArrayList<>();
-                if(shipmentRequest.getCreateMainLegRoute()){
+                if(shipmentRequest.getCreateMainLegRoute() != null && shipmentRequest.getCreateMainLegRoute()){
                     List<RoutingsRequest> routeRequestList = shipmentRequest.getRoutingsList().stream().sorted(Comparator.comparingLong(RoutingsRequest::getLeg)).collect(Collectors.toList());
                     var routeRequest = routeRequestList.stream().filter(x -> x.getMode().equals(shipmentRequest.getTransportMode())).findFirst();
                     if(routeRequest.isPresent()) {
