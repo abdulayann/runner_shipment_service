@@ -25,5 +25,9 @@ public interface IPackingService extends ICommonService {
 
     PackSummaryResponse calculatePackSummary(List<Packing> packingList, String transportMode, String containerCategory) throws Exception;
 
-    ResponseEntity<?> autoCalculate(CommonRequestModel commonRequestModel);
+    ResponseEntity<?> autoCalculateVolumetricWeight(CommonRequestModel commonRequestModel);
+
+    ResponseEntity<?> autoCalculateChargable(CommonRequestModel commonRequestModel) throws Exception;
+
+    ResponseEntity<?> autoCalculateVolume(CommonRequestModel commonRequestModel) throws Exception;
 }
