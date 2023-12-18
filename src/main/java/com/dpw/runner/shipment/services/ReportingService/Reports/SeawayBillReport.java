@@ -53,12 +53,14 @@ public class SeawayBillReport extends IReport {
         dict.put(DATE_OF_RECEIPT_MDY, dict.get(DATE_OF_RECEIPT));
 
         dict.put(SHIPPER, dict.get(CONSIGNER));
-        Map<String, Object> consignerAddress = model.shipment.getConsigner().getAddressData();
-        var consignerWc = ReportHelper.getOrgAddressWithPhoneEmail(null, getValueFromMap(consignerAddress, ADDRESS1),
-                getValueFromMap(consignerAddress, ADDRESS2), ReportHelper.getCityCountry(getValueFromMap(consignerAddress, CITY), getValueFromMap(consignerAddress, COUNTRY)),
-                getValueFromMap(consignerAddress, EMAIL), getValueFromMap(consignerAddress, CONTACT_PHONE),
-                getValueFromMap(consignerAddress, "Zip_PostCode"));
-        dict.put(SHIPPER_WC, consignerWc);
+        if(model.shipment.getConsigner() != null) {
+            Map<String, Object> consignerAddress = model.shipment.getConsigner().getAddressData();
+            var consignerWc = ReportHelper.getOrgAddressWithPhoneEmail(null, getValueFromMap(consignerAddress, ADDRESS1),
+                    getValueFromMap(consignerAddress, ADDRESS2), ReportHelper.getCityCountry(getValueFromMap(consignerAddress, CITY), getValueFromMap(consignerAddress, COUNTRY)),
+                    getValueFromMap(consignerAddress, EMAIL), getValueFromMap(consignerAddress, CONTACT_PHONE),
+                    getValueFromMap(consignerAddress, "Zip_PostCode"));
+            dict.put(SHIPPER_WC, consignerWc);
+        }
 
         if(model.blObject != null && model.blObject.getHblData() != null){
             dict.put(CONSIGNER_ADDRESS, model.blObject.getHblData().getConsignorAddress());
