@@ -125,7 +125,7 @@ public class HawbReport extends IReport{
 
                 if (StringUtility.isNotEmpty(consolRow.getPayment()))
                 {
-                    masterDataQuery.add(MasterDataType.PAYMENT.name() + "#" + consolRow.getPayment());
+                    masterDataQuery.add(MasterDataType.PAYMENT.getDescription() + "#" + consolRow.getPayment());
                 }
                 //dictionary["PrintUserName"] = consolRow.InsertUserIdUsername;
             }
@@ -148,7 +148,7 @@ public class HawbReport extends IReport{
 
                 if (StringUtility.isNotEmpty(shipmentRow.getPaymentTerms()))
                 {
-                    masterDataQuery.add(MasterDataType.PAYMENT.name() + "#" + shipmentRow.getPaymentTerms());
+                    masterDataQuery.add(MasterDataType.PAYMENT.getDescription() + "#" + shipmentRow.getPaymentTerms());
                 }
                 dictionary.put(ReportConstants.PRINT_USER_NAME, shipmentRow.getAssignedTo());
             }
@@ -236,7 +236,7 @@ public class HawbReport extends IReport{
                 {
                     if (StringUtility.isNotEmpty(consolRow.getPayment()))
                     {
-                        paymentTerms = dataMap.get(MasterDataType.PAYMENT.name() + "#" + consolRow.getPayment());
+                        paymentTerms = dataMap.get(MasterDataType.PAYMENT.getDescription() + "#" + consolRow.getPayment());
                         if (paymentTerms != null)
                         {
                             dictionary.put(ReportConstants.PAYMENT_TERMS, paymentTerms.ItemDescription);
@@ -247,7 +247,7 @@ public class HawbReport extends IReport{
                 {
                     if (StringUtility.isNotEmpty(hawbModel.shipmentDetails.getPaymentTerms()))
                     {
-                        paymentTerms = dataMap.get(MasterDataType.PAYMENT.name() + "#" + hawbModel.shipmentDetails.getPaymentTerms());
+                        paymentTerms = dataMap.get(MasterDataType.PAYMENT.getDescription() + "#" + hawbModel.shipmentDetails.getPaymentTerms());
                         if (paymentTerms != null)
                         {
                             dictionary.put(ReportConstants.PAYMENT_TERMS, paymentTerms.ItemDescription);
