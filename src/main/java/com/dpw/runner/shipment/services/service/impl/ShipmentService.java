@@ -684,6 +684,11 @@ public class ShipmentService implements IShipmentService {
             if (shipmentAddressRequest != null)
                 shipmentDetails.setShipmentAddresses(partiesDao.saveEntityFromOtherEntity(commonUtils.convertToCreateEntityList(shipmentAddressRequest, Parties.class), shipmentId, Constants.SHIPMENT_ADDRESSES));
 
+            // Create Shipment Route in Console for Auto Attach Consolidation;
+            if (request.getReplaceConsoleRoute() != null && request.getReplaceConsoleRoute()){
+                createShipmentRouteInConsole(request);
+            }
+
             Hbl hbl = null;
             ConsolidationDetails consolidationDetails = null;
             if(updatedContainers.size() > 0) {
@@ -1495,25 +1500,10 @@ public class ShipmentService implements IShipmentService {
                 List<Parties> updatedParties = partiesDao.updateEntityFromOtherEntity(convertToEntityList(shipmentAddressList, Parties.class), id, Constants.SHIPMENT_ADDRESSES);
                 entity.setShipmentAddresses(updatedParties);
             }
+
+            // Create Shipment Route in Console for Auto Attach Consolidation;
             if (shipmentRequest.getReplaceConsoleRoute() != null && shipmentRequest.getReplaceConsoleRoute()){
-                List<ConsolidationDetailsRequest> consoleRequest = shipmentRequest.getConsolidationList();
-                List<Routings> createRoutes = new ArrayList<>();
-                if(shipmentRequest.getCreateMainLegRoute() != null && shipmentRequest.getCreateMainLegRoute()){
-                    List<RoutingsRequest> routeRequestList = shipmentRequest.getRoutingsList().stream().sorted(Comparator.comparingLong(RoutingsRequest::getLeg)).collect(Collectors.toList());
-                    var routeRequest = routeRequestList.stream().filter(x -> x.getMode().equals(shipmentRequest.getTransportMode())).findFirst();
-                    if(routeRequest.isPresent()) {
-                        createRoutes.add(convertToClass(routeRequest.get(), Routings.class));
-                        createRoutes = createConsoleRoutePayload(createRoutes);
-                    }
-                } else {
-                    createRoutes = convertToEntityList(shipmentRequest.getRoutingsList(), Routings.class);
-                    createRoutes = createConsoleRoutePayload(createRoutes);
-                }
-                if(consoleRequest != null && !consoleRequest.isEmpty() && createRoutes != null && !createRoutes.isEmpty()) {
-                    for (var console : consoleRequest) {
-                        routingsDao.updateEntityFromConsole(createRoutes, console.getId());
-                    }
-                }
+                createShipmentRouteInConsole(shipmentRequest);
             }
 
             Hbl hbl = null;
@@ -1590,6 +1580,27 @@ public class ShipmentService implements IShipmentService {
         }
         catch (Exception e) {
             log.error(e.getMessage());
+        }
+    }
+
+    private void createShipmentRouteInConsole (ShipmentRequest shipmentRequest) throws Exception{
+        List<ConsolidationDetailsRequest> consoleRequest = shipmentRequest.getConsolidationList();
+        List<Routings> createRoutes = new ArrayList<>();
+        if(shipmentRequest.getCreateMainLegRoute() != null && shipmentRequest.getCreateMainLegRoute()){
+            List<RoutingsRequest> routeRequestList = shipmentRequest.getRoutingsList().stream().sorted(Comparator.comparingLong(RoutingsRequest::getLeg)).collect(Collectors.toList());
+            var routeRequest = routeRequestList.stream().filter(x -> x.getMode().equals(shipmentRequest.getTransportMode())).findFirst();
+            if(routeRequest.isPresent()) {
+                createRoutes.add(convertToClass(routeRequest.get(), Routings.class));
+                createRoutes = createConsoleRoutePayload(createRoutes);
+            }
+        } else {
+            createRoutes = convertToEntityList(shipmentRequest.getRoutingsList(), Routings.class);
+            createRoutes = createConsoleRoutePayload(createRoutes);
+        }
+        if(consoleRequest != null && !consoleRequest.isEmpty() && createRoutes != null && !createRoutes.isEmpty()) {
+            for (var console : consoleRequest) {
+                routingsDao.updateEntityFromConsole(createRoutes, console.getId());
+            }
         }
     }
 
