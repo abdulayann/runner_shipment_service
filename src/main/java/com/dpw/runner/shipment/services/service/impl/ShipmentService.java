@@ -593,7 +593,8 @@ public class ShipmentService implements IShipmentService {
         }
 
         try {
-            
+            if (Objects.isNull(shipmentDetails.getSourceTenantId()))
+                shipmentDetails.setSourceTenantId(Long.valueOf(UserContext.getUser().TenantId));
             List<ShipmentSettingsDetails> shipmentSettingsDetailsList = shipmentSettingsDao.getSettingsByTenantIds(List.of(TenantContext.getCurrentTenant()));
             ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
             if(shipmentSettingsDetailsList.size() > 0)
