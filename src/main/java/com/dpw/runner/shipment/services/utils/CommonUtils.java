@@ -352,4 +352,8 @@ public class CommonUtils {
         return str.toString().trim();
     }
 
+    public static <T> Iterable<T> emptyIfNull(Iterable<T> iterable) {
+        return iterable == null ? Collections.<T>emptyList() : iterable;
+    }
+
 }
