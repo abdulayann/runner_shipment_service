@@ -1495,6 +1495,26 @@ public class ShipmentService implements IShipmentService {
                 List<Parties> updatedParties = partiesDao.updateEntityFromOtherEntity(convertToEntityList(shipmentAddressList, Parties.class), id, Constants.SHIPMENT_ADDRESSES);
                 entity.setShipmentAddresses(updatedParties);
             }
+            if (shipmentRequest.getReplaceConsoleRoute()){
+                List<ConsolidationDetailsRequest> consoleRequest = shipmentRequest.getConsolidationList();
+                List<Routings> createRoutes = new ArrayList<>();
+                if(shipmentRequest.getCreateMainLegRoute()){
+                    List<RoutingsRequest> routeRequestList = shipmentRequest.getRoutingsList().stream().sorted(Comparator.comparingLong(RoutingsRequest::getLeg)).collect(Collectors.toList());
+                    var routeRequest = routeRequestList.stream().filter(x -> x.getMode().equals(shipmentRequest.getTransportMode())).findFirst();
+                    if(routeRequest.isPresent()) {
+                        createRoutes.add(convertToClass(routeRequest.get(), Routings.class));
+                        createRoutes = createConsoleRoutePayload(createRoutes);
+                    }
+                } else {
+                    createRoutes = convertToEntityList(shipmentRequest.getRoutingsList(), Routings.class);
+                    createRoutes = createConsoleRoutePayload(createRoutes);
+                }
+                if(consoleRequest != null && !consoleRequest.isEmpty() && createRoutes != null && !createRoutes.isEmpty()) {
+                    for (var console : consoleRequest) {
+                        routingsDao.updateEntityFromConsole(createRoutes, console.getId());
+                    }
+                }
+            }
 
             Hbl hbl = null;
             ConsolidationDetails consolidationDetails = null;
@@ -1571,6 +1591,29 @@ public class ShipmentService implements IShipmentService {
         catch (Exception e) {
             log.error(e.getMessage());
         }
+    }
+
+    private List<Routings> createConsoleRoutePayload(List<Routings> routes){
+        List<Routings> responseList = new ArrayList<>();
+        for (var route : routes){
+            Routings routings = new Routings();
+            routings.setLeg(1L);
+            routings.setPol(route.getPol());
+            routings.setPod(route.getPod());
+            routings.setMode(route.getMode());
+            routings.setEta(route.getEta());
+            routings.setEtd(route.getEtd());
+            routings.setTransitDays(route.getTransitDays());
+            routings.setAta(route.getAta());
+            routings.setAtd(route.getAtd());
+            routings.setVesselId(route.getVesselId());
+            routings.setVesselName(route.getVesselName());
+            routings.setVoyage(route.getVoyage());
+            routings.setCarrier(route.getCarrier());
+            routings.setFlightNumber(route.getFlightNumber());
+            responseList.add(routings);
+        }
+        return responseList;
     }
 
     public ConsolidationDetails createConsolidation(ShipmentDetails shipmentDetails, List<Containers> containers) {
