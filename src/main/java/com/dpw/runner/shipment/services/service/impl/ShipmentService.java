@@ -565,6 +565,62 @@ public class ShipmentService implements IShipmentService {
         return salt.toString();
     }
 
+    @Transactional
+    private ResponseEntity<?> createFromBooking(CommonRequestModel commonRequestModel)
+    {
+        ShipmentRequest request = (ShipmentRequest) commonRequestModel.getData();
+        if (request == null) {
+            log.error("Request is null for Shipment Create From Booking with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+        }
+        ShipmentDetails shipmentDetails = jsonHelper.convertValue(request, ShipmentDetails.class);
+        try {
+            if(request.getConsolidationList() != null)
+                shipmentDetails.setConsolidationList(jsonHelper.convertValueToList(request.getConsolidationList(), ConsolidationDetails.class));
+            if(request.getContainersList() != null)
+                shipmentDetails.setContainersList(jsonHelper.convertValueToList(request.getContainersList(), Containers.class));
+            shipmentDetails = getShipment(shipmentDetails);
+            Long shipmentId = shipmentDetails.getId();
+            List<Packing> updatedPackings = new ArrayList<>();
+            if (request.getPackingList() != null) {
+                updatedPackings = packingDao.saveEntityFromShipment(jsonHelper.convertValueToList(request.getPackingList(), Packing.class), shipmentId);
+                shipmentDetails.setPackingList(updatedPackings);
+            }
+            List<RoutingsRequest> routingsRequest = request.getRoutingsList();
+            if (routingsRequest != null)
+                shipmentDetails.setRoutingsList(routingsDao.saveEntityFromShipment(jsonHelper.convertValueToList(routingsRequest, Routings.class), shipmentId));
+            Hbl hbl = null;
+            if(shipmentDetails.getContainersList() != null && shipmentDetails.getContainersList().size() > 0) {
+                hbl = hblService.checkAllContainerAssigned(shipmentId, shipmentDetails.getContainersList(), updatedPackings);
+            }
+            afterSave(shipmentDetails, true);
+            try {
+                shipmentSync.sync(shipmentDetails);
+            } catch (Exception e){
+                log.error("Error performing sync on shipment entity, {}", e);
+            }
+            if(hbl != null) {
+                try {
+                    hblSync.sync(hbl);
+                }
+                catch (Exception e) {
+                    log.error("Error performing sync on hbl entity, {}", e);
+                }
+            }
+            auditLogService.addAuditLog(
+                AuditLogMetaData.builder()
+                        .newData(shipmentDetails)
+                        .prevData(null)
+                        .parent(ShipmentDetails.class.getSimpleName())
+                        .parentId(shipmentDetails.getId())
+                        .operation(DBOperationType.CREATE.name()).build()
+            );
+        } catch (Exception e) {
+            log.error(e.getMessage());
+            throw new RuntimeException(e);
+        }
+        return ResponseHelper.buildSuccessResponse(jsonHelper.convertValue(shipmentDetails, ShipmentDetailsResponse.class));
+    }
+
     @Override
     @Transactional
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
@@ -935,7 +991,7 @@ public class ShipmentService implements IShipmentService {
     public ResponseEntity<?> createShipmentInV2(CustomerBookingRequest customerBookingRequest) throws Exception
     {
         List<ConsolidationDetailsRequest> consolidationDetails = new ArrayList<>();
-        if(customerBookingRequest.getTransportType() == "FCL")
+        if(customerBookingRequest.getCargoType().equals("FCL"))
         {
             ConsolidationDetailsRequest consolidationDetailsRequest = ConsolidationDetailsRequest.builder().
                     carrierDetails(CarrierDetailRequest.builder()
@@ -1000,11 +1056,11 @@ public class ShipmentService implements IShipmentService {
                 volumetricWeightUnit(customerBookingRequest.getWeightVolumeUnit()).
                 bookingReference(customerBookingRequest.getBookingNumber()).
                 shipmentCreatedOn(customerBookingRequest.getBookingDate()).
-                client(customerBookingRequest.getCustomer()).
-                consignee(customerBookingRequest.getConsignee()).
-                consigner(customerBookingRequest.getConsignor()).
+                client(createPartiesRequest(customerBookingRequest.getCustomer())).
+                consignee(createPartiesRequest(customerBookingRequest.getConsignee())).
+                consigner(createPartiesRequest(customerBookingRequest.getConsignor())).
                 additionalDetails(AdditionalDetailRequest.builder().
-                        notifyParty(customerBookingRequest.getNotifyParty()).
+                        notifyParty(createPartiesRequest(customerBookingRequest.getNotifyParty())).
                         build()
                 ).
                 shipmentType(customerBookingRequest.getCargoType()).
@@ -1015,14 +1071,26 @@ public class ShipmentService implements IShipmentService {
                 serviceType(customerBookingRequest.getServiceMode()).
                 status(4).
                 fmcTlcId(customerBookingRequest.getFmcTlcId()).
-                containersList(customerBookingRequest.getContainersList()).
+                containersList(consolidationDetails != null && consolidationDetails.size() > 0 ? consolidationDetails.get(0).getContainersList() : null).
                 packingList(customerBookingRequest.getPackingList()).
                 fileRepoList(customerBookingRequest.getFileRepoList()).
                 routingsList(customerBookingRequest.getRoutingList()).
-                consolidationList(customerBookingRequest.getTransportType() == "FCL" ? consolidationDetails : null).
+                consolidationList(customerBookingRequest.getCargoType().equals("FCL") ? consolidationDetails : null).
                 build();
 
-        return this.create(CommonRequestModel.buildRequest(shipmentRequest));
+        return this.createFromBooking(CommonRequestModel.buildRequest(shipmentRequest));
+    }
+
+    private PartiesRequest createPartiesRequest(PartiesRequest party)
+    {
+        if(party == null)
+            return null;
+        return PartiesRequest.builder()
+                .addressCode(party.getAddressCode())
+                .addressData(party.getAddressData())
+                .orgCode(party.getOrgCode())
+                .orgData(party.getOrgData())
+                .build();
     }
 
     private List<PackingRequest> setContainerIdByNumber(List<Containers> containersList, List<PackingRequest> packingRequests) {

@@ -50,6 +50,8 @@ public class ShipmentBillingListResponse {
         private BigDecimal TotalPostedProfitPercent;
         @JsonProperty("WayBillNumber")
         private String WayBillNumber;
+        @JsonProperty("Id")
+        private Long Id;
     }
 
 }
