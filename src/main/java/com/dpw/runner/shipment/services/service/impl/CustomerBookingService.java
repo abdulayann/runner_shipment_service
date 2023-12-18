@@ -17,6 +17,8 @@ import com.dpw.runner.shipment.services.dto.request.crp.CRPRetrieveRequest;
 import com.dpw.runner.shipment.services.dto.request.npm.*;
 import com.dpw.runner.shipment.services.dto.request.platformBooking.PlatformToRunnerCustomerBookingRequest;
 import com.dpw.runner.shipment.services.dto.response.*;
+import com.dpw.runner.shipment.services.dto.v1.request.ShipmentBillingListRequest;
+import com.dpw.runner.shipment.services.dto.v1.request.V1RetrieveRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.BookingSource;
@@ -114,6 +116,8 @@ public class CustomerBookingService implements ICustomerBookingService {
     private IV1Service v1Service;
     @Autowired
     private MasterDataFactory masterDataFactory;
+    @Autowired
+    private IShipmentDao shipmentDao;
 
     private static final Map<String, String> loadTypeMap = Map.of("SEA", "LCL", "AIR", "LSE");
 
@@ -327,9 +331,15 @@ public class CustomerBookingService implements ICustomerBookingService {
             {
                 ShipmentDetailsResponse shipmentResponse = (ShipmentDetailsResponse) (((RunnerResponse) bookingIntegrationsUtility.createShipmentInV2(request).getBody()).getData());
                 if(shipmentResponse != null) {
-                    bookingIntegrationsUtility.createShipmentInV1(customerBooking, false, true, shipmentResponse.getGuid());
+                    try
+                    {
+                        bookingIntegrationsUtility.createShipmentInV1(customerBooking, false, true, shipmentResponse.getGuid());
+                    } catch (Exception e) {
+                        log.error("Bill creation for shipment with booking reference {} failed due to following error: {}", shipmentResponse.getBookingReference(), e.getMessage());
+                    }
                     customerBooking.setShipmentId(shipmentResponse.getShipmentId());
-                    customerBooking.setShipmentEntityId(shipmentResponse.getId().toString());
+                    customerBooking.setShipmentEntityIdV2(shipmentResponse.getId().toString());
+                    customerBooking.setShipmentGuid(shipmentResponse.getGuid().toString());
                     customerBooking.setShipmentCreatedDate(LocalDateTime.now());
                     customerBooking = customerBookingDao.save(customerBooking);
                 }
@@ -340,6 +350,7 @@ public class CustomerBookingService implements ICustomerBookingService {
                 if (!Objects.isNull(shipmentCreationResponse) && !Objects.isNull(shipmentCreationResponse.getShipmentId())) {
                     customerBooking.setShipmentId(shipmentCreationResponse.getShipmentId());
                     customerBooking.setShipmentEntityId(shipmentCreationResponse.getEntityId());
+                    customerBooking.setShipmentGuid(shipmentCreationResponse.getShipmentGuid());
                     customerBooking.setShipmentCreatedDate(LocalDateTime.now());
                     customerBooking = customerBookingDao.save(customerBooking);
                 }
@@ -1059,6 +1070,46 @@ public class CustomerBookingService implements ICustomerBookingService {
             var carrierFuture = CompletableFuture.runAsync(withMdc(() -> this.addAllCarrierDataInSingleCall(customerBooking, customerBookingResponse)), executorService);
             var containerTypeFuture = CompletableFuture.runAsync(withMdc(() -> this.addAllContainerTypesInSingleCall(customerBooking, customerBookingResponse)), executorService);
             var chargeTypeFuture = CompletableFuture.runAsync(withMdc(() -> this.addAllChargeTypesInSingleCall(customerBooking, customerBookingResponse)), executorService);
+            if(customerBookingResponse.getBookingStatus() == BookingStatus.READY_FOR_SHIPMENT) {
+                DependentServiceResponse dependentServiceResponse = masterDataFactory.getMasterDataService().retrieveTenantSettings();
+                V1TenantSettingsResponse tenantSettingsResponse = modelMapper.map(dependentServiceResponse.getData(), V1TenantSettingsResponse.class);
+                Boolean isShipmentV2 = tenantSettingsResponse.getShipmentServiceV2Enabled();
+                if (isShipmentV2) {
+                    if (customerBookingResponse.getShipmentEntityIdV2() == null) {
+                        if (customerBookingResponse.getShipmentGuid() == null) {
+                            if (customerBookingResponse.getShipmentEntityId() != null) {
+                                V1RetrieveRequest v1RetrieveRequest =
+                                        V1RetrieveRequest.builder().
+                                                EntityId(customerBookingResponse.getShipmentEntityId()).
+                                                build();
+                                V1RetrieveResponse v1RetrieveResponse = v1Service.getShipment(v1RetrieveRequest);
+                                ShipmentRetrieveResponse shipmentRetrieveResponse = (ShipmentRetrieveResponse) v1RetrieveResponse.getEntity();
+                                var shipment = shipmentDao.findByGuid(shipmentRetrieveResponse.getGuid());
+                                if (shipment.isPresent())
+                                    customerBookingResponse.setShipmentEntityIdV2(shipment.get().getId().toString());
+                            }
+                        } else {
+                            var shipment = shipmentDao.findByGuid(UUID.fromString(customerBooking.getShipmentGuid()));
+                            if (shipment.isPresent())
+                                customerBookingResponse.setShipmentEntityIdV2(shipment.get().getId().toString());
+                        }
+                    }
+                } else {
+                    if (customerBookingResponse.getShipmentEntityId() == null) {
+                        if (customerBookingResponse.getShipmentGuid() != null) {
+                            List<UUID> guidsList = new ArrayList<>();
+                            guidsList.add(UUID.fromString(customerBookingResponse.getShipmentGuid()));
+                            ShipmentBillingListRequest shipmentBillingListRequest = new ShipmentBillingListRequest();
+                            shipmentBillingListRequest.setGuidsList(guidsList);
+                            ShipmentBillingListResponse shipmentBillingListResponse = v1Service.fetchShipmentBillingData(shipmentBillingListRequest);
+                            if (shipmentBillingListResponse.getData() != null && !shipmentBillingListResponse.getData().isEmpty()) {
+                                ShipmentBillingListResponse.BillingData billingData = shipmentBillingListResponse.getData().get(UUID.fromString(customerBookingResponse.getShipmentGuid()));
+                                customerBookingResponse.setShipmentEntityId(billingData.getId() != null ? billingData.getId().toString() : null);
+                            }
+                        }
+                    }
+                }
+            }
             CompletableFuture.allOf(masterListFuture, unLocationsFuture, vesselsFuture, carrierFuture, containerTypeFuture, chargeTypeFuture).join();
             double _timeTaken = System.currentTimeMillis() - _start;
             log.info("Time taken to fetch Master-data from V1: {} ms. || RequestId: {}", _timeTaken, LoggerHelper.getRequestIdFromMDC());

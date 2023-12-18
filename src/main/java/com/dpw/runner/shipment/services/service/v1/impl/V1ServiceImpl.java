@@ -283,6 +283,8 @@ public class V1ServiceImpl implements IV1Service {
     private String GET_SHIPMENT_SEQUENCE_NUMBER_URL;
     @Value("${v1service.url.base}${v1service.url.getMaxConsolidationId}")
     private String GET_MAX_CONSOL_ID_URL;
+    @Value("${v1service.url.base}${v1service.url.shipmentRetrieve}")
+    private String SHIPMENT_RETRIEVE_URL;
 
     @Autowired
     private JsonHelper jsonHelper;
@@ -1786,4 +1788,22 @@ public class V1ServiceImpl implements IV1Service {
         }
     }
 
+    @Override
+    public V1RetrieveResponse getShipment(V1RetrieveRequest request) {
+        ResponseEntity masterDataResponse = null;
+        try {
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            masterDataResponse = this.restTemplate.postForEntity(this.SHIPMENT_RETRIEVE_URL, entity, V1RetrieveResponse.class, new Object[0]);
+            return (V1RetrieveResponse) masterDataResponse.getBody();
+
+        } catch (HttpStatusCodeException var6) {
+            if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
+                throw new UnAuthorizedException("UnAuthorizedException");
+            } else {
+                throw new V1ServiceException(var6.getMessage());
+            }
+        } catch (Exception var7) {
+            throw new V1ServiceException(var7.getMessage());
+        }
+    }
 }
