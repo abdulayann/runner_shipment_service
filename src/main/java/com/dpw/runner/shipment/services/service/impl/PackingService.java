@@ -380,7 +380,7 @@ public class PackingService implements IPackingService {
             if(request.getNewContainerId() != null)
                 newContainer = containersDao.findById(request.getNewContainerId()).get();
 
-            if(request.getOldContainerId().equals(request.getNewContainerId())) {
+            if(request.getOldContainerId() != null && request.getNewContainerId() != null && request.getOldContainerId().equals(request.getNewContainerId())) {
                 subtractWeightVolume(oldPacking, newContainer);
                 addWeightVolume(newPacking, newContainer);
             }
@@ -530,10 +530,12 @@ public class PackingService implements IPackingService {
 
     private static Containers addWeightVolume(Packing request, Containers newContainer) throws Exception {
         if(newContainer != null && request != null) {
-            BigDecimal finalWeight = (BigDecimal) convertUnit(Constants.MASS, request.getWeight(), request.getWeightUnit(), newContainer.getAchievedWeightUnit());
-            BigDecimal finalVolume = (BigDecimal) convertUnit(Constants.MASS, request.getVolume(), request.getVolumeUnit(), newContainer.getAchievedVolumeUnit());
-            finalWeight = finalWeight.add(newContainer.getAchievedWeight());
-            finalVolume = finalVolume.add(newContainer.getAchievedVolume());
+            BigDecimal finalWeight = new BigDecimal(convertUnit(Constants.MASS, request.getWeight(), request.getWeightUnit(), newContainer.getAchievedWeightUnit()).toString());
+            BigDecimal finalVolume = new BigDecimal(convertUnit(Constants.MASS, request.getVolume(), request.getVolumeUnit(), newContainer.getAchievedVolumeUnit()).toString());
+            if(newContainer.getAchievedWeight() != null)
+                finalWeight = finalWeight.add(newContainer.getAchievedWeight());
+            if(newContainer.getAchievedVolume() != null)
+                finalVolume = finalVolume.add(newContainer.getAchievedVolume());
             newContainer.setAchievedWeight(finalWeight);
             newContainer.setAchievedVolume(finalVolume);
         }
@@ -542,12 +544,16 @@ public class PackingService implements IPackingService {
 
     private static Containers subtractWeightVolume(Packing request, Containers oldContainer) throws Exception {
         if(oldContainer != null && request != null) {
-            BigDecimal finalWeight = (BigDecimal) convertUnit(Constants.MASS, request.getWeight(), request.getWeightUnit(), oldContainer.getAchievedWeightUnit());
-            BigDecimal finalVolume = (BigDecimal) convertUnit(Constants.MASS, request.getVolume(), request.getVolumeUnit(), oldContainer.getAchievedVolumeUnit());
-            finalWeight = oldContainer.getAchievedWeight().subtract(finalWeight);
-            finalVolume = oldContainer.getAchievedVolume().subtract(finalVolume);
-            oldContainer.setAchievedWeight(finalWeight);
-            oldContainer.setAchievedVolume(finalVolume);
+            BigDecimal finalWeight = new BigDecimal(convertUnit(Constants.MASS, request.getWeight(), request.getWeightUnit(), oldContainer.getAchievedWeightUnit()).toString());
+            BigDecimal finalVolume = new BigDecimal(convertUnit(Constants.MASS, request.getVolume(), request.getVolumeUnit(), oldContainer.getAchievedVolumeUnit()).toString());
+            if(oldContainer.getAchievedWeight() != null) {
+                finalWeight = oldContainer.getAchievedWeight().subtract(finalWeight);
+                oldContainer.setAchievedWeight(finalWeight);
+            }
+            if(oldContainer.getAchievedVolume() != null) {
+                finalVolume = oldContainer.getAchievedVolume().subtract(finalVolume);
+                oldContainer.setAchievedVolume(finalVolume);
+            }
         }
         return oldContainer;
     }
