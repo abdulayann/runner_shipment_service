@@ -231,7 +231,7 @@ public class ConsolidationController {
     }
 
     @ApiResponses(value = { @ApiResponse(code = 200, message = ConsolidationConstants.LIST_SUCCESSFUL) })
-    @GetMapping(ApiConstants.LIST_PACKS_FOR_ASSIGN_DETACH)
+    @PostMapping(ApiConstants.LIST_PACKS_FOR_ASSIGN_DETACH)
     public ResponseEntity<RunnerResponse<ConsolePacksListResponse>> listPacksForAssignDetach(@RequestBody ConsolePacksListRequest request) {
         String responseMsg;
         try {
