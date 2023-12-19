@@ -1065,6 +1065,10 @@ public class ShipmentService implements IShipmentService {
                 serviceType(customerBookingRequest.getServiceMode()).
                 status(4).
                 fmcTlcId(customerBookingRequest.getFmcTlcId()).
+                clientCountry(customerBookingRequest.getClientCountry()).
+                consignorCountry(customerBookingRequest.getConsignorCountry()).
+                consigneeCountry(customerBookingRequest.getConsigneeCountry()).
+                notifyPartyCountry(customerBookingRequest.getNotifyPartyCountry()).
                 containersList(consolidationDetails != null && consolidationDetails.size() > 0 ? consolidationDetails.get(0).getContainersList() : null).
                 packingList(customerBookingRequest.getPackingList()).
                 fileRepoList(customerBookingRequest.getFileRepoList()).
