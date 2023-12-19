@@ -369,4 +369,7 @@ public class ConsolidationDetails extends MultiTenancy {
     @Size(max = 64, message = "max size is 64 for mode_of_booking")
     @MasterData(type = MasterDataType.MODE_OF_BOOKING)
     private String modeOfBooking;
+
+    @Column(name = "auto_update_goods_desc")
+    private Boolean autoUpdateGoodsDesc;
 }
