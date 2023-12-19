@@ -20,16 +20,16 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.TransactionSystemException;
 
 import javax.imageio.ImageIO;
+import javax.validation.ConstraintViolation;
+import javax.validation.ConstraintViolationException;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.text.DecimalFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.*;
 import java.util.List;
-import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Component
@@ -312,4 +312,48 @@ public class CommonUtils {
         };
         return responseMessage;
     }
+
+    public static String getConstrainViolationErrorMessage(Exception e) {
+        String errorMessage = "";
+        Set<ConstraintViolation<?>> set = ((ConstraintViolationException) e).getConstraintViolations();
+        List<String> errors = set.stream().map(i -> String.format("%s : %s",i.getInvalidValue(), i.getMessage())).toList();
+        errorMessage = errors.toString();
+        return errorMessage;
+    }
+
+    public static String inWords(Long num) {
+        String[] a = {"", "One ", "Two ", "Three ", "Four ", "Five ", "Six ", "Seven ", "Eight ", "Nine ", "Ten ",
+                "Eleven ", "Twelve ", "Thirteen ", "Fourteen ", "Fifteen ", "Sixteen ", "Seventeen ", "Eighteen ",
+                "Nineteen "};
+        String[] b = {"", "", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety"};
+
+        if (num > 999999999) {
+            return "overflow";
+        }
+
+        String numStr = String.format("%09d", num);
+        int[] n = {
+                Integer.parseInt(numStr.substring(0, 2)), // Crore
+                Integer.parseInt(numStr.substring(2, 4)), // Lakh
+                Integer.parseInt(numStr.substring(4, 6)), // Thousand
+                Integer.parseInt(numStr.substring(6, 7)), // Hundred
+                Integer.parseInt(numStr.substring(7, 9))  // Tens and Ones
+        };
+
+        StringBuilder str = new StringBuilder();
+
+        str.append((n[0] != 0) ? (!a[n[0]].equals("") ? a[n[0]] : b[n[0] / 10] + " " + a[n[0] % 10]) + "Crore " : "");
+        str.append((n[1] != 0) ? (!a[n[1]].equals("") ? a[n[1]] : b[n[1] / 10] + " " + a[n[1] % 10]) + "Lakh " : "");
+        str.append((n[2] != 0) ? (!a[n[2]].equals("") ? a[n[2]] : b[n[2] / 10] + " " + a[n[2] % 10]) + "Thousand " : "");
+        str.append((n[3] != 0) ? (!a[n[3]].equals("") ? a[n[3]] : b[n[3] / 10] + " " + a[n[3] % 10]) + "Hundred " : "");
+        str.append((n[4] != 0) ? ((str.length() != 0) ? "and " : "") +
+                (!a[n[4]].equals("") ? a[n[4]] : b[n[4] / 10] + " " + a[n[4] % 10]) + " " : "");
+
+        return str.toString().trim();
+    }
+
+    public static <T> Iterable<T> emptyIfNull(Iterable<T> iterable) {
+        return iterable == null ? Collections.<T>emptyList() : iterable;
+    }
+
 }

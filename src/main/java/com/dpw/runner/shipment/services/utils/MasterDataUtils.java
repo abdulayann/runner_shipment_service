@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.utils;
 
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.RequestAuthContext;
 import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
@@ -21,12 +22,14 @@ import com.dpw.runner.shipment.services.entitytransfer.dto.*;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest;
+import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequestV2;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.validator.enums.Operators;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
+import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
@@ -199,7 +202,9 @@ public class MasterDataUtils{
             }
         }
         if(requests.size() > 0) {
-            V1DataResponse response = v1Service.fetchMultipleMasterData(requests);
+            MasterListRequestV2 masterListRequestV2 = new MasterListRequestV2();
+            masterListRequestV2.setMasterListRequests(requests);
+            V1DataResponse response = v1Service.fetchMultipleMasterData(masterListRequestV2);
             List<EntityTransferMasterLists> masterLists = jsonHelper.convertValueToList(response.entities, EntityTransferMasterLists.class);
             masterLists.forEach(masterData -> {
                 String key = masterData.ItemValue + '#' + MasterDataType.masterData(masterData.ItemType).name();
@@ -590,9 +595,9 @@ public class MasterDataUtils{
         fieldNameMainKeyMap.put(code, fieldNameKeyMap);
         return requests;
     }
-    public Map<String, EntityTransferMasterLists> fetchInBulkMasterList(List<MasterListRequest> requests) {
+    public Map<String, EntityTransferMasterLists> fetchInBulkMasterList(MasterListRequestV2 requests) {
         Map<String, EntityTransferMasterLists> keyMasterDataMap = new HashMap<>();
-        if(requests.size() > 0) {
+        if(requests.getMasterListRequests() != null && requests.getMasterListRequests().size() > 0) {
             log.info("Request: {} || MasterListsList: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(requests));
             V1DataResponse response = v1Service.fetchMultipleMasterData(requests);
             List<EntityTransferMasterLists> masterLists = jsonHelper.convertValueToList(response.entities, EntityTransferMasterLists.class);
@@ -979,7 +984,15 @@ public class MasterDataUtils{
         }
     }
 
+    public Map<String, String> setMasterData (Map<String, String> fieldNameKeyMap, String masterDataType, boolean isBooking) {
+        return setMasterDataImpl(fieldNameKeyMap, masterDataType, isBooking);
+    }
+
     public Map<String, String> setMasterData (Map<String, String> fieldNameKeyMap, String masterDataType) {
+        return setMasterDataImpl(fieldNameKeyMap, masterDataType, false);
+    }
+
+    public Map<String, String> setMasterDataImpl (Map<String, String> fieldNameKeyMap, String masterDataType, boolean isBooking) {
         Map<String, String> fieldNameMasterDataMap = new HashMap<>();
         if (Objects.isNull(fieldNameKeyMap) || fieldNameKeyMap.isEmpty())
             return fieldNameMasterDataMap;
@@ -1003,7 +1016,14 @@ public class MasterDataUtils{
                         break;
                     case CacheConstants.MASTER_LIST:
                         EntityTransferMasterLists object3 = (EntityTransferMasterLists) cache.get();
-                        fieldNameMasterDataMap.put(key, object3.getItemDescription());
+                        if(isBooking)
+                            fieldNameMasterDataMap.put(key, object3.getItemDescription());
+                        else {
+                            if(!IsStringNullOrEmpty(object3.getValuenDesc()))
+                                fieldNameMasterDataMap.put(key, object3.getValuenDesc());
+                            else
+                                fieldNameMasterDataMap.put(key, object3.getItemDescription());
+                        }
                         break;
                     case CacheConstants.VESSELS:
                         EntityTransferVessels object4 = (EntityTransferVessels) cache.get();
@@ -1032,6 +1052,10 @@ public class MasterDataUtils{
                     case CacheConstants.SALES_AGENT:
                         SalesAgentResponse object10 = (SalesAgentResponse) cache.get();
                         fieldNameMasterDataMap.put(key, object10.getSalesAgentName());
+                        break;
+                    case CacheConstants.COMMODITY:
+                        EntityTransferCommodityType object11 = (EntityTransferCommodityType) cache.get();
+                        fieldNameMasterDataMap.put(key, object11.getDescription());
                         break;
                 }
 
@@ -1190,7 +1214,9 @@ public class MasterDataUtils{
         Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
 
         List<MasterListRequest> listRequests = new ArrayList<>(createInBulkMasterListRequest(shipmentSettingsDetailsResponse, ShipmentSettingsDetails.class, fieldNameKeyMap, ShipmentSettingsDetails.class.getSimpleName()));
-        Map<String, EntityTransferMasterLists> masterListsMap = fetchInBulkMasterList(listRequests);
+        MasterListRequestV2 masterListRequestV2 = new MasterListRequestV2();
+        masterListRequestV2.setMasterListRequests(listRequests);
+        Map<String, EntityTransferMasterLists> masterListsMap = fetchInBulkMasterList(masterListRequestV2);
 
         for(Field field : ShipmentSettingsDetails.class.getDeclaredFields()) {
             if(field.isAnnotationPresent(MasterData.class)) {
@@ -1304,5 +1330,15 @@ public class MasterDataUtils{
             });
         }
         return keyMasterDataMap;
+    }
+
+    public Runnable withMdc(Runnable runnable) {
+        Map<String, String> mdc = MDC.getCopyOfContextMap();
+        String token = RequestAuthContext.getAuthToken();
+        return () -> {
+            MDC.setContextMap(mdc);
+            RequestAuthContext.setAuthToken(token);
+            runnable.run();
+        };
     }
 }

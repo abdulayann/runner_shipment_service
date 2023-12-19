@@ -90,8 +90,7 @@ public class ShipmentController {
     public ResponseEntity<RunnerResponse<ShipmentDetailsResponse>> create(@RequestBody @Valid ShipmentRequest request) {
         String responseMsg;
         try {
-            ShipmentRequest req = jsonHelper.convertValue(request, ShipmentRequest.class);
-            return (ResponseEntity<RunnerResponse<ShipmentDetailsResponse>>) shipmentService.create(CommonRequestModel.buildRequest(req));
+            return (ResponseEntity<RunnerResponse<ShipmentDetailsResponse>>) shipmentService.create(CommonRequestModel.buildRequest(request));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
@@ -259,6 +258,21 @@ public class ShipmentController {
         return (ResponseEntity<RunnerResponse<AutoUpdateWtVolResponse>>) ResponseHelper.buildFailedResponse(responseMsg);
     }
 
+    @ApiResponses(value = { @ApiResponse(code = 200, message = ContainerConstants.CALCULATION_SUCCESSFUL) })
+    @PostMapping(ApiConstants.CALCULATE_WT_VOL_SHIPMENT_ON_CHANGES)
+    public ResponseEntity<RunnerResponse<AutoUpdateWtVolResponse>> calculateWtVolInShipmentOnChanges(@RequestBody AutoUpdateWtVolRequest autoUpdateWtVolRequest) {
+        String responseMsg;
+        try {
+            return (ResponseEntity<RunnerResponse<AutoUpdateWtVolResponse>>) shipmentService.calculateWtVolInShipmentOnChanges(CommonRequestModel.buildRequest(autoUpdateWtVolRequest));
+        }
+        catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_CALCULATION_ERROR;
+            log.error(responseMsg, e);
+        }
+        return (ResponseEntity<RunnerResponse<AutoUpdateWtVolResponse>>) ResponseHelper.buildFailedResponse(responseMsg);
+    }
+
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = ShipmentConstants.CREATE_SUCCESSFUL),
             @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
@@ -393,6 +407,20 @@ public class ShipmentController {
     @GetMapping(ApiConstants.GET_MASTER_DATA_MAPPING)
     public ResponseEntity<RunnerResponse<List<MasterDataDescriptionResponse>>> getMasterDataDescriptionMapping() {
         return (ResponseEntity<RunnerResponse<List<MasterDataDescriptionResponse>>>) shipmentService.getMasterDataMappings();
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.MASTER_DATA_RETRIEVE_SUCCESS)})
+    @GetMapping(ApiConstants.GET_ALL_MASTER_DATA)
+    public ResponseEntity<?> getAllMasterData(@RequestParam Long shipmentId) {
+        String responseMsg = "failure executing :(";
+        try {
+            return (ResponseEntity<?>) shipmentService.getAllMasterData(CommonRequestModel.buildRequest(shipmentId));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : "Error retrieving master data";
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(e.getMessage());
+        }
     }
 
 }

@@ -41,17 +41,20 @@ public class AdditionalDetails extends MultiTenancy {
 
     @Size(max=3, message = "max size is 3 for airway_bill_dims")
     @Column(name = "airway_bill_dims")
+    @MasterData(type = MasterDataType.AIRWAY_BILL_DIMS)
     private String airwayBillDims;
 
     @Column(name = "shipper_cod")
     private BigDecimal shipperCOD;
 
     @Column(name = "shipper_cod_pm")
-    @Size(max=3, message = "max size is 3 for shipper_cod_pm")
+    @Size(max = 3, message = "max size is 3 for shipper_cod_pm")
+    @MasterData(type = MasterDataType.SHIPPER_COD_TYPE)
     private String shipperCODPM;
 
     @Size(max=3, message = "max size is 3 for phase")
     @Column(name = "phase")
+    @MasterData(type = MasterDataType.PHASE)
     private String phase;
 
     @Column(name = "spot_rate")
@@ -59,10 +62,12 @@ public class AdditionalDetails extends MultiTenancy {
 
     @Size(max=3, message = "max size is 3 for spot_rate_type")
     @Column(name = "spot_rate_type")
+    @MasterData(type = MasterDataType.SPOT_RATE_TYPE)
     private String spotRateType;
 
     @Size(max=3, message = "max size is 3 for efreight_status")
     @Column(name = "efreight_status")
+    @MasterData(type = MasterDataType.EFREIGHT_STATUS)
     private String efreightStatus;
 
     @Column(name = "import_export_shipment_lock")

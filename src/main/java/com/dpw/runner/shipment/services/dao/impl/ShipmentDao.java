@@ -12,6 +12,7 @@ import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.entity.enums.LifecycleHooks;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
@@ -33,12 +34,12 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
 
+import javax.validation.ConstraintViolationException;
 import java.time.LocalDateTime;
 import java.util.*;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.*;
 
 @Repository
 @Slf4j
@@ -102,7 +103,14 @@ public class ShipmentDao implements IShipmentDao {
             if(shipmentDetails.getContainersList() == null)
                 shipmentDetails.setContainersList(new ArrayList<>());
         }
-        onSave(shipmentDetails, errors, oldShipment, fromV1Sync);
+        try {
+            onSave(shipmentDetails, errors, oldShipment, fromV1Sync);
+        } catch (Exception e){
+            String errorMessage = e.getMessage();
+            if(e.getClass().equals(ConstraintViolationException.class))
+                errorMessage = getConstrainViolationErrorMessage(e);
+            throw new RunnerException(errorMessage);
+        }
         return shipmentDetails;
     }
 
@@ -146,7 +154,7 @@ public class ShipmentDao implements IShipmentDao {
         errors.addAll(applyShipmentValidations(shipmentDetails, oldShipment));
         if (! errors.isEmpty())
             throw new ValidationException(errors.toString());
-        if (!fromV1Sync && shipmentDetails.getTransportMode().equals("AIR") && shipmentDetails.getShipmentType().equals("DRT"))
+        if(!fromV1Sync && shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && shipmentDetails.getJobType() != null && shipmentDetails.getJobType().equals(Constants.SHIPMENT_TYPE_DRT))
             directShipmentMAWBCheck(shipmentDetails);
         shipmentDetails = shipmentRepository.save(shipmentDetails);
         if(!fromV1Sync && shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && shipmentDetails.getJobType() != null && shipmentDetails.getJobType().equals(Constants.SHIPMENT_TYPE_DRT)) {
@@ -334,7 +342,7 @@ public class ShipmentDao implements IShipmentDao {
         List<MawbStocksLink> mawbStocksLinks = mawbStocksLinkDao.findByMawbNumber(shipmentDetails.getMasterBill());
         if(mawbStocksLinks != null && mawbStocksLinks.size() > 0) {
             MawbStocksLink res = mawbStocksLinks.get(0);
-            if(res.getStatus() != "Consumed") {
+            if(!Objects.isNull(res.getStatus()) && !res.getStatus().equals("Consumed")) {
                 res.setEntityId(shipmentDetails.getId());
                 res.setEntityType(Constants.SHIPMENT);
                 res.setStatus("Consumed");
@@ -348,7 +356,7 @@ public class ShipmentDao implements IShipmentDao {
         Optional<MawbStocks> mawbStocks = mawbStocksDao.findById(parentId);
         if(!mawbStocks.isEmpty()) {
             MawbStocks res = mawbStocks.get();
-            res.setAvailableCount(String.valueOf(Integer.parseInt(res.getAvailableCount()) - 1));
+            res.setAvailableCount(String.valueOf(Integer.parseInt(res.getAvailableCount() == null ? "1" : res.getAvailableCount()) - 1));
             res.setNextMawbNumber(assignNextMawbNumber(parentId));
             mawbStocksDao.save(res);
         }
@@ -410,12 +418,12 @@ public class ShipmentDao implements IShipmentDao {
         if (!isCarrierExist)
             shipmentRequest.setCarrierDetails(jsonHelper.convertValue(correspondingCarrier, CarrierDetails.class));
 
-        if (shipmentRequest.getDirection() == "IMP") {
+        if (shipmentRequest.getDirection().equals("IMP")) {
             return;
         }
 
         if (isMAWBNumberExist) {
-            if (mawbStocksLink.getStatus() == "Consumed" && mawbStocksLink.getEntityId() != shipmentRequest.getId()) // If MasterBill number is already Consumed.
+            if (mawbStocksLink.getStatus().equals("Consumed") && mawbStocksLink.getEntityId() != shipmentRequest.getId()) // If MasterBill number is already Consumed.
                 throw new ValidationException("The MAWB number entered is already consumed. Please enter another MAWB number.");
         } else {
             createNewMAWBEntry(shipmentRequest);
@@ -426,6 +434,7 @@ public class ShipmentDao implements IShipmentDao {
         MawbStocks mawbStocks = new MawbStocks();
         mawbStocks.setAirLinePrefix(shipmentRequest.getCarrierDetails().getShippingLine());
         mawbStocks.setCount("1");
+        mawbStocks.setAvailableCount("1");
         mawbStocks.setStartNumber(Long.valueOf(shipmentRequest.getMasterBill().substring(4, 10)));
         mawbStocks.setFrom(shipmentRequest.getMasterBill());
         mawbStocks.setTo(shipmentRequest.getMasterBill());

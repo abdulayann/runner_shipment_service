@@ -8,7 +8,7 @@ import java.util.List;
 
 @Data
 public class CalculateContainerSummaryRequest implements IRunnerRequest {
-    private List<ContainerRequest> containerRequestList;
+    private List<ContainerRequest> containersList;
     private String transportMode;
     private String shipmentType;
     private String containerCategory;

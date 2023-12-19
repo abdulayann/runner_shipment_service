@@ -4,13 +4,13 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.utils.MasterData;
 import com.dpw.runner.shipment.services.utils.OrganizationData;
-import lombok.experimental.Accessors;
+import com.dpw.runner.shipment.services.utils.UnlocationData;
 import lombok.*;
+import lombok.experimental.Accessors;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Where;
 
 import javax.persistence.*;
-import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 
@@ -43,6 +43,7 @@ public class ServiceDetails extends MultiTenancy {
     private Parties contractor;
 
     @Column(name = "srv_location")
+    @UnlocationData
     private String srvLocation;
 
     @Column(name = "booking_date")

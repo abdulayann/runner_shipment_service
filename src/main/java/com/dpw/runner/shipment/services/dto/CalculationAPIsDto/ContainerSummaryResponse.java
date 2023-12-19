@@ -11,4 +11,5 @@ public class ContainerSummaryResponse implements IRunnerResponse {
     private String totalTareWeight;
     private String chargeableWeight;
     private String totalContainerVolume;
+    private String summary;
 }

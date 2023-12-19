@@ -8,7 +8,7 @@ import java.util.List;
 
 @Data
 public class CalculatePackSummaryRequest implements IRunnerRequest {
-    private List<PackingRequest> packingRequestList;
+    private List<PackingRequest> packingList;
     private String transportMode;
     private String shipmentType;
     private String containerCategory;

@@ -10,6 +10,9 @@ import com.opencsv.exceptions.CsvException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.input.BOMInputStream;
 import org.apache.commons.text.WordUtils;
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.usermodel.XSSFSheet;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -18,10 +21,7 @@ import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -35,28 +35,32 @@ public class CSVParsingUtil<T> {
         this.entityClass = entityClass;
     }
 
-    public String generateCSVHeaderForContainer() {
-        StringBuilder headerBuilder = new StringBuilder();
+    public Set<String> generateContainerHeaders() {
+        Set<String> hs = new LinkedHashSet<>();
         Field[] fields = Containers.class.getDeclaredFields();
         for (Field field : fields) {
-            if (headerBuilder.length() > 0) {
-                headerBuilder.append(",");
-            }
-            headerBuilder.append(field.getName());
+            if (hiddenFields.contains(field.getName())) continue;
+            hs.add(field.getName());
         }
-        return headerBuilder.toString();
+        return hs;
     }
 
-    public String generateCSVHeaderForEvent() {
-        StringBuilder headerBuilder = new StringBuilder();
-        Field[] fields = Events.class.getDeclaredFields();
+    public Set<String> generateCSVHeaderForPacking() {
+        Set<String> hs = new LinkedHashSet<>();
+        Field[] fields = Packing.class.getDeclaredFields();
         for (Field field : fields) {
-            if (headerBuilder.length() > 0) {
-                headerBuilder.append(",");
-            }
-            headerBuilder.append(field.getName());
+            hs.add(field.getName());
         }
-        return headerBuilder.toString();
+        return hs;
+    }
+
+    public Set<String> generateCSVHeaderForEvent() {
+        Field[] fields = Events.class.getDeclaredFields();
+        Set<String> hs = new LinkedHashSet<>();
+        for (Field field : fields) {
+            hs.add(field.getName());
+        }
+        return hs;
     }
 
     public List<String> getHeadersForShipment() {
@@ -373,58 +377,47 @@ public class CSVParsingUtil<T> {
         return lst;
     }
 
-    public String formatContainerAsCSVLine(T entity) {
-        StringBuilder lineBuilder = new StringBuilder();
+    public void addContainerToSheet(T entity, XSSFWorkbook workbook, XSSFSheet sheet, int rowNum) {
+        Row row = sheet.createRow(rowNum);
         Field[] fields = Containers.class.getDeclaredFields();
-        for (Field field : fields) {
-            if (hiddenFields.contains(field.getName())) continue;
-            field.setAccessible(true);
-            try {
-                Object value = field.get(entity);
-                lineBuilder.append(value != null ? value.toString() : "");
-                lineBuilder.append(",");
-            } catch (IllegalAccessException e) {
-                e.printStackTrace();
-            }
-        }
-        lineBuilder.deleteCharAt(lineBuilder.length() - 1);
-        return lineBuilder.toString();
+        int counter = 0;
+        addRowToSheet(entity, row, fields, counter);
     }
 
-    public String formatPackingAsCSVLine(T entity) {
-        StringBuilder lineBuilder = new StringBuilder();
+    public void addPackToSheet(T entity, XSSFWorkbook workbook, XSSFSheet sheet, int rowNum) {
+        Row row = sheet.createRow(rowNum);
         Field[] fields = Packing.class.getDeclaredFields();
-        for (Field field : fields) {
-            if (hiddenFields.contains(field.getName())) continue;
-            field.setAccessible(true);
-            try {
-                Object value = field.get(entity);
-                lineBuilder.append(value != null ? value.toString() : "");
-                lineBuilder.append(",");
-            } catch (IllegalAccessException e) {
-                e.printStackTrace();
-            }
-        }
-        lineBuilder.deleteCharAt(lineBuilder.length() - 1);
-        return lineBuilder.toString();
+        int counter = 0;
+        addRowToSheet(entity, row, fields, counter);
     }
 
-    public String formatEventAsCSVLine(Events entity) {
-        StringBuilder lineBuilder = new StringBuilder();
-        Field[] fields = Events.class.getDeclaredFields();
+    private void addRowToSheet(T entity, Row row, Field[] fields, int counter) {
         for (Field field : fields) {
             if (hiddenFields.contains(field.getName())) continue;
             field.setAccessible(true);
             try {
                 Object value = field.get(entity);
-                lineBuilder.append(value != null ? value.toString() : "");
-                lineBuilder.append(",");
+                row.createCell(counter++).setCellValue(value != null ? value.toString() : "");
             } catch (IllegalAccessException e) {
                 e.printStackTrace();
             }
         }
-        lineBuilder.deleteCharAt(lineBuilder.length() - 1);
-        return lineBuilder.toString();
+    }
+
+    public void addEventToSheet(Events entity, XSSFWorkbook workbook, XSSFSheet sheet, int rowNum) {
+        Field[] fields = Events.class.getDeclaredFields();
+        Row row = sheet.createRow(rowNum);
+        int counter = 0;
+        for (Field field : fields) {
+            if (hiddenFields.contains(field.getName())) continue;
+            field.setAccessible(true);
+            try {
+                Object value = field.get(entity);
+                row.createCell(counter++).setCellValue(value != null ? value.toString() : "");
+            } catch (IllegalAccessException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
 
@@ -438,7 +431,6 @@ public class CSVParsingUtil<T> {
 
     public List<T> parseCSVFile(MultipartFile file) throws IOException, CsvException {
         List<T> entityList = new ArrayList<>();
-        List<String> mandatoryColumns = List.of("ContainerNumber", "ContainerCount", "ContainerCode");
         try (CSVReader csvReader = new CSVReader(new InputStreamReader(new BOMInputStream(file.getInputStream()), StandardCharsets.UTF_8))) {
             String[] header = csvReader.readNext();
             for (int i = 0; i < header.length; i++) {
@@ -457,6 +449,60 @@ public class CSVParsingUtil<T> {
             throw new RuntimeException(e);
         }
         return entityList;
+    }
+
+    public List<T> parseExcelFile(MultipartFile file) throws IOException {
+        List<T> entityList = new ArrayList<>();
+        try (Workbook workbook = new XSSFWorkbook(file.getInputStream())) {
+            Sheet sheet = workbook.getSheetAt(0); // Assuming data is in the first sheet
+
+            Row headerRow = sheet.getRow(0);
+            String[] header = new String[headerRow.getLastCellNum()];
+            for (int i = 0; i < headerRow.getLastCellNum(); i++) {
+                header[i] = getCamelCase(headerRow.getCell(i).getStringCellValue());
+            }
+
+            for (int i = 1; i <= sheet.getLastRowNum(); i++) {
+                Row row = sheet.getRow(i);
+                T entity = createEntityInstance();
+
+                for (int j = 0; j < header.length; j++) {
+                    Cell cell = row.getCell(j);
+                    if (cell != null) {
+                        String cellValue = getCellValueAsString(cell);
+                        setField(entity, header[j], cellValue);
+                    }
+                }
+
+                entityList.add(entity);
+            }
+        } catch (NoSuchFieldException | IllegalAccessException | InstantiationException e) {
+            throw new RuntimeException(e);
+        }
+        return entityList;
+    }
+
+    private String getCellValueAsString(Cell cell) {
+        switch (cell.getCellType()) {
+            case STRING:
+                return cell.getStringCellValue();
+            case NUMERIC:
+                if (DateUtil.isCellDateFormatted(cell)) {
+                    return cell.getLocalDateTimeCellValue().toString();
+                } else {
+                    if (cell.getNumericCellValue() == Math.floor(cell.getNumericCellValue())) {
+                        return String.valueOf((long) cell.getNumericCellValue());
+                    } else {
+                        return String.valueOf(cell.getNumericCellValue());
+                    }
+                }
+            case BOOLEAN:
+                return String.valueOf(cell.getBooleanCellValue());
+            case FORMULA:
+                return cell.getCellFormula();
+            default:
+                return "";
+        }
     }
 
 

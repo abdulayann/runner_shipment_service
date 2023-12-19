@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.syncing.impl;
 
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.Packing;
+import com.dpw.runner.shipment.services.syncing.Entity.ContainerRequestV2;
 import com.dpw.runner.shipment.services.syncing.Entity.PackingRequestV2;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,6 +40,44 @@ public class SyncEntityConversionService {
             return res;
         }
         return new ArrayList<>();
+    }
+
+    public List<ContainerRequestV2> containersV2ToV1(List<Containers> containersList) {
+        if(containersList != null) {
+            List<ContainerRequestV2> res = containersList.stream().map(
+                    this::containerV2ToV1
+            ).toList();
+            return res;
+        }
+        return new ArrayList<>();
+    }
+
+    public ContainerRequestV2 containerV2ToV1(Containers containers) {
+        var containerRequestV2 = modelMapper.map(containers, ContainerRequestV2.class);
+        containerRequestV2.setIsHazardous(containers.getHazardous());
+        containerRequestV2.setDgClassString(containers.getDgClass());
+        containerRequestV2.setMarksnNums(containers.getMarksNums());
+        containerRequestV2.setContainerStuffingLocationName(containers.getContainerStuffingLocation());
+        return containerRequestV2;
+    }
+
+    public List<Containers> containersV1ToV2(List<ContainerRequestV2> containersList) {
+        if(containersList != null) {
+            List<Containers> res = containersList.stream().map(
+                    this::containerV1ToV2
+            ).toList();
+            return res;
+        }
+        return new ArrayList<>();
+    }
+
+    public Containers containerV1ToV2(ContainerRequestV2 containerRequestV2) {
+        var containers = modelMapper.map(containerRequestV2, Containers.class);
+        containers.setHazardous(containerRequestV2.getIsHazardous());
+        containers.setDgClass(containerRequestV2.getDgClassString());
+        containers.setMarksNums(containerRequestV2.getMarksnNums());
+        containers.setContainerStuffingLocation(containerRequestV2.getContainerStuffingLocationName());
+        return containers;
     }
 
 }
