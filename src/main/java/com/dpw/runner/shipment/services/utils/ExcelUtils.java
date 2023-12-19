@@ -77,6 +77,14 @@ public class ExcelUtils {
         });
     }
 
+    public void writeSimpleHeader(XSSFWorkbook workbook, Set<String> columnHeaders, XSSFSheet sheet) {
+        Row row = sheet.createRow(0);
+        int i = 0;
+        for (var c : columnHeaders) {
+            row.createCell(i++).setCellValue(c);
+        }
+    }
+
     public XSSFSheet createSheet(XSSFWorkbook workbook, String sheetName) {
         XSSFSheet sheet;
         sheet = workbook.createSheet(sheetName);

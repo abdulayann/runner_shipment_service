@@ -33,6 +33,7 @@ import com.dpw.runner.shipment.services.syncing.constants.SyncingConstants;
 import com.dpw.runner.shipment.services.syncing.impl.SyncEntityConversionService;
 import com.dpw.runner.shipment.services.syncing.interfaces.IContainerSync;
 import com.dpw.runner.shipment.services.utils.CSVParsingUtil;
+import com.dpw.runner.shipment.services.utils.ExcelUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.util.Pair;
@@ -41,6 +42,7 @@ import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -61,7 +63,6 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.OutputStream;
-import java.io.PrintWriter;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -86,6 +87,10 @@ public class ContainerService implements IContainerService {
     IShipmentsContainersMappingDao shipmentsContainersMappingDao;
     @Autowired
     private ObjectMapper objectMapper;
+
+    @Autowired
+    private ExcelUtils excelUtils;
+
     @Autowired
 
     private ModelMapper modelMapper;
@@ -169,7 +174,7 @@ public class ContainerService implements IContainerService {
 
     @Override
     public void uploadContainers(BulkUploadRequest request) throws Exception {
-        List<Containers> containersList = parser.parseCSVFile(request.getFile());
+        List<Containers> containersList = parser.parseExcelFile(request.getFile());
         containersList = containersList.stream().map(c ->
                 c.setConsolidationId(request.getConsolidationId())
         ).collect(Collectors.toList());
@@ -185,7 +190,8 @@ public class ContainerService implements IContainerService {
 
     @Override
     public void uploadContainerEvents(BulkUploadRequest request) throws Exception {
-        List<Events> eventsList = parser.parseCSVFileEvents(request.getFile());
+        CSVParsingUtil<Events> newParser = new CSVParsingUtil<>(Events.class);
+        List<Events> eventsList = newParser.parseExcelFile(request.getFile());
         eventsList = eventsList.stream().map(c -> {
             c.setEntityId(request.getConsolidationId());
             c.setEntityType("CONSOLIDATION");
@@ -201,45 +207,58 @@ public class ContainerService implements IContainerService {
 
     @Override
     public void downloadContainers(HttpServletResponse response, @ModelAttribute BulkDownloadRequest request) throws Exception {
-        List<ShipmentsContainersMapping> mappings;
-        List<Containers> result = new ArrayList<>();
-        if (request.getShipmentId() != null) {
-            List<Long> containerId = new ArrayList<>();
-            mappings = shipmentsContainersMappingDao.findByShipmentId(Long.valueOf(request.getShipmentId()));
-            containerId.addAll(mappings.stream().map(mapping -> mapping.getContainerId()).collect(Collectors.toList()));
+        try {
+            List<ShipmentsContainersMapping> mappings;
+            List<Containers> result = new ArrayList<>();
+            if (request.getShipmentId() != null) {
+                List<Long> containerId = new ArrayList<>();
+                mappings = shipmentsContainersMappingDao.findByShipmentId(Long.valueOf(request.getShipmentId()));
+                containerId.addAll(mappings.stream().map(mapping -> mapping.getContainerId()).collect(Collectors.toList()));
 
-            ListCommonRequest req = constructListCommonRequest("id", containerId, "IN");
-            Pair<Specification<Containers>, Pageable> pair = fetchData(req, Containers.class);
-            Page<Containers> containers = containerDao.findAll(pair.getLeft(), pair.getRight());
-            List<Containers> containersList = containers.getContent();
-            result.addAll(containersList);
-        }
-
-        if (request.getConsolidationId() != null) {
-            ListCommonRequest req2 = constructListCommonRequest("consolidationId", Long.valueOf(request.getConsolidationId()), "=");
-            Pair<Specification<Containers>, Pageable> pair = fetchData(req2, Containers.class);
-            Page<Containers> containers = containerDao.findAll(pair.getLeft(), pair.getRight());
-            List<Containers> containersList = containers.getContent();
-            if (result.isEmpty()) {
+                ListCommonRequest req = constructListCommonRequest("id", containerId, "IN");
+                Pair<Specification<Containers>, Pageable> pair = fetchData(req, Containers.class);
+                Page<Containers> containers = containerDao.findAll(pair.getLeft(), pair.getRight());
+                List<Containers> containersList = containers.getContent();
                 result.addAll(containersList);
-            } else {
-                result = result.stream().filter(result::contains).collect(Collectors.toList());
             }
-        }
-        LocalDateTime currentTime = LocalDateTime.now();
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
-        String timestamp = currentTime.format(formatter);
-        String filenameWithTimestamp = "Containers_" + timestamp + ".csv";
 
-        response.setContentType("text/csv");
-        response.setHeader("Content-Disposition", "attachment; filename=" + filenameWithTimestamp);
+            if (request.getConsolidationId() != null) {
+                ListCommonRequest req2 = constructListCommonRequest("consolidationId", Long.valueOf(request.getConsolidationId()), "=");
+                Pair<Specification<Containers>, Pageable> pair = fetchData(req2, Containers.class);
+                Page<Containers> containers = containerDao.findAll(pair.getLeft(), pair.getRight());
+                List<Containers> containersList = containers.getContent();
+                if (result.isEmpty()) {
+                    result.addAll(containersList);
+                } else {
+                    result = result.stream().filter(result::contains).collect(Collectors.toList());
+                }
+            }
+            LocalDateTime currentTime = LocalDateTime.now();
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
+            String timestamp = currentTime.format(formatter);
+            String filenameWithTimestamp = "Containers_" + timestamp + ".xlsx";
 
-        try (PrintWriter writer = response.getWriter()) {
-            writer.println(parser.generateCSVHeaderForContainer());
+            XSSFWorkbook workbook = new XSSFWorkbook();
+            XSSFSheet sheet = workbook.createSheet("Containers");
+            ExcelUtils utils = new ExcelUtils();
+            utils.writeSimpleHeader(workbook, parser.generateContainerHeaders(), sheet);
+
+            int rowNum = 1;
             for (Containers container : result) {
-                writer.println(parser.formatContainerAsCSVLine(container));
+                parser.addContainerToSheet(container, workbook, sheet, rowNum++);
             }
+
+            response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+            response.setHeader("Content-Disposition", "attachment; filename=" + filenameWithTimestamp);
+
+            try (OutputStream outputStream = response.getOutputStream()) {
+                workbook.write(outputStream);
+            }
+
+        } catch (Exception ex) {
+            throw new RunnerException(ex.getMessage());
         }
+
     }
 
     @Override
@@ -261,14 +280,21 @@ public class ContainerService implements IContainerService {
         String timestamp = currentTime.format(formatter);
         String filenameWithTimestamp = "ContainerEvents_" + timestamp + ".xlsx";
 
-        response.setContentType("text/csv");
+        XSSFWorkbook workbook = new XSSFWorkbook();
+        XSSFSheet sheet = workbook.createSheet("ContainerEvents");
+        ExcelUtils utils = new ExcelUtils();
+        utils.writeSimpleHeader(workbook, parser.generateCSVHeaderForEvent(), sheet);
+
+        int rowNum = 1;
+        for (Events event : result) {
+            parser.addEventToSheet(event, workbook, sheet, rowNum++);
+        }
+
+        response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
         response.setHeader("Content-Disposition", "attachment; filename=" + filenameWithTimestamp);
 
-        try (PrintWriter writer = response.getWriter()) {
-            writer.println(parser.generateCSVHeaderForEvent());
-            for (Events event : result) {
-                writer.println(parser.formatEventAsCSVLine(event));
-            }
+        try (OutputStream outputStream = response.getOutputStream()) {
+            workbook.write(outputStream);
         }
     }
 

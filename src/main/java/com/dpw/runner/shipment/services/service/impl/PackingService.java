@@ -27,10 +27,13 @@ import com.dpw.runner.shipment.services.syncing.Entity.PackingRequestV2;
 import com.dpw.runner.shipment.services.syncing.constants.SyncingConstants;
 import com.dpw.runner.shipment.services.syncing.interfaces.IPackingSync;
 import com.dpw.runner.shipment.services.utils.CSVParsingUtil;
+import com.dpw.runner.shipment.services.utils.ExcelUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.poi.xssf.usermodel.XSSFSheet;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
@@ -45,7 +48,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.interceptor.TransactionAspectSupport;
 
 import javax.servlet.http.HttpServletResponse;
-import java.io.PrintWriter;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -131,7 +133,7 @@ public class PackingService implements IPackingService {
 
     @Override
     public void uploadPacking(BulkUploadRequest request) throws Exception {
-        List<Packing> packingList = parser.parseCSVFile(request.getFile());
+        List<Packing> packingList = parser.parseExcelFile(request.getFile());
         packingList.stream().forEach(packing -> {
             packing.setConsolidationId(request.getConsolidationId());
             packing.setShipmentId(request.getShipmentId());
@@ -142,39 +144,51 @@ public class PackingService implements IPackingService {
 
     @Override
     public void downloadPacking(HttpServletResponse response, BulkDownloadRequest request) throws Exception {
-        List<Packing> result = new ArrayList<>();
-        if (request.getShipmentId() != null) {
-            ListCommonRequest req = constructListCommonRequest("shipmentId", Long.valueOf(request.getShipmentId()), "=");
-            Pair<Specification<Packing>, Pageable> pair = fetchData(req, Packing.class);
-            Page<Packing> packings = packingDao.findAll(pair.getLeft(), pair.getRight());
-            List<Packing> packingList = packings.getContent();
-            result.addAll(packingList);
-        }
-
-        if (request.getConsolidationId() != null) {
-            ListCommonRequest req2 = constructListCommonRequest("consolidationId", Long.valueOf(request.getConsolidationId()), "=");
-            Pair<Specification<Packing>, Pageable> pair = fetchData(req2, Packing.class);
-            Page<Packing> packings = packingDao.findAll(pair.getLeft(), pair.getRight());
-            List<Packing> packingList = packings.getContent();
-            if (result.isEmpty()) {
+        try {
+            List<Packing> result = new ArrayList<>();
+            if (request.getShipmentId() != null) {
+                ListCommonRequest req = constructListCommonRequest("shipmentId", Long.valueOf(request.getShipmentId()), "=");
+                Pair<Specification<Packing>, Pageable> pair = fetchData(req, Packing.class);
+                Page<Packing> packings = packingDao.findAll(pair.getLeft(), pair.getRight());
+                List<Packing> packingList = packings.getContent();
                 result.addAll(packingList);
-            } else {
-                result = result.stream().filter(result::contains).collect(Collectors.toList());
             }
-        }
-        LocalDateTime currentTime = LocalDateTime.now();
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
-        String timestamp = currentTime.format(formatter);
-        String filenameWithTimestamp = "Packings_" + timestamp + ".xlsx";
 
-        response.setContentType("text/csv");
-        response.setHeader("Content-Disposition", "attachment; filename=" + filenameWithTimestamp);
+            if (request.getConsolidationId() != null) {
+                ListCommonRequest req2 = constructListCommonRequest("consolidationId", Long.valueOf(request.getConsolidationId()), "=");
+                Pair<Specification<Packing>, Pageable> pair = fetchData(req2, Packing.class);
+                Page<Packing> packings = packingDao.findAll(pair.getLeft(), pair.getRight());
+                List<Packing> packingList = packings.getContent();
+                if (result.isEmpty()) {
+                    result.addAll(packingList);
+                } else {
+                    result = result.stream().filter(result::contains).collect(Collectors.toList());
+                }
+            }
+            LocalDateTime currentTime = LocalDateTime.now();
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
+            String timestamp = currentTime.format(formatter);
+            String filenameWithTimestamp = "Packings_" + timestamp + ".xlsx";
 
-        try (PrintWriter writer = response.getWriter()) {
-            writer.println(parser.generateCSVHeaderForContainer());
+            XSSFWorkbook workbook = new XSSFWorkbook();
+            XSSFSheet sheet = workbook.createSheet("ContainerEvents");
+            ExcelUtils utils = new ExcelUtils();
+            utils.writeSimpleHeader(workbook, parser.generateCSVHeaderForPacking(), sheet);
+
+            int rowNum = 1;
             for (Packing packing : result) {
-                writer.println(parser.formatPackingAsCSVLine(packing));
+                parser.addPackToSheet(packing, workbook, sheet, rowNum++);
             }
+
+            response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+            response.setHeader("Content-Disposition", "attachment; filename=" + filenameWithTimestamp);
+
+            try (var outputStream = response.getOutputStream()) {
+                workbook.write(outputStream);
+            }
+
+        } catch (Exception e) {
+            throw new RunnerException(e.getMessage());
         }
     }
 
