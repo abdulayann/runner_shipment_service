@@ -154,7 +154,7 @@ public class ShipmentDao implements IShipmentDao {
         errors.addAll(applyShipmentValidations(shipmentDetails, oldShipment));
         if (! errors.isEmpty())
             throw new ValidationException(errors.toString());
-        if (!fromV1Sync && shipmentDetails.getTransportMode().equals("AIR") && shipmentDetails.getShipmentType().equals("DRT"))
+        if(!fromV1Sync && shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && shipmentDetails.getJobType() != null && shipmentDetails.getJobType().equals(Constants.SHIPMENT_TYPE_DRT))
             directShipmentMAWBCheck(shipmentDetails);
         shipmentDetails = shipmentRepository.save(shipmentDetails);
         if(!fromV1Sync && shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && shipmentDetails.getJobType() != null && shipmentDetails.getJobType().equals(Constants.SHIPMENT_TYPE_DRT)) {
@@ -342,7 +342,7 @@ public class ShipmentDao implements IShipmentDao {
         List<MawbStocksLink> mawbStocksLinks = mawbStocksLinkDao.findByMawbNumber(shipmentDetails.getMasterBill());
         if(mawbStocksLinks != null && mawbStocksLinks.size() > 0) {
             MawbStocksLink res = mawbStocksLinks.get(0);
-            if(res.getStatus() != "Consumed") {
+            if(!Objects.isNull(res.getStatus()) && !res.getStatus().equals("Consumed")) {
                 res.setEntityId(shipmentDetails.getId());
                 res.setEntityType(Constants.SHIPMENT);
                 res.setStatus("Consumed");
@@ -356,7 +356,7 @@ public class ShipmentDao implements IShipmentDao {
         Optional<MawbStocks> mawbStocks = mawbStocksDao.findById(parentId);
         if(!mawbStocks.isEmpty()) {
             MawbStocks res = mawbStocks.get();
-            res.setAvailableCount(String.valueOf(Integer.parseInt(res.getAvailableCount()) - 1));
+            res.setAvailableCount(String.valueOf(Integer.parseInt(res.getAvailableCount() == null ? "1" : res.getAvailableCount()) - 1));
             res.setNextMawbNumber(assignNextMawbNumber(parentId));
             mawbStocksDao.save(res);
         }
@@ -418,12 +418,12 @@ public class ShipmentDao implements IShipmentDao {
         if (!isCarrierExist)
             shipmentRequest.setCarrierDetails(jsonHelper.convertValue(correspondingCarrier, CarrierDetails.class));
 
-        if (shipmentRequest.getDirection() == "IMP") {
+        if (shipmentRequest.getDirection().equals("IMP")) {
             return;
         }
 
         if (isMAWBNumberExist) {
-            if (mawbStocksLink.getStatus() == "Consumed" && mawbStocksLink.getEntityId() != shipmentRequest.getId()) // If MasterBill number is already Consumed.
+            if (mawbStocksLink.getStatus().equals("Consumed") && mawbStocksLink.getEntityId() != shipmentRequest.getId()) // If MasterBill number is already Consumed.
                 throw new ValidationException("The MAWB number entered is already consumed. Please enter another MAWB number.");
         } else {
             createNewMAWBEntry(shipmentRequest);
@@ -434,6 +434,7 @@ public class ShipmentDao implements IShipmentDao {
         MawbStocks mawbStocks = new MawbStocks();
         mawbStocks.setAirLinePrefix(shipmentRequest.getCarrierDetails().getShippingLine());
         mawbStocks.setCount("1");
+        mawbStocks.setAvailableCount("1");
         mawbStocks.setStartNumber(Long.valueOf(shipmentRequest.getMasterBill().substring(4, 10)));
         mawbStocks.setFrom(shipmentRequest.getMasterBill());
         mawbStocks.setTo(shipmentRequest.getMasterBill());
