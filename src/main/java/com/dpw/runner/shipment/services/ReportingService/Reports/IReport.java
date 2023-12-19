@@ -1022,11 +1022,11 @@ public abstract class IReport {
 
             PartiesModel consigner = shipment.getConsigner();
             if(consigner != null && consigner.getAddressData() != null) {
-                shipmentContainer.consignerCompanyName = consigner.getAddressData().get(COMPANY_NAME).toString();
-                shipmentContainer.consignerAddress1 = consigner.getAddressData().get(ADDRESS1).toString();
-                shipmentContainer.consignerAddress2 = consigner.getAddressData().get(ADDRESS2).toString();
-                shipmentContainer.consignerCountry = consigner.getAddressData().get(COUNTRY).toString();
-                shipmentContainer.consignerZip = consigner.getAddressData().get(ZIP_POST_CODE).toString();
+                shipmentContainer.consignerCompanyName = consigner.getAddressData().get(COMPANY_NAME) != null ? consigner.getAddressData().get(COMPANY_NAME).toString() : null;
+                shipmentContainer.consignerAddress1 = consigner.getAddressData().get(ADDRESS1) != null ? consigner.getAddressData().get(ADDRESS1).toString() : null;
+                shipmentContainer.consignerAddress2 = consigner.getAddressData().get(ADDRESS2) != null ? consigner.getAddressData().get(ADDRESS2).toString() : null;
+                shipmentContainer.consignerCountry = consigner.getAddressData().get(COUNTRY) != null ? consigner.getAddressData().get(COUNTRY).toString() : null;
+                shipmentContainer.consignerZip = consigner.getAddressData().get(ZIP_POST_CODE) != null ? consigner.getAddressData().get(ZIP_POST_CODE).toString() : null;
             }
 
             PartiesModel consignee = shipment.getConsignee();
