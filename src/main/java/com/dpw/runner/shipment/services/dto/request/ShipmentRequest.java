@@ -115,4 +115,8 @@ public class ShipmentRequest extends CommonRequest implements IRunnerRequest {
     private CustomerCategoryRates customerCategory;
     private String contractId;
     private String contractType;
+    private String clientCountry;
+    private String consignorCountry;
+    private String consigneeCountry;
+    private String notifyPartyCountry;
 }

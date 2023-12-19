@@ -77,4 +77,8 @@ public class CustomerBookingResponse implements IRunnerResponse {
     private Boolean isNotifyPartyAddressFreeText;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime shipmentCreatedDate;
+    private String clientCountry;
+    private String consignorCountry;
+    private String consigneeCountry;
+    private String notifyPartyCountry;
 }

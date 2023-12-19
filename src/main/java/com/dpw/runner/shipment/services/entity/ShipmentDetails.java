@@ -395,4 +395,20 @@ public class ShipmentDetails extends MultiTenancy {
     @Column(name = "contract_type")
     @Size(max=64, message = "max size is 64 for contract_type")
     private String contractType;
+
+    @MasterData(type = MasterDataType.COUNTRIES)
+    @Column(name = "client_country")
+    private String clientCountry;
+
+    @MasterData(type = MasterDataType.COUNTRIES)
+    @Column(name = "consignor_country")
+    private String consignorCountry;
+
+    @MasterData(type = MasterDataType.COUNTRIES)
+    @Column(name = "consignee_country")
+    private String consigneeCountry;
+
+    @MasterData(type = MasterDataType.COUNTRIES)
+    @Column(name = "notify_party_country")
+    private String notifyPartyCountry;
 }

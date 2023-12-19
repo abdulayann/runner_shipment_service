@@ -19,6 +19,7 @@ import com.dpw.runner.shipment.services.validator.ValidatorUtility;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
@@ -49,6 +50,9 @@ public class ContainerDao implements IContainerDao {
 
     @Autowired
     private IAuditLogService auditLogService;
+
+    @Autowired
+    private ModelMapper modelMapper;
 
     @Override
     public Containers save(Containers containers) {
@@ -216,7 +220,7 @@ public class ContainerDao implements IContainerDao {
                             if(oldEntity.isPresent())
                             {
                                 operation = DBOperationType.UPDATE.name();
-                                oldEntityJson = jsonHelper.convertValue(oldEntity.get(), Containers.class);
+                                oldEntityJson = modelMapper.map(oldEntity.get(), Containers.class);
                             }
                         }
                         try {

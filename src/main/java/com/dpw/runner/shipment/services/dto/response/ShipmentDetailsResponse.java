@@ -151,4 +151,8 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     private LocalDateTime createdAt;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime updatedAt;
+    private String clientCountry;
+    private String consignorCountry;
+    private String consigneeCountry;
+    private String notifyPartyCountry;
 }
