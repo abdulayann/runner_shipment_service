@@ -1031,20 +1031,20 @@ public abstract class IReport {
 
             PartiesModel consignee = shipment.getConsignee();
             if(consignee != null && consignee.getAddressData() != null) {
-                shipmentContainer.consigneeCompanyName = consignee.getAddressData().get(COMPANY_NAME).toString();
-                shipmentContainer.consigneeAddress1 = consignee.getAddressData().get(ADDRESS1).toString();
-                shipmentContainer.consigneeAddress2 = consignee.getAddressData().get(ADDRESS2).toString();
-                shipmentContainer.consigneeCountry = consignee.getAddressData().get(COUNTRY).toString();
-                shipmentContainer.consigneeZip = consignee.getAddressData().get(ZIP_POST_CODE).toString();
+                shipmentContainer.consigneeCompanyName = consignee.getAddressData().get(COMPANY_NAME) != null ? consignee.getAddressData().get(COMPANY_NAME).toString() : null;
+                shipmentContainer.consigneeAddress1 = consignee.getAddressData().get(ADDRESS1) != null ? consignee.getAddressData().get(ADDRESS1).toString() : null;
+                shipmentContainer.consigneeAddress2 = consignee.getAddressData().get(ADDRESS2) != null ? consignee.getAddressData().get(ADDRESS2).toString() : null;
+                shipmentContainer.consigneeCountry = consignee.getAddressData().get(COUNTRY) != null ? consignee.getAddressData().get(COUNTRY).toString() : null;
+                shipmentContainer.consigneeZip = consignee.getAddressData().get(ZIP_POST_CODE) != null ? consignee.getAddressData().get(ZIP_POST_CODE).toString() : null;
             }
 
             PartiesModel notify = shipment.getAdditionalDetails().getNotifyParty();
             if(notify != null && notify.getAddressData() != null) {
-                shipmentContainer.notifyCompanyName = notify.getAddressData().get(COMPANY_NAME).toString();
-                shipmentContainer.notifyAddress1 = notify.getAddressData().get(ADDRESS1).toString();
-                shipmentContainer.notifyAddress2 = notify.getAddressData().get(ADDRESS2).toString();
-                shipmentContainer.notifyCountry = notify.getAddressData().get(COUNTRY).toString();
-                shipmentContainer.notifyZip = notify.getAddressData().get(ZIP_POST_CODE).toString();
+                shipmentContainer.notifyCompanyName = notify.getAddressData().get(COMPANY_NAME) != null ? notify.getAddressData().get(COMPANY_NAME).toString() : null;
+                shipmentContainer.notifyAddress1 = notify.getAddressData().get(ADDRESS1) != null ? notify.getAddressData().get(ADDRESS1).toString() : null;
+                shipmentContainer.notifyAddress2 = notify.getAddressData().get(ADDRESS2) != null ? notify.getAddressData().get(ADDRESS2).toString() : null;
+                shipmentContainer.notifyCountry = notify.getAddressData().get(COUNTRY) != null ? notify.getAddressData().get(COUNTRY).toString() : null;
+                shipmentContainer.notifyZip = notify.getAddressData().get(ZIP_POST_CODE) != null ? notify.getAddressData().get(ZIP_POST_CODE).toString() : null;
             }
 
             shipmentContainer.shipmentContainers = shipment.getContainersList()
@@ -1075,8 +1075,14 @@ public abstract class IReport {
 
             response.HouseBill = shipment.getHouseBill();
             response.MasterBill = shipment.getMasterBill();
-            response.ConsignerCompanyName = consigner.getAddressData().get(COMPANY_NAME).toString();
-            response.ConsigneeCompanyName = consignee.getAddressData().get(COMPANY_NAME).toString();
+            if(consigner != null && consigner.getAddressData() != null) {
+                response.ConsignerCompanyName = consigner.getAddressData().get(COMPANY_NAME) != null ? consigner.getAddressData().get(COMPANY_NAME).toString() : null;
+                response.ConsignerLocalName = consigner.getAddressData().get(LOCAL_NAME) != null ? consigner.getAddressData().get(LOCAL_NAME).toString() : null;
+            }
+            if(consignee != null && consignee.getAddressData() != null) {
+                response.ConsigneeCompanyName =  consignee.getAddressData().get(COMPANY_NAME) != null ? consignee.getAddressData().get(COMPANY_NAME).toString() : null;
+                response.ConsigneeLocalName = consignee.getAddressData().get(LOCAL_NAME) != null ? consignee.getAddressData().get(LOCAL_NAME).toString() : null;
+            }
             response.Weight = shipment.getWeight();
             response.WeightUnit = shipment.getWeightUnit();
             response.Consigner = getPartyAddress(shipment.getConsigner());
@@ -1086,9 +1092,8 @@ public abstract class IReport {
             response.ConsignerAddressFreeText = getPartyAddress(shipment.getConsignee());
             response.NotifyPartyAddressFreeText = getPartyAddress(shipment.getAdditionalDetails().getNotifyParty());
 //            response.Description = shipment.Description;
-            response.ConsignerLocalName = consigner.getAddressData().get(LOCAL_NAME).toString();
-            response.ConsigneeLocalName = consignee.getAddressData().get(LOCAL_NAME).toString();
-            response.HsnNumber = shipment.getAdditionalDetails().getHsnNumber().toString();
+
+            response.HsnNumber = shipment.getAdditionalDetails().getHsnNumber() != null ? shipment.getAdditionalDetails().getHsnNumber().toString() : null;
             response.TotalPacks = getTotalPacks(shipment);
 
             shipmentResponses.add(response);

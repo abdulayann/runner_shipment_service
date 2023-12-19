@@ -19,4 +19,7 @@ public class V1ShipmentCreationResponse {
 
     @JsonProperty("EntityId")
     public String entityId;
+
+    @JsonProperty("ShipmentGuid")
+    public String shipmentGuid;
 }

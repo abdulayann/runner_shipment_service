@@ -1053,6 +1053,10 @@ public class MasterDataUtils{
                         SalesAgentResponse object10 = (SalesAgentResponse) cache.get();
                         fieldNameMasterDataMap.put(key, object10.getSalesAgentName());
                         break;
+                    case CacheConstants.COMMODITY:
+                        EntityTransferCommodityType object11 = (EntityTransferCommodityType) cache.get();
+                        fieldNameMasterDataMap.put(key, object11.getDescription());
+                        break;
                 }
 
             }

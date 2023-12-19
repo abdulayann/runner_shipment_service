@@ -86,6 +86,10 @@ public class MasterDataKeyUtils {
                                 SalesAgentResponse object10 = (SalesAgentResponse) cache.get();
                                 response.put(value, object10.getSalesAgentName());
                                 break;
+                            case CacheConstants.COMMODITY:
+                                EntityTransferCommodityType object11 = (EntityTransferCommodityType) cache.get();
+                                response.put(value, object11.getDescription());
+                                break;
                         }
                     }
                 });

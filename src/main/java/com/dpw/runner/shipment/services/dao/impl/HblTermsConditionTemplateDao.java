@@ -7,7 +7,6 @@ import com.dpw.runner.shipment.services.entity.HblTermsConditionTemplate;
 import com.dpw.runner.shipment.services.entity.enums.TypeOfHblPrint;
 import com.dpw.runner.shipment.services.repository.interfaces.IHblTermsConditionTemplateRepository;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
-import com.dpw.runner.shipment.services.utils.ObjectUtility;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
@@ -20,9 +19,7 @@ import org.springframework.stereotype.Repository;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
@@ -86,16 +83,13 @@ public class HblTermsConditionTemplateDao implements IHblTermsConditionTemplateD
             ListCommonRequest listCommonRequest = constructListCommonRequest("shipmentSettingsId", shipmentSettingsId, "=");
             Pair<Specification<HblTermsConditionTemplate>, Pageable> pair = fetchData(listCommonRequest, HblTermsConditionTemplate.class);
             Page<HblTermsConditionTemplate> hblTermsConditionTemplates = findAll(pair.getLeft(), pair.getRight());
-            Map<Long, HblTermsConditionTemplate> hashMap = hblTermsConditionTemplates.stream()
+            List<HblTermsConditionTemplate> hashMap = hblTermsConditionTemplates.stream()
                     .filter(e -> e.getIsFrontPrint() == isFrontPrint)
-                    .collect(Collectors.toMap(HblTermsConditionTemplate::getId, Function.identity()));
+                    .collect(Collectors.toList());
             List<HblTermsConditionTemplate> hblTermsConditionTemplatesRequestList = new ArrayList<>();
             if (hblTermsConditionTemplateList != null && hblTermsConditionTemplateList.size() != 0) {
                 for (HblTermsConditionTemplate request : hblTermsConditionTemplateList) {
                     Long id = request.getId();
-                    if (id != null) {
-                        hashMap.remove(id);
-                    }
                     hblTermsConditionTemplatesRequestList.add(request);
                 }
                 responseHblTermsConditionTemplate = saveEntityFromSettings(hblTermsConditionTemplatesRequestList, shipmentSettingsId, isFrontPrint);
@@ -110,10 +104,10 @@ public class HblTermsConditionTemplateDao implements IHblTermsConditionTemplateD
         }
     }
 
-    private void deleteHblTermsConditionTemplate(Map<Long, HblTermsConditionTemplate> hashMap) {
+    private void deleteHblTermsConditionTemplate(List<HblTermsConditionTemplate> hblTermsConditionTemplates) {
         String responseMsg;
         try {
-            hashMap.values().forEach(this::delete);
+            hblTermsConditionTemplates.forEach(this::delete);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_DELETE_EXCEPTION_MSG;

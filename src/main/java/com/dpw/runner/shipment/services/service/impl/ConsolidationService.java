@@ -24,6 +24,7 @@ import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.v1.request.ConsoleBookingListRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.ConsoleBookingListResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.entity.enums.ProductProcessTypes;
@@ -42,6 +43,9 @@ import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationService;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerService;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingService;
+import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
+import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
+import com.dpw.runner.shipment.services.service.interfaces.*;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service_bus.AzureServiceBusTopic;
 import com.dpw.runner.shipment.services.service_bus.ISBProperties;
@@ -49,6 +53,7 @@ import com.dpw.runner.shipment.services.service_bus.ISBUtils;
 import com.dpw.runner.shipment.services.syncing.interfaces.IConsolidationSync;
 import com.dpw.runner.shipment.services.utils.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Strings;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.Cell;
@@ -246,6 +251,8 @@ public class ConsolidationService implements IConsolidationService {
             Map.entry("voyage", RunnerEntityMapping.builder().tableName("carrierDetails").dataType(String.class).build()),
             Map.entry("origin", RunnerEntityMapping.builder().tableName("carrierDetails").dataType(String.class).build()),
             Map.entry("destination", RunnerEntityMapping.builder().tableName("carrierDetails").dataType(String.class).build()),
+            Map.entry("originPort", RunnerEntityMapping.builder().tableName("carrierDetails").dataType(String.class).build()),
+            Map.entry("destinationPort", RunnerEntityMapping.builder().tableName("carrierDetails").dataType(String.class).build()),
             Map.entry("eta", RunnerEntityMapping.builder().tableName("carrierDetails").dataType(LocalDateTime.class).build()),
             Map.entry("etd", RunnerEntityMapping.builder().tableName("carrierDetails").dataType(LocalDateTime.class).build()),
             Map.entry("ata", RunnerEntityMapping.builder().tableName("carrierDetails").dataType(LocalDateTime.class).build()),
@@ -2658,5 +2665,122 @@ public class ConsolidationService implements IConsolidationService {
         createConsolidationPayload(modelMapper.map(consol, ConsolidationDetails.class), consol);
 
         return ResponseHelper.buildSuccessResponse(consol);
+    }
+    @Override
+    public ResponseEntity<?> getAutoAttachConsolidationDetails(CommonRequestModel commonRequestModel){
+        AutoAttachConsolidationRequest request = (AutoAttachConsolidationRequest) commonRequestModel.getData();
+        AutoAttachConsolidationResponse response = new AutoAttachConsolidationResponse();
+
+        List<Integer> itemTypeList = new ArrayList<>();
+        itemTypeList.add(MasterDataType.CONSOLIDATION_CHECK_ORDER.getId());
+        itemTypeList.add(MasterDataType.CONSOL_CHECK_ETD_ETD_THRESHOLD.getId());
+        itemTypeList.add(MasterDataType.AUTO_ATTACH_TRANSPORT.getId());
+        List<Object> masterDataCriteria = Arrays.asList(
+                Arrays.asList("ItemType"),
+                "in",
+                Arrays.asList(itemTypeList)
+        );
+        CommonV1ListRequest masterDataRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(masterDataCriteria).build();
+        V1DataResponse masterDataResponse = v1Service.fetchMasterData(masterDataRequest);
+        List<EntityTransferMasterLists> masterLists = jsonHelper.convertValueToList(masterDataResponse.entities, EntityTransferMasterLists.class);
+
+        var applicableTransportModes = masterLists.stream()
+                .filter(x -> x.getItemType() == (int)MasterDataType.AUTO_ATTACH_TRANSPORT.getId())
+                .map(EntityTransferMasterLists::getItemDescription)
+                .map(description -> description != null ? Arrays.asList(description.split(",")): null)
+                .findFirst();
+        List<String> applicableTransportModesList = applicableTransportModes.orElse(null);
+
+        boolean isConditionSatisfied = false;
+        ListCommonRequest consolListRequest = null;
+
+        if(!Strings.isNullOrEmpty(request.getTransportMode()) && applicableTransportModesList != null &&
+                applicableTransportModesList.contains(request.getTransportMode().toUpperCase())){
+
+            consolListRequest = CommonUtils.andCriteria("transportMode", request.getTransportMode(), "=", consolListRequest);
+            if(!Strings.isNullOrEmpty(request.getMasterBill())){
+                consolListRequest = CommonUtils.andCriteria("bol", request.getMasterBill(), "=", consolListRequest);
+                isConditionSatisfied = true;
+                response.setFilteredDetailName("Master Bill");
+            } else if(request.getEta() != null && request.getEtd() != null){
+                var thresholdDetails = masterLists.stream()
+                        .filter(x -> x.getItemType() == (int)MasterDataType.CONSOL_CHECK_ETD_ETD_THRESHOLD.getId())
+                        .map(EntityTransferMasterLists::getItemDescription)
+                        .findFirst();
+                Long thresholdLimit = 0L;
+                if(thresholdDetails.isPresent()){
+                    thresholdLimit = Long.parseLong(thresholdDetails.get());
+                }
+                Long negativeThresholdLimit = thresholdLimit * -1;
+                LocalDateTime eta = request.getEta();
+                LocalDateTime etd = request.getEtd();
+
+                var thresholdETAFrom = eta.plusDays(negativeThresholdLimit);
+                var thresholdETATo = eta.plusDays(thresholdLimit + 1).plusSeconds(-1);
+                var thresholdETDFrom = etd.plusDays(negativeThresholdLimit);
+                var thresholdETDTo = etd.plusDays(thresholdLimit + 1).plusSeconds(-1);
+
+                var etaAndETDCriteria = CommonUtils.andCriteria("eta", thresholdETAFrom, ">=", consolListRequest);
+                etaAndETDCriteria = CommonUtils.andCriteria("Eta", thresholdETATo, "<=", etaAndETDCriteria);
+                etaAndETDCriteria = CommonUtils.andCriteria("Etd", thresholdETDFrom, ">=", etaAndETDCriteria);
+                etaAndETDCriteria = CommonUtils.andCriteria("Etd", thresholdETDTo, "<=", etaAndETDCriteria);
+
+                var priorityList = masterLists.stream()
+                        .filter(x -> x.getItemType() == (int)MasterDataType.CONSOLIDATION_CHECK_ORDER.getId())
+                        .sorted((y1, y2) -> {
+                            int itd1 = Integer.parseInt(y1.getItemDescription());
+                            int itd2 = Integer.parseInt(y2.getItemDescription());
+                            return Integer.compare(itd1, itd2);
+                        })
+                        .map(EntityTransferMasterLists::getItemValue)
+                        .collect(Collectors.toList());
+                for (var item : priorityList){
+                    switch (item.toUpperCase()){
+                        case "VOYAGE NUMBER":
+                            if(Strings.isNullOrEmpty(request.getVoyageNumber())){
+                                consolListRequest = CommonUtils.andCriteria("voyage", request.getVoyageNumber(), "=", etaAndETDCriteria);
+                                isConditionSatisfied = true;
+                                response.setFilteredDetailName("Voyage Number");
+                            }
+                            break;
+                        case "VESSEL NAME":
+                            if(Strings.isNullOrEmpty(request.getVessel())){
+                                consolListRequest = CommonUtils.andCriteria("vessel", request.getVessel(), "=", etaAndETDCriteria);
+                                isConditionSatisfied = true;
+                                response.setFilteredDetailName("Vessel Name");
+                            }
+                            break;
+                        case "ORIGIN PORT/ DESTINATION PORT":
+                            if(Strings.isNullOrEmpty(request.getPol()) && Strings.isNullOrEmpty(request.getPod())){
+                                consolListRequest = CommonUtils.andCriteria("originPort", request.getPol(), "=", etaAndETDCriteria);
+                                consolListRequest = CommonUtils.andCriteria("destinationPort", request.getPod(), "=", consolListRequest);
+                                isConditionSatisfied = true;
+                                response.setFilteredDetailName("Origin Port/ Destination Port");
+                            }
+                            break;
+
+                    }
+                    if (isConditionSatisfied)
+                        break;
+                }
+            }
+            if (isConditionSatisfied){
+                Pair<Specification<ConsolidationDetails>, Pageable> tuple = fetchData(consolListRequest, ConsolidationDetails.class, tableNames);
+                Page<ConsolidationDetails> consolidationDetailsPage = consolidationDetailsDao.findAll(tuple.getLeft(), tuple.getRight());
+                List<ConsolidationDetailsResponse> consolidationDetailsResponseList = jsonHelper.convertValueToList(consolidationDetailsPage.getContent(), ConsolidationDetailsResponse.class);
+
+                for (var console : consolidationDetailsResponseList){
+                    if(console.getConsolidationNumber() == null)
+                        console.setConsolidationNumber("");
+                    if(console.getCarrierDetails().getVoyage() == null)
+                        console.getCarrierDetails().setVoyage("");
+                }
+                response.setConsolidationDetailsList(consolidationDetailsResponseList);
+                return ResponseHelper.buildSuccessResponse(response, consolidationDetailsPage.getTotalPages(),
+                        consolidationDetailsPage.getTotalElements());
+            }
+        }
+
+        return ResponseHelper.buildSuccessResponse(response);
     }
 }

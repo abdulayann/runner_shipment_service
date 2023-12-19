@@ -1404,11 +1404,11 @@ public class EntityTransferService implements IEntityTransferService {
             if (consolidationDetails.get().getTransportMode().equals(Constants.TRANSPORT_MODE_SEA)) {
                 flightNumber = consolidationDetails.get().getCarrierDetails().getVessel();
                 voyage = consolidationDetails.get().getCarrierDetails().getVoyage();
-                bol = consolidationDetails.get().getMawb();
+                bol = consolidationDetails.get().getBol();
             } else if (consolidationDetails.get().getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)) {
                 flightNumber = consolidationDetails.get().getCarrierDetails().getFlightNumber();
                 voyage = consolidationDetails.get().getCarrierDetails().getShippingLine();
-                bol = consolidationDetails.get().getMawb();
+                bol = consolidationDetails.get().getBol();
             }
             LocalDateTime eta = consolidationDetails.get().getCarrierDetails().getEta();
             LocalDateTime etd = consolidationDetails.get().getCarrierDetails().getEtd();
