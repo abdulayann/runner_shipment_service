@@ -1576,9 +1576,9 @@ public class ConsolidationService implements IConsolidationService {
                         }
                     }
                     if(pack.getWeight() != null && !IsStringNullOrEmpty(pack.getWeightUnit()) && !IsStringNullOrEmpty(container.getAchievedWeightUnit()))
-                        weight = weight.add((BigDecimal) convertUnit(Constants.MASS, pack.getWeight(), pack.getWeightUnit(), container.getAchievedWeightUnit()));
+                        weight = weight.add(new BigDecimal(convertUnit(Constants.MASS, pack.getWeight(), pack.getWeightUnit(), container.getAchievedWeightUnit()).toString()));
                     if(pack.getVolume() != null && !IsStringNullOrEmpty(pack.getVolumeUnit()) && !IsStringNullOrEmpty(container.getAchievedVolumeUnit()))
-                        volume = volume.add((BigDecimal) convertUnit(Constants.VOLUME, pack.getVolume(), pack.getVolumeUnit(), container.getAchievedVolumeUnit()));
+                        volume = volume.add(new BigDecimal(convertUnit(Constants.VOLUME, pack.getVolume(), pack.getVolumeUnit(), container.getAchievedVolumeUnit()).toString()));
                 }
                 if( (isFCL || isFCLAlready) && contShipIds.size() + shipmentsIncluded.size() > 1 ) {
                     if(container.getShipmentsList().size() > 0 && container.getShipmentsList().get(0).getShipmentType().equals(Constants.CARGO_TYPE_FCL)) {
@@ -1660,9 +1660,9 @@ public class ConsolidationService implements IConsolidationService {
                         pack = packingDao.findById(packing.getId()).get();
                         if(!packing.getShipmentType().equals(Constants.CARGO_TYPE_FCL)) {
                             if(pack.getWeight() != null && !IsStringNullOrEmpty(pack.getWeightUnit()) && !IsStringNullOrEmpty(container.getAchievedWeightUnit()))
-                                weight = weight.subtract((BigDecimal) convertUnit(Constants.MASS, pack.getWeight(), pack.getWeightUnit(), container.getAchievedWeightUnit()));
+                                weight = weight.subtract(new BigDecimal(convertUnit(Constants.MASS, pack.getWeight(), pack.getWeightUnit(), container.getAchievedWeightUnit()).toString()));
                             if(pack.getVolume() != null && !IsStringNullOrEmpty(pack.getVolumeUnit()) && !IsStringNullOrEmpty(container.getAchievedVolumeUnit()))
-                                weight = weight.subtract((BigDecimal) convertUnit(Constants.MASS, pack.getVolume(), pack.getVolumeUnit(), container.getAchievedVolumeUnit()));
+                                weight = weight.subtract(new BigDecimal(convertUnit(Constants.MASS, pack.getVolume(), pack.getVolumeUnit(), container.getAchievedVolumeUnit()).toString()));
                         }
                         pack.setContainerId(null);
                         packingDao.save(pack);
