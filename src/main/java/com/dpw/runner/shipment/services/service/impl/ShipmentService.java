@@ -1633,7 +1633,7 @@ public class ShipmentService implements IShipmentService {
     }
 
     private void beforeSave(ShipmentDetails shipmentDetails) {
-        if(IsStringNullOrEmpty(shipmentDetails.getJobType()) && shipmentDetails.getJobType().equals(Constants.SHIPMENT_TYPE_DRT)){
+        if(!IsStringNullOrEmpty(shipmentDetails.getJobType()) && shipmentDetails.getJobType().equals(Constants.SHIPMENT_TYPE_DRT)){
             shipmentDetails.setHouseBill(shipmentDetails.getMasterBill());
         }
     }
