@@ -1932,16 +1932,30 @@ public class ShipmentService implements IShipmentService {
                 ListCommonRequest listCommonRequest = constructListCommonRequest("id", request.getContainerIds(), "IN");
                 Pair<Specification<Containers>, Pageable> pair = fetchData(listCommonRequest, Containers.class);
                 Page<Containers> containers = containerDao.findAll(pair.getLeft(), pair.getRight());
-                if(containers != null && containers.getContent() != null && !containers.getContent().isEmpty()) {
-                    for (Containers container : containers.getContent()) {
-                        boolean isPart = container.getIsPart() != null && container.getIsPart().booleanValue();
-                        if(shipmentDetails.getShipmentType().equals(Constants.CARGO_TYPE_FCL) || isPart && container.getShipmentsList() != null && container.getShipmentsList().size() > 0) {
-                            String errorMsg = "This container is already linked to another shipment. Only part Container/Containers are allowed to attach";
-                            if(!isPart)
-                                errorMsg = "Mentioned container " + container.getContainerNumber() + " is already assigned to a Shipment - " + container.getShipmentsList().get(0).getShipmentId() + ". Please check and retry.";
-                            throw new ValidationException(errorMsg);
+                boolean isFCL = shipmentDetails.getShipmentType().equals(Constants.CARGO_TYPE_FCL) && shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_SEA) || shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_ROA);
+                if(containers != null && containers.getContent() != null) {
+                    List<Containers> containersList = containers.getContent();
+                    if(!containers.getContent().isEmpty()) {
+                        for (Containers container : containersList) {
+                            boolean isPart = container.getIsPart() != null && container.getIsPart().booleanValue();
+                            if(shipmentDetails.getShipmentType().equals(Constants.CARGO_TYPE_FCL) || isPart && container.getShipmentsList() != null && container.getShipmentsList().size() > 0) {
+                                String errorMsg = "This container is already linked to another shipment. Only part Container/Containers are allowed to attach";
+                                if(!isPart)
+                                    errorMsg = "Mentioned container " + container.getContainerNumber() + " is already assigned to a Shipment - " + container.getShipmentsList().get(0).getShipmentId() + ". Please check and retry.";
+                                throw new ValidationException(errorMsg);
+                            }
+                            if(isFCL) {
+                                container.setAchievedWeight(container.getAllocatedWeight());
+                                container.setAchievedVolume(container.getAllocatedVolume());
+                                container.setAchievedWeightUnit(container.getAllocatedWeightUnit());
+                                container.setAchievedVolumeUnit(container.getAllocatedVolumeUnit());
+                                container.setWeightUtilization("100");
+                                container.setVolumeUtilization("100");
+                            }
                         }
                     }
+                    if(isFCL)
+                        containerDao.saveAll(containersList);
                 }
             }
             shipmentsContainersMappingDao.assignContainers(request.getShipmentId(), request.getContainerIds());
