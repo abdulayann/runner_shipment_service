@@ -204,4 +204,20 @@ public class CustomerBooking extends MultiTenancy {
 
     @Column(name = "shipment_created_date")
     private LocalDateTime shipmentCreatedDate;
+
+    @MasterData(type = MasterDataType.COUNTRIES)
+    @Column(name = "client_country")
+    private String clientCountry;
+
+    @MasterData(type = MasterDataType.COUNTRIES)
+    @Column(name = "consignor_country")
+    private String consignorCountry;
+
+    @MasterData(type = MasterDataType.COUNTRIES)
+    @Column(name = "consignee_country")
+    private String consigneeCountry;
+
+    @MasterData(type = MasterDataType.COUNTRIES)
+    @Column(name = "notify_party_country")
+    private String notifyPartyCountry;
 }

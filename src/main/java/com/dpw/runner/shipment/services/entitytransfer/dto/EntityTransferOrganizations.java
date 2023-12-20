@@ -17,7 +17,7 @@ public class EntityTransferOrganizations implements IEntityTranferBaseEntity {
     public String OrganizationCode;
     public String OrganizationCategory;
     public String RemoteId;
-    public RemoteIdTypes RemoteIdType;
+    public String RemoteIdType;
     public String FullName;
     public String LocalName;
     public String Address1;

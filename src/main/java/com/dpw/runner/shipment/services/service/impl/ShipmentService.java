@@ -671,6 +671,7 @@ public class ShipmentService implements IShipmentService {
                 shipmentDetails.setContainersList(updatedContainers);
             }
 
+            beforeSave(shipmentDetails);
             shipmentDetails = getShipment(shipmentDetails);
             Long shipmentId = shipmentDetails.getId();
 
@@ -1071,6 +1072,10 @@ public class ShipmentService implements IShipmentService {
                 serviceType(customerBookingRequest.getServiceMode()).
                 status(4).
                 fmcTlcId(customerBookingRequest.getFmcTlcId()).
+                clientCountry(customerBookingRequest.getClientCountry()).
+                consignorCountry(customerBookingRequest.getConsignorCountry()).
+                consigneeCountry(customerBookingRequest.getConsigneeCountry()).
+                notifyPartyCountry(customerBookingRequest.getNotifyPartyCountry()).
                 containersList(consolidationDetails != null && consolidationDetails.size() > 0 ? consolidationDetails.get(0).getContainersList() : null).
                 packingList(customerBookingRequest.getPackingList()).
                 fileRepoList(customerBookingRequest.getFileRepoList()).
@@ -1501,6 +1506,7 @@ public class ShipmentService implements IShipmentService {
             String oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
             updateMasterBill(entity, oldEntity.get().getMasterBill());
             updateLinkedShipmentData(entity);
+            beforeSave(entity);
             entity = shipmentDao.update(entity, false);
             try {
                 // audit logs
@@ -1623,6 +1629,12 @@ public class ShipmentService implements IShipmentService {
                     : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
             throw new RuntimeException(e.getMessage());
+        }
+    }
+
+    private void beforeSave(ShipmentDetails shipmentDetails) {
+        if(shipmentDetails.getJobType().equals(Constants.SHIPMENT_TYPE_DRT)){
+            shipmentDetails.setHouseBill(shipmentDetails.getMasterBill());
         }
     }
 
@@ -2254,6 +2266,7 @@ public class ShipmentService implements IShipmentService {
                 updatedCarrierDetails = carrierDao.updateEntityFromShipmentConsole(convertToClass(carrierDetailRequest, CarrierDetails.class));
                 entity.setCarrierDetails(updatedCarrierDetails);
             }
+            beforeSave(entity);
             entity = shipmentDao.update(entity, false);
 
             entity.setContainersList(updatedContainers);
@@ -2501,6 +2514,7 @@ public class ShipmentService implements IShipmentService {
                 oldContainers = oldEntity.get().getContainersList();
                 isCreate = false;
             }
+            shipmentRequest.setConsolidationList(null);
             ShipmentDetails entity = objectMapper.convertValue(shipmentRequest, ShipmentDetails.class);
             entity.setId(id);
             List<Containers> updatedContainers = null;
@@ -2960,7 +2974,9 @@ public class ShipmentService implements IShipmentService {
         if(containers != null)
             map = containers.stream().collect(Collectors.toMap(cont -> cont.getId(), cont -> cont.getContainerNumber()));
         Map<Long, Map<String, String>> contMap = new HashMap<>();
-        boolean flag = shipmentDetailsResponse.getContainerAutoWeightVolumeUpdate() != null && shipmentDetailsResponse.getContainerAutoWeightVolumeUpdate().booleanValue();
+        ShipmentSettingsDetails shipmentSettingsDetails = shipmentSettingsDao.getSettingsByTenantIds(List.of(TenantContext.getCurrentTenant())).get(0);
+        boolean flag = shipmentDetailsResponse.getContainerAutoWeightVolumeUpdate() != null && shipmentDetailsResponse.getContainerAutoWeightVolumeUpdate().booleanValue()
+                && shipmentSettingsDetails.getMultipleShipmentEnabled() != null && shipmentSettingsDetails.getMultipleShipmentEnabled();
         if(packings != null && packings.size() > 0) {
             for (PackingResponse pack : packings) {
                 if(pack.getContainerId() != null) {
@@ -3208,7 +3224,7 @@ public class ShipmentService implements IShipmentService {
         return ResponseHelper.buildSuccessResponse(shipment);
     }
 
-    private String generateCustomHouseBL() {
+    public String generateCustomHouseBL() {
         String res = null;
         List<ShipmentSettingsDetails> shipmentSettingsDetailsList = shipmentSettingsDao.getSettingsByTenantIds(List.of(TenantContext.getCurrentTenant()));
         ShipmentSettingsDetails tenantSetting = null;

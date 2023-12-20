@@ -64,4 +64,5 @@ public interface IShipmentService extends ICommonService {
     ResponseEntity<?> calculateAutoUpdateWtVolInShipment(CommonRequestModel commonRequestModel) throws Exception;
     ResponseEntity<?> calculateWtVolInShipmentOnChanges(CommonRequestModel commonRequestModel) throws Exception;
     ResponseEntity<?> getAllMasterData(CommonRequestModel commonRequestModel);
+    String generateCustomHouseBL();
 }
