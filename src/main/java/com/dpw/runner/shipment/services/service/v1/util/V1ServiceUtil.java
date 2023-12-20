@@ -1,20 +1,24 @@
 package com.dpw.runner.shipment.services.service.v1.util;
 
 import com.dpw.runner.shipment.services.commons.constants.CustomerBookingConstants;
-import com.dpw.runner.shipment.services.commons.constants.NPMConstants;
 import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
+import com.dpw.runner.shipment.services.dao.interfaces.INotesDao;
 import com.dpw.runner.shipment.services.dto.request.CreateBookingModuleInV1;
 import com.dpw.runner.shipment.services.entity.*;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
-
+@Component
 public class V1ServiceUtil {
+    @Autowired
+    INotesDao notesDao;
 
-    public static CreateBookingModuleInV1 createBookingRequestForV1(CustomerBooking customerBooking, boolean isShipmentEnabled, boolean isBillingEnabled, UUID shipmentGuid) {
+    public CreateBookingModuleInV1 createBookingRequestForV1(CustomerBooking customerBooking, boolean isShipmentEnabled, boolean isBillingEnabled, UUID shipmentGuid) {
         return CreateBookingModuleInV1.builder()
                 .IsP100Booking(Boolean.TRUE)
                 .Entity(createEntity(customerBooking, isShipmentEnabled, isBillingEnabled))
@@ -22,8 +26,9 @@ public class V1ServiceUtil {
                 .build();
     }
 
-    private static CreateBookingModuleInV1.BookingEntity createEntity(CustomerBooking customerBooking, boolean isShipmentEnabled, boolean isBillingEnabled) {
+    private CreateBookingModuleInV1.BookingEntity createEntity(CustomerBooking customerBooking, boolean isShipmentEnabled, boolean isBillingEnabled) {
         var carrierDetails = Optional.ofNullable(customerBooking.getCarrierDetails());
+        List<Notes> notes = notesDao.findByEntityIdAndEntityType(customerBooking.getId(), "CustomerBooking");
         return CreateBookingModuleInV1.BookingEntity.builder()
                 .Voyage(customerBooking.getCarrierDetails() != null ? customerBooking.getCarrierDetails().getVoyage() : null)
                 .ContractId(customerBooking.getContractId())
@@ -70,9 +75,22 @@ public class V1ServiceUtil {
                 .Loosecargos(createLooseCarges(customerBooking.getPackingList()))
                 .OrgDetails(null)
                 .BillCharges(createQuoteCharges(customerBooking.getBookingCharges()))
+                .CustomerBookingNoteList(createNotes(notes))
                 .build();
     }
 
+    private  static List<CreateBookingModuleInV1.BookingEntity.Notes> createNotes(List<Notes>notes){
+        if (notes == null) return null;
+        return notes.stream().filter(Objects::nonNull).map(note ->
+                CreateBookingModuleInV1.BookingEntity.Notes.builder()
+                        .AssignedTo(note.getAssignedTo())
+                        .Label(note.getLabel())
+                        .Text(note.getText())
+                        .InsertUserDisplayName(note.getInsertUserDisplayName())
+                        .IsPublic(note.getIsPublic())
+                        .InsertDate(note.getCreatedAt())
+                        .build()).collect(Collectors.toList());
+    }
     private static List<CreateBookingModuleInV1.BookingEntity.BillCharge> createQuoteCharges(List<BookingCharges> bookingCharges) {
         if (bookingCharges == null) return null;
         return bookingCharges.stream().filter(Objects::nonNull).map(bc ->
