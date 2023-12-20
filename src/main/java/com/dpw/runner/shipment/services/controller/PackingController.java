@@ -8,6 +8,7 @@ import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackContainerNumberChangeRequest;
+import com.dpw.runner.shipment.services.dto.request.AutoCalculatePackingRequest;
 import com.dpw.runner.shipment.services.dto.request.PackingRequest;
 import com.dpw.runner.shipment.services.dto.response.PackingResponse;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -176,6 +177,57 @@ public class PackingController {
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : "Error syncing provided Container";
+            log.error(responseMsg, e);
+        }
+        return ResponseHelper.buildFailedResponse(responseMsg);
+    }
+
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = ShipmentConstants.CALCULATION_SUCCESSFUL),
+            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
+    })
+    @PostMapping(ApiConstants.AUTO_CALCULATE_VOLUMETRIC_WEIGHT)
+    public ResponseEntity<?> autoCalculateVolumetricWeight(@RequestBody AutoCalculatePackingRequest request) {
+        String responseMsg = "failure executing request " + request.getId();
+        try {
+            return packingService.autoCalculateVolumetricWeight(CommonRequestModel.buildRequest(request));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : "Error in auto calculate volmetric weight";
+            log.error(responseMsg, e);
+        }
+        return ResponseHelper.buildFailedResponse(responseMsg);
+    }
+
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = ShipmentConstants.CALCULATION_SUCCESSFUL),
+            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
+    })
+    @PostMapping(ApiConstants.AUTO_CALCULATE_CHARGABLE)
+    public ResponseEntity<?> autoCalculateChargable(@RequestBody AutoCalculatePackingRequest request) {
+        String responseMsg = "failure executing request " + request.getId();
+        try {
+            return packingService.autoCalculateChargable(CommonRequestModel.buildRequest(request));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : "Error in auto calculate chargeable";
+            log.error(responseMsg, e);
+        }
+        return ResponseHelper.buildFailedResponse(responseMsg);
+    }
+
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = ShipmentConstants.CALCULATION_SUCCESSFUL),
+            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
+    })
+    @PostMapping(ApiConstants.AUTO_CALCULATE_VOLUME)
+    public ResponseEntity<?> autoCalculateVolume(@RequestBody AutoCalculatePackingRequest request) {
+        String responseMsg = "failure executing request " + request.getId();
+        try {
+            return packingService.autoCalculateVolume(CommonRequestModel.buildRequest(request));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : "Error in auto calculate volume";
             log.error(responseMsg, e);
         }
         return ResponseHelper.buildFailedResponse(responseMsg);

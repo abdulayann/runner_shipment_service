@@ -11,7 +11,10 @@ import com.dpw.runner.shipment.services.config.SyncConfig;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackContainerNumberChangeRequest;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryResponse;
+import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
+import com.dpw.runner.shipment.services.dto.request.AutoCalculatePackingRequest;
 import com.dpw.runner.shipment.services.dto.request.PackingRequest;
+import com.dpw.runner.shipment.services.dto.response.AutoCalculatePackingResponse;
 import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.PackingResponse;
 import com.dpw.runner.shipment.services.entity.*;
@@ -20,6 +23,7 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
+import com.dpw.runner.shipment.services.service.interfaces.IConsolidationService;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingService;
 import com.dpw.runner.shipment.services.service.interfaces.ISyncQueueService;
 import com.dpw.runner.shipment.services.syncing.Entity.BulkPackingRequestV2;
@@ -34,6 +38,7 @@ import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.apache.commons.lang3.StringUtils;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
@@ -55,6 +60,7 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
+import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
@@ -65,6 +71,10 @@ import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.conve
 public class PackingService implements IPackingService {
     @Autowired
     IPackingDao packingDao;
+
+    @Autowired
+    @Lazy
+    private IConsolidationService consolidationService;
 
     @Autowired
     IContainerDao containersDao;
@@ -415,7 +425,7 @@ public class PackingService implements IPackingService {
             if(packingList != null) {
                 for (Packing packing: packingList) {
                     double winDef = convertUnit(Constants.MASS, packing.getWeight(), packing.getWeightUnit(), toWeightUnit).doubleValue();
-                    double volDef = convertUnit(Constants.VOLUME, packing.getVolume(), packing.getVolumeUnit(), toVolumeUnit).doubleValue();
+                    double volDef = convertUnit(VOLUME, packing.getVolume(), packing.getVolumeUnit(), toVolumeUnit).doubleValue();
                     totalWeight = totalWeight + winDef;
                     volumeWeight = volumeWeight + volDef;
                     if(!IsStringNullOrEmpty(packing.getPacksType()) && !map.containsKey(packing.getPacksType()))
@@ -431,7 +441,7 @@ public class PackingService implements IPackingService {
             for (int i=0; i<sortedKeys.size(); i++) {
                 Long value = map.get(sortedKeys.get(i));
                 packsCount = packsCount + value.toString() + " " + sortedKeys.get(i);
-                if (i+1 < sortedKeys.size())
+                if (i + 1 < sortedKeys.size())
                     packsCount = packsCount + ", ";
             }
             response.setTotalPacks(packsCount);
@@ -439,21 +449,219 @@ public class PackingService implements IPackingService {
             response.setTotalPacksVolume(volumeWeight + " " + toVolumeUnit);
             response.setPacksVolumetricWeight(volumetricWeight + " " + toWeightUnit);
             String packChargeableWeightUnit = toWeightUnit;
-            if(!IsStringNullOrEmpty(transportMode) && transportMode.equals(Constants.TRANSPORT_MODE_AIR))
+            if (!IsStringNullOrEmpty(transportMode) && transportMode.equals(Constants.TRANSPORT_MODE_AIR))
                 chargeableWeight = roundOffAirShipment(chargeableWeight);
-            if(!IsStringNullOrEmpty(transportMode) && transportMode.equals(Constants.TRANSPORT_MODE_SEA) &&
-            !IsStringNullOrEmpty(containerCategory) && containerCategory.equals(Constants.SHIPMENT_TYPE_LCL)) {
-                double volInM3 = convertUnit(Constants.VOLUME, new BigDecimal(volumeWeight), toVolumeUnit, Constants.VOLUME_UNIT_M3).doubleValue();
+            if (!IsStringNullOrEmpty(transportMode) && transportMode.equals(Constants.TRANSPORT_MODE_SEA) &&
+                    !IsStringNullOrEmpty(containerCategory) && containerCategory.equals(Constants.SHIPMENT_TYPE_LCL)) {
+                double volInM3 = convertUnit(VOLUME, new BigDecimal(volumeWeight), toVolumeUnit, Constants.VOLUME_UNIT_M3).doubleValue();
                 double wtInKg = convertUnit(Constants.MASS, new BigDecimal(totalWeight), toWeightUnit, Constants.WEIGHT_UNIT_KG).doubleValue();
-                chargeableWeight = Math.max(wtInKg/1000, volInM3);
+                chargeableWeight = Math.max(wtInKg / 1000, volInM3);
                 packChargeableWeightUnit = Constants.VOLUME_UNIT_M3;
             }
             response.setPacksChargeableWeight(chargeableWeight + " " + packChargeableWeightUnit);
             return response;
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             throw new Exception(e);
         }
+    }
+
+    public VolumeWeightChargeable calculateVolumetricWeightForAir(BigDecimal volume, BigDecimal weight, String transportMode, String weightUnit, String volumeUnit) throws Exception {
+        VolumeWeightChargeable vwOb = new VolumeWeightChargeable();
+        BigDecimal wtInKG = new BigDecimal(convertUnit(Constants.MASS, weight, weightUnit, Constants.WEIGHT_UNIT_KG).toString());
+        BigDecimal vlInM3 = new BigDecimal(convertUnit(VOLUME, volume, volumeUnit, Constants.VOLUME_UNIT_M3).toString());
+        BigDecimal factor = new BigDecimal(166.667);
+        if (transportMode == Constants.TRANSPORT_MODE_ROA) {
+            factor = BigDecimal.valueOf(333.0);
+        }
+        BigDecimal wvInKG = vlInM3.multiply(factor);
+        if (wtInKG.compareTo(wvInKG) < 0) {
+            wtInKG = wvInKG;
+        }
+        vwOb.setChargeable(wtInKG.multiply(BigDecimal.valueOf(100)).setScale(0, BigDecimal.ROUND_CEILING).divide(BigDecimal.valueOf(100)));
+        vwOb.setChargeableUnit(Constants.WEIGHT_UNIT_KG);
+        BigDecimal WV = new BigDecimal(convertUnit(Constants.MASS, wvInKG, Constants.WEIGHT_UNIT_KG, weightUnit).toString());
+        vwOb.setVolumeWeight(WV);
+        vwOb.setVolumeWeightUnit(weightUnit);
+        return vwOb;
+    }
+
+    public void calculateVolume(String widthUnit, String heightUnit, String lengthUnit, AutoCalculatePackingResponse pack, AutoCalculatePackingRequest request) throws Exception {
+
+        if (lengthUnit != heightUnit || heightUnit != widthUnit)
+            return;
+
+        String quantity = pack.getPacks();
+        Double len = pack.getLength().doubleValue();
+        Double width = pack.getWidth().doubleValue();
+        Double height = pack.getHeight().doubleValue();
+        String dimUnit = lengthUnit;
+
+        Double vol = null;
+
+        if (!StringUtils.isEmpty(quantity) && !Double.isNaN(Double.parseDouble(quantity)) &&
+                Double.parseDouble(quantity) >= 0 && len != null && width != null && height != null &&
+                !StringUtils.isEmpty(dimUnit) && !StringUtils.isEmpty(widthUnit) && !StringUtils.isEmpty(heightUnit) &&
+                !StringUtils.isEmpty(lengthUnit) && widthUnit.equals(heightUnit) && heightUnit.equals(lengthUnit) &&
+                (dimUnit.equals("CM") || dimUnit.equals("FT") || dimUnit.equals("IN") || dimUnit.equals("M") || dimUnit.equals("MM"))) {
+            if (dimUnit.equals("CM")) {
+                vol = (Double.parseDouble(quantity) * len * width * height) / 1000000;
+            } else if (dimUnit.equals("FT")) {
+                vol = ((Double.parseDouble(quantity) * len * width * height) / 35.3147);
+            } else if (dimUnit.equals("IN")) {
+                vol = ((Double.parseDouble(quantity) * len * width * height) / 61024);
+            } else if (dimUnit.equals("M")) {
+                vol = ((Double.parseDouble(quantity) * len * width * height));
+            } else if (dimUnit.equals("MM")) {
+                vol = ((Double.parseDouble(quantity) * len * width * height) / 1000000000);
+            }
+            pack.setVolumeUnit("M3");
+            pack.setVolume(BigDecimal.valueOf(vol));
+            if (vol != null && vol.doubleValue() > 0.0) {
+                if (request.getTransportMode() != null && request.getTransportMode().equals(TRANSPORT_MODE_AIR)) {
+                    this.calculateVolumetricWeightForAir(BigDecimal.valueOf(vol), pack.getWeight(), request.getTransportMode(), widthUnit, request.getVolumeUnit());
+                }
+            }
+        } else if (!(len == null && width == null && height == null)) {
+            pack.setVolume(null);
+        }
+
+    }
+
+
+    protected void checkVolumeUnit(String volumeUnit,
+                                   String widthUnit,
+                                   String lengthUnit,
+                                   String heightUnit,
+                                   AutoCalculatePackingRequest request,
+                                   AutoCalculatePackingResponse response) throws Exception {
+        if (!StringUtils.isEmpty(volumeUnit) && volumeUnit.equals("M3")) {
+            calculateVolume(widthUnit, heightUnit, lengthUnit, response, request);
+        }
+    }
+
+    @Override
+    public ResponseEntity<?> autoCalculateVolumetricWeight(CommonRequestModel commonRequestModel) {
+
+        AutoCalculatePackingRequest request = (AutoCalculatePackingRequest) commonRequestModel.getData();
+        AutoCalculatePackingResponse response = new AutoCalculatePackingResponse();
+        String responseMsg;
+        try {
+            String transportMode = request.getTransportMode();
+            BigDecimal weight = request.getWeight();
+            String weightUnit = request.getWeightUnit();
+            BigDecimal volume = request.getVolume();
+            String volumeUnit = request.getVolumeUnit();
+            if (weightUnit != null && volumeUnit != null) {
+                VolumeWeightChargeable vwOb = consolidationService.calculateVolumeWeight(transportMode, weightUnit, volumeUnit, weight, volume);
+                response.setChargeable(vwOb.getChargeable());
+                if (transportMode == Constants.TRANSPORT_MODE_AIR) {
+                    BigDecimal charge = response.getChargeable();
+                    BigDecimal half = new BigDecimal("0.50");
+                    BigDecimal floor = charge.setScale(0, BigDecimal.ROUND_FLOOR);
+                    if (charge.subtract(half).compareTo(floor) <= 0 && charge.compareTo(floor) != 0) {
+                        charge = floor.add(half);
+                    } else {
+                        charge = charge.setScale(0, BigDecimal.ROUND_CEILING);
+                    }
+                    response.setChargeable(charge);
+                }
+                if (transportMode.equals(Constants.TRANSPORT_MODE_SEA) && request.getContainerCategory().equals(Constants.SHIPMENT_TYPE_LCL)) {
+                    volume = new BigDecimal(convertUnit(VOLUME, volume, volumeUnit, Constants.VOLUME_UNIT_M3).toString());
+                    weight = new BigDecimal(convertUnit(Constants.MASS, weight, weightUnit, Constants.WEIGHT_UNIT_KG).toString());
+                    response.setChargeable(weight.divide(new BigDecimal("1000")).max(volume));
+                    vwOb = consolidationService.calculateVolumeWeight(transportMode, Constants.WEIGHT_UNIT_KG, Constants.VOLUME_UNIT_M3, weight, volume);
+                }
+                response.setVolumeWeight(vwOb.getVolumeWeight());
+                response.setChargeableUnit(vwOb.getChargeableUnit());
+                checkVolumeUnit(request.getVolumeUnit(), request.getWidthUnit(), request.getLengthUnit(), request.getHeightUnit(), request, response);
+            }
+            return ResponseHelper.buildSuccessResponse(response);
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_CALCULATION_ERROR;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
+    @Override
+    public ResponseEntity<?> autoCalculateChargable(CommonRequestModel commonRequestModel) throws Exception {
+        AutoCalculatePackingRequest request = (AutoCalculatePackingRequest) commonRequestModel.getData();
+        AutoCalculatePackingResponse response = new AutoCalculatePackingResponse();
+        calculateChargeable(request, response);
+        return ResponseHelper.buildSuccessResponse(response);
+    }
+
+    private void calculateChargeable(AutoCalculatePackingRequest request, AutoCalculatePackingResponse response) throws Exception {
+        if (StringUtility.isNotEmpty(request.getTransportMode()) && request.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)) {
+            String wunit = request.getWeightUnit();
+            String vunit = request.getVolumeUnit();
+            var vol = request.getVolume();
+            var weight = request.getWeight();
+
+            if (wunit != null && !wunit.isEmpty() && vunit != null && !vunit.isEmpty()) {
+                VolumeWeightChargeable vwobj = consolidationService.calculateVolumeWeight(request.getTransportMode(), wunit, vunit, weight, vol);
+
+                response.setVolumeWeight(vwobj.getVolumeWeight());
+                response.setVolumeWeightUnit(vwobj.getVolumeWeightUnit());
+
+                if (request.getTransportMode() != null && request.getTransportMode().equals(Constants.TRANSPORT_MODE_SEA)) {
+                    if (request.getContainerCategory() != null && request.getContainerCategory().equals(SHIPMENT_TYPE_LCL)) {
+                        calculateChargeableForSEA_LCL(response, request);
+                    }
+                }
+            }
+        } else if (request.getTransportMode() != null && request.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)) {
+            calculateChargeableForAir(response, request);
+        }
+    }
+
+    @Override
+    public ResponseEntity<?> autoCalculateVolume(CommonRequestModel commonRequestModel) throws Exception {
+        AutoCalculatePackingRequest request = (AutoCalculatePackingRequest) commonRequestModel.getData();
+        if (request.getVolumeUnit() == null || request.getWeightUnit() == null || request.getWidthUnit() == null || request.getLengthUnit() == null) {
+            return ResponseEntity.badRequest().build();
+        }
+        AutoCalculatePackingResponse response = new AutoCalculatePackingResponse();
+        calculateVolume(request.getWidthUnit(), request.getHeightUnit(), request.getLengthUnit(), response, request);
+        calculateChargeable(request, response);
+        return ResponseHelper.buildSuccessResponse(response);
+    }
+
+    public void calculateChargeableForAir(AutoCalculatePackingResponse response, AutoCalculatePackingRequest request) {
+        if (request.getWeight() == null) {
+            return;
+        }
+
+        if (request.getWeightUnit().equals("KG")) {
+            var totalWeight = request.getWeight();
+            var totalVolume = (request.getVolume() != null && request.getVolumeUnit() == VOLUME_UNIT_M3) ? request.getVolume() : BigDecimal.ZERO;
+            response.setChargeableUnit("KG");
+            response.setChargeable(calculateChargeableWeight(response, request, totalVolume, totalWeight));
+        }
+    }
+
+    private BigDecimal calculateChargeableWeight(AutoCalculatePackingResponse response, AutoCalculatePackingRequest request, BigDecimal totalVolume, BigDecimal totalWeight) {
+        var chargeableWeight = totalWeight;
+        var factorForVW = BigDecimal.valueOf(166.667);
+        var totalVolumeInM3 = totalVolume;
+        var volumetricWeight = totalVolumeInM3.multiply(factorForVW);
+
+        if (chargeableWeight.doubleValue() < volumetricWeight.doubleValue()) {
+            chargeableWeight = volumetricWeight;
+        }
+        return chargeableWeight;
+    }
+
+    public void calculateChargeableForSEA_LCL(AutoCalculatePackingResponse response, AutoCalculatePackingRequest request) throws Exception {
+        var wunit = request.getWeightUnit();
+        var vunit = request.getVolumeUnit();
+        var vol = request.getVolume();
+        var weight = request.getWeight();
+        var vol_in_m3 = BigDecimal.valueOf(convertUnit(VOLUME, vol, vunit, VOLUME_UNIT_M3).doubleValue());
+        var weight_in_kg = BigDecimal.valueOf(convertUnit(MASS, weight, wunit, WEIGHT_UNIT_KG).doubleValue());
+        response.setChargeable(BigDecimal.valueOf(Math.max(weight_in_kg.doubleValue() / 1000.0, vol_in_m3.doubleValue())));
+        response.setChargeableUnit(VOLUME_UNIT_M3);
     }
 
     private double roundOffAirShipment(double charge) {

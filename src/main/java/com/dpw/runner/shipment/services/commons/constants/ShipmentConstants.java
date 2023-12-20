@@ -40,4 +40,5 @@ public class ShipmentConstants {
 
     public static final String DEFAULT_SHIPMENT_GENERATED_SUCCESSFULLY = "Default shipment generated successfully";
     public static final String MASTER_DATA_RETRIEVE_SUCCESS = "Master Data Retrieve Successfully";
- }
+    public static final String CALCULATION_SUCCESSFUL = "calculation successful";
+}

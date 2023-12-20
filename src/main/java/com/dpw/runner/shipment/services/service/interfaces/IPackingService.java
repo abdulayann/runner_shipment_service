@@ -20,6 +20,14 @@ public interface IPackingService extends ICommonService {
     ResponseEntity<?> V1PackingCreateAndUpdate(CommonRequestModel commonRequestModel, boolean checkForSync) throws Exception;
 
     ResponseEntity<?> V1BulkPackingCreateAndUpdate(CommonRequestModel commonRequestModel);
+
     ResponseEntity<?> listPacksToDetach(CommonRequestModel commonRequestModel) throws Exception;
+
     PackSummaryResponse calculatePackSummary(List<Packing> packingList, String transportMode, String containerCategory) throws Exception;
+
+    ResponseEntity<?> autoCalculateVolumetricWeight(CommonRequestModel commonRequestModel);
+
+    ResponseEntity<?> autoCalculateChargable(CommonRequestModel commonRequestModel) throws Exception;
+
+    ResponseEntity<?> autoCalculateVolume(CommonRequestModel commonRequestModel) throws Exception;
 }

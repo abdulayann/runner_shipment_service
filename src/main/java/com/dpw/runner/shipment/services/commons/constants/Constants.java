@@ -205,4 +205,32 @@ public class Constants {
     public static final String ROUTING_CFD = "CFD";
     public static final String SHIPMENT_TYPE_STD = "STD";
     public static final String SYSTEM = "System";
+
+    public static final String METER = "M";
+    public static final String ANGSTROM = "A";
+    public static final String ASTRONOMICAL_UNIT = "AU";
+    public static final String CENTILEAGUE = "CL";
+    public static final String CENTIMETER = "CM";
+    public static final String KILOMETER = "KM";
+    public static final String ELL = "Ell";
+    public static final String EXAMETER = "Em";
+    public static final String FATHOM = "Fathom";
+    public static final String FURLONG = "Furlong";
+    public static final String FOOT = "FT";
+    public static final String FOOT_FT = "Foot (ft)";
+    public static final String LI = "LI";
+    public static final String LIGHT_YEAR = "LU";
+    public static final String MICRO_METER = "UM";
+    public static final String MIL = "Mil";
+    public static final String MILLIMETER = "MM";
+    public static final String NANOMETER = "NM";
+    public static final String NAUTICAL_MILE = "MI";
+    public static final String MICROINCH = "MIU";
+    public static final String MILLIINCH = "MIS";
+    public static final String PARSEC = "Parsec";
+    public static final String PICA = "PI";
+    public static final String PICOMETER = "PM";
+    public static final String POINT = "PT";
+    public static final String ROD = "Rod";
+    public static final String YARD = "YD";
 }
