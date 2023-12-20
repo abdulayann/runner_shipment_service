@@ -36,9 +36,9 @@ import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-import org.apache.commons.lang3.StringUtils;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
@@ -487,13 +487,15 @@ public class PackingService implements IPackingService {
 
     public void calculateVolume(String widthUnit, String heightUnit, String lengthUnit, AutoCalculatePackingResponse pack, AutoCalculatePackingRequest request) throws Exception {
 
-        if (lengthUnit != heightUnit || heightUnit != widthUnit)
+        if (!lengthUnit.equals(heightUnit) || !heightUnit.equals(widthUnit))
             return;
 
-        String quantity = pack.getPacks();
-        Double len = pack.getLength().doubleValue();
-        Double width = pack.getWidth().doubleValue();
-        Double height = pack.getHeight().doubleValue();
+        String quantity = request.getPacks();
+        if (request.getLength() == null || request.getWidth() == null || request.getHeight() == null)
+            throw new RunnerException("Length or height or width is null");
+        Double len = request.getLength().doubleValue();
+        Double width = request.getWidth().doubleValue();
+        Double height = request.getHeight().doubleValue();
         String dimUnit = lengthUnit;
 
         Double vol = null;
