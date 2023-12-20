@@ -2996,7 +2996,7 @@ public class ConsolidationService implements IConsolidationService {
                         packsList.setShipmentMasterBill(shipmentDetails.getMasterBill());
                         packsList.setShipmentHouseBill(shipmentDetails.getHouseBill());
                         packsList.setShipmentNumber(shipmentDetails.getShipmentId());
-                        try { packsList.setShipmentStatus(ShipmentStatus.valueOf(shipmentDetails.getStatus().toString())); }
+                        try { packsList.setShipmentStatus(ShipmentStatus.fromValue(shipmentDetails.getStatus())); }
                         catch (Exception e) { }
                         try { Containers containers = getContainerFromMap(contMap, packing.getContainerId());
                             packsList.setContainerNumber(containers.getContainerNumber()); }
