@@ -1453,7 +1453,7 @@ public class ConsolidationService implements IConsolidationService {
                 }
                 Map<Long, ShipmentDetails> map = new HashMap<>();
 
-                if(contShipIds != null && contShipIds.size() == 1 && packings == null || packings.getContent() == null || packings.getContent().isEmpty()) {
+                if(contShipIds != null && contShipIds.size() == 1 && (packings == null || packings.getContent() == null || packings.getContent().isEmpty())) {
                     for(Long shipmentId: shipIds) {
                         if(shipmentId == contShipIds.get(0)) {
                             ShipmentDetails shipmentDetails = getShipmentFromMap(map, shipmentId);
