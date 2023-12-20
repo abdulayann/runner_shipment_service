@@ -1928,17 +1928,17 @@ public class ShipmentService implements IShipmentService {
             ShipmentContainerAssignRequest request = (ShipmentContainerAssignRequest) commonRequestModel.getData();
             ShipmentSettingsDetails shipmentSettingsDetails = shipmentSettingsDao.getSettingsByTenantIds(List.of(TenantContext.getCurrentTenant())).get(0);
             ShipmentDetails shipmentDetails = shipmentDao.findById(request.getShipmentId()).get();
-            if(shipmentSettingsDetails.getMultipleShipmentEnabled() && shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_SEA) || shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_ROA)) {
+            if(shipmentSettingsDetails.getMultipleShipmentEnabled() && (shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_SEA) || shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_ROA))) {
                 ListCommonRequest listCommonRequest = constructListCommonRequest("id", request.getContainerIds(), "IN");
                 Pair<Specification<Containers>, Pageable> pair = fetchData(listCommonRequest, Containers.class);
                 Page<Containers> containers = containerDao.findAll(pair.getLeft(), pair.getRight());
-                boolean isFCL = shipmentDetails.getShipmentType().equals(Constants.CARGO_TYPE_FCL) && shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_SEA) || shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_ROA);
+                boolean isFCL = shipmentDetails.getShipmentType().equals(Constants.CARGO_TYPE_FCL) && (shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_SEA) || shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_ROA));
                 if(containers != null && containers.getContent() != null) {
                     List<Containers> containersList = containers.getContent();
                     if(!containers.getContent().isEmpty()) {
                         for (Containers container : containersList) {
                             boolean isPart = container.getIsPart() != null && container.getIsPart().booleanValue();
-                            if(shipmentDetails.getShipmentType().equals(Constants.CARGO_TYPE_FCL) || isPart && container.getShipmentsList() != null && container.getShipmentsList().size() > 0) {
+                            if((shipmentDetails.getShipmentType().equals(Constants.CARGO_TYPE_FCL) || isPart) && container.getShipmentsList() != null && container.getShipmentsList().size() > 0) {
                                 String errorMsg = "This container is already linked to another shipment. Only part Container/Containers are allowed to attach";
                                 if(!isPart)
                                     errorMsg = "Mentioned container " + container.getContainerNumber() + " is already assigned to a Shipment - " + container.getShipmentsList().get(0).getShipmentId() + ". Please check and retry.";
