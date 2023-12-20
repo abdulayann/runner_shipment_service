@@ -1385,6 +1385,7 @@ public class ConsolidationService implements IConsolidationService {
             ConsolePacksListRequest request = (ConsolePacksListRequest) commonRequestModel.getData();
             ConsolePacksListResponse response = new ConsolePacksListResponse();
             response.setPacksList(new ArrayList<>());
+            int size = 1;
             response.setIsFCL(false);
             if(request.getIsAssign()) {
                 List<Long> shipIds = new ArrayList<>();
@@ -1417,6 +1418,7 @@ public class ConsolidationService implements IConsolidationService {
                             packsList.setShipmentType(shipmentDetails.getShipmentType());
                         }
                         response.getPacksList().add(packsList);
+                        size++;
                     }
                 }
                 for(Long shipmentId: shipIds) {
@@ -1426,12 +1428,13 @@ public class ConsolidationService implements IConsolidationService {
                             ConsolePacksListResponse.PacksList packsList = new ConsolePacksListResponse.PacksList();
                             packsList.setShipmentId(shipmentDetails.getId());
                             packsList.setShipmentNumber(shipmentDetails.getShipmentId());
-                            packsList.setId(-1L);
+                            packsList.setId(size * -1L);
                             packsList.setShipmentHouseBill(shipmentDetails.getHouseBill());
                             packsList.setShipmentMasterBill(shipmentDetails.getMasterBill());
                             packsList.setShipmentType(shipmentDetails.getShipmentType());
                             packsList.setShipmentClient(jsonHelper.convertValue(shipmentDetails.getClient(), PartiesResponse.class));
                             response.getPacksList().add(packsList);
+                            size++;
                         }
                     }
                 }
@@ -1453,6 +1456,22 @@ public class ConsolidationService implements IConsolidationService {
                 }
                 Map<Long, ShipmentDetails> map = new HashMap<>();
 
+                if(packings != null && packings.getContent() != null && packings.getContent().size() > 0) {
+                    for (Packing packing : packings) {
+                        ConsolePacksListResponse.PacksList packsList = jsonHelper.convertValue(packing, ConsolePacksListResponse.PacksList.class);
+                        ShipmentDetails shipmentDetails = getShipmentFromMap(map, packing.getShipmentId());
+                        if(shipmentDetails != null) {
+                            packsList.setShipmentClient(jsonHelper.convertValue(shipmentDetails.getClient(), PartiesResponse.class));
+                            packsList.setShipmentHouseBill(shipmentDetails.getHouseBill());
+                            packsList.setShipmentMasterBill(shipmentDetails.getMasterBill());
+                            packsList.setShipmentNumber(shipmentDetails.getShipmentId());
+                            packsList.setShipmentType(shipmentDetails.getShipmentType());
+                        }
+                        response.getPacksList().add(packsList);
+                        size++;
+                    }
+                }
+
                 if(contShipIds != null && contShipIds.size() == 1 && (packings == null || packings.getContent() == null || packings.getContent().isEmpty())) {
                     for(Long shipmentId: shipIds) {
                         if(shipmentId == contShipIds.get(0)) {
@@ -1462,12 +1481,13 @@ public class ConsolidationService implements IConsolidationService {
                                 ConsolePacksListResponse.PacksList packsList = new ConsolePacksListResponse.PacksList();
                                 packsList.setShipmentId(shipmentDetails.getId());
                                 packsList.setShipmentNumber(shipmentDetails.getShipmentId());
-                                packsList.setId(-1L);
+                                packsList.setId(size * -1L);
                                 packsList.setShipmentHouseBill(shipmentDetails.getHouseBill());
                                 packsList.setShipmentMasterBill(shipmentDetails.getMasterBill());
                                 packsList.setShipmentType(shipmentDetails.getShipmentType());
                                 packsList.setShipmentClient(jsonHelper.convertValue(shipmentDetails.getClient(), PartiesResponse.class));
                                 response.getPacksList().add(packsList);
+                                size++;
                             }
                         }
                     }
@@ -1550,8 +1570,8 @@ public class ConsolidationService implements IConsolidationService {
                         shipmentsIncluded.add(pack.getShipmentId());
                     if(pack.getShipmentType().equals(Constants.CARGO_TYPE_FCL)) {
                         isFCL = true;
-                        if( isFCL || isFCLAlready && contShipIds.size() + shipmentsIncluded.size() > 1 ) {
-                            throw new ValidationException("Mentioned container is already assigned or being assigned to a FCL Shipment - " + pack.getShipmentNumber() + "along with some other Shipment. Please check and retry!");
+                        if( (isFCL || isFCLAlready) && contShipIds.size() + shipmentsIncluded.size() > 1 ) {
+                            throw new ValidationException("Mentioned container is already assigned or being assigned to a FCL Shipment - " + pack.getShipmentNumber() + " along with some other Shipment. Please check and retry!");
                         }
                     }
                     if(pack.getWeight() != null && !IsStringNullOrEmpty(pack.getWeightUnit()) && !IsStringNullOrEmpty(container.getAchievedWeightUnit()))
@@ -1559,9 +1579,9 @@ public class ConsolidationService implements IConsolidationService {
                     if(pack.getVolume() != null && !IsStringNullOrEmpty(pack.getVolumeUnit()) && !IsStringNullOrEmpty(container.getAchievedVolumeUnit()))
                         volume = volume.add((BigDecimal) convertUnit(Constants.VOLUME, pack.getVolume(), pack.getVolumeUnit(), container.getAchievedVolumeUnit()));
                 }
-                if( isFCL || isFCLAlready && contShipIds.size() + shipmentsIncluded.size() > 1 ) {
+                if( (isFCL || isFCLAlready) && contShipIds.size() + shipmentsIncluded.size() > 1 ) {
                     if(container.getShipmentsList().size() > 0 && container.getShipmentsList().get(0).getShipmentType().equals(Constants.CARGO_TYPE_FCL)) {
-                        throw new ValidationException("Mentioned container is already assigned or being assigned to a FCL Shipment - " + container.getShipmentsList().get(0).getShipmentId() + "along with some other Shipment. Please check and retry!");
+                        throw new ValidationException("Mentioned container is already assigned or being assigned to a FCL Shipment - " + container.getShipmentsList().get(0).getShipmentId() + " along with some other Shipment. Please check and retry!");
                     }
                 }
                 if(isFCL || isFCLAlready) {
