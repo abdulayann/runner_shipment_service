@@ -348,6 +348,8 @@ public class DbAccessHelper {
                     throw new RuntimeException("Criteria not supported yet");
             case "ISNULL":
                 return criteriaBuilder.isNull(path.get(fieldName));
+            case "ISNOTNULL":
+                return criteriaBuilder.isNotNull(path.get(fieldName));
             default:
                 throw new RuntimeException("Operation not supported yet");
         }

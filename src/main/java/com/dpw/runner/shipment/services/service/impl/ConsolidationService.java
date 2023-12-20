@@ -28,6 +28,7 @@ import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.entity.enums.ProductProcessTypes;
+import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCommodityType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
@@ -1718,6 +1719,20 @@ public class ConsolidationService implements IConsolidationService {
         return shipmentDetails;
     }
 
+    private Containers getContainerFromMap(Map<Long, Containers> map, Long id) {
+        Containers containers = null;
+        if(map.containsKey(id))
+            containers = map.get(id);
+        else {
+            Optional<Containers> containers1 = containerDao.findById(id);
+            if(containers1 != null && containers1.isPresent()) {
+                containers = containers1.get();
+                map.put(containers.getId(), containers);
+            }
+        }
+        return containers;
+    }
+
     public ResponseEntity<?> completeRetrieveById(CommonRequestModel commonRequestModel) throws ExecutionException, InterruptedException {
         try {
             // create common list request for consolidation id
@@ -2949,6 +2964,61 @@ public class ConsolidationService implements IConsolidationService {
             ConsolidationDetailsResponse consolidationDetailsResponse = jsonHelper.convertValue(consolidationDetails, ConsolidationDetailsResponse.class);
             calculateDescOfGoodsAndHandlingInfo(consolidationDetails, consolidationDetailsResponse, true);
             return ResponseHelper.buildSuccessResponse(consolidationDetailsResponse.getContainersList());
+        }
+        catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_DATA_RETRIEVAL_FAILURE;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
+    @Override
+    public ResponseEntity<?> getContainerPackSummary(CommonRequestModel commonRequestModel) {
+        String responseMsg;
+        try {
+            Long id = commonRequestModel.getId();
+            ContainerPackSummaryDto response = new ContainerPackSummaryDto();
+            response.setPacksList(new ArrayList<>());
+            List<ConsoleShipmentMapping> consoleShipmentMappingList = consoleShipmentMappingDao.findByConsolidationId(id);
+            if(consoleShipmentMappingList != null && consoleShipmentMappingList.size() > 0) {
+                ListCommonRequest listCommonRequest = andCriteria("shipmentId", consoleShipmentMappingList.stream().map(e -> e.getShipmentId()).collect(Collectors.toList()), "IN", null);
+                andCriteria("containerId", "", "ISNOTNULL", listCommonRequest);
+                Pair<Specification<Packing>, Pageable> pair = fetchData(listCommonRequest, Packing.class);
+                Page<Packing> packings = packingDao.findAll(pair.getLeft(), pair.getRight());
+                Map<Long, ShipmentDetails> shipMap = new HashMap<>();
+                Map<Long, Containers> contMap = new HashMap<>();
+                if(packings != null && packings.getContent() != null && !packings.getContent().isEmpty()) {
+                    for (Packing packing : packings.getContent()) {
+                        ContainerPackSummaryDto.PacksList packsList = jsonHelper.convertValue(packing, ContainerPackSummaryDto.PacksList.class);
+                        ShipmentDetails shipmentDetails = getShipmentFromMap(shipMap, packing.getShipmentId());
+                        packsList.setShipmentClient(jsonHelper.convertValue(shipmentDetails.getClient(), PartiesResponse.class));
+                        packsList.setShipmentMasterBill(shipmentDetails.getMasterBill());
+                        packsList.setShipmentHouseBill(shipmentDetails.getHouseBill());
+                        packsList.setShipmentNumber(shipmentDetails.getShipmentId());
+                        try { packsList.setShipmentStatus(ShipmentStatus.fromValue(shipmentDetails.getStatus())); }
+                        catch (Exception e) { }
+                        try { Containers containers = getContainerFromMap(contMap, packing.getContainerId());
+                            packsList.setContainerNumber(containers.getContainerNumber()); }
+                        catch (Exception e) { }
+                        response.getPacksList().add(packsList);
+                    }
+                }
+            }
+            try {
+                Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
+                List<MasterListRequest> listRequests = new ArrayList<>();
+                if(!Objects.isNull(response.getPacksList()))
+                    response.getPacksList().forEach(r -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(r, ContainerPackSummaryDto.PacksList.class, fieldNameKeyMap, ContainerPackSummaryDto.PacksList.class.getSimpleName() )));
+                MasterListRequestV2 masterListRequestV2 = new MasterListRequestV2();
+                masterListRequestV2.setMasterListRequests(listRequests);
+                masterListRequestV2.setIncludeCols(Arrays.asList("ItemType", "ItemValue", "ItemDescription", "ValuenDesc", "Cascade"));
+                Map<String, EntityTransferMasterLists> keyMasterDataMap = masterDataUtils.fetchInBulkMasterList(masterListRequestV2);
+                masterDataUtils.pushToCache(keyMasterDataMap, CacheConstants.MASTER_LIST);
+                if(!Objects.isNull(response.getPacksList()))
+                    response.getPacksList().forEach(r -> r.setMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(ContainerPackSummaryDto.PacksList.class.getSimpleName()), CacheConstants.MASTER_LIST)));
+            } catch (Exception e) { }
+            return ResponseHelper.buildSuccessResponse(response);
         }
         catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()

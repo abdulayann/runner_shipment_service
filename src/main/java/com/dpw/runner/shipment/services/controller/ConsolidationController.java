@@ -369,4 +369,18 @@ public class ConsolidationController {
             return ResponseHelper.buildFailedResponse(e.getMessage());
         }
     }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ConsolidationConstants.LIST_SUCCESSFUL)})
+    @GetMapping(ApiConstants.GET_CONT_PACK_SUMMARY)
+    public ResponseEntity<RunnerResponse<ContainerPackSummaryDto>> getContainerPackSummary(@RequestParam Long consolidationId) {
+        String responseMsg;
+        try {
+            return (ResponseEntity<RunnerResponse<ContainerPackSummaryDto>>) consolidationService.getContainerPackSummary(CommonRequestModel.buildRequest(consolidationId));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : "Error retrieving master data";
+            log.error(responseMsg, e);
+            return (ResponseEntity<RunnerResponse<ContainerPackSummaryDto>>) ResponseHelper.buildFailedResponse(e.getMessage());
+        }
+    }
 }
