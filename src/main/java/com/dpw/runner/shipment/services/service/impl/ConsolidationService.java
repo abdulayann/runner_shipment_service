@@ -3001,23 +3001,23 @@ public class ConsolidationService implements IConsolidationService {
                         try { Containers containers = getContainerFromMap(contMap, packing.getContainerId());
                             packsList.setContainerNumber(containers.getContainerNumber()); }
                         catch (Exception e) { }
-                        try {
-                            Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
-                            List<MasterListRequest> listRequests = new ArrayList<>();
-                            if(!Objects.isNull(response.getPacksList()))
-                                response.getPacksList().forEach(r -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(r, ContainerPackSummaryDto.PacksList.class, fieldNameKeyMap, ContainerPackSummaryDto.PacksList.class.getSimpleName() )));
-                            MasterListRequestV2 masterListRequestV2 = new MasterListRequestV2();
-                            masterListRequestV2.setMasterListRequests(listRequests);
-                            masterListRequestV2.setIncludeCols(Arrays.asList("ItemType", "ItemValue", "ItemDescription", "ValuenDesc", "Cascade"));
-                            Map<String, EntityTransferMasterLists> keyMasterDataMap = masterDataUtils.fetchInBulkMasterList(masterListRequestV2);
-                            masterDataUtils.pushToCache(keyMasterDataMap, CacheConstants.MASTER_LIST);
-                            if(!Objects.isNull(response.getPacksList()))
-                                response.getPacksList().forEach(r -> r.setMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(ContainerPackSummaryDto.PacksList.class.getSimpleName()), CacheConstants.MASTER_LIST)));
-                        } catch (Exception e) { }
                         response.getPacksList().add(packsList);
                     }
                 }
             }
+            try {
+                Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
+                List<MasterListRequest> listRequests = new ArrayList<>();
+                if(!Objects.isNull(response.getPacksList()))
+                    response.getPacksList().forEach(r -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(r, ContainerPackSummaryDto.PacksList.class, fieldNameKeyMap, ContainerPackSummaryDto.PacksList.class.getSimpleName() )));
+                MasterListRequestV2 masterListRequestV2 = new MasterListRequestV2();
+                masterListRequestV2.setMasterListRequests(listRequests);
+                masterListRequestV2.setIncludeCols(Arrays.asList("ItemType", "ItemValue", "ItemDescription", "ValuenDesc", "Cascade"));
+                Map<String, EntityTransferMasterLists> keyMasterDataMap = masterDataUtils.fetchInBulkMasterList(masterListRequestV2);
+                masterDataUtils.pushToCache(keyMasterDataMap, CacheConstants.MASTER_LIST);
+                if(!Objects.isNull(response.getPacksList()))
+                    response.getPacksList().forEach(r -> r.setMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(ContainerPackSummaryDto.PacksList.class.getSimpleName()), CacheConstants.MASTER_LIST)));
+            } catch (Exception e) { }
             return ResponseHelper.buildSuccessResponse(response);
         }
         catch (Exception e) {
