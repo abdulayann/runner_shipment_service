@@ -74,11 +74,16 @@ public class ContainersSync implements IContainersSync {
             .build();
 
     @Override
-    @Async
     public ResponseEntity<?> sync(List<Long> containerIds) {
         List<Containers> containers = getContainersFromIds(containerIds);
         List<ContainerRequestV2> containerRequestV2 = convertEntityToSyncDto(containers);
         String json = jsonHelper.convertToJson(V1DataSyncRequest.builder().entity(containerRequestV2).module(SyncingConstants.CONTAINERS).build());
+        callSync(json, containerIds);
+        return ResponseHelper.buildSuccessResponse(containerRequestV2);
+    }
+
+    @Async
+    private void callSync(String json, List<Long> containerIds) {
         retryTemplate.execute(ctx -> {
             log.info("Current retry : {}", ctx.getRetryCount());
             if (ctx.getLastThrowable() != null) {
@@ -96,8 +101,6 @@ public class ContainersSync implements IContainersSync {
             }
             return ResponseHelper.buildSuccessResponse(response_);
         });
-
-        return ResponseHelper.buildSuccessResponse(containerRequestV2);
     }
 
     public List<Containers> getContainersFromIds(List<Long> containerIds) {

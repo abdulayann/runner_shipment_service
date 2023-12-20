@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.dto.CalculationAPIsDto;
 
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
+import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
 import lombok.Data;
 
 import java.math.BigDecimal;
@@ -29,7 +30,7 @@ public class ContainerShipmentADInConsoleRequest implements IRunnerRequest {
         private String commodity;
         private String shipmentHouseBill;
         private String shipmentMasterBill;
-        private String shipmentClientName;
+        private PartiesRequest shipmentClientName;
         private String shipmentNumber;
         private String shipmentType;
     }

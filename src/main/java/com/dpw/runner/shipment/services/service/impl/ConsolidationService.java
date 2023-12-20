@@ -1410,7 +1410,7 @@ public class ConsolidationService implements IConsolidationService {
                         ConsolePacksListResponse.PacksList packsList = jsonHelper.convertValue(packing, ConsolePacksListResponse.PacksList.class);
                         ShipmentDetails shipmentDetails = getShipmentFromMap(map, packing.getShipmentId());
                         if(shipmentDetails != null) {
-                            packsList.setShipmentClient(shipmentDetails.getClient());
+                            packsList.setShipmentClient(jsonHelper.convertValue(shipmentDetails.getClient(), PartiesResponse.class));
                             packsList.setShipmentHouseBill(shipmentDetails.getHouseBill());
                             packsList.setShipmentMasterBill(shipmentDetails.getMasterBill());
                             packsList.setShipmentNumber(shipmentDetails.getShipmentId());
@@ -1430,7 +1430,7 @@ public class ConsolidationService implements IConsolidationService {
                             packsList.setShipmentHouseBill(shipmentDetails.getHouseBill());
                             packsList.setShipmentMasterBill(shipmentDetails.getMasterBill());
                             packsList.setShipmentType(shipmentDetails.getShipmentType());
-                            packsList.setShipmentClient(shipmentDetails.getClient());
+                            packsList.setShipmentClient(jsonHelper.convertValue(shipmentDetails.getClient(), PartiesResponse.class));
                             response.getPacksList().add(packsList);
                         }
                     }
@@ -1466,7 +1466,7 @@ public class ConsolidationService implements IConsolidationService {
                                 packsList.setShipmentHouseBill(shipmentDetails.getHouseBill());
                                 packsList.setShipmentMasterBill(shipmentDetails.getMasterBill());
                                 packsList.setShipmentType(shipmentDetails.getShipmentType());
-                                packsList.setShipmentClient(shipmentDetails.getClient());
+                                packsList.setShipmentClient(jsonHelper.convertValue(shipmentDetails.getClient(), PartiesResponse.class));
                                 response.getPacksList().add(packsList);
                             }
                         }
