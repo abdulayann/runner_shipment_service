@@ -28,6 +28,7 @@ import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.IAwbService;
+import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
 import com.dpw.runner.shipment.services.service.interfaces.ISyncQueueService;
 import com.dpw.runner.shipment.services.syncing.Entity.AwbRequestV2;
 import com.dpw.runner.shipment.services.syncing.constants.SyncingConstants;
@@ -104,6 +105,9 @@ public class AwbService implements IAwbService {
 
     @Autowired
     IAwbSync awbSync;
+
+    @Autowired
+    IShipmentService shipmentService;
 
     private Integer totalPacks = 0;
     private List<String> attachedShipmentDescriptions = new ArrayList<>();
@@ -711,6 +715,10 @@ public class AwbService implements IAwbService {
 
         // fetch sehipment info
         ShipmentDetails shipmentDetails = shipmentDao.findById(request.getShipmentId()).get();
+        if(shipmentDetails.getHouseBill() == null) {
+            shipmentDetails.setHouseBill(shipmentService.generateCustomHouseBL());
+            shipmentDao.save(shipmentDetails, false);
+        }
 
         // fetch all packings
         List<Packing> packings = shipmentDetails.getPackingList();

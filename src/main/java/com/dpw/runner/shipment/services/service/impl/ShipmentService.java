@@ -614,6 +614,7 @@ public class ShipmentService implements IShipmentService {
                 shipmentDetails.setContainersList(updatedContainers);
             }
 
+            beforeSave(shipmentDetails);
             shipmentDetails = getShipment(shipmentDetails);
             Long shipmentId = shipmentDetails.getId();
 
@@ -1430,6 +1431,7 @@ public class ShipmentService implements IShipmentService {
             String oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
             updateMasterBill(entity, oldEntity.get().getMasterBill());
             updateLinkedShipmentData(entity);
+            beforeSave(entity);
             entity = shipmentDao.update(entity, false);
             try {
                 // audit logs
@@ -1532,6 +1534,12 @@ public class ShipmentService implements IShipmentService {
                     : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
             throw new RuntimeException(e.getMessage());
+        }
+    }
+
+    private void beforeSave(ShipmentDetails shipmentDetails) {
+        if(shipmentDetails.getJobType().equals(Constants.SHIPMENT_TYPE_DRT)){
+            shipmentDetails.setHouseBill(shipmentDetails.getMasterBill());
         }
     }
 
@@ -2140,6 +2148,7 @@ public class ShipmentService implements IShipmentService {
                 updatedCarrierDetails = carrierDao.updateEntityFromShipmentConsole(convertToClass(carrierDetailRequest, CarrierDetails.class));
                 entity.setCarrierDetails(updatedCarrierDetails);
             }
+            beforeSave(entity);
             entity = shipmentDao.update(entity, false);
 
             entity.setContainersList(updatedContainers);
@@ -3090,7 +3099,7 @@ public class ShipmentService implements IShipmentService {
         return ResponseHelper.buildSuccessResponse(shipment);
     }
 
-    private String generateCustomHouseBL() {
+    public String generateCustomHouseBL() {
         String res = null;
         List<ShipmentSettingsDetails> shipmentSettingsDetailsList = shipmentSettingsDao.getSettingsByTenantIds(List.of(TenantContext.getCurrentTenant()));
         ShipmentSettingsDetails tenantSetting = null;

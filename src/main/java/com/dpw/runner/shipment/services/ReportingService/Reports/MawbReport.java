@@ -26,13 +26,18 @@ public class MawbReport extends IReport{
         HawbModel hawbModel = new HawbModel();
         hawbModel.usersDto = UserContext.getUser();
         hawbModel.shipmentDetails = getShipment(id);
+        String entityType = "MAWB";
         if(hawbModel.shipmentDetails != null && hawbModel.shipmentDetails.getConsolidationList() != null && !hawbModel.shipmentDetails.getConsolidationList().isEmpty())
         {
             hawbModel.setConsolidationDetails(hawbModel.shipmentDetails.getConsolidationList().get(0));
             hawbModel.setMawb(getMawb(hawbModel.getConsolidationDetails().getId()));
+            hawbModel.awb = hawbModel.getMawb();
         }
-        hawbModel.awb = hawbModel.getMawb();
-        hawbModel.setEntityType("MAWB");
+        if(hawbModel.getMawb() == null){
+            hawbModel.awb = getHawb(id);
+            entityType = "DMAWB";
+        }
+        hawbModel.setEntityType(entityType);
         return hawbModel;
     }
 
