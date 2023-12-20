@@ -567,7 +567,8 @@ public class PackingService implements IPackingService {
                     }
                     response.setChargeable(charge);
                 }
-                if (transportMode.equals(Constants.TRANSPORT_MODE_SEA) && request.getContainerCategory().equals(Constants.SHIPMENT_TYPE_LCL)) {
+                if (transportMode.equals(Constants.TRANSPORT_MODE_SEA) &&
+                        (request.getContainerCategory() != null && request.getContainerCategory().equals(Constants.SHIPMENT_TYPE_LCL))) {
                     volume = new BigDecimal(convertUnit(VOLUME, volume, volumeUnit, Constants.VOLUME_UNIT_M3).toString());
                     weight = new BigDecimal(convertUnit(Constants.MASS, weight, weightUnit, Constants.WEIGHT_UNIT_KG).toString());
                     response.setChargeable(weight.divide(new BigDecimal("1000")).max(volume));
