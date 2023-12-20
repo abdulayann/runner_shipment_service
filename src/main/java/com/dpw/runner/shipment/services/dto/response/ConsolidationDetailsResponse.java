@@ -126,4 +126,5 @@ public class ConsolidationDetailsResponse implements IRunnerResponse {
     private ContainerSummaryResponse containerSummary;
     private PackSummaryResponse packSummary;
     private String modeOfBooking;
+    private Boolean autoUpdateGoodsDesc;
 }
