@@ -2,7 +2,7 @@ package com.dpw.runner.shipment.services.dto.CalculationAPIsDto;
 
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.entity.Parties;
+import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.utils.DedicatedMasterData;
 import com.dpw.runner.shipment.services.utils.MasterData;
@@ -36,7 +36,7 @@ public class ConsolePacksListResponse implements IRunnerResponse {
         private String commodity;
         private String shipmentHouseBill;
         private String shipmentMasterBill;
-        private Parties shipmentClient;
+        private PartiesResponse shipmentClient;
         private String shipmentNumber;
         private String shipmentType;
         private Map<String, String> masterData;

@@ -32,6 +32,7 @@ import com.dpw.runner.shipment.services.syncing.Entity.ContainerRequestV2;
 import com.dpw.runner.shipment.services.syncing.constants.SyncingConstants;
 import com.dpw.runner.shipment.services.syncing.impl.SyncEntityConversionService;
 import com.dpw.runner.shipment.services.syncing.interfaces.IContainerSync;
+import com.dpw.runner.shipment.services.syncing.interfaces.IContainersSync;
 import com.dpw.runner.shipment.services.utils.CSVParsingUtil;
 import com.dpw.runner.shipment.services.utils.ExcelUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
@@ -129,6 +130,9 @@ public class ContainerService implements IContainerService {
 
     @Autowired
     private SyncEntityConversionService syncEntityConversionService;
+
+    @Autowired
+    IContainersSync containersSync;
 
     @Transactional
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
@@ -651,49 +655,39 @@ public class ContainerService implements IContainerService {
                 changeAchievedUnit(container);
                 ShipmentDetails shipmentDetails = shipmentDao.findById(request.getShipmentId()).get();
                 if(request.getPacksId() != null && request.getPacksId().size() > 0) {
-                    ListCommonRequest listCommonRequest = constructListCommonRequest("id", request.getPacksId(), "IN");
+                    ListCommonRequest listCommonRequest = constructListCommonRequest("shipmentId", request.getShipmentId(), "=");
                     Pair<Specification<Packing>, Pageable> pair = fetchData(listCommonRequest, Packing.class);
-                    Page<Packing> packings = packingDao.findAll(pair.getLeft(), pair.getRight());
-                    if(!packings.isEmpty() && packings.get().findAny().isPresent())
+                    Page<Packing> allPackings = packingDao.findAll(pair.getLeft(), pair.getRight());
+                    if(!allPackings.isEmpty() && allPackings.get().findAny().isPresent())
                     {
-                        List<Packing> packingList = packings.stream().toList();
+                        List<Packing> packingList = allPackings.stream().toList();
+                        List<Packing> detachPacks = new ArrayList<>();
+                        boolean removeAllPacks = true;
                         for(Packing packing: packingList) {
-                            if(!shipmentDetails.getShipmentType().equals(Constants.CARGO_TYPE_FCL)) {
-                                if(packing.getWeight() != null && !packing.getWeightUnit().isEmpty() && !IsStringNullOrEmpty(container.getAchievedWeightUnit())) {
-                                    BigDecimal val = new BigDecimal(convertUnit(Constants.MASS, packing.getWeight(), packing.getWeightUnit(), container.getAchievedWeightUnit()).toString());
-                                    container.setAchievedWeight(container.getAchievedWeight().subtract(val));
-                                }
-                                if(packing.getVolume() != null && !packing.getVolumeUnit().isEmpty() && !IsStringNullOrEmpty(container.getAchievedVolumeUnit())) {
-                                    BigDecimal val = new BigDecimal(convertUnit(Constants.VOLUME, packing.getVolume(), packing.getVolumeUnit(), container.getAchievedVolumeUnit()).toString());
-                                    container.setAchievedVolume(container.getAchievedVolume().subtract(val));
-                                }
-                                container = calculateUtilization(container);
-                            }
-                        }
-                        if(shipmentDetails.getShipmentType().equals(Constants.CARGO_TYPE_FCL)) {
-                            listCommonRequest = constructListCommonRequest("shipmentId", shipmentDetails.getId(), "=");
-                            pair = fetchData(listCommonRequest, Packing.class);
-                            Page<Packing> allPackings = packingDao.findAll(pair.getLeft(), pair.getRight());
-                            boolean removeAllPacks = true;
-                            if(allPackings != null) {
-                                allPackings.getContent();
-                                if (allPackings.getContent().size() > 0) {
-                                    for (Packing packing : allPackings.getContent()) {
-                                        if (!request.getPacksId().contains(packing.getId()) && Objects.equals(packing.getContainerId(), container.getId())) {
-                                            removeAllPacks = false;
-                                            break;
-                                        }
+                            if(request.getPacksId().contains(packing.getId())) {
+                                detachPacks.add(packing);
+                                if(!shipmentDetails.getShipmentType().equals(Constants.CARGO_TYPE_FCL)) {
+                                    if(packing.getWeight() != null && !packing.getWeightUnit().isEmpty() && !IsStringNullOrEmpty(container.getAchievedWeightUnit())) {
+                                        BigDecimal val = new BigDecimal(convertUnit(Constants.MASS, packing.getWeight(), packing.getWeightUnit(), container.getAchievedWeightUnit()).toString());
+                                        container.setAchievedWeight(container.getAchievedWeight().subtract(val));
                                     }
+                                    if(packing.getVolume() != null && !packing.getVolumeUnit().isEmpty() && !IsStringNullOrEmpty(container.getAchievedVolumeUnit())) {
+                                        BigDecimal val = new BigDecimal(convertUnit(Constants.VOLUME, packing.getVolume(), packing.getVolumeUnit(), container.getAchievedVolumeUnit()).toString());
+                                        container.setAchievedVolume(container.getAchievedVolume().subtract(val));
+                                    }
+                                    container = calculateUtilization(container);
                                 }
                             }
-                            if(removeAllPacks) {
-                                container.setAchievedWeight(BigDecimal.ZERO);
-                                container.setAchievedVolume(BigDecimal.ZERO);
-                                container.setWeightUtilization("0");
-                                container.setVolumeUtilization("0");
-                            }
+                            else if(packing.getContainerId() != null && packing.getContainerId().equals(request.getContainerId()))
+                                removeAllPacks = false;
                         }
-                        return detachContainer(packingList, container, request.getShipmentId());
+                        if(removeAllPacks && shipmentDetails.getShipmentType().equals(Constants.CARGO_TYPE_FCL)) {
+                            container.setAchievedWeight(BigDecimal.ZERO);
+                            container.setAchievedVolume(BigDecimal.ZERO);
+                            container.setWeightUtilization("0");
+                            container.setVolumeUtilization("0");
+                        }
+                        return detachContainer(detachPacks, container, request.getShipmentId(), removeAllPacks);
                     }
                 }
                 else {
@@ -703,7 +697,7 @@ public class ContainerService implements IContainerService {
                         container.setWeightUtilization("0");
                         container.setVolumeUtilization("0");
                     }
-                    return detachContainer(null, container, request.getShipmentId());
+                    return detachContainer(null, container, request.getShipmentId(), true);
                 }
             }
             responseMsg = "Data not available for provided request";
@@ -716,11 +710,20 @@ public class ContainerService implements IContainerService {
         }
     }
 
-    public ResponseEntity<?> detachContainer(List<Packing> packingList, Containers container, Long shipmentId) {
+    public ResponseEntity<?> detachContainer(List<Packing> packingList, Containers container, Long shipmentId, boolean removeAllPacks) {
         String responseMsg;
         try {
-            shipmentsContainersMappingDao.detachShipments(container.getId(), List.of(shipmentId));
             Containers containers = containerDao.save(jsonHelper.convertValue(container, Containers.class));
+            if(removeAllPacks)
+                shipmentsContainersMappingDao.detachShipments(container.getId(), List.of(shipmentId));
+            else {
+                try {
+                    containersSync.sync(List.of(containers.getId()));
+                }
+                catch (Exception e) {
+                    log.error("Error syncing containers");
+                }
+            }
             if(packingList != null && packingList.size() > 0) {
                 for (Packing packing: packingList) {
                     packing.setContainerId(null);

@@ -1410,7 +1410,7 @@ public class ConsolidationService implements IConsolidationService {
                         ConsolePacksListResponse.PacksList packsList = jsonHelper.convertValue(packing, ConsolePacksListResponse.PacksList.class);
                         ShipmentDetails shipmentDetails = getShipmentFromMap(map, packing.getShipmentId());
                         if(shipmentDetails != null) {
-                            packsList.setShipmentClient(shipmentDetails.getClient());
+                            packsList.setShipmentClient(jsonHelper.convertValue(shipmentDetails.getClient(), PartiesResponse.class));
                             packsList.setShipmentHouseBill(shipmentDetails.getHouseBill());
                             packsList.setShipmentMasterBill(shipmentDetails.getMasterBill());
                             packsList.setShipmentNumber(shipmentDetails.getShipmentId());
@@ -1430,7 +1430,7 @@ public class ConsolidationService implements IConsolidationService {
                             packsList.setShipmentHouseBill(shipmentDetails.getHouseBill());
                             packsList.setShipmentMasterBill(shipmentDetails.getMasterBill());
                             packsList.setShipmentType(shipmentDetails.getShipmentType());
-                            packsList.setShipmentClient(shipmentDetails.getClient());
+                            packsList.setShipmentClient(jsonHelper.convertValue(shipmentDetails.getClient(), PartiesResponse.class));
                             response.getPacksList().add(packsList);
                         }
                     }
@@ -1466,7 +1466,7 @@ public class ConsolidationService implements IConsolidationService {
                                 packsList.setShipmentHouseBill(shipmentDetails.getHouseBill());
                                 packsList.setShipmentMasterBill(shipmentDetails.getMasterBill());
                                 packsList.setShipmentType(shipmentDetails.getShipmentType());
-                                packsList.setShipmentClient(shipmentDetails.getClient());
+                                packsList.setShipmentClient(jsonHelper.convertValue(shipmentDetails.getClient(), PartiesResponse.class));
                                 response.getPacksList().add(packsList);
                             }
                         }
@@ -1599,7 +1599,7 @@ public class ConsolidationService implements IConsolidationService {
     }
 
     private Containers attachContainer(ContainerShipmentADInConsoleRequest request, Set<Long> newShipmentsIncluded, Containers container, BigDecimal weight, BigDecimal volume) {
-        ListCommonRequest listCommonRequest = constructListCommonRequest("id", request.getPacksList().stream().filter(e -> e.getId() != null && e.getId() > 0).map(e -> e.getId()), "IN");
+        ListCommonRequest listCommonRequest = constructListCommonRequest("id", request.getPacksList().stream().filter(e -> e.getId() != null && e.getId() > 0).map(e -> e.getId()).collect(Collectors.toList()), "IN");
         Pair<Specification<Packing>, Pageable> pair = fetchData(listCommonRequest, Packing.class);
         Page<Packing> packings = packingDao.findAll(pair.getLeft(), pair.getRight());
         if(packings != null && packings.getContent() != null && packings.getContent().size() > 0) {
