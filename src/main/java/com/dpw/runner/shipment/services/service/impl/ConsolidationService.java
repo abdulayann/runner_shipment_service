@@ -420,6 +420,7 @@ public class ConsolidationService implements IConsolidationService {
         try {
             consolidationDetails.setShipmentsList(null);
 
+            beforeSave(consolidationDetails);
             getConsolidation(consolidationDetails);
 
             List<ShipmentSettingsDetails> shipmentSettingsDetailsList = shipmentSettingsDao.getSettingsByTenantIds(List.of(TenantContext.getCurrentTenant()));
@@ -745,6 +746,7 @@ public class ConsolidationService implements IConsolidationService {
         }
         if (entity.getContainersList() == null)
             entity.setContainersList(oldEntity.get().getContainersList());
+        beforeSave(entity);
         entity = consolidationDetailsDao.update(entity, false);
         try {
             consolidationSync.sync(entity);
@@ -841,6 +843,7 @@ public class ConsolidationService implements IConsolidationService {
             ConsolidationDetails entity = oldEntity.get();
             long id = oldEntity.get().getId();
             consolidationDetailsMapper.update(consolidationDetailsRequest, entity);
+            beforeSave(entity);
             entity = consolidationDetailsDao.update(entity, false);
 
             List<PackingRequest> packingRequestList = consolidationDetailsRequest.getPackingList();
@@ -930,6 +933,7 @@ public class ConsolidationService implements IConsolidationService {
 
             ConsolidationDetails entity = jsonHelper.convertValue(consolidationDetailsRequest, ConsolidationDetails.class);
             String oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
+            beforeSave(entity);
             entity = consolidationDetailsDao.update(entity, false);
             try {
                 // audit logs
@@ -2660,6 +2664,14 @@ public class ConsolidationService implements IConsolidationService {
             workbook.write(outputStream);
         }
 
+    }
+
+    private void beforeSave(ConsolidationDetails consolidationDetails) {
+        log.info("Executing consolidation before save");
+        // assign consolidation bol to mawb field as well
+        if (consolidationDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)) {
+            consolidationDetails.setMawb(consolidationDetails.getBol());
+        }
     }
 
     @Override
