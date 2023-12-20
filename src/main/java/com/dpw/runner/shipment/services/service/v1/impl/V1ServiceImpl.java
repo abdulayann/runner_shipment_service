@@ -15,6 +15,7 @@ import com.dpw.runner.shipment.services.exception.response.V1ErrorResponse;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
+import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.utils.V1AuthHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,8 +33,6 @@ import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.UUID;
-
-import static com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil.createBookingRequestForV1;
 
 @Service
 //@EnableAsync
@@ -294,11 +293,14 @@ public class V1ServiceImpl implements IV1Service {
         this.restTemplate = restTemplate;
     }
 
+    @Autowired
+    private V1ServiceUtil v1ServiceUtil;
+
     @Override
     public ResponseEntity<?> createBooking(CustomerBooking customerBooking, boolean isShipmentEnabled, boolean isBillingEnabled, UUID shipmentGuid) {
         try {
             long time = System.currentTimeMillis();
-            var request = createBookingRequestForV1(customerBooking, isShipmentEnabled, isBillingEnabled, shipmentGuid);
+            var request = v1ServiceUtil.createBookingRequestForV1(customerBooking, isShipmentEnabled, isBillingEnabled, shipmentGuid);
             HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
             log.info("Payload sent for event: {} with request payload: {}", IntegrationType.V1_SHIPMENT_CREATION, jsonHelper.convertToJson(request));
             return this.restTemplate.postForEntity(this.CUSTOMER_BOOKING_URL, entity, V1ShipmentCreationResponse.class, new Object[0]);

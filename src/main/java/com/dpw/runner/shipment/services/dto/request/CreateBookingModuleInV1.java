@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -70,6 +71,7 @@ public class CreateBookingModuleInV1 {
         private List<LooseCargo> Loosecargos;
         private List<OrgDetail> OrgDetails;
         private List<BillCharge> BillCharges;
+        private List<Notes> CustomerBookingNoteList;
 
         @Data
         @Builder
@@ -119,6 +121,19 @@ public class CreateBookingModuleInV1 {
             private String CreditorAddressCode;
             private String PerMeasurementBasis;
 
+        }
+
+        @Data
+        @Builder
+        @NoArgsConstructor
+        @AllArgsConstructor
+        public static class Notes{
+            private String Text;
+            private String InsertUserDisplayName;
+            private Boolean IsPublic;
+            private String Label;
+            private String AssignedTo;
+            private LocalDateTime InsertDate;
         }
 
         @Data
