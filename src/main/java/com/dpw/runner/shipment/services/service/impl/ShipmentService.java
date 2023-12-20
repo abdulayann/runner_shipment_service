@@ -2505,6 +2505,7 @@ public class ShipmentService implements IShipmentService {
                 oldContainers = oldEntity.get().getContainersList();
                 isCreate = false;
             }
+            shipmentRequest.setConsolidationList(null);
             ShipmentDetails entity = objectMapper.convertValue(shipmentRequest, ShipmentDetails.class);
             entity.setId(id);
             List<Containers> updatedContainers = null;
