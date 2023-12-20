@@ -322,22 +322,27 @@ public class DbAccessHelper {
             case "IN":
                 if (dataType.isAssignableFrom(UUID.class) && input.getValue() != null && input.getValue() instanceof List) {
                     List<UUID> querySet = ((List<?>) input.getValue()).stream()
-                    .map(i -> {
-                        if(i instanceof String)
-                            return UUID.fromString((String) i);
-                        return (UUID) i;
-                    }).collect(Collectors.toList());
+                            .map(i -> {
+                                if (i instanceof String)
+                                    return UUID.fromString((String) i);
+                                return (UUID) i;
+                            }).collect(Collectors.toList());
                     return criteriaBuilder.in(path.get(fieldName)).value(querySet);
                 }
-                if(dataType.isAssignableFrom(Long.class) && input.getValue() != null && input.getValue() instanceof List) {
+                if (dataType.isAssignableFrom(Long.class) && input.getValue() != null && input.getValue() instanceof List) {
                     List<Long> querySet = ((List<?>) input.getValue()).stream()
                             .map(i -> Long.valueOf(String.valueOf(i))).collect(Collectors.toList());
+                    return criteriaBuilder.in(path.get(fieldName)).value(querySet);
+                }
+                if (dataType.isEnum()) {
+                    List<Enum> querySet = ((List<?>) input.getValue()).stream()
+                            .map(i -> getEnum(dataType.getName(), String.valueOf(i))).collect(Collectors.toList());
                     return criteriaBuilder.in(path.get(fieldName)).value(querySet);
                 }
                 return criteriaBuilder.in(path.get(fieldName))
                         .value(input.getValue());
             case "CONTAINS":
-                if(dataType.isAssignableFrom(List.class))
+                if (dataType.isAssignableFrom(List.class))
                     return criteriaBuilder.isMember(input.getValue(), path.get(fieldName));
                 else
                     throw new RuntimeException("Criteria not supported yet");
