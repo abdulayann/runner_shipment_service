@@ -757,10 +757,7 @@ public class ShipmentService implements IShipmentService {
             }
             afterSave(shipmentDetails, true);
             // Create events on basis of shipment status Confirmed/Created
-            Events autoGenerateEvents = autoGenerateEvents(shipmentDetails, null);
-            if(shipmentDetails.getEventsList() == null)
-                shipmentDetails.setEventsList(new ArrayList<>());
-            shipmentDetails.getEventsList().add(autoGenerateEvents);
+            autoGenerateEvents(shipmentDetails, null);
             try {
                 shipmentSync.sync(shipmentDetails);
             } catch (Exception e){
@@ -1456,6 +1453,7 @@ public class ShipmentService implements IShipmentService {
 
         Optional<ShipmentDetails> oldEntity = retrieveByIdOrGuid(shipmentRequest);
         long id=oldEntity.get().getId();
+        Integer previousStatus = oldEntity.get().getStatus();
         if (!oldEntity.isPresent()) {
             log.debug("Shipment Details is null for Id {}", shipmentRequest.getId());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
@@ -1554,10 +1552,7 @@ public class ShipmentService implements IShipmentService {
                 entity.setEventsList(updatedEvents);
             }
             // Create events on basis of shipment status Confirmed/Created
-            Events autoGenerateEvents = autoGenerateEvents(entity, oldEntity.get().getStatus());
-            if(entity.getEventsList() == null)
-                entity.setEventsList(new ArrayList<>());
-            entity.getEventsList().add(autoGenerateEvents);
+            autoGenerateEvents(entity, previousStatus);
             if (jobRequestList != null) {
                 List<Jobs> updatedJobs = jobDao.updateEntityFromShipment(convertToEntityList(jobRequestList, Jobs.class), id);
                 entity.setJobsList(updatedJobs);
@@ -2284,6 +2279,7 @@ public class ShipmentService implements IShipmentService {
 
         try {
             ShipmentDetails entity = oldEntity.get();
+            Integer previousStatus = oldEntity.get().getStatus();
             shipmentDetailsMapper.update(shipmentRequest, entity);
             updateMasterBill(entity, oldEntity.get().getMasterBill());
             updateLinkedShipmentData(entity);
@@ -2332,10 +2328,7 @@ public class ShipmentService implements IShipmentService {
                 entity.setEventsList(updatedEvents);
             }
             // Create events on basis of shipment status Confirmed/Created
-            Events autoGenerateEvents = autoGenerateEvents(entity, oldEntity.get().getStatus());
-            if(entity.getEventsList() == null)
-                entity.setEventsList(new ArrayList<>());
-            entity.getEventsList().add(autoGenerateEvents);
+            autoGenerateEvents(entity, previousStatus);
             if (fileRepoRequestList != null) {
                 List<FileRepo> updatedFileRepos = fileRepoDao.updateEntityFromOtherEntity(convertToEntityList(fileRepoRequestList, FileRepo.class), id, Constants.SHIPMENT);
                 entity.setFileRepoList(updatedFileRepos);
@@ -3598,7 +3591,7 @@ public class ShipmentService implements IShipmentService {
         }
     }
 
-    private Events autoGenerateEvents(ShipmentDetails shipmentDetails, Integer previousStauts) {
+    private void autoGenerateEvents(ShipmentDetails shipmentDetails, Integer previousStauts) {
         Events response = null;
         if(previousStauts == null || !shipmentDetails.getStatus().equals(previousStauts)) {
             if (shipmentDetails.getStatus().equals(ShipmentStatus.Confirmed.getValue())) {
@@ -3608,7 +3601,9 @@ public class ShipmentService implements IShipmentService {
                 response = createAutomatedEvents(shipmentDetails, Constants.SHPCMPLT);
             }
         }
-        return response;
+        if(shipmentDetails.getEventsList() == null)
+            shipmentDetails.setEventsList(new ArrayList<>());
+        shipmentDetails.getEventsList().add(response);
     }
 
     private Events createAutomatedEvents(ShipmentDetails shipmentDetails, String eventCode) {
