@@ -1560,6 +1560,14 @@ public class ConsolidationService implements IConsolidationService {
             if(container != null && request.getPacksList() != null && request.getPacksList().size() > 0) {
                 BigDecimal weight = container.getAchievedWeight();
                 BigDecimal volume = container.getAchievedVolume();
+                if(weight == null) {
+                    weight = BigDecimal.ZERO;
+                    container.setAchievedWeightUnit(container.getAllocatedWeightUnit());
+                }
+                if(volume == null) {
+                    volume = BigDecimal.ZERO;
+                    container.setAchievedVolumeUnit(container.getAllocatedVolumeUnit());
+                }
                 List<Long> contShipIds = new ArrayList<>();
                 if(container.getShipmentsList() != null && container.getShipmentsList().size() > 0)
                     contShipIds = container.getShipmentsList().stream().map(e -> e.getId()).toList();
@@ -1652,6 +1660,14 @@ public class ConsolidationService implements IConsolidationService {
             if(container != null && request.getPacksList() != null && request.getPacksList().size() > 0) {
                 BigDecimal weight = container.getAchievedWeight();
                 BigDecimal volume = container.getAchievedVolume();
+                if(weight == null) {
+                    weight = BigDecimal.ZERO;
+                    container.setAchievedWeightUnit(container.getAllocatedWeightUnit());
+                }
+                if(volume == null) {
+                    volume = BigDecimal.ZERO;
+                    container.setAchievedVolumeUnit(container.getAllocatedVolumeUnit());
+                }
                 Set<Long> shipmentdIdSet = new HashSet<>();
                 for (ContainerShipmentADInConsoleRequest.PacksList packing : request.getPacksList()) {
                     shipmentdIdSet.add(packing.getShipmentId());

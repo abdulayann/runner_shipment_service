@@ -2355,7 +2355,7 @@ public class ShipmentService implements IShipmentService {
             String responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
-            return ResponseHelper.buildFailedResponse(responseMsg);
+            throw new RunnerException(responseMsg);
         }
     }
 

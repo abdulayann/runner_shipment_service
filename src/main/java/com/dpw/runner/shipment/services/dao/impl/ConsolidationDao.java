@@ -81,7 +81,7 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
     @Override
     public ConsolidationDetails update(ConsolidationDetails consolidationDetails, boolean fromV1Sync) {
         Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(consolidationDetails) , Constants.CONSOLIDATION, LifecycleHooks.ON_CREATE, false);
-        validateLockStatus(consolidationDetails.getId());
+        validateLockStatus(consolidationDetails);
         ConsolidationDetails oldConsole = null;
         if(consolidationDetails.getId() != null) {
             long id = consolidationDetails.getId();
@@ -120,13 +120,12 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
 
     @Override
     public void delete(ConsolidationDetails consolidationDetails) {
-        validateLockStatus(consolidationDetails.getId());
+        validateLockStatus(consolidationDetails);
         consolidationRepository.delete(consolidationDetails);
     }
 
-    private void validateLockStatus(Long id) throws ValidationException {
-        Optional<ConsolidationDetails> existingConsolidation = findById(id);
-        if(existingConsolidation.get().getIsLocked() != null && existingConsolidation.get().getIsLocked()) {
+    private void validateLockStatus(ConsolidationDetails consolidationDetails) throws ValidationException {
+        if(consolidationDetails.getIsLocked() != null && consolidationDetails.getIsLocked()) {
             throw new ValidationException(ConsolidationConstants.CONSOLIDATION_LOCKED);
         }
     }
