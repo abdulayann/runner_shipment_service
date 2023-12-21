@@ -1869,14 +1869,18 @@ public class ConsolidationService implements IConsolidationService {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
-            if (request == null) {
-                log.error("Request is empty for Consolidation retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            if(request.getId() == null && request.getGuid() == null) {
+                log.error("Request Id and Guid are null for Consolidation retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+                throw new RunnerException("Id and GUID can't be null. Please provide any one !");
             }
-            if (request.getId() == null) {
-                log.error("Request Id is null for Consolidation retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            Long id = request.getId();
+            Optional<ConsolidationDetails> consolidationDetails = Optional.ofNullable(null);
+            if(id != null ){
+                consolidationDetails = consolidationDetailsDao.findById(id);
+            } else {
+                UUID guid = UUID.fromString(request.getGuid());
+                consolidationDetails = consolidationDetailsDao.findByGuid(guid);
             }
-            long id = request.getId();
-            Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(id);
             if (!consolidationDetails.isPresent()) {
                 log.debug("Consolidation Details is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
