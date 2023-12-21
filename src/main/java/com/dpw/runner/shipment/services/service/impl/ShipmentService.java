@@ -1988,17 +1988,9 @@ public class ShipmentService implements IShipmentService {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
-            if (request == null) {
-                log.error("Request is empty for Shipment retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
-            }
             if(request.getId() == null && request.getGuid() == null) {
                 log.error("Request Id and Guid are null for Shipment retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
-            }
-            if (request.getId() == null) {
-                log.error("Request Id is null for Shipment retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
-            }
-            if(request.getGuid() == null) {
-                log.error("GUID is null for Shipment retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+                throw new RunnerException("Id and GUID can't be null. Please provide any one !");
             }
             Long id = request.getId();
             Optional<ShipmentDetails> shipmentDetails = Optional.ofNullable(null);

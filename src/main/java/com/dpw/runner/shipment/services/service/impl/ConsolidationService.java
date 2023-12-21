@@ -1693,17 +1693,9 @@ public class ConsolidationService implements IConsolidationService {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
-            if (request == null) {
-                log.error("Request is empty for Consolidation retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
-            }
             if(request.getId() == null && request.getGuid() == null) {
                 log.error("Request Id and Guid are null for Consolidation retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
-            }
-            if (request.getId() == null) {
-                log.error("Request Id is null for Consolidation retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
-            }
-            if(request.getGuid() == null) {
-                log.error("GUID is null for Consolidation retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+                throw new RunnerException("Id and GUID can't be null. Please provide any one !");
             }
             Long id = request.getId();
             Optional<ConsolidationDetails> consolidationDetails = Optional.ofNullable(null);
