@@ -713,7 +713,7 @@ public class ContainerService implements IContainerService {
     public ResponseEntity<?> detachContainer(List<Packing> packingList, Containers container, Long shipmentId, boolean removeAllPacks) {
         String responseMsg;
         try {
-            Containers containers = containerDao.save(jsonHelper.convertValue(container, Containers.class));
+            Containers containers = containerDao.save(container);
             if(removeAllPacks)
                 shipmentsContainersMappingDao.detachShipments(container.getId(), List.of(shipmentId));
             else {

@@ -22,10 +22,7 @@ import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
-import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
-import com.dpw.runner.shipment.services.service.interfaces.IConsolidationService;
-import com.dpw.runner.shipment.services.service.interfaces.IPackingService;
-import com.dpw.runner.shipment.services.service.interfaces.ISyncQueueService;
+import com.dpw.runner.shipment.services.service.interfaces.*;
 import com.dpw.runner.shipment.services.syncing.Entity.BulkPackingRequestV2;
 import com.dpw.runner.shipment.services.syncing.Entity.PackingRequestV2;
 import com.dpw.runner.shipment.services.syncing.constants.SyncingConstants;
@@ -106,6 +103,9 @@ public class PackingService implements IPackingService {
     private ISyncQueueService syncQueueService;
     @Autowired
     private SyncConfig syncConfig;
+
+    @Autowired
+    private IContainerService containerService;
 
     private final CSVParsingUtil<Packing> parser = new CSVParsingUtil<>(Packing.class);
 
@@ -397,11 +397,15 @@ public class PackingService implements IPackingService {
             else {
                 oldContainer = subtractWeightVolume(oldPacking, oldContainer);
                 newContainer = addWeightVolume(newPacking, newContainer);
-                if(oldContainer != null)
+                if(oldContainer != null) {
+                    containerService.calculateUtilization(oldContainer);
                     finalContainers.add(jsonHelper.convertValue(oldContainer, ContainerResponse.class));
+                }
             }
-            if(newContainer != null)
+            if(newContainer != null) {
+                containerService.calculateUtilization(newContainer);
                 finalContainers.add(jsonHelper.convertValue(newContainer, ContainerResponse.class));
+            }
         }
         return ResponseHelper.buildListSuccessResponse(finalContainers);
     }
