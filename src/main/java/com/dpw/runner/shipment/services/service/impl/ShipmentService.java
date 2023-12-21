@@ -742,6 +742,11 @@ public class ShipmentService implements IShipmentService {
             if (shipmentAddressRequest != null)
                 shipmentDetails.setShipmentAddresses(partiesDao.saveEntityFromOtherEntity(commonUtils.convertToCreateEntityList(shipmentAddressRequest, Parties.class), shipmentId, Constants.SHIPMENT_ADDRESSES));
 
+            // Create Shipment Route in Console for Auto Attach Consolidation;
+            if (request.getReplaceConsoleRoute() != null && request.getReplaceConsoleRoute()){
+                createShipmentRouteInConsole(request);
+            }
+
             Hbl hbl = null;
             ConsolidationDetails consolidationDetails = null;
             if(updatedContainers.size() > 0) {
@@ -1572,25 +1577,10 @@ public class ShipmentService implements IShipmentService {
                 List<Parties> updatedParties = partiesDao.updateEntityFromOtherEntity(convertToEntityList(shipmentAddressList, Parties.class), id, Constants.SHIPMENT_ADDRESSES);
                 entity.setShipmentAddresses(updatedParties);
             }
+
+            // Create Shipment Route in Console for Auto Attach Consolidation;
             if (shipmentRequest.getReplaceConsoleRoute() != null && shipmentRequest.getReplaceConsoleRoute()){
-                List<ConsolidationDetailsRequest> consoleRequest = shipmentRequest.getConsolidationList();
-                List<Routings> createRoutes = new ArrayList<>();
-                if(shipmentRequest.getCreateMainLegRoute() != null && shipmentRequest.getCreateMainLegRoute()){
-                    List<RoutingsRequest> routeRequestList = shipmentRequest.getRoutingsList().stream().sorted(Comparator.comparingLong(RoutingsRequest::getLeg)).collect(Collectors.toList());
-                    var routeRequest = routeRequestList.stream().filter(x -> x.getMode().equals(shipmentRequest.getTransportMode())).findFirst();
-                    if(routeRequest.isPresent()) {
-                        createRoutes.add(convertToClass(routeRequest.get(), Routings.class));
-                        createRoutes = createConsoleRoutePayload(createRoutes);
-                    }
-                } else {
-                    createRoutes = convertToEntityList(shipmentRequest.getRoutingsList(), Routings.class);
-                    createRoutes = createConsoleRoutePayload(createRoutes);
-                }
-                if(consoleRequest != null && !consoleRequest.isEmpty() && createRoutes != null && !createRoutes.isEmpty()) {
-                    for (var console : consoleRequest) {
-                        routingsDao.updateEntityFromConsole(createRoutes, console.getId());
-                    }
-                }
+                createShipmentRouteInConsole(shipmentRequest);
             }
 
             Hbl hbl = null;
@@ -1673,6 +1663,27 @@ public class ShipmentService implements IShipmentService {
         }
         catch (Exception e) {
             log.error(e.getMessage());
+        }
+    }
+
+    private void createShipmentRouteInConsole (ShipmentRequest shipmentRequest) throws Exception{
+        List<ConsolidationDetailsRequest> consoleRequest = shipmentRequest.getConsolidationList();
+        List<Routings> createRoutes = new ArrayList<>();
+        if(shipmentRequest.getCreateMainLegRoute() != null && shipmentRequest.getCreateMainLegRoute()){
+            List<RoutingsRequest> routeRequestList = shipmentRequest.getRoutingsList().stream().sorted(Comparator.comparingLong(RoutingsRequest::getLeg)).collect(Collectors.toList());
+            var routeRequest = routeRequestList.stream().filter(x -> x.getMode().equals(shipmentRequest.getTransportMode())).findFirst();
+            if(routeRequest.isPresent()) {
+                createRoutes.add(convertToClass(routeRequest.get(), Routings.class));
+                createRoutes = createConsoleRoutePayload(createRoutes);
+            }
+        } else {
+            createRoutes = convertToEntityList(shipmentRequest.getRoutingsList(), Routings.class);
+            createRoutes = createConsoleRoutePayload(createRoutes);
+        }
+        if(consoleRequest != null && !consoleRequest.isEmpty() && createRoutes != null && !createRoutes.isEmpty()) {
+            for (var console : consoleRequest) {
+                routingsDao.updateEntityFromConsole(createRoutes, console.getId());
+            }
         }
     }
 
@@ -2120,16 +2131,20 @@ public class ShipmentService implements IShipmentService {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
-            if (request == null) {
-                log.error("Request is empty for Shipment retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            if(request.getId() == null && request.getGuid() == null) {
+                log.error("Request Id and Guid are null for Shipment retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+                throw new RunnerException("Id and GUID can't be null. Please provide any one !");
             }
-            if (request.getId() == null) {
-                log.error("Request Id is null for Shipment retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            Long id = request.getId();
+            Optional<ShipmentDetails> shipmentDetails = Optional.ofNullable(null);
+            if(id != null ){
+                shipmentDetails = shipmentDao.findById(id);
+            } else {
+                UUID guid = UUID.fromString(request.getGuid());
+                shipmentDetails = shipmentDao.findByGuid(guid);
             }
-            long id = request.getId();
-            Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(id);
             if (!shipmentDetails.isPresent()) {
-                log.debug("Shipment Details is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
+                log.debug("Shipment Details is null for the input with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
             log.info("Shipment details fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
@@ -2344,7 +2359,7 @@ public class ShipmentService implements IShipmentService {
             String responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
-            return ResponseHelper.buildFailedResponse(responseMsg);
+            throw new RunnerException(responseMsg);
         }
     }
 
@@ -2505,14 +2520,14 @@ public class ShipmentService implements IShipmentService {
         UUID guid = shipmentRequest.getGuid();
         Optional<ShipmentDetails> oldEntity = shipmentDao.findByGuid(guid);
 
-        List<Long> tempConsolIds = new ArrayList<>();
+        List<ConsolidationDetails> tempConsolidations = new ArrayList<>();
 
         List<ConsolidationDetailsRequest> consolidationDetailsRequests = shipmentRequest.getConsolidationList();
         if(consolidationDetailsRequests != null && !consolidationDetailsRequests.isEmpty()) {
             for(ConsolidationDetailsRequest consolidation : consolidationDetailsRequests) {
                 Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findByGuid(consolidation.getGuid());
                 if(consolidationDetails.get() != null && consolidationDetails.get().getId() != null) {
-                    tempConsolIds.add(consolidationDetails.get().getId());
+                    tempConsolidations.add(consolidationDetails.get());
                 }
             }
         }
@@ -2530,6 +2545,8 @@ public class ShipmentService implements IShipmentService {
             }
             shipmentRequest.setConsolidationList(null);
             ShipmentDetails entity = objectMapper.convertValue(shipmentRequest, ShipmentDetails.class);
+            if (!tempConsolidations.isEmpty())
+                entity.setConsolidationList(tempConsolidations);
             entity.setId(id);
             List<Containers> updatedContainers = null;
             if (containerRequestList != null) {
@@ -2545,8 +2562,8 @@ public class ShipmentService implements IShipmentService {
             } else {
                 entity = shipmentDao.update(entity, true);
             }
-
-            attachConsolidations(entity.getId(), tempConsolIds);
+//            Not needed, added consolidations while saving shipment
+//            attachConsolidations(entity.getId(), tempConsolIds);
 
             if (bookingCarriageRequestList != null) {
                 ListCommonRequest listCommonRequest = constructListCommonRequest("shipmentId", entity.getId(), "=");

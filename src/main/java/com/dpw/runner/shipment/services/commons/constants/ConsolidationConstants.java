@@ -14,6 +14,7 @@ public class ConsolidationConstants {
     public static final String RETRIEVE_BY_ID_SUCCESSFUL = "Successful Consolidation Data Retrieval By Id";
 
     public static final String CONSOLIDATION_ID = "Consolidation Id";
+    public static final String CONSOLIDATION_GUID = "Consolidation Guid";
 
     public static final String RESPONSE_CONTAINER_LIST = "List";
 

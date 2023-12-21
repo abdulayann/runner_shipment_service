@@ -126,7 +126,7 @@ public class ShipmentDao implements IShipmentDao {
 
     @Override
     public ShipmentDetails update(ShipmentDetails shipmentDetails, boolean fromV1Sync) {
-        validateLockStatus(shipmentDetails.getId());
+        validateLockStatus(shipmentDetails);
         Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(shipmentDetails) , Constants.SHIPMENT, LifecycleHooks.ON_CREATE, false);
         ShipmentDetails oldShipment = null;
         if(shipmentDetails.getId() != null){
@@ -178,13 +178,12 @@ public class ShipmentDao implements IShipmentDao {
 
     @Override
     public void delete(ShipmentDetails shipmentDetails) {
-        validateLockStatus(shipmentDetails.getId());
+        validateLockStatus(shipmentDetails);
         shipmentRepository.delete(shipmentDetails);
     }
 
-    private void validateLockStatus(Long id) throws ValidationException {
-        Optional<ShipmentDetails> existingShipment = findById(id);
-        if(existingShipment.get().getIsLocked() != null && existingShipment.get().getIsLocked()) {
+    private void validateLockStatus(ShipmentDetails shipmentDetails) throws ValidationException {
+        if(shipmentDetails.getIsLocked() != null && shipmentDetails.getIsLocked()) {
             throw new ValidationException(ShipmentConstants.SHIPMENT_LOCKED);
         }
     }

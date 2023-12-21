@@ -53,7 +53,7 @@ public class ConsolidationReverseSync implements IConsolidationReverseSync {
             response = modelMapper.map(request, ConsolidationDetailsRequest.class);
 
             response.setLockedBy(request.getLockedByUser());
-
+            response.setMsnNumber(request.getMsnNumberStr());
             response.setShipmentType(request.getShipmentType());
             response.setCoLoadBookingReference(request.getCoLoadBookingRef());
             response.setConsolidationType(request.getType());
