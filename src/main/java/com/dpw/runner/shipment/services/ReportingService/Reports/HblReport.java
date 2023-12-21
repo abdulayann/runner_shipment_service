@@ -436,7 +436,7 @@ public class HblReport extends IReport{
         dictionary.put(AS_AGREED, false);
         dictionary.put(COPY_AS_AGREED, false);
 
-        String chargesApply = hblModel.shipment.getAdditionalDetails().getBLChargesDisplay();
+        String chargesApply = hblModel.shipment.getAdditionalDetails() != null ? hblModel.shipment.getAdditionalDetails().getBLChargesDisplay() : null;
 
         if (!Objects.isNull(chargesApply) && chargesApply.equals("AGR")) {
             dictionary.put(AS_AGREED, true);
