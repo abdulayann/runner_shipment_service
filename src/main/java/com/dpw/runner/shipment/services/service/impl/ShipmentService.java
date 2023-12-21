@@ -756,6 +756,8 @@ public class ShipmentService implements IShipmentService {
                 }
             }
             afterSave(shipmentDetails, true);
+            // Create events on basis of shipment status Confirmed/Created
+            autoGenerateEvents(shipmentDetails, null);
             try {
                 shipmentSync.sync(shipmentDetails);
             } catch (Exception e){
@@ -1451,6 +1453,7 @@ public class ShipmentService implements IShipmentService {
 
         Optional<ShipmentDetails> oldEntity = retrieveByIdOrGuid(shipmentRequest);
         long id=oldEntity.get().getId();
+        Integer previousStatus = oldEntity.get().getStatus();
         if (!oldEntity.isPresent()) {
             log.debug("Shipment Details is null for Id {}", shipmentRequest.getId());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
@@ -1548,6 +1551,8 @@ public class ShipmentService implements IShipmentService {
                 List<Events> updatedEvents = eventDao.updateEntityFromOtherEntity(convertToEntityList(eventsRequestList, Events.class), id, Constants.SHIPMENT);
                 entity.setEventsList(updatedEvents);
             }
+            // Create events on basis of shipment status Confirmed/Created
+            autoGenerateEvents(entity, previousStatus);
             if (jobRequestList != null) {
                 List<Jobs> updatedJobs = jobDao.updateEntityFromShipment(convertToEntityList(jobRequestList, Jobs.class), id);
                 entity.setJobsList(updatedJobs);
@@ -2274,6 +2279,7 @@ public class ShipmentService implements IShipmentService {
 
         try {
             ShipmentDetails entity = oldEntity.get();
+            Integer previousStatus = oldEntity.get().getStatus();
             shipmentDetailsMapper.update(shipmentRequest, entity);
             updateMasterBill(entity, oldEntity.get().getMasterBill());
             updateLinkedShipmentData(entity);
@@ -2321,6 +2327,8 @@ public class ShipmentService implements IShipmentService {
                 List<Events> updatedEvents = eventDao.updateEntityFromOtherEntity(convertToEntityList(eventsRequestList, Events.class), id, Constants.SHIPMENT);
                 entity.setEventsList(updatedEvents);
             }
+            // Create events on basis of shipment status Confirmed/Created
+            autoGenerateEvents(entity, previousStatus);
             if (fileRepoRequestList != null) {
                 List<FileRepo> updatedFileRepos = fileRepoDao.updateEntityFromOtherEntity(convertToEntityList(fileRepoRequestList, FileRepo.class), id, Constants.SHIPMENT);
                 entity.setFileRepoList(updatedFileRepos);
@@ -3581,6 +3589,39 @@ public class ShipmentService implements IShipmentService {
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(responseMsg);
         }
+    }
+
+    private void autoGenerateEvents(ShipmentDetails shipmentDetails, Integer previousStauts) {
+        Events response = null;
+        if(shipmentDetails.getStatus() != null) {
+            if (previousStauts == null || !shipmentDetails.getStatus().equals(previousStauts)) {
+                if (shipmentDetails.getStatus().equals(ShipmentStatus.Confirmed.getValue())) {
+                    response = createAutomatedEvents(shipmentDetails, Constants.SHPCNFRM);
+                }
+                if (shipmentDetails.getStatus().equals(ShipmentStatus.Created.getValue())) {
+                    response = createAutomatedEvents(shipmentDetails, Constants.SHPCMPLT);
+                }
+            }
+            if (shipmentDetails.getEventsList() != null)
+                shipmentDetails.setEventsList(new ArrayList<>());
+            shipmentDetails.getEventsList().add(response);
+        }
+    }
+
+    private Events createAutomatedEvents(ShipmentDetails shipmentDetails, String eventCode) {
+        Events events = new Events();
+        // Set event fields from shipment
+        events.setActual(LocalDateTime.now());
+        events.setEstimated(LocalDateTime.now());
+        events.setSource(Constants.CARGO_RUNNER);
+        events.setIsPublicTrackingEvent(true);
+        events.setEntityType(Constants.SHIPMENT);
+        events.setEntityId(shipmentDetails.getId());
+        events.setTenantId(TenantContext.getCurrentTenant());
+        events.setEventCode(eventCode);
+        // Persist the event
+        eventDao.save(events);
+        return events;
     }
 
 }
