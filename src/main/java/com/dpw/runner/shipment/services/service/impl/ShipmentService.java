@@ -756,6 +756,11 @@ public class ShipmentService implements IShipmentService {
                 }
             }
             afterSave(shipmentDetails, true);
+            // Create events on basis of shipment status Confirmed/Created
+            Events autoGenerateEvents = autoGenerateEvents(shipmentDetails, null);
+            if(shipmentDetails.getEventsList() == null)
+                shipmentDetails.setEventsList(new ArrayList<>());
+            shipmentDetails.getEventsList().add(autoGenerateEvents);
             try {
                 shipmentSync.sync(shipmentDetails);
             } catch (Exception e){
@@ -1548,6 +1553,11 @@ public class ShipmentService implements IShipmentService {
                 List<Events> updatedEvents = eventDao.updateEntityFromOtherEntity(convertToEntityList(eventsRequestList, Events.class), id, Constants.SHIPMENT);
                 entity.setEventsList(updatedEvents);
             }
+            // Create events on basis of shipment status Confirmed/Created
+            Events autoGenerateEvents = autoGenerateEvents(entity, oldEntity.get().getStatus());
+            if(entity.getEventsList() == null)
+                entity.setEventsList(new ArrayList<>());
+            entity.getEventsList().add(autoGenerateEvents);
             if (jobRequestList != null) {
                 List<Jobs> updatedJobs = jobDao.updateEntityFromShipment(convertToEntityList(jobRequestList, Jobs.class), id);
                 entity.setJobsList(updatedJobs);
@@ -2321,6 +2331,11 @@ public class ShipmentService implements IShipmentService {
                 List<Events> updatedEvents = eventDao.updateEntityFromOtherEntity(convertToEntityList(eventsRequestList, Events.class), id, Constants.SHIPMENT);
                 entity.setEventsList(updatedEvents);
             }
+            // Create events on basis of shipment status Confirmed/Created
+            Events autoGenerateEvents = autoGenerateEvents(entity, oldEntity.get().getStatus());
+            if(entity.getEventsList() == null)
+                entity.setEventsList(new ArrayList<>());
+            entity.getEventsList().add(autoGenerateEvents);
             if (fileRepoRequestList != null) {
                 List<FileRepo> updatedFileRepos = fileRepoDao.updateEntityFromOtherEntity(convertToEntityList(fileRepoRequestList, FileRepo.class), id, Constants.SHIPMENT);
                 entity.setFileRepoList(updatedFileRepos);
@@ -3581,6 +3596,35 @@ public class ShipmentService implements IShipmentService {
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(responseMsg);
         }
+    }
+
+    private Events autoGenerateEvents(ShipmentDetails shipmentDetails, Integer previousStauts) {
+        Events response = null;
+        if(previousStauts == null || !shipmentDetails.getStatus().equals(previousStauts)) {
+            if (shipmentDetails.getStatus().equals(ShipmentStatus.Confirmed.getValue())) {
+                response = createAutomatedEvents(shipmentDetails,Constants.SHPCNFRM);
+            }
+            if (shipmentDetails.getStatus().equals(ShipmentStatus.Created.getValue())) {
+                response = createAutomatedEvents(shipmentDetails, Constants.SHPCMPLT);
+            }
+        }
+        return response;
+    }
+
+    private Events createAutomatedEvents(ShipmentDetails shipmentDetails, String eventCode) {
+        Events events = new Events();
+        // Set event fields from shipment
+        events.setActual(LocalDateTime.now());
+        events.setEstimated(LocalDateTime.now());
+        events.setSource(Constants.CARGO_RUNNER);
+        events.setIsPublicTrackingEvent(true);
+        events.setEntityType(Constants.SHIPMENT);
+        events.setEntityId(shipmentDetails.getId());
+        events.setTenantId(TenantContext.getCurrentTenant());
+        events.setEventCode(eventCode);
+        // Persist the event
+        eventDao.save(events);
+        return events;
     }
 
 }
