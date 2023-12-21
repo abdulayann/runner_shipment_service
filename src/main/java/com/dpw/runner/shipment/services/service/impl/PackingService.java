@@ -575,6 +575,7 @@ public class PackingService implements IPackingService {
                     vwOb = consolidationService.calculateVolumeWeight(transportMode, Constants.WEIGHT_UNIT_KG, Constants.VOLUME_UNIT_M3, weight, volume);
                 }
                 response.setVolumeWeight(vwOb.getVolumeWeight());
+                response.setVolumeWeightUnit(vwOb.getVolumeWeightUnit());
                 response.setChargeableUnit(vwOb.getChargeableUnit());
                 checkVolumeUnit(request.getVolumeUnit(), request.getWidthUnit(), request.getLengthUnit(), request.getHeightUnit(), request, response);
             }
