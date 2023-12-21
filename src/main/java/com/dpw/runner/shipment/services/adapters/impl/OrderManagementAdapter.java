@@ -65,10 +65,13 @@ public class OrderManagementAdapter implements IOrderManagementAdapter {
 
         shipmentDetails.setTransportMode(order.getTransportMode());
         shipmentDetails.setIncoterms(order.getIncoTerm());
-        shipmentDetails.getCarrierDetails().setOrigin(order.getOriginName());
-        shipmentDetails.getCarrierDetails().setOriginPort(order.getOriginPortName());
-        shipmentDetails.getCarrierDetails().setDestination(order.getDestinationName());
-        shipmentDetails.getCarrierDetails().setDestinationPort(order.getDestinationPortName());
+
+        // TODO : to revert this change once order team gets back on this
+        // Skipping this fields for now as integration for LocationReferenceGuid is pending from order team
+//        shipmentDetails.getCarrierDetails().setOrigin(order.getOriginName());
+//        shipmentDetails.getCarrierDetails().setOriginPort(order.getOriginPortName());
+//        shipmentDetails.getCarrierDetails().setDestination(order.getDestinationName());
+//        shipmentDetails.getCarrierDetails().setDestinationPort(order.getDestinationPortName());
 
 
 
@@ -121,11 +124,10 @@ public class OrderManagementAdapter implements IOrderManagementAdapter {
             shipmentDetails.setVolume(order.getVolumeAmount().getAmount());
             shipmentDetails.setVolumeUnit(order.getVolumeAmount().getUnit());
         }
-        shipmentDetails.setOrderManagementId(order.getOrderId());
+        shipmentDetails.setOrderManagementId(order.getGuid().toString());
         shipmentDetails.setOrderManagementNumber(order.getOrderNumber());
 
-//        TODO map remaining fields
-//        shipmentDetails.setServiceMode(order.serviceMode);
+        shipmentDetails.setServiceType(order.getServiceMode());
 
         return shipmentDetails;
     }
