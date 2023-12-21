@@ -55,4 +55,5 @@ public interface IConsolidationService extends ICommonService{
     ResponseEntity<?> getAutoAttachConsolidationDetails(CommonRequestModel commonRequestModel);
     ResponseEntity<?> getAutoUpdateGoodsAndHandlingInfo(CommonRequestModel commonRequestModel);
     ResponseEntity<?> getContainerPackSummary(CommonRequestModel commonRequestModel);
+    ResponseEntity<?> getDefaultConsolidation();
 }

@@ -100,7 +100,7 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
         errors.addAll(applyConsolidationValidations(consolidationDetails, oldConsole));
         if (! errors.isEmpty())
             throw new ValidationException(errors.toString());
-        if(!fromV1Sync && consolidationDetails.getTransportMode() == "AIR")
+        if(!fromV1Sync && consolidationDetails.getTransportMode() != null && consolidationDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR))
             consolidationMAWBCheck(consolidationDetails);
         consolidationDetails = consolidationRepository.save(consolidationDetails);
         if(!fromV1Sync && consolidationDetails.getMawb() != null && consolidationDetails.getShipmentType().equals(Constants.IMP)) {
@@ -267,7 +267,7 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
         Optional<MawbStocks> mawbStocks = mawbStocksDao.findById(parentId);
         if(!mawbStocks.isEmpty()) {
             MawbStocks res = mawbStocks.get();
-            res.setAvailableCount(String.valueOf(Integer.parseInt(res.getAvailableCount()) - 1));
+            res.setAvailableCount(String.valueOf(Integer.parseInt(res.getAvailableCount() == null ? res.getAvailableCount() : "0") - 1));
             res.setNextMawbNumber(assignNextMawbNumber(parentId));
             mawbStocksDao.save(res);
         }
@@ -302,7 +302,7 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
         Pair<Specification<CarrierDetails>, Pageable> pair = fetchData(listCarrierRequest, CarrierDetails.class);
         Page<CarrierDetails> carrierDetails = carrierDao.findAll(pair.getLeft(), pair.getRight());
 
-        if (carrierDetails.getContent() == null || carrierDetails.getTotalElements() == 0)
+        if (carrierDetails.getTotalElements() == 0)
             throw new ValidationException("Airline for the entered MAWB Number doesn't exist in Carrier Master");
 
         CarrierDetails correspondingCarrier = carrierDetails.getContent().get(0);
@@ -320,6 +320,9 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
         Page<MawbStocksLink> mawbStocksLinkPage = mawbStocksLinkDao.findAll(mawbStocksLinkPair.getLeft(), mawbStocksLinkPair.getRight());
 
         MawbStocksLink mawbStocksLink = null;
+        mawbStocksLinkPage.getContent();
+        if (!mawbStocksLinkPage.getContent().isEmpty())
+            isMAWBNumberExist = true;
 
         if (!isCarrierExist)
             consolidationRequest.setCarrierDetails(correspondingCarrier);
@@ -331,15 +334,15 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
         if (isMAWBNumberExist)
             if (mawbStocksLink.getStatus().equals("Consumed") && !mawbStocksLink.getEntityId().equals(consolidationRequest.getId())) // If MasterBill number is already Consumed.
                 throw new ValidationException("The MAWB number entered is already consumed. Please enter another MAWB number.");
-
-            else
-                createNewMAWBEntry(consolidationRequest);
+        else
+            createNewMAWBEntry(consolidationRequest);
     }
 
     private void createNewMAWBEntry(ConsolidationDetails consolidationRequest) {
         MawbStocks mawbStocks = new MawbStocks();
         // mawbStocks.setAirLinePrefix() //TODO fetch from v1
         mawbStocks.setCount("1");
+        mawbStocks.setAvailableCount("1");
         mawbStocks.setStartNumber(Long.valueOf(consolidationRequest.getMawb().substring(4, 10)));
         mawbStocks.setFrom(consolidationRequest.getMawb());
         mawbStocks.setTo(consolidationRequest.getMawb());

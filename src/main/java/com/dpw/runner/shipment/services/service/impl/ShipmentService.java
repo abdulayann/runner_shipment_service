@@ -2131,16 +2131,20 @@ public class ShipmentService implements IShipmentService {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
-            if (request == null) {
-                log.error("Request is empty for Shipment retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            if(request.getId() == null && request.getGuid() == null) {
+                log.error("Request Id and Guid are null for Shipment retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+                throw new RunnerException("Id and GUID can't be null. Please provide any one !");
             }
-            if (request.getId() == null) {
-                log.error("Request Id is null for Shipment retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            Long id = request.getId();
+            Optional<ShipmentDetails> shipmentDetails = Optional.ofNullable(null);
+            if(id != null ){
+                shipmentDetails = shipmentDao.findById(id);
+            } else {
+                UUID guid = UUID.fromString(request.getGuid());
+                shipmentDetails = shipmentDao.findByGuid(guid);
             }
-            long id = request.getId();
-            Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(id);
             if (!shipmentDetails.isPresent()) {
-                log.debug("Shipment Details is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
+                log.debug("Shipment Details is null for the input with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
             log.info("Shipment details fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
@@ -2516,14 +2520,14 @@ public class ShipmentService implements IShipmentService {
         UUID guid = shipmentRequest.getGuid();
         Optional<ShipmentDetails> oldEntity = shipmentDao.findByGuid(guid);
 
-        List<Long> tempConsolIds = new ArrayList<>();
+        List<ConsolidationDetails> tempConsolidations = new ArrayList<>();
 
         List<ConsolidationDetailsRequest> consolidationDetailsRequests = shipmentRequest.getConsolidationList();
         if(consolidationDetailsRequests != null && !consolidationDetailsRequests.isEmpty()) {
             for(ConsolidationDetailsRequest consolidation : consolidationDetailsRequests) {
                 Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findByGuid(consolidation.getGuid());
                 if(consolidationDetails.get() != null && consolidationDetails.get().getId() != null) {
-                    tempConsolIds.add(consolidationDetails.get().getId());
+                    tempConsolidations.add(consolidationDetails.get());
                 }
             }
         }
@@ -2541,6 +2545,8 @@ public class ShipmentService implements IShipmentService {
             }
             shipmentRequest.setConsolidationList(null);
             ShipmentDetails entity = objectMapper.convertValue(shipmentRequest, ShipmentDetails.class);
+            if (!tempConsolidations.isEmpty())
+                entity.setConsolidationList(tempConsolidations);
             entity.setId(id);
             List<Containers> updatedContainers = null;
             if (containerRequestList != null) {
@@ -2556,8 +2562,8 @@ public class ShipmentService implements IShipmentService {
             } else {
                 entity = shipmentDao.update(entity, true);
             }
-
-            attachConsolidations(entity.getId(), tempConsolIds);
+//            Not needed, added consolidations while saving shipment
+//            attachConsolidations(entity.getId(), tempConsolIds);
 
             if (bookingCarriageRequestList != null) {
                 ListCommonRequest listCommonRequest = constructListCommonRequest("shipmentId", entity.getId(), "=");

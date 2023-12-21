@@ -14,6 +14,7 @@ public class ConsolidationConstants {
     public static final String RETRIEVE_BY_ID_SUCCESSFUL = "Successful Consolidation Data Retrieval By Id";
 
     public static final String CONSOLIDATION_ID = "Consolidation Id";
+    public static final String CONSOLIDATION_GUID = "Consolidation Guid";
 
     public static final String RESPONSE_CONTAINER_LIST = "List";
 
@@ -28,4 +29,5 @@ public class ConsolidationConstants {
     public static final String ASSIGN_SUCCESSFUL = "Assign Shipments Successful";
     public static final String DETACH_SUCCESSFUL = "Detach Shipments Successful";
     public static final String MASTER_DATA_RETRIEVE_SUCCESS = "Master Data Retrieve Successfully";
+    public static final String DEFAULT_CONSOLIDATION_GENERATED_SUCCESSFULLY = "Default consolidation generated successfully";
 }

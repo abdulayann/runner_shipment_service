@@ -35,6 +35,7 @@ import org.springframework.web.bind.annotation.*;
 import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 
 @RestController
@@ -103,8 +104,10 @@ public class ConsolidationController {
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = ConsolidationConstants.RETRIEVE_BY_ID_SUCCESSFUL)})
     @GetMapping(ApiConstants.API_RETRIEVE_BY_ID)
-    public ResponseEntity<RunnerResponse<ConsolidationDetailsResponse>> retrieveById(@ApiParam(value = ConsolidationConstants.CONSOLIDATION_ID, required = true) @RequestParam Long id) {
-        CommonGetRequest request = CommonGetRequest.builder().id(id).build();
+    public ResponseEntity<RunnerResponse<ConsolidationDetailsResponse>> retrieveById(@ApiParam(value = ConsolidationConstants.CONSOLIDATION_ID) @RequestParam Optional<Long> id, @ApiParam(value = ShipmentConstants.SHIPMENT_GUID) @RequestParam Optional<String> guid) {
+        CommonGetRequest request = CommonGetRequest.builder().build();
+        id.ifPresent(request::setId);
+        guid.ifPresent(request::setGuid);
         return (ResponseEntity<RunnerResponse<ConsolidationDetailsResponse>>) consolidationService.retrieveById(CommonRequestModel.buildRequest(request));
     }
 
@@ -382,5 +385,11 @@ public class ConsolidationController {
             log.error(responseMsg, e);
             return (ResponseEntity<RunnerResponse<ContainerPackSummaryDto>>) ResponseHelper.buildFailedResponse(e.getMessage());
         }
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.DEFAULT_SHIPMENT_GENERATED_SUCCESSFULLY)})
+    @GetMapping(ApiConstants.API_DEFAULT_CONSOLIDATION)
+    public ResponseEntity<RunnerResponse<ConsolidationDetailsResponse>> getDefaultConsolidation() {
+        return (ResponseEntity<RunnerResponse<ConsolidationDetailsResponse>>) consolidationService.getDefaultConsolidation();
     }
 }

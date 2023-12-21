@@ -64,6 +64,10 @@ public class CreateBookingModuleInV1 {
         private String BookingType;
         private String Status;
         private String FmcTlcId;
+        private String ClientCountryFilter;
+        private String ConsignorCountryFilter;
+        private String ConsigneeCountryFilter;
+        private String NotifyPartyCountryFilter;
 
         private List<QuoteContainer> QuoteContainers;
         private List<Routing> RoutingList;

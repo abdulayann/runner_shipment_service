@@ -1869,14 +1869,18 @@ public class ConsolidationService implements IConsolidationService {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
-            if (request == null) {
-                log.error("Request is empty for Consolidation retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            if(request.getId() == null && request.getGuid() == null) {
+                log.error("Request Id and Guid are null for Consolidation retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+                throw new RunnerException("Id and GUID can't be null. Please provide any one !");
             }
-            if (request.getId() == null) {
-                log.error("Request Id is null for Consolidation retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            Long id = request.getId();
+            Optional<ConsolidationDetails> consolidationDetails = Optional.ofNullable(null);
+            if(id != null ){
+                consolidationDetails = consolidationDetailsDao.findById(id);
+            } else {
+                UUID guid = UUID.fromString(request.getGuid());
+                consolidationDetails = consolidationDetailsDao.findByGuid(guid);
             }
-            long id = request.getId();
-            Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(id);
             if (!consolidationDetails.isPresent()) {
                 log.debug("Consolidation Details is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
@@ -3039,6 +3043,45 @@ public class ConsolidationService implements IConsolidationService {
         catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_DATA_RETRIEVAL_FAILURE;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
+    @Override
+    public ResponseEntity<?> getDefaultConsolidation() {
+        String responseMsg;
+        try {
+            List<ShipmentSettingsDetails> shipmentSettingsDetails = shipmentSettingsDao.getSettingsByTenantIds(List.of(TenantContext.getCurrentTenant()));
+            if(shipmentSettingsDetails == null || shipmentSettingsDetails.size() == 0)
+                throw new RunnerException("Shipment settings empty for current tenant");
+            var tenantSettings = shipmentSettingsDetails.get(0);
+            // Populate shipment details on basis of tenant settings
+            ConsolidationDetailsResponse response = new ConsolidationDetailsResponse();
+            response.setCarrierDetails(new CarrierDetailResponse());
+            response.setTransportMode(tenantSettings.getDefaultTransportMode());
+            response.setShipmentType(tenantSettings.getDefaultContainerType());
+
+            response.setCreatedBy(UserContext.getUser().getUsername());
+
+//            try {
+//                log.info("Fetching Tenant Model");
+//                TenantModel tenantModel = modelMapper.map(v1Service.retrieveTenant().getEntity(), TenantModel.class);
+//                String currencyCode = tenantModel.currencyCode;
+//                response.setFreightLocalCurrency(currencyCode);
+//            } catch (Exception e){
+//                log.error("Failed in fetching tenant data from V1 with error : {}", e);
+//            }
+//
+//            if(Constants.TRANSPORT_MODE_SEA.equals(response.getTransportMode()) && Constants.DIRECTION_EXP.equals(response.getDirection()))
+//                response.setHouseBill(generateCustomHouseBL());
+
+            this.addAllMasterDataInSingleCall(null, response, null);
+
+            return ResponseHelper.buildSuccessResponse(response);
+        } catch(Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(responseMsg);
         }
