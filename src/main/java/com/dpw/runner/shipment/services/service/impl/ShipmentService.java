@@ -3593,17 +3593,19 @@ public class ShipmentService implements IShipmentService {
 
     private void autoGenerateEvents(ShipmentDetails shipmentDetails, Integer previousStauts) {
         Events response = null;
-        if(previousStauts == null || !shipmentDetails.getStatus().equals(previousStauts)) {
-            if (shipmentDetails.getStatus().equals(ShipmentStatus.Confirmed.getValue())) {
-                response = createAutomatedEvents(shipmentDetails,Constants.SHPCNFRM);
+        if(shipmentDetails.getStatus() != null) {
+            if (previousStauts == null || !shipmentDetails.getStatus().equals(previousStauts)) {
+                if (shipmentDetails.getStatus().equals(ShipmentStatus.Confirmed.getValue())) {
+                    response = createAutomatedEvents(shipmentDetails, Constants.SHPCNFRM);
+                }
+                if (shipmentDetails.getStatus().equals(ShipmentStatus.Created.getValue())) {
+                    response = createAutomatedEvents(shipmentDetails, Constants.SHPCMPLT);
+                }
             }
-            if (shipmentDetails.getStatus().equals(ShipmentStatus.Created.getValue())) {
-                response = createAutomatedEvents(shipmentDetails, Constants.SHPCMPLT);
-            }
+            if (shipmentDetails.getEventsList() != null)
+                shipmentDetails.setEventsList(new ArrayList<>());
+            shipmentDetails.getEventsList().add(response);
         }
-        if(shipmentDetails.getEventsList() == null)
-            shipmentDetails.setEventsList(new ArrayList<>());
-        shipmentDetails.getEventsList().add(response);
     }
 
     private Events createAutomatedEvents(ShipmentDetails shipmentDetails, String eventCode) {
