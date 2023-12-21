@@ -2520,14 +2520,14 @@ public class ShipmentService implements IShipmentService {
         UUID guid = shipmentRequest.getGuid();
         Optional<ShipmentDetails> oldEntity = shipmentDao.findByGuid(guid);
 
-        List<Long> tempConsolIds = new ArrayList<>();
+        List<ConsolidationDetails> tempConsolidations = new ArrayList<>();
 
         List<ConsolidationDetailsRequest> consolidationDetailsRequests = shipmentRequest.getConsolidationList();
         if(consolidationDetailsRequests != null && !consolidationDetailsRequests.isEmpty()) {
             for(ConsolidationDetailsRequest consolidation : consolidationDetailsRequests) {
                 Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findByGuid(consolidation.getGuid());
                 if(consolidationDetails.get() != null && consolidationDetails.get().getId() != null) {
-                    tempConsolIds.add(consolidationDetails.get().getId());
+                    tempConsolidations.add(consolidationDetails.get());
                 }
             }
         }
@@ -2545,6 +2545,8 @@ public class ShipmentService implements IShipmentService {
             }
             shipmentRequest.setConsolidationList(null);
             ShipmentDetails entity = objectMapper.convertValue(shipmentRequest, ShipmentDetails.class);
+            if (!tempConsolidations.isEmpty())
+                entity.setConsolidationList(tempConsolidations);
             entity.setId(id);
             List<Containers> updatedContainers = null;
             if (containerRequestList != null) {
@@ -2560,8 +2562,8 @@ public class ShipmentService implements IShipmentService {
             } else {
                 entity = shipmentDao.update(entity, true);
             }
-
-            attachConsolidations(entity.getId(), tempConsolIds);
+//            Not needed, added consolidations while saving shipment
+//            attachConsolidations(entity.getId(), tempConsolIds);
 
             if (bookingCarriageRequestList != null) {
                 ListCommonRequest listCommonRequest = constructListCommonRequest("shipmentId", entity.getId(), "=");
