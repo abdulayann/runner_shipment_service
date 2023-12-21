@@ -592,6 +592,17 @@ public class ShipmentService implements IShipmentService {
             if(shipmentDetails.getContainersList() != null && shipmentDetails.getContainersList().size() > 0) {
                 hbl = hblService.checkAllContainerAssigned(shipmentId, shipmentDetails.getContainersList(), updatedPackings);
             }
+
+            List<NotesRequest> notesRequest = request.getNotesList();
+            for(NotesRequest req : notesRequest) {
+                req.setEntityId(shipmentId);
+            }
+            if (notesRequest != null) {
+                for(NotesRequest req : notesRequest) {
+                    notesDao.save(jsonHelper.convertValue(req, Notes.class));
+                }
+            }
+
             afterSave(shipmentDetails, true);
             try {
                 shipmentSync.sync(shipmentDetails);
@@ -999,6 +1010,7 @@ public class ShipmentService implements IShipmentService {
     public ResponseEntity<?> createShipmentInV2(CustomerBookingRequest customerBookingRequest) throws Exception
     {
         List<ConsolidationDetailsRequest> consolidationDetails = new ArrayList<>();
+        List<Notes> notes = notesDao.findByEntityIdAndEntityType(customerBookingRequest.getId(), "CustomerBooking");
         if(customerBookingRequest.getCargoType().equals("FCL"))
         {
             ConsolidationDetailsRequest consolidationDetailsRequest = ConsolidationDetailsRequest.builder().
@@ -1088,9 +1100,24 @@ public class ShipmentService implements IShipmentService {
                 fileRepoList(customerBookingRequest.getFileRepoList()).
                 routingsList(customerBookingRequest.getRoutingList()).
                 consolidationList(customerBookingRequest.getCargoType().equals("FCL") ? consolidationDetails : null).
+                notesList(createNotes(notes)).
                 build();
 
         return this.createFromBooking(CommonRequestModel.buildRequest(shipmentRequest));
+    }
+
+    private List<NotesRequest> createNotes(List<Notes> notes){
+        if(notes == null) return null;
+        return notes.stream().filter(Objects::nonNull).map(note ->
+               NotesRequest.builder()
+                        .assignedTo(note.getAssignedTo())
+                        .label(note.getLabel())
+                        .text(note.getText())
+                        .insertUserDisplayName(note.getInsertUserDisplayName())
+                        .isPublic(note.getIsPublic())
+                        .insertDate(note.getCreatedAt())
+                        .entityType(Constants.SHIPMENT_BOOKING)
+                        .build()).collect(Collectors.toList());
     }
 
     private PartiesRequest createPartiesRequest(PartiesRequest party)
@@ -2153,7 +2180,9 @@ public class ShipmentService implements IShipmentService {
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
             log.info("Shipment details fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
+            List<Notes> notes = notesDao.findByEntityIdAndEntityType(request.getId(), Constants.SHIPMENT_BOOKING);
             ShipmentDetailsResponse response = modelMapper.map(shipmentDetails.get(), ShipmentDetailsResponse.class);
+            response.setCustomerBookingNotesList(convertToDtoList(notes,NotesResponse.class));
             createShipmentPayload(shipmentDetails.get(), response);
             //containerCountUpdate(shipmentDetails.get(), response);
             return ResponseHelper.buildSuccessResponse(response);
@@ -2186,6 +2215,7 @@ public class ShipmentService implements IShipmentService {
             shipmentDetails.get().setNotesList(notesDao.findByEntityIdAndEntityType(id, Constants.SHIPMENT));
             log.info("Shipment details async fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
             ShipmentDetailsResponse response = jsonHelper.convertValue(shipmentDetails.get(), ShipmentDetailsResponse.class);
+            response.setCustomerBookingNotesList(convertToDtoList(notesDao.findByEntityIdAndEntityType(request.getId(), Constants.SHIPMENT_BOOKING),NotesResponse.class));
             //containerCountUpdate(shipmentDetails.get(), response);
             return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(response));
         } catch (Exception e) {
@@ -2213,9 +2243,9 @@ public class ShipmentService implements IShipmentService {
             CompletableFuture<ResponseEntity<?>> shipmentsFuture = retrieveByIdAsync(commonRequestModel);
             RunnerResponse<ShipmentDetailsResponse> res = (RunnerResponse<ShipmentDetailsResponse>) shipmentsFuture.get().getBody();
             if(request.getIncludeColumns()==null||request.getIncludeColumns().size()==0)
-            return ResponseHelper.buildSuccessResponse(res.getData());
+                return ResponseHelper.buildSuccessResponse(res.getData());
             else
-            return ResponseHelper.buildSuccessResponse(PartialFetchUtils.fetchPartialData(res, request.getIncludeColumns()));
+                return ResponseHelper.buildSuccessResponse(PartialFetchUtils.fetchPartialData(res, request.getIncludeColumns()));
         } catch (Exception e) {
             String responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;
