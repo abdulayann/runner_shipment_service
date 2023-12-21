@@ -369,4 +369,10 @@ public class ConsolidationController {
             return ResponseHelper.buildFailedResponse(e.getMessage());
         }
     }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.DEFAULT_SHIPMENT_GENERATED_SUCCESSFULLY)})
+    @GetMapping(ApiConstants.API_DEFAULT_CONSOLIDATION)
+    public ResponseEntity<RunnerResponse<ConsolidationDetailsResponse>> getDefaultConsolidation() {
+        return (ResponseEntity<RunnerResponse<ConsolidationDetailsResponse>>) consolidationService.getDefaultConsolidation();
+    }
 }

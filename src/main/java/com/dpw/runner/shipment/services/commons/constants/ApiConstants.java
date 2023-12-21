@@ -72,4 +72,5 @@ public class ApiConstants {
     public static final String AUTO_CALCULATE_CHARGABLE = "/auto-calc-chargable";
     public static final String AUTO_CALCULATE_VOLUME = "/auto-calc-volume";
     public static final String GET_AUTO_UPDATE_DESC_GOODS = "/get/auto-update/goods";
+    public static final String API_DEFAULT_CONSOLIDATION = "/getDefaultConsolidation";
 }
