@@ -71,7 +71,7 @@ public class ConsolidationSync implements IConsolidationSync {
         response = modelMapper.map(request, CustomConsolidationRequest.class);
 
         response.setLockedByUser(request.getLockedBy());
-
+        response.setMsnNumberStr(request.getMsnNumber());
         response.setShipmentType(request.getShipmentType());
         response.setCoLoadBookingRef(request.getCoLoadBookingReference());
         response.setType(request.getConsolidationType());

@@ -91,8 +91,8 @@ public class CustomConsolidationRequest implements IRunnerResponse, IRunnerReque
     private String MarksnNums;
     @JsonProperty("MrnNumber")
     private String MrnNumber;
-    @JsonProperty("MsnNumber")
-    private Long MsnNumber;
+    @JsonProperty("MsnNumberStr")
+    private String MsnNumberStr;
 
     @JsonProperty("PackageType")
     private String PackageType;
