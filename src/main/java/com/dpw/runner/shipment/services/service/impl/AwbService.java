@@ -1101,6 +1101,7 @@ public class AwbService implements IAwbService {
                 //TODO
             }
         }
+        awb.setId(resetAwbRequest.getId());
         awb = awbDao.save(awb);
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(awb));
     }
