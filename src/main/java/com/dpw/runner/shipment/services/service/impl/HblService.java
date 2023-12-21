@@ -319,10 +319,7 @@ public class HblService implements IHblService {
     public ResponseEntity<?> retrieveByShipmentId(CommonRequestModel request) {
         Long shipmentId = ((CommonGetRequest) request.getData()).getId();
         List<Hbl> hbls = hblDao.findByShipmentId(shipmentId);
-        if (hbls.isEmpty()) {
-            throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
-        }
-        return ResponseHelper.buildSuccessResponse(convertEntityToDto(hbls.get(0)));
+        return ResponseHelper.buildSuccessResponse(hbls.isEmpty() ? null : convertEntityToDto(hbls.get(0)));
     }
 
     @Override
