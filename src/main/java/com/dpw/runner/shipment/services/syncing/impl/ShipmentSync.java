@@ -28,6 +28,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -111,6 +112,7 @@ public class ShipmentSync implements IShipmentSync {
         // entityID also gets assigned as a part of this mapping
         mapTruckDriverDetail(cs, sd);
         mapRoutings(cs, sd);
+        mapEvents(cs, sd);
         cs.setContainersList(syncEntityConversionService.containersV2ToV1(sd.getContainersList()));
         cs.setReferenceNumbers(convertToList(sd.getReferenceNumbersList(), ReferenceNumbersRequestV2.class));
         cs.setPackings_(syncEntityConversionService.packingsV2ToV1(sd.getPackingList(), sd.getContainersList()));
@@ -287,6 +289,14 @@ public class ShipmentSync implements IShipmentSync {
                 }
         ).toList();
         cs.setRoutings(res);
+    }
+
+    private void mapEvents(CustomShipmentSyncRequest cs, ShipmentDetails sd) {
+        if(sd.getEventsList() == null)
+            return;
+        List<EventsRequestV2> res = sd.getEventsList().stream().filter(Objects::nonNull)
+                .map(i -> modelMapper.map(i, EventsRequestV2.class)).toList();
+        cs.setEventsList(res);
     }
 
     private <T,P> List<P> convertToList(final List<T> lst, Class<P> clazz) {
