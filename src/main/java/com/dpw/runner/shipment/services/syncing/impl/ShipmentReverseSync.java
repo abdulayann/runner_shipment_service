@@ -88,7 +88,7 @@ public class ShipmentReverseSync implements IShipmentReverseSync {
             sd.setReferenceNumbersList(convertToList(cs.getReferenceNumbers(), ReferenceNumbers.class));
             Map<UUID, String> map = new HashMap<>();
             if(cs.getPackings_() != null)
-                map = cs.getPackings_().stream().collect(Collectors.toMap(PackingRequestV2::getGuid, PackingRequestV2::getContainerNumber));
+                map = cs.getPackings_().stream().filter(x-> x.getContainerNumber() != null).collect(Collectors.toMap(PackingRequestV2::getGuid, PackingRequestV2::getContainerNumber));
             sd.setPackingList(convertToList(cs.getPackings_(), Packing.class));
             sd.setFileRepoList(convertToList(cs.getDocs_(), FileRepo.class));
             sd.setElDetailsList(convertToList(cs.getELDetails(), ELDetails.class));

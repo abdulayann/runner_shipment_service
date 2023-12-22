@@ -3630,7 +3630,7 @@ public class ShipmentService implements IShipmentService {
                 if (shipmentDetails.getStatus().equals(ShipmentStatus.Confirmed.getValue())) {
                     response = createAutomatedEvents(shipmentDetails, Constants.SHPCNFRM);
                 }
-                if (shipmentDetails.getStatus().equals(ShipmentStatus.Created.getValue())) {
+                if (shipmentDetails.getStatus().equals(ShipmentStatus.Completed.getValue())) {
                     response = createAutomatedEvents(shipmentDetails, Constants.SHPCMPLT);
                 }
             }
