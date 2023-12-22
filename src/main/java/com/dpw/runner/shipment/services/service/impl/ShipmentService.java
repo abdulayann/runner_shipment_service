@@ -1212,9 +1212,10 @@ public class ShipmentService implements IShipmentService {
         AutoUpdateWtVolResponse response = jsonHelper.convertValue(request, AutoUpdateWtVolResponse.class);
         List<Packing> packingList = jsonHelper.convertValueToList(request.getPackingList(), Packing.class);
         List<Containers> containersList = jsonHelper.convertValueToList(request.getContainersList(), Containers.class);
-        if(request.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)) {
-            response = calculatePacksAndPacksUnit(packingList, response);
-        }
+//        if(request.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)) {
+//            response = calculatePacksAndPacksUnit(packingList, response);
+//        }
+        response = calculatePacksAndPacksUnit(packingList, response);
         response = calculateWeightAndVolumeUnit(request, packingList, response);
         ShipmentSettingsDetails shipmentSettingsDetails = shipmentSettingsDao.getSettingsByTenantIds(List.of(TenantContext.getCurrentTenant())).get(0);
         boolean isPacksPresent = packingList != null && packingList.size() > 0;
@@ -3195,6 +3196,7 @@ public class ShipmentService implements IShipmentService {
     public ResponseEntity<?> retrieveByOrderId(String orderId) {
         try {
             ShipmentDetailsResponse response = jsonHelper.convertValue(orderManagementAdapter.getOrder(orderId), ShipmentDetailsResponse.class);
+            this.addAllMasterDataInSingleCall(null, response, null);
             return ResponseHelper.buildSuccessResponse(response);
         } catch (Exception e){
             throw new RunnerException(e.getMessage());
