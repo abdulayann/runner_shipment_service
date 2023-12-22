@@ -3632,9 +3632,11 @@ public class ShipmentService implements IShipmentService {
                     response = createAutomatedEvents(shipmentDetails, Constants.SHPCMPLT);
                 }
             }
-            if (shipmentDetails.getEventsList() != null)
-                shipmentDetails.setEventsList(new ArrayList<>());
-            shipmentDetails.getEventsList().add(response);
+            if(response != null) {
+                if (shipmentDetails.getEventsList() == null)
+                    shipmentDetails.setEventsList(new ArrayList<>());
+                shipmentDetails.getEventsList().add(response);
+            }
         }
     }
 
