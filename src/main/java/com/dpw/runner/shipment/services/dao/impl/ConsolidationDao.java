@@ -298,25 +298,26 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
             throw new ValidationException("Please enter a valid MAWB number.");
 
         String mawbAirlineCode = consolidationRequest.getMawb().substring(0, 3);
-        ListCommonRequest listCarrierRequest = constructListCommonRequest("airlineCode", mawbAirlineCode, "="); // TODO fetch from v1
-        Pair<Specification<CarrierDetails>, Pageable> pair = fetchData(listCarrierRequest, CarrierDetails.class);
-        Page<CarrierDetails> carrierDetails = carrierDao.findAll(pair.getLeft(), pair.getRight());
-
-        if (carrierDetails.getTotalElements() == 0)
-            throw new ValidationException("Airline for the entered MAWB Number doesn't exist in Carrier Master");
-
-        CarrierDetails correspondingCarrier = carrierDetails.getContent().get(0);
-
+        //TODO: Tapan need to fix this
+//        ListCommonRequest listCarrierRequest = constructListCommonRequest("airlineCode", mawbAirlineCode, "="); // TODO fetch from v1
+//        Pair<Specification<CarrierDetails>, Pageable> pair = fetchData(listCarrierRequest, CarrierDetails.class);
+//        Page<CarrierDetails> carrierDetails = carrierDao.findAll(pair.getLeft(), pair.getRight());
+//
+//        if (carrierDetails.getTotalElements() == 0)
+//            throw new ValidationException("Airline for the entered MAWB Number doesn't exist in Carrier Master");
+//
+//        CarrierDetails correspondingCarrier = carrierDetails.getContent().get(0);
+//
         Boolean isMAWBNumberExist = false;
         Boolean isCarrierExist = false;
-        if (consolidationRequest.getCarrierDetails() != null)
-            isCarrierExist = true;
+//        if (consolidationRequest.getCarrierDetails() != null)
+//            isCarrierExist = true;
+//
+//        if (isCarrierExist)
+//            throw new ValidationException("MAWB Number prefix is not matching with entered Flight Carrier");
 
-        if (isCarrierExist)
-            throw new ValidationException("MAWB Number prefix is not matching with entered Flight Carrier");
-
-        ListCommonRequest listMawbRequest = constructListCommonRequest("MAWBNumber", consolidationRequest.getMawb(), "=");
-        Pair<Specification<MawbStocksLink>, Pageable> mawbStocksLinkPair = fetchData(listCarrierRequest, MawbStocksLink.class);
+        ListCommonRequest listMawbRequest = constructListCommonRequest("mawbNumber", consolidationRequest.getMawb(), "=");
+        Pair<Specification<MawbStocksLink>, Pageable> mawbStocksLinkPair = fetchData(listMawbRequest, MawbStocksLink.class);
         Page<MawbStocksLink> mawbStocksLinkPage = mawbStocksLinkDao.findAll(mawbStocksLinkPair.getLeft(), mawbStocksLinkPair.getRight());
 
         MawbStocksLink mawbStocksLink = null;
@@ -324,8 +325,8 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
         if (!mawbStocksLinkPage.getContent().isEmpty())
             isMAWBNumberExist = true;
 
-        if (!isCarrierExist)
-            consolidationRequest.setCarrierDetails(correspondingCarrier);
+//        if (!isCarrierExist)
+//            consolidationRequest.setCarrierDetails(correspondingCarrier);
 
         if (consolidationRequest.getShipmentType().equals(Constants.IMP)) {
             return;
