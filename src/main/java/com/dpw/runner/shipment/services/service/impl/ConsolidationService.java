@@ -3060,7 +3060,8 @@ public class ConsolidationService implements IConsolidationService {
             ConsolidationDetailsResponse response = new ConsolidationDetailsResponse();
             response.setCarrierDetails(new CarrierDetailResponse());
             response.setTransportMode(tenantSettings.getDefaultTransportMode());
-            response.setShipmentType(tenantSettings.getDefaultContainerType());
+            response.setContainerCategory(tenantSettings.getDefaultContainerType());
+            response.setShipmentType(tenantSettings.getDefaultShipmentType());
 
             response.setCreatedBy(UserContext.getUser().getUsername());
 
