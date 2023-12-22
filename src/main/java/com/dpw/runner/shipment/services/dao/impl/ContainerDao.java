@@ -100,6 +100,11 @@ public class ContainerDao implements IContainerDao {
         containerRepository.delete(containers);
     }
 
+    @Override
+    public void deleteById(Long id) {
+        containerRepository.deleteById(id);
+    }
+
     public List<Containers> updateEntityFromBooking(List<Containers> containersList, Long bookingId) throws Exception {
         String responseMsg;
         List<Containers> responseContainers = new ArrayList<>();
@@ -202,12 +207,22 @@ public class ContainerDao implements IContainerDao {
         List<Containers> responseContainers = new ArrayList<>();
         try {
             // TODO- Handle Transactions here
-            if (containersList != null && containersList.size() != 0) {
+            if (containersList != null) {
                 List<Containers> containerList = new ArrayList<>(containersList);
                 if(consolidationId != null) {
+                    ListCommonRequest listCommonRequest = constructListCommonRequest("consolidationId", consolidationId, "=");
+                    Pair<Specification<Containers>, Pageable> pair = fetchData(listCommonRequest, Containers.class);
+                    Page<Containers> containersPage = findAll(pair.getLeft(), pair.getRight());
+                    Map<Long, Containers> hashMap = containersPage.stream()
+                            .collect(Collectors.toMap(Containers::getId, Function.identity()));
                     for (Containers containers: containerList) {
                         containers.setConsolidationId(consolidationId);
+                        Long id = containers.getId();
+                        if (id != null) {
+                            hashMap.remove(id);
+                        }
                     }
+                    deleteContainers(hashMap, null, null);
                 }
                 if(shipmentId != null)
                 {

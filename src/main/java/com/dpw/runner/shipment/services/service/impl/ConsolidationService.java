@@ -1475,7 +1475,7 @@ public class ConsolidationService implements IConsolidationService {
 
                 if(contShipIds != null && contShipIds.size() == 1 && (packings == null || packings.getContent() == null || packings.getContent().isEmpty())) {
                     for(Long shipmentId: shipIds) {
-                        if(shipmentId == contShipIds.get(0)) {
+                        if(shipmentId.equals(contShipIds.get(0))) {
                             ShipmentDetails shipmentDetails = getShipmentFromMap(map, shipmentId);
                             if(shipmentDetails != null && shipmentDetails.getShipmentType().equals(Constants.CARGO_TYPE_FCL)) {
                                 response.setIsFCL(true);

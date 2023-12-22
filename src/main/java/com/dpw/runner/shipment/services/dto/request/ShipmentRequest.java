@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.dto.request;
 
 import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerIdDltReq;
 import com.dpw.runner.shipment.services.entity.enums.CustomerCategoryRates;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -121,4 +122,5 @@ public class ShipmentRequest extends CommonRequest implements IRunnerRequest {
     private String consignorCountry;
     private String consigneeCountry;
     private String notifyPartyCountry;
+    private List<ContainerIdDltReq> deletedContainerIds;
 }

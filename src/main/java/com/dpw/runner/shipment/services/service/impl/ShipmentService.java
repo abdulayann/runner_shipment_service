@@ -1536,12 +1536,34 @@ public class ShipmentService implements IShipmentService {
                 entity.setBookingCarriagesList(updatedBookingCarriages);
             }
             List<Packing> updatedPackings = new ArrayList<>();
+            List<Long> deleteContainerIds = new ArrayList<>();
+            if(shipmentRequest.getDeletedContainerIds() != null && shipmentRequest.getDeletedContainerIds().size() > 0) {
+                deleteContainerIds = shipmentRequest.getDeletedContainerIds().stream().filter(e -> e.getId() != null).map(e -> e.getId()).collect(Collectors.toList());
+                if(deleteContainerIds != null && deleteContainerIds.size() > 0) {
+                    for (Long containerId : deleteContainerIds) {
+                        containerDao.deleteById(containerId);
+                    }
+                }
+            }
             if (packingRequestList != null) {
                 if(updatedContainers == null)
                     updatedContainers = oldEntity.get().getContainersList();
                 packingRequestList = setContainerIdByNumber(updatedContainers, packingRequestList);
-                updatedPackings = packingDao.updateEntityFromShipment(convertToEntityList(packingRequestList, Packing.class), id);
+                updatedPackings = packingDao.updateEntityFromShipment(convertToEntityList(packingRequestList, Packing.class), id, deleteContainerIds);
                 entity.setPackingList(updatedPackings);
+            }
+            if(deleteContainerIds != null && deleteContainerIds.size() > 0) {
+                ListCommonRequest listCommonRequest = andCriteria("containerId", deleteContainerIds, "IN", null);
+                Pair<Specification<Packing>, Pageable> pair = fetchData(listCommonRequest, Packing.class);
+                Page<Packing> packings = packingDao.findAll(pair.getLeft(), pair.getRight());
+                if(packings != null && packings.getContent() != null && !packings.getContent().isEmpty()) {
+                    List<Packing> packingList = new ArrayList<>();
+                    for (Packing packing : packings.getContent()) {
+                        packing.setContainerId(null);
+                        packingList.add(packing);
+                    }
+                    packingDao.saveAll(packingList);
+                }
             }
             if (elDetailsRequestList != null) {
                 List<ELDetails> updatedELDetails = elDetailsDao.updateEntityFromShipment(convertToEntityList(elDetailsRequestList, ELDetails.class), id);
@@ -2316,7 +2338,7 @@ public class ShipmentService implements IShipmentService {
                 entity.setBookingCarriagesList(updatedBookingCarriages);
             }
             if (packingRequestList != null) {
-                List<Packing> updatedPackings = packingDao.updateEntityFromShipment(convertToEntityList(packingRequestList, Packing.class), id);
+                List<Packing> updatedPackings = packingDao.updateEntityFromShipment(convertToEntityList(packingRequestList, Packing.class), id, null);
                 entity.setPackingList(updatedPackings);
             }
             if (elDetailsRequestList != null) {
