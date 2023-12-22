@@ -392,4 +392,15 @@ public class ConsolidationController {
     public ResponseEntity<RunnerResponse<ConsolidationDetailsResponse>> getDefaultConsolidation() {
         return (ResponseEntity<RunnerResponse<ConsolidationDetailsResponse>>) consolidationService.getDefaultConsolidation();
     }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ConsolidationConstants.CREATE_SUCCESSFUL)})
+    @GetMapping(ApiConstants.GET_ID_BY_GUID)
+    public ResponseEntity<?> getIdFromGuid(@ApiParam(value = ConsolidationConstants.CONSOLIDATION_ID, required = true) @RequestParam String guid) {
+        try {
+            CommonGetRequest request = CommonGetRequest.builder().guid(guid).build();
+            return consolidationService.getIdFromGuid(CommonRequestModel.buildRequest(request));
+        } catch (Exception e) {
+            return ResponseHelper.buildFailedResponse(e.getMessage());
+        }
+    }
 }

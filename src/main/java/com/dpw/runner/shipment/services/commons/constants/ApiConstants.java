@@ -74,4 +74,5 @@ public class ApiConstants {
     public static final String GET_AUTO_UPDATE_DESC_GOODS = "/get/auto-update/goods";
     public static final String GET_CONT_PACK_SUMMARY = "/get/container-pack-summary";
     public static final String API_DEFAULT_CONSOLIDATION = "/getDefaultConsolidation";
+    public static final String GET_ID_BY_GUID = "/get/id";
 }

@@ -592,6 +592,17 @@ public class ShipmentService implements IShipmentService {
             if(shipmentDetails.getContainersList() != null && shipmentDetails.getContainersList().size() > 0) {
                 hbl = hblService.checkAllContainerAssigned(shipmentId, shipmentDetails.getContainersList(), updatedPackings);
             }
+
+            List<NotesRequest> notesRequest = request.getNotesList();
+            for(NotesRequest req : notesRequest) {
+                req.setEntityId(shipmentId);
+            }
+            if (notesRequest != null) {
+                for(NotesRequest req : notesRequest) {
+                    notesDao.save(jsonHelper.convertValue(req, Notes.class));
+                }
+            }
+
             afterSave(shipmentDetails, true);
             try {
                 shipmentSync.sync(shipmentDetails);
@@ -756,6 +767,8 @@ public class ShipmentService implements IShipmentService {
                 }
             }
             afterSave(shipmentDetails, true);
+            // Create events on basis of shipment status Confirmed/Created
+            autoGenerateEvents(shipmentDetails, null);
             try {
                 shipmentSync.sync(shipmentDetails);
             } catch (Exception e){
@@ -997,6 +1010,7 @@ public class ShipmentService implements IShipmentService {
     public ResponseEntity<?> createShipmentInV2(CustomerBookingRequest customerBookingRequest) throws Exception
     {
         List<ConsolidationDetailsRequest> consolidationDetails = new ArrayList<>();
+        List<Notes> notes = notesDao.findByEntityIdAndEntityType(customerBookingRequest.getId(), "CustomerBooking");
         if(customerBookingRequest.getCargoType().equals("FCL"))
         {
             ConsolidationDetailsRequest consolidationDetailsRequest = ConsolidationDetailsRequest.builder().
@@ -1086,9 +1100,24 @@ public class ShipmentService implements IShipmentService {
                 fileRepoList(customerBookingRequest.getFileRepoList()).
                 routingsList(customerBookingRequest.getRoutingList()).
                 consolidationList(customerBookingRequest.getCargoType().equals("FCL") ? consolidationDetails : null).
+                notesList(createNotes(notes)).
                 build();
 
         return this.createFromBooking(CommonRequestModel.buildRequest(shipmentRequest));
+    }
+
+    private List<NotesRequest> createNotes(List<Notes> notes){
+        if(notes == null) return null;
+        return notes.stream().filter(Objects::nonNull).map(note ->
+               NotesRequest.builder()
+                        .assignedTo(note.getAssignedTo())
+                        .label(note.getLabel())
+                        .text(note.getText())
+                        .insertUserDisplayName(note.getInsertUserDisplayName())
+                        .isPublic(note.getIsPublic())
+                        .insertDate(note.getCreatedAt())
+                        .entityType(Constants.SHIPMENT_BOOKING)
+                        .build()).collect(Collectors.toList());
     }
 
     private PartiesRequest createPartiesRequest(PartiesRequest party)
@@ -1451,6 +1480,7 @@ public class ShipmentService implements IShipmentService {
 
         Optional<ShipmentDetails> oldEntity = retrieveByIdOrGuid(shipmentRequest);
         long id=oldEntity.get().getId();
+        Integer previousStatus = oldEntity.get().getStatus();
         if (!oldEntity.isPresent()) {
             log.debug("Shipment Details is null for Id {}", shipmentRequest.getId());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
@@ -1548,6 +1578,8 @@ public class ShipmentService implements IShipmentService {
                 List<Events> updatedEvents = eventDao.updateEntityFromOtherEntity(convertToEntityList(eventsRequestList, Events.class), id, Constants.SHIPMENT);
                 entity.setEventsList(updatedEvents);
             }
+            // Create events on basis of shipment status Confirmed/Created
+            autoGenerateEvents(entity, previousStatus);
             if (jobRequestList != null) {
                 List<Jobs> updatedJobs = jobDao.updateEntityFromShipment(convertToEntityList(jobRequestList, Jobs.class), id);
                 entity.setJobsList(updatedJobs);
@@ -2148,7 +2180,9 @@ public class ShipmentService implements IShipmentService {
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
             log.info("Shipment details fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
+            List<Notes> notes = notesDao.findByEntityIdAndEntityType(request.getId(), Constants.SHIPMENT_BOOKING);
             ShipmentDetailsResponse response = modelMapper.map(shipmentDetails.get(), ShipmentDetailsResponse.class);
+            response.setCustomerBookingNotesList(convertToDtoList(notes,NotesResponse.class));
             createShipmentPayload(shipmentDetails.get(), response);
             //containerCountUpdate(shipmentDetails.get(), response);
             return ResponseHelper.buildSuccessResponse(response);
@@ -2181,6 +2215,7 @@ public class ShipmentService implements IShipmentService {
             shipmentDetails.get().setNotesList(notesDao.findByEntityIdAndEntityType(id, Constants.SHIPMENT));
             log.info("Shipment details async fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
             ShipmentDetailsResponse response = jsonHelper.convertValue(shipmentDetails.get(), ShipmentDetailsResponse.class);
+            response.setCustomerBookingNotesList(convertToDtoList(notesDao.findByEntityIdAndEntityType(request.getId(), Constants.SHIPMENT_BOOKING),NotesResponse.class));
             //containerCountUpdate(shipmentDetails.get(), response);
             return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(response));
         } catch (Exception e) {
@@ -2208,9 +2243,9 @@ public class ShipmentService implements IShipmentService {
             CompletableFuture<ResponseEntity<?>> shipmentsFuture = retrieveByIdAsync(commonRequestModel);
             RunnerResponse<ShipmentDetailsResponse> res = (RunnerResponse<ShipmentDetailsResponse>) shipmentsFuture.get().getBody();
             if(request.getIncludeColumns()==null||request.getIncludeColumns().size()==0)
-            return ResponseHelper.buildSuccessResponse(res.getData());
+                return ResponseHelper.buildSuccessResponse(res.getData());
             else
-            return ResponseHelper.buildSuccessResponse(PartialFetchUtils.fetchPartialData(res, request.getIncludeColumns()));
+                return ResponseHelper.buildSuccessResponse(PartialFetchUtils.fetchPartialData(res, request.getIncludeColumns()));
         } catch (Exception e) {
             String responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;
@@ -2274,6 +2309,7 @@ public class ShipmentService implements IShipmentService {
 
         try {
             ShipmentDetails entity = oldEntity.get();
+            Integer previousStatus = oldEntity.get().getStatus();
             shipmentDetailsMapper.update(shipmentRequest, entity);
             updateMasterBill(entity, oldEntity.get().getMasterBill());
             updateLinkedShipmentData(entity);
@@ -2321,6 +2357,8 @@ public class ShipmentService implements IShipmentService {
                 List<Events> updatedEvents = eventDao.updateEntityFromOtherEntity(convertToEntityList(eventsRequestList, Events.class), id, Constants.SHIPMENT);
                 entity.setEventsList(updatedEvents);
             }
+            // Create events on basis of shipment status Confirmed/Created
+            autoGenerateEvents(entity, previousStatus);
             if (fileRepoRequestList != null) {
                 List<FileRepo> updatedFileRepos = fileRepoDao.updateEntityFromOtherEntity(convertToEntityList(fileRepoRequestList, FileRepo.class), id, Constants.SHIPMENT);
                 entity.setFileRepoList(updatedFileRepos);
@@ -3555,6 +3593,65 @@ public class ShipmentService implements IShipmentService {
 
             shipmentDao.saveAll(shipments);
         }
+    }
+
+    @Override
+    public ResponseEntity<?> getIdFromGuid(CommonRequestModel commonRequestModel) {
+        String responseMsg;
+        try {
+            CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
+            if (request == null) {
+                log.error("Request is empty for Shipment retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            }
+            if (request.getGuid() == null) {
+                log.error("Request Guid Id is null for Shipment retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            }
+            Optional<ShipmentDetails> shipmentDetails = shipmentDao.findByGuid(UUID.fromString(request.getGuid()));
+            if (!shipmentDetails.isPresent()) {
+                log.debug("Shipment Details is null for Guid {} with Request Id {}", request.getGuid(), LoggerHelper.getRequestIdFromMDC());
+                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+            }
+            log.info("Shipment details fetched successfully for Guid {} with Request Id {}", request.getGuid(), LoggerHelper.getRequestIdFromMDC());
+            return ResponseHelper.buildSuccessResponse(ShipmentDetailsResponse.builder().id(shipmentDetails.get().getId()).build());
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
+    private void autoGenerateEvents(ShipmentDetails shipmentDetails, Integer previousStauts) {
+        Events response = null;
+        if(shipmentDetails.getStatus() != null) {
+            if (previousStauts == null || !shipmentDetails.getStatus().equals(previousStauts)) {
+                if (shipmentDetails.getStatus().equals(ShipmentStatus.Confirmed.getValue())) {
+                    response = createAutomatedEvents(shipmentDetails, Constants.SHPCNFRM);
+                }
+                if (shipmentDetails.getStatus().equals(ShipmentStatus.Created.getValue())) {
+                    response = createAutomatedEvents(shipmentDetails, Constants.SHPCMPLT);
+                }
+            }
+            if (shipmentDetails.getEventsList() != null)
+                shipmentDetails.setEventsList(new ArrayList<>());
+            shipmentDetails.getEventsList().add(response);
+        }
+    }
+
+    private Events createAutomatedEvents(ShipmentDetails shipmentDetails, String eventCode) {
+        Events events = new Events();
+        // Set event fields from shipment
+        events.setActual(LocalDateTime.now());
+        events.setEstimated(LocalDateTime.now());
+        events.setSource(Constants.CARGO_RUNNER);
+        events.setIsPublicTrackingEvent(true);
+        events.setEntityType(Constants.SHIPMENT);
+        events.setEntityId(shipmentDetails.getId());
+        events.setTenantId(TenantContext.getCurrentTenant());
+        events.setEventCode(eventCode);
+        // Persist the event
+        eventDao.save(events);
+        return events;
     }
 
 }

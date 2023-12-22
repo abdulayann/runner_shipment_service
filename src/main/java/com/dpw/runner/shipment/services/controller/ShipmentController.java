@@ -427,4 +427,14 @@ public class ShipmentController {
         }
     }
 
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.CREATE_SUCCESSFUL)})
+    @GetMapping(ApiConstants.GET_ID_BY_GUID)
+    public ResponseEntity<?> getIdFromGuid(@ApiParam(value = ShipmentConstants.SHIPMENT_ID, required = true) @RequestParam String guid) {
+        try {
+            CommonGetRequest request = CommonGetRequest.builder().guid(guid).build();
+            return (ResponseEntity<RunnerResponse<?>>) shipmentService.getIdFromGuid(CommonRequestModel.buildRequest(request));
+        } catch (Exception e) {
+            return ResponseHelper.buildFailedResponse(e.getMessage());
+        }
+    }
 }

@@ -141,6 +141,7 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     private ContainerSummaryResponse containerSummary;
     private PackSummaryResponse packSummary;
     public Map<String, String> textData;
+    private List<NotesResponse> customerBookingNotesList;
 
     public void addTextData(Map<String, String> dataMap) {
         if(textData == null) {

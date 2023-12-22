@@ -24,6 +24,7 @@ public class Constants {
     public static final String USER_SERVICE_MAVANI = "mavani";
     public static final String NO_DATA = "Not Found!";
     public static final String SHIPMENT = "SHIPMENT";
+    public static final String SHIPMENT_BOOKING = "ShipmentBooking";
     public static final String BOOKING = "BOOKING";
     public static final String BOOKING_CHARGES = "BOOKING_CHARGES";
     public static final String CONSOLIDATION = "CONSOLIDATION";
@@ -158,6 +159,8 @@ public class Constants {
     public static final String TAXSG = "TAXSG";
     public static final String CSEDI = "CSEDI";
     public static final String AMSEDI = "AMSEDI";
+    public static final String SHPCNFRM = "SHPCNFRM";
+    public static final String SHPCMPLT = "SHPCMPLT";
 
     public static final String COMMODITY_TYPE_MASTER_DATA = "CommodityType";
     public static final String WARE_HOUSE_DATA = "WareHouse";

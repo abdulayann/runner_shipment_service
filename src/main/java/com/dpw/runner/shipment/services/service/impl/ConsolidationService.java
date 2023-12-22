@@ -3086,4 +3086,31 @@ public class ConsolidationService implements IConsolidationService {
             return ResponseHelper.buildFailedResponse(responseMsg);
         }
     }
+
+    @Override
+    public ResponseEntity<?> getIdFromGuid(CommonRequestModel commonRequestModel) {
+        String responseMsg;
+        try {
+            CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
+            if (request == null) {
+                log.error("Request is empty for Consolidation retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            }
+            if (request.getGuid() == null) {
+                log.error("Request Guid is null for Consolidation retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            }
+            Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findByGuid(UUID.fromString(request.getGuid()));
+            if (!consolidationDetails.isPresent()) {
+                log.debug("Consolidation Details is null for Guid {} with Request Id {}", request.getGuid(), LoggerHelper.getRequestIdFromMDC());
+                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+            }
+            log.info("Consolidation details fetched successfully for Id {} with Request Id {}", request.getGuid(), LoggerHelper.getRequestIdFromMDC());
+            return ResponseHelper.buildSuccessResponse(ConsolidationDetailsResponse.builder().id(consolidationDetails.get().getId()).build());
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+
+    }
 }
