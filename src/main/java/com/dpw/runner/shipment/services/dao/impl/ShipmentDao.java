@@ -154,7 +154,10 @@ public class ShipmentDao implements IShipmentDao {
         errors.addAll(applyShipmentValidations(shipmentDetails, oldShipment));
         if (! errors.isEmpty())
             throw new ValidationException(errors.toString());
-        if(!fromV1Sync && shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && shipmentDetails.getJobType() != null && shipmentDetails.getJobType().equals(Constants.SHIPMENT_TYPE_DRT))
+        if(!fromV1Sync && shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)
+                && shipmentDetails.getJobType() != null && shipmentDetails.getJobType().equals(Constants.SHIPMENT_TYPE_DRT)
+                && shipmentDetails.getMasterBill() != null
+                && (oldShipment == null || oldShipment.getMasterBill() == null || !oldShipment.getMasterBill().equalsIgnoreCase(shipmentDetails.getMasterBill())))
             directShipmentMAWBCheck(shipmentDetails);
         shipmentDetails = shipmentRepository.save(shipmentDetails);
         if(!fromV1Sync && shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && shipmentDetails.getJobType() != null && shipmentDetails.getJobType().equals(Constants.SHIPMENT_TYPE_DRT)) {
@@ -392,16 +395,9 @@ public class ShipmentDao implements IShipmentDao {
         if (carrierDetails == null || carrierDetails.size()==0)
             throw new ValidationException("Airline for the entered MAWB Number doesn't exist in Carrier Master");
 
-
-        CarrierResponse correspondingCarrier = carrierDetails.get(0); //carrierDetails.getContent().get(0);
+        CarrierResponse correspondingCarrier = carrierDetails.get(0);
 
         Boolean isMAWBNumberExist = false;
-        Boolean isCarrierExist = false;
-        if (shipmentRequest.getCarrierDetails() != null)
-            isCarrierExist = true;
-
-        if (isCarrierExist && !shipmentRequest.getCarrierDetails().getShippingLine().equals(correspondingCarrier.getItemValue()))
-            throw new ValidationException("MAWB Number prefix is not matching with entered Flight Carrier");
 
         ListCommonRequest listMawbRequest = constructListCommonRequest("mawbNumber", shipmentRequest.getMasterBill(), "=");
         Pair<Specification<MawbStocksLink>, Pageable> mawbStocksLinkPair = fetchData(listMawbRequest, MawbStocksLink.class);
@@ -414,8 +410,10 @@ public class ShipmentDao implements IShipmentDao {
             mawbStocksLink = mawbStocksLinkPage.getContent().get(0);
         }
 
-        if (!isCarrierExist)
-            shipmentRequest.setCarrierDetails(jsonHelper.convertValue(correspondingCarrier, CarrierDetails.class));
+        if(shipmentRequest.getCarrierDetails() == null)
+            shipmentRequest.setCarrierDetails(new CarrierDetails());
+
+        shipmentRequest.getCarrierDetails().setShippingLine(correspondingCarrier.getItemValue());
 
         if (shipmentRequest.getDirection().equals("IMP")) {
             return;
