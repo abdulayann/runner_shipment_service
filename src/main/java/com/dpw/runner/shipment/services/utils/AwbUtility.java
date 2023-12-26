@@ -43,20 +43,22 @@ public class AwbUtility {
         StringBuilder sb = new StringBuilder();
         String newLine = "\r\n";
 
-        if (addressData.containsKey(PartiesConstants.ADDRESS1))
-            sb.append(newLine).append(StringUtility.convertToString(addressData.get(PartiesConstants.ADDRESS1)));
-        if (addressData.containsKey(PartiesConstants.ADDRESS2))
-            sb.append(newLine).append(StringUtility.convertToString(addressData.get(PartiesConstants.ADDRESS2)));
-        if (addressData.containsKey(PartiesConstants.STATE))
-            sb.append(newLine).append(StringUtility.convertToString(addressData.get(PartiesConstants.STATE)));
-        if (addressData.containsKey(PartiesConstants.CITY))
-            sb.append(newLine).append(StringUtility.convertToString(addressData.get(PartiesConstants.CITY)));
-        if (addressData.containsKey(PartiesConstants.COUNTRY))
-            sb.append(newLine).append(StringUtility.convertToString(addressData.get(PartiesConstants.COUNTRY)));
-        if (addressData.containsKey(PartiesConstants.ZIP_POST_CODE))
-            sb.append(newLine).append(StringUtility.convertToString(addressData.get(PartiesConstants.ZIP_POST_CODE)));
-        if (addressData.containsKey(PartiesConstants.CONTACT_PHONE))
-            sb.append(newLine).append(StringUtility.convertToString(addressData.get(PartiesConstants.CONTACT_PHONE)));
+        if(addressData != null) {
+            if (addressData.containsKey(PartiesConstants.ADDRESS1))
+                sb.append(newLine).append(StringUtility.convertToString(addressData.get(PartiesConstants.ADDRESS1)));
+            if (addressData.containsKey(PartiesConstants.ADDRESS2))
+                sb.append(newLine).append(StringUtility.convertToString(addressData.get(PartiesConstants.ADDRESS2)));
+            if (addressData.containsKey(PartiesConstants.STATE))
+                sb.append(newLine).append(StringUtility.convertToString(addressData.get(PartiesConstants.STATE)));
+            if (addressData.containsKey(PartiesConstants.CITY))
+                sb.append(newLine).append(StringUtility.convertToString(addressData.get(PartiesConstants.CITY)));
+            if (addressData.containsKey(PartiesConstants.COUNTRY))
+                sb.append(newLine).append(StringUtility.convertToString(addressData.get(PartiesConstants.COUNTRY)));
+            if (addressData.containsKey(PartiesConstants.ZIP_POST_CODE))
+                sb.append(newLine).append(StringUtility.convertToString(addressData.get(PartiesConstants.ZIP_POST_CODE)));
+            if (addressData.containsKey(PartiesConstants.CONTACT_PHONE))
+                sb.append(newLine).append(StringUtility.convertToString(addressData.get(PartiesConstants.CONTACT_PHONE)));
+        }
 
         return sb.toString();
     }
