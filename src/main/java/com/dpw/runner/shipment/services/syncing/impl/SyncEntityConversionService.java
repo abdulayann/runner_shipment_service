@@ -1,5 +1,7 @@
 package com.dpw.runner.shipment.services.syncing.impl;
 
+import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.syncing.Entity.ContainerRequestV2;
@@ -8,10 +10,7 @@ import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Component
@@ -20,7 +19,13 @@ public class SyncEntityConversionService {
     @Autowired
     private ModelMapper modelMapper;
 
-    public List<PackingRequestV2> packingsV2ToV1(List<Packing> packingList, List<Containers> containers) {
+    @Autowired
+    private IShipmentDao shipmentDao;
+
+    @Autowired
+    private IConsolidationDetailsDao consolidationDetailsDao;
+
+    public List<PackingRequestV2> packingsV2ToV1(List<Packing> packingList, List<Containers> containers, UUID shipmentGuid, UUID consoleGuid) {
         Map<Long, String> map = new HashMap<>();
         if(containers != null)
             map = containers.stream().filter(container -> container.getContainerNumber() != null).collect(Collectors.toMap(Containers::getId, Containers::getContainerNumber));
@@ -34,6 +39,19 @@ public class SyncEntityConversionService {
                         p.setOrigin(null);
                         if(item.getContainerId() != null && finalMap.containsKey(item.getContainerId()))
                             p.setContainerNumber(finalMap.get(item.getContainerId()));
+
+                        if(shipmentGuid == null && item.getShipmentId() != null) {
+                            try { p.setShipmentGuid(shipmentDao.findById(p.getShipmentId()).get().getGuid()); }  catch (Exception ignored) { }
+                        }
+                        else if(shipmentGuid != null)
+                            p.setShipmentGuid(shipmentGuid);
+
+                        if(consoleGuid == null && item.getConsolidationId() != null) {
+                            try { p.setConsolidationGuid(consolidationDetailsDao.findById(p.getConsolidationId()).get().getGuid()); }  catch (Exception ignored) { }
+                        }
+                        else if(consoleGuid != null)
+                            p.setConsolidationGuid(consoleGuid);
+
                         return p;
                     })
                     .collect(Collectors.toList());

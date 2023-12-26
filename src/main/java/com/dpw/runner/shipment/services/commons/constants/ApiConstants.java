@@ -56,6 +56,7 @@ public class ApiConstants {
     public static final String API_LIST_PACKS_TO_DETACH = "/list/packs/detach";
     public static final String API_RETRIEVE_BY_TENANT_ID = "/retrieve/tenantId";
     public static final String API_ASSIGN_SHIPMENT_CONTAINERS = "/assign/containers";
+    public static final String API_ASSIGN_ALL_CONTAINERS = "/assign/all/containers";
     public static final String API_RETRIEVE_BY_ORDER_ID = "retrieve/orderId";
     public static final String BULK_SYNC = "/bulk-sync";
     public static final String API_DEFAULT_SHIPMENT = "/getDefaultShipment";

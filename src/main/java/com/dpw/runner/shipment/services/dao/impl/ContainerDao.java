@@ -202,14 +202,15 @@ public class ContainerDao implements IContainerDao {
         }
     }
 
-    public List<Containers> updateEntityFromShipmentConsole(List<Containers> containersList, Long consolidationId, Long shipmentId) throws Exception {
+    @Override
+    public List<Containers> updateEntityFromShipmentConsole(List<Containers> containersList, Long consolidationId, Long shipmentId, boolean fromConsolidation) throws Exception {
         String responseMsg;
         List<Containers> responseContainers = new ArrayList<>();
         try {
             // TODO- Handle Transactions here
             if (containersList != null) {
                 List<Containers> containerList = new ArrayList<>(containersList);
-                if(consolidationId != null) {
+                if(fromConsolidation) {
                     ListCommonRequest listCommonRequest = constructListCommonRequest("consolidationId", consolidationId, "=");
                     Pair<Specification<Containers>, Pageable> pair = fetchData(listCommonRequest, Containers.class);
                     Page<Containers> containersPage = findAll(pair.getLeft(), pair.getRight());
@@ -227,6 +228,7 @@ public class ContainerDao implements IContainerDao {
                 if(shipmentId != null)
                 {
                     for (Containers container: containerList) {
+                        container.setConsolidationId(consolidationId);
                         String operation = DBOperationType.CREATE.name();
                         Containers oldEntityJson = null;
                         if(container.getId() != null)

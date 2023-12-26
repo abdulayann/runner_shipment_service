@@ -45,6 +45,7 @@ public interface IShipmentService extends ICommonService {
     ResponseEntity<?> createShipmentInV2(CustomerBookingRequest customerBookingRequest) throws Exception;
 
     ResponseEntity<?> assignShipmentContainers(CommonRequestModel commonRequestModel);
+    ResponseEntity<?> assignAllContainers(CommonRequestModel commonRequestModel);
 
     ResponseEntity<?> retrieveByOrderId(String orderId);
 

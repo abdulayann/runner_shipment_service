@@ -431,7 +431,7 @@ public class ConsolidationService implements IConsolidationService {
 
             if (request.getContainersList() != null && !shipmentSettingsDetails.getMergeContainers()) {
                 List<ContainerRequest> containerRequest = request.getContainersList();
-                List<Containers> containers = containerDao.updateEntityFromShipmentConsole(convertToEntityList(containerRequest, Containers.class), consolidationDetails.getId(), (Long) null);
+                List<Containers> containers = containerDao.updateEntityFromShipmentConsole(convertToEntityList(containerRequest, Containers.class), consolidationDetails.getId(), (Long) null, true);
                 consolidationDetails.setContainersList(containers);
             }
 
@@ -857,7 +857,7 @@ public class ConsolidationService implements IConsolidationService {
             List<PartiesRequest> consolidationAddressRequest = consolidationDetailsRequest.getConsolidationAddresses();
 
             if(containerRequestList != null) {
-                List<Containers> updatedContainers = containerDao.updateEntityFromShipmentConsole(convertToEntityList(containerRequestList, Containers.class), id, (Long) null);
+                List<Containers> updatedContainers = containerDao.updateEntityFromShipmentConsole(convertToEntityList(containerRequestList, Containers.class), id, (Long) null, true);
                 entity.setContainersList(updatedContainers);
             }
             if (packingRequestList != null) {
@@ -956,7 +956,7 @@ public class ConsolidationService implements IConsolidationService {
             if(shipmentSettingsDetailsList.size() > 0)
                 shipmentSettingsDetails = shipmentSettingsDetailsList.get(0);
             if(containerRequestList != null && !shipmentSettingsDetails.getMergeContainers()) {
-                List<Containers> updatedContainers = containerDao.updateEntityFromShipmentConsole(convertToEntityList(containerRequestList, Containers.class), id, (Long) null);
+                List<Containers> updatedContainers = containerDao.updateEntityFromShipmentConsole(convertToEntityList(containerRequestList, Containers.class), id, (Long) null, true);
                 entity.setContainersList(updatedContainers);
             }
             if (packingRequestList != null) {
