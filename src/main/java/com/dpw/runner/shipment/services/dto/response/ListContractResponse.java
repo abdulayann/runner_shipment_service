@@ -10,6 +10,7 @@ import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 @Data
 @Builder
@@ -20,6 +21,7 @@ public class ListContractResponse implements IRunnerResponse {
     private List<ContractResponse> contracts;
     @JsonProperty("count")
     private Long count;
+    private Map<String, String> unlocMasterData;
 
     @Data
     @Builder
@@ -30,6 +32,8 @@ public class ListContractResponse implements IRunnerResponse {
         private String _id;
         @JsonProperty("contract_id")
         private String contract_id;
+        @JsonProperty("parent_contract_id")
+        private String parent_contract_id;
         @JsonProperty("contract_type")
         private String contract_type;
         @JsonProperty("source")

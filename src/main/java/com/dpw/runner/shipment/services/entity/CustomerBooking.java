@@ -220,4 +220,7 @@ public class CustomerBooking extends MultiTenancy {
     @MasterData(type = MasterDataType.COUNTRIES)
     @Column(name = "notify_party_country")
     private String notifyPartyCountry;
+
+    @Column(name = "parent_contract_id")
+    private String parentContractId;
 }
