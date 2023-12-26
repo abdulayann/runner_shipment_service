@@ -22,7 +22,7 @@ public interface IPackingDao {
 
     void delete(Packing packing);
 
-    List<Packing> updateEntityFromShipment(List<Packing> packingList, Long shipmentId) throws Exception;
+    List<Packing> updateEntityFromShipment(List<Packing> packingList, Long shipmentId, List<Long> deleteContIds) throws Exception;
 
     List<Packing> saveEntityFromShipment(List<Packing> packings, Long shipmentId);
 
