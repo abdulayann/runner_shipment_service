@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -19,6 +20,7 @@ public class KafkaProducer {
     @Autowired
     private KafkaTemplate<String, Object> kafkaTemplate;
 
+    @Async
     public <T> void produceToKafka(T payload, String senderQueue, String transactionId) {
         log.info("Processing result to kafka queue - " + senderQueue);
         try {
