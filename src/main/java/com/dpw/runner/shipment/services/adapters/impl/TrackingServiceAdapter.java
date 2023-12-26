@@ -24,8 +24,8 @@ import com.dpw.runner.shipment.services.service_bus.ISBProperties;
 import com.dpw.runner.shipment.services.service_bus.ISBUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.kafka.common.protocol.types.Field;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.time.format.DateTimeFormatter;
@@ -96,6 +96,7 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
     }
 
     @Override
+    @Async
     public void publishUpdatesToTrackingServiceQueue(String jsonBody, Boolean isTrackingEvents) {
         if(isTrackingEvents){
           // Publish to EventsMessage Topic
