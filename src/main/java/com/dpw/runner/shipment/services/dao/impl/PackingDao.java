@@ -78,7 +78,7 @@ public class PackingDao implements IPackingDao {
         packingRepository.delete(packing);
     }
 
-    public List<Packing> updateEntityFromShipment(List<Packing> packingList, Long shipmentId) throws Exception {
+    public List<Packing> updateEntityFromShipment(List<Packing> packingList, Long shipmentId, List<Long> deleteContIds) throws Exception {
         String responseMsg;
         List<Packing> responsePackings = new ArrayList<>();
         try {
@@ -95,6 +95,8 @@ public class PackingDao implements IPackingDao {
                     if (id != null) {
                         hashMap.remove(id);
                     }
+                    if(deleteContIds != null && request.getContainerId() != null && deleteContIds.contains(request.getContainerId()))
+                        request.setContainerId(null);
                     packingRequestList.add(request);
                 }
                 responsePackings = saveEntityFromShipment(packingRequestList, shipmentId);

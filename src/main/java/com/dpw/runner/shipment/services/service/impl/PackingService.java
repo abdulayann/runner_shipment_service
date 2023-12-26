@@ -372,6 +372,9 @@ public class PackingService implements IPackingService {
         PackContainerNumberChangeRequest request = (PackContainerNumberChangeRequest) commonRequestModel.getData();
         List<IRunnerResponse> finalContainers = new ArrayList<>();
         ShipmentSettingsDetails shipmentSettingsDetails = shipmentSettingsDao.getSettingsByTenantIds(List.of(TenantContext.getCurrentTenant())).get(0);
+        if(request.getNewContainerId() == null && request.getOldContainerId() == null) {
+            return ResponseHelper.buildListSuccessResponse(finalContainers);
+        }
         ShipmentDetails shipmentDetails = shipmentDao.findById(request.getPack().getShipmentId()).get();
         if(shipmentSettingsDetails.getMultipleShipmentEnabled() != null && shipmentSettingsDetails.getMultipleShipmentEnabled()
         && !shipmentDetails.getShipmentType().equals(Constants.CARGO_TYPE_FCL)
