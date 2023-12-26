@@ -1,0 +1,41 @@
+package com.dpw.runner.shipment.services.dto.response.npm;
+
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.util.List;
+
+@Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+public class NPMContractsResponse implements IRunnerResponse {
+    @JsonProperty("contracts")
+    private List<NPMContractResponse> contracts;
+
+    @Data
+    @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class NPMContractResponse {
+        @JsonProperty("contract_id")
+        private String contract_id;
+        @JsonProperty("parent_contract_id")
+        private String parent_contract_id;
+        @JsonProperty("origin")
+        private String origin;
+        @JsonProperty("destination")
+        private String destination;
+        @JsonProperty("product_type")
+        private String product_type;
+        @JsonProperty("origin_name")
+        private String origin_name;
+        @JsonProperty("destination_name")
+        private String destination_name;
+    }
+}
+

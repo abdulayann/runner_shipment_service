@@ -20,5 +20,9 @@ public class UnlocationsResponse {
     @JsonProperty("IATACode")
     private String iataCode;
     @JsonProperty("LocationsReferenceGUID")
-    public String locationsReferenceGUID;
+    private String locationsReferenceGUID;
+    @JsonProperty("lookupDescAir")
+    private String lookupDescAir;
+    @JsonProperty("lookupDescSea")
+    private String lookupDescSea;
 }

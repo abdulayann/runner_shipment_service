@@ -81,4 +81,5 @@ public class CustomerBookingResponse implements IRunnerResponse {
     private String consignorCountry;
     private String consigneeCountry;
     private String notifyPartyCountry;
+    private String parentContractId;
 }
