@@ -72,4 +72,6 @@ public class PlatformToRunnerCustomerBookingRequest implements IRunnerRequest {
     @JsonProperty("charges")
     private List<PlatformBookingChargesRequest> bookingCharges;
     private String serviceMode;
+    @JsonProperty("parentContractId")
+    private String parentContractId;
 }

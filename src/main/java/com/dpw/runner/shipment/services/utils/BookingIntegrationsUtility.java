@@ -151,6 +151,7 @@ public class BookingIntegrationsUtility {
                 .charges(createCharges(customerBooking))
                 .business_code(customerBooking.getBusinessCode())
                 .bill_to_party(Arrays.asList(createOrgRequest(customerBooking.getCustomer())))
+                .parent_contract_id(customerBooking.getParentContractId())
                 .build();
         return CommonRequestModel.builder().data(platformCreateRequest).build();
     }
