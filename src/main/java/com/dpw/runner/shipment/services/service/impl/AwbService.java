@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
@@ -30,6 +31,7 @@ import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.IAwbService;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
 import com.dpw.runner.shipment.services.service.interfaces.ISyncQueueService;
+import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.syncing.Entity.AwbRequestV2;
 import com.dpw.runner.shipment.services.syncing.constants.SyncingConstants;
 import com.dpw.runner.shipment.services.syncing.interfaces.IAwbSync;
@@ -109,12 +111,17 @@ public class AwbService implements IAwbService {
     @Autowired
     IShipmentService shipmentService;
 
+    @Autowired
+    private IV1Service v1Service;
+
     private Integer totalPacks = 0;
     private List<String> attachedShipmentDescriptions = new ArrayList<>();
     private BigDecimal totalVolumetricWeightOfAwbPacks = new BigDecimal(0);
 
     @Value("${v1service.url.base}${v1service.url.awbSync}")
     private String AWB_V1_SYNC_URL;
+
+    private String iataCode;
 
     public ResponseEntity<?> createAwb(CommonRequestModel commonRequestModel) {
         String responseMsg;
@@ -763,8 +770,7 @@ public class AwbService implements IAwbService {
         awbShipmentInfo.setDestinationAirport(shipmentDetails.getCarrierDetails() != null ? shipmentDetails.getCarrierDetails().getDestinationPort() : null);
         awbShipmentInfo.setFirstCarrier(shipmentDetails.getCarrierDetails() != null ? shipmentDetails.getCarrierDetails().getShippingLine() : null);
 
-        awbShipmentInfo.setIataCode(userContext.getUser().getAgentIATACode());
-        awbShipmentInfo.setAgentCASSCode(userContext.getUser().getAgentCASSCode());
+        setTenantFieldsInAwbShipmentInfo(awbShipmentInfo);
         for (var orgRow : shipmentDetails.getShipmentAddresses()) {
             if (orgRow.getType() == Constants.FORWARDING_AGENT) {
                 var issuingAgentName = StringUtility.convertToString(orgRow.getOrgData().get(PartiesConstants.FULLNAME));
@@ -1388,7 +1394,7 @@ public class AwbService implements IAwbService {
             awbShipmentInfo.setFirstCarrier(shipmentDetails.getCarrierDetails().getShippingLine());
         if((request.getAwbType().equals(Constants.HAWB) && !hawbLockSettings.getIataCodeLock()) ||
                 (request.getAwbType().equals(Constants.DMAWB) && !mawbLockSettings.getIataCodeLock()))
-            awbShipmentInfo.setIataCode(userContext.getUser().getAgentIATACode());
+            awbShipmentInfo.setIataCode(iataCode);
 
 
         for (var orgRow : shipmentDetails.getShipmentAddresses()) {
@@ -1862,5 +1868,12 @@ public class AwbService implements IAwbService {
         if(!mawbLockSettings.getExecutedOnLock())
             awbOtherInfo.setExecutedOn(jsonHelper.convertValue(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss").format(LocalDateTime.now()), LocalDateTime.class));
 
+    }
+
+    private void setTenantFieldsInAwbShipmentInfo(AwbShipmentInfo awbShipmentInfo) {
+        TenantModel tenantModel = jsonHelper.convertValue(v1Service.retrieveTenant().getEntity(), TenantModel.class);
+        iataCode = tenantModel.AgentIATACode;
+        awbShipmentInfo.setIataCode(iataCode);
+        awbShipmentInfo.setAgentCASSCode(tenantModel.AgentCASSCode);
     }
 }
