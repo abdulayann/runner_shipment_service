@@ -598,7 +598,25 @@ public class AwbService implements IAwbService {
     }
 
     private List<AwbRoutingInfo> generateMawbRoutingInfo(ConsolidationDetails consolidationDetails, CreateAwbRequest request) {
-        if (consolidationDetails.getCarrierDetails() != null &&
+        if (consolidationDetails.getRoutingsList() != null && consolidationDetails.getRoutingsList().size() > 0) {
+            var sortedRoutingList = consolidationDetails.getRoutingsList();
+            List<AwbRoutingInfo> res = new ArrayList<>();
+            Collections.sort(sortedRoutingList, Comparator.comparing(Routings::getLeg));
+            for (var route : sortedRoutingList) {
+                AwbRoutingInfo awbRoutingInfo = new AwbRoutingInfo();
+                awbRoutingInfo.setIsShipmentCreated(true);
+                awbRoutingInfo.setOriginPortName(route.getPol());
+                awbRoutingInfo.setDestinationPortName(route.getPod());
+                awbRoutingInfo.setByCarrier(route.getCarrier());
+                awbRoutingInfo.setFlightNumber(route.getFlightNumber());
+                awbRoutingInfo.setFlightDate(route.getEtd());
+                awbRoutingInfo.setEntityId(consolidationDetails.getId());
+                awbRoutingInfo.setEntityType(request.getAwbType());
+                res.add(awbRoutingInfo);
+            }
+            return res;
+        }
+        else if (consolidationDetails.getCarrierDetails() != null &&
                 consolidationDetails.getCarrierDetails().getOriginPort() != null &&
                 consolidationDetails.getCarrierDetails().getDestinationPort() != null
         ) {
@@ -772,7 +790,7 @@ public class AwbService implements IAwbService {
 
         setTenantFieldsInAwbShipmentInfo(awbShipmentInfo);
         for (var orgRow : shipmentDetails.getShipmentAddresses()) {
-            if (orgRow.getType() == Constants.FORWARDING_AGENT) {
+            if (orgRow.getType().equals(Constants.FORWARDING_AGENT)) {
                 var issuingAgentName = StringUtility.convertToString(orgRow.getOrgData().get(PartiesConstants.FULLNAME));
                 awbShipmentInfo.setIssuingAgentName(issuingAgentName == null ? issuingAgentName : issuingAgentName.toUpperCase()); // extract from orgdata
                 var issuingAgentAddress = AwbUtility.constructAddress(orgRow.getAddressData());
@@ -812,7 +830,26 @@ public class AwbService implements IAwbService {
     }
 
     private List<AwbRoutingInfo> generateAwbRoutingInfo(ShipmentDetails shipmentDetails, CreateAwbRequest request) {
-        if (shipmentDetails.getCarrierDetails() != null &&
+        if (shipmentDetails.getRoutingsList() != null && shipmentDetails.getRoutingsList().size() > 0) {
+            var sortedRoutingList = shipmentDetails.getRoutingsList();
+            List<AwbRoutingInfo> res = new ArrayList<>();
+            Collections.sort(sortedRoutingList, Comparator.comparing(Routings::getLeg));
+            for (var route : sortedRoutingList) {
+                AwbRoutingInfo awbRoutingInfo = new AwbRoutingInfo();
+                awbRoutingInfo.setIsShipmentCreated(true);
+                awbRoutingInfo.setOriginPortName(route.getPol());
+                awbRoutingInfo.setDestinationPortName(route.getPod());
+                awbRoutingInfo.setByCarrier(route.getCarrier());
+                awbRoutingInfo.setFlightNumber(route.getFlightNumber());
+                awbRoutingInfo.setFlightDate(route.getEtd());
+                awbRoutingInfo.setEntityId(shipmentDetails.getId());
+                awbRoutingInfo.setEntityType(request.getAwbType());
+                res.add(awbRoutingInfo);
+            }
+            return res;
+        }
+
+        else if (shipmentDetails.getCarrierDetails() != null &&
                 shipmentDetails.getCarrierDetails().getOriginPort() != null &&
                 shipmentDetails.getCarrierDetails().getDestinationPort() != null
         ) {
@@ -1087,24 +1124,39 @@ public class AwbService implements IAwbService {
                 .build();
         switch (resetAwbRequest.getResetType()) {
             case ALL: {
-                awb = generateAwb(createAwbRequest);
+                if(resetAwbRequest.getAwbType().equals(Constants.MAWB))
+                    awb = generateMawb(createAwbRequest, consolidationDetails.get());
+                else awb = generateAwb(createAwbRequest);
                 break;
             }
             case AWB_ROUTING: {
-                awb.setAwbRoutingInfo(generateAwbRoutingInfo(shipmentDetails.get(), createAwbRequest));
+                if(resetAwbRequest.getAwbType().equals(Constants.MAWB))
+                    awb.setAwbRoutingInfo(generateMawbRoutingInfo(consolidationDetails.get(), createAwbRequest));
+                else awb.setAwbRoutingInfo(generateAwbRoutingInfo(shipmentDetails.get(), createAwbRequest));
                 break;
             }
             case AWB_NOTIFY_PARTY_INFO: {
+                if(resetAwbRequest.getAwbType().equals(Constants.MAWB))
+                    awb.setAwbNotifyPartyInfo(generateMawbNotifyPartyinfo(consolidationDetails.get(), createAwbRequest));
                 awb.setAwbNotifyPartyInfo(generateAwbNotifyPartyinfo(shipmentDetails.get(), createAwbRequest));
                 break;
             }
             case AWB_PACKS_AND_GOODS: {
-                awb.setAwbPackingInfo(generateMawbPackingInfo(consolidationDetails.get()));
+                if (resetAwbRequest.getAwbType().equals(Constants.MAWB)) {
+                    awb.setAwbPackingInfo(generateMawbPackingInfo(consolidationDetails.get()));
+                    generateMawbGoodsDescriptionInfo(consolidationDetails.get(), createAwbRequest, awb.getAwbPackingInfo());
+                }
+                else {
+                    awb.setAwbPackingInfo(generateAwbPackingInfo(shipmentDetails.get(), shipmentDetails.get().getPackingList()));
+                    generateAwbGoodsDescriptionInfo(shipmentDetails.get(), createAwbRequest, awb.getAwbPackingInfo());
+                }
                 break;
             }
             case AWB_OTHER_CHARGES_INFO: {
-//                awb.setAwbOtherChargesInfo()
-                //TODO
+                awb.setAwbOtherChargesInfo(null);
+            }
+            case AWB_OCI_INFO: {
+                awb.setAwbOciInfo(null);
             }
         }
         awb.setId(resetAwbRequest.getId());
