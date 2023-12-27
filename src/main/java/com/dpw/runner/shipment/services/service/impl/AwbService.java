@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
 import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
@@ -20,13 +21,18 @@ import com.dpw.runner.shipment.services.dto.request.CreateAwbRequest;
 import com.dpw.runner.shipment.services.dto.request.ResetAwbRequest;
 import com.dpw.runner.shipment.services.dto.request.awb.*;
 import com.dpw.runner.shipment.services.dto.response.AwbResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.AwbReset;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest;
+import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
+import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.IAwbService;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
@@ -113,6 +119,9 @@ public class AwbService implements IAwbService {
 
     @Autowired
     private IV1Service v1Service;
+
+    @Autowired
+    private MasterDataUtils masterDataUtils;
 
     private Integer totalPacks = 0;
     private List<String> attachedShipmentDescriptions = new ArrayList<>();
@@ -648,7 +657,7 @@ public class AwbService implements IAwbService {
 //        awbCargoInfo.setCarriageValue(shipmentDetails.getInsuranceValue() != null ? shipmentDetailsgetInsuranceValue() : new BigDecimal(0.0)); // field missing
         awbCargoInfo.setCustomsValue(new BigDecimal(0.0));
         awbCargoInfo.setCurrency(userContext.getUser().getCompanyCurrency());
-        // awbCargoInfo.setHandlingInfo(getHandlingInfo(MasterListTypes.MAWBGeneration)); // field missing
+        awbCargoInfo.setHandlingInfo(getHandlingInfo(MasterDataType.MAWB_GENERATION));
         awbCargoInfo.setAccountingInfo(awbCargoInfo.getAccountingInfo() == null ? null : awbCargoInfo.getAccountingInfo().toUpperCase());
         awbCargoInfo.setOtherInfo(awbCargoInfo.getOtherInfo() == null ? null : awbCargoInfo.getOtherInfo().toUpperCase());
         awbCargoInfo.setNtrQtyGoods(awbCargoInfo.getNtrQtyGoods() == null ? null : awbCargoInfo.getNtrQtyGoods().toUpperCase());
@@ -879,7 +888,7 @@ public class AwbService implements IAwbService {
 //        awbCargoInfo.setCarriageValue(shipmentDetails.getInsuranceValue() != null ? shipmentDetailsgetInsuranceValue() : new BigDecimal(0.0)); // field missing
         awbCargoInfo.setCustomsValue(new BigDecimal(0.0));
         awbCargoInfo.setCurrency(userContext.getUser().getCompanyCurrency());
-        // awbCargoInfo.setHandlingInfo(getHandlingInfo(MasterListTypes.HAWBGeneration)); // field missing
+        awbCargoInfo.setHandlingInfo(getHandlingInfo(MasterDataType.HAWB_GENERATION));
         awbCargoInfo.setAccountingInfo(awbCargoInfo.getAccountingInfo() == null ? null : awbCargoInfo.getAccountingInfo().toUpperCase());
         awbCargoInfo.setOtherInfo(awbCargoInfo.getOtherInfo() == null ? null : awbCargoInfo.getOtherInfo().toUpperCase());
         awbCargoInfo.setNtrQtyGoods(awbCargoInfo.getNtrQtyGoods() == null ? null : awbCargoInfo.getNtrQtyGoods().toUpperCase());
@@ -1902,7 +1911,7 @@ public class AwbService implements IAwbService {
             awbCargoInfo.setCustomsValue(new BigDecimal(0.0));
         if(!mawbLockSettings.getCurrencyLock())
             awbCargoInfo.setCurrency(userContext.getUser().getCompanyCurrency());
-        // awbCargoInfo.setHandlingInfo(getHandlingInfo(MasterListTypes.MAWBGeneration)); // field missing
+        awbCargoInfo.setHandlingInfo(getHandlingInfo(MasterDataType.MAWB_GENERATION));
         if(!mawbLockSettings.getAccountingInfoLock())
             awbCargoInfo.setAccountingInfo(awbCargoInfo.getAccountingInfo() == null ? null : awbCargoInfo.getAccountingInfo().toUpperCase());
         if(!mawbLockSettings.getOtherInfoLock())
@@ -1927,5 +1936,23 @@ public class AwbService implements IAwbService {
         iataCode = tenantModel.AgentIATACode;
         awbShipmentInfo.setIataCode(iataCode);
         awbShipmentInfo.setAgentCASSCode(tenantModel.AgentCASSCode);
+    }
+
+    private String getHandlingInfo(MasterDataType masterDataType) {
+        String res = null;
+        List<Integer> itemTypeList = new ArrayList<>();
+        itemTypeList.add(masterDataType.getId());
+        List<Object> masterDataCriteria = Arrays.asList(
+                Arrays.asList("ItemType"),
+                "in",
+                Arrays.asList(itemTypeList)
+        );
+        CommonV1ListRequest masterDataRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(masterDataCriteria).build();
+        V1DataResponse masterDataResponse = v1Service.fetchMasterData(masterDataRequest);
+        if(masterDataResponse.getEntities() != null) {
+            List<EntityTransferMasterLists> masterLists = jsonHelper.convertValueToList(masterDataResponse.entities, EntityTransferMasterLists.class);
+            res = masterLists.get(0).getItemDescription();
+        }
+        return res;
     }
 }
