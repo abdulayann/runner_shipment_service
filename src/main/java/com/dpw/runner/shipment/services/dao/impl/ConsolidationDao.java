@@ -4,15 +4,23 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext
 import com.dpw.runner.shipment.services.commons.constants.ConsolidationConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.SortRequest;
+import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
+import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
+import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.LifecycleHooks;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
+import com.dpw.runner.shipment.services.masterdata.response.CarrierResponse;
 import com.dpw.runner.shipment.services.repository.interfaces.IConsolidationRepository;
 import com.dpw.runner.shipment.services.repository.interfaces.IShipmentRepository;
+import com.dpw.runner.shipment.services.service.interfaces.IMasterDataService;
+import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.dpw.runner.shipment.services.validator.ValidatorUtility;
@@ -23,6 +31,7 @@ import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Repository;
 
 import java.util.*;
@@ -57,6 +66,9 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
 
     @Autowired
     private ICarrierDao carrierDao;
+
+    @Autowired
+    private IV1Service v1Service;
 
     @Override
     public ConsolidationDetails save(ConsolidationDetails consolidationDetails, boolean fromV1Sync) {
@@ -100,7 +112,10 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
         errors.addAll(applyConsolidationValidations(consolidationDetails, oldConsole));
         if (! errors.isEmpty())
             throw new ValidationException(errors.toString());
-        if(!fromV1Sync && consolidationDetails.getTransportMode() != null && consolidationDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR))
+        if(!fromV1Sync && consolidationDetails.getTransportMode() != null
+                && consolidationDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)
+                && consolidationDetails.getMawb() != null
+                && (oldConsole == null || oldConsole.getMawb() == null || !oldConsole.getMawb().equalsIgnoreCase(consolidationDetails.getMawb())))
             consolidationMAWBCheck(consolidationDetails);
         consolidationDetails = consolidationRepository.save(consolidationDetails);
         if(!fromV1Sync && consolidationDetails.getMawb() != null && consolidationDetails.getShipmentType().equals(Constants.IMP)) {
@@ -289,6 +304,17 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
         return null;
     }
 
+    private V1DataResponse fetchCarrierDetailsFromV1(String mawbAirlineCode) {
+        CommonV1ListRequest request = new CommonV1ListRequest();
+        List<Object> criteria = new ArrayList<>();
+        criteria.addAll(List.of(List.of("AirlineCode"), "=", mawbAirlineCode));
+        request.setCriteriaRequests(criteria);
+        CarrierListObject carrierListObject = new CarrierListObject();
+        carrierListObject.setListObject(request);
+        V1DataResponse response = v1Service.fetchCarrierMasterData(carrierListObject, true);
+        return response;
+    }
+
     private void consolidationMAWBCheck(ConsolidationDetails consolidationRequest) {
         if (StringUtility.isEmpty(consolidationRequest.getMawb())) {
             return;
@@ -298,50 +324,47 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
             throw new ValidationException("Please enter a valid MAWB number.");
 
         String mawbAirlineCode = consolidationRequest.getMawb().substring(0, 3);
-        //TODO: Tapan need to fix this
-//        ListCommonRequest listCarrierRequest = constructListCommonRequest("airlineCode", mawbAirlineCode, "="); // TODO fetch from v1
-//        Pair<Specification<CarrierDetails>, Pageable> pair = fetchData(listCarrierRequest, CarrierDetails.class);
-//        Page<CarrierDetails> carrierDetails = carrierDao.findAll(pair.getLeft(), pair.getRight());
-//
-//        if (carrierDetails.getTotalElements() == 0)
-//            throw new ValidationException("Airline for the entered MAWB Number doesn't exist in Carrier Master");
-//
-//        CarrierDetails correspondingCarrier = carrierDetails.getContent().get(0);
-//
+        V1DataResponse v1DataResponse = fetchCarrierDetailsFromV1(mawbAirlineCode);
+        List<CarrierResponse> carrierDetails = jsonHelper.convertValueToList(v1DataResponse.entities, CarrierResponse.class);
+
+        if (carrierDetails == null || carrierDetails.size()==0)
+            throw new ValidationException("Airline for the entered MAWB Number doesn't exist in Carrier Master");
+
+        CarrierResponse correspondingCarrier = carrierDetails.get(0);
+
         Boolean isMAWBNumberExist = false;
-        Boolean isCarrierExist = false;
-//        if (consolidationRequest.getCarrierDetails() != null)
-//            isCarrierExist = true;
-//
-//        if (isCarrierExist)
-//            throw new ValidationException("MAWB Number prefix is not matching with entered Flight Carrier");
 
         ListCommonRequest listMawbRequest = constructListCommonRequest("mawbNumber", consolidationRequest.getMawb(), "=");
         Pair<Specification<MawbStocksLink>, Pageable> mawbStocksLinkPair = fetchData(listMawbRequest, MawbStocksLink.class);
         Page<MawbStocksLink> mawbStocksLinkPage = mawbStocksLinkDao.findAll(mawbStocksLinkPair.getLeft(), mawbStocksLinkPair.getRight());
 
         MawbStocksLink mawbStocksLink = null;
-        mawbStocksLinkPage.getContent();
-        if (!mawbStocksLinkPage.getContent().isEmpty())
+        if (!mawbStocksLinkPage.getContent().isEmpty()){
+            mawbStocksLink = mawbStocksLinkPage.getContent().get(0);
             isMAWBNumberExist = true;
+        }
 
-//        if (!isCarrierExist)
-//            consolidationRequest.setCarrierDetails(correspondingCarrier);
+        if(consolidationRequest.getCarrierDetails() == null)
+            consolidationRequest.setCarrierDetails(new CarrierDetails());
+
+        consolidationRequest.getCarrierDetails().setShippingLine(correspondingCarrier.getItemValue());
 
         if (consolidationRequest.getShipmentType().equals(Constants.IMP)) {
             return;
         }
 
-        if (isMAWBNumberExist)
-            if (mawbStocksLink.getStatus().equals("Consumed") && !mawbStocksLink.getEntityId().equals(consolidationRequest.getId())) // If MasterBill number is already Consumed.
+        if (isMAWBNumberExist){
+            if (mawbStocksLink.getStatus().equals("Consumed") && !mawbStocksLink.getEntityId().equals(consolidationRequest.getId())) {
                 throw new ValidationException("The MAWB number entered is already consumed. Please enter another MAWB number.");
-        else
-            createNewMAWBEntry(consolidationRequest);
+            }
+        } else {
+                createNewMAWBEntry(consolidationRequest);
+        }
     }
 
     private void createNewMAWBEntry(ConsolidationDetails consolidationRequest) {
         MawbStocks mawbStocks = new MawbStocks();
-        // mawbStocks.setAirLinePrefix() //TODO fetch from v1
+        mawbStocks.setAirLinePrefix(consolidationRequest.getCarrierDetails().getShippingLine());
         mawbStocks.setCount("1");
         mawbStocks.setAvailableCount("1");
         mawbStocks.setStartNumber(Long.valueOf(consolidationRequest.getMawb().substring(4, 10)));
