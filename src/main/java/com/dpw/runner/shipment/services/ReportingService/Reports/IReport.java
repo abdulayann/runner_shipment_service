@@ -882,6 +882,11 @@ public abstract class IReport {
         return DateTimeFormatter.ofPattern("MM/dd/yyyy");
     }
 
+    public static String GetDPWDateFormatOrDefaultString()
+    {
+        return "MM/dd/yyyy";
+    }
+
     public static String ConvertToDPWDateFormat(LocalDateTime date)
     {
         String strDate = "";
