@@ -672,6 +672,7 @@ public class ReportConstants {
     public static final String CLI = "ClientAdrs";
     public static final String CONTAINER_SUMMARY = "ContainerSummary";
     public static final String SHIPPER_REF_NO = "ShipperRefNo";
+    public static final String PICKUP_SHIPPERS_REF = "ShipperReferenceNumber";
     public static final String PICKUP_ORDER_CONTACT_PERSON = "PickUpOrderContactPerson";
     public static final String EMPTY_STRING = "";
     public static final String VESSEL_BERTHING_DATE = "VesselBerthingDate";
