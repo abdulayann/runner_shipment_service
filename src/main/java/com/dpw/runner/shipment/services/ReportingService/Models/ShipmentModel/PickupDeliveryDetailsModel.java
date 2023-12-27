@@ -73,4 +73,6 @@ public class PickupDeliveryDetailsModel {
     private LocalDateTime emptyTruckInDate;
     @JsonProperty("LoadedTruckGateOutDate")
     private LocalDateTime loadedTruckGateOutDate;
+    @JsonProperty("PickupDeliveryInstruction")
+    private String pickupDeliveryInstruction;
 }

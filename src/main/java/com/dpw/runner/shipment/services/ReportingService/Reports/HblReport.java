@@ -639,11 +639,15 @@ public class HblReport extends IReport{
         }
 
         if (hblModel.shipment.getDeliveryDetails() != null && hblModel.shipment.getDeliveryDetails().getActualPickupOrDelivery() != null)
-            dictionary.put(ACTUAL_DELIVERY, DateTimeFormatter.ofPattern(GetDPWDateFormatOrDefault() + " hh:mm tt")
+            dictionary.put(ACTUAL_DELIVERY, DateTimeFormatter.ofPattern(GetDPWDateFormatOrDefaultString() + " hh:mm ss")
                     .format(hblModel.shipment.getDeliveryDetails().getActualPickupOrDelivery()));
 
-        if(hblModel.shipment.getPickupDetails() != null)
+        if(hblModel.shipment.getPickupDetails() != null){
             dictionary.put(SHIPPER_REF_NO, hblModel.shipment.getPickupDetails().getShipperRef());
+            dictionary.put(PICKUP_INSTRUCTION, hblModel.shipment.getPickupDetails().getPickupDeliveryInstruction());
+            dictionary.put(ESTIMATED_READY_FOR_PICKUP, ConvertToDPWDateFormat(hblModel.shipment.getPickupDetails().getEstimatedPickupOrDelivery()));
+            dictionary.put(PICKUP_TIME, dictionary.get(ESTIMATED_READY_FOR_PICKUP));
+        }
         MathContext precision = new MathContext(decimalPlaces);
         if (!Objects.isNull(hblModel.shipment.getWeight())) {
             BigDecimal weight = hblModel.shipment.getWeight().round(precision);
