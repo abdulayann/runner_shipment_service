@@ -135,6 +135,7 @@ public class ReportConstants {
     public static final String DATE_TIME = "DateTime";
     public static final String HSN_NUMBER = "HsnNumber";
     public static final String ESTIMATED_READY_FOR_PICKUP = "EstimatedReadyForPickup";
+    public static final String PICKUP_TIME = "PickUpTime";
     public static final String DATE_OF_RECEIPT = "DateofReceipt";
     public static final String DATE_OF_RECEIPT_MDY = "DateofReceiptMDY";
     public static final String DESTINATION_NAME_ = "DestinationName";
@@ -678,6 +679,7 @@ public class ReportConstants {
     public static final String EMPTY_TRUCK_IN_DATE = "EmptyTruckInDate";
     public static final String LOADED_TRUCK_GATE_OUT_DATE = "LoadedTruckGateOutDate";
     public static final String PICKUP_PORT_TRANSPORT_ADVISED = "PickupPortTransportAdvised";
+    public static final String PICKUP_INSTRUCTION = "PickUpInstructions";
     public static final String LOADED_DATE = "LoadedDate";
     public static final String ACTUAL_DELIVERY = "ActualDelivery";
     public static final String ORG_FULL_NAME = "OrgFullName";
