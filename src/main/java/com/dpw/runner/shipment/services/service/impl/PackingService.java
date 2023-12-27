@@ -494,12 +494,15 @@ public class PackingService implements IPackingService {
 
     public void calculateVolume(String widthUnit, String heightUnit, String lengthUnit, AutoCalculatePackingResponse pack, AutoCalculatePackingRequest request) throws Exception {
 
+        if (request.getWidthUnit() == null || request.getLengthUnit() == null || request.getHeightUnit() == null) {
+            return ;
+        }
         if (!lengthUnit.equals(heightUnit) || !heightUnit.equals(widthUnit))
             return;
 
         String quantity = request.getPacks();
-        if (request.getLength() == null || request.getWidth() == null || request.getHeight() == null)
-            throw new RunnerException("Length or height or width is null");
+        if (StringUtility.isEmpty(request.getPacks()) ||request.getLength() == null || request.getWidth() == null || request.getHeight() == null)
+            return;
         Double len = request.getLength().doubleValue();
         Double width = request.getWidth().doubleValue();
         Double height = request.getHeight().doubleValue();
@@ -525,6 +528,8 @@ public class PackingService implements IPackingService {
             }
             pack.setVolumeUnit("M3");
             pack.setVolume(BigDecimal.valueOf(vol));
+            request.setVolumeUnit("M3");
+            request.setVolume(BigDecimal.valueOf(vol));
             if (vol != null && vol.doubleValue() > 0.0) {
                 if (request.getTransportMode() != null && request.getTransportMode().equals(TRANSPORT_MODE_AIR)) {
                     this.calculateVolumetricWeightForAir(BigDecimal.valueOf(vol), pack.getWeight(), request.getTransportMode(), widthUnit, request.getVolumeUnit());
@@ -604,37 +609,38 @@ public class PackingService implements IPackingService {
     }
 
     private void calculateChargeable(AutoCalculatePackingRequest request, AutoCalculatePackingResponse response) throws Exception {
-        if (StringUtility.isNotEmpty(request.getTransportMode()) && request.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)) {
-            String wunit = request.getWeightUnit();
-            String vunit = request.getVolumeUnit();
-            var vol = request.getVolume();
-            var weight = request.getWeight();
+        if (StringUtility.isNotEmpty(request.getTransportMode())) {
+            if (!request.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)){
+                String wunit = request.getWeightUnit();
+                String vunit = request.getVolumeUnit();
+                var vol = request.getVolume();
+                var weight = request.getWeight();
 
-            if (wunit != null && !wunit.isEmpty() && vunit != null && !vunit.isEmpty()) {
-                VolumeWeightChargeable vwobj = consolidationService.calculateVolumeWeight(request.getTransportMode(), wunit, vunit, weight, vol);
+                if (wunit != null && !wunit.isEmpty() && vunit != null && !vunit.isEmpty()) {
+                    VolumeWeightChargeable vwobj = consolidationService.calculateVolumeWeight(request.getTransportMode(), wunit, vunit, weight, vol);
 
-                response.setVolumeWeight(vwobj.getVolumeWeight());
-                response.setVolumeWeightUnit(vwobj.getVolumeWeightUnit());
+                    response.setVolumeWeight(vwobj.getVolumeWeight());
+                    response.setVolumeWeightUnit(vwobj.getVolumeWeightUnit());
 
-                if (request.getTransportMode() != null && request.getTransportMode().equals(Constants.TRANSPORT_MODE_SEA)) {
-                    if (request.getContainerCategory() != null && request.getContainerCategory().equals(SHIPMENT_TYPE_LCL)) {
-                        calculateChargeableForSEA_LCL(response, request);
+                    if (request.getTransportMode() != null && request.getTransportMode().equals(Constants.TRANSPORT_MODE_SEA)) {
+                        if (request.getContainerCategory() != null && request.getContainerCategory().equals(SHIPMENT_TYPE_LCL)) {
+                            calculateChargeableForSEA_LCL(response, request);
+                        }
                     }
                 }
+            } else {
+                calculateChargeableForAir(response, request);
             }
-        } else if (request.getTransportMode() != null && request.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)) {
-            calculateChargeableForAir(response, request);
         }
     }
 
     @Override
     public ResponseEntity<?> autoCalculateVolume(CommonRequestModel commonRequestModel) throws Exception {
         AutoCalculatePackingRequest request = (AutoCalculatePackingRequest) commonRequestModel.getData();
-        if (request.getVolumeUnit() == null || request.getWeightUnit() == null || request.getWidthUnit() == null || request.getLengthUnit() == null) {
-            return ResponseEntity.badRequest().build();
-        }
         AutoCalculatePackingResponse response = new AutoCalculatePackingResponse();
-        calculateVolume(request.getWidthUnit(), request.getHeightUnit(), request.getLengthUnit(), response, request);
+        if(!request.isVolumeChange()) {
+            calculateVolume(request.getWidthUnit(), request.getHeightUnit(), request.getLengthUnit(), response, request);
+        }
         calculateChargeable(request, response);
         return ResponseHelper.buildSuccessResponse(response);
     }
