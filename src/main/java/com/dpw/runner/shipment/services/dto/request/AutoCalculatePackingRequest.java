@@ -11,4 +11,5 @@ import lombok.*;
 public class AutoCalculatePackingRequest extends PackingRequest {
     private String transportMode;
     private String containerCategory;
+    private boolean volumeChange;
 }
