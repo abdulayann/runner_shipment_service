@@ -1,17 +1,25 @@
 package com.dpw.runner.shipment.services.syncing.impl;
 
+import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.Packing;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.syncing.Entity.ContainerRequestV2;
 import com.dpw.runner.shipment.services.syncing.Entity.PackingRequestV2;
+import com.nimbusds.jose.util.Pair;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
 import java.util.stream.Collectors;
+
+import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 
 @Component
 public class SyncEntityConversionService {
@@ -60,6 +68,37 @@ public class SyncEntityConversionService {
         return new ArrayList<>();
     }
 
+    public List<Packing> packingsV1ToV2(List<PackingRequestV2> packingRequestV2List) {
+        if(packingRequestV2List != null) {
+            List<Packing> res = packingRequestV2List.stream().map(
+                    this::packingV1ToV2
+            ).toList();
+            return res;
+        }
+        return new ArrayList<>();
+    }
+
+    public Packing packingV1ToV2(PackingRequestV2 packingRequestV2) {
+        var packing = modelMapper.map(packingRequestV2, Packing.class);
+        packing.setOrigin(packingRequestV2.getOriginName());
+        if(packingRequestV2.getConsolidationGuid() != null) {
+            try {
+                packing.setConsolidationId(consolidationDetailsDao.findByGuid(packingRequestV2.getConsolidationGuid()).get().getId());
+            } catch (Exception ignored) {
+                packing.setConsolidationId(null);
+            }
+        }
+        if(packingRequestV2.getShipmentGuid() != null) {
+            try {
+                packing.setShipmentId(shipmentDao.findByGuid(packingRequestV2.getShipmentGuid()).get().getId());
+            } catch (Exception ignored) {
+                packing.setShipmentId(null);
+            }
+        }
+
+        return packing;
+    }
+
     public List<ContainerRequestV2> containersV2ToV1(List<Containers> containersList) {
         if(containersList != null) {
             List<ContainerRequestV2> res = containersList.stream().map(
@@ -95,6 +134,29 @@ public class SyncEntityConversionService {
         containers.setDgClass(containerRequestV2.getDgClassString());
         containers.setMarksNums(containerRequestV2.getMarksnNums());
         containers.setContainerStuffingLocation(containerRequestV2.getContainerStuffingLocationName());
+        if(containerRequestV2.getConsolidationGuid() != null) {
+            try {
+                containers.setConsolidationId(consolidationDetailsDao.findByGuid(containerRequestV2.getConsolidationGuid()).get().getId());
+            } catch (Exception ignored) {
+                containers.setConsolidationId(null);
+            }
+        }
+        if(containerRequestV2.getShipmentGuids() != null && containerRequestV2.getShipmentGuids().size() > 0) {
+            try {
+                ListCommonRequest listCommonRequest = constructListCommonRequest("guid", containerRequestV2.getShipmentGuids(), "IN");
+                Pair<Specification<ShipmentDetails>, org.springframework.data.domain.Pageable> pair = fetchData(listCommonRequest, ShipmentDetails.class);
+                Page<ShipmentDetails> shipmentDetailsPage = shipmentDao.findAll(pair.getLeft(), pair.getRight());
+                if(shipmentDetailsPage != null && !shipmentDetailsPage.isEmpty()) {
+                    List<ShipmentDetails> shipmentDetails = new ArrayList<>();
+                    for (ShipmentDetails shipmentDetails1 : shipmentDetailsPage.getContent()) {
+                        ShipmentDetails sd = new ShipmentDetails();
+                        sd.setId(shipmentDetails1.getId());
+                        shipmentDetails.add(sd);
+                    }
+                    containers.setShipmentsList(shipmentDetails);
+                }
+            } catch (Exception ignored) {}
+        }
         return containers;
     }
 

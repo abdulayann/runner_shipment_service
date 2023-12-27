@@ -100,6 +100,12 @@ public class ContainerDao implements IContainerDao {
         containerRepository.delete(containers);
     }
 
+    private void deleteByIds(List<Long> ids) {
+        if(ids != null && ids.size() > 0) {
+            for (Long id: ids)
+                deleteById(id);
+        }
+    }
     @Override
     public void deleteById(Long id) {
         containerRepository.deleteById(id);
@@ -274,14 +280,16 @@ public class ContainerDao implements IContainerDao {
         return res;
     }
 
-    public List<Containers> updateEntityFromShipmentConsole(List<Containers> containersList, Long consolidationId, List<Containers> oldEntityList) throws Exception {
+    public List<Containers> updateEntityFromConsolidationV1(List<Containers> containersList, Long consolidationId, List<Containers> oldEntityList) throws Exception {
         String responseMsg;
         List<Containers> responseContainers = new ArrayList<>();
         Map<UUID, Containers> containersMap = new HashMap<>();
+        List<Long> deleteContIds = new ArrayList<>();
         if(oldEntityList != null && oldEntityList.size() > 0) {
             for (Containers containers:
                  oldEntityList) {
                 containersMap.put(containers.getGuid(), containers);
+                deleteContIds.add(containers.getId());
             }
         }
         Containers oldContainer;
@@ -293,16 +301,16 @@ public class ContainerDao implements IContainerDao {
                     if(containersMap.containsKey(containers.getGuid())) {
                         oldContainer = containersMap.get(containers.getGuid());
                         containers.setId(oldContainer.getId());
-                        containers.setConsolidationId(oldContainer.getConsolidationId());
+                        deleteContIds.remove(oldContainer.getId());
                     } else {
                         containers.setId(null);
-                        containers.setConsolidationId(null);
                     }
-                    if(consolidationId != null) {
-                        containers.setConsolidationId(consolidationId);
-                    }
+                    containers.setConsolidationId(consolidationId);
                 }
                 responseContainers = saveAll(containerList);
+            }
+            if(deleteContIds.size() > 0) {
+                deleteByIds(deleteContIds);
             }
             return responseContainers;
         } catch (Exception e) {
@@ -333,19 +341,13 @@ public class ContainerDao implements IContainerDao {
                     if(containersMap.containsKey(containers.getGuid())) {
                         oldContainer = containersMap.get(containers.getGuid());
                         containers.setId(oldContainer.getId());
-                        containers.setConsolidationId(oldContainer.getConsolidationId());
-                        containers.setShipmentsList(oldContainer.getShipmentsList());
                     } else {
                         List<Containers> oldConsolContainer = findByGuid(containers.getGuid());
                         if(oldConsolContainer.size() > 0) {
                             containers.setId(oldConsolContainer.get(0).getId());
-                            containers.setConsolidationId(oldConsolContainer.get(0).getConsolidationId());
-                            containers.setShipmentsList(oldConsolContainer.get(0).getShipmentsList());
                         }
                         else {
                             containers.setId(null);
-                            containers.setConsolidationId(null);
-                            containers.setShipmentsList(null);
                         }
                     }
                 }

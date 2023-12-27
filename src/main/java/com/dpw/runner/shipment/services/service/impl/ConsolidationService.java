@@ -2468,7 +2468,7 @@ public class ConsolidationService implements IConsolidationService {
                 ListCommonRequest listCommonRequest = constructListCommonRequest("consolidationId", entity.getId(), "=");
                 Pair<Specification<Containers>, Pageable> containerPair = fetchData(listCommonRequest, Containers.class);
                 Page<Containers> oldContainers = containerDao.findAll(containerPair.getLeft(), containerPair.getRight());
-                List<Containers> updatedContainers = containerDao.updateEntityFromShipmentConsole(convertToEntityList(containerRequestList, Containers.class), id, oldContainers.stream().toList());
+                List<Containers> updatedContainers = containerDao.updateEntityFromConsolidationV1(convertToEntityList(containerRequestList, Containers.class), id, oldContainers.stream().toList());
                 entity.setContainersList(updatedContainers);
             }
             if (packingRequestList != null) {
