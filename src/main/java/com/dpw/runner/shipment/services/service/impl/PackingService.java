@@ -532,7 +532,7 @@ public class PackingService implements IPackingService {
             request.setVolume(BigDecimal.valueOf(vol));
             if (vol != null && vol.doubleValue() > 0.0) {
                 if (request.getTransportMode() != null && request.getTransportMode().equals(TRANSPORT_MODE_AIR)) {
-                    this.calculateVolumetricWeightForAir(BigDecimal.valueOf(vol), pack.getWeight(), request.getTransportMode(), widthUnit, request.getVolumeUnit());
+                    this.calculateVolumetricWeightForAir(BigDecimal.valueOf(vol), pack.getWeight(), request.getTransportMode(), request.getWeightUnit(), request.getVolumeUnit());
                 }
             }
         } else if (!(len == null && width == null && height == null)) {
