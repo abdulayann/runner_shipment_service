@@ -148,13 +148,13 @@ public class ReportService implements IReportService {
             List<byte[]> pdf_Bytes = new ArrayList<>();
             DocPages Pages = GetFromTenantSettings(reportRequest.getReportInfo(), null, null, reportRequest.getPrintType(), reportRequest.getFrontTemplateCode(), reportRequest.getBackTemplateCode(), false, null, null);
             int copies = reportRequest.getCopyCountForAWB();
-            if(copies < 1) return null;
+            if(copies < 1) throw new ValidationException("Copy count is less than 1");
             for(int i = 1; i <= copies; i++){
                 String copyCount = getSerialCount(i, copies);
                 if(dataRetrived.get(ReportConstants.MAWB_NUMBER) != null) dataRetrived.put(ReportConstants.COUNT, copyCount);
                 else dataRetrived.put(ReportConstants.COUNT, null);
                 byte[] mainDocPage = GetFromDocumentService(dataRetrived, Pages.getMainPageId());
-                if(mainDocPage == null) return null;
+                if(mainDocPage == null) throw new ValidationException("Please Upload Valid Template");
                 byte[] docBytes = AddBarCodeInAWBLableReport(mainDocPage, dataRetrived.get(ReportConstants.MAWB_NUMBER)+copyCount, dataRetrived.get(ReportConstants.HAWB_NUMBER)+"");
                 pdf_Bytes.add(docBytes);
             }
@@ -217,7 +217,7 @@ public class ReportService implements IReportService {
                 for(String party : printingForParties){
                     dataRetrived.put(ReportConstants.PRINTING_FOR , MawbPrintFor.getById(Integer.parseInt(party)));
                     byte[] mainDocPage = GetFromDocumentService(dataRetrived, Pages.getMainPageId());
-                    if(mainDocPage == null) return null;
+                    if(mainDocPage == null) throw new ValidationException("Please Upload Valid Template");
                     else{
                         if(lastPage == null) lastPage = CommonUtils.getLastPage(mainDocPage);
                         mainDocPage = CommonUtils.removeLastPage(mainDocPage);
@@ -231,7 +231,7 @@ public class ReportService implements IReportService {
                 pdfByte_Content = CommonUtils.concatAndAddContent(pdf_Bytes);
             }else{
                 pdfByte_Content = GetFromDocumentService(dataRetrived, Pages.getMainPageId());
-                if(pdfByte_Content == null) return null;
+                if(pdfByte_Content == null) throw new ValidationException("Please Upload Valid Template");
             }
             if(reportRequest.getPrintType().equalsIgnoreCase(ReportConstants.DRAFT)){
                 pdfByte_Content = CommonUtils.AddWatermark(pdfByte_Content, BaseFont.createFont(BaseFont.TIMES_BOLD, BaseFont.WINANSI, BaseFont.EMBEDDED), "DRAFT     DRAFT");
@@ -310,7 +310,7 @@ public class ReportService implements IReportService {
             byte[] backprint_hawb = GetFromDocumentService(dataRetrived, Pages.getMainPageId());
             List<byte[]> pdfBytes_hawb = getOriginalandCopies(Pages, reportRequest.getReportInfo(), mainDoc_hawb, firstpage_hawb, backprint_hawb, dataRetrived, hbltype, tenantSettingsRow, reportRequest.getNoOfCopies());
             pdfByte_Content = CommonUtils.concatAndAddContent(pdfBytes_hawb);
-            if (pdfByte_Content == null) return null;
+            if (pdfByte_Content == null) throw new ValidationException("Please Upload Valid Template");
             if (reportRequest.getPrintType().equalsIgnoreCase(TypeOfHblPrint.Draft.name()))
             {
                 pdfByte_Content = CommonUtils.AddWatermark(pdfByte_Content, BaseFont.createFont(BaseFont.TIMES_BOLD, BaseFont.WINANSI, BaseFont.EMBEDDED), "DRAFT     DRAFT");
@@ -344,7 +344,7 @@ public class ReportService implements IReportService {
         byte[] pdfByteContent;
         if (mainDoc == null)
         {
-            return null;
+            throw new ValidationException("Please Upload Valid Template");
         }
 
         List<byte[]> pdfBytes = getOriginalandCopies(pages, reportRequest.getReportInfo(), mainDoc, firstpage, backprint, dataRetrived, hbltype, tenantSettingsRow, reportRequest.getNoOfCopies());
