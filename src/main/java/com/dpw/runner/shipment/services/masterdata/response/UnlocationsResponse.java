@@ -25,4 +25,6 @@ public class UnlocationsResponse {
     private String lookupDescAir;
     @JsonProperty("lookupDescSea")
     private String lookupDescSea;
+    @JsonProperty("CountryName")
+    private String countryName;
 }
