@@ -59,5 +59,7 @@ public class RoutingsRequestV2 implements IRunnerRequest {
     public UUID ShipmentGuid;
     @JsonProperty("ConsolidationGuid")
     public UUID ConsolidationGuid;
+    @JsonProperty("ByCarrier")
+    public String ByCarrier;
 //    public Long EntityId;
 }

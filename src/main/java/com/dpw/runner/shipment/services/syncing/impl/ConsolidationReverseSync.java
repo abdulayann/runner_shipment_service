@@ -77,6 +77,7 @@ public class ConsolidationReverseSync implements IConsolidationReverseSync {
             mapReverseArrivalDepartureDetails(response, request);
             mapReverseTruckDriverDetail(response, request);
             response.setPackingList(jsonHelper.convertValueToList(syncEntityConversionService.packingsV1ToV2(request.getPackingList()), PackingRequest.class));
+            response.setRoutingsList(jsonHelper.convertValueToList(syncEntityConversionService.routingsV1ToV2(request.getRoutingsList()), RoutingsRequest.class));
             mapReverseJobs(response, request);
             response.setContainersList(jsonHelper.convertValueToList(syncEntityConversionService.containersV1ToV2(request.getContainersList()), ContainerRequest.class));
             response.setFileRepoList(convertToList(request.getDocsList(), FileRepoRequest.class));
@@ -149,6 +150,7 @@ public class ConsolidationReverseSync implements IConsolidationReverseSync {
         response.getCarrierDetails().setShippingLine(request.getCarrier());
         response.getCarrierDetails().setGuid(null);
         response.getCarrierDetails().setId(null);
+        response.getCarrierDetails().setVoyage(request.getVoyageNumber());
     }
 
     private void mapReverseAchievedQuantities(ConsolidationDetailsRequest response, CustomConsolidationRequest request) {

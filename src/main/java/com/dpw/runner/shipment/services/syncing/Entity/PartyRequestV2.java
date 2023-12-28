@@ -23,4 +23,6 @@ public class PartyRequestV2 {
     private int TenantId;
     @JsonProperty("Type")
     private String Type;
+    @JsonProperty("IsFreeTextAddress")
+    private Boolean IsFreeTextAddress;
 }

@@ -1,13 +1,16 @@
 package com.dpw.runner.shipment.services.syncing.impl;
 
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.Packing;
+import com.dpw.runner.shipment.services.entity.Routings;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.syncing.Entity.ContainerRequestV2;
 import com.dpw.runner.shipment.services.syncing.Entity.PackingRequestV2;
+import com.dpw.runner.shipment.services.syncing.Entity.RoutingsRequestV2;
 import com.nimbusds.jose.util.Pair;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -158,6 +161,46 @@ public class SyncEntityConversionService {
             } catch (Exception ignored) {}
         }
         return containers;
+    }
+
+    public List<RoutingsRequestV2> routingsV2ToV1(List<Routings> routingsList) {
+        if(routingsList != null) {
+            List<RoutingsRequestV2> res = routingsList.stream().map(
+                    this::routingV2ToV1
+            ).toList();
+            return res;
+        }
+        return new ArrayList<>();
+    }
+
+    public RoutingsRequestV2 routingV2ToV1(Routings routings) {
+        var routingsRequestV2 = modelMapper.map(routings, RoutingsRequestV2.class);
+        if(routingsRequestV2.getMode() != null && routingsRequestV2.getMode().equals(Constants.TRANSPORT_MODE_ROA))
+            routingsRequestV2.setVoyage(routings.getTruckReferenceNumber());
+        routingsRequestV2.setIsDomestic(routings.isDomestic());
+        routingsRequestV2.setByCarrier(routings.getCarrier());
+        return routingsRequestV2;
+    }
+
+    public List<Routings> routingsV1ToV2(List<RoutingsRequestV2> routingsRequestV2List) {
+        if(routingsRequestV2List != null) {
+            List<Routings> res = routingsRequestV2List.stream().map(
+                    this::routingV1ToV2
+            ).toList();
+            return res;
+        }
+        return new ArrayList<>();
+    }
+
+    public Routings routingV1ToV2(RoutingsRequestV2 routingsRequestV2) {
+        var routings = modelMapper.map(routingsRequestV2, Routings.class);
+        routings.setDomestic(routingsRequestV2.getIsDomestic());
+        routings.setCarrier(routingsRequestV2.getByCarrier());
+        if(routingsRequestV2.getMode() != null && routingsRequestV2.getMode().equals(Constants.TRANSPORT_MODE_ROA)) {
+            routings.setTruckReferenceNumber(routingsRequestV2.getVoyage());
+            routings.setVoyage(null);
+        }
+        return routings;
     }
 
 }
