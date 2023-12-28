@@ -2907,9 +2907,9 @@ public class ConsolidationService implements IConsolidationService {
                 var thresholdETDTo = etd.plusDays(thresholdLimit + 1).plusSeconds(-1);
 
                 var etaAndETDCriteria = CommonUtils.andCriteria("eta", thresholdETAFrom, ">=", consolListRequest);
-                etaAndETDCriteria = CommonUtils.andCriteria("Eta", thresholdETATo, "<=", etaAndETDCriteria);
-                etaAndETDCriteria = CommonUtils.andCriteria("Etd", thresholdETDFrom, ">=", etaAndETDCriteria);
-                etaAndETDCriteria = CommonUtils.andCriteria("Etd", thresholdETDTo, "<=", etaAndETDCriteria);
+                etaAndETDCriteria = CommonUtils.andCriteria("eta", thresholdETATo, "<=", etaAndETDCriteria);
+                etaAndETDCriteria = CommonUtils.andCriteria("etd", thresholdETDFrom, ">=", etaAndETDCriteria);
+                etaAndETDCriteria = CommonUtils.andCriteria("etd", thresholdETDTo, "<=", etaAndETDCriteria);
 
                 var priorityList = masterLists.stream()
                         .filter(x -> x.getItemType() == (int)MasterDataType.CONSOLIDATION_CHECK_ORDER.getId())
@@ -2923,21 +2923,21 @@ public class ConsolidationService implements IConsolidationService {
                 for (var item : priorityList){
                     switch (item.toUpperCase()){
                         case "VOYAGE NUMBER":
-                            if(Strings.isNullOrEmpty(request.getVoyageNumber())){
+                            if(StringUtility.isNotEmpty(request.getVoyageNumber())){
                                 consolListRequest = CommonUtils.andCriteria("voyage", request.getVoyageNumber(), "=", etaAndETDCriteria);
                                 isConditionSatisfied = true;
                                 response.setFilteredDetailName("Voyage Number");
                             }
                             break;
                         case "VESSEL NAME":
-                            if(Strings.isNullOrEmpty(request.getVessel())){
+                            if(StringUtility.isNotEmpty(request.getVessel())){
                                 consolListRequest = CommonUtils.andCriteria("vessel", request.getVessel(), "=", etaAndETDCriteria);
                                 isConditionSatisfied = true;
                                 response.setFilteredDetailName("Vessel Name");
                             }
                             break;
                         case "ORIGIN PORT/ DESTINATION PORT":
-                            if(Strings.isNullOrEmpty(request.getPol()) && Strings.isNullOrEmpty(request.getPod())){
+                            if(StringUtility.isNotEmpty(request.getPol()) && StringUtility.isNotEmpty(request.getPod())){
                                 consolListRequest = CommonUtils.andCriteria("originPort", request.getPol(), "=", etaAndETDCriteria);
                                 consolListRequest = CommonUtils.andCriteria("destinationPort", request.getPod(), "=", consolListRequest);
                                 isConditionSatisfied = true;
