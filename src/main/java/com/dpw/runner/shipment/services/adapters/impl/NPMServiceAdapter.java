@@ -245,54 +245,54 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
             List<UnlocationsResponse> unlocationsResponse = jsonHelper.convertValueToList(v1DataResponse.entities, UnlocationsResponse.class);
             if (unlocationsResponse != null && !unlocationsResponse.isEmpty()) {
                 Map<String, UnlocationsResponse> locationMap = new HashMap<>();
-                Map<String, String> unlocMasterData = new HashMap<>();
+                //Map<String, String> unlocMasterData = new HashMap<>();
                 for (UnlocationsResponse unlocation : unlocationsResponse) {
                     locationMap.put(unlocation.getLocationsReferenceGUID(), unlocation);
                 }
-                for (var contract: response.getContracts())
-                {
-                    if(contract.getMeta() != null){
-                        if(Objects.equals(contract.getMeta().getMode_of_transport(), "SEA"))
-                        {
-                            if(contract.getOrigin() != null && locationMap.containsKey(contract.getOrigin()))
-                            {
-                                unlocMasterData.put(contract.getOrigin(), locationMap.get(contract.getOrigin()).getLookupDescSea());
-                            }
-                            if(contract.getDestination() != null && locationMap.containsKey(contract.getDestination()))
-                            {
-                                unlocMasterData.put(contract.getDestination(), locationMap.get(contract.getDestination()).getLookupDescSea());
-                            }
-                            if(contract.getMeta().getPol() != null && locationMap.containsKey(contract.getMeta().getPol()))
-                            {
-                                unlocMasterData.put(contract.getMeta().getPol(), locationMap.get(contract.getMeta().getPol()).getLookupDescSea());
-                            }
-                            if(contract.getMeta().getPod() != null && locationMap.containsKey(contract.getMeta().getPod()))
-                            {
-                                unlocMasterData.put(contract.getMeta().getPod(), locationMap.get(contract.getMeta().getPod()).getLookupDescSea());
-                            }
-                        }
-                        else
-                        {
-                            if(contract.getOrigin() != null && locationMap.containsKey(contract.getOrigin()))
-                            {
-                                unlocMasterData.put(contract.getOrigin(), locationMap.get(contract.getOrigin()).getLookupDescAir());
-                            }
-                            if(contract.getDestination() != null && locationMap.containsKey(contract.getDestination()))
-                            {
-                                unlocMasterData.put(contract.getDestination(), locationMap.get(contract.getDestination()).getLookupDescAir());
-                            }
-                            if(contract.getMeta().getPol() != null && locationMap.containsKey(contract.getMeta().getPol()))
-                            {
-                                unlocMasterData.put(contract.getMeta().getPol(), locationMap.get(contract.getMeta().getPol()).getLookupDescAir());
-                            }
-                            if(contract.getMeta().getPod() != null && locationMap.containsKey(contract.getMeta().getPod()))
-                            {
-                                unlocMasterData.put(contract.getMeta().getPod(), locationMap.get(contract.getMeta().getPod()).getLookupDescAir());
-                            }
-                        }
-                    }
-                }
-                response.setUnlocMasterData(unlocMasterData);
+//                for (var contract: response.getContracts())
+//                {
+//                    if(contract.getMeta() != null){
+//                        if(Objects.equals(contract.getMeta().getMode_of_transport(), "SEA"))
+//                        {
+//                            if(contract.getOrigin() != null && locationMap.containsKey(contract.getOrigin()))
+//                            {
+//                                unlocMasterData.put(contract.getOrigin(), locationMap.get(contract.getOrigin()).getLookupDescSea());
+//                            }
+//                            if(contract.getDestination() != null && locationMap.containsKey(contract.getDestination()))
+//                            {
+//                                unlocMasterData.put(contract.getDestination(), locationMap.get(contract.getDestination()).getLookupDescSea());
+//                            }
+//                            if(contract.getMeta().getPol() != null && locationMap.containsKey(contract.getMeta().getPol()))
+//                            {
+//                                unlocMasterData.put(contract.getMeta().getPol(), locationMap.get(contract.getMeta().getPol()).getLookupDescSea());
+//                            }
+//                            if(contract.getMeta().getPod() != null && locationMap.containsKey(contract.getMeta().getPod()))
+//                            {
+//                                unlocMasterData.put(contract.getMeta().getPod(), locationMap.get(contract.getMeta().getPod()).getLookupDescSea());
+//                            }
+//                        }
+//                        else
+//                        {
+//                            if(contract.getOrigin() != null && locationMap.containsKey(contract.getOrigin()))
+//                            {
+//                                unlocMasterData.put(contract.getOrigin(), locationMap.get(contract.getOrigin()).getLookupDescAir());
+//                            }
+//                            if(contract.getDestination() != null && locationMap.containsKey(contract.getDestination()))
+//                            {
+//                                unlocMasterData.put(contract.getDestination(), locationMap.get(contract.getDestination()).getLookupDescAir());
+//                            }
+//                            if(contract.getMeta().getPol() != null && locationMap.containsKey(contract.getMeta().getPol()))
+//                            {
+//                                unlocMasterData.put(contract.getMeta().getPol(), locationMap.get(contract.getMeta().getPol()).getLookupDescAir());
+//                            }
+//                            if(contract.getMeta().getPod() != null && locationMap.containsKey(contract.getMeta().getPod()))
+//                            {
+//                                unlocMasterData.put(contract.getMeta().getPod(), locationMap.get(contract.getMeta().getPod()).getLookupDescAir());
+//                            }
+//                        }
+//                    }
+//                }
+                response.setUnlocMasterData(locationMap);
             }
         }
     }
