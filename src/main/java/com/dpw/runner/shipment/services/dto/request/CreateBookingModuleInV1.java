@@ -137,7 +137,7 @@ public class CreateBookingModuleInV1 {
             private Boolean IsPublic;
             private String Label;
             private String AssignedTo;
-            private LocalDateTime InsertDate;
+            private String InsertDate;
         }
 
         @Data
