@@ -92,7 +92,7 @@ public class V1ServiceUtil {
                         .Text(note.getText())
                         .InsertUserDisplayName(note.getInsertUserDisplayName())
                         .IsPublic(note.getIsPublic())
-                        .InsertDate(note.getCreatedAt())
+                        .InsertDate(note.getCreatedAt() != null ? DateTimeFormatter.ofPattern(CustomerBookingConstants.DATE_TIME_FORMAT).format(note.getCreatedAt()) : null)
                         .build()).collect(Collectors.toList());
     }
     private static List<CreateBookingModuleInV1.BookingEntity.BillCharge> createQuoteCharges(List<BookingCharges> bookingCharges) {
