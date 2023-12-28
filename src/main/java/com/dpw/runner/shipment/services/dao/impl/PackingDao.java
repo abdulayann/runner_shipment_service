@@ -475,6 +475,12 @@ public class PackingDao implements IPackingDao {
                         packingMap.remove(oldEntity.getGuid());
                         request.setId(oldEntity.getId());
                     }
+                    else {
+                        Optional<Packing> oldPackCont = findByGuid(request.getGuid());
+                        if(oldPackCont != null && oldPackCont.isPresent()) {
+                            request.setId(oldPackCont.get().getId());
+                        }
+                    }
                     if(packMap.containsKey(request.getGuid()) && !IsStringNullOrEmpty(packMap.get(request.getGuid())) && contMap.containsKey(packMap.get(request.getGuid())))
                         request.setContainerId(contMap.get(packMap.get(request.getGuid())));
                     packingRequestList.add(request);

@@ -175,7 +175,7 @@ public class ConsolidationSync implements IConsolidationSync {
     private void mapPackings(CustomConsolidationRequest response, ConsolidationDetails request) {
         if(request == null || request.getPackingList() == null)
             return;
-        List<PackingRequestV2> res = syncEntityConversionService.packingsV2ToV1(request.getPackingList(), request.getContainersList());
+        List<PackingRequestV2> res = syncEntityConversionService.packingsV2ToV1(request.getPackingList(), request.getContainersList(), null, request.getGuid());
         response.setPackingList(res);
     }
 

@@ -93,6 +93,7 @@ import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.*;
+import static com.dpw.runner.shipment.services.utils.StringUtility.isNotEmpty;
 import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
 
 @SuppressWarnings("ALL")
@@ -676,8 +677,14 @@ public class ShipmentService implements IShipmentService {
             if(shipmentDetails.getContainerAutoWeightVolumeUpdate() != null && shipmentDetails.getContainerAutoWeightVolumeUpdate().booleanValue() && packingRequest != null) {
                 containerRequest = calculateAutoContainerWeightAndVolume(containerRequest, packingRequest);
             }
+            Long consolidationId = null;
+            if(shipmentDetails.getConsolidationList() != null && shipmentDetails.getConsolidationList().size() > 0)
+                consolidationId = shipmentDetails.getConsolidationList().get(0).getId();
             List<Containers> updatedContainers = new ArrayList<>();
             if (request.getContainersList() != null) {
+                for (ContainerRequest containerRequest1 : containerRequest) {
+                    containerRequest1.setConsolidationId(consolidationId);
+                }
                 updatedContainers = containerDao.saveAll(commonUtils.convertToCreateEntityList(containerRequest, Containers.class));
                 shipmentDetails.setContainersList(updatedContainers);
             }
@@ -708,7 +715,7 @@ public class ShipmentService implements IShipmentService {
 
             List<Packing> updatedPackings = new ArrayList<>();
             if (packingRequest != null) {
-                packingRequest = setContainerIdByNumber(updatedContainers, packingRequest);
+                packingRequest = setPackingDetails(updatedContainers, packingRequest, shipmentDetails.getTransportMode(), consolidationId);
                 updatedPackings = packingDao.saveEntityFromShipment(commonUtils.convertToCreateEntityList(packingRequest, Packing.class), shipmentId);
                 shipmentDetails.setPackingList(updatedPackings);
             }
@@ -1132,7 +1139,7 @@ public class ShipmentService implements IShipmentService {
                 .build();
     }
 
-    private List<PackingRequest> setContainerIdByNumber(List<Containers> containersList, List<PackingRequest> packingRequests) {
+    private List<PackingRequest> setPackingDetails(List<Containers> containersList, List<PackingRequest> packingRequests, String transportMode, Long consolidationId) {
         if(containersList != null) {
             Map<String, Long> map = containersList.stream().filter(c -> c.getContainerNumber() != null).collect(Collectors.toMap(element -> element.getContainerNumber(), element -> element.getId()));
             if(packingRequests != null && packingRequests.size() > 0) {
@@ -1142,6 +1149,9 @@ public class ShipmentService implements IShipmentService {
                             packingRequest.setContainerId(map.get(packingRequest.getContainerNumber()));
                         else
                             packingRequest.setContainerId(null);
+                    }
+                    if(!IsStringNullOrEmpty(transportMode) && transportMode.equals(Constants.TRANSPORT_MODE_AIR)) {
+                        packingRequest.setConsolidationId(consolidationId);
                     }
                 }
             }
@@ -1532,8 +1542,11 @@ public class ShipmentService implements IShipmentService {
                     containerRequestList = jsonHelper.convertValueToList(oldEntity.get().getContainersList(), ContainerRequest.class);
                 containerRequestList = calculateAutoContainerWeightAndVolume(containerRequestList, packingRequestList);
             }
+            Long consolidationId = null;
+            if(entity.getConsolidationList() != null && entity.getConsolidationList().size() > 0)
+                consolidationId = entity.getConsolidationList().get(0).getId();
             if (containerRequestList != null) {
-                updatedContainers = containerDao.updateEntityFromShipmentConsole(convertToEntityList(containerRequestList, Containers.class), null, id);
+                updatedContainers = containerDao.updateEntityFromShipmentConsole(convertToEntityList(containerRequestList, Containers.class), consolidationId, id, false);
             } else {
                 updatedContainers = oldEntity.get().getContainersList();
             }
@@ -1576,7 +1589,7 @@ public class ShipmentService implements IShipmentService {
             if (packingRequestList != null) {
                 if(updatedContainers == null)
                     updatedContainers = oldEntity.get().getContainersList();
-                packingRequestList = setContainerIdByNumber(updatedContainers, packingRequestList);
+                packingRequestList = setPackingDetails(updatedContainers, packingRequestList, entity.getTransportMode(), consolidationId);
                 updatedPackings = packingDao.updateEntityFromShipment(convertToEntityList(packingRequestList, Packing.class), id, deleteContainerIds);
                 entity.setPackingList(updatedPackings);
             }
@@ -2034,6 +2047,105 @@ public class ShipmentService implements IShipmentService {
         }
     }
 
+    @Override
+    public ResponseEntity<?> assignAllContainers(CommonRequestModel commonRequestModel) {
+        String responseMsg;
+        ShipmentSettingsDetails shipmentSettingsDetails = shipmentSettingsDao.getSettingsByTenantIds(List.of(TenantContext.getCurrentTenant())).get(0);
+        boolean lclAndSeaOrRoadFlag = shipmentSettingsDetails.getMultipleShipmentEnabled() != null && shipmentSettingsDetails.getMultipleShipmentEnabled();
+        boolean IsConsolidatorFlag = shipmentSettingsDetails.getIsConsolidator() != null && shipmentSettingsDetails.getIsConsolidator();
+        List<Containers> containersList = new ArrayList<>();
+        try {
+            ContainerAssignListRequest containerAssignRequest = (ContainerAssignListRequest) commonRequestModel.getData();
+            Long shipmentId = containerAssignRequest.getShipmentId();
+            Long consolidationId = containerAssignRequest.getConsolidationId();
+            if (lclAndSeaOrRoadFlag) {
+                if(!containerAssignRequest.getTransportMode().equals(Constants.TRANSPORT_MODE_SEA) && !containerAssignRequest.getTransportMode().equals(Constants.TRANSPORT_MODE_ROA)) {
+                    lclAndSeaOrRoadFlag = false;
+                }
+            }
+            ListCommonRequest listCommonRequest = constructListCommonRequest("consolidationId", consolidationId, "=");
+            Pair<Specification<Containers>, Pageable> pair = fetchData(listCommonRequest, Containers.class);
+            Page<Containers> containers = containerDao.findAll(pair.getLeft(), pair.getRight());
+            List<Containers> conts = new ArrayList<>();
+            if(lclAndSeaOrRoadFlag) {
+                for (Containers container : containers.getContent()) {
+                    List<ShipmentsContainersMapping> shipmentsContainersMappings = shipmentsContainersMappingDao.findByContainerId(container.getId());
+                    if(!shipmentsContainersMappings.stream().map(ShipmentsContainersMapping::getShipmentId).toList().contains(shipmentId)) {
+
+                        if(container.getAllocatedWeight() != null && container.getAchievedWeight() != null && container.getAllocatedVolume() != null && container.getAchievedWeight() != null
+                                && isNotEmpty(container.getAllocatedWeightUnit()) && isNotEmpty(container.getAllocatedVolumeUnit()) && isNotEmpty(container.getAchievedWeightUnit()) && isNotEmpty(container.getAchievedVolumeUnit())) {
+
+                            BigDecimal achievedWeight = new BigDecimal(convertUnit(Constants.MASS, container.getAchievedWeight(), container.getAchievedWeightUnit(), container.getAllocatedWeightUnit()).toString());
+                            BigDecimal achievedVolume = new BigDecimal(convertUnit(Constants.VOLUME, container.getAchievedVolume(), container.getAchievedVolumeUnit(), container.getAllocatedVolumeUnit()).toString());
+
+                            if(achievedWeight.compareTo(container.getAllocatedWeight()) < 0 && achievedVolume.compareTo(container.getAllocatedVolume()) < 0) {
+                                containersList.add(container);
+                            }
+                            else if(!IsConsolidatorFlag) {
+                                conts.add(container);
+                            }
+                        }
+                        else
+                            containersList.add(container);
+                    }
+                }
+                if(conts.size() > 0) {
+                    for (Containers x : conts) {
+                        boolean flag = true;
+                        if(x.getShipmentsList() != null && x.getShipmentsList().size() > 0) {
+                            for(ShipmentDetails shipmentDetails : x.getShipmentsList()) {
+                                if(shipmentDetails.getShipmentType().equals(Constants.CARGO_TYPE_FCL))
+                                    flag = false;
+                            }
+                        }
+                        if (flag)
+                            containersList.add(x);
+                    }
+                }
+            }
+            else {
+                for (Containers container : containers.getContent()) {
+                    List<ShipmentsContainersMapping> shipmentsContainersMappings = shipmentsContainersMappingDao.findByContainerId(container.getId());
+                    if(!shipmentsContainersMappings.stream().map(ShipmentsContainersMapping::getShipmentId).toList().contains(shipmentId)) {
+                        containersList.add(container);
+                    }
+                }
+            }
+
+            List<Long> containerIds = new ArrayList<>();
+            ShipmentDetails shipmentDetails = shipmentDao.findById(containerAssignRequest.getShipmentId()).get();
+            if(shipmentSettingsDetails.getMultipleShipmentEnabled() && (shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_SEA) || shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_ROA))) {
+                boolean isFCL = shipmentDetails.getShipmentType().equals(Constants.CARGO_TYPE_FCL) && (shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_SEA) || shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_ROA));
+                for (Containers container : containersList) {
+                    boolean isPart = container.getIsPart() != null && container.getIsPart().booleanValue();
+                    if ((shipmentDetails.getShipmentType().equals(Constants.CARGO_TYPE_FCL) || isPart) && container.getShipmentsList() != null && container.getShipmentsList().size() > 0) {
+
+                    }
+                    else {
+                        containerIds.add(container.getId());
+                    }
+                    if (isFCL) {
+                        container.setAchievedWeight(container.getAllocatedWeight());
+                        container.setAchievedVolume(container.getAllocatedVolume());
+                        container.setAchievedWeightUnit(container.getAllocatedWeightUnit());
+                        container.setAchievedVolumeUnit(container.getAllocatedVolumeUnit());
+                        container.setWeightUtilization("100");
+                        container.setVolumeUtilization("100");
+                    }
+                }
+                if(isFCL)
+                    containerDao.saveAll(containersList);
+            }
+            shipmentsContainersMappingDao.assignContainers(containerAssignRequest.getShipmentId(), containerIds);
+            return ResponseHelper.buildSuccessResponse();
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
     private List<IRunnerResponse> convertEntityListToFullShipmentList(List<ShipmentDetails> lst) {
         List<IRunnerResponse> responseList = new ArrayList<>();
         lst.forEach(shipmentDetail -> {
@@ -2338,8 +2450,11 @@ public class ShipmentService implements IShipmentService {
             updateLinkedShipmentData(entity);
             entity.setId(oldEntity.get().getId());
             List<Containers> updatedContainers = null;
+            Long consolidationId = null;
+            if(entity.getConsolidationList() != null && entity.getConsolidationList().size() > 0)
+                consolidationId = entity.getConsolidationList().get(0).getId();
             if (containerRequestList != null) {
-                updatedContainers = containerDao.updateEntityFromShipmentConsole(convertToEntityList(containerRequestList, Containers.class), null, id);
+                updatedContainers = containerDao.updateEntityFromShipmentConsole(convertToEntityList(containerRequestList, Containers.class), consolidationId, id, false);
             } else {
                 updatedContainers = oldEntity.get().getContainersList();
             }

@@ -39,7 +39,6 @@ import javax.validation.Valid;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 
 import static com.dpw.runner.shipment.services.commons.constants.Constants.ALL;
@@ -211,10 +210,16 @@ public class ShipmentController {
         return (ResponseEntity<RunnerResponse<ShipmentDetailsResponse>>) ResponseHelper.buildFailedResponse(responseMsg);
     }
 
-    @ApiResponses(value = { @ApiResponse(code = 200, message = ContainerConstants.CALCULATION_SUCCESSFUL) })
+    @ApiResponses(value = { @ApiResponse(code = 200, message = ShipmentConstants.ASSIGN_CONTAINERS_SUCCESSFUL) })
     @PostMapping(ApiConstants.API_ASSIGN_SHIPMENT_CONTAINERS)
     public ResponseEntity<RunnerListResponse<ContainerResponse>> assignShipmentContainers(@RequestBody ShipmentContainerAssignRequest shipmentContainerAssignRequest) {
         return (ResponseEntity<RunnerListResponse<ContainerResponse>>) shipmentService.assignShipmentContainers(CommonRequestModel.buildRequest(shipmentContainerAssignRequest));
+    }
+
+    @ApiResponses(value = { @ApiResponse(code = 200, message = ShipmentConstants.ASSIGN_CONTAINERS_SUCCESSFUL) })
+    @PostMapping(ApiConstants.API_ASSIGN_ALL_CONTAINERS)
+    public ResponseEntity<RunnerListResponse<ContainerResponse>> assignAllContainers(@RequestBody ContainerAssignListRequest request) {
+        return (ResponseEntity<RunnerListResponse<ContainerResponse>>) shipmentService.assignAllContainers(CommonRequestModel.buildRequest(request));
     }
 
     @ApiResponses(value = { @ApiResponse(code = 200, message = ContainerConstants.CALCULATION_SUCCESSFUL) })

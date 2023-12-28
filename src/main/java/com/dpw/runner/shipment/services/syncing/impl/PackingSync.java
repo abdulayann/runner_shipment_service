@@ -66,7 +66,7 @@ public class PackingSync implements IPackingSync {
         if(shipmentId != null) {
             containersList = containerDao.findByShipmentId(shipmentId);
         }
-        requestV2List = syncEntityConversionService.packingsV2ToV1(packings, containersList);
+        requestV2List = syncEntityConversionService.packingsV2ToV1(packings, containersList, null, null);
         BulkPackingRequestV2 packingRequestV2 = BulkPackingRequestV2.builder()
                 .bulkPacking(requestV2List).ConsolidationId(consolidationId).ShipmentId(shipmentId).build();
         String finalCs = jsonHelper.convertToJson(V1DataSyncRequest.builder().entity(packingRequestV2).module(SyncingConstants.BULK_PACKAGES).build());
