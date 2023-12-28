@@ -276,6 +276,9 @@ public class DbAccessHelper {
                     return criteriaBuilder.greaterThan(path.get(fieldName), covertStringToData((String) input.getValue(), "yyyy-MM-dd"));
                 }
                 if (dataType.isAssignableFrom(LocalDateTime.class)) {
+                    if(input.getValue() instanceof LocalDateTime) {
+                        return criteriaBuilder.greaterThan(path.get(fieldName), (LocalDateTime)input.getValue());
+                    }
                     return criteriaBuilder.greaterThan(path.get(fieldName), covertStringToLocalDate((String) input.getValue(), "yyyy-MM-dd"));
                 }
                 return criteriaBuilder.gt(path.get(fieldName), (Number) input.getValue());
@@ -288,6 +291,9 @@ public class DbAccessHelper {
                     return criteriaBuilder.lessThan(path.get(fieldName), covertStringToData((String) input.getValue(), "yyyy-MM-dd"));
                 }
                 if (dataType.isAssignableFrom(LocalDateTime.class)) {
+                    if(input.getValue() instanceof LocalDateTime) {
+                        return criteriaBuilder.lessThan(path.get(fieldName), (LocalDateTime)input.getValue());
+                    }
                     return criteriaBuilder.lessThan(path.get(fieldName), covertStringToLocalDate((String) input.getValue(), "yyyy-MM-dd"));
                 }
                 return criteriaBuilder.lt(path.get(fieldName), (Number) input.getValue());
@@ -299,6 +305,9 @@ public class DbAccessHelper {
                     return criteriaBuilder.greaterThanOrEqualTo(path.get(fieldName), covertStringToData((String) input.getValue(), "yyyy-MM-dd"));
                 }
                 if (dataType.isAssignableFrom(LocalDateTime.class)) {
+                    if(input.getValue() instanceof LocalDateTime) {
+                        return criteriaBuilder.greaterThanOrEqualTo(path.get(fieldName), (LocalDateTime)input.getValue());
+                    }
                     return criteriaBuilder.greaterThanOrEqualTo(path.get(fieldName), covertStringToLocalDate((String) input.getValue(), "yyyy-MM-dd"));
                 }
                 return criteriaBuilder.gt(path.get(fieldName), (Number) input.getValue());
@@ -311,6 +320,9 @@ public class DbAccessHelper {
                     return criteriaBuilder.lessThanOrEqualTo(path.get(fieldName), covertStringToData((String) input.getValue(), "yyyy-MM-dd"));
                 }
                 if (dataType.isAssignableFrom(LocalDateTime.class)) {
+                    if(input.getValue() instanceof LocalDateTime) {
+                        return criteriaBuilder.lessThanOrEqualTo(path.get(fieldName), (LocalDateTime) input.getValue());
+                    }
                     return criteriaBuilder.lessThanOrEqualTo(path.get(fieldName), covertStringToLocalDate((String) input.getValue(), "yyyy-MM-dd"));
                 }
                 return criteriaBuilder.lt(path.get(fieldName), (Number) input.getValue());

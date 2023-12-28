@@ -355,6 +355,7 @@ public class ConsolidationController {
         try {
             return (ResponseEntity<RunnerListResponse<AutoAttachConsolidationResponse>>) consolidationService.getAutoAttachConsolidationDetails(CommonRequestModel.buildRequest(request));
         } catch (Exception e) {
+            log.error(e.getLocalizedMessage());
             return ResponseHelper.buildFailedResponse(e.getMessage());
         }
     }
