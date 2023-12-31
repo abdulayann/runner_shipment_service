@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.syncing.impl;
 
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
@@ -111,11 +112,11 @@ public class ShipmentSync implements IShipmentSync {
         // assigning child entities not automatically mapped
         // entityID also gets assigned as a part of this mapping
         mapTruckDriverDetail(cs, sd);
-        mapRoutings(cs, sd);
+        cs.setRoutings(syncEntityConversionService.routingsV2ToV1(sd.getRoutingsList()));
         mapEvents(cs, sd);
         cs.setContainersList(syncEntityConversionService.containersV2ToV1(sd.getContainersList()));
         cs.setReferenceNumbers(convertToList(sd.getReferenceNumbersList(), ReferenceNumbersRequestV2.class));
-        cs.setPackings_(syncEntityConversionService.packingsV2ToV1(sd.getPackingList(), sd.getContainersList()));
+        cs.setPackings_(syncEntityConversionService.packingsV2ToV1(sd.getPackingList(), sd.getContainersList(), sd.getGuid(), null));
         cs.setDocs_(convertToList(sd.getFileRepoList(), FileRepoRequestV2.class));
         cs.setELDetails(convertToList(sd.getElDetailsList(), ElDetailsRequestV2.class));
         // PickupAddressJSON and DeliveryAddressJSON (could be renamed for easy mapping)
@@ -244,7 +245,10 @@ public class ShipmentSync implements IShipmentSync {
         if(sd.getAdditionalDetails() == null)
             return;
         modelMapper.map(sd.getAdditionalDetails(), cs);
-        cs.setDateofIssue(sd.getAdditionalDetails().getDateOfIssue());
+        if(cs.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR))
+            cs.setIssueDate(sd.getAdditionalDetails().getDateOfIssue());
+        else
+            cs.setDateofIssue(sd.getAdditionalDetails().getDateOfIssue());
         cs.setDateofReceipt(sd.getAdditionalDetails().getDateOfReceipt());
         cs.setReceivingForwarderParty(mapPartyObject(sd.getAdditionalDetails().getReceivingForwarder()));
         cs.setSendingForwarderParty(mapPartyObject(sd.getAdditionalDetails().getSendingForwarder()));
@@ -276,19 +280,6 @@ public class ShipmentSync implements IShipmentSync {
                 }
         ).toList();
         cs.setServicesList(res);
-    }
-
-    private void mapRoutings(CustomShipmentSyncRequest cs, ShipmentDetails sd) {
-        if(sd.getRoutingsList() == null)
-            return;
-        List<RoutingsRequestV2> res = sd.getRoutingsList().stream().map(
-                i -> {
-                    var routingsRequestV2 = modelMapper.map(i, RoutingsRequestV2.class);
-                    routingsRequestV2.setIsDomestic(i.isDomestic());
-                    return routingsRequestV2;
-                }
-        ).toList();
-        cs.setRoutings(res);
     }
 
     private void mapEvents(CustomShipmentSyncRequest cs, ShipmentDetails sd) {

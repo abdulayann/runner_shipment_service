@@ -431,7 +431,7 @@ public class ConsolidationService implements IConsolidationService {
 
             if (request.getContainersList() != null && !shipmentSettingsDetails.getMergeContainers()) {
                 List<ContainerRequest> containerRequest = request.getContainersList();
-                List<Containers> containers = containerDao.updateEntityFromShipmentConsole(convertToEntityList(containerRequest, Containers.class), consolidationDetails.getId(), (Long) null);
+                List<Containers> containers = containerDao.updateEntityFromShipmentConsole(convertToEntityList(containerRequest, Containers.class), consolidationDetails.getId(), (Long) null, true);
                 consolidationDetails.setContainersList(containers);
             }
 
@@ -857,7 +857,7 @@ public class ConsolidationService implements IConsolidationService {
             List<PartiesRequest> consolidationAddressRequest = consolidationDetailsRequest.getConsolidationAddresses();
 
             if(containerRequestList != null) {
-                List<Containers> updatedContainers = containerDao.updateEntityFromShipmentConsole(convertToEntityList(containerRequestList, Containers.class), id, (Long) null);
+                List<Containers> updatedContainers = containerDao.updateEntityFromShipmentConsole(convertToEntityList(containerRequestList, Containers.class), id, (Long) null, true);
                 entity.setContainersList(updatedContainers);
             }
             if (packingRequestList != null) {
@@ -956,7 +956,7 @@ public class ConsolidationService implements IConsolidationService {
             if(shipmentSettingsDetailsList.size() > 0)
                 shipmentSettingsDetails = shipmentSettingsDetailsList.get(0);
             if(containerRequestList != null && !shipmentSettingsDetails.getMergeContainers()) {
-                List<Containers> updatedContainers = containerDao.updateEntityFromShipmentConsole(convertToEntityList(containerRequestList, Containers.class), id, (Long) null);
+                List<Containers> updatedContainers = containerDao.updateEntityFromShipmentConsole(convertToEntityList(containerRequestList, Containers.class), id, (Long) null, true);
                 entity.setContainersList(updatedContainers);
             }
             if (packingRequestList != null) {
@@ -1324,7 +1324,8 @@ public class ConsolidationService implements IConsolidationService {
 
             consolidationDetails.getAchievedQuantities().setConsolidationChargeQuantity(vwOb.getChargeable());
             consolidationDetails.getAchievedQuantities().setConsolidationChargeQuantityUnit(vwOb.getChargeableUnit());
-            if (transportMode.equals(Constants.TRANSPORT_MODE_SEA) && consolidationDetails.getContainerCategory().equals(Constants.SHIPMENT_TYPE_LCL)) {
+            if (transportMode.equals(Constants.TRANSPORT_MODE_SEA) &&
+                    consolidationDetails.getContainerCategory() != null && consolidationDetails.getContainerCategory().equals(Constants.SHIPMENT_TYPE_LCL)) {
                 BigDecimal winKg = new BigDecimal(convertUnit(Constants.MASS, consolidationDetails.getAllocations().getWeight(), consolidationDetails.getAllocations().getWeightUnit(), Constants.WEIGHT_UNIT_KG).toString());
                 BigDecimal vinM3 = new BigDecimal(convertUnit(Constants.VOLUME, consolidationDetails.getAllocations().getVolume(), consolidationDetails.getAllocations().getVolumeUnit(), Constants.VOLUME_UNIT_M3).toString());
                 consolidationDetails.getAchievedQuantities().setConsolidationChargeQuantity(winKg.divide(BigDecimal.valueOf(1000)).max(vinM3));
@@ -2078,6 +2079,8 @@ public class ConsolidationService implements IConsolidationService {
             locationCodes.addAll((masterDataUtils.createInBulkUnLocationsRequest(consolidationDetailsResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName() )));
         if(!Objects.isNull(consolidationDetailsResponse.getContainersList()))
             consolidationDetailsResponse.getContainersList().forEach(r -> locationCodes.addAll(masterDataUtils.createInBulkUnLocationsRequest(r, Containers.class, fieldNameKeyMap, Containers.class.getSimpleName() )));
+        if(!Objects.isNull(consolidationDetailsResponse.getRoutingsList()))
+            consolidationDetailsResponse.getRoutingsList().forEach(r -> locationCodes.addAll(masterDataUtils.createInBulkUnLocationsRequest(r, Routings.class, fieldNameKeyMap, Routings.class.getSimpleName() )));
 
         Map<String, EntityTransferUnLocations> keyMasterDataMap = masterDataUtils.fetchInBulkUnlocations(locationCodes, EntityTransferConstants.LOCATION_SERVICE_GUID);
         masterDataUtils.pushToCache(keyMasterDataMap, CacheConstants.UNLOCATIONS);
@@ -2098,6 +2101,8 @@ public class ConsolidationService implements IConsolidationService {
         if (!Objects.isNull(consolidationDetailsResponse.getCarrierDetails())) {
             Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
             List<String> carrierList = new ArrayList<>(masterDataUtils.createInBulkCarriersRequest(consolidationDetailsResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName()));
+            if(!Objects.isNull(consolidationDetailsResponse.getRoutingsList()))
+                consolidationDetailsResponse.getRoutingsList().forEach(r -> carrierList.addAll(masterDataUtils.createInBulkCarriersRequest(r, Routings.class, fieldNameKeyMap, Routings.class.getSimpleName() )));
 
             Map v1Data = masterDataUtils.fetchInBulkCarriers(carrierList);
             masterDataUtils.pushToCache(v1Data, CacheConstants.CARRIER);
@@ -2468,7 +2473,7 @@ public class ConsolidationService implements IConsolidationService {
                 ListCommonRequest listCommonRequest = constructListCommonRequest("consolidationId", entity.getId(), "=");
                 Pair<Specification<Containers>, Pageable> containerPair = fetchData(listCommonRequest, Containers.class);
                 Page<Containers> oldContainers = containerDao.findAll(containerPair.getLeft(), containerPair.getRight());
-                List<Containers> updatedContainers = containerDao.updateEntityFromShipmentConsole(convertToEntityList(containerRequestList, Containers.class), id, oldContainers.stream().toList());
+                List<Containers> updatedContainers = containerDao.updateEntityFromConsolidationV1(convertToEntityList(containerRequestList, Containers.class), id, oldContainers.stream().toList());
                 entity.setContainersList(updatedContainers);
             }
             if (packingRequestList != null) {

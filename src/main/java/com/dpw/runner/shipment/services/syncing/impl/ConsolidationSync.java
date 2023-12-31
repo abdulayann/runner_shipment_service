@@ -93,6 +93,7 @@ public class ConsolidationSync implements IConsolidationSync {
         mapJobs(response, request);
         response.setContainersList(syncEntityConversionService.containersV2ToV1(request.getContainersList()));
         response.setDocsList(convertToList(request.getFileRepoList(), FileRepoRequestV2.class));
+        response.setRoutingsList(syncEntityConversionService.routingsV2ToV1(request.getRoutingsList()));
 
         mapShipmentGuids(response, request);
 
@@ -175,7 +176,7 @@ public class ConsolidationSync implements IConsolidationSync {
     private void mapPackings(CustomConsolidationRequest response, ConsolidationDetails request) {
         if(request == null || request.getPackingList() == null)
             return;
-        List<PackingRequestV2> res = syncEntityConversionService.packingsV2ToV1(request.getPackingList(), request.getContainersList());
+        List<PackingRequestV2> res = syncEntityConversionService.packingsV2ToV1(request.getPackingList(), request.getContainersList(), null, request.getGuid());
         response.setPackingList(res);
     }
 
@@ -204,6 +205,7 @@ public class ConsolidationSync implements IConsolidationSync {
         response.setFirstLoadString(request.getCarrierDetails().getOrigin());
         response.setOriginPortName(request.getCarrierDetails().getOriginPort());
         response.setCarrier(request.getCarrierDetails().getShippingLine());
+        response.setVoyageNumber(request.getCarrierDetails().getVoyage());
     }
 
     private void mapAchievedQuantities(CustomConsolidationRequest response, ConsolidationDetails request) {

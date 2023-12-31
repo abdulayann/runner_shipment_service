@@ -34,16 +34,21 @@ public class ConsolidationReverseSync implements IConsolidationReverseSync {
     ModelMapper modelMapper;
 
     @Autowired
+    JsonHelper jsonHelper;
+
+    @Autowired
     private IConsolidationService consolidationService;
     @Lazy
     @Autowired
     private ISyncQueueService syncQueueService;
     @Autowired
     private SyncConfig syncConfig;
+    @Autowired
+    private SyncEntityConversionService syncEntityConversionService;
 
     @Override
-    public ResponseEntity<?> reverseSync(CommonRequestModel request_, boolean checkForSync) {
-        CustomConsolidationRequest request = (CustomConsolidationRequest) request_.getData();
+    public ResponseEntity<?> reverseSync(CommonRequestModel commonRequestModel, boolean checkForSync) {
+        CustomConsolidationRequest request = (CustomConsolidationRequest) commonRequestModel.getData();
         ConsolidationDetailsRequest response = new ConsolidationDetailsRequest();
         String responseMsg;
         try {
@@ -71,8 +76,10 @@ public class ConsolidationReverseSync implements IConsolidationReverseSync {
 
             mapReverseArrivalDepartureDetails(response, request);
             mapReverseTruckDriverDetail(response, request);
-            mapReversePackings(response, request);
+            response.setPackingList(jsonHelper.convertValueToList(syncEntityConversionService.packingsV1ToV2(request.getPackingList()), PackingRequest.class));
+            response.setRoutingsList(jsonHelper.convertValueToList(syncEntityConversionService.routingsV1ToV2(request.getRoutingsList()), RoutingsRequest.class));
             mapReverseJobs(response, request);
+            response.setContainersList(jsonHelper.convertValueToList(syncEntityConversionService.containersV1ToV2(request.getContainersList()), ContainerRequest.class));
             response.setFileRepoList(convertToList(request.getDocsList(), FileRepoRequest.class));
 
             mapReverseShipmentGuids(response, request);
@@ -115,20 +122,6 @@ public class ConsolidationReverseSync implements IConsolidationReverseSync {
         response.setJobsList(req);
     }
 
-    private void mapReversePackings(ConsolidationDetailsRequest response, CustomConsolidationRequest request) {
-        if(request == null || request.getPackingList() == null)
-            return;
-        List<PackingRequest> req = request.getPackingList().stream()
-                .map(item -> {
-                    PackingRequest p;
-                    p = modelMapper.map(item, PackingRequest.class);
-                    p.setOrigin(item.getOriginName());
-                    return p;
-                })
-                .collect(Collectors.toList());
-        response.setPackingList(req);
-    }
-
     private void mapReverseTruckDriverDetail(ConsolidationDetailsRequest response, CustomConsolidationRequest request) {
         if(request == null || request.getTruckDriverDetail() == null)
             return;
@@ -157,6 +150,7 @@ public class ConsolidationReverseSync implements IConsolidationReverseSync {
         response.getCarrierDetails().setShippingLine(request.getCarrier());
         response.getCarrierDetails().setGuid(null);
         response.getCarrierDetails().setId(null);
+        response.getCarrierDetails().setVoyage(request.getVoyageNumber());
     }
 
     private void mapReverseAchievedQuantities(ConsolidationDetailsRequest response, CustomConsolidationRequest request) {

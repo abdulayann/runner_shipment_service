@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.syncing.impl;
 
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.config.SyncConfig;
@@ -83,13 +84,13 @@ public class ShipmentReverseSync implements IShipmentReverseSync {
             sd.setConsignee(mapPartyObject(cs.getConsigneeParty()));
 
             mapTruckDriverDetailReverse(cs, sd);
-            mapRoutingsReverse(cs, sd);
+            sd.setRoutingsList(syncEntityConversionService.routingsV1ToV2(cs.getRoutings()));
             sd.setContainersList(syncEntityConversionService.containersV1ToV2(cs.getContainersList()));
             sd.setReferenceNumbersList(convertToList(cs.getReferenceNumbers(), ReferenceNumbers.class));
             Map<UUID, String> map = new HashMap<>();
             if(cs.getPackings_() != null)
                 map = cs.getPackings_().stream().filter(x-> x.getContainerNumber() != null).collect(Collectors.toMap(PackingRequestV2::getGuid, PackingRequestV2::getContainerNumber));
-            sd.setPackingList(convertToList(cs.getPackings_(), Packing.class));
+            sd.setPackingList(syncEntityConversionService.packingsV1ToV2(cs.getPackings_()));
             sd.setFileRepoList(convertToList(cs.getDocs_(), FileRepo.class));
             sd.setElDetailsList(convertToList(cs.getELDetails(), ELDetails.class));
 
@@ -168,7 +169,10 @@ public class ShipmentReverseSync implements IShipmentReverseSync {
         additionalDetails.setBOENumber(cs.getBoenumber());
         additionalDetails.setGuid(null);
         additionalDetails.setDeliveryMode(cs.getHblDeliveryMode());
-        additionalDetails.setDateOfIssue(cs.getDateofIssue());
+        if(cs.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR))
+            additionalDetails.setDateOfIssue(cs.getIssueDate());
+        else
+            additionalDetails.setDateOfIssue(cs.getDateofIssue());
         additionalDetails.setDateOfReceipt(cs.getDateofReceipt());
         sd.setAdditionalDetails(additionalDetails);
     }
@@ -184,19 +188,6 @@ public class ShipmentReverseSync implements IShipmentReverseSync {
                 }
         ).toList();
         sd.setServicesList(res);
-    }
-
-    private void mapRoutingsReverse(CustomShipmentSyncRequest cs, ShipmentDetails sd) {
-        if(cs.getRoutings() == null)
-            return;
-        List<Routings> res = cs.getRoutings().stream().map(
-                i -> {
-                    var routings = modelMapper.map(i, Routings.class);
-                    routings.setDomestic(i.getIsDomestic());
-                    return routings;
-                }
-        ).toList();
-        sd.setRoutingsList(res);
     }
 
     private Parties mapPartyObject(PartyRequestV2 sourcePartyObject) {

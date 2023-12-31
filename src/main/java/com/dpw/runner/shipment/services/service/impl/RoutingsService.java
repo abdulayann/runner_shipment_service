@@ -25,6 +25,7 @@ import com.dpw.runner.shipment.services.service.interfaces.IRoutingsService;
 import com.dpw.runner.shipment.services.service.interfaces.ISyncQueueService;
 import com.dpw.runner.shipment.services.syncing.Entity.RoutingsRequestV2;
 import com.dpw.runner.shipment.services.syncing.constants.SyncingConstants;
+import com.dpw.runner.shipment.services.syncing.impl.SyncEntityConversionService;
 import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -78,6 +79,9 @@ public class RoutingsService implements IRoutingsService {
     private ISyncQueueService syncQueueService;
     @Autowired
     private SyncConfig syncConfig;
+
+    @Autowired
+    private SyncEntityConversionService syncEntityConversionService;
 
     @Override
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
@@ -296,7 +300,7 @@ public class RoutingsService implements IRoutingsService {
                 return syncQueueService.saveSyncRequest(SyncingConstants.ROUTINGS, StringUtility.convertToString(routingsRequestV2.getGuid()), routingsRequestV2);
             }
             Optional<Routings> existingRouting = routingsDao.findByGuid(routingsRequestV2.getGuid());
-            Routings routings = modelMapper.map(routingsRequestV2, Routings.class);
+            Routings routings = syncEntityConversionService.routingV1ToV2(routingsRequestV2);
             if (existingRouting != null && existingRouting.isPresent()) {
                 routings.setId(existingRouting.get().getId());
                 routings.setConsolidationId(existingRouting.get().getConsolidationId());

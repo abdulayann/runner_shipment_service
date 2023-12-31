@@ -118,6 +118,8 @@ public class CustomShipmentSyncRequest implements IRunnerRequest, IRunnerRespons
     private LocalDateTime CustomsNoIssueDate;
     @JsonProperty("DateofIssue")
     private LocalDateTime DateofIssue;
+    @JsonProperty("IssueDate")
+    private LocalDateTime IssueDate;
     @JsonProperty("ExpiryDate")
     private LocalDateTime ExpiryDate;
     @JsonProperty("OnBoardDate")
