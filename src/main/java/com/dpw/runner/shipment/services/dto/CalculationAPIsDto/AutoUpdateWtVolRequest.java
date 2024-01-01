@@ -26,6 +26,8 @@ public class AutoUpdateWtVolRequest implements IRunnerRequest {
     private String volumetricWeightUnit;
     private BigDecimal netWeight;
     private String netWeightUnit;
+    private Integer innerPacks;
+    private String innerPackUnit;
     private ContainerSummaryRequest containerSummary;
     private PackSummaryRequest packSummary;
 }

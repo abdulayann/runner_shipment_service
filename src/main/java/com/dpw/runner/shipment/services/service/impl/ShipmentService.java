@@ -1236,7 +1236,31 @@ public class ShipmentService implements IShipmentService {
         }
         else {
             response = calculateVW(request, response, true);
-            response.setPackSummary(packingService.calculatePackSummary(packingList, request.getTransportMode(), request.getShipmentType()));
+            ShipmentMeasurementDetailsDto dto = new ShipmentMeasurementDetailsDto();
+            response.setPackSummary(packingService.calculatePackSummary(packingList, request.getTransportMode(), request.getShipmentType(), dto));
+            if(request.getPackingList() == null || request.getPackingList().size() == 0) {
+                response.setContainerSummary(containerService.calculateContainerSummary(containersList, request.getTransportMode(), request.getShipmentType()));
+            }
+            if(request.getTransportMode() != null && request.getTransportMode().equals(Constants.TRANSPORT_MODE_SEA)
+            && request.getShipmentType() != null && request.getShipmentType().equals(Constants.SHIPMENT_TYPE_LCL)) {
+                response.setInnerPacks(dto.getInnerPacks());
+                response.setInnerPackUnit(dto.getInnerPackUnit());
+            }
+            if(shipmentSettingsDetails.getIsShipmentLevelContainer() != null && shipmentSettingsDetails.getIsShipmentLevelContainer()
+            && request.getPackingList() != null && request.getPackingList().size() > 0) {
+                response.setWeight(dto.getWeight());
+                response.setWeightUnit(dto.getWeightUnit());
+                response.setVolume(dto.getVolume());
+                response.setVolumeUnit(dto.getVolumeUnit());
+                response.setNetWeight(dto.getNetWeight());
+                response.setNetWeightUnit(dto.getNetWeightUnit());
+                response.setNoOfPacks(dto.getNoOfPacks());
+                response.setPacksUnit(dto.getPacksUnit());
+            }
+            else if(shipmentSettingsDetails.getIsShipmentLevelContainer() == null || !shipmentSettingsDetails.getIsShipmentLevelContainer()){
+                response.setNoOfPacks(dto.getNoOfPacks());
+                response.setPacksUnit(dto.getPacksUnit());
+            }
         }
         V1RetrieveResponse v1RetrieveResponse = v1Service.retrieveTenantSettings();
         V1TenantSettingsResponse v1TenantSettingsResponse = modelMapper.map(v1RetrieveResponse.getEntity(), V1TenantSettingsResponse.class);
@@ -1283,14 +1307,7 @@ public class ShipmentService implements IShipmentService {
             }
         }
         if (containersList.size() > 0 ) {
-            String firstPacksType = containersList.get(0).getPacksType();
-            boolean isSame = containersList.stream()
-                    .allMatch(container -> container.getPacksType().equals(firstPacksType));
-            if (isSame) {
-                packsUnit = firstPacksType;
-            } else {
-                packsUnit = Constants.MPK;
-            }
+            packsUnit = setPacksUnit(containersList, packsUnit);
         }
         response.setWeight(new BigDecimal(totalWeight));
         response.setVolume(new BigDecimal(totalVolume));
@@ -1318,20 +1335,25 @@ public class ShipmentService implements IShipmentService {
                     totalPacks = totalPacks + Integer.parseInt(container.getPacks());
                 }
             };
-            String firstPacksType = containersList.get(0).getPacksType();
-            boolean isSame = containersList.stream()
-                    .map(Containers::getPacksType)
-                    .allMatch(packsType -> packsType == null || packsType.equals(firstPacksType));
-
-            if (isSame) {
-                packsUnit = firstPacksType;
-            } else {
-                packsUnit = Constants.MPK;
-            }
+            packsUnit = setPacksUnit(containersList, packsUnit);
             response.setNoOfPacks(totalPacks == 0 ? null : String.valueOf(totalPacks));
             response.setPacksUnit(packsUnit);
         }
         return response;
+    }
+
+    private String setPacksUnit(List<Containers> containersList, String packsUnit) {
+        String firstPacksType = containersList.get(0).getPacksType();
+        boolean isSame = containersList.stream()
+                .map(Containers::getPacksType)
+                .allMatch(packsType -> packsType == null || packsType.equals(firstPacksType));
+
+        if (isSame) {
+            packsUnit = firstPacksType;
+        } else {
+            packsUnit = Constants.MPK;
+        }
+        return packsUnit;
     }
 
     private AutoUpdateWtVolResponse calculateWeightAndVolumeUnit(AutoUpdateWtVolRequest request, List<Packing> packings, AutoUpdateWtVolResponse response) throws Exception {
@@ -2844,7 +2866,7 @@ public class ShipmentService implements IShipmentService {
         CalculatePackSummaryRequest request = (CalculatePackSummaryRequest) commonRequestModel.getData();
         try {
             List<Packing> packingList = jsonHelper.convertValueToList(request.getPackingList(), Packing.class);
-            PackSummaryResponse response = packingService.calculatePackSummary(packingList, request.getTransportMode(), request.getShipmentType());
+            PackSummaryResponse response = packingService.calculatePackSummary(packingList, request.getTransportMode(), request.getShipmentType(), new ShipmentMeasurementDetailsDto());
             return ResponseHelper.buildSuccessResponse(response);
         }
         catch (Exception e) {
@@ -2912,7 +2934,7 @@ public class ShipmentService implements IShipmentService {
             CompletableFuture.allOf(masterListFuture, unLocationsFuture, carrierFuture, currencyFuture, commodityTypesFuture, tenantDataFuture, wareHouseDataFuture, activityDataFuture, salesAgentFuture,
                     containerTypeFuture).join();
             setContainersPacksAutoUpdateData(shipmentDetailsResponse);
-            shipmentDetailsResponse.setPackSummary(packingService.calculatePackSummary(shipmentDetails.getPackingList(), shipmentDetails.getTransportMode(), shipmentDetails.getShipmentType()));
+            shipmentDetailsResponse.setPackSummary(packingService.calculatePackSummary(shipmentDetails.getPackingList(), shipmentDetails.getTransportMode(), shipmentDetails.getShipmentType(), new ShipmentMeasurementDetailsDto()));
             shipmentDetailsResponse.setContainerSummary(containerService.calculateContainerSummary(shipmentDetails.getContainersList(), shipmentDetails.getTransportMode(), shipmentDetails.getShipmentType()));
         }
         catch (Exception ex) {
