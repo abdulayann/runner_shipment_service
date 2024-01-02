@@ -1162,6 +1162,56 @@ public class MasterDataUtils{
         return keyMasterDataMap;
     }
 
+    public List<String> createInBulkDGSubstanceRequest (IRunnerResponse entityPayload, Class mainClass, Map<String, Map<String, String>> fieldNameMainKeyMap, String code) {
+        List<String> requests = new ArrayList<>();
+        if (Objects.isNull(entityPayload))
+            return requests;
+
+        Map<String, String> fieldNameKeyMap = new HashMap<>();
+        Cache cache = cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA);
+        for(Field field : mainClass.getDeclaredFields()) {
+            if (field.isAnnotationPresent(DedicatedMasterData.class) && field.getDeclaredAnnotation(DedicatedMasterData.class).type().equals(Constants.DG_SUBSTANCE)) {
+                try {
+                    Field field1 = entityPayload.getClass().getDeclaredField(field.getName());
+                    field1.setAccessible(true);
+                    Long dgSubstanceId = null;
+                    if(field1.get(entityPayload) != null) {
+                        if(!IsStringNullOrEmpty(field1.get(entityPayload).toString()))
+                            dgSubstanceId = Long.parseLong(field1.get(entityPayload).toString());
+                    }
+                    if(dgSubstanceId != null) {
+                        Cache.ValueWrapper cacheValue = cache.get(keyGenerator.customCacheKeyForMasterData(CacheConstants.DG_SUBSTANCES, StringUtility.convertToString(dgSubstanceId)));
+                        if (Objects.isNull(cacheValue)) requests.add(StringUtility.convertToString(dgSubstanceId));
+                        fieldNameKeyMap.put(field.getName(), StringUtility.convertToString(dgSubstanceId));
+                    }
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }
+        fieldNameMainKeyMap.put(code, fieldNameKeyMap);
+        return requests;
+    }
+
+    public Map<String, EntityTransferDGSubstance> fetchInDGSubstanceList(List<String> requests) {
+        Map<String, EntityTransferDGSubstance> keyMasterDataMap = new HashMap<>();
+        if(requests.size() > 0) {
+            log.info("Request: {} || DGSubstanceList: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(requests));
+            CommonV1ListRequest request = new CommonV1ListRequest();
+            List<Object> field = new ArrayList<>(List.of(EntityTransferConstants.ID));
+            String operator = Operators.IN.getValue();
+            List<Object> criteria = new ArrayList<>(List.of(field, operator, List.of(requests)));
+            request.setCriteriaRequests(criteria);
+            V1DataResponse response = v1Service.fetchDangerousGoodData(request);
+
+            List<EntityTransferDGSubstance> dgSubstanceList = commonUtils.convertToList((List<?>) response.entities, EntityTransferDGSubstance.class);
+            dgSubstanceList.forEach(dgSubstance -> {
+                keyMasterDataMap.put(StringUtility.convertToString(dgSubstance.getId()), dgSubstance);
+            });
+        }
+        return keyMasterDataMap;
+    }
+
     public List<String> createInBulkWareHouseRequest (IRunnerResponse entityPayload, Class mainClass, Map<String, Map<String, String>> fieldNameMainKeyMap, String code) {
         List<String> requests = new ArrayList<>();
         if (Objects.isNull(entityPayload))
