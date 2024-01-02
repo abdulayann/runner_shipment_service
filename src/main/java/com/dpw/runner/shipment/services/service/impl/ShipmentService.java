@@ -3285,6 +3285,8 @@ public class ShipmentService implements IShipmentService {
             cloneShipmentDetails.setShipmentId(null);
             cloneShipmentDetails.setMasterBill(null);
             cloneShipmentDetails.setConsolidationList(null);
+
+            cloneShipmentDetails.setShipmentCreatedOn(LocalDateTime.now());
             
             if(Constants.TRANSPORT_MODE_SEA.equals(cloneShipmentDetails.getTransportMode()) && Constants.DIRECTION_EXP.equals(cloneShipmentDetails.getDirection()))
                 cloneShipmentDetails.setHouseBill(generateCustomHouseBL());
@@ -3507,6 +3509,10 @@ public class ShipmentService implements IShipmentService {
             response.setSource(Constants.SYSTEM);
             response.setCreatedBy(UserContext.getUser().getUsername());
             response.setCustomerCategory(CustomerCategoryRates.CATEGORY_5);
+            response.setShipmentCreatedOn(LocalDateTime.now());
+            //Generate HBL
+            if(Constants.TRANSPORT_MODE_SEA.equals(response.getTransportMode()) && Constants.DIRECTION_EXP.equals(response.getDirection()))
+                response.setHouseBill(generateCustomHouseBL());
 
             try {
                 log.info("Fetching Tenant Model");

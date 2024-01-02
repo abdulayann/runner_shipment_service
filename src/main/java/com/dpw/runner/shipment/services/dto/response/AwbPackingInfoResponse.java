@@ -1,21 +1,17 @@
-package com.dpw.runner.shipment.services.dto.request.awb;
+package com.dpw.runner.shipment.services.dto.response;
 
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.utils.MasterData;
 import com.dpw.runner.shipment.services.utils.UnlocationData;
-import io.swagger.annotations.ApiModel;
-import lombok.*;
+import lombok.Data;
 
 import java.math.BigDecimal;
+import java.util.Map;
 import java.util.UUID;
 
 @Data
-@Builder
-@ApiModel("AWB Packing Info Model")
-@ToString
-@NoArgsConstructor
-@AllArgsConstructor
-public class AwbPackingInfo {
+public class AwbPackingInfoResponse implements IRunnerResponse {
     private UUID guid;
     private Integer dgGoodsId;
     private Integer dgSubstanceId;
@@ -23,35 +19,27 @@ public class AwbPackingInfo {
     private String packsType;
     private String containerNumber;
     private BigDecimal weight;
-    @MasterData(type = MasterDataType.WEIGHT_UNIT)
     private String weightUnit;
     private BigDecimal volume;
-    @MasterData(type = MasterDataType.VOLUME_UNIT)
     private String volumeUnit;
     private String inspections;
-    @UnlocationData
     private String origin;
     private String commodity;
     private Long CommodityId;
     private String packingOrder;
     private BigDecimal length;
-    @MasterData(type = MasterDataType.DIMENSION_UNIT)
     private String lengthUnit;
     private BigDecimal width;
-    @MasterData(type = MasterDataType.DIMENSION_UNIT)
     private String widthUnit;
     private BigDecimal height;
-    @MasterData(type = MasterDataType.DIMENSION_UNIT)
     private String heightUnit;
     private String marksnNums;
     private String flashPoint;
     private String undgContact;
     private Boolean isTemperatureControlled;
     private BigDecimal minTemp;
-    @MasterData(type = MasterDataType.TEMPERATURE_UNIT)
     private String minTempUnit;
     private BigDecimal maxTemp;
-    @MasterData(type = MasterDataType.TEMPERATURE_UNIT)
     private String maxTempUnit;
     private String hsCode;
     private String countryCode;
@@ -61,7 +49,6 @@ public class AwbPackingInfo {
     private Boolean hazardous;
     private Integer nommodityId;
     private BigDecimal netWeight;
-    @MasterData(type = MasterDataType.WEIGHT_UNIT)
     private String netWeightUnit;
     private BigDecimal volumeWeight;
     private String volumeWeightUnit;
@@ -69,4 +56,8 @@ public class AwbPackingInfo {
     private String awbNumber;
     private Long mawbGoodsDescId;
     private UUID awbGoodsDescriptionInfoGuid;
+
+    //Master Data
+    public Map<String, String> masterData;
+    public Map<String, String> unlocationData;
 }

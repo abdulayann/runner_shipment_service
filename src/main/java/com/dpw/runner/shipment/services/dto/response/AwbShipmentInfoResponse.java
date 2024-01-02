@@ -1,17 +1,13 @@
-package com.dpw.runner.shipment.services.dto.request.awb;
+package com.dpw.runner.shipment.services.dto.response;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.utils.UnlocationData;
-import io.swagger.annotations.ApiModel;
-import lombok.*;
+import lombok.Data;
+
+import java.util.Map;
 
 @Data
-@ApiModel("Awb Shipment Info Request Model")
-@ToString
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
-public class AwbShipmentInfo {
+public class AwbShipmentInfoResponse implements IRunnerResponse {
     private Long entityId;
     private String entityType;
     private String shipperName;
@@ -26,11 +22,12 @@ public class AwbShipmentInfo {
     private String noOfCopies;
     private String status;
     private String awbNumber;
-    @UnlocationData
     private String originAirport;
-    @UnlocationData
     private String destinationAirport;
     private String firstCarrier;
     private Integer abrId;
     private String agentCASSCode;
+    // Master Data
+    private Map<String, String> masterData;
+    private Map<String, String> unlocationData;
 }
