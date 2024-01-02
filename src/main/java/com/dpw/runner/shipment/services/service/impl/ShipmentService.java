@@ -1276,7 +1276,7 @@ public class ShipmentService implements IShipmentService {
         double tareWeight = 0;
         double totalVolume = 0;
         double totalContainerCount = 0;
-        double totalPacks = 0;
+        int totalPacks = 0;
         String packsUnit = "";
         String toWeightUnit = Constants.WEIGHT_UNIT_KG;
         String toVolumeUnit = Constants.VOLUME_UNIT_M3;
@@ -1303,7 +1303,7 @@ public class ShipmentService implements IShipmentService {
                 if(containers.getContainerCount() != null)
                     totalContainerCount = totalContainerCount + containers.getContainerCount();
                 if(!IsStringNullOrEmpty(containers.getPacks()))
-                    totalPacks = totalPacks + Long.parseLong(containers.getPacks());
+                    totalPacks = totalPacks + Integer.parseInt(containers.getPacks());
             }
         }
         if (containersList.size() > 0 ) {

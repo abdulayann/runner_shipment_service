@@ -423,7 +423,7 @@ public class PackingService implements IPackingService {
             double volumeWeight = 0;
             double volumetricWeight = 0;
             double chargeableWeight = 0;
-            double totalPacks = 0;
+            int totalPacks = 0;
             int totalInnerPacks = 0;
             String packsUnit = null;
             String innerPacksUnit = null;
@@ -452,7 +452,7 @@ public class PackingService implements IPackingService {
                             map.put(packing.getPacksType(), 0L);
                     }
                     if(!IsStringNullOrEmpty(packing.getPacks())) {
-                        long packs = Long.parseLong(packing.getPacks());
+                        int packs = Integer.parseInt(packing.getPacks());
                         totalPacks = totalPacks + packs;
                         if(!IsStringNullOrEmpty(packing.getPacksType())) {
                             map.put(packing.getPacksType(), map.get(packing.getPacksType()) + packs);
