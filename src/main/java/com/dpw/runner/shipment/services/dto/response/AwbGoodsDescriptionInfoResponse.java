@@ -1,26 +1,20 @@
-package com.dpw.runner.shipment.services.dto.request.awb;
+package com.dpw.runner.shipment.services.dto.response;
 
-import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
-import com.dpw.runner.shipment.services.utils.MasterData;
-import io.swagger.annotations.ApiModel;
-import lombok.*;
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.dto.request.awb.AwbPackingInfo;
+import lombok.Data;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Data
-@Builder
-@ApiModel("AWB Goods Description Info Model")
-@ToString
-@NoArgsConstructor
-@AllArgsConstructor
-public class AwbGoodsDescriptionInfo {
+public class AwbGoodsDescriptionInfoResponse implements IRunnerResponse {
     private Long entityId;
     private String entityType;
     private Integer piecesNo;
     private BigDecimal grossWt;
-    @MasterData(type = MasterDataType.WEIGHT_UNIT)
     private String grossWtUnit;
     private Integer rateClass;
     private Integer commodityItemNo;
@@ -33,4 +27,7 @@ public class AwbGoodsDescriptionInfo {
     private List<AwbPackingInfo> awbPackingInfo;
     private Boolean isShipmentCreated;
 
+    //Master Data
+    public Map<String, String> masterData;
+    public Map<String, String> unlocationData;
 }

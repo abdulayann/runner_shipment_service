@@ -1,20 +1,14 @@
-package com.dpw.runner.shipment.services.dto.request.awb;
+package com.dpw.runner.shipment.services.dto.response;
 
-import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
-import com.dpw.runner.shipment.services.utils.MasterData;
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.utils.UnlocationData;
-import io.swagger.annotations.ApiModel;
-import lombok.*;
+import lombok.Data;
 
 import java.time.LocalDateTime;
+import java.util.Map;
 
 @Data
-@Builder
-@ApiModel("AWB Routing Info Model")
-@ToString
-@NoArgsConstructor
-@AllArgsConstructor
-public class AwbRoutingInfo {
+public class AwbRoutingInfoResponse implements IRunnerResponse {
     private Long entityId;
     private String entityType;
     private String origin;
@@ -29,4 +23,8 @@ public class AwbRoutingInfo {
     @UnlocationData
     private String originPortName;
     private Boolean isShipmentCreated;
+
+    //Master Data
+    public Map<String, String> masterData;
+    public Map<String, String> unlocationData;
 }

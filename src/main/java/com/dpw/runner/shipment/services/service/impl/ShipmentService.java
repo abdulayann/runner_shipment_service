@@ -1017,6 +1017,7 @@ public class ShipmentService implements IShipmentService {
     public ResponseEntity<?> createShipmentInV2(CustomerBookingRequest customerBookingRequest) throws Exception
     {
         List<ConsolidationDetailsRequest> consolidationDetails = new ArrayList<>();
+        List<ContainerRequest> containerList = new ArrayList<>();
         List<Notes> notes = notesDao.findByEntityIdAndEntityType(customerBookingRequest.getId(), "CustomerBooking");
         if(customerBookingRequest.getCargoType().equals("FCL"))
         {
@@ -1055,7 +1056,10 @@ public class ShipmentService implements IShipmentService {
             if(consolidationDetailsResponse != null)
             {
                 ConsolidationDetailsResponse consolDetailsResponse = (ConsolidationDetailsResponse) (((RunnerResponse)consolidationDetailsResponse.getBody()).getData());
-                consolidationDetails.add(jsonHelper.convertValue(consolDetailsResponse, ConsolidationDetailsRequest.class));
+                ConsolidationDetailsRequest consolRequest = jsonHelper.convertValue(consolDetailsResponse, ConsolidationDetailsRequest.class);
+                containerList = consolRequest.getContainersList();
+                consolRequest.setContainersList(null);
+                consolidationDetails.add(consolRequest);
             }
         }
 
@@ -1102,7 +1106,7 @@ public class ShipmentService implements IShipmentService {
                 consignorCountry(customerBookingRequest.getConsignorCountry()).
                 consigneeCountry(customerBookingRequest.getConsigneeCountry()).
                 notifyPartyCountry(customerBookingRequest.getNotifyPartyCountry()).
-                containersList(consolidationDetails != null && consolidationDetails.size() > 0 ? consolidationDetails.get(0).getContainersList() : null).
+                containersList(consolidationDetails != null && consolidationDetails.size() > 0 ? containerList : null).
                 packingList(customerBookingRequest.getPackingList()).
                 fileRepoList(customerBookingRequest.getFileRepoList()).
                 routingsList(customerBookingRequest.getRoutingList()).
@@ -3285,6 +3289,8 @@ public class ShipmentService implements IShipmentService {
             cloneShipmentDetails.setShipmentId(null);
             cloneShipmentDetails.setMasterBill(null);
             cloneShipmentDetails.setConsolidationList(null);
+
+            cloneShipmentDetails.setShipmentCreatedOn(LocalDateTime.now());
             
             if(Constants.TRANSPORT_MODE_SEA.equals(cloneShipmentDetails.getTransportMode()) && Constants.DIRECTION_EXP.equals(cloneShipmentDetails.getDirection()))
                 cloneShipmentDetails.setHouseBill(generateCustomHouseBL());
@@ -3507,6 +3513,10 @@ public class ShipmentService implements IShipmentService {
             response.setSource(Constants.SYSTEM);
             response.setCreatedBy(UserContext.getUser().getUsername());
             response.setCustomerCategory(CustomerCategoryRates.CATEGORY_5);
+            response.setShipmentCreatedOn(LocalDateTime.now());
+            //Generate HBL
+            if(Constants.TRANSPORT_MODE_SEA.equals(response.getTransportMode()) && Constants.DIRECTION_EXP.equals(response.getDirection()))
+                response.setHouseBill(generateCustomHouseBL());
 
             try {
                 log.info("Fetching Tenant Model");

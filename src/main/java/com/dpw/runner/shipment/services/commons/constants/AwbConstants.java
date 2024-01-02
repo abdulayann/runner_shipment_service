@@ -22,4 +22,6 @@ public class AwbConstants {
 
     public static final String ISSUING_AGENT_NAME = "Issuing Agent Name";
     public static final String AWB_NUMBER = "AWB Number";
+
+    public static final String MASTER_DATA_RETRIEVE_SUCCESS = "Master Data Retrieve Successfully";
 }
