@@ -1010,6 +1010,7 @@ public class ShipmentService implements IShipmentService {
     public ResponseEntity<?> createShipmentInV2(CustomerBookingRequest customerBookingRequest) throws Exception
     {
         List<ConsolidationDetailsRequest> consolidationDetails = new ArrayList<>();
+        List<ContainerRequest> containerList = new ArrayList<>();
         List<Notes> notes = notesDao.findByEntityIdAndEntityType(customerBookingRequest.getId(), "CustomerBooking");
         if(customerBookingRequest.getCargoType().equals("FCL"))
         {
@@ -1048,7 +1049,10 @@ public class ShipmentService implements IShipmentService {
             if(consolidationDetailsResponse != null)
             {
                 ConsolidationDetailsResponse consolDetailsResponse = (ConsolidationDetailsResponse) (((RunnerResponse)consolidationDetailsResponse.getBody()).getData());
-                consolidationDetails.add(jsonHelper.convertValue(consolDetailsResponse, ConsolidationDetailsRequest.class));
+                ConsolidationDetailsRequest consolRequest = jsonHelper.convertValue(consolDetailsResponse, ConsolidationDetailsRequest.class);
+                containerList = consolRequest.getContainersList();
+                consolRequest.setContainersList(null);
+                consolidationDetails.add(consolRequest);
             }
         }
 
@@ -1095,7 +1099,7 @@ public class ShipmentService implements IShipmentService {
                 consignorCountry(customerBookingRequest.getConsignorCountry()).
                 consigneeCountry(customerBookingRequest.getConsigneeCountry()).
                 notifyPartyCountry(customerBookingRequest.getNotifyPartyCountry()).
-                containersList(consolidationDetails != null && consolidationDetails.size() > 0 ? consolidationDetails.get(0).getContainersList() : null).
+                containersList(consolidationDetails != null && consolidationDetails.size() > 0 ? containerList : null).
                 packingList(customerBookingRequest.getPackingList()).
                 fileRepoList(customerBookingRequest.getFileRepoList()).
                 routingsList(customerBookingRequest.getRoutingList()).
