@@ -106,7 +106,7 @@ public class ReportsFactory {
                 return customsInstructionsReport;
             case ReportConstants.PRE_ALERT:
                 return preAlertReport;
-            case ReportConstants.SHIPPING_REQUEST_OUT:
+            case ReportConstants.SHIPPING_REQUEST:
                 return shippingRequestOutReport;
             case ReportConstants.MANIFEST_PRINT:
                 return manifestPrintReport;

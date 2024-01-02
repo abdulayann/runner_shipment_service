@@ -43,7 +43,7 @@ public class NPMController {
         String responseMsg;
         ListContractRequest listContractRequest = jsonHelper.convertValue(request, ListContractRequest.class);
         try {
-             return  (ResponseEntity<RunnerResponse>) npmService.fetchContracts(CommonRequestModel.buildRequest(listContractRequest));
+             return  (ResponseEntity<RunnerResponse>) npmService.fetchContractsTemp(CommonRequestModel.buildRequest(listContractRequest));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : NPMConstants.CONTRACT_LIST_FAILED;

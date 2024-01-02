@@ -126,13 +126,12 @@ public class ReportService implements IReportService {
             }
         }
 
-        if (!newFlowSuccess) {
-            if (reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.HOUSE_BILL)) {
-                dataRetrived = hblReport.getData(Long.parseLong(reportRequest.getReportId()));
-            }
-            else {
-                dataRetrived = reportsFactory.getReport(reportRequest.getReportInfo()).getData(Long.parseLong(reportRequest.getReportId()));
-            }
+        //TODO - Need to handle for new flow
+        if (reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.HOUSE_BILL)) {
+            dataRetrived = hblReport.getData(Long.parseLong(reportRequest.getReportId()));
+        }
+        else {
+            dataRetrived = reportsFactory.getReport(reportRequest.getReportInfo()).getData(Long.parseLong(reportRequest.getReportId()));
         }
         boolean isOriginalPrinted = (boolean) dataRetrived.getOrDefault(ReportConstants.PRINTED_ORIGINAL, false);
         String hbltype = (String)dataRetrived.getOrDefault(ReportConstants.HOUSE_BILL_TYPE, null);
@@ -609,11 +608,11 @@ public class ReportService implements IReportService {
             case ReportConstants.SHIPMENT_HOUSE_BILL:
                 try
                 {
-                    if (frontTemplateCode != null && backTemplateCode != null)
+                    if (frontTemplateCode != null || backTemplateCode != null)
                     {
                         String front = hblTermsConditionTemplateDao.getTemplateCode(frontTemplateCode, true ,printType).getTemplateFileName();
                         String back = null;
-                        if (backTemplateCode.length() > 0)
+                        if (StringUtility.isNotEmpty(backTemplateCode))
                         {
                             back = hblTermsConditionTemplateDao.getTemplateCode(backTemplateCode, false ,printType).getTemplateFileName();
                         }
@@ -755,6 +754,12 @@ public class ReportService implements IReportService {
             case ReportConstants.GENERATE_ISF_FILE:
                 return setDocPages(null,
                         row.getIsfFileMainPage() == null ? adminRow.getIsfFileMainPage() : row.getIsfFileMainPage(), null, row.getIsfFileMainPage() != null, null, null, null);
+            case ReportConstants.CONTAINER_MANIFEST_PRINT:
+                return setDocPages(null,
+                        row.getContainerManifestPrint() == null ? adminRow.getContainerManifestPrint(): row.getContainerManifestPrint(), null, row.getContainerManifestPrint() != null, null, null, null);
+            case ReportConstants.MANIFEST_PRINT:
+                return setDocPages(null,
+                        row.getManifestPrint() == null ? adminRow.getManifestPrint(): row.getManifestPrint(), null, row.getManifestPrint() != null, null, null, null);
         }
 
         return null;

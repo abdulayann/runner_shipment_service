@@ -109,38 +109,40 @@ public class ContainerManifestPrint extends IReport {
 
         var exportAgentAddress = ReportHelper.getOrgAddress(consol.getSendingAgent());
         var importAgentAddress = ReportHelper.getOrgAddress(consol.getReceivingAgent());
-        var ctoAddress = ReportHelper.getOrgAddress(consol.getArrivalDetails().getCTOId());
+        var ctoAddress = consol.getArrivalDetails() == null ? new ArrayList(): ReportHelper.getOrgAddress(consol.getArrivalDetails().getCTOId());
         List<String> exportAgentFreeTextAddress = new ArrayList<>();
         List<String> importAgentFreeTextAddress = new ArrayList<>();
 
-        if (consol.getIsSendingAgentFreeTextAddress()) {
+        if (consol.getIsSendingAgentFreeTextAddress() != null  && consol.getIsSendingAgentFreeTextAddress()) {
             exportAgentFreeTextAddress = ReportHelper.getAddressList(consol.getSendingAgentFreeTextAddress());
         } else {
-            exportAgentFreeTextAddress = ReportHelper.getAddressList(consol.getReceivingAgentFreeTextAddress());
+            exportAgentFreeTextAddress = exportAgentAddress;
         }
 
-        if (consol.getIsReceivingAgentFreeTextAddress()) {
+        if (consol.getIsReceivingAgentFreeTextAddress() != null && consol.getIsReceivingAgentFreeTextAddress()) {
             importAgentFreeTextAddress = ReportHelper.getAddressList(consol.getReceivingAgentFreeTextAddress());
         } else {
             importAgentFreeTextAddress = importAgentAddress;
         }
 
-        if (consol.getShipmentType() == "EXP") {
+        if (consol.getShipmentType().equalsIgnoreCase("EXP")) {
             dictionary.put(ReportConstants.EXPORT_AGENT, exportAgentAddress);
             dictionary.put(ReportConstants.IMPORT_AGENT, importAgentAddress);
             dictionary.put(ReportConstants.EXPORT_AGENT_FREETEXT, exportAgentFreeTextAddress);
             dictionary.put(ReportConstants.IMPORT_AGENT_FREETEXT, importAgentFreeTextAddress);
-            UnlocationsResponse arrival = getUNLocRow(consol.getArrivalDetails().getLastForeignPort());
+            UnlocationsResponse arrival = consol.getArrivalDetails() == null ? null : getUNLocRow(consol.getArrivalDetails().getLastForeignPort());
             if (arrival != null)
                 dictionary.put(ReportConstants.LAST_FOREIGN_PORT_NAME, ReportHelper.getCityCountry(arrival.getNameWoDiacritics(), arrival.getCountry()));
 
-        } else if (consol.getShipmentType() == "IMP") {
+        } else if (consol.getShipmentType().equalsIgnoreCase("IMP")) {
             dictionary.put(ReportConstants.EXPORT_AGENT, importAgentAddress);
             dictionary.put(ReportConstants.IMPORT_AGENT, exportAgentAddress);
             dictionary.put(ReportConstants.EXPORT_AGENT_FREETEXT, importAgentFreeTextAddress);
             dictionary.put(ReportConstants.IMPORT_AGENT_FREETEXT, exportAgentFreeTextAddress);
-            UnlocationsResponse depart = getUNLocRow(consol.getDepartureDetails().getLastForeignPort());
-            dictionary.put(ReportConstants.LAST_FOREIGN_PORT_NAME, ReportHelper.getCityCountry(depart.getNameWoDiacritics(), depart.getCountry()));
+            UnlocationsResponse depart = consol.getDepartureDetails() == null ? null : getUNLocRow(consol.getDepartureDetails().getLastForeignPort());
+            if(depart != null) {
+                dictionary.put(ReportConstants.LAST_FOREIGN_PORT_NAME, ReportHelper.getCityCountry(depart.getNameWoDiacritics(), depart.getCountry()));
+            }
         } else {
             dictionary.put(ReportConstants.LAST_FOREIGN_PORT_NAME, StringUtils.EMPTY);
         }
