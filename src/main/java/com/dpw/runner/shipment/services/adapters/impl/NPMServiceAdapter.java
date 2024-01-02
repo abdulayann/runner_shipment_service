@@ -138,6 +138,22 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
     }
 
     @Override
+    public ResponseEntity<?> fetchContractsTemp(CommonRequestModel commonRequestModel) throws Exception {
+        try {
+            ListContractRequest listContractRequest = (ListContractRequest) commonRequestModel.getData();
+            String url = npmBaseUrl + npmContracts;
+            log.info("Payload sent for event: {} with request payload: {}", IntegrationType.NPM_CONTRACT_FETCH, jsonHelper.convertToJson(listContractRequest));
+            ResponseEntity<ListContractResponse> response = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJson(listContractRequest)), ListContractResponse.class);
+            this.setOriginAndDestinationNameTemp(response.getBody());
+            return ResponseHelper.buildDependentServiceResponse(response.getBody(),0,0);
+        } catch (HttpStatusCodeException ex) {
+            NpmErrorResponse npmErrorResponse = jsonHelper.readFromJson(ex.getResponseBodyAsString(), NpmErrorResponse.class);
+            log.error("NPM Fetch contract failed due to: {}", jsonHelper.convertToJson(npmErrorResponse));
+            throw new NPMException("Error from NPM while fetching contracts: " + npmErrorResponse.getErrorMessage());
+        }
+    }
+
+    @Override
     public ResponseEntity<?> updateContracts(CommonRequestModel commonRequestModel) throws Exception {
         try {
             UpdateContractRequest updateContractRequest = (UpdateContractRequest) commonRequestModel.getData();
@@ -249,6 +265,36 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
                     locationMap.put(unlocation.getLocationsReferenceGUID(), unlocation);
                 }
                 response.setUnlocMasterData(locationMap);
+            }
+        }
+    }
+
+    private void setOriginAndDestinationNameTemp(ListContractResponse response) {
+        Set<String> locCodes = new HashSet<>();
+        if(response != null && response.getContracts() != null  && !response.getContracts().isEmpty()) {
+            response.getContracts().forEach(cont -> {
+                locCodes.add(cont.getOrigin());
+                locCodes.add(cont.getDestination());
+            });
+            List<Object> criteria = Arrays.asList(
+                    Arrays.asList("LocationsReferenceGUID"),
+                    "In",
+                    Arrays.asList(locCodes)
+            );
+            CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(criteria).build();
+            V1DataResponse v1DataResponse = v1Service.fetchUnlocation(commonV1ListRequest);
+            List<UnlocationsResponse> unlocationsResponse = jsonHelper.convertValueToList(v1DataResponse.entities, UnlocationsResponse.class);
+            if (unlocationsResponse != null && !unlocationsResponse.isEmpty()) {
+                Map<String, String> locationMap = new HashMap<>();
+                for (UnlocationsResponse unlocation : unlocationsResponse) {
+                    locationMap.put(unlocation.getLocationsReferenceGUID(), unlocation.getName());
+                }
+                response.getContracts().forEach(cont -> {
+                    if(locationMap.containsKey(cont.getOrigin()))
+                        cont.setOrigin_name(locationMap.get(cont.getOrigin()));
+                    if(locationMap.containsKey(cont.getDestination()))
+                        cont.setDestination_name(locationMap.get(cont.getDestination()));
+                });
             }
         }
     }
