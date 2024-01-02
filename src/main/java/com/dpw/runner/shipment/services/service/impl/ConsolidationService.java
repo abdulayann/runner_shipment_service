@@ -1251,7 +1251,7 @@ public class ConsolidationService implements IConsolidationService {
                         BigDecimal wtInKG = new BigDecimal(convertUnit(Constants.MASS, weight, weightUnit, Constants.WEIGHT_UNIT_KG).toString());
                         BigDecimal vlInM3 = new BigDecimal(convertUnit(Constants.VOLUME, volume, volumeUnit, Constants.VOLUME_UNIT_M3).toString());
                         BigDecimal factor = new BigDecimal(166.667);
-                        if (transportMode == Constants.TRANSPORT_MODE_ROA) {
+                        if (transportMode.equals(Constants.TRANSPORT_MODE_ROA)) {
                             factor = BigDecimal.valueOf(333.0);
                         }
                         BigDecimal wvInKG = vlInM3.multiply(factor);
