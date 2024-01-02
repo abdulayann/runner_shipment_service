@@ -1120,7 +1120,7 @@ public class ShipmentService implements IShipmentService {
                         .assignedTo(note.getAssignedTo())
                         .label(note.getLabel())
                         .text(note.getText())
-                        .insertUserDisplayName(note.getInsertUserDisplayName())
+                        .insertUserDisplayName(note.getCreatedBy())
                         .isPublic(note.getIsPublic())
                         .insertDate(note.getCreatedAt())
                         .entityType(Constants.SHIPMENT_BOOKING)
