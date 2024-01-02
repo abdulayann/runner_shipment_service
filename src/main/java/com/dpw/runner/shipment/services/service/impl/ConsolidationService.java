@@ -648,7 +648,7 @@ public class ConsolidationService implements IConsolidationService {
     public void createParties(ConsolidationDetails consolidationDetails, PartiesRequest partiesRequest) {
         partiesRequest.setEntityId(consolidationDetails.getId());
         partiesRequest.setEntityType(Constants.CONSOLIDATION_ADDRESSES);
-        packingDao.save(jsonHelper.convertValue(partiesRequest, Packing.class));
+        partiesDao.save(jsonHelper.convertValue(partiesRequest, Parties.class));
     }
 
     @Transactional
@@ -1600,7 +1600,7 @@ public class ConsolidationService implements IConsolidationService {
                 }
                 ShipmentSettingsDetails shipmentSettingsDetails = shipmentSettingsDao.getSettingsByTenantIds(List.of(TenantContext.getCurrentTenant())).get(0);
                 if(shipmentSettingsDetails.getIsConsolidator() != null && shipmentSettingsDetails.getIsConsolidator()
-                && (weight.compareTo(container.getAllocatedWeight()) > 0 || volume.compareTo(container.getAllocatedVolume()) > 0)) {
+                && ((weight != null && weight.compareTo(container.getAllocatedWeight()) > 0) || (volume != null && volume.compareTo(container.getAllocatedVolume()) > 0))) {
                     if(request.getIsConfirmedByUser() != null && request.getIsConfirmedByUser().booleanValue()) {
                         container = attachContainer(request, shipmentsIncluded, container, weight, volume);
                     }
