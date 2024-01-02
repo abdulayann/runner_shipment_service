@@ -4,12 +4,10 @@ import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
-import com.dpw.runner.shipment.services.entity.Containers;
-import com.dpw.runner.shipment.services.entity.Packing;
-import com.dpw.runner.shipment.services.entity.Routings;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.syncing.Entity.ContainerRequestV2;
 import com.dpw.runner.shipment.services.syncing.Entity.PackingRequestV2;
+import com.dpw.runner.shipment.services.syncing.Entity.PartyRequestV2;
 import com.dpw.runner.shipment.services.syncing.Entity.RoutingsRequestV2;
 import com.nimbusds.jose.util.Pair;
 import org.modelmapper.ModelMapper;
@@ -201,6 +199,38 @@ public class SyncEntityConversionService {
             routings.setVoyage(null);
         }
         return routings;
+    }
+
+    public List<PartyRequestV2> addressesV2ToV1(List<Parties> partiesList) {
+        if(partiesList != null) {
+            return partiesList.stream().map(
+                    this::addressV2ToV1
+            ).toList();
+        }
+        return new ArrayList<>();
+    }
+
+    public PartyRequestV2 addressV2ToV1(Parties parties) {
+        var partyRequestV2 = modelMapper.map(parties, PartyRequestV2.class);
+        partyRequestV2.setIsFreeTextAddress(parties.getIsAddressFreeText());
+        if(partyRequestV2.getIsFreeTextAddress() == null)
+            partyRequestV2.setIsFreeTextAddress(false);
+        return partyRequestV2;
+    }
+
+    public List<Parties> addressesV1ToV2(List<PartyRequestV2> partiesList) {
+        if(partiesList != null) {
+            return partiesList.stream().map(
+                    this::addressV1ToV2
+            ).toList();
+        }
+        return new ArrayList<>();
+    }
+
+    public Parties addressV1ToV2(PartyRequestV2 partyRequestV2) {
+        var parties = modelMapper.map(partyRequestV2, Parties.class);
+        parties.setIsAddressFreeText(partyRequestV2.getIsFreeTextAddress());
+        return parties;
     }
 
 }

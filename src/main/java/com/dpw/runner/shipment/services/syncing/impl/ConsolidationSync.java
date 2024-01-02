@@ -94,6 +94,7 @@ public class ConsolidationSync implements IConsolidationSync {
         response.setContainersList(syncEntityConversionService.containersV2ToV1(request.getContainersList()));
         response.setDocsList(convertToList(request.getFileRepoList(), FileRepoRequestV2.class));
         response.setRoutingsList(syncEntityConversionService.routingsV2ToV1(request.getRoutingsList()));
+        response.setConsolidationAddresses(syncEntityConversionService.addressesV2ToV1(request.getConsolidationAddresses()));
 
         mapShipmentGuids(response, request);
 

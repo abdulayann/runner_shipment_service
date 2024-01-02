@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.commons.requests.BulkDownloadRequest;
 import com.dpw.runner.shipment.services.commons.requests.BulkUploadRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryResponse;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentMeasurementDetailsDto;
 import com.dpw.runner.shipment.services.entity.Packing;
 import org.springframework.http.ResponseEntity;
 
@@ -23,7 +24,7 @@ public interface IPackingService extends ICommonService {
 
     ResponseEntity<?> listPacksToDetach(CommonRequestModel commonRequestModel) throws Exception;
 
-    PackSummaryResponse calculatePackSummary(List<Packing> packingList, String transportMode, String containerCategory) throws Exception;
+    PackSummaryResponse calculatePackSummary(List<Packing> packingList, String transportMode, String containerCategory, ShipmentMeasurementDetailsDto dto) throws Exception;
 
     ResponseEntity<?> autoCalculateVolumetricWeight(CommonRequestModel commonRequestModel);
 

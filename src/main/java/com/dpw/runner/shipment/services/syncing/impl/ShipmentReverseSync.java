@@ -86,6 +86,7 @@ public class ShipmentReverseSync implements IShipmentReverseSync {
             mapTruckDriverDetailReverse(cs, sd);
             sd.setRoutingsList(syncEntityConversionService.routingsV1ToV2(cs.getRoutings()));
             sd.setContainersList(syncEntityConversionService.containersV1ToV2(cs.getContainersList()));
+            sd.setShipmentAddresses(syncEntityConversionService.addressesV1ToV2(cs.getShipmentAddresses()));
             sd.setReferenceNumbersList(convertToList(cs.getReferenceNumbers(), ReferenceNumbers.class));
             Map<UUID, String> map = new HashMap<>();
             if(cs.getPackings_() != null)
