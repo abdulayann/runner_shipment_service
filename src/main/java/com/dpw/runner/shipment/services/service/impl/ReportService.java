@@ -126,13 +126,12 @@ public class ReportService implements IReportService {
             }
         }
 
-        if (!newFlowSuccess) {
-            if (reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.HOUSE_BILL)) {
-                dataRetrived = hblReport.getData(Long.parseLong(reportRequest.getReportId()));
-            }
-            else {
-                dataRetrived = reportsFactory.getReport(reportRequest.getReportInfo()).getData(Long.parseLong(reportRequest.getReportId()));
-            }
+        //TODO - Need to handle for new flow
+        if (reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.HOUSE_BILL)) {
+            dataRetrived = hblReport.getData(Long.parseLong(reportRequest.getReportId()));
+        }
+        else {
+            dataRetrived = reportsFactory.getReport(reportRequest.getReportInfo()).getData(Long.parseLong(reportRequest.getReportId()));
         }
         boolean isOriginalPrinted = (boolean) dataRetrived.getOrDefault(ReportConstants.PRINTED_ORIGINAL, false);
         String hbltype = (String)dataRetrived.getOrDefault(ReportConstants.HOUSE_BILL_TYPE, null);
@@ -758,6 +757,9 @@ public class ReportService implements IReportService {
             case ReportConstants.CONTAINER_MANIFEST_PRINT:
                 return setDocPages(null,
                         row.getContainerManifestPrint() == null ? adminRow.getContainerManifestPrint(): row.getContainerManifestPrint(), null, row.getContainerManifestPrint() != null, null, null, null);
+            case ReportConstants.MANIFEST_PRINT:
+                return setDocPages(null,
+                        row.getManifestPrint() == null ? adminRow.getManifestPrint(): row.getManifestPrint(), null, row.getManifestPrint() != null, null, null, null);
         }
 
         return null;
