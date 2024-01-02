@@ -648,7 +648,7 @@ public class ConsolidationService implements IConsolidationService {
     public void createParties(ConsolidationDetails consolidationDetails, PartiesRequest partiesRequest) {
         partiesRequest.setEntityId(consolidationDetails.getId());
         partiesRequest.setEntityType(Constants.CONSOLIDATION_ADDRESSES);
-        packingDao.save(jsonHelper.convertValue(partiesRequest, Packing.class));
+        partiesDao.save(jsonHelper.convertValue(partiesRequest, Parties.class));
     }
 
     @Transactional
@@ -1251,7 +1251,7 @@ public class ConsolidationService implements IConsolidationService {
                         BigDecimal wtInKG = new BigDecimal(convertUnit(Constants.MASS, weight, weightUnit, Constants.WEIGHT_UNIT_KG).toString());
                         BigDecimal vlInM3 = new BigDecimal(convertUnit(Constants.VOLUME, volume, volumeUnit, Constants.VOLUME_UNIT_M3).toString());
                         BigDecimal factor = new BigDecimal(166.667);
-                        if (transportMode == Constants.TRANSPORT_MODE_ROA) {
+                        if (transportMode.equals(Constants.TRANSPORT_MODE_ROA)) {
                             factor = BigDecimal.valueOf(333.0);
                         }
                         BigDecimal wvInKG = vlInM3.multiply(factor);
@@ -1600,7 +1600,7 @@ public class ConsolidationService implements IConsolidationService {
                 }
                 ShipmentSettingsDetails shipmentSettingsDetails = shipmentSettingsDao.getSettingsByTenantIds(List.of(TenantContext.getCurrentTenant())).get(0);
                 if(shipmentSettingsDetails.getIsConsolidator() != null && shipmentSettingsDetails.getIsConsolidator()
-                && (weight.compareTo(container.getAllocatedWeight()) > 0 || volume.compareTo(container.getAllocatedVolume()) > 0)) {
+                && ((weight != null && weight.compareTo(container.getAllocatedWeight()) > 0) || (volume != null && volume.compareTo(container.getAllocatedVolume()) > 0))) {
                     if(request.getIsConfirmedByUser() != null && request.getIsConfirmedByUser().booleanValue()) {
                         container = attachContainer(request, shipmentsIncluded, container, weight, volume);
                     }
