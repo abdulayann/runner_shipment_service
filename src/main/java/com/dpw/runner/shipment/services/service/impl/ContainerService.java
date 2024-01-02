@@ -955,8 +955,8 @@ public class ContainerService implements IContainerService {
             ContainerSummaryResponse response = new ContainerSummaryResponse();
             response.setTotalPackages(String.valueOf(packageCount));
             response.setTotalContainers(String.valueOf(totalContainerCount));
-            response.setTotalWeight(totalWeight + " " + toWeightUnit);
-            response.setTotalTareWeight(tareWeight + " " + toWeightUnit);
+            response.setTotalWeight(String.format("%.2f %s", totalWeight, toWeightUnit));
+            response.setTotalTareWeight(String.format("%.2f %s", tareWeight, toWeightUnit));
             if(!IsStringNullOrEmpty(transportMode) && transportMode.equals(Constants.TRANSPORT_MODE_SEA) &&
                     !IsStringNullOrEmpty(containerCategory) && containerCategory.equals(Constants.SHIPMENT_TYPE_LCL)) {
                 double volInM3 = convertUnit(Constants.VOLUME, new BigDecimal(totalVolume), toVolumeUnit, Constants.VOLUME_UNIT_M3).doubleValue();
@@ -964,7 +964,7 @@ public class ContainerService implements IContainerService {
                 double chargeableWeight = Math.max(wtInKg/1000, volInM3);
                 response.setChargeableWeight(chargeableWeight + " " + Constants.VOLUME_UNIT_M3);
             }
-            response.setTotalContainerVolume(totalVolume + " " + toVolumeUnit);
+            response.setTotalContainerVolume(String.format("%.2f %s", totalVolume, toVolumeUnit));
             try {
                 response.setSummary(calculateContainerSummary(containersList));
             }

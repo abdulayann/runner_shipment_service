@@ -470,7 +470,7 @@ public class PackingService implements IPackingService {
                     }
                 }
             }
-            volumetricWeight = volumetricWeight * 166.667;
+            volumetricWeight = volumeWeight * 166.667;
             chargeableWeight = Math.max(volumetricWeight, totalWeight);
             List<String> sortedKeys = new ArrayList<>(map.keySet());
             Collections.sort(sortedKeys);
@@ -481,9 +481,9 @@ public class PackingService implements IPackingService {
                     packsCount.append(", ");
             }
             response.setTotalPacks(packsCount.toString());
-            response.setTotalPacksWeight(totalWeight + " " + toWeightUnit);
-            response.setTotalPacksVolume(volumeWeight + " " + toVolumeUnit);
-            response.setPacksVolumetricWeight(volumetricWeight + " " + toWeightUnit);
+            response.setTotalPacksWeight(String.format("%.2f %s", totalWeight, toWeightUnit));
+            response.setTotalPacksVolume(String.format("%.2f %s", volumeWeight, toVolumeUnit));
+            response.setPacksVolumetricWeight(String.format("%.2f %s", volumetricWeight, toWeightUnit));
 
             dto.setWeight(new BigDecimal(totalWeight));
             dto.setWeightUnit(toWeightUnit);
@@ -506,7 +506,7 @@ public class PackingService implements IPackingService {
                 chargeableWeight = Math.max(wtInKg / 1000, volInM3);
                 packChargeableWeightUnit = Constants.VOLUME_UNIT_M3;
             }
-            response.setPacksChargeableWeight(chargeableWeight + " " + packChargeableWeightUnit);
+            response.setPacksChargeableWeight(String.format("%.2f %s", chargeableWeight, packChargeableWeightUnit));
             return response;
         } catch (Exception e) {
             throw new Exception(e);
