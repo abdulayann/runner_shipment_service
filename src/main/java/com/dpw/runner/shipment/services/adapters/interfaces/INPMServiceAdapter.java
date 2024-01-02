@@ -8,6 +8,7 @@ import org.testcontainers.shaded.org.bouncycastle.jcajce.provider.asymmetric.ec.
 
 public interface INPMServiceAdapter {
     ResponseEntity<?> fetchContracts(CommonRequestModel commonRequestModel) throws Exception;
+    ResponseEntity<?> fetchContractsTemp(CommonRequestModel commonRequestModel) throws Exception;
 
     ResponseEntity<?> fetchContract(CommonRequestModel commonRequestModel) throws Exception;
 
