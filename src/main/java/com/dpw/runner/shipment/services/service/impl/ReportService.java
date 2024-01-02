@@ -609,11 +609,11 @@ public class ReportService implements IReportService {
             case ReportConstants.SHIPMENT_HOUSE_BILL:
                 try
                 {
-                    if (frontTemplateCode != null && backTemplateCode != null)
+                    if (frontTemplateCode != null || backTemplateCode != null)
                     {
                         String front = hblTermsConditionTemplateDao.getTemplateCode(frontTemplateCode, true ,printType).getTemplateFileName();
                         String back = null;
-                        if (backTemplateCode.length() > 0)
+                        if (StringUtility.isNotEmpty(backTemplateCode))
                         {
                             back = hblTermsConditionTemplateDao.getTemplateCode(backTemplateCode, false ,printType).getTemplateFileName();
                         }
