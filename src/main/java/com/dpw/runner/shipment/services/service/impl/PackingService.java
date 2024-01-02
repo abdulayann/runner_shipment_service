@@ -11,6 +11,7 @@ import com.dpw.runner.shipment.services.config.SyncConfig;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackContainerNumberChangeRequest;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryResponse;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentMeasurementDetailsDto;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
 import com.dpw.runner.shipment.services.dto.request.AutoCalculatePackingRequest;
 import com.dpw.runner.shipment.services.dto.request.PackingRequest;
@@ -413,14 +414,19 @@ public class PackingService implements IPackingService {
         return ResponseHelper.buildListSuccessResponse(finalContainers);
     }
 
-    public PackSummaryResponse calculatePackSummary(List<Packing> packingList, String transportMode, String containerCategory) throws Exception {
+    public PackSummaryResponse calculatePackSummary(List<Packing> packingList, String transportMode, String containerCategory, ShipmentMeasurementDetailsDto dto) throws Exception {
         try {
             PackSummaryResponse response = new PackSummaryResponse();
             double totalWeight = 0;
-            String packsCount = "";
+            double netWeight = 0;
+            StringBuilder packsCount = new StringBuilder();
             double volumeWeight = 0;
             double volumetricWeight = 0;
             double chargeableWeight = 0;
+            double totalPacks = 0;
+            int totalInnerPacks = 0;
+            String packsUnit = null;
+            String innerPacksUnit = null;
             Map<String, Long> map = new HashMap<>();
             String toWeightUnit = Constants.WEIGHT_UNIT_KG;
             String toVolumeUnit = Constants.VOLUME_UNIT_M3;
@@ -433,12 +439,35 @@ public class PackingService implements IPackingService {
                 for (Packing packing: packingList) {
                     double winDef = convertUnit(Constants.MASS, packing.getWeight(), packing.getWeightUnit(), toWeightUnit).doubleValue();
                     double volDef = convertUnit(VOLUME, packing.getVolume(), packing.getVolumeUnit(), toVolumeUnit).doubleValue();
+                    double netWtDif = convertUnit(MASS, packing.getNetWeight(), packing.getNetWeightUnit(), toWeightUnit).doubleValue();
                     totalWeight = totalWeight + winDef;
                     volumeWeight = volumeWeight + volDef;
-                    if(!IsStringNullOrEmpty(packing.getPacksType()) && !map.containsKey(packing.getPacksType()))
-                        map.put(packing.getPacksType(), 0L);
-                    if(!IsStringNullOrEmpty(packing.getPacks()) && !IsStringNullOrEmpty(packing.getPacksType()))
-                        map.put(packing.getPacksType(), map.get(packing.getPacksType()) + Long.parseLong(packing.getPacks()));
+                    netWeight = netWeight + netWtDif;
+                    if(!IsStringNullOrEmpty(packing.getPacksType())) {
+                        if(packsUnit == null)
+                            packsUnit = packing.getPacksType();
+                        else if(!packsUnit.equals(packing.getPacksType()))
+                            packsUnit = MPK;
+                        if(!map.containsKey(packing.getPacksType()))
+                            map.put(packing.getPacksType(), 0L);
+                    }
+                    if(!IsStringNullOrEmpty(packing.getPacks())) {
+                        long packs = Long.parseLong(packing.getPacks());
+                        totalPacks = totalPacks + packs;
+                        if(!IsStringNullOrEmpty(packing.getPacksType())) {
+                            map.put(packing.getPacksType(), map.get(packing.getPacksType()) + packs);
+                        }
+                    }
+                    if(!IsStringNullOrEmpty(packing.getInnerPackageNumber())) {
+                        int innerPacks = Integer.parseInt(packing.getInnerPackageNumber());
+                        totalInnerPacks = totalInnerPacks + innerPacks;
+                    }
+                    if(!IsStringNullOrEmpty(packing.getInnerPackageType())) {
+                        if(innerPacksUnit == null)
+                            innerPacksUnit = packing.getInnerPackageType();
+                        else if(!innerPacksUnit.equals(packing.getInnerPackageType()))
+                            innerPacksUnit = MPK;
+                    }
                 }
             }
             volumetricWeight = volumetricWeight * 166.667;
@@ -447,14 +476,26 @@ public class PackingService implements IPackingService {
             Collections.sort(sortedKeys);
             for (int i=0; i<sortedKeys.size(); i++) {
                 Long value = map.get(sortedKeys.get(i));
-                packsCount = packsCount + value.toString() + " " + sortedKeys.get(i);
+                packsCount.append(value.toString()).append(" ").append(sortedKeys.get(i));
                 if (i + 1 < sortedKeys.size())
-                    packsCount = packsCount + ", ";
+                    packsCount.append(", ");
             }
-            response.setTotalPacks(packsCount);
+            response.setTotalPacks(packsCount.toString());
             response.setTotalPacksWeight(totalWeight + " " + toWeightUnit);
             response.setTotalPacksVolume(volumeWeight + " " + toVolumeUnit);
             response.setPacksVolumetricWeight(volumetricWeight + " " + toWeightUnit);
+
+            dto.setWeight(new BigDecimal(totalWeight));
+            dto.setWeightUnit(toWeightUnit);
+            dto.setNetWeight(new BigDecimal(netWeight));
+            dto.setNetWeightUnit(toWeightUnit);
+            dto.setVolume(new BigDecimal(volumeWeight));
+            dto.setVolumeUnit(toVolumeUnit);
+            dto.setNoOfPacks(String.valueOf(totalPacks));
+            dto.setPacksUnit(packsUnit);
+            dto.setInnerPacks(totalInnerPacks);
+            dto.setInnerPackUnit(innerPacksUnit);
+
             String packChargeableWeightUnit = toWeightUnit;
             if (!IsStringNullOrEmpty(transportMode) && transportMode.equals(Constants.TRANSPORT_MODE_AIR))
                 chargeableWeight = roundOffAirShipment(chargeableWeight);

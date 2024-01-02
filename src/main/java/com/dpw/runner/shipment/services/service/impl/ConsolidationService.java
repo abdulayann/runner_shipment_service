@@ -1369,7 +1369,7 @@ public class ConsolidationService implements IConsolidationService {
         CalculatePackSummaryRequest request = (CalculatePackSummaryRequest) commonRequestModel.getData();
         try {
             List<Packing> packingList = jsonHelper.convertValueToList(request.getPackingList(), Packing.class);
-            PackSummaryResponse response = packingService.calculatePackSummary(packingList, request.getTransportMode(), request.getContainerCategory());
+            PackSummaryResponse response = packingService.calculatePackSummary(packingList, request.getTransportMode(), request.getContainerCategory(), new ShipmentMeasurementDetailsDto());
             return ResponseHelper.buildSuccessResponse(response);
         }
         catch (Exception e) {
@@ -2028,7 +2028,7 @@ public class ConsolidationService implements IConsolidationService {
     private void calculationsOnRetrieve(ConsolidationDetails consolidationDetails, ConsolidationDetailsResponse consolidationDetailsResponse) {
         try {
             consolidationDetailsResponse.setContainerSummary(containerService.calculateContainerSummary(consolidationDetails.getContainersList(), consolidationDetails.getTransportMode(), consolidationDetails.getContainerCategory()));
-            consolidationDetailsResponse.setPackSummary(packingService.calculatePackSummary(consolidationDetails.getPackingList(), consolidationDetails.getTransportMode(), consolidationDetails.getContainerCategory()));
+            consolidationDetailsResponse.setPackSummary(packingService.calculatePackSummary(consolidationDetails.getPackingList(), consolidationDetails.getTransportMode(), consolidationDetails.getContainerCategory(), new ShipmentMeasurementDetailsDto()));
             calculateChargeable(CommonRequestModel.buildRequest(jsonHelper.convertValue(consolidationDetailsResponse, ConsoleCalculationsRequest.class)));
             calculateDescOfGoodsAndHandlingInfo(consolidationDetails, consolidationDetailsResponse, false);
         }

@@ -117,6 +117,7 @@ public class ShipmentSync implements IShipmentSync {
         cs.setContainersList(syncEntityConversionService.containersV2ToV1(sd.getContainersList()));
         cs.setReferenceNumbers(convertToList(sd.getReferenceNumbersList(), ReferenceNumbersRequestV2.class));
         cs.setPackings_(syncEntityConversionService.packingsV2ToV1(sd.getPackingList(), sd.getContainersList(), sd.getGuid(), null));
+        cs.setShipmentAddresses(syncEntityConversionService.addressesV2ToV1(sd.getShipmentAddresses()));
         cs.setDocs_(convertToList(sd.getFileRepoList(), FileRepoRequestV2.class));
         cs.setELDetails(convertToList(sd.getElDetailsList(), ElDetailsRequestV2.class));
         // PickupAddressJSON and DeliveryAddressJSON (could be renamed for easy mapping)
