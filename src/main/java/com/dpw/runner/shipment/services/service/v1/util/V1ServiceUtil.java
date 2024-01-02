@@ -90,7 +90,7 @@ public class V1ServiceUtil {
                         .AssignedTo(note.getAssignedTo())
                         .Label(note.getLabel())
                         .Text(note.getText())
-                        .InsertUserDisplayName(note.getInsertUserDisplayName())
+                        .InsertUserDisplayName(note.getCreatedBy())
                         .IsPublic(note.getIsPublic())
                         .InsertDate(note.getCreatedAt() != null ? DateTimeFormatter.ofPattern(CustomerBookingConstants.DATE_TIME_FORMAT).format(note.getCreatedAt()) : null)
                         .build()).collect(Collectors.toList());
