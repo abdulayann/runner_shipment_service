@@ -160,7 +160,6 @@ public class ShipmentSync implements IShipmentSync {
     }
 
     @Override
-    @Async
     public ResponseEntity<?> syncById(Long shipmentId) {
         Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(shipmentId);
         if(shipmentDetails.isPresent()) {
