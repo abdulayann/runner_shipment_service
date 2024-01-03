@@ -1,11 +1,16 @@
 package com.dpw.runner.shipment.services.dao.interfaces;
 
 import com.dpw.runner.shipment.services.entity.ShipmentsContainersMapping;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 
 import java.util.List;
 
 public interface IShipmentsContainersMappingDao {
 
+    Page<ShipmentsContainersMapping> findAll(Specification<ShipmentsContainersMapping> spec, Pageable pageable);
+    Page<ShipmentsContainersMapping> findAllByContainerIds(List<Long> containerIds);
     List<ShipmentsContainersMapping> findByContainerId(Long containerId);
 
     List<ShipmentsContainersMapping> findByShipmentId(Long shipmentId);
