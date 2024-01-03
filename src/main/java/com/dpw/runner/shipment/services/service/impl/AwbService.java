@@ -1962,7 +1962,8 @@ public class AwbService implements IAwbService {
         V1DataResponse masterDataResponse = v1Service.fetchMasterData(masterDataRequest);
         if(masterDataResponse.getEntities() != null) {
             List<EntityTransferMasterLists> masterLists = jsonHelper.convertValueToList(masterDataResponse.entities, EntityTransferMasterLists.class);
-            res = masterLists.get(0).getItemDescription();
+            if(masterLists.size() > 0)
+                res = masterLists.get(0).getItemDescription();
         }
         return res;
     }
