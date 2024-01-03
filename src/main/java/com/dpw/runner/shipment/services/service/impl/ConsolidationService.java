@@ -2826,10 +2826,11 @@ public class ConsolidationService implements IConsolidationService {
                 .etd(shipmentCarrierDetails != null ? shipmentCarrierDetails.getEtd() : null)
                 .build();
 
+
         consol = ConsolidationDetailsResponse.builder()
                 .consolidationType(Constants.SHIPMENT_TYPE_DRT)
-                .transportMode(shipment.getTransportMode())
-                .containerCategory(shipment.getShipmentType())
+                .transportMode(shipment.getTransportMode() == null ? tenantSettings.get().getDefaultTransportMode(): shipment.getTransportMode())
+                .containerCategory(shipment.getShipmentType() == null ? tenantSettings.get().getDefaultContainerType() : shipment.getShipmentType())
                 .declarationType(additionalDetails != null ? additionalDetails.getCustomDeclType() : null)
                 .carrierDetails(CarrierDetailResponse.builder()
                         .vessel(shipmentCarrierDetails != null ? shipmentCarrierDetails.getVessel() : null)
@@ -2844,6 +2845,8 @@ public class ConsolidationService implements IConsolidationService {
                         .shippingLine(shipmentCarrierDetails != null ? shipmentCarrierDetails.getShippingLine() : null) // carrier
                         .voyage(shipmentCarrierDetails != null ? shipmentCarrierDetails.getVoyage() : null)
                         .build())
+                .departureDetails(ArrivalDepartureDetailsResponse.builder().firstForeignPort(shipmentCarrierDetails.getOriginPort())
+                        .lastForeignPort(shipmentCarrierDetails.getDestinationPort()).build())
                 .releaseType(additionalDetails != null ? additionalDetails.getReleaseType() : null)
                 .original(additionalDetails != null ? additionalDetails.getOriginal() : null)
                 .copy(additionalDetails != null ? additionalDetails.getCopy() : null)
@@ -2855,7 +2858,7 @@ public class ConsolidationService implements IConsolidationService {
 //                        .chargable(shipment.getChargable())
                         .chargeableUnit(shipment.getChargeableUnit())
                         .build())
-                .shipmentType(shipment.getShipmentType())
+                .shipmentType(shipment.getShipmentType() == null ? tenantSettings.get().getDefaultShipmentType() : shipment.getShipmentType())
                 .igmFileDate(additionalDetails != null ? additionalDetails.getIGMFileDate() : null)
                 .igmFileNo(additionalDetails != null ? additionalDetails.getIGMFileNo() : null)
                 .smtpigmDate(additionalDetails != null ? additionalDetails.getSMTPIGMDate() : null)
@@ -2868,7 +2871,8 @@ public class ConsolidationService implements IConsolidationService {
                 .payment(isPayment ? shipment.getPaymentTerms() : null)
                 .routingsList(List.of(customRouting))
                 .mawb(isMawb ? shipment.getMasterBill() : null)
-                .isLinked(true)
+                .createdBy(UserContext.getUser().getUsername())
+                //.isLinked(true)
                 .build();
 
         createConsolidationPayload(modelMapper.map(consol, ConsolidationDetails.class), consol);
