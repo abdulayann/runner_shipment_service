@@ -1679,7 +1679,7 @@ public class ConsolidationService implements IConsolidationService {
                             if(pack.getWeight() != null && !IsStringNullOrEmpty(pack.getWeightUnit()) && !IsStringNullOrEmpty(container.getAchievedWeightUnit()))
                                 weight = weight.subtract(new BigDecimal(convertUnit(Constants.MASS, pack.getWeight(), pack.getWeightUnit(), container.getAchievedWeightUnit()).toString()));
                             if(pack.getVolume() != null && !IsStringNullOrEmpty(pack.getVolumeUnit()) && !IsStringNullOrEmpty(container.getAchievedVolumeUnit()))
-                                weight = weight.subtract(new BigDecimal(convertUnit(Constants.MASS, pack.getVolume(), pack.getVolumeUnit(), container.getAchievedVolumeUnit()).toString()));
+                                volume = volume.subtract(new BigDecimal(convertUnit(Constants.VOLUME, pack.getVolume(), pack.getVolumeUnit(), container.getAchievedVolumeUnit()).toString()));
                         }
                         pack.setContainerId(null);
                         packingDao.save(pack);
