@@ -40,7 +40,7 @@ public class ShippingRequestOutReport extends IReport {
     IDocumentModel getDocumentModel(Long id) {
         ShippingRequestOutModel model = new ShippingRequestOutModel();
         model.setTenant(getTenant());
-        model.setConsolidation(getFirstConsolidationFromShipmentId(id));
+        model.setConsolidation(getConsolidation(id));
         model.setUser(UserContext.getUser());
 
         var shipments = model.getConsolidation() != null ? model.getConsolidation().getShipmentsList() : null;
@@ -73,7 +73,7 @@ public class ShippingRequestOutReport extends IReport {
         var consolContainers = new ArrayList<ShipmentContainers>();
         var tenantSettings = getShipmentSettings(TenantContext.getCurrentTenant());
 
-        if (tenantSettings.getIsShipmentLevelContainer()) {
+        if (tenantSettings.getIsShipmentLevelContainer() != null && tenantSettings.getIsShipmentLevelContainer().equals(true)) {
             if (model.getShipment() != null) {
                 model.setCommonContainers(model.getShipment().getContainersList());
             } else {
@@ -95,18 +95,17 @@ public class ShippingRequestOutReport extends IReport {
 
         model.setConsolContainers(consolContainers);
 
-        if (model.getShipment() != null && model.getShipment().getCarrierDetails() != null) {
-            model.setLoadingPort(getUNLocRow(model.getShipment().getCarrierDetails().getOriginPort()));
-            model.setDischargePort(getUNLocRow(model.getShipment().getCarrierDetails().getDestinationPort()));
+        if (model.getShipment() != null) {
+            //setting serviceMode master data
+            var masterData = getMasterListData(MasterDataType.SERVICE_MODE, model.getShipment().getServiceType());
+            model.setServiceMode(masterData != null ? masterData.getItemDescription() : null);
+            if(model.getShipment().getCarrierDetails() != null) {
+                model.setLoadingPort(getUNLocRow(model.getShipment().getCarrierDetails().getOriginPort()));
+                model.setDischargePort(getUNLocRow(model.getShipment().getCarrierDetails().getDestinationPort()));
+                //setting carrier master data
+                model.setCarrier(getCarrier(model.getShipment().getCarrierDetails().getShippingLine()));
+            }
         }
-
-        //setting serviceMode master data
-        var masterData = getMasterListData(MasterDataType.SERVICE_MODE, model.getShipment().getServiceType());
-        model.setServiceMode(masterData != null ? masterData.getItemDescription() : null);
-
-        //setting carrier master data
-        if (model.getShipment().getCarrierDetails() != null)
-            model.setCarrier(getCarrier(model.getShipment().getCarrierDetails().getShippingLine()));
 
         //setting shipment and container response
         model.setShipmentAndContainer(getShipmentAndContainerResponse(model.getShipmentList()));
@@ -118,7 +117,7 @@ public class ShippingRequestOutReport extends IReport {
                 map.put(containerModel.getContainerNumber(), containerModel);
             }
         }
-        if (model.getShipment().getContainersList() != null) {
+        if (model.getShipment() != null && model.getShipment().getContainersList() != null) {
             for (ContainerModel container : model.getShipment().getContainersList()) {
                 ShipmentContainers shipmentContainer = getShipmentContainer(container);
                 shipmentContainer.BL_SealNumber = container.getCustomsSealNumber();
@@ -128,7 +127,7 @@ public class ShippingRequestOutReport extends IReport {
         }
         model.setCommonContainers(allCommonContainers);
         //setting vessel
-        List<BookingCarriageModel> bookingCarriages = model.getShipment().getBookingCarriagesList();
+        List<BookingCarriageModel> bookingCarriages = model.getShipment() != null ? model.getShipment().getBookingCarriagesList() : null;
         BookingCarriageModel bookingCarriage = null;
         if (bookingCarriages != null) {
             for (int i = 0; i < bookingCarriages.size(); i++) {
