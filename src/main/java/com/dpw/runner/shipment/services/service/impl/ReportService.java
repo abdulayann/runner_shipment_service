@@ -1074,17 +1074,19 @@ public class ReportService implements IReportService {
 
     public void AddHouseBillToRepo(DocUploadRequest uploadRequest, String printType, byte[] document, ShipmentSettingsDetails shipmentSettingsDetails, String releaseType) throws IOException {
         List<Hbl> blObjectList = hblDao.findByShipmentId(Long.parseLong(uploadRequest.getReportId()));
+        if (blObjectList == null || blObjectList.isEmpty())
+            return;
         Hbl blObject = blObjectList.get(0);
         String fileVersion = null;
-        if(printType.equalsIgnoreCase(TypeOfHblPrint.Original.name())){
-            fileVersion =  StringUtility.convertToString(blObject.getHblData().getOriginalSeq());
+        if (printType.equalsIgnoreCase(TypeOfHblPrint.Original.name()) && blObject != null && blObject.getHblData() != null) {
+            fileVersion = blObject.getHblData().getOriginalSeq() != null ? StringUtility.convertToString(blObject.getHblData().getOriginalSeq()) : null;
             blObject.getHblData().setOriginalSeq(blObject.getHblData().getOriginalSeq() != null ? blObject.getHblData().getOriginalSeq() + 1 : 1);
             updateInReleaseMappingTable(blObject, releaseType, shipmentSettingsDetails);
-        }else{
+        } else {
             fileVersion = blObject.getHblData().getVersion().toString();
-            blObject.getHblData().setVersion(blObject.getHblData().getVersion()+ 1);
+            blObject.getHblData().setVersion(blObject.getHblData().getVersion() + 1);
         }
-        String filename = uploadRequest.getType() + "_" + printType +"_"+ uploadRequest.getId()+ "_" + fileVersion + ".pdf";
+        String filename = uploadRequest.getType() + "_" + printType + "_" + uploadRequest.getId() + "_" + fileVersion + ".pdf";
         ListCommonRequest listCommonRequest = CommonUtils.andCriteria("entityType", uploadRequest.getEntityType(), "=", null);
         CommonUtils.andCriteria("entityId", uploadRequest.getId(), "=", listCommonRequest);
         CommonUtils.andCriteria("fileName", filename, "=", listCommonRequest);
@@ -1120,7 +1122,10 @@ public class ReportService implements IReportService {
             shipmentDetails = shipmentsRow.get();
         }
 
-        if (shipmentDetails.getAdditionalDetails().getOriginal() >= 1) {
+        if (shipmentDetails != null &&
+                shipmentDetails.getAdditionalDetails() != null &&
+                shipmentDetails.getAdditionalDetails().getOriginal() != null &&
+                shipmentDetails.getAdditionalDetails().getOriginal() >= 1) {
             createAutoEvent(uploadRequest.getReportId(), EventConstants.GENERATE_BL_EVENT_EXCLUSIVE_OF_DRAFT, shipmentSettingsDetails);
         }
     }
