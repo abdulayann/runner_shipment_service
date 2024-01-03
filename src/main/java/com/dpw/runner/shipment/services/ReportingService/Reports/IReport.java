@@ -743,7 +743,7 @@ public abstract class IReport {
 
     public MasterData getMasterListData(MasterDataType type, String ItemValue)
     {
-        if (StringUtility.isEmpty(ItemValue)) return null;
+        if (ItemValue == null || StringUtility.isEmpty(ItemValue)) return null;
         MasterListRequest masterListRequest = MasterListRequest.builder().ItemType(type.getDescription()).ItemValue(ItemValue).build();
         MasterListRequestV2 masterListRequests = new MasterListRequestV2();
         masterListRequests.getMasterListRequests().add(masterListRequest);
@@ -788,7 +788,34 @@ public abstract class IReport {
         }
 
         List<ContainerCountByCode> containerCountByCode = new ArrayList<>();
-        for(var entry : containerTypeCountMap.entrySet()) {
+        for (var entry : containerTypeCountMap.entrySet()) {
+            ContainerCountByCode countByCode = new ContainerCountByCode();
+            countByCode.ContainerTypeCode = entry.getKey();
+            countByCode.ContainerCount = entry.getValue();
+            containerCountByCode.add(countByCode);
+        }
+        return containerCountByCode;
+    }
+
+    public List<ContainerCountByCode> getCountByCommonContainerTypeCode(List<ContainerModel> commonContainers) {
+        Map<String, Long> containerTypeCountMap = new HashMap<>();
+        if (commonContainers != null) {
+            for (var container : commonContainers) {
+                if (container.getContainerCode() != null) {
+                    Long containerCount = container.getContainerCount();
+                    if (!containerTypeCountMap.containsKey(container.getContainerCode())) {
+                        containerTypeCountMap.put(container.getContainerCode(), containerCount);
+                        continue;
+                    }
+                    Long containers = containerTypeCountMap.get(container.getContainerCode());
+                    containers += containerCount;
+                    containerTypeCountMap.put(container.getContainerCode(), containers);
+                }
+            }
+        }
+
+        List<ContainerCountByCode> containerCountByCode = new ArrayList<>();
+        for (var entry : containerTypeCountMap.entrySet()) {
             ContainerCountByCode countByCode = new ContainerCountByCode();
             countByCode.ContainerTypeCode = entry.getKey();
             countByCode.ContainerCount = entry.getValue();
@@ -799,7 +826,7 @@ public abstract class IReport {
 
     public Awb getHawb(Long Id) {
         List<Awb> awb = awbRepository.findByShipmentId(Id);
-        if(awb != null && !awb.isEmpty())
+        if (awb != null && !awb.isEmpty())
             return awb.get(0);
         return null;
     }
