@@ -98,7 +98,6 @@ public class ShipmentDetails extends MultiTenancy {
 
     @Column(name = "sales_agent")
     @DedicatedMasterData(type = Constants.SALES_AGENT)
-    @MasterData(type = MasterDataType.SALES_AGENT_MASTER)
     private Long salesAgent;
 
     @Column(name = "payment_terms")

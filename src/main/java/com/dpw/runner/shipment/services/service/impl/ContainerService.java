@@ -718,7 +718,7 @@ public class ContainerService implements IContainerService {
                 shipmentsContainersMappingDao.detachShipments(container.getId(), List.of(shipmentId));
             else {
                 try {
-                    containersSync.sync(List.of(containers.getId()));
+                    containersSync.sync(List.of(containers.getId()), shipmentsContainersMappingDao.findAllByContainerIds(List.of(containers.getId())));
                 }
                 catch (Exception e) {
                     log.error("Error syncing containers");
