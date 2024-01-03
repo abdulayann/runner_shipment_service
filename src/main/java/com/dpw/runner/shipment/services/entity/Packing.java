@@ -40,6 +40,7 @@ public class Packing extends MultiTenancy {
     private Integer DGGoodsId;
 
     @Column(name = "dg_substance_id")
+    @DedicatedMasterData(type = Constants.DG_SUBSTANCE)
     private Integer DGSubstanceId;
 
     @Column(name = "packs")
