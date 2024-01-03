@@ -63,7 +63,7 @@ public class ShipmentsContainersMappingDao implements IShipmentsContainersMappin
             shipmentSync.syncById(shipmentId);
         }
         catch (Exception e) {
-            log.error("Error syncing containers");
+            log.error("Error syncing shipment containers");
         }
     }
 
