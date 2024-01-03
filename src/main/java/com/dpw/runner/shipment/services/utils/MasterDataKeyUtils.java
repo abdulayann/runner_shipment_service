@@ -90,6 +90,10 @@ public class MasterDataKeyUtils {
                                 EntityTransferCommodityType object11 = (EntityTransferCommodityType) cache.get();
                                 response.put(value, object11.getDescription());
                                 break;
+                            case CacheConstants.DG_SUBSTANCES:
+                                EntityTransferDGSubstance object12 = (EntityTransferDGSubstance) cache.get();
+                                response.put(value, object12.getProperShippingName());
+                                break;
                         }
                     }
                 });

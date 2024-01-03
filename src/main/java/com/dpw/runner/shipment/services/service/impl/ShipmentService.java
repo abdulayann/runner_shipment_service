@@ -2917,8 +2917,9 @@ public class ShipmentService implements IShipmentService {
         var salesAgentFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllSalesAgentInSingleCall(shipmentDetails, shipmentDetailsResponse, masterDataResponse)), executorService);
         var containerTypeFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllContainerTypesInSingleCall(shipmentDetails, shipmentDetailsResponse, masterDataResponse)), executorService);
         var vesselsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllVesselDataInSingleCall(shipmentDetails, shipmentDetailsResponse, masterDataResponse)), executorService);
+        var dgSubstanceFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllDGSubstanceDataInSingleCall(shipmentDetails, shipmentDetailsResponse, masterDataResponse)), executorService);
         CompletableFuture.allOf(masterListFuture, unLocationsFuture, carrierFuture, currencyFuture, commodityTypesFuture, tenantDataFuture, wareHouseDataFuture, activityDataFuture, salesAgentFuture,
-                containerTypeFuture).join();
+                containerTypeFuture, vesselsFuture, dgSubstanceFuture).join();
 
         return masterDataResponse;
     }
@@ -3198,6 +3199,23 @@ public class ShipmentService implements IShipmentService {
         }
 
         return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(Arrays.asList()));
+    }
+
+    private CompletableFuture<ResponseEntity<?>> addAllDGSubstanceDataInSingleCall (ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse, Map<String, Object> masterDataResponse) {
+        Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
+        Set<String> dgSubstanceIdList = new HashSet<>();
+        if (!Objects.isNull(shipmentDetailsResponse.getPackingList()))
+            shipmentDetailsResponse.getPackingList().forEach(r -> dgSubstanceIdList.addAll(masterDataUtils.createInBulkDGSubstanceRequest(r, Packing.class, fieldNameKeyMap, Packing.class.getSimpleName() + r.getId() )));
+
+        Map v1Data = masterDataUtils.fetchInDGSubstanceList(dgSubstanceIdList.stream().toList());
+        masterDataUtils.pushToCache(v1Data, CacheConstants.DG_SUBSTANCES);
+
+        if(masterDataResponse == null) { }
+        else {
+            masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.DG_SUBSTANCES, masterDataResponse);
+        }
+
+        return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(v1Data));
     }
 
     private void setContainersPacksAutoUpdateData (ShipmentDetailsResponse shipmentDetailsResponse) {
