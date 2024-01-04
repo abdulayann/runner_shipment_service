@@ -1000,7 +1000,7 @@ public class ContainerService implements IContainerService {
         if (!response.isEmpty()) {
             for (int i = 0; i < response.size(); i++) {
                 Containers container = response.get(i);
-                if (container.getIsPart()) {
+                if (container.getIsPart() != null && container.getIsPart()) {
                     containerCountPart = containerCountPart + container.getContainerCount();
                 } else {
                     containerCountNoPart = containerCountNoPart + container.getContainerCount();
@@ -1012,7 +1012,7 @@ public class ContainerService implements IContainerService {
 
                 for (int i = 0; i < response.size(); i++) {
                     Containers container = response.get(i);
-                    if (!container.getIsPart()) {
+                    if (container.getIsPart() == null || !container.getIsPart()) {
                         Long containerCount = container.getContainerCount();
                         int j;
                         for (j = i + 1; j < response.size(); j++) {
