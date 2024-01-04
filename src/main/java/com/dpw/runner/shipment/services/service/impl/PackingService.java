@@ -376,7 +376,13 @@ public class PackingService implements IPackingService {
         if(request.getNewContainerId() == null && request.getOldContainerId() == null) {
             return ResponseHelper.buildListSuccessResponse(finalContainers);
         }
-        ShipmentDetails shipmentDetails = shipmentDao.findById(request.getPack().getShipmentId()).get();
+        ShipmentDetails shipmentDetails;
+        try {
+            shipmentDetails = shipmentDao.findById(request.getPack().getShipmentId()).get();
+        }
+        catch (Exception e) {
+            throw new Exception("Please send correct shipment Id in packing request");
+        }
         if(shipmentSettingsDetails.getMultipleShipmentEnabled() != null && shipmentSettingsDetails.getMultipleShipmentEnabled()
         && !shipmentDetails.getShipmentType().equals(Constants.CARGO_TYPE_FCL)
                 && (shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_SEA) || shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_ROA))) {

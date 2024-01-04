@@ -25,4 +25,8 @@ public class DocumentManagerSaveFileRequest {
     private String eventCode;
 
     private Boolean customerPortalVisibility;
+    private String source;
+    private String docName;
+    private String entityKey;
+    private String childType;
 }

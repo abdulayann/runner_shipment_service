@@ -451,7 +451,7 @@ public class ReportService implements IReportService {
                 docUploadRequest.setType(ReportConstants.SHIPMENT_HOUSE_BILL);
                 docUploadRequest.setReportId(reportRequest.getReportId());
                 try {
-                    AddHouseBillToRepo(docUploadRequest, reportRequest.getPrintType(), pdfByteContent, tenantSettingsRow, shipmentDetails.getAdditionalDetails().getReleaseType());
+                    AddHouseBillToRepo(docUploadRequest, reportRequest.getPrintType(), pdfByteContent, tenantSettingsRow, shipmentDetails.getAdditionalDetails().getReleaseType(), StringUtility.convertToString(shipmentDetails.getGuid()));
                 } catch (Exception e) {
                     log.error(e.getMessage());
                     //TODO - Abhimanyu doc upload failing
@@ -484,13 +484,17 @@ public class ReportService implements IReportService {
         }
         if (reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.SEAWAY_BILL) && pdfByteContent != null)
         {
+            Optional<ShipmentDetails> shipmentsRow = shipmentDao.findById(Long.parseLong(reportRequest.getReportId()));
+            ShipmentDetails shipmentDetails = null;
+            if(shipmentsRow.isPresent())
+                shipmentDetails = shipmentsRow.get();
             DocUploadRequest docUploadRequest = new DocUploadRequest();
             docUploadRequest.setEntityType(Constants.Shipments);
             docUploadRequest.setId(Long.parseLong(reportRequest.getReportId()));
             docUploadRequest.setType(ReportConstants.SEAWAY_BILL);
             docUploadRequest.setReportId(reportRequest.getReportId());
             try {
-                AddHouseBillToRepo(docUploadRequest, TypeOfHblPrint.Draft.name().toUpperCase(), pdfByteContent, tenantSettingsRow, null);
+                AddHouseBillToRepo(docUploadRequest, TypeOfHblPrint.Draft.name().toUpperCase(), pdfByteContent, tenantSettingsRow, null, StringUtility.convertToString(shipmentDetails.getGuid()));
             } catch (Exception e) {
                 log.error(e.getMessage());
                 // TODO Abhimanyu doc upload failing
@@ -1077,7 +1081,7 @@ public class ReportService implements IReportService {
         }
     }
 
-    public void AddHouseBillToRepo(DocUploadRequest uploadRequest, String printType, byte[] document, ShipmentSettingsDetails shipmentSettingsDetails, String releaseType) throws IOException {
+    public void AddHouseBillToRepo(DocUploadRequest uploadRequest, String printType, byte[] document, ShipmentSettingsDetails shipmentSettingsDetails, String releaseType, String shipmentGuid) throws IOException {
         List<Hbl> blObjectList = hblDao.findByShipmentId(Long.parseLong(uploadRequest.getReportId()));
         if (blObjectList == null || blObjectList.isEmpty())
             return;
@@ -1116,6 +1120,11 @@ public class ReportService implements IReportService {
                 .fileSize(uploadResponse.getData().getFileSize())
                 .fileType(uploadResponse.getData().getFileType())
                 .path(uploadResponse.getData().getPath())
+                .entityKey(shipmentGuid)
+                .source("SYSTEM_GENERATED")
+                .docType(uploadRequest.getType())
+                .docName(uploadRequest.getType())
+                .childType(uploadRequest.getType())
                 .build());
 
         if (!saveResponse.getSuccess())
