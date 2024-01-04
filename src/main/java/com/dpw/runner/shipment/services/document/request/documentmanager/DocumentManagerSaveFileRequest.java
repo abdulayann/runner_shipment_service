@@ -28,4 +28,5 @@ public class DocumentManagerSaveFileRequest {
     private String source;
     private String docName;
     private String entityKey;
+    private String childType;
 }

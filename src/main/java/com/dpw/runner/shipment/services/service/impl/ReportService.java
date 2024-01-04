@@ -1124,6 +1124,7 @@ public class ReportService implements IReportService {
                 .source("SYSTEM_GENERATED")
                 .docType(uploadRequest.getType())
                 .docName(uploadRequest.getType())
+                .childType(uploadRequest.getType())
                 .build());
 
         if (!saveResponse.getSuccess())
