@@ -14,6 +14,7 @@ import com.dpw.runner.shipment.services.dto.request.ShipmentAttachDetachRequest;
 import com.dpw.runner.shipment.services.dto.response.AutoAttachConsolidationResponse;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
+import com.dpw.runner.shipment.services.dto.response.GenerateCustomHblResponse;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
@@ -403,5 +404,11 @@ public class ConsolidationController {
         } catch (Exception e) {
             return ResponseHelper.buildFailedResponse(e.getMessage());
         }
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ConsolidationConstants.CREATE_SUCCESSFUL)})
+    @GetMapping(ConsolidationConstants.GENERATE_CUSTOM_HOUSE_BL)
+    public ResponseEntity<RunnerResponse<GenerateCustomHblResponse>> generateCustomHouseBLNumber() {
+        return (ResponseEntity<RunnerResponse<GenerateCustomHblResponse>>) consolidationService.generateCustomHouseBLNumber();
     }
 }
