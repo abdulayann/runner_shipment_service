@@ -547,7 +547,7 @@ public class AwbService implements IAwbService {
     private Awb generateMawb(CreateAwbRequest request, ConsolidationDetails consolidationDetails) {
 
         if(request.getIsReset() == null || request.getIsReset() == false) {
-            List<Awb> existingAwbs = awbDao.findByShipmentId(request.getShipmentId());
+            List<Awb> existingAwbs = awbDao.findByConsolidationId(request.getConsolidationId());
             if(existingAwbs.size() > 0)
                 throw new RunnerException("MAWB already created for current Consolidation !");
         }
