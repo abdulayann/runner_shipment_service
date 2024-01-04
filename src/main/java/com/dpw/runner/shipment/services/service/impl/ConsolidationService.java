@@ -1158,7 +1158,7 @@ public class ConsolidationService implements IConsolidationService {
         Map<Long, String> descOfGoodsMap = new HashMap<>();
         Map<Long, String> handlingInfoMap = new HashMap<>();
         if(shipmentSettingsDetails.getMultipleShipmentEnabled() != null && shipmentSettingsDetails.getMultipleShipmentEnabled()
-        && isAutoUpdate || (consolidationDetails.getAutoUpdateGoodsDesc() != null && consolidationDetails.getAutoUpdateGoodsDesc())) {
+        && (isAutoUpdate || (consolidationDetails.getAutoUpdateGoodsDesc() != null && consolidationDetails.getAutoUpdateGoodsDesc()))) {
             Set<Long> containerSelfDataAdded = new HashSet<>();
             if(consolidationDetails.getShipmentsList() != null && consolidationDetails.getShipmentsList().size() > 0) {
                 for(ShipmentDetails shipmentDetails : consolidationDetails.getShipmentsList()) {
@@ -1531,7 +1531,7 @@ public class ConsolidationService implements IConsolidationService {
         masterDataUtils.pushToCache(keyMasterDataMap, CacheConstants.MASTER_LIST);
 
         if(!Objects.isNull(consolePacksListResponse.getPacksList()))
-            consolePacksListResponse.getPacksList().forEach(r -> r.setMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(ConsolidationDetails.class.getSimpleName()), CacheConstants.MASTER_LIST)));
+            consolePacksListResponse.getPacksList().forEach(r -> r.setMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(ConsolePacksListResponse.PacksList.class.getSimpleName()), CacheConstants.MASTER_LIST)));
 
         return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(keyMasterDataMap));
     }
@@ -1546,7 +1546,7 @@ public class ConsolidationService implements IConsolidationService {
         masterDataUtils.pushToCache(v1Data, CacheConstants.COMMODITY);
 
         if(!Objects.isNull(consolePacksListResponse.getPacksList()))
-            consolePacksListResponse.getPacksList().forEach(r -> r.setCommodityMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(ConsolidationDetails.class.getSimpleName()), CacheConstants.COMMODITY)));
+            consolePacksListResponse.getPacksList().forEach(r -> r.setCommodityMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(ConsolePacksListResponse.PacksList.class.getSimpleName()), CacheConstants.COMMODITY)));
 
         return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(v1Data));
     }
