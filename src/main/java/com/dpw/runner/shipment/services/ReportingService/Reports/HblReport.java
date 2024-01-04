@@ -668,21 +668,21 @@ public class HblReport extends IReport{
         }
 //        dictionary.put(DELIVERY_TO_EMAIL_ADDRESS, DeliveryEmailAddress);
         dictionary.put(PLACE_OF_DELIVERY, hblModel.podCountry);
-        dictionary.put(BL_PLACE_OF_DELIVERY, hblModel.blObject.getHblData().getPlaceOfDelivery());
-        dictionary.put(BL_WEIGHT, hblModel.blObject.getHblData().getCargoGrossWeight());
-        dictionary.put(BL_WEIGHT_UNIT, hblModel.blObject.getHblData().getCargoGrossWeightUnit());
-        dictionary.put(BL_NETWEIGHT, hblModel.blObject.getHblData().getCargoNetWeight());
-        dictionary.put(BL_NETWEIGHT_UNIT, hblModel.blObject.getHblData().getCargoNetWeightUnit());
-        dictionary.put(BL_DELIVERYAGENT, hblModel.blObject.getHblData().getDeliveryAgent());
-        dictionary.put(BL_DELIVERYAGENT_ADDRESS, hblModel.blObject.getHblData().getDeliveryAgentAddress());
-        dictionary.put(BL_CARGO_TERMS_DESCRIPTION, hblModel.blObject.getHblData().getBlRemarksDescription());
-        dictionary.put(BL_REMARKS_DESCRIPTION, hblModel.blObject.getHblData().getBlRemarksDescription());
-
+        if (hblModel != null && hblModel.blObject != null && hblModel.blObject.getHblData() != null) {
+            dictionary.put(BL_PLACE_OF_DELIVERY, hblModel.blObject.getHblData().getPlaceOfDelivery());
+            dictionary.put(BL_WEIGHT, hblModel.blObject.getHblData().getCargoGrossWeight());
+            dictionary.put(BL_WEIGHT_UNIT, hblModel.blObject.getHblData().getCargoGrossWeightUnit());
+            dictionary.put(BL_NETWEIGHT, hblModel.blObject.getHblData().getCargoNetWeight());
+            dictionary.put(BL_NETWEIGHT_UNIT, hblModel.blObject.getHblData().getCargoNetWeightUnit());
+            dictionary.put(BL_DELIVERYAGENT, hblModel.blObject.getHblData().getDeliveryAgent());
+            dictionary.put(BL_DELIVERYAGENT_ADDRESS, hblModel.blObject.getHblData().getDeliveryAgentAddress());
+            dictionary.put(BL_CARGO_TERMS_DESCRIPTION, hblModel.blObject.getHblData().getBlRemarksDescription());
+            dictionary.put(BL_REMARKS_DESCRIPTION, hblModel.blObject.getHblData().getBlRemarksDescription());
+        }
         PartiesModel deliveryToAddress = null;
-        if(hblModel.shipment.getDeliveryDetails() != null)
+        if (hblModel.shipment.getDeliveryDetails() != null)
             deliveryToAddress = hblModel.shipment.getDeliveryDetails().getDestinationDetail();
-        if (deliveryToAddress != null && deliveryToAddress.getAddressData() != null)
-        {
+        if (deliveryToAddress != null && deliveryToAddress.getAddressData() != null) {
             Map<String, Object> addressMap = deliveryToAddress.getAddressData();
             populateAddress(addressMap, dictionary, "DeliveryTo");
             var deliveryTo = getOrgAddress(getValueFromMap(addressMap, COMPANY_NAME), getValueFromMap(addressMap, ADDRESS1), getValueFromMap(addressMap, ADDRESS2),
@@ -961,8 +961,7 @@ public class HblReport extends IReport{
             ));
         }
         PickupDeliveryDetailsModel delivery = hblModel.shipment.getDeliveryDetails();
-        if(delivery != null && delivery.getAgentDetail() != null && delivery.getAgentDetail().getAddressData() != null)
-        {
+        if (delivery != null && delivery.getAgentDetail() != null && delivery.getAgentDetail().getAddressData() != null) {
             Map<String, Object> address = delivery.getAgentDetail().getAddressData();
             dictionary.put(ReportConstants.DELIVERY_AGENT, ReportHelper.getOrgAddressWithPhoneEmail(
                     StringUtility.convertToString(address.get(COMPANY_NAME)), StringUtility.convertToString(address.get(ReportConstants.ADDRESS1)), StringUtility.convertToString(address.get(ReportConstants.ADDRESS2)),
@@ -970,6 +969,7 @@ public class HblReport extends IReport{
                     null
             ));
         }
+        dictionary.put(MARKS_N_NUMS, hblModel.shipment.getMarksNum());
         return dictionary;
     }
 
