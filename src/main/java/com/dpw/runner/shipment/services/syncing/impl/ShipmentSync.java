@@ -17,6 +17,7 @@ import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.syncing.Entity.*;
 import com.dpw.runner.shipment.services.syncing.constants.SyncingConstants;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.EmailServiceUtility;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
@@ -29,10 +30,8 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.utils.CommonUtils.stringValueOf;
@@ -61,7 +60,8 @@ public class ShipmentSync implements IShipmentSync {
 
     @Autowired
     private SyncEntityConversionService syncEntityConversionService;
-
+    @Autowired
+    private CommonUtils commonUtils;
     private RetryTemplate retryTemplate = RetryTemplate.builder()
             .maxAttempts(3)
             .fixedBackoff(1000)
@@ -162,11 +162,12 @@ public class ShipmentSync implements IShipmentSync {
         cs.setDeletedContGuids(deletedContGuids);
 
         String finalCs = jsonHelper.convertToJson(V1DataSyncRequest.builder().entity(cs).module(SyncingConstants.SHIPMENT).build());
-        return callSync(finalCs, cs, sd.getId(), sd.getGuid());
+        CompletableFuture.runAsync(commonUtils.withMdc(() -> callSync(finalCs, cs, sd.getId(), sd.getGuid())), commonUtils.syncExecutorService);
+        return ResponseHelper.buildSuccessResponse(modelMapper.map(cs, CustomShipmentSyncRequest.class));
     }
 
-    @Async
-    public ResponseEntity<?> callSync(String finalCs, CustomShipmentSyncRequest cs, Long id, UUID guid) {
+
+    public void callSync(String finalCs, CustomShipmentSyncRequest cs, Long id, UUID guid) {
 
         retryTemplate.execute(ctx -> {
             log.info("Current retry : {}", ctx.getRetryCount());
@@ -185,7 +186,6 @@ public class ShipmentSync implements IShipmentSync {
             return ResponseHelper.buildSuccessResponse(response_);
         });
 
-        return ResponseHelper.buildSuccessResponse(modelMapper.map(cs, CustomShipmentSyncRequest.class));
     }
 
     @Override
