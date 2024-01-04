@@ -2101,6 +2101,10 @@ public class ConsolidationService implements IConsolidationService {
             consolidationDetailsResponse.getContainersList().forEach(r -> locationCodes.addAll(masterDataUtils.createInBulkUnLocationsRequest(r, Containers.class, fieldNameKeyMap, Containers.class.getSimpleName() )));
         if(!Objects.isNull(consolidationDetailsResponse.getRoutingsList()))
             consolidationDetailsResponse.getRoutingsList().forEach(r -> locationCodes.addAll(masterDataUtils.createInBulkUnLocationsRequest(r, Routings.class, fieldNameKeyMap, Routings.class.getSimpleName() )));
+        if (!Objects.isNull(consolidationDetailsResponse.getArrivalDetails()))
+            locationCodes.addAll((masterDataUtils.createInBulkUnLocationsRequest(consolidationDetailsResponse.getArrivalDetails(), ArrivalDepartureDetails.class, fieldNameKeyMap, ArrivalDepartureDetails.class.getSimpleName() )));
+        if (!Objects.isNull(consolidationDetailsResponse.getDepartureDetails()))
+            locationCodes.addAll((masterDataUtils.createInBulkUnLocationsRequest(consolidationDetailsResponse.getDepartureDetails(), ArrivalDepartureDetails.class, fieldNameKeyMap, ArrivalDepartureDetails.class.getSimpleName() )));
 
         Map<String, EntityTransferUnLocations> keyMasterDataMap = masterDataUtils.fetchInBulkUnlocations(locationCodes, EntityTransferConstants.LOCATION_SERVICE_GUID);
         masterDataUtils.pushToCache(keyMasterDataMap, CacheConstants.UNLOCATIONS);
