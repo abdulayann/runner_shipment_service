@@ -176,7 +176,9 @@ public class ShippingRequestOutReport extends IReport {
             dictionary.put(ReportConstants.DISCHARGE_PORT_NAME, dischargePort.getName());
             dictionary.put(ReportConstants.DISCHARGE_PORT_COUNTRY, dischargePort.getCountry());
             dictionary.put(ReportConstants.DISCHARGE_PORT_CODE, dischargePort.getLocCode());
-            dictionary.put(ReportConstants.DISCHARGE_PORT_COUNTRY_NAME, dischargePort.getCountry().toUpperCase());
+            if (dischargePort.getCountry() != null) {
+                dictionary.put(ReportConstants.DISCHARGE_PORT_COUNTRY_NAME, dischargePort.getCountry().toUpperCase());
+            }
         }
         dictionary.put(ReportConstants.CONTAINER_COUNT_BY_CODE, getCountByCommonContainerTypeCode(model.getCommonContainers()));
 

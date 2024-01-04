@@ -1135,7 +1135,9 @@ public abstract class IReport {
 
     public static Long getTotalPacks(ShipmentModel shipmentDetails){
         long sum = 0L;
-        for(var packs : shipmentDetails.getPackingList()) {
+        if (shipmentDetails == null || shipmentDetails.getPackingList() == null)
+            return sum;
+        for (var packs : shipmentDetails.getPackingList()) {
             sum += Long.parseLong(packs.getPacks());
         }
         return sum;
