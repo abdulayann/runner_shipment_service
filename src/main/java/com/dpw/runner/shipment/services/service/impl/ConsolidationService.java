@@ -51,6 +51,7 @@ import com.dpw.runner.shipment.services.service_bus.AzureServiceBusTopic;
 import com.dpw.runner.shipment.services.service_bus.ISBProperties;
 import com.dpw.runner.shipment.services.service_bus.ISBUtils;
 import com.dpw.runner.shipment.services.syncing.interfaces.IConsolidationSync;
+import com.dpw.runner.shipment.services.syncing.interfaces.IPackingsADSync;
 import com.dpw.runner.shipment.services.utils.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
@@ -204,6 +205,9 @@ public class ConsolidationService implements IConsolidationService {
 
     @Autowired
     private GetNextNumberHelper getNextNumberHelper;
+
+    @Autowired
+    private IPackingsADSync packingsADSync;
 
     @Value("${consolidationsKafka.queue}")
     private String senderQueue;
@@ -1632,8 +1636,9 @@ public class ConsolidationService implements IConsolidationService {
         ListCommonRequest listCommonRequest = constructListCommonRequest("id", request.getPacksList().stream().filter(e -> e.getId() != null && e.getId() > 0).map(e -> e.getId()).collect(Collectors.toList()), "IN");
         Pair<Specification<Packing>, Pageable> pair = fetchData(listCommonRequest, Packing.class);
         Page<Packing> packings = packingDao.findAll(pair.getLeft(), pair.getRight());
+        List<Packing> packingList = null;
         if(packings != null && packings.getContent() != null && packings.getContent().size() > 0) {
-            List<Packing> packingList = packings.getContent();
+            packingList = packings.getContent();
             for(Packing pack: packingList) {
                 pack.setContainerId(container.getId());
             }
@@ -1644,6 +1649,12 @@ public class ConsolidationService implements IConsolidationService {
         container = containerService.calculateUtilization(container);
         containerDao.save(container);
         shipmentsContainersMappingDao.assignShipments(container.getId(), newShipmentsIncluded.stream().toList());
+        try {
+            packingsADSync.sync(packingList);
+        }
+        catch (Exception e) {
+            log.error("Error syncing packings");
+        }
         return container;
     }
 
@@ -1670,6 +1681,7 @@ public class ConsolidationService implements IConsolidationService {
                     container.setAchievedVolumeUnit(container.getAllocatedVolumeUnit());
                 }
                 Set<Long> shipmentdIdSet = new HashSet<>();
+                List<Packing> packingList = new ArrayList<>();
                 for (ContainerShipmentADInConsoleRequest.PacksList packing : request.getPacksList()) {
                     shipmentdIdSet.add(packing.getShipmentId());
                     if(packing.getId() > 0) {
@@ -1683,6 +1695,7 @@ public class ConsolidationService implements IConsolidationService {
                         }
                         pack.setContainerId(null);
                         packingDao.save(pack);
+                        packingList.add(pack);
                     }
                 }
                 container.setAchievedWeight(weight);
@@ -1710,6 +1723,12 @@ public class ConsolidationService implements IConsolidationService {
                 container = containerDao.save(container);
                 shipmentsContainersMappingDao.detachShipments(container.getId(), removeShipmentIds.stream().toList());
                 containerService.afterSave(container, false);
+                try {
+                    packingsADSync.sync(packingList);
+                }
+                catch (Exception e) {
+                    log.error("Error syncing packings");
+                }
                 response = jsonHelper.convertValue(container, ContainerResponse.class);
             }
             return ResponseHelper.buildSuccessResponse(response);

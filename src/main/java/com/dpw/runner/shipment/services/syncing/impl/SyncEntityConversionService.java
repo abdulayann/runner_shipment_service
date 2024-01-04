@@ -52,14 +52,12 @@ public class SyncEntityConversionService {
                         if(shipmentGuid == null && item.getShipmentId() != null) {
                             try { p.setShipmentGuid(shipmentDao.findById(p.getShipmentId()).get().getGuid()); }  catch (Exception ignored) { }
                         }
-                        else if(shipmentGuid != null)
-                            p.setShipmentGuid(shipmentGuid);
+                        else p.setShipmentGuid(shipmentGuid);
 
                         if(consoleGuid == null && item.getConsolidationId() != null) {
                             try { p.setConsolidationGuid(consolidationDetailsDao.findById(p.getConsolidationId()).get().getGuid()); }  catch (Exception ignored) { }
                         }
-                        else if(consoleGuid != null)
-                            p.setConsolidationGuid(consoleGuid);
+                        else p.setConsolidationGuid(consoleGuid);
 
                         return p;
                     })
