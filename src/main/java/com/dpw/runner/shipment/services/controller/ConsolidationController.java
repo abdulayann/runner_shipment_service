@@ -406,9 +406,4 @@ public class ConsolidationController {
         }
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = ConsolidationConstants.CREATE_SUCCESSFUL)})
-    @GetMapping(ConsolidationConstants.GENERATE_CUSTOM_HOUSE_BL)
-    public ResponseEntity<RunnerResponse<GenerateCustomHblResponse>> generateCustomHouseBLNumber() {
-        return (ResponseEntity<RunnerResponse<GenerateCustomHblResponse>>) consolidationService.generateCustomHouseBLNumber();
-    }
 }

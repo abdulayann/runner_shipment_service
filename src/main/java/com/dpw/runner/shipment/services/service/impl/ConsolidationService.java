@@ -2866,7 +2866,7 @@ public class ConsolidationService implements IConsolidationService {
                 .igmInwardDate(additionalDetails != null ? additionalDetails.getIGMInwardDate() : null)
                 .inwardDateAndTime(additionalDetails != null ? additionalDetails.getInwardDateAndTime() : null)
                 .warehouseId(additionalDetails != null ? additionalDetails.getWarehouseId() : null)
-                .bol(shipment.getMasterBill())
+                .bol(shipment.getMasterBill() != null ? shipment.getMasterBill() : generateCustomBolNumber())
                 .referenceNumber(shipment.getBookingReference())
                 .payment(isPayment ? shipment.getPaymentTerms() : null)
                 .routingsList(List.of(customRouting))
@@ -3089,6 +3089,7 @@ public class ConsolidationService implements IConsolidationService {
             response.setTransportMode(tenantSettings.getDefaultTransportMode());
             response.setContainerCategory(tenantSettings.getDefaultContainerType());
             response.setShipmentType(tenantSettings.getDefaultShipmentType());
+            response.setBol(generateCustomBolNumber());
 
             response.setCreatedBy(UserContext.getUser().getUsername());
 
