@@ -541,7 +541,8 @@ public class HblReport extends IReport{
             dictionary.put(DESCRIPTION_CAPS, description.toUpperCase());
         dictionary.put(DESCRIPTION_ORIGINAL, getAddressList(description));
         dictionary.put(CONSIGNEE, consignee);
-        dictionary.put(CONSIGNEE_CAPS, consignee.stream().map(String::toUpperCase).collect(Collectors.toList()));
+        if(!Objects.isNull(consignee))
+            dictionary.put(CONSIGNEE_CAPS, consignee.stream().map(String::toUpperCase).collect(Collectors.toList()));
 
         dictionary.put(NOTIFY_PARTY_FREETEXT, dictionary.get(NOTIFY_PARTY));
         dictionary.put(CONSIGNEE_FREETEXT, dictionary.get(CONSIGNEE));

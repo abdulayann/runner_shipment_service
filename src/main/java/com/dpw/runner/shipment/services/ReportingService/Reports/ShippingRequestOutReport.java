@@ -6,8 +6,10 @@ import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.BookingCarriageModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ContainerModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShippingRequestOutModel;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.MasterData;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
@@ -38,21 +40,72 @@ public class ShippingRequestOutReport extends IReport {
     IDocumentModel getDocumentModel(Long id) {
         ShippingRequestOutModel model = new ShippingRequestOutModel();
         model.setTenant(getTenant());
-        model.setShipment(getShipment(id));
-        model.setConsolidation(getFirstConsolidationFromShipmentId(id));
-        model.setShipmentList(model.getConsolidation().getShipmentsList());
-        model.setLoadingPort(getUNLocRow(model.getShipment().getCarrierDetails().getOriginPort()));
-        model.setDischargePort(getUNLocRow(model.getShipment().getCarrierDetails().getDestinationPort()));
+        model.setConsolidation(getConsolidation(id));
         model.setUser(UserContext.getUser());
-        model.setConsolContainers(model.getConsolidation().getContainersList());
-        model.setShipmentPacking(model.getShipment().getPackingList());
 
-        //setting serviceMode master data
-        var masterData = getMasterListData(MasterDataType.SERVICE_MODE, model.getShipment().getServiceType());
-        model.setServiceMode(masterData != null ? masterData.getItemDescription() : null);
+        var shipments = model.getConsolidation() != null ? model.getConsolidation().getShipmentsList() : null;
+        if (model.getConsolidation() == null) {
+            throw new RunnerException("Consolidation is null for the id " + id);
+        }
+        var allCommonContainers = new ArrayList<ContainerModel>();
 
-        //setting carrier master data
-        model.setCarrier(getCarrier(model.getShipment().getCarrierDetails().getShippingLine()));
+        if (shipments != null && shipments.size() > 0) {
+            for (var shipment : shipments) {
+                var shipmentsContainersList = new ArrayList<ShipmentContainers>();
+                var commonContainersList = shipment.getContainersList();
+                if (commonContainersList != null && commonContainersList.size() > 0) {
+                    for (var item : commonContainersList) {
+                        var shipmentContainerRow = getShipmentContainer(item);
+                        shipmentsContainersList.add(shipmentContainerRow);
+                    }
+                    allCommonContainers.addAll(commonContainersList);
+                    shipment.setShipmentContainersList(shipmentsContainersList);
+                }
+            }
+        }
+
+        model.setShipmentList(shipments);
+
+        if (model.getShipmentList() != null && model.getShipmentList().size() > 0) {
+            model.setShipment(model.getShipmentList().get(0));
+        }
+
+        var consolContainers = new ArrayList<ShipmentContainers>();
+        var tenantSettings = getShipmentSettings(TenantContext.getCurrentTenant());
+
+        if (tenantSettings.getIsShipmentLevelContainer() != null && tenantSettings.getIsShipmentLevelContainer().equals(true)) {
+            if (model.getShipment() != null) {
+                model.setCommonContainers(model.getShipment().getContainersList());
+            } else {
+                model.setCommonContainers(model.getConsolidation().getContainersList());
+            }
+            for (var container_row : model.getCommonContainers()) {
+                consolContainers.add(getShipmentContainer(container_row));
+            }
+        } else {
+            if (model.getShipmentList() != null && model.getShipmentList().size() > 0) {
+                for (var shipment : model.getShipmentList()) {
+                    if (shipment != null && shipment.getShipmentContainersList() != null) {
+                        consolContainers.addAll(shipment.getShipmentContainersList());
+                    }
+                }
+            }
+            model.setCommonContainers(allCommonContainers);
+        }
+
+        model.setConsolContainers(consolContainers);
+
+        if (model.getShipment() != null) {
+            //setting serviceMode master data
+            var masterData = getMasterListData(MasterDataType.SERVICE_MODE, model.getShipment().getServiceType());
+            model.setServiceMode(masterData != null ? masterData.getItemDescription() : null);
+            if(model.getShipment().getCarrierDetails() != null) {
+                model.setLoadingPort(getUNLocRow(model.getShipment().getCarrierDetails().getOriginPort()));
+                model.setDischargePort(getUNLocRow(model.getShipment().getCarrierDetails().getDestinationPort()));
+                //setting carrier master data
+                model.setCarrier(getCarrier(model.getShipment().getCarrierDetails().getShippingLine()));
+            }
+        }
 
         //setting shipment and container response
         model.setShipmentAndContainer(getShipmentAndContainerResponse(model.getShipmentList()));
@@ -64,7 +117,7 @@ public class ShippingRequestOutReport extends IReport {
                 map.put(containerModel.getContainerNumber(), containerModel);
             }
         }
-        if (model.getShipment().getContainersList() != null) {
+        if (model.getShipment() != null && model.getShipment().getContainersList() != null) {
             for (ContainerModel container : model.getShipment().getContainersList()) {
                 ShipmentContainers shipmentContainer = getShipmentContainer(container);
                 shipmentContainer.BL_SealNumber = container.getCustomsSealNumber();
@@ -72,10 +125,9 @@ public class ShippingRequestOutReport extends IReport {
                     commonContainers.add(shipmentContainer);
             }
         }
-        model.setCommonContainers(commonContainers);
-
+        model.setCommonContainers(allCommonContainers);
         //setting vessel
-        List<BookingCarriageModel> bookingCarriages = model.getShipment().getBookingCarriagesList();
+        List<BookingCarriageModel> bookingCarriages = model.getShipment() != null ? model.getShipment().getBookingCarriagesList() : null;
         BookingCarriageModel bookingCarriage = null;
         if (bookingCarriages != null) {
             for (int i = 0; i < bookingCarriages.size(); i++) {
@@ -115,23 +167,28 @@ public class ShippingRequestOutReport extends IReport {
             dictionary.put(ReportConstants.LOADING_PORT_NAME, loadingPort.getName());
             dictionary.put(ReportConstants.LOADING_PORT_COUNTRY, loadingPort.getCountry());
             dictionary.put(ReportConstants.LOADING_PORT_CODE, loadingPort.getLocCode());
-            dictionary.put(ReportConstants.LOADING_PORT_COUNTRY_NAME, loadingPort.getCountry().toUpperCase());
+            if (loadingPort.getCountry() != null) {
+                dictionary.put(ReportConstants.LOADING_PORT_COUNTRY_NAME, loadingPort.getCountry().toUpperCase());
+            }
         }
         if (model.getDischargePort() != null) {
             var dischargePort = model.getDischargePort();
             dictionary.put(ReportConstants.DISCHARGE_PORT_NAME, dischargePort.getName());
             dictionary.put(ReportConstants.DISCHARGE_PORT_COUNTRY, dischargePort.getCountry());
             dictionary.put(ReportConstants.DISCHARGE_PORT_CODE, dischargePort.getLocCode());
-            dictionary.put(ReportConstants.DISCHARGE_PORT_COUNTRY_NAME, dischargePort.getCountry().toUpperCase());
+            if (dischargePort.getCountry() != null) {
+                dictionary.put(ReportConstants.DISCHARGE_PORT_COUNTRY_NAME, dischargePort.getCountry().toUpperCase());
+            }
         }
-        dictionary.put(ReportConstants.CONTAINER_COUNT_BY_CODE, getCountByContainerTypeCode(model.getCommonContainers()));
+        dictionary.put(ReportConstants.CONTAINER_COUNT_BY_CODE, getCountByCommonContainerTypeCode(model.getCommonContainers()));
 
         if (model.getConsolContainers() != null && !model.getConsolContainers().isEmpty()) {
             List<Map<String, Object>> containerSummary = model.getConsolContainers().stream()
-                    .sorted(Comparator.comparing(ContainerModel::getContainerCode))
-                    .collect(Collectors.groupingBy(ContainerModel::getContainerCode, Collectors.counting()))
+                    .sorted(Comparator.comparing(ShipmentContainers::getContainerTypeCode))
+                    .collect(Collectors.groupingBy(ShipmentContainers::getContainerTypeCode, Collectors.counting()))
                     .entrySet()
                     .stream()
+                    .filter(Objects::nonNull)
                     .map(entry -> {
                         Map<String, Object> map = new HashMap<>();
                         map.put("key", entry.getKey());
@@ -150,11 +207,15 @@ public class ShippingRequestOutReport extends IReport {
         dictionary.put(ReportConstants.TOTAL_PACK_UNIT_DESCRIPTION, masterListDescriptionPacksUnit(unitCode));
 
         dictionary.put(ReportConstants.CONSOL_CONTAINERS, model.getConsolContainers());
-        dictionary.put(ReportConstants.CONSOL_CARRIER, model.getCarrier().getItemDescription());
-        dictionary.put(ReportConstants.CARRIER_CONTACT_PERSON, model.getCarrier().getCarrierContactPerson().toUpperCase());
-        dictionary.put(ReportConstants.CARRIER_NAME, model.getCarrier().getItemDescription().toUpperCase());
+        if (model.getCarrier() != null) {
+            dictionary.put(ReportConstants.CONSOL_CARRIER, model.getCarrier().getItemDescription());
+            if (model.getCarrier().getCarrierContactPerson() != null)
+                dictionary.put(ReportConstants.CARRIER_CONTACT_PERSON, model.getCarrier().getCarrierContactPerson().toUpperCase());
+            if (model.getCarrier().getItemDescription() != null)
+                dictionary.put(ReportConstants.CARRIER_NAME, model.getCarrier().getItemDescription().toUpperCase());
+        }
         dictionary.put(ReportConstants.SHIPMENT_AND_CONTAINER, model.getShipmentAndContainer());
-        if (model.getShipmentAndContainer().size() > 0) {
+        if (model.getShipmentAndContainer() != null && model.getShipmentAndContainer().size() > 0) {
             dictionary.put(ReportConstants.CONSOL_DESCRIPTION_ENABLED, false);
             dictionary.put(ReportConstants.SHIPMENT_HASCONTAINERS, true);
         } else {
@@ -162,27 +223,32 @@ public class ShippingRequestOutReport extends IReport {
             dictionary.put(ReportConstants.SHIPMENT_HASCONTAINERS, false);
         }
 
-
         String jsonContainer = jsonHelper.convertToJson(dictionary.get(ReportConstants.SHIPMENT_AND_CONTAINER));
 
         List<Map<String, Object>> valuesContainer = jsonHelper.readFromJson(jsonContainer, List.class);
 
         valuesContainer.forEach(v -> {
-            v.put(ReportConstants.WEIGHT, addCommas(v.get(ReportConstants.WEIGHT).toString()));
-            v.put(ReportConstants.VOLUME, addCommas(v.get(ReportConstants.VOLUME).toString()));
-            v.put(ReportConstants.PACKS, addCommas(v.get(ReportConstants.PACKS).toString()));
-            v.put(ReportConstants.SHIPMENT_PACKS_UNIT_DESC, getMasterListData(MasterDataType.PACKS_UNIT, model.getShipment().getPacksUnit().toUpperCase()));
-
+            if (v.containsKey(ReportConstants.WEIGHT))
+                v.put(ReportConstants.WEIGHT, addCommas(v.get(ReportConstants.WEIGHT).toString()));
+            if (v.containsKey(ReportConstants.VOLUME))
+                v.put(ReportConstants.VOLUME, addCommas(v.get(ReportConstants.VOLUME).toString()));
+            if (v.containsKey(ReportConstants.PACKS))
+                v.put(ReportConstants.PACKS, addCommas(v.get(ReportConstants.PACKS).toString()));
+            if (model.getShipment() != null && model.getShipment().getPacksUnit() != null)
+                v.put(ReportConstants.SHIPMENT_PACKS_UNIT_DESC, getMasterListData(MasterDataType.PACKS_UNIT, model.getShipment().getPacksUnit().toUpperCase()));
         });
 
         dictionary.put(ReportConstants.SHIPMENT_AND_CONTAINER, valuesContainer);
-        dictionary.put(ReportConstants.SERVICE_MODE_DESCRIPTION,
-                model.getServiceMode().toUpperCase());
-        dictionary.put(ReportConstants.SERVICE_MODE, model.getShipment().getServiceType().toUpperCase());
-
-        List<String> shipmentIds = model.getShipmentList().stream()
+        if (model.getServiceMode() != null) {
+            dictionary.put(ReportConstants.SERVICE_MODE_DESCRIPTION,
+                    model.getServiceMode().toUpperCase());
+        }
+        if (model.getShipment() != null && model.getShipment().getServiceType() != null) {
+            dictionary.put(ReportConstants.SERVICE_MODE, model.getShipment().getServiceType().toUpperCase());
+        }
+        List<String> shipmentIds = model.getShipmentList() != null ? model.getShipmentList().stream()
                 .map(i -> i.getId().toString())
-                .collect(Collectors.toList());
+                .collect(Collectors.toList()) : Collections.emptyList();
         dictionary.put(ReportConstants.SHIPMENT_IDS, String.join(",", shipmentIds));
         return dictionary;
     }

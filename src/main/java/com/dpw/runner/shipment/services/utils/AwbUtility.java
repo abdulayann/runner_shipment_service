@@ -196,11 +196,11 @@ public class AwbUtility {
 
     public static void validateConsolidationInfoBeforeGeneratingAwb(ConsolidationDetails consolidationDetails)
     {
-        if (consolidationDetails.getSendingAgentFreeTextAddress() == null)
+        if (consolidationDetails.getSendingAgent() == null)
         {
             throw new ValidationException("Sending Agent details are required in Consolidation to generate the document.");
         }
-        if (consolidationDetails.getReceivingAgentFreeTextAddress() == null)
+        if (consolidationDetails.getReceivingAgent() == null)
         {
             throw new ValidationException("Receiving Agent details are required in Consolidation to generate the document.");
         }

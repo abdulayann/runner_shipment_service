@@ -3397,6 +3397,12 @@ public class ShipmentService implements IShipmentService {
 
     @Override
     public ResponseEntity<?> getShipmentFromConsol(Long consolidationId) {
+        List<ShipmentSettingsDetails> shipmentSettingsDetails = shipmentSettingsDao.getSettingsByTenantIds(List.of(TenantContext.getCurrentTenant()));
+        if(shipmentSettingsDetails == null || shipmentSettingsDetails.size() == 0)
+            throw new RunnerException("Shipment settings empty for current tenant");
+        var tenantSettings = shipmentSettingsDetails.get(0);
+        // Populate shipment details on basis of tenant settings
+
         ShipmentDetailsResponse shipment;
         var consolidationResponse = consolidationDetailsDao.findById(consolidationId);
 
@@ -3417,12 +3423,12 @@ public class ShipmentService implements IShipmentService {
         var consolAllocation = consolidation.getAllocations();
         var consolCarrier = consolidation.getCarrierDetails();
         shipment = ShipmentDetailsResponse.builder()
-                .transportMode(consolidation.getTransportMode())
+                .transportMode(consolidation.getTransportMode() == null ? tenantSettings.getDefaultTransportMode() : consolidation.getTransportMode())
                 .bookingNumber(consolidation.getBookingNumber())
                 .consolidationList(List.of(modelMapper.map(consolidation, ConsolidationListResponse.class)))
-                .direction(consolidation.getShipmentType())
+                .direction(consolidation.getShipmentType() == null ? tenantSettings.getDefaultShipmentType() : consolidation.getShipmentType())
                 .jobType(Constants.SHIPMENT_TYPE_STD)
-                .shipmentType(consolidation.getContainerCategory())
+                .shipmentType(consolidation.getContainerCategory() == null ? tenantSettings.getDefaultContainerType() : consolidation.getContainerCategory())
                 .additionalDetails(AdditionalDetailResponse.builder()
                         .SMTPIGMDate(consolidation.getSmtpigmDate())
                         .SMTPIGMNumber(consolidation.getSmtpigmNumber())
@@ -3451,14 +3457,19 @@ public class ShipmentService implements IShipmentService {
                         .flightNumber(consolCarrier != null ? consolCarrier.getFlightNumber() : null)
                         .build())
                 .weight(consolAllocation != null ? consolAllocation.getWeight() : null)
-                .weightUnit(consolAllocation != null ? consolAllocation.getWeightUnit() : null)
+                .weightUnit(consolAllocation != null ? consolAllocation.getWeightUnit() : tenantSettings.getWeightChargeableUnit())
                 .volume(consolAllocation != null ? consolAllocation.getVolume() : null)
-                .volumeUnit(consolAllocation != null ? consolAllocation.getVolumeUnit() : null)
+                .volumeUnit(consolAllocation != null ? consolAllocation.getVolumeUnit() : tenantSettings.getVolumeChargeableUnit())
                 .chargable(consolAllocation != null ? consolAllocation.getChargable() : null)
                 .chargeableUnit(consolAllocation != null ? consolAllocation.getChargeableUnit() : null)
                 .paymentTerms(consolidation.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && consolidation.getShipmentType().equals("EXP")
                         ? consolidation.getPayment() : null)
                 .masterBill(consolidation.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) ? consolidation.getMawb() : consolidation.getBol())
+                .status(0)
+                .source(Constants.SYSTEM)
+                .createdBy(UserContext.getUser().getUsername())
+                .customerCategory(CustomerCategoryRates.CATEGORY_5)
+                .shipmentCreatedOn(LocalDateTime.now())
                 .build();
 
         if (consolidation.getConsolidationAddresses() != null) {
@@ -3474,6 +3485,19 @@ public class ShipmentService implements IShipmentService {
         }
 
         shipment.setShipmentType(Constants.SHIPMENT_TYPE_STD);
+
+        //Generate HBL
+        if(Constants.TRANSPORT_MODE_SEA.equals(shipment.getTransportMode()) && Constants.DIRECTION_EXP.equals(shipment.getDirection()))
+            shipment.setHouseBill(generateCustomHouseBL());
+
+        try {
+            log.info("Fetching Tenant Model");
+            TenantModel tenantModel = modelMapper.map(v1Service.retrieveTenant().getEntity(), TenantModel.class);
+            String currencyCode = tenantModel.currencyCode;
+            shipment.setFreightLocalCurrency(currencyCode);
+        } catch (Exception e){
+            log.error("Failed in fetching tenant data from V1 with error : {}", e);
+        }
 
         createShipmentPayload(modelMapper.map(shipment, ShipmentDetails.class), shipment);
 
