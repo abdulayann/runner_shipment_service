@@ -10,6 +10,7 @@ import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.syncing.Entity.*;
 import com.dpw.runner.shipment.services.syncing.constants.SyncingConstants;
 import com.dpw.runner.shipment.services.syncing.interfaces.IHblSync;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.EmailServiceUtility;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
@@ -23,6 +24,8 @@ import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.utils.CommonUtils.convertToClass;
@@ -47,8 +50,8 @@ public class HblSync implements IHblSync {
 
     @Autowired
     private EmailServiceUtility emailServiceUtility;
-
-
+    @Autowired
+    private CommonUtils commonUtils;
     private RetryTemplate retryTemplate = RetryTemplate.builder()
             .maxAttempts(3)
             .fixedBackoff(1000)
@@ -72,6 +75,11 @@ public class HblSync implements IHblSync {
             }
         }
         String finalHbl = jsonHelper.convertToJson(V1DataSyncRequest.builder().entity(hblRequest).module(SyncingConstants.HBL).build());
+        CompletableFuture.runAsync(commonUtils.withMdc(() -> callSync(finalHbl, hbl.getId(), hbl.getGuid())), commonUtils.syncExecutorService);
+        return ResponseHelper.buildSuccessResponse(modelMapper.map(finalHbl, HblDataRequestV2.class));
+    }
+
+    public void callSync(String finalHbl, Long id, UUID guid) {
         retryTemplate.execute(ctx -> {
             log.info("Current retry : {}", ctx.getRetryCount());
             if (ctx.getLastThrowable() != null) {
@@ -80,8 +88,8 @@ public class HblSync implements IHblSync {
             V1DataSyncResponse response_ = v1Service.v1DataSync(finalHbl);
             if (!response_.getIsSuccess()) {
                 try {
-                    emailServiceUtility.sendEmailForSyncEntity(String.valueOf(hbl.getId()),
-                            String.valueOf(hbl.getGuid()),
+                    emailServiceUtility.sendEmailForSyncEntity(String.valueOf(id),
+                            String.valueOf(guid),
                             "HBL", response_.getError().toString());
                 } catch (Exception ex) {
                     log.error("Not able to send email for sync failure for HBL: " + ex.getMessage());
@@ -89,7 +97,6 @@ public class HblSync implements IHblSync {
             }
             return ResponseHelper.buildSuccessResponse(response_);
         });
-        return ResponseHelper.buildSuccessResponse(modelMapper.map(finalHbl, HblDataRequestV2.class));
     }
 
     private HblRequestV2 convertEntityToDto(Hbl hbl) {

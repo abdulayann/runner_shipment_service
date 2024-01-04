@@ -776,6 +776,7 @@ public class ShipmentService implements IShipmentService {
             afterSave(shipmentDetails, true);
             // Create events on basis of shipment status Confirmed/Created
             autoGenerateEvents(shipmentDetails, null);
+            long start = System.currentTimeMillis();
             try {
                 shipmentSync.sync(shipmentDetails);
             } catch (Exception e){
@@ -796,6 +797,7 @@ public class ShipmentService implements IShipmentService {
                     log.error("Error performing sync on consol entity, {}", e);
                 }
             }
+            log.info(" RequestId: {} || {} for event: {} Actual time taken: {} ms",LoggerHelper.getRequestIdFromMDC(), LoggerEvent.TIME_TAKEN, LoggerEvent.COMPLETE_SHIPMENT_SYNC, System.currentTimeMillis() - start);
 
             // audit logs
             auditLogService.addAuditLog(
@@ -823,7 +825,7 @@ public class ShipmentService implements IShipmentService {
         if(shipmentDetails.getShipmentId() == null){
             this.currentShipment = shipmentDetails;
             shipmentDetails.setShipmentId(generateShipmentId());
-    }
+        }
         shipmentDetails = shipmentDao.save(shipmentDetails, false);
         return shipmentDetails;
         //shipmentDetails = shipmentDao.findById(shipmentDetails.getId()).get();
@@ -3587,7 +3589,7 @@ public class ShipmentService implements IShipmentService {
 
             if(Constants.TRANSPORT_MODE_SEA.equals(response.getTransportMode()) && Constants.DIRECTION_EXP.equals(response.getDirection()))
                 response.setHouseBill(generateCustomHouseBL());
-
+            response.setShipmentId(generateShipmentId());
             this.addAllMasterDataInSingleCall(null, response, null);
 
             return ResponseHelper.buildSuccessResponse(response);

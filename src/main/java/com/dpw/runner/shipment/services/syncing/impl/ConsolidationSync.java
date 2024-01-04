@@ -11,6 +11,7 @@ import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.syncing.Entity.*;
 import com.dpw.runner.shipment.services.syncing.constants.SyncingConstants;
 import com.dpw.runner.shipment.services.syncing.interfaces.IConsolidationSync;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.EmailServiceUtility;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
@@ -25,6 +26,7 @@ import org.springframework.web.client.RestTemplate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 @Service
@@ -53,7 +55,8 @@ public class ConsolidationSync implements IConsolidationSync {
 
     @Autowired
     private EmailServiceUtility emailServiceUtility;
-
+    @Autowired
+    private CommonUtils commonUtils;
 
     private RetryTemplate retryTemplate = RetryTemplate.builder()
             .maxAttempts(3)
@@ -100,7 +103,8 @@ public class ConsolidationSync implements IConsolidationSync {
 
         response.setGuid(request.getGuid());
         String consolidationRequest = jsonHelper.convertToJson(V1DataSyncRequest.builder().entity(response).module(SyncingConstants.CONSOLIDATION).build());
-        return callSync(consolidationRequest, response, request.getId(), request.getGuid());
+        CompletableFuture.runAsync(commonUtils.withMdc(() -> callSync(consolidationRequest, request.getId(), request.getGuid())), commonUtils.syncExecutorService);
+        return ResponseHelper.buildSuccessResponse(response);
     }
 
     @Override
@@ -126,8 +130,7 @@ public class ConsolidationSync implements IConsolidationSync {
         });
     }
 
-    @Async
-    private ResponseEntity<?> callSync(String consolidationRequest, CustomConsolidationRequest response, Long id, UUID guid) {
+    private void callSync(String consolidationRequest, Long id, UUID guid) {
         retryTemplate.execute(ctx -> {
             log.info("Current retry : {}", ctx.getRetryCount());
             if (ctx.getLastThrowable() != null) {
@@ -146,7 +149,6 @@ public class ConsolidationSync implements IConsolidationSync {
             return ResponseHelper.buildSuccessResponse(response_);
         });
 
-        return ResponseHelper.buildSuccessResponse(response);
     }
 
     private void mapShipmentGuids(CustomConsolidationRequest response, ConsolidationDetails request) {
