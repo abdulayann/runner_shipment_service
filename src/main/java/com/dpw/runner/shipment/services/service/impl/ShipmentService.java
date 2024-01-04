@@ -3485,6 +3485,20 @@ public class ShipmentService implements IShipmentService {
         }
 
         shipment.setShipmentType(Constants.SHIPMENT_TYPE_STD);
+        if(!IsStringNullOrEmpty(shipment.getCarrierDetails().getOrigin())) {
+            if(IsStringNullOrEmpty(shipment.getAdditionalDetails().getPaidPlace()))
+                shipment.getAdditionalDetails().setPaidPlace(shipment.getCarrierDetails().getOrigin());
+            if(IsStringNullOrEmpty(shipment.getAdditionalDetails().getPlaceOfIssue()))
+                shipment.getAdditionalDetails().setPlaceOfIssue(shipment.getCarrierDetails().getOrigin());
+            if(IsStringNullOrEmpty(shipment.getAdditionalDetails().getPlaceOfSupply()))
+                shipment.getAdditionalDetails().setPlaceOfSupply(shipment.getCarrierDetails().getOrigin());
+        }
+        if(shipment.getCarrierDetails().getEta() != null) {
+            if(shipment.getAdditionalDetails().getDateOfIssue() == null)
+                shipment.getAdditionalDetails().setDateOfIssue(shipment.getCarrierDetails().getEta());
+            if(shipment.getAdditionalDetails().getDateOfReceipt() == null)
+                shipment.getAdditionalDetails().setDateOfReceipt(shipment.getCarrierDetails().getEta());
+        }
 
         //Generate HBL
         if(Constants.TRANSPORT_MODE_SEA.equals(shipment.getTransportMode()) && Constants.DIRECTION_EXP.equals(shipment.getDirection()))
