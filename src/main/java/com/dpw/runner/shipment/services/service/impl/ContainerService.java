@@ -33,7 +33,7 @@ import com.dpw.runner.shipment.services.syncing.constants.SyncingConstants;
 import com.dpw.runner.shipment.services.syncing.impl.SyncEntityConversionService;
 import com.dpw.runner.shipment.services.syncing.interfaces.IContainerSync;
 import com.dpw.runner.shipment.services.syncing.interfaces.IContainersSync;
-import com.dpw.runner.shipment.services.syncing.interfaces.IPackingsADSync;
+import com.dpw.runner.shipment.services.syncing.interfaces.IPackingsSync;
 import com.dpw.runner.shipment.services.utils.CSVParsingUtil;
 import com.dpw.runner.shipment.services.utils.ExcelUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
@@ -136,7 +136,7 @@ public class ContainerService implements IContainerService {
     IContainersSync containersSync;
 
     @Autowired
-    IPackingsADSync packingsADSync;
+    IPackingsSync packingsADSync;
 
     @Transactional
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {

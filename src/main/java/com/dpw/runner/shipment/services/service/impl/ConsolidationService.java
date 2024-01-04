@@ -51,7 +51,7 @@ import com.dpw.runner.shipment.services.service_bus.AzureServiceBusTopic;
 import com.dpw.runner.shipment.services.service_bus.ISBProperties;
 import com.dpw.runner.shipment.services.service_bus.ISBUtils;
 import com.dpw.runner.shipment.services.syncing.interfaces.IConsolidationSync;
-import com.dpw.runner.shipment.services.syncing.interfaces.IPackingsADSync;
+import com.dpw.runner.shipment.services.syncing.interfaces.IPackingsSync;
 import com.dpw.runner.shipment.services.utils.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
@@ -207,7 +207,7 @@ public class ConsolidationService implements IConsolidationService {
     private GetNextNumberHelper getNextNumberHelper;
 
     @Autowired
-    private IPackingsADSync packingsADSync;
+    private IPackingsSync packingsADSync;
 
     @Value("${consolidationsKafka.queue}")
     private String senderQueue;

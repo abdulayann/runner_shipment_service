@@ -12,7 +12,7 @@ import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.syncing.Entity.PackingRequestV2;
 import com.dpw.runner.shipment.services.syncing.Entity.V1DataSyncRequest;
 import com.dpw.runner.shipment.services.syncing.constants.SyncingConstants;
-import com.dpw.runner.shipment.services.syncing.interfaces.IPackingsADSync;
+import com.dpw.runner.shipment.services.syncing.interfaces.IPackingsSync;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.EmailServiceUtility;
 import com.nimbusds.jose.util.Pair;
@@ -34,7 +34,7 @@ import java.util.stream.Collectors;
 
 @Service
 @Slf4j
-public class PackingsADSync implements IPackingsADSync {
+public class PackingsSync implements IPackingsSync {
 
     @Autowired
     SyncEntityConversionService syncEntityConversionService;

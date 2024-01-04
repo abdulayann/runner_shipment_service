@@ -5,6 +5,6 @@ import org.springframework.http.ResponseEntity;
 
 import java.util.List;
 
-public interface IPackingsADSync {
+public interface IPackingsSync {
     ResponseEntity<?> sync(List<Packing> packingList);
 }
