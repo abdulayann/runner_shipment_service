@@ -3141,4 +3141,36 @@ public class ConsolidationService implements IConsolidationService {
         }
 
     }
+
+    @Override
+    public ResponseEntity<?> generateCustomHouseBLNumber() {
+        try {
+            return ResponseHelper.buildSuccessResponse(GenerateCustomHblResponse.builder().hblNumber(generateCustomBolNumber()).build());
+        } catch (Exception e) {
+            throw new RunnerException(e.getMessage());
+        }
+    }
+
+    public String generateCustomBolNumber() {
+        String res = null;
+        List<ShipmentSettingsDetails> shipmentSettingsDetailsList = shipmentSettingsDao.getSettingsByTenantIds(List.of(TenantContext.getCurrentTenant()));
+        ShipmentSettingsDetails tenantSetting = null;
+        if (shipmentSettingsDetailsList.get(0) != null)
+            tenantSetting = shipmentSettingsDetailsList.get(0);
+
+        if(tenantSetting.getBolNumberGeneration() != null) {
+            res = tenantSetting.getBolNumberPrefix() != null ? tenantSetting.getBolNumberPrefix() : "";
+            switch(tenantSetting.getBolNumberGeneration()) {
+                case Random :
+                    res += StringUtility.getRandomString(10);
+                    break;
+                default :
+                    String serialNumber = v1Service.getMaxConsolidationId();
+                    res += serialNumber;
+                    break;
+            }
+        }
+
+        return res;
+    }
 }
