@@ -3110,6 +3110,7 @@ public class ConsolidationService implements IConsolidationService {
             response.setShipmentType(tenantSettings.getDefaultShipmentType());
 
             response.setCreatedBy(UserContext.getUser().getUsername());
+            response.setCreatedAt(LocalDateTime.now());
 
 //            try {
 //                log.info("Fetching Tenant Model");
