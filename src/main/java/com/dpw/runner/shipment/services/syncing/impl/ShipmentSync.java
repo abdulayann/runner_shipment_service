@@ -131,23 +131,26 @@ public class ShipmentSync implements IShipmentSync {
         // Manually mapped fields
         cs.setVolumeWeight(sd.getVolumetricWeight());
         cs.setWeightVolumeUnit(sd.getVolumetricWeightUnit());
-        if(sd.getConsignee().getIsAddressFreeText() != null && sd.getConsignee().getIsAddressFreeText()){
+        if(sd.getConsignee() != null && sd.getConsignee().getIsAddressFreeText() != null && sd.getConsignee().getIsAddressFreeText()){
             cs.setIsConsigneeFreeTextAddress(true);
-            var rawData = sd.getConsignee().getAddressData().get("rawData");
+
+            var rawData = sd.getConsignee().getAddressData() != null ? sd.getConsignee().getAddressData().get("rawData"): null;
             if(rawData!=null)
                 cs.setConsigneeFreeTextAddress(rawData.toString());
         }
         else cs.setIsConsigneeFreeTextAddress(false);
-        if(sd.getConsigner().getIsAddressFreeText() != null && sd.getConsigner().getIsAddressFreeText()){
+
+        if(sd.getConsigner() != null && sd.getConsigner().getIsAddressFreeText() != null && sd.getConsigner().getIsAddressFreeText()){
             cs.setIsConsignerFreeTextAddress(true);
-            var rawData = sd.getConsigner().getAddressData().get("rawData");
+            var rawData = sd.getConsigner().getAddressData() != null ? sd.getConsigner().getAddressData().get("rawData"): null;
             if(rawData!=null)
                 cs.setConsignerFreeTextAddress(rawData.toString());
         }
         else  cs.setIsConsignerFreeTextAddress(false);
-        if(sd.getAdditionalDetails().getNotifyParty().getIsAddressFreeText() != null && sd.getAdditionalDetails().getNotifyParty().getIsAddressFreeText()){
+
+        if(sd.getAdditionalDetails() != null && sd.getAdditionalDetails().getNotifyParty() != null && sd.getAdditionalDetails().getNotifyParty().getIsAddressFreeText() != null && sd.getAdditionalDetails().getNotifyParty().getIsAddressFreeText()){
             cs.setIsNotifyPartyFreeTextAddress(true);
-            var rawData =  sd.getAdditionalDetails().getNotifyParty().getAddressData().get("rawData");
+            var rawData = sd.getAdditionalDetails().getNotifyParty().getAddressData() != null ? sd.getAdditionalDetails().getNotifyParty().getAddressData().get("rawData"): null;
             if(rawData!=null)
                 cs.setNotifyPartyFreeTextAddress(rawData.toString());
         }
