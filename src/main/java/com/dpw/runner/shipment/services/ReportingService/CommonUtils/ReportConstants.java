@@ -89,6 +89,8 @@ public class ReportConstants {
     public static final String GROSS_WEIGHT_UNIT = "GrossWeightUnit";
     public static final String GROSS_VOLUME = "GrossVolume";
     public static final String GROSS_VOLUME_UNIT = "GrossVolumeUnit";
+    public static final String CLIENT_ADDRESS_CITY = "ClientAdrs_City";
+    public static final String CLIENT_ADDRESS_COUNTRY = "ClientAdrs_Country";
     public static final String CLIENT_CONTACT_PERSON = "ClientContactPerson";
     public static final String CLIENT_ADRS = "ClientAdrs";
     public static final String CLIENT_ADDRESS_1 = "ClientAddress1";
@@ -717,4 +719,10 @@ public class ReportConstants {
     public static final String SHIPPER = "Shipper";
     public static final String SHIPPER_WC = "ShipperWC";
     public static final String INVOICE_DATE = "InvoiceDate";
+
+    public static final String PAYMENT = "Payment";
+    public static final String SHIPMENT_DETAILS_PORTOFARRIVALCOUNTRYINCAPS = "PortofArrivalCountryInCaps";
+    public static final String PortofArrivalInCaps = "PortofArrivalInCaps";
+    public static final String SHIPMENT_DETAILS_PORTOFDEPARTURECOUNTRYINCAPS = "PortofDepartureCountryInCaps";
+    public static final String PortofDepartureInCaps = "PortofDepartureInCaps";
 }
