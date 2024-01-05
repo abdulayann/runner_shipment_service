@@ -213,6 +213,11 @@ public class SyncEntityConversionService {
         partyRequestV2.setIsFreeTextAddress(parties.getIsAddressFreeText());
         if(partyRequestV2.getIsFreeTextAddress() == null)
             partyRequestV2.setIsFreeTextAddress(false);
+        if(partyRequestV2.getIsFreeTextAddress()){
+            var rawData = parties.getAddressData().get("rawData").toString();
+            if(rawData != null)
+            partyRequestV2.setFreeTextAddress(rawData);
+        }
         return partyRequestV2;
     }
 

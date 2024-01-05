@@ -25,4 +25,6 @@ public class PartyRequestV2 {
     private String Type;
     @JsonProperty("IsFreeTextAddress")
     private Boolean IsFreeTextAddress;
+    @JsonProperty("FreeTextAddress")
+    private String FreeTextAddress;
 }
