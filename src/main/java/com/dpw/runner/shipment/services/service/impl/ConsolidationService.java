@@ -2062,16 +2062,19 @@ public class ConsolidationService implements IConsolidationService {
         List<MasterListRequest> listRequests = new ArrayList<>(masterDataUtils.createInBulkMasterListRequest(consolidationDetailsResponse, ConsolidationDetails.class, fieldNameKeyMap, ConsolidationDetails.class.getSimpleName() ));
         if (!Objects.isNull(consolidationDetailsResponse.getCarrierDetails()))
             listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(consolidationDetailsResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName() ));
-        if (!Objects.isNull(consolidationDetailsResponse.getAllocations()))
-            listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(consolidationDetailsResponse.getAllocations(), Allocations.class, fieldNameKeyMap, Allocations.class.getSimpleName() ));
-        if (!Objects.isNull(consolidationDetailsResponse.getAchievedQuantities()))
-            listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(consolidationDetailsResponse.getAchievedQuantities(), AchievedQuantities.class, fieldNameKeyMap, AchievedQuantities.class.getSimpleName() ));
-        if(!Objects.isNull(consolidationDetailsResponse.getRoutingsList()))
-            consolidationDetailsResponse.getRoutingsList().forEach(r -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(r, Routings.class, fieldNameKeyMap, Routings.class.getSimpleName() )));
-        if(!Objects.isNull(consolidationDetailsResponse.getPackingList()))
-            consolidationDetailsResponse.getPackingList().forEach(r -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(r, Packing.class, fieldNameKeyMap, Packing.class.getSimpleName() )));
-        if(!Objects.isNull(consolidationDetailsResponse.getReferenceNumbersList()))
-            consolidationDetailsResponse.getReferenceNumbersList().forEach(r -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(r, ReferenceNumbers.class, fieldNameKeyMap, ReferenceNumbers.class.getSimpleName() )));
+
+        if(masterDataResponse != null) {
+            if (!Objects.isNull(consolidationDetailsResponse.getAllocations()))
+                listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(consolidationDetailsResponse.getAllocations(), Allocations.class, fieldNameKeyMap, Allocations.class.getSimpleName() ));
+            if (!Objects.isNull(consolidationDetailsResponse.getAchievedQuantities()))
+                listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(consolidationDetailsResponse.getAchievedQuantities(), AchievedQuantities.class, fieldNameKeyMap, AchievedQuantities.class.getSimpleName() ));
+            if(!Objects.isNull(consolidationDetailsResponse.getRoutingsList()))
+                consolidationDetailsResponse.getRoutingsList().forEach(r -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(r, Routings.class, fieldNameKeyMap, Routings.class.getSimpleName() + r.getId())));
+            if(!Objects.isNull(consolidationDetailsResponse.getPackingList()))
+                consolidationDetailsResponse.getPackingList().forEach(r -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(r, Packing.class, fieldNameKeyMap, Packing.class.getSimpleName() + r.getId())));
+            if(!Objects.isNull(consolidationDetailsResponse.getReferenceNumbersList()))
+                consolidationDetailsResponse.getReferenceNumbersList().forEach(r -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(r, ReferenceNumbers.class, fieldNameKeyMap, ReferenceNumbers.class.getSimpleName() + r.getId())));
+        }
 
         MasterListRequestV2 masterListRequestV2 = new MasterListRequestV2();
         masterListRequestV2.setMasterListRequests(listRequests);
@@ -2097,14 +2100,17 @@ public class ConsolidationService implements IConsolidationService {
         List<String> locationCodes = new ArrayList<>(masterDataUtils.createInBulkUnLocationsRequest(consolidationDetailsResponse, ConsolidationDetails.class, fieldNameKeyMap, ConsolidationDetails.class.getSimpleName() ));
         if (!Objects.isNull(consolidationDetailsResponse.getCarrierDetails()))
             locationCodes.addAll((masterDataUtils.createInBulkUnLocationsRequest(consolidationDetailsResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName() )));
-        if(!Objects.isNull(consolidationDetailsResponse.getContainersList()))
-            consolidationDetailsResponse.getContainersList().forEach(r -> locationCodes.addAll(masterDataUtils.createInBulkUnLocationsRequest(r, Containers.class, fieldNameKeyMap, Containers.class.getSimpleName() )));
-        if(!Objects.isNull(consolidationDetailsResponse.getRoutingsList()))
-            consolidationDetailsResponse.getRoutingsList().forEach(r -> locationCodes.addAll(masterDataUtils.createInBulkUnLocationsRequest(r, Routings.class, fieldNameKeyMap, Routings.class.getSimpleName() )));
-        if (!Objects.isNull(consolidationDetailsResponse.getArrivalDetails()))
-            locationCodes.addAll((masterDataUtils.createInBulkUnLocationsRequest(consolidationDetailsResponse.getArrivalDetails(), ArrivalDepartureDetails.class, fieldNameKeyMap, ArrivalDepartureDetails.class.getSimpleName() )));
-        if (!Objects.isNull(consolidationDetailsResponse.getDepartureDetails()))
-            locationCodes.addAll((masterDataUtils.createInBulkUnLocationsRequest(consolidationDetailsResponse.getDepartureDetails(), ArrivalDepartureDetails.class, fieldNameKeyMap, ArrivalDepartureDetails.class.getSimpleName() )));
+
+        if(masterDataResponse != null) {
+            if(!Objects.isNull(consolidationDetailsResponse.getContainersList()))
+                consolidationDetailsResponse.getContainersList().forEach(r -> locationCodes.addAll(masterDataUtils.createInBulkUnLocationsRequest(r, Containers.class, fieldNameKeyMap, Containers.class.getSimpleName() + r.getId())));
+            if(!Objects.isNull(consolidationDetailsResponse.getRoutingsList()))
+                consolidationDetailsResponse.getRoutingsList().forEach(r -> locationCodes.addAll(masterDataUtils.createInBulkUnLocationsRequest(r, Routings.class, fieldNameKeyMap, Routings.class.getSimpleName() + r.getId())));
+            if (!Objects.isNull(consolidationDetailsResponse.getArrivalDetails()))
+                locationCodes.addAll((masterDataUtils.createInBulkUnLocationsRequest(consolidationDetailsResponse.getArrivalDetails(), ArrivalDepartureDetails.class, fieldNameKeyMap, ArrivalDepartureDetails.class.getSimpleName() )));
+            if (!Objects.isNull(consolidationDetailsResponse.getDepartureDetails()))
+                locationCodes.addAll((masterDataUtils.createInBulkUnLocationsRequest(consolidationDetailsResponse.getDepartureDetails(), ArrivalDepartureDetails.class, fieldNameKeyMap, ArrivalDepartureDetails.class.getSimpleName() )));
+        }
 
         Map<String, EntityTransferUnLocations> keyMasterDataMap = masterDataUtils.fetchInBulkUnlocations(locationCodes, EntityTransferConstants.LOCATION_SERVICE_GUID);
         masterDataUtils.pushToCache(keyMasterDataMap, CacheConstants.UNLOCATIONS);
@@ -2122,25 +2128,30 @@ public class ConsolidationService implements IConsolidationService {
     }
 
     private CompletableFuture<ResponseEntity<?>> addAllCarrierDataInSingleCall (ConsolidationDetails consolidationDetails, ConsolidationDetailsResponse consolidationDetailsResponse, Map<String, Object> masterDataResponse) {
-        if (!Objects.isNull(consolidationDetailsResponse.getCarrierDetails())) {
-            Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
-            List<String> carrierList = new ArrayList<>(masterDataUtils.createInBulkCarriersRequest(consolidationDetailsResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName()));
-            if(!Objects.isNull(consolidationDetailsResponse.getRoutingsList()))
-                consolidationDetailsResponse.getRoutingsList().forEach(r -> carrierList.addAll(masterDataUtils.createInBulkCarriersRequest(r, Routings.class, fieldNameKeyMap, Routings.class.getSimpleName() )));
+        Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
+        List<String> carrierList = new ArrayList<>();
+        if (!Objects.isNull(consolidationDetailsResponse.getCarrierDetails()))
+            carrierList = new ArrayList<>(masterDataUtils.createInBulkCarriersRequest(consolidationDetailsResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName()));
 
-            Map v1Data = masterDataUtils.fetchInBulkCarriers(carrierList);
-            masterDataUtils.pushToCache(v1Data, CacheConstants.CARRIER);
-
-            if(masterDataResponse == null) {
-                consolidationDetailsResponse.getCarrierDetails().setCarrierMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName()), CacheConstants.CARRIER));
+        if(masterDataResponse != null) {
+            if(!Objects.isNull(consolidationDetailsResponse.getRoutingsList())) {
+                List<String> finalCarrierList = carrierList;
+                consolidationDetailsResponse.getRoutingsList().forEach(r -> finalCarrierList.addAll(masterDataUtils.createInBulkCarriersRequest(r, Routings.class, fieldNameKeyMap, Routings.class.getSimpleName() + r.getId())));
+                carrierList = finalCarrierList;
             }
-            else {
-                masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.CARRIER, masterDataResponse);
-            }
-
-            return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(v1Data));
         }
-        return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(Arrays.asList()));
+
+        Map v1Data = masterDataUtils.fetchInBulkCarriers(carrierList);
+        masterDataUtils.pushToCache(v1Data, CacheConstants.CARRIER);
+
+        if(masterDataResponse == null) {
+            consolidationDetailsResponse.getCarrierDetails().setCarrierMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName()), CacheConstants.CARRIER));
+        }
+        else {
+            masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.CARRIER, masterDataResponse);
+        }
+
+        return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(v1Data));
     }
 
     private CompletableFuture<ResponseEntity<?>> addAllCurrencyDataInSingleCall (ConsolidationDetails consolidationDetails, ConsolidationDetailsResponse consolidationDetailsResponse, Map<String, Object> masterDataResponse) {
@@ -2166,8 +2177,11 @@ public class ConsolidationService implements IConsolidationService {
         Set<String> commodityTypes = new HashSet<>();
         if (!Objects.isNull(consolidationDetailsResponse.getContainersList()))
             consolidationDetailsResponse.getContainersList().forEach(r -> commodityTypes.addAll(masterDataUtils.createInBulkCommodityTypeRequest(r, Containers.class, fieldNameKeyMap, Containers.class.getSimpleName() + r.getId() )));
-        if (!Objects.isNull(consolidationDetailsResponse.getPackingList()))
-            consolidationDetailsResponse.getPackingList().forEach(r -> commodityTypes.addAll(masterDataUtils.createInBulkCommodityTypeRequest(r, Packing.class, fieldNameKeyMap, Packing.class.getSimpleName() + r.getId() )));
+
+        if(masterDataResponse != null) {
+            if (!Objects.isNull(consolidationDetailsResponse.getPackingList()))
+                consolidationDetailsResponse.getPackingList().forEach(r -> commodityTypes.addAll(masterDataUtils.createInBulkCommodityTypeRequest(r, Packing.class, fieldNameKeyMap, Packing.class.getSimpleName() + r.getId() )));
+        }
 
         Map<String, EntityTransferCommodityType> v1Data = masterDataUtils.fetchInBulkCommodityTypes(commodityTypes.stream().toList());
         masterDataUtils.pushToCache(v1Data, CacheConstants.COMMODITY);
