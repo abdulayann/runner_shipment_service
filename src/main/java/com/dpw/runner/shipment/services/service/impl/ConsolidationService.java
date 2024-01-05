@@ -799,7 +799,7 @@ public class ConsolidationService implements IConsolidationService {
                 if(shipmentDetails.getContainersList() != null) {
                     List<Containers> containersList = shipmentDetails.getContainersList();
                     for(Containers container : containersList) {
-                        shipmentsContainersMappingDao.detachShipments(container.getId(), List.of(shipId));
+                        shipmentsContainersMappingDao.detachShipments(container.getId(), List.of(shipId), false);
                     }
                     containersList = containerDao.saveAll(containersList);
                     containerService.afterSaveList(containersList, false);
@@ -826,7 +826,7 @@ public class ConsolidationService implements IConsolidationService {
                 if(shipmentDetails.getContainersList() != null) {
                     List<Containers> containersList = shipmentDetails.getContainersList();
                     for(Containers container : containersList) {
-                        shipmentsContainersMappingDao.detachShipments(container.getId(), List.of(shipId));
+                        shipmentsContainersMappingDao.detachShipments(container.getId(), List.of(shipId), true);
                     }
                     containerDao.saveAll(containersList);
                 }
@@ -1648,7 +1648,7 @@ public class ConsolidationService implements IConsolidationService {
         container.setAchievedVolume(volume);
         container = containerService.calculateUtilization(container);
         containerDao.save(container);
-        shipmentsContainersMappingDao.assignShipments(container.getId(), newShipmentsIncluded.stream().toList());
+        shipmentsContainersMappingDao.assignShipments(container.getId(), newShipmentsIncluded.stream().toList(), false);
         try {
             packingsADSync.sync(packingList);
         }
@@ -1721,7 +1721,7 @@ public class ConsolidationService implements IConsolidationService {
                     }
                 }
                 container = containerDao.save(container);
-                shipmentsContainersMappingDao.detachShipments(container.getId(), removeShipmentIds.stream().toList());
+                shipmentsContainersMappingDao.detachShipments(container.getId(), removeShipmentIds.stream().toList(), false);
                 containerService.afterSave(container, false);
                 try {
                     packingsADSync.sync(packingList);

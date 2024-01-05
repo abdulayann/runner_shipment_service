@@ -1259,7 +1259,7 @@ public class EntityTransferService implements IEntityTransferService {
                 if(containerVsShipmentGuid.containsKey(cont.getGuid())) {
                     List<UUID> shipmentGuids = containerVsShipmentGuid.get(cont.getGuid());
                     newShipmentIds = shipmentGuids.stream().map(x -> shipmentGuidVsIdMap.get(x)).collect(Collectors.toList());
-                    shipmentsContainersMappingDao.assignShipments(cont.getId(), newShipmentIds);
+                    shipmentsContainersMappingDao.assignShipments(cont.getId(), newShipmentIds, false);
                 }
             });
             try {

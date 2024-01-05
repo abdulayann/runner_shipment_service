@@ -2043,9 +2043,9 @@ public class ShipmentService implements IShipmentService {
                     if(!containers.getContent().isEmpty()) {
                         for (Containers container : containersList) {
                             boolean isPart = container.getIsPart() != null && container.getIsPart().booleanValue();
-                            if((shipmentDetails.getShipmentType().equals(Constants.CARGO_TYPE_FCL) || isPart) && container.getShipmentsList() != null && container.getShipmentsList().size() > 0) {
+                            if((shipmentDetails.getShipmentType().equals(Constants.CARGO_TYPE_FCL) || !isPart) && container.getShipmentsList() != null && container.getShipmentsList().size() > 0) {
                                 String errorMsg = "This container is already linked to another shipment. Only part Container/Containers are allowed to attach";
-                                if(!isPart)
+                                if(isPart)
                                     errorMsg = "Mentioned container " + container.getContainerNumber() + " is already assigned to a Shipment - " + container.getShipmentsList().get(0).getShipmentId() + ". Please check and retry.";
                                 throw new ValidationException(errorMsg);
                             }
