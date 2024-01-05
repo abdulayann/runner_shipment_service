@@ -327,7 +327,7 @@ public class AwbService implements IAwbService {
 
         if (request.getConsolidationId() == null) {
             log.error("Consolidation Id can't be null or empty in create MAWB Request");
-            throw new ValidationException("Shipment Id can't be null or empty in Create MAWB Request");
+            throw new ValidationException("Consolidation Id can't be null or empty in Create MAWB Request");
         }
 
         Awb awb = new Awb();
@@ -1164,11 +1164,11 @@ public class AwbService implements IAwbService {
             case AWB_PACKS_AND_GOODS: {
                 if (resetAwbRequest.getAwbType().equals(Constants.MAWB)) {
                     awb.setAwbPackingInfo(generateMawbPackingInfo(consolidationDetails.get()));
-                    generateMawbGoodsDescriptionInfo(consolidationDetails.get(), createAwbRequest, awb.getAwbPackingInfo());
+                    awb.setAwbGoodsDescriptionInfo(generateMawbGoodsDescriptionInfo(consolidationDetails.get(), createAwbRequest, awb.getAwbPackingInfo()));
                 }
                 else {
                     awb.setAwbPackingInfo(generateAwbPackingInfo(shipmentDetails.get(), shipmentDetails.get().getPackingList()));
-                    generateAwbGoodsDescriptionInfo(shipmentDetails.get(), createAwbRequest, awb.getAwbPackingInfo());
+                    awb.setAwbGoodsDescriptionInfo(generateAwbGoodsDescriptionInfo(shipmentDetails.get(), createAwbRequest, awb.getAwbPackingInfo()));
                 }
                 break;
             }
