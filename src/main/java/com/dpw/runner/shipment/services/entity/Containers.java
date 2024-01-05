@@ -309,4 +309,7 @@ public class Containers extends MultiTenancy {
 
     @Column(name = "is_part")
     private Boolean isPart;
+
+    @Column(name = "is_attached")
+    private Boolean isAttached;
 }
