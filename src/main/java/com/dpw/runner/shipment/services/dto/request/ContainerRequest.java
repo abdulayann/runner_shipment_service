@@ -103,4 +103,5 @@ public class ContainerRequest extends CommonRequest implements IRunnerRequest {
     private String ownType;
     private String handlingInfo;
     private Boolean isPart;
+    private Boolean isAttached;
 }
