@@ -294,6 +294,7 @@ public abstract class IReport {
         dictionary.put(ReportConstants.ESTIMATED_READY_FOR_PICKUP, pickup != null ? pickup.getEstimatedPickupOrDelivery() : null);
         String formatPattern = "dd/MMM/y";
         dictionary.put(ReportConstants.DATE_OF_ISSUE, GenerateFormattedDate(additionalDetails.getDateOfIssue(), formatPattern));
+        dictionary.put(SHIPMENT_DETAIL_DATE_OF_ISSUE, GenerateFormattedDate(additionalDetails.getDateOfIssue(), formatPattern));
         dictionary.put(ReportConstants.DATE_OF_RECEIPT, additionalDetails.getDateOfReceipt());
 
         dictionary.put(ReportConstants.INCO_TERM, shipment.getIncoterms());
@@ -416,8 +417,8 @@ public abstract class IReport {
                             getValueFromMap(clientAddress, ZIP_POST_CODE));
                     dictionary.put(ReportConstants.CLIENT_NAME, getValueFromMap(clientAddress, COMPANY_NAME));
                     dictionary.put(ReportConstants.CLIENT_ADDRESS_1, getValueFromMap(clientAddress, ADDRESS1));
-                    dictionary.put(CLIENT_ADDRESS_COUNTRY, getValueFromMap(clientAddress, CLIENT_ADDRESS_COUNTRY));
-                    dictionary.put(CLIENT_ADDRESS_CITY, getValueFromMap(clientAddress, CLIENT_ADDRESS_CITY));
+                    dictionary.put(CLIENT_ADDRESS_COUNTRY, getValueFromMap(clientAddress, COUNTRY));
+                    dictionary.put(CLIENT_ADDRESS_CITY, getValueFromMap(clientAddress, CITY));
                     dictionary.put(ReportConstants.CLIENT_ADDRESS_PHONE, getValueFromMap(clientAddress, CONTACT_PHONE));
                     dictionary.put(ReportConstants.CLIENT_ADDRESS_MOBILE, getValueFromMap(clientAddress, "Mobile"));
                     dictionary.put(ReportConstants.CLIENT_ADDRESS_CONTACT_PERSON, getValueFromMap(clientAddress, "ContactPerson"));
@@ -432,6 +433,7 @@ public abstract class IReport {
             dictionary.put(ReportConstants.NOTIFY_PARTY_FREETEXT, dictionary.get(ReportConstants.NOTIFY_PARTY));
             dictionary.put(ReportConstants.CLIENT, client);
         }
+        dictionary.put(ReportConstants.NO_OF_PACKAGES, shipment.getNoOfPacks());
     }
 
     public ShipmentModel getShipment(Long Id)
@@ -749,8 +751,14 @@ public abstract class IReport {
         MasterListRequestV2 masterListRequests = new MasterListRequestV2();
         masterListRequests.getMasterListRequests().add(masterListRequest);
         Object masterDataList = masterDataFactory.getMasterDataService().fetchMultipleMasterData(masterListRequests).getData();
-        List<MasterData> masterData = jsonHelper.convertValueToList(masterDataList, MasterData.class);
-        if(masterData == null || masterData.isEmpty())
+        List<MasterData> masterData = new ArrayList<>();
+        if (masterDataList != null) {
+            for (Object data : (ArrayList<?>) masterDataList) {
+                MasterData masterDataObject = modelMapper.map(data, MasterData.class);
+                masterData.add(masterDataObject);
+            }
+        }
+        if (masterData == null || masterData.isEmpty())
             return null;
         return masterData.get(0);
     }
@@ -1085,6 +1093,7 @@ public abstract class IReport {
                     .map(i -> getShipmentContainer(
                             jsonHelper.convertValue(i, ContainerModel.class)
                     )).toList();
+
             shipmentContainer.consigneeAddressFreeText = getPartyAddress(shipment.getConsignee());
             shipmentContainer.consignerAddressFreeText = getPartyAddress(shipment.getConsigner());
             if (shipment.getAdditionalDetails() != null)

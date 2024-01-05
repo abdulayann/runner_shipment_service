@@ -36,9 +36,12 @@ public class BookingConfirmationReport extends IReport{
     @Autowired
     private HblReport hblReport;
 
+    private Long id;
+
     @Override
     public Map<String, Object> getData(Long id) {
         BookingConfirmationModel bookingConfirmationModel = (BookingConfirmationModel) getDocumentModel(id);
+        this.id = id;
         return populateDictionary(bookingConfirmationModel);
     }
 
@@ -139,7 +142,7 @@ public class BookingConfirmationReport extends IReport{
     @Override
     public Map<String, Object> populateDictionary(IDocumentModel documentModel) {
 
-        Map<String, Object> dictionary = hblReport.populateDictionary(documentModel);
+        Map<String, Object> dictionary = hblReport.getData(this.id);
 
         BookingConfirmationModel bookingConfirmationModel = (BookingConfirmationModel) documentModel;
 
