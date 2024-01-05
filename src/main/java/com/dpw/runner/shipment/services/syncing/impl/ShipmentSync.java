@@ -131,6 +131,29 @@ public class ShipmentSync implements IShipmentSync {
         // Manually mapped fields
         cs.setVolumeWeight(sd.getVolumetricWeight());
         cs.setWeightVolumeUnit(sd.getVolumetricWeightUnit());
+        if(sd.getConsignee().getIsAddressFreeText() != null && sd.getConsignee().getIsAddressFreeText()){
+            cs.setIsConsigneeFreeTextAddress(true);
+            var rawData = sd.getConsignee().getAddressData().get("rawData");
+            if(rawData!=null)
+                cs.setConsigneeFreeTextAddress(rawData.toString());
+        }
+        else cs.setIsConsigneeFreeTextAddress(false);
+        if(sd.getConsigner().getIsAddressFreeText() != null && sd.getConsigner().getIsAddressFreeText()){
+            cs.setIsConsignerFreeTextAddress(true);
+            var rawData = sd.getConsigner().getAddressData().get("rawData");
+            if(rawData!=null)
+                cs.setConsignerFreeTextAddress(rawData.toString());
+        }
+        else  cs.setIsConsignerFreeTextAddress(false);
+        if(sd.getAdditionalDetails().getNotifyParty().getIsAddressFreeText() != null && sd.getAdditionalDetails().getNotifyParty().getIsAddressFreeText()){
+            cs.setIsNotifyPartyFreeTextAddress(true);
+            var rawData =  sd.getAdditionalDetails().getNotifyParty().getAddressData().get("rawData");
+            if(rawData!=null)
+                cs.setNotifyPartyFreeTextAddress(rawData.toString());
+        }
+        else cs.setIsNotifyPartyFreeTextAddress(false);
+
+
 
         String finalCs = jsonHelper.convertToJson(V1DataSyncRequest.builder().entity(cs).module(SyncingConstants.SHIPMENT).build());
         return callSync(finalCs, cs, sd.getId(), sd.getGuid());
