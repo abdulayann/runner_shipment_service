@@ -47,6 +47,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.GenerateFormattedDate;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.combineStringsWithComma;
 
 public abstract class IReport {
@@ -275,10 +276,8 @@ public abstract class IReport {
         Long containerCount = 0L;
         if(shipment.getContainersList().size() > 0)
         {
-            for (ContainerModel container : shipment.getContainersList())
-            {
-                if (container.getContainerCount() != null && container.getContainerCount() != 0)
-                {
+            for (ContainerModel container : shipment.getContainersList()) {
+                if (container.getContainerCount() != null && container.getContainerCount() != 0) {
                     containerCount += container.getContainerCount();
                 }
             }
@@ -286,14 +285,15 @@ public abstract class IReport {
         dictionary.put(ReportConstants.CONTAINER_COUNT, containerCount);
 
         dictionary.put(ReportConstants.ETA, shipment.getCarrierDetails() != null ? shipment.getCarrierDetails().getEta() : null);
-        dictionary.put(ReportConstants.ETD,shipment.getCarrierDetails() != null ? shipment.getCarrierDetails().getEtd() : null);
-        dictionary.put(ReportConstants.ATA,shipment.getCarrierDetails() != null ? shipment.getCarrierDetails().getAta() : null);
-        dictionary.put(ReportConstants.ATD,shipment.getCarrierDetails() != null ? shipment.getCarrierDetails().getAtd() : null);
+        dictionary.put(ReportConstants.ETD, shipment.getCarrierDetails() != null ? shipment.getCarrierDetails().getEtd() : null);
+        dictionary.put(ReportConstants.ATA, shipment.getCarrierDetails() != null ? shipment.getCarrierDetails().getAta() : null);
+        dictionary.put(ReportConstants.ATD, shipment.getCarrierDetails() != null ? shipment.getCarrierDetails().getAtd() : null);
         dictionary.put(ReportConstants.DATE_OF_DEPARTURE, dictionary.get(ReportConstants.ATD) == null ? dictionary.get(ReportConstants.ETD) : dictionary.get(ReportConstants.ATD));
         dictionary.put(ReportConstants.SYSTEM_DATE, LocalDateTime.now());
         dictionary.put(ReportConstants.ONBOARD_DATE, additionalDetails.getOnBoardDate());
         dictionary.put(ReportConstants.ESTIMATED_READY_FOR_PICKUP, pickup != null ? pickup.getEstimatedPickupOrDelivery() : null);
-        dictionary.put(ReportConstants.DATE_OF_ISSUE, additionalDetails.getDateOfIssue());
+        String formatPattern = "dd/MMM/y";
+        dictionary.put(ReportConstants.DATE_OF_ISSUE, GenerateFormattedDate(additionalDetails.getDateOfIssue(), formatPattern));
         dictionary.put(ReportConstants.DATE_OF_RECEIPT, additionalDetails.getDateOfReceipt());
 
         dictionary.put(ReportConstants.INCO_TERM, shipment.getIncoterms());
@@ -408,18 +408,19 @@ public abstract class IReport {
             if(shipmentClient != null)
             {
                 Map<String, Object> clientAddress = shipmentClient.getAddressData();
-                if(clientAddress != null)
-                {
+                if(clientAddress != null) {
                     client = ReportHelper.getOrgAddressWithPhoneEmail(getValueFromMap(clientAddress, COMPANY_NAME), getValueFromMap(clientAddress, ADDRESS1),
                             getValueFromMap(clientAddress, ADDRESS2),
                             ReportHelper.getCityCountry(getValueFromMap(clientAddress, CITY), getValueFromMap(clientAddress, COUNTRY)),
-                            getValueFromMap(clientAddress,"Email"),  getValueFromMap(clientAddress, CONTACT_PHONE),
-                            getValueFromMap(clientAddress,ZIP_POST_CODE));
+                            getValueFromMap(clientAddress, "Email"), getValueFromMap(clientAddress, CONTACT_PHONE),
+                            getValueFromMap(clientAddress, ZIP_POST_CODE));
                     dictionary.put(ReportConstants.CLIENT_NAME, getValueFromMap(clientAddress, COMPANY_NAME));
-                    dictionary.put(ReportConstants.CLIENT_ADDRESS_1,getValueFromMap(clientAddress, ADDRESS1));
-                    dictionary.put(ReportConstants.CLIENT_ADDRESS_PHONE,getValueFromMap(clientAddress, CONTACT_PHONE));
-                    dictionary.put(ReportConstants.CLIENT_ADDRESS_MOBILE,getValueFromMap(clientAddress,"Mobile"));
-                    dictionary.put(ReportConstants.CLIENT_ADDRESS_CONTACT_PERSON, getValueFromMap(clientAddress,"ContactPerson"));
+                    dictionary.put(ReportConstants.CLIENT_ADDRESS_1, getValueFromMap(clientAddress, ADDRESS1));
+                    dictionary.put(CLIENT_ADDRESS_COUNTRY, getValueFromMap(clientAddress, CLIENT_ADDRESS_COUNTRY));
+                    dictionary.put(CLIENT_ADDRESS_CITY, getValueFromMap(clientAddress, CLIENT_ADDRESS_CITY));
+                    dictionary.put(ReportConstants.CLIENT_ADDRESS_PHONE, getValueFromMap(clientAddress, CONTACT_PHONE));
+                    dictionary.put(ReportConstants.CLIENT_ADDRESS_MOBILE, getValueFromMap(clientAddress, "Mobile"));
+                    dictionary.put(ReportConstants.CLIENT_ADDRESS_CONTACT_PERSON, getValueFromMap(clientAddress, "ContactPerson"));
                 }
             }
 
