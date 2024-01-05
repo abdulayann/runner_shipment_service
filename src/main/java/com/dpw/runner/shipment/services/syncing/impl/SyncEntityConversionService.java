@@ -214,9 +214,9 @@ public class SyncEntityConversionService {
         if(partyRequestV2.getIsFreeTextAddress() == null)
             partyRequestV2.setIsFreeTextAddress(false);
         if(partyRequestV2.getIsFreeTextAddress()){
-            var rawData = parties.getAddressData().get("rawData").toString();
+            var rawData = parties.getAddressData() != null ? parties.getAddressData().get("rawData"): null;
             if(rawData != null)
-            partyRequestV2.setFreeTextAddress(rawData);
+            partyRequestV2.setFreeTextAddress(rawData.toString());
         }
         return partyRequestV2;
     }
