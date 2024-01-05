@@ -2832,6 +2832,8 @@ public class ConsolidationService implements IConsolidationService {
                 .containerCategory(shipment.getShipmentType())
                 .declarationType(additionalDetails != null ? additionalDetails.getCustomDeclType() : null)
                 .carrierDetails(CarrierDetailResponse.builder()
+                        .origin(shipmentCarrierDetails != null ? shipmentCarrierDetails.getOriginPort() : null)
+                        .destination(shipmentCarrierDetails != null ? shipmentCarrierDetails.getDestinationPort() : null)
                         .vessel(shipmentCarrierDetails != null ? shipmentCarrierDetails.getVessel() : null)
                         .originPort(shipmentCarrierDetails != null ? shipmentCarrierDetails.getOriginPort() : null)
                         .destinationPort(shipmentCarrierDetails != null ? shipmentCarrierDetails.getDestinationPort() : null)
