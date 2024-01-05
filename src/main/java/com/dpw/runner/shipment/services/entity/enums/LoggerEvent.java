@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.entity.enums;
 
 public enum LoggerEvent {
     MORE_TIME_TAKEN,
+    TIME_TAKEN,
     USER_DEFINITION_RETRIEVAL,
     COMPLETE_API_TIME,
     BOOKING_RETRIEVAL,
@@ -12,5 +13,6 @@ public enum LoggerEvent {
     MASTERDATA_UNLOCATIONS,
     MASTERDATA_CHARGE_TYPE,
     MASTERDATA_CONTAINER_CODES,
-    BOOKING_FETCH_JSON_CONVERTER
+    BOOKING_FETCH_JSON_CONVERTER,
+    COMPLETE_SHIPMENT_SYNC
 }

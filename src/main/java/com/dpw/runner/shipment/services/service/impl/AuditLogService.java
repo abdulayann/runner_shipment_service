@@ -17,6 +17,7 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.DateUtils;
 import com.dpw.runner.shipment.services.utils.ExcelUtils;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -46,6 +47,9 @@ import java.math.RoundingMode;
 import java.text.DecimalFormat;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
@@ -68,6 +72,7 @@ public class AuditLogService implements IAuditLogService {
         COLUMN_HEADERS_TO_FIELD_NAME.put("Changed Date", "createdAt");
     }
 
+    public ExecutorService executorService = Executors.newFixedThreadPool(20);
     @Autowired
     private IAuditLogDao auditLogDao;
 
@@ -76,6 +81,8 @@ public class AuditLogService implements IAuditLogService {
 
     @Autowired
     private ExcelUtils excelUtils;
+    @Autowired
+    private CommonUtils commonUtils;
 
     public Resource downloadExcel(CommonRequestModel commonRequestModel) {
         String responseMsg;
@@ -119,7 +126,16 @@ public class AuditLogService implements IAuditLogService {
 
     public void addAuditLog(AuditLogMetaData auditLogMetaData) throws IllegalAccessException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, NoSuchMethodException {
         validateRequest(auditLogMetaData);
+        CompletableFuture.runAsync(commonUtils.withMdc(() -> {
+            try {
+                this.addToAuditLog(auditLogMetaData);
+            } catch (Exception e) {
+                log.error("Error occurred during audit logs with exception: {}", e.getMessage());
+            }
+        }), executorService);
+    }
 
+    private void addToAuditLog(AuditLogMetaData auditLogMetaData) throws IllegalAccessException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, NoSuchMethodException {
         AuditLog auditLog = new AuditLog();
         auditLog.setOperation(auditLogMetaData.getOperation());
         auditLog.setParentType(auditLogMetaData.getParent());
