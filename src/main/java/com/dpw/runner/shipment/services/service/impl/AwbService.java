@@ -295,7 +295,7 @@ public class AwbService implements IAwbService {
 
             // Get packs of all linked HAWB
             if(awb.get().getAwbShipmentInfo().getEntityType().equals(Constants.MAWB)) {
-                List<Awb> linkedHawb = getLinkedAwbFromMawb(awb.get());
+                List<Awb> linkedHawb = getLinkedAwbFromMawb(awb.get().getId());
                 List<AwbPackingInfo> linkedPacks = new ArrayList<>();
                 for(var hawb : linkedHawb){
 //                    awb.get().getAwbGoodsDescriptionInfo().addAll(hawb.getAwbGoodsDescriptionInfo());
@@ -382,7 +382,7 @@ public class AwbService implements IAwbService {
 
     private void updateGoodsAndPacks(CreateAwbRequest request) {
         Awb mawb = awbDao.findByConsolidationId(request.getConsolidationId()).get(0);
-        List<Awb> linkedHawb = getLinkedAwbFromMawb(mawb);
+        List<Awb> linkedHawb = getLinkedAwbFromMawb(mawb.getId());
         List<AwbPackingInfo> allHawbPacks = new ArrayList<>();
         for(var i : linkedHawb) {
             allHawbPacks.addAll(i.getAwbPackingInfo());
@@ -1073,8 +1073,7 @@ public class AwbService implements IAwbService {
         }
     }
 
-    List<Awb> getLinkedAwbFromMawb(Awb mawb) {
-        Long mawbId = mawb.getId();
+    List<Awb> getLinkedAwbFromMawb(Long mawbId) {
         List<MawbHawbLink> mawbHawbLinks = mawbHawbLinkDao.findByMawbId(mawbId);
 
         // Fetch all the awb records with the mapped hawbId
@@ -2057,6 +2056,42 @@ public class AwbService implements IAwbService {
         }
 
         return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(keyMasterDataMap));
+    }
+
+    public ResponseEntity<?> retrieveByAwbByMawb(CommonRequestModel commonRequestModel) {
+        String responseMsg;
+        try {
+            CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
+            if (request == null) {
+                log.error("Request is empty for AWB retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            }
+            if (request.getId() == null) {
+                log.error("Request Id is null for MAWB retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            }
+            long id = request.getId();
+            List<Awb> awb = getLinkedAwbFromMawb(id);
+            if (awb == null) {
+                log.debug("AWB is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
+                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+            }
+            log.info("AWB fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
+
+            if(request.getIncludeColumns()==null||request.getIncludeColumns().size()==0)
+                return ResponseHelper.buildSuccessResponse(jsonHelper.convertValueToList(awb, AwbResponse.class));
+            else {
+                List<Object> data = new ArrayList<>();
+                for(Awb awb1 : awb) {
+                    data.add(PartialFetchUtils.fetchPartialListData(jsonHelper.convertValue(awb, AwbResponse.class), request.getIncludeColumns()));
+                }
+                return ResponseHelper.buildSuccessResponse(data);
+            }
+
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
     }
 
 }

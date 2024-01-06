@@ -212,4 +212,11 @@ public class AwbController {
             return ResponseHelper.buildFailedResponse(e.getMessage());
         }
     }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = AwbConstants.AWB_RETRIEVE_BY_ID_SUCCESSFUL)})
+    @GetMapping(ApiConstants.RETIEVE_BY_MAWB_ID)
+    public ResponseEntity<RunnerListResponse<AwbResponse>> retrieveByAwbByMawb(@ApiParam(value = AwbConstants.MAWB, required = true) @RequestParam Long id, @RequestParam(name = "includeColumns", required = false) List<String> includeColumns) {
+        CommonGetRequest request = CommonGetRequest.builder().id(id).includeColumns(includeColumns).build();
+        return (ResponseEntity<RunnerListResponse<AwbResponse>>) awbService.retrieveByAwbByMawb(CommonRequestModel.buildRequest(request));
+    }
 }

@@ -20,5 +20,6 @@ public interface IAwbService {
     ResponseEntity<?> partialAutoUpdateAwb(CommonRequestModel commonRequestModel);
     ResponseEntity<?> partialAutoUpdateMawb(CommonRequestModel commonRequestModel);
     ResponseEntity<?> getAllMasterData(CommonRequestModel commonRequestModel);
+    ResponseEntity<?> retrieveByAwbByMawb(CommonRequestModel commonRequestModel);
 
 }
