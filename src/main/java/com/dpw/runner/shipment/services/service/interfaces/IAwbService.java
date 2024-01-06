@@ -3,8 +3,6 @@ package com.dpw.runner.shipment.services.service.interfaces;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import org.springframework.http.ResponseEntity;
 
-import java.util.List;
-
 public interface IAwbService {
     ResponseEntity<?> createAwb(CommonRequestModel commonRequestModel);
     ResponseEntity<?> updateAwb(CommonRequestModel commonRequestModel);
@@ -19,6 +17,6 @@ public interface IAwbService {
     ResponseEntity<?> reset(CommonRequestModel commonRequestModel);
     ResponseEntity<?> partialAutoUpdateAwb(CommonRequestModel commonRequestModel);
     ResponseEntity<?> partialAutoUpdateMawb(CommonRequestModel commonRequestModel);
-    ResponseEntity<?> getAllMasterData(CommonRequestModel commonRequestModel);
+    ResponseEntity<?> getAllMasterData(CommonRequestModel commonRequestModel, boolean isShipment);
 
 }

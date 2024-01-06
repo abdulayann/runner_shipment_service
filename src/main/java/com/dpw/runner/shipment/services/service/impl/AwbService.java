@@ -18,7 +18,6 @@ import com.dpw.runner.shipment.services.dto.request.CreateAwbRequest;
 import com.dpw.runner.shipment.services.dto.request.ResetAwbRequest;
 import com.dpw.runner.shipment.services.dto.request.awb.*;
 import com.dpw.runner.shipment.services.dto.response.AwbResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.AwbReset;
@@ -1969,16 +1968,20 @@ public class AwbService implements IAwbService {
     }
 
     @Override
-    public ResponseEntity<?> getAllMasterData(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<?> getAllMasterData(CommonRequestModel commonRequestModel, boolean isShipment) {
         String responseMsg;
         try {
             Long id = commonRequestModel.getId();
-            Optional<Awb> optional = awbDao.findById(id);
-            if(optional == null || !optional.isPresent()) {
+            List<Awb> optional = null;
+            if(isShipment)
+                optional = awbDao.findByShipmentId(id);
+            else
+                optional = awbDao.findByConsolidationId(id);
+            if(optional == null || optional.isEmpty()) {
                 log.debug("Shipment Details is null for Id {}", id);
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
-            Awb awb = optional.get();
+            Awb awb = optional.get(0);
             AwbResponse awbResponse = jsonHelper.convertValue(awb, AwbResponse.class);
             Map<String, Object> response = fetchAllMasterDataByKey(awb, awbResponse);
             return ResponseHelper.buildSuccessResponse(response);
