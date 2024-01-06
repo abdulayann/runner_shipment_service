@@ -203,10 +203,14 @@ public class AwbController {
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = AwbConstants.MASTER_DATA_RETRIEVE_SUCCESS)})
     @GetMapping(ApiConstants.GET_ALL_MASTER_DATA)
-    public ResponseEntity<?> getAllMasterData(@RequestParam Long shipmentId) {
+    public ResponseEntity<?> getAllMasterData(@RequestParam(required = false) Long shipmentId, @RequestParam(required = false) Long consolidationId) {
         String responseMsg = "failure executing :(";
         try {
-            return (ResponseEntity<?>) awbService.getAllMasterData(CommonRequestModel.buildRequest(shipmentId));
+            if(shipmentId != null)
+                return (ResponseEntity<?>) awbService.getAllMasterData(CommonRequestModel.buildRequest(shipmentId), true);
+            else if(consolidationId != null)
+                return (ResponseEntity<?>) awbService.getAllMasterData(CommonRequestModel.buildRequest(consolidationId), false);
+            return ResponseHelper.buildFailedResponse(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : "Error retrieving master data";

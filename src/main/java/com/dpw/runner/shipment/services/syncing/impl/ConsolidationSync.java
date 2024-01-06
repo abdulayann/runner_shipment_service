@@ -117,7 +117,7 @@ public class ConsolidationSync implements IConsolidationSync {
             response.setIsSendingAgentFreeTextAddress(true);
             var rawData = request.getSendingAgent().getAddressData() != null ? request.getSendingAgent().getAddressData().get("rawData"): null;
             if(rawData!=null)
-                response.setReceivingAgentFreeTextAddress(rawData.toString());
+                response.setSendingAgentFreeTextAddress(rawData.toString());
         }
         else response.setIsSendingAgentFreeTextAddress(false);
 

@@ -1168,7 +1168,7 @@ public class ShipmentService implements IShipmentService {
             for (ContainerRequest containers : containersList) {
                 if(!IsStringNullOrEmpty(containers.getContainerNumber())) {
                     if(packingList != null) {
-                        List<PackingRequest> packings = packingList.stream().filter(packing -> packing.getContainerNumber().equals(containers.getContainerNumber())).toList();
+                        List<PackingRequest> packings = packingList.stream().filter(packing -> packing.getContainerNumber() != null && packing.getContainerNumber().equals(containers.getContainerNumber())).toList();
                         BigDecimal totalWeight = BigDecimal.ZERO;
                         BigDecimal totalVolume = BigDecimal.ZERO;
                         if(packings != null && packings.size() > 0) {
