@@ -206,7 +206,13 @@ public class AwbService implements IAwbService {
         try {
             String oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
             updateAwbOtherChargesInfo(awb.getAwbOtherChargesInfo());
+            if(awb.getAwbShipmentInfo().getEntityType().equals(Constants.MAWB)) {
+                List<AwbPackingInfo> awbPackingInfoList = awb.getAwbPackingInfo();
+                awb.setAwbPackingInfo(null);
+                updateAwbPacking(awb.getId(), awbPackingInfoList);
+            }
             awb = awbDao.save(awb);
+
             try {
                 callV1Sync(awb);
             } catch (Exception e) {
@@ -231,6 +237,27 @@ public class AwbService implements IAwbService {
             return ResponseHelper.buildFailedResponse(responseMsg);
         }
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(awb));
+    }
+
+    private void updateAwbPacking(long mawbId, List<AwbPackingInfo> awbPackingInfoList) {
+        if(awbPackingInfoList == null) {
+            return;
+        }
+
+        Map<String, List<AwbPackingInfo>> dataMap = new HashMap<>();
+
+        for(AwbPackingInfo awbPackingInfo : awbPackingInfoList) {
+            dataMap.putIfAbsent(awbPackingInfo.getAwbNumber(), new ArrayList<>());
+            dataMap.get(awbPackingInfo.getAwbNumber()).add(awbPackingInfo);
+        }
+
+        List<Awb> awbList = getLinkedAwbFromMawb(mawbId);
+        if(awbList != null) {
+            for(Awb awb : awbList) {
+                awb.setAwbPackingInfo(dataMap.get(awb.getAwbNumber()));
+                awbDao.save(awb);
+            }
+        }
     }
 
     public ResponseEntity<?> list(CommonRequestModel commonRequestModel) {
@@ -334,8 +361,23 @@ public class AwbService implements IAwbService {
         try {
             // fetch consolidation info
             ConsolidationDetails consolidationDetails = consolidationDetailsDao.findById(request.getConsolidationId()).get();
+            List<Awb> awbList = new ArrayList<>();
+            List<AwbPackingInfo> mawbPackingInfo = new ArrayList<>();
+            for (var consoleShipment : consolidationDetails.getShipmentsList()) {
+                if (consoleShipment.getId() != null) {
+                    Awb linkAwb = awbDao.findByShipmentId(consoleShipment.getId()).stream().findFirst().get();
+                    if (linkAwb == null) {
+                        throw new ValidationException("To Generate Mawb, Please create Hawb for all the shipments attached");
+                    }
+                    awbList.add(linkAwb);
+                    if(linkAwb.getAwbPackingInfo() != null) {
+                        mawbPackingInfo.addAll(linkAwb.getAwbPackingInfo());
+                    }
+                }
+            }
+
             // save awb details
-            awb = awbDao.save(generateMawb(request, consolidationDetails));
+            awb = awbDao.save(generateMawb(request, consolidationDetails, mawbPackingInfo));
             try {
                 callV1Sync(awb);
             } catch (Exception e) {
@@ -343,7 +385,7 @@ public class AwbService implements IAwbService {
             }
 
             // map mawb and hawb affter suuccessful save
-            LinkHawbMawb(consolidationDetails, awb.getId());
+            LinkHawbMawb(consolidationDetails, awb, awbList);
             log.info("MAWB created successfully for Id {} with Request Id {}", awb.getId(), LoggerHelper.getRequestIdFromMDC());
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -452,8 +494,8 @@ public class AwbService implements IAwbService {
 
                     // Link pack to Goods if link not already present and save
                     // save part will happen in awbDao.save()
-                    if (i.getMawbGoodsDescId() == null)
-                        i.setMawbGoodsDescId(mawbGoodsDescId);
+//                    if (i.getMawbGoodsDescId() == null)
+//                        i.setMawbGoodsDescId(mawbGoodsDescId);
 
                     if(hawbPacksMap.get(i.getAwbNumber()) == null) {
                         hawbPacksMap.put(i.getAwbNumber(), new ArrayList<>());
@@ -544,7 +586,7 @@ public class AwbService implements IAwbService {
         return jsonHelper.convertValue(request, Awb.class);
     }
 
-    private Awb generateMawb(CreateAwbRequest request, ConsolidationDetails consolidationDetails) {
+    private Awb generateMawb(CreateAwbRequest request, ConsolidationDetails consolidationDetails, List<AwbPackingInfo> awbPackingInfo) {
 
         if(request.getIsReset() == null || request.getIsReset() == false) {
             List<Awb> existingAwbs = awbDao.findByConsolidationId(request.getConsolidationId());
@@ -555,17 +597,17 @@ public class AwbService implements IAwbService {
         // validate the request
         AwbUtility.validateConsolidationInfoBeforeGeneratingAwb(consolidationDetails);
 
-        var awbPackingInfo = generateMawbPackingInfo(consolidationDetails);
+        //var awbPackingInfo = generateMawbPackingInfo(consolidationDetails);
         // generate Awb Entity
         return Awb.builder()
                 .awbNumber(consolidationDetails.getMawb())
                 .awbShipmentInfo(generateMawbShipmentInfo(consolidationDetails, request))
                 .awbNotifyPartyInfo(generateMawbNotifyPartyinfo(consolidationDetails, request))
                 .awbRoutingInfo(generateMawbRoutingInfo(consolidationDetails, request))
-                .awbGoodsDescriptionInfo(generateMawbGoodsDescriptionInfo(consolidationDetails, request, awbPackingInfo))
+                .awbGoodsDescriptionInfo(generateMawbGoodsDescriptionInfo(consolidationDetails, request, null))
                 .awbCargoInfo(generateMawbCargoInfo(consolidationDetails, request, awbPackingInfo))
                 .awbOtherInfo(generateMawbOtherInfo(consolidationDetails, request))
-                .awbPackingInfo(awbPackingInfo)
+                //.awbPackingInfo(awbPackingInfo)
                 .consolidationId(consolidationDetails.getId())
                 .build();
     }
@@ -684,10 +726,12 @@ public class AwbService implements IAwbService {
         awbGoodsDescriptionInfo.setGrossWtUnit("KG");
         awbGoodsDescriptionInfo.setIsShipmentCreated(true);
         awbGoodsDescriptionInfo.setGuid(UUID.randomUUID());
-        for (var awbPacking:awbPackingList) {
-            awbPacking.setAwbGoodsDescriptionInfoGuid(awbGoodsDescriptionInfo.getGuid());
+        if(awbPackingList != null) {
+            for (var awbPacking : awbPackingList) {
+                awbPacking.setAwbGoodsDescriptionInfoGuid(awbGoodsDescriptionInfo.getGuid());
+            }
+            awbGoodsDescriptionInfo.setAwbPackingInfo(awbPackingList);
         }
-        awbGoodsDescriptionInfo.setAwbPackingInfo(awbPackingList);
         return Arrays.asList(awbGoodsDescriptionInfo);
     }
 
@@ -700,19 +744,19 @@ public class AwbService implements IAwbService {
         return awbOtherInfo;
     }
 
-    private void LinkHawbMawb(ConsolidationDetails consolidationDetails, Long mawbId) {
-        for (var consoleShipment : consolidationDetails.getShipmentsList()) {
-            if (consoleShipment.getId() != null) {
-                Awb awb = awbDao.findByShipmentId(consoleShipment.getId()).stream().findFirst().get();
-                if (awb == null) {
-                    throw new ValidationException("To Generate Mawb, Please create Hawb for all the shipments attached");
+    private void LinkHawbMawb(ConsolidationDetails consolidationDetails, Awb mawb, List<Awb> awbList) {
+        for (var awb : awbList) {
+            if(awb.getAwbPackingInfo() != null) {
+                for(AwbPackingInfo awbPackingInfo : awb.getAwbPackingInfo()) {
+                    awbPackingInfo.setMawbGoodsDescGuid(awb.getAwbGoodsDescriptionInfo() == null || awb.getAwbGoodsDescriptionInfo().size() == 0 ? null : awb.getAwbGoodsDescriptionInfo().get(0).getGuid());
                 }
-
-                MawbHawbLink mawbHawblink = new MawbHawbLink();
-                mawbHawblink.setHawbId(awb.getId());
-                mawbHawblink.setMawbId(mawbId);
-                mawbHawbLinkDao.save(mawbHawblink);
             }
+            awbDao.save(awb);
+
+            MawbHawbLink mawbHawblink = new MawbHawbLink();
+            mawbHawblink.setHawbId(awb.getId());
+            mawbHawblink.setMawbId(mawb.getId());
+            mawbHawbLinkDao.save(mawbHawblink);
         }
     }
 
@@ -1143,8 +1187,24 @@ public class AwbService implements IAwbService {
                 .build();
         switch (resetAwbRequest.getResetType()) {
             case ALL: {
-                if(resetAwbRequest.getAwbType().equals(Constants.MAWB))
-                    awb = generateMawb(createAwbRequest, consolidationDetails.get());
+                if(resetAwbRequest.getAwbType().equals(Constants.MAWB)) {
+                    List<Awb> awbList = new ArrayList<>();
+                    List<AwbPackingInfo> mawbPackingInfo = new ArrayList<>();
+                    for (var consoleShipment : consolidationDetails.get().getShipmentsList()) {
+                        if (consoleShipment.getId() != null) {
+                            Awb linkAwb = awbDao.findByShipmentId(consoleShipment.getId()).stream().findFirst().get();
+                            if (linkAwb == null) {
+                                throw new ValidationException("To Generate Mawb, Please create Hawb for all the shipments attached");
+                            }
+                            awbList.add(linkAwb);
+                            if(linkAwb.getAwbPackingInfo() != null) {
+                                mawbPackingInfo.addAll(linkAwb.getAwbPackingInfo());
+                            }
+                        }
+                    }
+                    awb = generateMawb(createAwbRequest, consolidationDetails.get(), mawbPackingInfo);
+                    //LinkHawbMawb(consolidationDetails.get(), awb, awbList);
+                }
                 else awb = generateAwb(createAwbRequest);
                 break;
             }
@@ -1162,8 +1222,8 @@ public class AwbService implements IAwbService {
             }
             case AWB_PACKS_AND_GOODS: {
                 if (resetAwbRequest.getAwbType().equals(Constants.MAWB)) {
-                    awb.setAwbPackingInfo(generateMawbPackingInfo(consolidationDetails.get()));
-                    awb.setAwbGoodsDescriptionInfo(generateMawbGoodsDescriptionInfo(consolidationDetails.get(), createAwbRequest, awb.getAwbPackingInfo()));
+                    //awb.setAwbPackingInfo(generateMawbPackingInfo(consolidationDetails.get()));
+                    awb.setAwbGoodsDescriptionInfo(generateMawbGoodsDescriptionInfo(consolidationDetails.get(), createAwbRequest, null));
                 }
                 else {
                     awb.setAwbPackingInfo(generateAwbPackingInfo(shipmentDetails.get(), shipmentDetails.get().getPackingList()));
