@@ -133,6 +133,18 @@ public class CustomShipmentSyncRequest implements IRunnerRequest, IRunnerRespons
     private BigDecimal insuranceValue;
     @JsonProperty("InsuranceValueCurrency")
     private String InsuranceValueCurrency;
+    @JsonProperty("IsConsignerFreeTextAddress")
+    private Boolean IsConsignerFreeTextAddress;
+    @JsonProperty("ConsignerFreeTextAddress")
+    private String ConsignerFreeTextAddress;
+    @JsonProperty("IsConsigneeFreeTextAddress")
+    private Boolean IsConsigneeFreeTextAddress;
+    @JsonProperty("ConsigneeFreeTextAddress")
+    private String ConsigneeFreeTextAddress;
+    @JsonProperty("IsNotifyPartyFreeTextAddress")
+    private Boolean IsNotifyPartyFreeTextAddress;
+    @JsonProperty("NotifyPartyFreeTextAddress")
+    private String NotifyPartyFreeTextAddress;
 
     // %%%%%%%%%%%%%% Custom shipment properties from here %%%%%%%%%%%%%%%%
 

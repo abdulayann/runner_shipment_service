@@ -77,9 +77,11 @@ public class CustomConsolidationRequest implements IRunnerResponse, IRunnerReque
     @JsonProperty("IsInland")
     private boolean IsInland;
     @JsonProperty("IsReceivingAgentFreeTextAddress")
-    private boolean IsReceivingAgentFreeTextAddress;
+    private Boolean IsReceivingAgentFreeTextAddress;
     @JsonProperty("IsSendingAgentFreeTextAddress")
-    private boolean IsSendingAgentFreeTextAddress;
+    private Boolean IsSendingAgentFreeTextAddress;
+    @JsonProperty("IsCreditorFreeTextAddress")
+    private Boolean IsCreditorFreeTextAddress;
 
 
     // Using this field to address diff in v1 and v2
@@ -106,6 +108,8 @@ public class CustomConsolidationRequest implements IRunnerResponse, IRunnerReque
 
     @JsonProperty("SendingAgentFreeTextAddress")
     private String SendingAgentFreeTextAddress;
+    @JsonProperty("CreditorFreeTextAddress")
+    private String CreditorFreeTextAddress;
     @JsonProperty("Smtpigmdate")
     private LocalDateTime Smtpigmdate;
     @JsonProperty("Smtpigmnumber")

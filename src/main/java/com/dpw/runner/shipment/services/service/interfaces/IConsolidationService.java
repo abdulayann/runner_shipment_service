@@ -57,4 +57,5 @@ public interface IConsolidationService extends ICommonService{
     ResponseEntity<?> getIdFromGuid(CommonRequestModel commonRequestModel);
     ResponseEntity<?> getContainerPackSummary(CommonRequestModel commonRequestModel);
     ResponseEntity<?> getDefaultConsolidation();
+    ResponseEntity<?> generateCustomHouseBLNumber();
 }

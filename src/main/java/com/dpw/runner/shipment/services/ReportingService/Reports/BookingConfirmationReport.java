@@ -36,9 +36,12 @@ public class BookingConfirmationReport extends IReport{
     @Autowired
     private HblReport hblReport;
 
+    private Long id;
+
     @Override
     public Map<String, Object> getData(Long id) {
         BookingConfirmationModel bookingConfirmationModel = (BookingConfirmationModel) getDocumentModel(id);
+        this.id = id;
         return populateDictionary(bookingConfirmationModel);
     }
 
@@ -64,31 +67,35 @@ public class BookingConfirmationReport extends IReport{
         }
 
         Set<String> locCodes = new HashSet<>();
-        if(bookingConfirmationModel.shipment.getCarrierDetails().getOriginPort()!=null){
+        if (bookingConfirmationModel.shipment.getCarrierDetails() != null && bookingConfirmationModel.shipment.getCarrierDetails().getOriginPort() != null) {
             locCodes.add(bookingConfirmationModel.shipment.getCarrierDetails().getOriginPort());
         }
-        if(bookingConfirmationModel.shipment.getCarrierDetails().getDestinationPort()!=null){
+
+        if (bookingConfirmationModel.shipment.getCarrierDetails() != null && bookingConfirmationModel.shipment.getCarrierDetails().getDestinationPort() != null) {
             locCodes.add(bookingConfirmationModel.shipment.getCarrierDetails().getDestinationPort());
         }
 
-        if(bookingConfirmationModel.shipment.getCarrierDetails().getDestinationPort()!=null){
+        if (bookingConfirmationModel.shipment.getCarrierDetails() != null && bookingConfirmationModel.shipment.getCarrierDetails().getDestinationPort() != null) {
             locCodes.add(bookingConfirmationModel.shipment.getAdditionalDetails().getPaidPlace());
         }
 
         Map<String, UnlocationsResponse> unlocationMap = getLocationData(locCodes);
 
         UnlocationsResponse paidPlace = null;
-        UnlocationsResponse location;
-        if(unlocationMap.get(bookingConfirmationModel.shipment.getAdditionalDetails().getPaidPlace()) !=null) {
+        UnlocationsResponse location = null;
+        if (bookingConfirmationModel.shipment.getAdditionalDetails() != null &&
+                unlocationMap.get(bookingConfirmationModel.shipment.getAdditionalDetails().getPaidPlace()) != null) {
             paidPlace = unlocationMap.get(bookingConfirmationModel.shipment.getAdditionalDetails().getPaidPlace());
         }
-        location = unlocationMap.get(bookingConfirmationModel.shipment.getCarrierDetails().getOriginPort());
-        if(location != null) {
+        location = bookingConfirmationModel.shipment.getCarrierDetails() != null ?
+                unlocationMap.get(bookingConfirmationModel.shipment.getCarrierDetails().getOriginPort()) : null;
+        if (location != null) {
             bookingConfirmationModel.polName = location.getName();
             bookingConfirmationModel.polCountry = location.getCountry();
         }
-        location = unlocationMap.get(bookingConfirmationModel.shipment.getCarrierDetails().getDestinationPort());
-        if(location != null) {
+        location = bookingConfirmationModel.shipment.getCarrierDetails() != null ?
+                unlocationMap.get(bookingConfirmationModel.shipment.getCarrierDetails().getDestinationPort()) : null;
+        if (location != null) {
             bookingConfirmationModel.podName = location.getName();
             bookingConfirmationModel.podCountry = location.getCountry();
         }
@@ -135,41 +142,46 @@ public class BookingConfirmationReport extends IReport{
     @Override
     public Map<String, Object> populateDictionary(IDocumentModel documentModel) {
 
-        Map<String, Object> dictionary = hblReport.populateDictionary(documentModel);
+        Map<String, Object> dictionary = hblReport.getData(this.id);
 
         BookingConfirmationModel bookingConfirmationModel = (BookingConfirmationModel) documentModel;
 
         dictionary.put(ReportConstants.HAWB_NO, bookingConfirmationModel.shipment.getHouseBill());
         dictionary.put(ReportConstants.MAWB_NO, bookingConfirmationModel.shipment.getMasterBill());
         dictionary.put(ReportConstants.PORT_OF_DEPARTURE, bookingConfirmationModel.polName);
+        if (bookingConfirmationModel.polName != null)
+            dictionary.put(ReportConstants.PortofDepartureInCaps, bookingConfirmationModel.polName.toUpperCase());
         dictionary.put(ReportConstants.PORT_OF_DEPARTURE_COUNTRY, bookingConfirmationModel.polCountry);
+        if (bookingConfirmationModel.polCountry != null)
+            dictionary.put(ReportConstants.SHIPMENT_DETAILS_PORTOFDEPARTURECOUNTRYINCAPS, bookingConfirmationModel.polCountry.toUpperCase());
         dictionary.put(ReportConstants.PORT_OF_ARRIVAL, bookingConfirmationModel.podName);
+        if (bookingConfirmationModel.podName != null)
+            dictionary.put(ReportConstants.PortofArrivalInCaps, bookingConfirmationModel.podName.toUpperCase());
         dictionary.put(ReportConstants.PORT_OF_ARRIVAL_COUNTRY, bookingConfirmationModel.podCountry);
+        if (bookingConfirmationModel.podCountry != null)
+            dictionary.put(ReportConstants.SHIPMENT_DETAILS_PORTOFARRIVALCOUNTRYINCAPS, bookingConfirmationModel.podCountry.toUpperCase());
 
         dictionary.put(ReportConstants.MOVEMENT_TYPE, bookingConfirmationModel.shipment.getTransportMode());
 
         List<ReferenceNumbersModel> referenceNumbers = bookingConfirmationModel.referenceNumbersList;
 
-        if(referenceNumbers != null && referenceNumbers.size() > 0)
-        {
+        if (referenceNumbers != null && referenceNumbers.size() > 0) {
             List<ReferenceNumbersModel> conditionBasedReferenceNo = new ArrayList<>();
             List<ReferenceNumbersModel> motherReferenceNo = new ArrayList<>();
             List<ReferenceNumbersModel> feederReferenceNo = new ArrayList<>();
-            for(ReferenceNumbersModel refNo : referenceNumbers)
-            {
-                if(refNo!=null && refNo.getType().equalsIgnoreCase("BKG"))
-                {
+            for (ReferenceNumbersModel refNo : referenceNumbers) {
+                if (refNo != null && refNo.getType() != null && refNo.getType().equalsIgnoreCase("BKG")) {
                     dictionary.put(ReportConstants.BOOKING_NUMBER, refNo.getReferenceNumber());
                     break;
                 }
             }
-            for(ReferenceNumbersModel refNo : referenceNumbers)
-            {
-                if(refNo.getType().equalsIgnoreCase(ReferenceNumbersConstants.FEEDER_VESSEL) || refNo.getType().equalsIgnoreCase(ReferenceNumbersConstants.MOTHER_VESSEL)){
-                    if(refNo.getType().equalsIgnoreCase(ReferenceNumbersConstants.MOTHER_VESSEL)){
+            for (ReferenceNumbersModel refNo : referenceNumbers) {
+                if (refNo != null && refNo.getType() != null &&
+                        refNo.getType().equalsIgnoreCase(ReferenceNumbersConstants.FEEDER_VESSEL) ||
+                        refNo.getType().equalsIgnoreCase(ReferenceNumbersConstants.MOTHER_VESSEL)) {
+                    if (refNo.getType().equalsIgnoreCase(ReferenceNumbersConstants.MOTHER_VESSEL)) {
                         motherReferenceNo.add(refNo);
-                    }
-                    else if( refNo.getType().equalsIgnoreCase(ReferenceNumbersConstants.FEEDER_VESSEL)){
+                    } else if (refNo.getType().equalsIgnoreCase(ReferenceNumbersConstants.FEEDER_VESSEL)) {
                         feederReferenceNo.add(refNo);
                     }
                     conditionBasedReferenceNo.add(refNo);
@@ -181,7 +193,7 @@ public class BookingConfirmationReport extends IReport{
             dictionary.put(ReportConstants.FEEDER_REFERENCE_NO, feederReferenceNo);
         }
 
-        dictionary.put(ReportConstants.PAYMENTS, bookingConfirmationModel.shipment.getPaymentTerms());
+        dictionary.put(ReportConstants.PAYMENT, bookingConfirmationModel.shipment.getPaymentTerms());
 
         return dictionary;
     }

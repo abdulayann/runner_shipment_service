@@ -52,14 +52,12 @@ public class SyncEntityConversionService {
                         if(shipmentGuid == null && item.getShipmentId() != null) {
                             try { p.setShipmentGuid(shipmentDao.findById(p.getShipmentId()).get().getGuid()); }  catch (Exception ignored) { }
                         }
-                        else if(shipmentGuid != null)
-                            p.setShipmentGuid(shipmentGuid);
+                        else p.setShipmentGuid(shipmentGuid);
 
                         if(consoleGuid == null && item.getConsolidationId() != null) {
                             try { p.setConsolidationGuid(consolidationDetailsDao.findById(p.getConsolidationId()).get().getGuid()); }  catch (Exception ignored) { }
                         }
-                        else if(consoleGuid != null)
-                            p.setConsolidationGuid(consoleGuid);
+                        else p.setConsolidationGuid(consoleGuid);
 
                         return p;
                     })
@@ -215,6 +213,11 @@ public class SyncEntityConversionService {
         partyRequestV2.setIsFreeTextAddress(parties.getIsAddressFreeText());
         if(partyRequestV2.getIsFreeTextAddress() == null)
             partyRequestV2.setIsFreeTextAddress(false);
+        if(partyRequestV2.getIsFreeTextAddress()){
+            var rawData = parties.getAddressData() != null ? parties.getAddressData().get("rawData"): null;
+            if(rawData != null)
+            partyRequestV2.setFreeTextAddress(rawData.toString());
+        }
         return partyRequestV2;
     }
 

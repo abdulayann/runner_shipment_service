@@ -33,6 +33,7 @@ import com.dpw.runner.shipment.services.syncing.constants.SyncingConstants;
 import com.dpw.runner.shipment.services.syncing.impl.SyncEntityConversionService;
 import com.dpw.runner.shipment.services.syncing.interfaces.IContainerSync;
 import com.dpw.runner.shipment.services.syncing.interfaces.IContainersSync;
+import com.dpw.runner.shipment.services.syncing.interfaces.IPackingsSync;
 import com.dpw.runner.shipment.services.utils.CSVParsingUtil;
 import com.dpw.runner.shipment.services.utils.ExcelUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
@@ -133,6 +134,9 @@ public class ContainerService implements IContainerService {
 
     @Autowired
     IContainersSync containersSync;
+
+    @Autowired
+    IPackingsSync packingsADSync;
 
     @Transactional
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
@@ -715,10 +719,10 @@ public class ContainerService implements IContainerService {
         try {
             Containers containers = containerDao.save(container);
             if(removeAllPacks)
-                shipmentsContainersMappingDao.detachShipments(container.getId(), List.of(shipmentId));
+                shipmentsContainersMappingDao.detachShipments(container.getId(), List.of(shipmentId), false);
             else {
                 try {
-                    containersSync.sync(List.of(containers.getId()));
+                    containersSync.sync(List.of(containers.getId()), shipmentsContainersMappingDao.findAllByContainerIds(List.of(containers.getId())));
                 }
                 catch (Exception e) {
                     log.error("Error syncing containers");
@@ -729,6 +733,12 @@ public class ContainerService implements IContainerService {
                     packing.setContainerId(null);
                 }
                 packingDao.saveAll(packingList);
+                try {
+                    packingsADSync.sync(packingList);
+                }
+                catch (Exception e) {
+                    log.error("Error syncing packings");
+                }
             }
             afterSave(containers, false);
             return ResponseHelper.buildSuccessResponse(convertEntityToDto(containers));
@@ -990,7 +1000,7 @@ public class ContainerService implements IContainerService {
         if (!response.isEmpty()) {
             for (int i = 0; i < response.size(); i++) {
                 Containers container = response.get(i);
-                if (container.getIsPart()) {
+                if (container.getIsPart() != null && container.getIsPart()) {
                     containerCountPart = containerCountPart + container.getContainerCount();
                 } else {
                     containerCountNoPart = containerCountNoPart + container.getContainerCount();
@@ -1002,7 +1012,7 @@ public class ContainerService implements IContainerService {
 
                 for (int i = 0; i < response.size(); i++) {
                     Containers container = response.get(i);
-                    if (!container.getIsPart()) {
+                    if (container.getIsPart() == null || !container.getIsPart()) {
                         Long containerCount = container.getContainerCount();
                         int j;
                         for (j = i + 1; j < response.size(); j++) {
@@ -1117,7 +1127,7 @@ public class ContainerService implements IContainerService {
             containers = containerDao.save(containers);
             afterSave(containers, isCreate);
             if (shipIds != null) {
-                shipmentsContainersMappingDao.assignShipments(containers.getId(), shipIds);
+                shipmentsContainersMappingDao.assignShipments(containers.getId(), shipIds, true);
             }
             ContainerResponse response = objectMapper.convertValue(containers, ContainerResponse.class);
             return ResponseHelper.buildSuccessResponse(response);

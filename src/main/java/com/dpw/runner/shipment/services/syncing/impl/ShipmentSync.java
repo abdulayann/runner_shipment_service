@@ -131,6 +131,32 @@ public class ShipmentSync implements IShipmentSync {
         // Manually mapped fields
         cs.setVolumeWeight(sd.getVolumetricWeight());
         cs.setWeightVolumeUnit(sd.getVolumetricWeightUnit());
+        if(sd.getConsignee() != null && sd.getConsignee().getIsAddressFreeText() != null && sd.getConsignee().getIsAddressFreeText()){
+            cs.setIsConsigneeFreeTextAddress(true);
+
+            var rawData = sd.getConsignee().getAddressData() != null ? sd.getConsignee().getAddressData().get("rawData"): null;
+            if(rawData!=null)
+                cs.setConsigneeFreeTextAddress(rawData.toString());
+        }
+        else cs.setIsConsigneeFreeTextAddress(false);
+
+        if(sd.getConsigner() != null && sd.getConsigner().getIsAddressFreeText() != null && sd.getConsigner().getIsAddressFreeText()){
+            cs.setIsConsignerFreeTextAddress(true);
+            var rawData = sd.getConsigner().getAddressData() != null ? sd.getConsigner().getAddressData().get("rawData"): null;
+            if(rawData!=null)
+                cs.setConsignerFreeTextAddress(rawData.toString());
+        }
+        else  cs.setIsConsignerFreeTextAddress(false);
+
+        if(sd.getAdditionalDetails() != null && sd.getAdditionalDetails().getNotifyParty() != null && sd.getAdditionalDetails().getNotifyParty().getIsAddressFreeText() != null && sd.getAdditionalDetails().getNotifyParty().getIsAddressFreeText()){
+            cs.setIsNotifyPartyFreeTextAddress(true);
+            var rawData = sd.getAdditionalDetails().getNotifyParty().getAddressData() != null ? sd.getAdditionalDetails().getNotifyParty().getAddressData().get("rawData"): null;
+            if(rawData!=null)
+                cs.setNotifyPartyFreeTextAddress(rawData.toString());
+        }
+        else cs.setIsNotifyPartyFreeTextAddress(false);
+
+
 
         String finalCs = jsonHelper.convertToJson(V1DataSyncRequest.builder().entity(cs).module(SyncingConstants.SHIPMENT).build());
         return callSync(finalCs, cs, sd.getId(), sd.getGuid());
@@ -160,7 +186,6 @@ public class ShipmentSync implements IShipmentSync {
     }
 
     @Override
-    @Async
     public ResponseEntity<?> syncById(Long shipmentId) {
         Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(shipmentId);
         if(shipmentDetails.isPresent()) {

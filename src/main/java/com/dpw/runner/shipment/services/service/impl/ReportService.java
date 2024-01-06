@@ -451,7 +451,7 @@ public class ReportService implements IReportService {
                 docUploadRequest.setType(ReportConstants.SHIPMENT_HOUSE_BILL);
                 docUploadRequest.setReportId(reportRequest.getReportId());
                 try {
-                    AddHouseBillToRepo(docUploadRequest, reportRequest.getPrintType(), pdfByteContent, tenantSettingsRow, shipmentDetails.getAdditionalDetails().getReleaseType());
+                    AddHouseBillToRepo(docUploadRequest, reportRequest.getPrintType(), pdfByteContent, tenantSettingsRow, shipmentDetails.getAdditionalDetails().getReleaseType(), StringUtility.convertToString(shipmentDetails.getGuid()));
                 } catch (Exception e) {
                     log.error(e.getMessage());
                     //TODO - Abhimanyu doc upload failing
@@ -484,13 +484,17 @@ public class ReportService implements IReportService {
         }
         if (reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.SEAWAY_BILL) && pdfByteContent != null)
         {
+            Optional<ShipmentDetails> shipmentsRow = shipmentDao.findById(Long.parseLong(reportRequest.getReportId()));
+            ShipmentDetails shipmentDetails = null;
+            if(shipmentsRow.isPresent())
+                shipmentDetails = shipmentsRow.get();
             DocUploadRequest docUploadRequest = new DocUploadRequest();
             docUploadRequest.setEntityType(Constants.Shipments);
             docUploadRequest.setId(Long.parseLong(reportRequest.getReportId()));
             docUploadRequest.setType(ReportConstants.SEAWAY_BILL);
             docUploadRequest.setReportId(reportRequest.getReportId());
             try {
-                AddHouseBillToRepo(docUploadRequest, TypeOfHblPrint.Draft.name().toUpperCase(), pdfByteContent, tenantSettingsRow, null);
+                AddHouseBillToRepo(docUploadRequest, TypeOfHblPrint.Draft.name().toUpperCase(), pdfByteContent, tenantSettingsRow, null, StringUtility.convertToString(shipmentDetails.getGuid()));
             } catch (Exception e) {
                 log.error(e.getMessage());
                 // TODO Abhimanyu doc upload failing
@@ -1077,19 +1081,21 @@ public class ReportService implements IReportService {
         }
     }
 
-    public void AddHouseBillToRepo(DocUploadRequest uploadRequest, String printType, byte[] document, ShipmentSettingsDetails shipmentSettingsDetails, String releaseType) throws IOException {
+    public void AddHouseBillToRepo(DocUploadRequest uploadRequest, String printType, byte[] document, ShipmentSettingsDetails shipmentSettingsDetails, String releaseType, String shipmentGuid) throws IOException {
         List<Hbl> blObjectList = hblDao.findByShipmentId(Long.parseLong(uploadRequest.getReportId()));
+        if (blObjectList == null || blObjectList.isEmpty())
+            return;
         Hbl blObject = blObjectList.get(0);
         String fileVersion = null;
-        if(printType.equalsIgnoreCase(TypeOfHblPrint.Original.name())){
-            fileVersion =  StringUtility.convertToString(blObject.getHblData().getOriginalSeq());
+        if (printType.equalsIgnoreCase(TypeOfHblPrint.Original.name()) && blObject != null && blObject.getHblData() != null) {
+            fileVersion = blObject.getHblData().getOriginalSeq() != null ? StringUtility.convertToString(blObject.getHblData().getOriginalSeq()) : null;
             blObject.getHblData().setOriginalSeq(blObject.getHblData().getOriginalSeq() != null ? blObject.getHblData().getOriginalSeq() + 1 : 1);
             updateInReleaseMappingTable(blObject, releaseType, shipmentSettingsDetails);
-        }else{
+        } else {
             fileVersion = blObject.getHblData().getVersion().toString();
-            blObject.getHblData().setVersion(blObject.getHblData().getVersion()+ 1);
+            blObject.getHblData().setVersion(blObject.getHblData().getVersion() + 1);
         }
-        String filename = uploadRequest.getType() + "_" + printType +"_"+ uploadRequest.getId()+ "_" + fileVersion + ".pdf";
+        String filename = uploadRequest.getType() + "_" + printType + "_" + uploadRequest.getId() + "_" + fileVersion + ".pdf";
         ListCommonRequest listCommonRequest = CommonUtils.andCriteria("entityType", uploadRequest.getEntityType(), "=", null);
         CommonUtils.andCriteria("entityId", uploadRequest.getId(), "=", listCommonRequest);
         CommonUtils.andCriteria("fileName", filename, "=", listCommonRequest);
@@ -1114,6 +1120,11 @@ public class ReportService implements IReportService {
                 .fileSize(uploadResponse.getData().getFileSize())
                 .fileType(uploadResponse.getData().getFileType())
                 .path(uploadResponse.getData().getPath())
+                .entityKey(shipmentGuid)
+                .source("SYSTEM_GENERATED")
+                .docType(uploadRequest.getType())
+                .docName(uploadRequest.getType())
+                .childType(uploadRequest.getType())
                 .build());
 
         if (!saveResponse.getSuccess())
@@ -1125,7 +1136,10 @@ public class ReportService implements IReportService {
             shipmentDetails = shipmentsRow.get();
         }
 
-        if (shipmentDetails.getAdditionalDetails().getOriginal() >= 1) {
+        if (shipmentDetails != null &&
+                shipmentDetails.getAdditionalDetails() != null &&
+                shipmentDetails.getAdditionalDetails().getOriginal() != null &&
+                shipmentDetails.getAdditionalDetails().getOriginal() >= 1) {
             createAutoEvent(uploadRequest.getReportId(), EventConstants.GENERATE_BL_EVENT_EXCLUSIVE_OF_DRAFT, shipmentSettingsDetails);
         }
     }

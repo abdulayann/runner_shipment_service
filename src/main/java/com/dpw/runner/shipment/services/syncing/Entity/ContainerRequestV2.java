@@ -172,4 +172,6 @@ public class ContainerRequestV2 implements IRunnerRequest {
     private String handlingInfo;
     @JsonProperty("IsPart")
     private Boolean IsPart;
+    @JsonProperty("IsAttached")
+    private Boolean IsAttached;
 }
