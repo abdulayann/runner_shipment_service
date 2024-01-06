@@ -48,7 +48,7 @@ public class CommonUtils {
 
     @Autowired
     private JsonHelper jsonHelper;
-    public ExecutorService syncExecutorService = Executors.newFixedThreadPool(20);
+    public ExecutorService syncExecutorService = Executors.newFixedThreadPool(10);
 
     private static final Logger LOG = LoggerFactory.getLogger(CommonUtils.class);
     private static final String resourcePath = String.format("%s%s", System.getProperty("user.dir"), "/src/main/resources/");

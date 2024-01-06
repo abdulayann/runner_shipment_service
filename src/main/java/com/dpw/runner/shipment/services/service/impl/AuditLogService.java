@@ -72,7 +72,7 @@ public class AuditLogService implements IAuditLogService {
         COLUMN_HEADERS_TO_FIELD_NAME.put("Changed Date", "createdAt");
     }
 
-    public ExecutorService executorService = Executors.newFixedThreadPool(20);
+    public ExecutorService executorService = Executors.newFixedThreadPool(10);
     @Autowired
     private IAuditLogDao auditLogDao;
 
@@ -126,13 +126,14 @@ public class AuditLogService implements IAuditLogService {
 
     public void addAuditLog(AuditLogMetaData auditLogMetaData) throws IllegalAccessException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, NoSuchMethodException {
         validateRequest(auditLogMetaData);
-        CompletableFuture.runAsync(commonUtils.withMdc(() -> {
-            try {
-                this.addToAuditLog(auditLogMetaData);
-            } catch (Exception e) {
-                log.error("Error occurred during audit logs with exception: {}", e.getMessage());
-            }
-        }), executorService);
+        this.addToAuditLog(auditLogMetaData);
+//        CompletableFuture.runAsync(commonUtils.withMdc(() -> {
+//            try {
+//                this.addToAuditLog(auditLogMetaData);
+//            } catch (Exception e) {
+//                log.error("Error occurred during audit logs with exception: {}", e.getMessage());
+//            }
+//        }), executorService);
     }
 
     private void addToAuditLog(AuditLogMetaData auditLogMetaData) throws IllegalAccessException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, NoSuchMethodException {
