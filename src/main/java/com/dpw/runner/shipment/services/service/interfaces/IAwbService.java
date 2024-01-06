@@ -19,5 +19,6 @@ public interface IAwbService {
     ResponseEntity<?> partialAutoUpdateMawb(CommonRequestModel commonRequestModel);
     ResponseEntity<?> getAllMasterData(CommonRequestModel commonRequestModel, boolean isShipment);
     ResponseEntity<?> generateAwbPaymentInfo(CommonRequestModel commonRequestModel);
+    ResponseEntity<?> retrieveByAwbByMawb(CommonRequestModel commonRequestModel);
 
 }

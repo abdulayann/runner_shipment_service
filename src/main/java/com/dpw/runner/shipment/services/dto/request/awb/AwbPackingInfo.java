@@ -67,6 +67,6 @@ public class AwbPackingInfo {
     private String volumeWeightUnit;
     private Integer transportId;
     private String awbNumber;
-    private Long mawbGoodsDescId;
+    private UUID mawbGoodsDescGuid;
     private UUID awbGoodsDescriptionInfoGuid;
 }
