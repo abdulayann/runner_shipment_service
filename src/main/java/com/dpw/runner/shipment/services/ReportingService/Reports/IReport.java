@@ -918,6 +918,11 @@ public abstract class IReport {
         return DateTimeFormatter.ofPattern("MM/dd/yyyy");
     }
 
+    public static DateTimeFormatter GetDPWDateFormatWithTime()
+    {
+        return DateTimeFormatter.ofPattern("MM/dd/yyyy HH:mm:ss");
+    }
+
     public static String GetDPWDateFormatOrDefaultString()
     {
         return "MM/dd/yyyy";
@@ -929,6 +934,16 @@ public abstract class IReport {
         if (date != null)
         {
             strDate = date.format(GetDPWDateFormatOrDefault());
+        }
+        return strDate;
+    }
+
+    public static String ConvertToDPWDateFormatWithTime(LocalDateTime date)
+    {
+        String strDate = "";
+        if (date != null)
+        {
+            strDate = date.format(GetDPWDateFormatWithTime());
         }
         return strDate;
     }
