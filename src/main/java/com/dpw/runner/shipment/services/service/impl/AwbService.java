@@ -22,6 +22,7 @@ import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.AwbReset;
+import com.dpw.runner.shipment.services.entity.enums.ChargesDue;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
@@ -2058,6 +2059,53 @@ public class AwbService implements IAwbService {
         }
 
         return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(keyMasterDataMap));
+    }
+
+    @Override
+    public ResponseEntity<?> generateAwbPaymentInfo(CommonRequestModel commonRequestModel) {
+
+        GenerateAwbPaymentInfoRequest req = (GenerateAwbPaymentInfoRequest) commonRequestModel.getData();
+
+        double totalAmount = 0.00;
+        if(req.getAwbGoodsDescriptionInfo() != null) {
+            for(var goods : req.getAwbGoodsDescriptionInfo()) {
+                totalAmount += goods.getTotalAmount() != null ? goods.getTotalAmount().doubleValue() : 0;
+            }
+        }
+
+        double agentOtherCharges = calculateOtherCharges(req, ChargesDue.AGENT);
+        double carrierOtherCharges = calculateOtherCharges(req, ChargesDue.CARRIER);
+
+        AwbPaymentInfo paymentInfo = AwbPaymentInfo.builder()
+                .weightCharges(new BigDecimal(totalAmount))
+                .dueAgentCharges(agentOtherCharges != 0 ? new BigDecimal(agentOtherCharges) : null)
+                .dueCarrierCharges(carrierOtherCharges != 0 ? new BigDecimal(carrierOtherCharges) : null)
+                .build();
+
+        /*
+        How to deal w/  this ?
+
+							this.awbComparisonForm.TotalPrepaid.value =(this.awbComparisonForm.PrepaidWeightCharges.value != null? this.awbComparisonForm.PrepaidWeightCharges.value: 0) +(this.awbComparisonForm.PrepaidValuationCharge.value != null? this.awbComparisonForm.PrepaidValuationCharge.value: 0) +(this.awbComparisonForm.PrepaidTax.value != null ? this.awbComparisonForm.PrepaidTax.value : 0) +(this.awbComparisonForm.PrepaidDueAgentCharges.value != null? this.awbComparisonForm.PrepaidDueAgentCharges.value: 0) +(this.awbComparisonForm.PrepaidDueCarrierCharges.value != null? this.awbComparisonForm.PrepaidDueCarrierCharges.value: 0);
+							this.awbComparisonForm.TotalPrepaid.element.attr('disabled', 'true');
+							if (this.awbComparisonForm.TotalPrepaid.value == 0.0) {
+								this.awbComparisonForm.TotalPrepaid.value = null;
+							}
+
+							this.awbComparisonForm.TotalCollect.value =	(this.awbComparisonForm.CollectWeightCharges.value != null? this.awbComparisonForm.CollectWeightCharges.value: 0) +(this.awbComparisonForm.CollectValuationCharge.value != null? this.awbComparisonForm.CollectValuationCharge.value: 0) +(this.awbComparisonForm.CollectTax.value != null ? this.awbComparisonForm.CollectTax.value : 0) +(this.awbComparisonForm.CollectDueAgentCharges.value != null? this.awbComparisonForm.CollectDueAgentCharges.value: 0) +(this.awbComparisonForm.CollectDueCarrierCharges.value != null? this.awbComparisonForm.CollectDueCarrierCharges.value: 0);
+         */
+
+        return ResponseHelper.buildSuccessResponse(paymentInfo);
+    }
+
+    private double calculateOtherCharges(GenerateAwbPaymentInfoRequest req, ChargesDue chargesDue) {
+        double sum = 0.00;
+        if(req.getAwbOtherChargesInfo() != null) {
+            for(var otherCharges : req.getAwbOtherChargesInfo()) {
+                if(otherCharges.getChargeDue() != null && chargesDue.equals(ChargesDue.getById(otherCharges.getChargeDue())))
+                    sum += otherCharges.getAmount() != null ? otherCharges.getAmount().doubleValue() : 0;
+            }
+        }
+        return sum;
     }
 
 }

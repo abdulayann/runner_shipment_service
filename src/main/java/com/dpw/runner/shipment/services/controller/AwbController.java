@@ -10,7 +10,9 @@ import com.dpw.runner.shipment.services.dto.request.AwbRequest;
 import com.dpw.runner.shipment.services.dto.request.CreateAwbRequest;
 import com.dpw.runner.shipment.services.dto.request.ResetAwbRequest;
 import com.dpw.runner.shipment.services.dto.request.awb.CustomAwbRetrieveRequest;
+import com.dpw.runner.shipment.services.dto.request.awb.GenerateAwbPaymentInfoRequest;
 import com.dpw.runner.shipment.services.dto.response.AwbResponse;
+import com.dpw.runner.shipment.services.entity.Awb;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IAwbService;
@@ -212,4 +214,19 @@ public class AwbController {
             return ResponseHelper.buildFailedResponse(e.getMessage());
         }
     }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = AwbConstants.PAYMENT_INFO_RETRIEVE_SUCCESS)})
+    @PostMapping(AwbConstants.GET_AWB_PAYMENT_INFO)
+    public ResponseEntity<?> generateAwbPaymentIndo(@RequestBody GenerateAwbPaymentInfoRequest req) {
+        String responseMsg = "failure executing :(";
+        try {
+            return (ResponseEntity<?>) awbService.generateAwbPaymentInfo(CommonRequestModel.buildRequest(req));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : "Error generating payment information";
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(e.getMessage());
+        }
+    }
+
 }

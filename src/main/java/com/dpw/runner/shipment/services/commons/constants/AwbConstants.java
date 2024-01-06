@@ -24,4 +24,6 @@ public class AwbConstants {
     public static final String AWB_NUMBER = "AWB Number";
 
     public static final String MASTER_DATA_RETRIEVE_SUCCESS = "Master Data Retrieve Successfully";
+    public static final String PAYMENT_INFO_RETRIEVE_SUCCESS = "Payment information created successfully !";
+    public static final String GET_AWB_PAYMENT_INFO = "/generate/awb-payment-info";
 }
