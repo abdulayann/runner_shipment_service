@@ -39,6 +39,7 @@ public class PickupOrderReport extends IReport {
         PickUpOrderReportModel pickUpOrderReportModel = (PickUpOrderReportModel) documentModel;
         dictionary.put(ReportConstants.PICKUP_TRANSPORT_CONTACT_PERSON, pickUpOrderReportModel.pickUpTransportAddress.getAddressData().get("ContactPerson"));
         try {dictionary.put(ReportConstants.ConsignerFullName, pickUpOrderReportModel.shipment.getConsigner().getOrgData().get("FullName"));} catch (Exception ignores) {}
+        try {dictionary.put(ReportConstants.CONSIGNER_ADDRESS, null);} catch (Exception ignores) {}
         try {dictionary.put(ReportConstants.ConsignerPhone, pickUpOrderReportModel.shipment.getConsigner().getAddressData().get("ContactPhone"));} catch (Exception ignores) {}
         try {
             List<String> pickUpFrom = ReportHelper.getOrgAddress(pickUpOrderReportModel.shipment.getPickupDetails().getSourceDetail());
