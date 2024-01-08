@@ -69,4 +69,6 @@ public class AwbPackingInfo {
     private String awbNumber;
     private UUID mawbGoodsDescGuid;
     private UUID awbGoodsDescriptionInfoGuid;
+
+    private Long mawbGoodsDescId;
 }

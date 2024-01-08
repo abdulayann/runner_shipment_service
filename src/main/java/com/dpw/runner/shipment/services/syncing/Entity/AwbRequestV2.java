@@ -7,6 +7,7 @@ import java.util.UUID;
 
 @Data
 public class AwbRequestV2 {
+    public UUID guid;
     public UUID shipmentGuid;
     public UUID consolidationGuid;
     public AwbShipmentInfoV2 awbShipmentInfo;
