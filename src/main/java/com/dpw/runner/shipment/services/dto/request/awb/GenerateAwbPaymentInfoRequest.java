@@ -11,4 +11,5 @@ public class GenerateAwbPaymentInfoRequest implements IRunnerRequest {
     private List<AwbGoodsDescriptionInfo> awbGoodsDescriptionInfo;
     private List<AwbOtherChargesInfo> awbOtherChargesInfo;
     private List<AwbPackingInfo> awbPackingInfo;
+    private AwbCargoInfo awbCargoInfo;
 }
