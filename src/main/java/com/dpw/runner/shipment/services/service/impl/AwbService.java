@@ -59,6 +59,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -493,7 +494,7 @@ public class AwbService implements IAwbService {
         }
     }
 
-    private void calculateGoodsDescription(AwbGoodsDescriptionInfo mawbGoodsDescriptionInfo, List<AwbPackingInfo> allHawbPacks, ShipmentSettingsDetails tenantSettings, Map<String, List<AwbPackingInfo>> hawbPacksMap) {
+    private BigDecimal calculateGoodsDescription(AwbGoodsDescriptionInfo mawbGoodsDescriptionInfo, List<AwbPackingInfo> allHawbPacks, ShipmentSettingsDetails tenantSettings, Map<String, List<AwbPackingInfo>> hawbPacksMap) {
         Long mawbGoodsDescId = null; //mawbGoodsDescriptionInfo.getId();  // TODO goodsDescId where to get this
         UUID mawbGoodsDescGuid = mawbGoodsDescriptionInfo.getGuid();
         Integer noOfPacks = 0;
@@ -502,6 +503,8 @@ public class AwbService implements IAwbService {
         BigDecimal chargeableWeightOfMawbGood = BigDecimal.ZERO;
         BigDecimal totalAmountOfMawbGood = BigDecimal.ZERO;
         String grossWeightUnit = "";
+
+        BigDecimal totalVolumetricWeight = BigDecimal.ZERO;
 
         for(var i : allHawbPacks) {
             noOfPacks += Integer.parseInt(i.getPacks());
@@ -545,6 +548,7 @@ public class AwbService implements IAwbService {
             chargeableWeightOfMawbGood = totalGrossWeightOfMawbGood;
             BigDecimal volumetricWeightOfMawbGood = totalGrossVolumeOfMawbGood.multiply(BigDecimal.valueOf(Constants.FACTOR_VOL_WT));
             chargeableWeightOfMawbGood = chargeableWeightOfMawbGood.max(volumetricWeightOfMawbGood);
+            totalVolumetricWeight = volumetricWeightOfMawbGood;
         }
 
         if (mawbGoodsDescriptionInfo.getRateCharge() != null && mawbGoodsDescriptionInfo.getRateClass() != null) {
@@ -564,7 +568,7 @@ public class AwbService implements IAwbService {
             mawbGoodsDescriptionInfo.setChargeableWt(roundOffAirShipment(chargeableWeightOfMawbGood));
             mawbGoodsDescriptionInfo.setTotalAmount(totalAmountOfMawbGood);
         }
-
+        return totalVolumetricWeight;
     }
 
     private void saveHawbPacks(Awb mawb, Map<String, List<AwbPackingInfo>> hawbPacksMap) {
@@ -2237,7 +2241,8 @@ public class AwbService implements IAwbService {
         }
     }
 
-    private void updateGoodsDescriptionInfoFromPacks(GenerateAwbPaymentInfoRequest request) {
+    private BigDecimal updateGoodsDescriptionInfoFromPacks(GenerateAwbPaymentInfoRequest request) {
+        BigDecimal totalVolumeticWeight = BigDecimal.ZERO;
         List<AwbPackingInfo> packsInfo = request.getAwbPackingInfo();
         List<AwbGoodsDescriptionInfo> goodsDescriptionInfos = request.getAwbGoodsDescriptionInfo();
         var tenantSettingsList = shipmentSettingsDao.getSettingsByTenantIds(Arrays.asList(UserContext.getUser().TenantId));
@@ -2258,12 +2263,12 @@ public class AwbService implements IAwbService {
 
                 if (guidBasedAwbPackingList.containsKey(goodDescription.getGuid())) {
                     var allPacks = guidBasedAwbPackingList.get(goodDescription.getGuid());
-                    calculateGoodsDescription(goodDescription, allPacks, tenantSettings, new HashMap<>());
+                    totalVolumeticWeight = totalVolumeticWeight.add(calculateGoodsDescription(goodDescription, allPacks, tenantSettings, new HashMap<>()));
                 }
 
             }
         }
-
+        return totalVolumeticWeight;
     }
 
     private void updateOtherChargesFromGoodsDescription(GenerateAwbPaymentInfoRequest request) {
@@ -2333,6 +2338,99 @@ public class AwbService implements IAwbService {
             return BigDecimal.valueOf(number.longValue());
         }
         return BigDecimal.valueOf(number.doubleValue());
+    }
+
+
+    @Override
+    public ResponseEntity<?> generateUpdatedNatureAndQuantGoodsField(CommonRequestModel commonRequestModel) {
+        GenerateAwbPaymentInfoRequest request = (GenerateAwbPaymentInfoRequest) commonRequestModel.getData();
+        String natureAndQuantGoodsValue = request.getAwbCargoInfo() == null || request.getAwbCargoInfo().getNtrQtyGoods() == null ? null : request.getAwbCargoInfo().getNtrQtyGoods();
+        String packsDescriptionValue = "";
+        String dimensionText = Constants.DEFAULT_DIMN_TEXT;
+        Set<String> uniqueDimension = new HashSet<>();
+        String newLine = "\r\n";
+
+        if (StringUtility.isNotEmpty(natureAndQuantGoodsValue)) {
+            natureAndQuantGoodsValue += newLine;
+        }
+        if (request.getAwbPackingInfo() != null) {
+            int counter = 0;
+            for (AwbPackingInfo packings : request.getAwbPackingInfo()) {
+                String pcs = " ";
+                String len = " ";
+                String width = " ";
+                String height = " ";
+                String equals = Constants.EQUALS;
+                String cross = Constants.CROSS;
+
+                if (packings.getPacks() != null) {
+                    pcs = packings.getPacks() + equals;
+                } else {
+                    pcs += equals;
+                }
+
+                if (packings.getLength() != null) {
+                    len = packings.getLength().toString() + cross;
+                } else {
+                    len += cross;
+                }
+
+                if (packings.getWidth() != null) {
+                    width = packings.getWidth().toString() + cross;
+                } else {
+                    width += cross;
+                }
+
+                if (packings.getHeight() != null) {
+                    height = packings.getHeight().toString();
+                }
+                if (StringUtility.isNotEmpty(packings.getLengthUnit()) && StringUtility.isNotEmpty(packings.getWidthUnit()) && StringUtility.isNotEmpty(packings.getHeightUnit())) {
+                    uniqueDimension.add(packings.getLengthUnit());
+                    uniqueDimension.add(packings.getWidthUnit());
+                    uniqueDimension.add(packings.getHeightUnit());
+                }
+                counter++;
+
+                packsDescriptionValue += pcs + len + width + height + ",";
+//                if (counter == listOfPackingRows.length) {
+//                    packsDescriptionValue = packsDescriptionValue.slice(0, -1);
+//                }
+
+                if (counter % 2 == 0) {
+                    packsDescriptionValue += newLine;
+                }
+            }
+
+            if (uniqueDimension.size() == 1) {
+                String dimentionUnit = new ArrayList<>(uniqueDimension).get(0);
+                if (dimentionUnit == Constants.CM) {
+                    dimentionUnit = Constants.CMS;
+                } else if (dimentionUnit == Constants.IN) {
+                    dimentionUnit = Constants.INCH;
+                } else if (dimentionUnit == Constants.M) {
+                    dimentionUnit = Constants.MTR;
+                } else if (dimentionUnit == Constants.FT) {
+                    dimentionUnit = Constants.FEET;
+                } else {
+                    dimentionUnit = "";
+                }
+                dimensionText += dimentionUnit + newLine;
+            } else {
+                dimensionText += newLine;
+            }
+
+            if (counter % 2 != 0) {
+                packsDescriptionValue += newLine;
+            }
+
+            BigDecimal totalVW = updateGoodsDescriptionInfoFromPacks(request);
+            BigDecimal totalVWt = totalVW.setScale(2, RoundingMode.HALF_UP);
+
+            packsDescriptionValue += "Total Volumetric Weight " + totalVWt.toString() + " " + "";
+
+        }
+
+        return ResponseHelper.buildSuccessResponse(packsDescriptionValue);
     }
 
 }
