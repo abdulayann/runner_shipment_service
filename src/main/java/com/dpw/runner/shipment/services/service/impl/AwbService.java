@@ -24,12 +24,14 @@ import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.AwbReset;
 import com.dpw.runner.shipment.services.entity.enums.ChargesDue;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferOrganizations;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import com.dpw.runner.shipment.services.masterdata.dto.MasterData;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequestV2;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
@@ -43,8 +45,10 @@ import com.dpw.runner.shipment.services.syncing.Entity.AwbRequestV2;
 import com.dpw.runner.shipment.services.syncing.constants.SyncingConstants;
 import com.dpw.runner.shipment.services.syncing.interfaces.IAwbSync;
 import com.dpw.runner.shipment.services.utils.*;
+import com.dpw.runner.shipment.services.validator.enums.Operators;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
@@ -56,6 +60,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.ui.ModelMap;
 import org.springframework.web.client.RestTemplate;
 
 import java.math.BigDecimal;
@@ -93,6 +98,9 @@ public class AwbService implements IAwbService {
 
     @Autowired
     private JsonHelper jsonHelper;
+
+    @Autowired
+    private ModelMapper modelMapper;
 
     @Autowired
     private UserContext userContext;
@@ -603,8 +611,33 @@ public class AwbService implements IAwbService {
 
     private List<IRunnerResponse> convertEntityListToDtoList(List<Awb> lst) {
         List<IRunnerResponse> responseList = new ArrayList<>();
+        List<String> chargeCodes = new ArrayList<>();
         lst.forEach(awbShipmentInfo -> {
-            responseList.add(convertEntityToDto(awbShipmentInfo));
+            var res = convertEntityToDto(awbShipmentInfo);
+            var chargeCode = res.getAwbCargoInfo() != null ? res.getAwbCargoInfo().getChargeCode() : null;
+            if(chargeCode != null){
+                CommonV1ListRequest request = new CommonV1ListRequest();
+                List<Object> criteria = new ArrayList<>();
+                List<Object> subCriteria1 = Arrays.asList(
+                        Arrays.asList("ItemType"),
+                        "=",
+                        "105"
+                );
+                List<Object> subCriteria2 = Arrays.asList(
+                        Arrays.asList("ItemValue"),
+                        "=",
+                        chargeCode
+                );
+                criteria.addAll(List.of(subCriteria1, "and", subCriteria2));
+                request.setCriteriaRequests(criteria);
+                try {
+                    V1DataResponse response = v1Service.fetchMasterData(request);
+                    List<MasterData> entityTransferMasterLists = jsonHelper.convertValueToList(response.entities, MasterData.class);
+                    if(entityTransferMasterLists != null && entityTransferMasterLists.size() > 0)
+                        res.setChargeCodeData(entityTransferMasterLists.get(0));
+                } catch (Exception ignored) {}
+            }
+            responseList.add(res);
         });
         return responseList;
     }
@@ -641,6 +674,13 @@ public class AwbService implements IAwbService {
 
     private AwbShipmentInfo generateMawbShipmentInfo(ConsolidationDetails consolidationDetails, CreateAwbRequest request) {
         AwbShipmentInfo awbShipmentInfo = new AwbShipmentInfo();
+        TenantModel tenantModel = null;
+        try {
+            tenantModel = jsonHelper.convertValue(v1Service.retrieveTenant().getEntity(), TenantModel.class);
+        } catch (Exception e) {
+            throw new RunnerException("Failed while fetching tenant info from V1");
+        }
+
         awbShipmentInfo.setEntityId(consolidationDetails.getId());
         awbShipmentInfo.setEntityType(request.getAwbType());
         // awbShipmentInfo.setShipperName(consolidationDetails.getSendingAgentName()); // missing
@@ -652,8 +692,51 @@ public class AwbService implements IAwbService {
         awbShipmentInfo.setConsigneeAddress(consolidationDetails.getReceivingAgentFreeTextAddress());
         // awbShipmentInfo.setConsigneeReferenceNumber(consolidationDetails.getReceivingAgentId()); //missing
         // AwbUtility.getConsolidationForwarderDetails(uow, consolidationRow, awbShipmentInfo, awbOtherInfoRow, awbCargoInfo); TODO
-        // awbShipmentInfo.setOriginAirport(consolidationDetails.setOriginPort()); // missing
-        // awbShipmentInfo.setDestinationAirport(consolidationDetails.setDestinationPort()); // missing
+        awbShipmentInfo.setOriginAirport(consolidationDetails.getCarrierDetails() != null ? consolidationDetails.getCarrierDetails().getOriginPort() : null);
+        awbShipmentInfo.setDestinationAirport(consolidationDetails.getCarrierDetails() != null ? consolidationDetails.getCarrierDetails().getDestinationPort() : null);
+        awbShipmentInfo.setIataCode(tenantModel.AgentIATACode);
+        awbShipmentInfo.setAgentCASSCode(tenantModel.AgentCASSCode);
+
+         for (var orgRow : consolidationDetails.getConsolidationAddresses()) {
+            if (orgRow.getType().equals(Constants.FORWARDING_AGENT)) {
+                var issuingAgentName = StringUtility.convertToString(orgRow.getOrgData().get(PartiesConstants.FULLNAME));
+                awbShipmentInfo.setIssuingAgentName(issuingAgentName == null ? issuingAgentName : issuingAgentName.toUpperCase()); // extract from orgdata
+                var issuingAgentAddress = AwbUtility.constructAddress(orgRow.getAddressData());
+                awbShipmentInfo.setIssuingAgentAddress(issuingAgentAddress == null ? issuingAgentAddress : issuingAgentAddress.toUpperCase());
+
+                awbShipmentInfo.setIataCode(StringUtility.isEmpty(awbShipmentInfo.getIataCode())
+                        ? StringUtility.convertToString(orgRow.getOrgData().get(PartiesConstants.AGENT_IATA_CODE))
+                        : awbShipmentInfo.getIataCode());
+                awbShipmentInfo.setAgentCASSCode(StringUtility.isEmpty(awbShipmentInfo.getAgentCASSCode())
+                        ? StringUtility.convertToString(orgRow.getOrgData().get(PartiesConstants.AGENT_IATA_CODE))
+                        : awbShipmentInfo.getAgentCASSCode());
+            }
+        }
+
+
+        if(awbShipmentInfo.getIssuingAgentName() == null || awbShipmentInfo.getIssuingAgentName().isEmpty()){
+            if(tenantModel.DefaultOrgId != null){
+                // Fetch Organization Data for defaultOrgId
+                try {
+                    CommonV1ListRequest orgRequest = new CommonV1ListRequest();
+                    List<Object> orgField = new ArrayList<>(List.of("Id"));
+                    String operator = "=";
+                    List<Object> orgCriteria = new ArrayList<>(List.of(orgField, operator, tenantModel.DefaultOrgId));
+                    orgRequest.setCriteriaRequests(orgCriteria);
+                    V1DataResponse orgResponse = v1Service.fetchOrganization(orgRequest);
+                    List<EntityTransferOrganizations> orgList = jsonHelper.convertValueToList(orgResponse.entities, EntityTransferOrganizations.class);
+                    if(orgList.size() > 0) {
+                        awbShipmentInfo.setIssuingAgentName(orgList.get(0).getFullName());
+                        awbShipmentInfo.setIataCode(awbShipmentInfo.getIataCode() == null ? orgList.get(0).getAgentIATACode() : awbShipmentInfo.getIataCode());
+                        awbShipmentInfo.setAgentCASSCode(awbShipmentInfo.getAgentCASSCode() == null ?
+                                orgList.get(0).getAgentCASSCode() : awbShipmentInfo.getAgentCASSCode());
+                    }
+
+                } catch (Exception e) {
+                    throw new RunnerException(String.format("Failed to fetch organization data for default org : %s", tenantModel.DefaultOrgId));
+                }
+            }
+        }
 
         return awbShipmentInfo;
     }
@@ -2185,12 +2268,19 @@ public class AwbService implements IAwbService {
         double agentOtherCharges = calculateOtherCharges(req, ChargesDue.AGENT);
         double carrierOtherCharges = calculateOtherCharges(req, ChargesDue.CARRIER);
 
-        AwbPaymentInfo paymentInfo = AwbPaymentInfo.builder()
-                .weightCharges(new BigDecimal(totalAmount))
-                .dueAgentCharges(agentOtherCharges != 0 ? new BigDecimal(agentOtherCharges) : null)
-                .dueCarrierCharges(carrierOtherCharges != 0 ? new BigDecimal(carrierOtherCharges) : null)
-                .build();
-
+        AwbPaymentInfo paymentInfo;
+        if(req.getAwbPaymentInfo() != null ){
+            paymentInfo = req.getAwbPaymentInfo();
+            paymentInfo.setWeightCharges(new BigDecimal(totalAmount));
+            paymentInfo.setDueAgentCharges(agentOtherCharges != 0 ? new BigDecimal(agentOtherCharges) : null);
+            paymentInfo.setDueCarrierCharges(carrierOtherCharges != 0 ? new BigDecimal(carrierOtherCharges) : null);
+        } else {
+            paymentInfo = AwbPaymentInfo.builder()
+                    .weightCharges(new BigDecimal(totalAmount))
+                    .dueAgentCharges(agentOtherCharges != 0 ? new BigDecimal(agentOtherCharges) : null)
+                    .dueCarrierCharges(carrierOtherCharges != 0 ? new BigDecimal(carrierOtherCharges) : null)
+                    .build();
+        }
         /*
         How to deal w/  this ?
 

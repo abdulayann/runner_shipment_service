@@ -216,6 +216,9 @@ public class AwbUtility {
         {
             throw new ValidationException("Discharge Port is required in Consolidation to generate the document.");
         }
+        if (consolidationDetails.getMawb() == null) {
+            throw new ValidationException("MAWB number can't be null for generating MAWB !");
+        }
     }
 
     public static String generateNatureAndQuantFieldsForConsolMawb(String goodsDescription, BigDecimal volumeWeight, List<AwbPackingInfo> packingList)
