@@ -1051,6 +1051,7 @@ public class ShipmentService implements IShipmentService {
                             build()
                     ).
                     containersList(customerBookingRequest.getContainersList()).
+                    sourceTenantId(Long.valueOf(UserContext.getUser().TenantId)).
                     build();
             ResponseEntity<?> consolidationDetailsResponse = consolidationService.create(CommonRequestModel.buildRequest(consolidationDetailsRequest));
             if(consolidationDetailsResponse != null)
@@ -1112,6 +1113,8 @@ public class ShipmentService implements IShipmentService {
                 routingsList(customerBookingRequest.getRoutingList()).
                 consolidationList(customerBookingRequest.getCargoType().equals("FCL") ? consolidationDetails : null).
                 notesList(createNotes(notes)).
+                sourceTenantId(Long.valueOf(UserContext.getUser().TenantId)).
+                source("API").
                 build();
 
         return this.createFromBooking(CommonRequestModel.buildRequest(shipmentRequest));
