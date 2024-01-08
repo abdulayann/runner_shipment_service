@@ -855,13 +855,15 @@ public abstract class IReport {
     {
         List<String> details = new ArrayList<>();
         details.add(name);
-        String[] addressList = address.split("\r\n");
-        addressList = Arrays.stream(addressList)
-                .filter(Objects::nonNull)
-                .map(String::trim)
-                .filter(Predicate.isEqual("").negate())
-                .toArray(String[]::new);
-        details.addAll(Arrays.asList(addressList));
+        if(StringUtility.isNotEmpty(address)) {
+            String[] addressList = address.split("\r\n");
+            addressList = Arrays.stream(addressList)
+                    .filter(Objects::nonNull)
+                    .map(String::trim)
+                    .filter(Predicate.isEqual("").negate())
+                    .toArray(String[]::new);
+            details.addAll(Arrays.asList(addressList));
+        }
         return details;
     }
 
