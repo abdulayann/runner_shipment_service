@@ -82,6 +82,62 @@ public class ShipmentReverseSync implements IShipmentReverseSync {
 
             sd.setConsigner(mapPartyObject(cs.getConsignerParty()));
             sd.setConsignee(mapPartyObject(cs.getConsigneeParty()));
+            if(sd.getConsignee() != null){
+                if(cs.getIsConsigneeFreeTextAddress() != null && cs.getIsConsigneeFreeTextAddress()){
+                    if(cs.getConsigneeFreeTextAddress() != null){
+                        Map<String, Object> addressDataMap = sd.getConsignee().getAddressData();
+                        String key = Constants.RAW_DATA;
+                        Object value = cs.getConsigneeFreeTextAddress();
+                        if(addressDataMap != null){
+                            addressDataMap.put(key, value);
+                            sd.getConsignee().setAddressData(addressDataMap);
+                        }
+                        else{
+                            Map<String, Object> newAddressDataMap = new HashMap<>();
+                            newAddressDataMap.put(key, value);
+                            sd.getConsignee().setAddressData(newAddressDataMap);
+                        }
+                    }
+                }
+            }
+
+            if(sd.getConsigner() != null){
+                if(cs.getIsConsignerFreeTextAddress() != null && cs.getIsConsignerFreeTextAddress()){
+                    if(cs.getConsignerFreeTextAddress() != null){
+                        Map<String, Object> addressDataMap = sd.getConsigner().getAddressData();
+                        String key = Constants.RAW_DATA;
+                        Object value = cs.getConsignerFreeTextAddress();
+                        if(addressDataMap != null){
+                            addressDataMap.put(key, value);
+                            sd.getConsigner().setAddressData(addressDataMap);
+                        }
+                        else{
+                            Map<String, Object> newAddressDataMap = new HashMap<>();
+                            newAddressDataMap.put(key, value);
+                            sd.getConsigner().setAddressData(newAddressDataMap);
+                        }
+                    }
+                }
+            }
+
+            if(sd.getAdditionalDetails().getNotifyParty() != null){
+                if(cs.getIsNotifyPartyFreeTextAddress() != null && cs.getIsNotifyPartyFreeTextAddress()){
+                    if(cs.getNotifyPartyFreeTextAddress() != null){
+                        Map<String, Object> addressDataMap = sd.getAdditionalDetails().getNotifyParty().getAddressData();
+                        String key = Constants.RAW_DATA;
+                        Object value = cs.getNotifyPartyFreeTextAddress();
+                        if(addressDataMap != null){
+                            addressDataMap.put(key, value);
+                            sd.getAdditionalDetails().getNotifyParty().setAddressData(addressDataMap);
+                        }
+                        else{
+                            Map<String, Object> newAddressDataMap = new HashMap<>();
+                            newAddressDataMap.put(key, value);
+                            sd.getAdditionalDetails().getNotifyParty().setAddressData(newAddressDataMap);
+                        }
+                    }
+                }
+            }
 
             mapTruckDriverDetailReverse(cs, sd);
             sd.setRoutingsList(syncEntityConversionService.routingsV1ToV2(cs.getRoutings()));
