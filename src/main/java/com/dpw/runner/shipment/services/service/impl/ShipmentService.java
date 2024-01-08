@@ -1170,7 +1170,7 @@ public class ShipmentService implements IShipmentService {
             for (ContainerRequest containers : containersList) {
                 if(!IsStringNullOrEmpty(containers.getContainerNumber())) {
                     if(packingList != null) {
-                        List<PackingRequest> packings = packingList.stream().filter(packing -> packing.getContainerNumber().equals(containers.getContainerNumber())).toList();
+                        List<PackingRequest> packings = packingList.stream().filter(packing -> packing.getContainerNumber() != null && packing.getContainerNumber().equals(containers.getContainerNumber())).toList();
                         BigDecimal totalWeight = BigDecimal.ZERO;
                         BigDecimal totalVolume = BigDecimal.ZERO;
                         if(packings != null && packings.size() > 0) {
@@ -2045,9 +2045,9 @@ public class ShipmentService implements IShipmentService {
                     if(!containers.getContent().isEmpty()) {
                         for (Containers container : containersList) {
                             boolean isPart = container.getIsPart() != null && container.getIsPart().booleanValue();
-                            if((shipmentDetails.getShipmentType().equals(Constants.CARGO_TYPE_FCL) || isPart) && container.getShipmentsList() != null && container.getShipmentsList().size() > 0) {
+                            if((shipmentDetails.getShipmentType().equals(Constants.CARGO_TYPE_FCL) || !isPart) && container.getShipmentsList() != null && container.getShipmentsList().size() > 0) {
                                 String errorMsg = "This container is already linked to another shipment. Only part Container/Containers are allowed to attach";
-                                if(!isPart)
+                                if(isPart)
                                     errorMsg = "Mentioned container " + container.getContainerNumber() + " is already assigned to a Shipment - " + container.getShipmentsList().get(0).getShipmentId() + ". Please check and retry.";
                                 throw new ValidationException(errorMsg);
                             }
@@ -2958,16 +2958,20 @@ public class ShipmentService implements IShipmentService {
             listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(shipmentDetailsResponse.getAdditionalDetails(), AdditionalDetails.class, fieldNameKeyMap, AdditionalDetails.class.getSimpleName() ));
         if (!Objects.isNull(shipmentDetailsResponse.getCarrierDetails()))
             listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(shipmentDetailsResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName() ));
-        if(!Objects.isNull(shipmentDetailsResponse.getRoutingsList()))
-            shipmentDetailsResponse.getRoutingsList().forEach(r -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(r, Routings.class, fieldNameKeyMap, Routings.class.getSimpleName() )));
-        if(!Objects.isNull(shipmentDetailsResponse.getBookingCarriagesList()))
-            shipmentDetailsResponse.getBookingCarriagesList().forEach(r -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(r, BookingCarriage.class, fieldNameKeyMap, BookingCarriage.class.getSimpleName() )));
-        if(!Objects.isNull(shipmentDetailsResponse.getPackingList()))
-            shipmentDetailsResponse.getPackingList().forEach(r -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(r, Packing.class, fieldNameKeyMap, Packing.class.getSimpleName() )));
-        if(!Objects.isNull(shipmentDetailsResponse.getReferenceNumbersList()))
-            shipmentDetailsResponse.getReferenceNumbersList().forEach(r -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(r, ReferenceNumbers.class, fieldNameKeyMap, ReferenceNumbers.class.getSimpleName() )));
-        if(!Objects.isNull(shipmentDetailsResponse.getServicesList()))
-            shipmentDetailsResponse.getServicesList().forEach(r -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(r, ServiceDetails.class, fieldNameKeyMap, ServiceDetails.class.getSimpleName() )));
+
+        if(masterDataResponse != null) {
+            if(!Objects.isNull(shipmentDetailsResponse.getRoutingsList()))
+                shipmentDetailsResponse.getRoutingsList().forEach(r -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(r, Routings.class, fieldNameKeyMap, Routings.class.getSimpleName() + r.getId())));
+            if(!Objects.isNull(shipmentDetailsResponse.getBookingCarriagesList()))
+                shipmentDetailsResponse.getBookingCarriagesList().forEach(r -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(r, BookingCarriage.class, fieldNameKeyMap, BookingCarriage.class.getSimpleName() + r.getId())));
+            if(!Objects.isNull(shipmentDetailsResponse.getPackingList()))
+                shipmentDetailsResponse.getPackingList().forEach(r -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(r, Packing.class, fieldNameKeyMap, Packing.class.getSimpleName() + r.getId())));
+            if(!Objects.isNull(shipmentDetailsResponse.getReferenceNumbersList()))
+                shipmentDetailsResponse.getReferenceNumbersList().forEach(r -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(r, ReferenceNumbers.class, fieldNameKeyMap, ReferenceNumbers.class.getSimpleName() + r.getId())));
+            if(!Objects.isNull(shipmentDetailsResponse.getServicesList()))
+                shipmentDetailsResponse.getServicesList().forEach(r -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(r, ServiceDetails.class, fieldNameKeyMap, ServiceDetails.class.getSimpleName() + r.getId())));
+        }
+
         MasterListRequestV2 masterListRequestV2 = new MasterListRequestV2();
         masterListRequestV2.setMasterListRequests(listRequests);
         masterListRequestV2.setIncludeCols(Arrays.asList("ItemType", "ItemValue", "ItemDescription", "ValuenDesc", "Cascade"));
@@ -2996,14 +3000,17 @@ public class ShipmentService implements IShipmentService {
             locationCodes.addAll((masterDataUtils.createInBulkUnLocationsRequest(shipmentDetailsResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName() )));
         if (!Objects.isNull(shipmentDetailsResponse.getAdditionalDetails()))
             locationCodes.addAll((masterDataUtils.createInBulkUnLocationsRequest(shipmentDetailsResponse.getAdditionalDetails(), AdditionalDetails.class, fieldNameKeyMap, AdditionalDetails.class.getSimpleName() )));
-        if(!Objects.isNull(shipmentDetailsResponse.getRoutingsList()))
-            shipmentDetailsResponse.getRoutingsList().forEach(r -> locationCodes.addAll(masterDataUtils.createInBulkUnLocationsRequest(r, Routings.class, fieldNameKeyMap, Routings.class.getSimpleName() )));
-        if(!Objects.isNull(shipmentDetailsResponse.getBookingCarriagesList()))
-            shipmentDetailsResponse.getBookingCarriagesList().forEach(r -> locationCodes.addAll(masterDataUtils.createInBulkUnLocationsRequest(r, BookingCarriage.class, fieldNameKeyMap, BookingCarriage.class.getSimpleName() )));
-        if(!Objects.isNull(shipmentDetailsResponse.getContainersList()))
-            shipmentDetailsResponse.getContainersList().forEach(r -> locationCodes.addAll(masterDataUtils.createInBulkUnLocationsRequest(r, Containers.class, fieldNameKeyMap, Containers.class.getSimpleName() )));
-        if(!Objects.isNull(shipmentDetailsResponse.getServicesList()))
-            shipmentDetailsResponse.getServicesList().forEach(r -> locationCodes.addAll(masterDataUtils.createInBulkUnLocationsRequest(r, ServiceDetails.class, fieldNameKeyMap, ServiceDetails.class.getSimpleName() )));
+
+        if(masterDataResponse != null) {
+            if(!Objects.isNull(shipmentDetailsResponse.getRoutingsList()))
+                shipmentDetailsResponse.getRoutingsList().forEach(r -> locationCodes.addAll(masterDataUtils.createInBulkUnLocationsRequest(r, Routings.class, fieldNameKeyMap, Routings.class.getSimpleName() + r.getId())));
+            if(!Objects.isNull(shipmentDetailsResponse.getBookingCarriagesList()))
+                shipmentDetailsResponse.getBookingCarriagesList().forEach(r -> locationCodes.addAll(masterDataUtils.createInBulkUnLocationsRequest(r, BookingCarriage.class, fieldNameKeyMap, BookingCarriage.class.getSimpleName() + r.getId())));
+            if(!Objects.isNull(shipmentDetailsResponse.getContainersList()))
+                shipmentDetailsResponse.getContainersList().forEach(r -> locationCodes.addAll(masterDataUtils.createInBulkUnLocationsRequest(r, Containers.class, fieldNameKeyMap, Containers.class.getSimpleName() + r.getId())));
+            if(!Objects.isNull(shipmentDetailsResponse.getServicesList()))
+                shipmentDetailsResponse.getServicesList().forEach(r -> locationCodes.addAll(masterDataUtils.createInBulkUnLocationsRequest(r, ServiceDetails.class, fieldNameKeyMap, ServiceDetails.class.getSimpleName() + r.getId())));
+        }
 
         Map<String, EntityTransferUnLocations> keyMasterDataMap = masterDataUtils.fetchInBulkUnlocations(locationCodes, EntityTransferConstants.LOCATION_SERVICE_GUID);
         masterDataUtils.pushToCache(keyMasterDataMap, CacheConstants.UNLOCATIONS);
@@ -3059,25 +3066,29 @@ public class ShipmentService implements IShipmentService {
     }
 
     private CompletableFuture<ResponseEntity<?>> addAllCarrierDataInSingleCall (ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse, Map<String, Object> masterDataResponse) {
-        if (!Objects.isNull(shipmentDetailsResponse.getCarrierDetails())) {
-            Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
-            List<String> carrierList = new ArrayList<>(masterDataUtils.createInBulkCarriersRequest(shipmentDetailsResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName()));
-            if (!Objects.isNull(shipmentDetailsResponse.getRoutingsList()))
-                shipmentDetailsResponse.getRoutingsList().forEach(r -> carrierList.addAll(masterDataUtils.createInBulkCarriersRequest(r, Routings.class, fieldNameKeyMap, Routings.class.getSimpleName() + r.getId() )));
+        Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
+        List<String> carrierList = new ArrayList<>();
+        if (!Objects.isNull(shipmentDetailsResponse.getCarrierDetails()))
+            carrierList = new ArrayList<>(masterDataUtils.createInBulkCarriersRequest(shipmentDetailsResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName()));
 
-            Map v1Data = masterDataUtils.fetchInBulkCarriers(carrierList);
-            masterDataUtils.pushToCache(v1Data, CacheConstants.CARRIER);
-
-            if(masterDataResponse == null) {
-                shipmentDetailsResponse.getCarrierDetails().setCarrierMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName()), CacheConstants.CARRIER));
+        if(masterDataResponse != null) {
+            if (!Objects.isNull(shipmentDetailsResponse.getRoutingsList())) {
+                List<String> finalCarrierList = carrierList;
+                shipmentDetailsResponse.getRoutingsList().forEach(r -> finalCarrierList.addAll(masterDataUtils.createInBulkCarriersRequest(r, Routings.class, fieldNameKeyMap, Routings.class.getSimpleName() + r.getId() )));
             }
-            else {
-                masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.CARRIER, masterDataResponse);
-            }
-
-            return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(v1Data));
         }
-        return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(Arrays.asList()));
+
+        Map v1Data = masterDataUtils.fetchInBulkCarriers(carrierList);
+        masterDataUtils.pushToCache(v1Data, CacheConstants.CARRIER);
+
+        if(masterDataResponse == null) {
+            shipmentDetailsResponse.getCarrierDetails().setCarrierMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName()), CacheConstants.CARRIER));
+        }
+        else {
+            masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.CARRIER, masterDataResponse);
+        }
+
+        return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(v1Data));
     }
 
     private CompletableFuture<ResponseEntity<?>> addAllCommodityTypesInSingleCall(ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse, Map<String, Object> masterDataResponse) {
@@ -3085,8 +3096,11 @@ public class ShipmentService implements IShipmentService {
         Set<String> commodityTypes = new HashSet<>();
         if (!Objects.isNull(shipmentDetailsResponse.getContainersList()))
             shipmentDetailsResponse.getContainersList().forEach(r -> commodityTypes.addAll(masterDataUtils.createInBulkCommodityTypeRequest(r, Containers.class, fieldNameKeyMap, Containers.class.getSimpleName() + r.getId() )));
-        if (!Objects.isNull(shipmentDetailsResponse.getPackingList()))
-            shipmentDetailsResponse.getPackingList().forEach(r -> commodityTypes.addAll(masterDataUtils.createInBulkCommodityTypeRequest(r, Packing.class, fieldNameKeyMap, Packing.class.getSimpleName() + r.getId() )));
+
+        if(masterDataResponse != null) {
+            if (!Objects.isNull(shipmentDetailsResponse.getPackingList()))
+                shipmentDetailsResponse.getPackingList().forEach(r -> commodityTypes.addAll(masterDataUtils.createInBulkCommodityTypeRequest(r, Packing.class, fieldNameKeyMap, Packing.class.getSimpleName() + r.getId() )));
+        }
 
         Map<String, EntityTransferCommodityType> v1Data = masterDataUtils.fetchInBulkCommodityTypes(commodityTypes.stream().toList());
         masterDataUtils.pushToCache(v1Data, CacheConstants.COMMODITY);
@@ -3415,6 +3429,8 @@ public class ShipmentService implements IShipmentService {
 
         var origin = consolidation.getCarrierDetails() != null ? consolidation.getCarrierDetails().getOrigin() : null;
         var destination = consolidation.getCarrierDetails() != null ? consolidation.getCarrierDetails().getDestination() : null;
+        var originPort = consolidation.getCarrierDetails() != null ? consolidation.getCarrierDetails().getOriginPort() : null;
+        var destinationPort = consolidation.getCarrierDetails() != null ? consolidation.getCarrierDetails().getDestinationPort() : null;
         var voyage = consolidation.getCarrierDetails() != null ? consolidation.getCarrierDetails().getVoyage() : null;
         var vessel = consolidation.getCarrierDetails() != null ? consolidation.getCarrierDetails().getVessel() : null;
         var aircrafType = consolidation.getCarrierDetails() != null ? consolidation.getCarrierDetails().getAircraftType() : null;
@@ -3452,6 +3468,8 @@ public class ShipmentService implements IShipmentService {
                         .etd(etd)
                         .origin(origin)
                         .vessel(vessel)
+                        .originPort(originPort)
+                        .destinationPort(destinationPort)
                         .shippingLine(consolCarrier != null ? consolCarrier.getShippingLine() : null)
                         .voyage(voyage)
                         .aircraftType(aircrafType)
@@ -3472,6 +3490,7 @@ public class ShipmentService implements IShipmentService {
                 .createdBy(UserContext.getUser().getUsername())
                 .customerCategory(CustomerCategoryRates.CATEGORY_5)
                 .shipmentCreatedOn(LocalDateTime.now())
+                .consolRef(consolidation.getConsolidationNumber())
                 .build();
 
         if (consolidation.getConsolidationAddresses() != null) {

@@ -153,10 +153,12 @@ public class ReportConstants {
     public static final String CONSIGNEE_AIR = "ConsigneeAir";
     public static final String EXPORTER = "Exporter";
     public static final String CONSIGNER_ADDRESS = "ConsignerAddress";
+    public static final String ConsignerPhone = "ConsignerPhone";
     public static final String CONSIGNER_FREETEXT = "ConsignerAddressFreeText";
     public static final String CONSIGNEE_FREETEXT = "ConsigneeAddressFreeText";
     public static final String NOTIFY_PARTY_FREETEXT = "NotifyPartyAddressFreeText";
     public static final String CONSIGNER_NAME = "ConsignerName";
+    public static final String ConsignerFullName = "ConsignerFullName";
     public static final String CONSIGNEE_NAME = "ConsigneeName";
     public static final String CLIENT = "Client";
     public static final String CLIENT_NAME = "ClientName";
@@ -210,6 +212,7 @@ public class ReportConstants {
     public static final String CMS_RELEASE_NO = "ReleaseNo";
     public static final String CMS_REMARKS = "Remarks";
     public static final String CMS_PICK_CY = "PickUpCy";
+    public static final String PickupFrom = "PickupFrom";
     public static final String PRE_CARRIAGE = "PreCarriage";
     public static final String INVNO = "INVNO";
     public static final String EXPORTER_TAX_ID = "ExporterTaxID";

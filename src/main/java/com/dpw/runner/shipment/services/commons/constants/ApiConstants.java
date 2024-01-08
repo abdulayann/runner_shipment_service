@@ -76,4 +76,5 @@ public class ApiConstants {
     public static final String GET_CONT_PACK_SUMMARY = "/get/container-pack-summary";
     public static final String API_DEFAULT_CONSOLIDATION = "/getDefaultConsolidation";
     public static final String GET_ID_BY_GUID = "/get/id";
+    public static final String RETIEVE_BY_MAWB_ID = "/get/mawbId";
 }

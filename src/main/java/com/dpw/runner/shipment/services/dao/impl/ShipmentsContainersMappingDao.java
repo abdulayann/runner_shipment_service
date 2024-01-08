@@ -83,7 +83,7 @@ public class ShipmentsContainersMappingDao implements IShipmentsContainersMappin
             }
         }
         try {
-            shipmentSync.syncById(shipmentId);
+            containersSync.sync(containerIds, findAllByContainerIds(containerIds));
         }
         catch (Exception e) {
             log.error("Error syncing shipment containers");
@@ -91,7 +91,7 @@ public class ShipmentsContainersMappingDao implements IShipmentsContainersMappin
     }
 
     @Override
-    public void assignShipments(Long containerId, List<Long> shipIds) {
+    public void assignShipments(Long containerId, List<Long> shipIds, boolean fromV1) {
         List<ShipmentsContainersMapping> mappings = findByContainerId(containerId);
         HashSet<Long> shipmentIds = new HashSet<>(shipIds);
         if (mappings != null && mappings.size() > 0) {
@@ -107,16 +107,18 @@ public class ShipmentsContainersMappingDao implements IShipmentsContainersMappin
                 save(entity);
             }
         }
-        try {
-            containersSync.sync(List.of(containerId), findAllByContainerIds(List.of(containerId)));
-        }
-        catch (Exception e) {
-            log.error("Error syncing containers");
+        if(!fromV1) {
+            try {
+                containersSync.sync(List.of(containerId), findAllByContainerIds(List.of(containerId)));
+            }
+            catch (Exception e) {
+                log.error("Error syncing containers");
+            }
         }
     }
 
     @Override
-    public void detachShipments(Long containerId, List<Long> shipIds) {
+    public void detachShipments(Long containerId, List<Long> shipIds, boolean fromV1) {
         List<ShipmentsContainersMapping> mappings = findByContainerId(containerId);
         HashSet<Long> shipmentIds = new HashSet<>(shipIds);
         List<ShipmentsContainersMapping> deleteMappings = new ArrayList<>();
@@ -132,11 +134,13 @@ public class ShipmentsContainersMappingDao implements IShipmentsContainersMappin
                 delete(shipmentsContainersMapping);
             }
         }
-        try {
-            containersSync.sync(List.of(containerId), findAllByContainerIds(List.of(containerId)));
-        }
-        catch (Exception e) {
-            log.error("Error syncing containers");
+        if(!fromV1) {
+            try {
+                containersSync.sync(List.of(containerId), findAllByContainerIds(List.of(containerId)));
+            }
+            catch (Exception e) {
+                log.error("Error syncing containers");
+            }
         }
     }
 

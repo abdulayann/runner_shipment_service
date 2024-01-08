@@ -719,7 +719,7 @@ public class ContainerService implements IContainerService {
         try {
             Containers containers = containerDao.save(container);
             if(removeAllPacks)
-                shipmentsContainersMappingDao.detachShipments(container.getId(), List.of(shipmentId));
+                shipmentsContainersMappingDao.detachShipments(container.getId(), List.of(shipmentId), false);
             else {
                 try {
                     containersSync.sync(List.of(containers.getId()), shipmentsContainersMappingDao.findAllByContainerIds(List.of(containers.getId())));
@@ -1127,7 +1127,7 @@ public class ContainerService implements IContainerService {
             containers = containerDao.save(containers);
             afterSave(containers, isCreate);
             if (shipIds != null) {
-                shipmentsContainersMappingDao.assignShipments(containers.getId(), shipIds);
+                shipmentsContainersMappingDao.assignShipments(containers.getId(), shipIds, true);
             }
             ContainerResponse response = objectMapper.convertValue(containers, ContainerResponse.class);
             return ResponseHelper.buildSuccessResponse(response);
