@@ -6,8 +6,10 @@ import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IPackingDao;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.CustomerBooking;
+import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.enums.LifecycleHooks;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
@@ -15,6 +17,7 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.IContainerRepository;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
+import com.dpw.runner.shipment.services.syncing.interfaces.IPackingsSync;
 import com.dpw.runner.shipment.services.validator.ValidatorUtility;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nimbusds.jose.util.Pair;
@@ -53,6 +56,12 @@ public class ContainerDao implements IContainerDao {
 
     @Autowired
     private ModelMapper modelMapper;
+
+    @Autowired
+    private IPackingsSync packingsSync;
+
+    @Autowired
+    private IPackingDao packingDao;
 
     @Override
     public Containers save(Containers containers) {
@@ -230,6 +239,21 @@ public class ContainerDao implements IContainerDao {
                         }
                     }
                     deleteContainers(hashMap, null, null);
+                    if(!hashMap.isEmpty()) {
+                        List<Long> deletedContIds = hashMap.keySet().stream().toList();
+                        if(deletedContIds.size() > 0) {
+                            listCommonRequest = constructListCommonRequest("containerId", deletedContIds, "IN");
+                            Pair<Specification<Packing>, Pageable> pair2 = fetchData(listCommonRequest, Packing.class);
+                            Page<Packing> packingPage = packingDao.findAll(pair2.getLeft(), pair2.getRight());
+                            if(packingPage != null && !packingPage.isEmpty()) {
+                                for (Packing packing : packingPage.getContent()) {
+                                    packing.setContainerId(null);
+                                }
+                                packingDao.saveAll(packingPage.getContent());
+                                packingsSync.sync(packingPage.getContent());
+                            }
+                        }
+                    }
                 }
                 if(shipmentId != null)
                 {

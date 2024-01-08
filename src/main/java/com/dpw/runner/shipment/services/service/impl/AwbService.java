@@ -2250,18 +2250,23 @@ public class AwbService implements IAwbService {
     private void updateOtherChargesFromGoodsDescription(GenerateAwbPaymentInfoRequest request) {
         List<AwbGoodsDescriptionInfo> goodsDescriptionInfos = request.getAwbGoodsDescriptionInfo();
         List<AwbOtherChargesInfo> otherChargesInfos = request.getAwbOtherChargesInfo();
+        var chargeableWeight = new BigDecimal(0);
+        var grossWeight = new BigDecimal(0);
 
-        if (!Objects.isNull(otherChargesInfos) && !Objects.isNull(goodsDescriptionInfos)) {
-            var chargeableWeight = calculateChargealeWeight(goodsDescriptionInfos);
-            var grossWeight = calculateGrossWeight(goodsDescriptionInfos);
+        if (!Objects.isNull(goodsDescriptionInfos)) {
+            chargeableWeight = calculateChargealeWeight(goodsDescriptionInfos);
+            grossWeight = calculateGrossWeight(goodsDescriptionInfos);
+        }
+
+        if (!Objects.isNull(otherChargesInfos)) {
 
             for (var _otherCharge : otherChargesInfos) {
-                if (_otherCharge.getChargeBasis() == 2)
+                if (_otherCharge.getChargeBasis() == 1)
+                    _otherCharge.setAmount(_otherCharge.getRate());
+                else if (_otherCharge.getChargeBasis() == 2)
                     _otherCharge.setAmount(_otherCharge.getRate().multiply(chargeableWeight));
-
                 else if (_otherCharge.getChargeBasis() == 3)
                     _otherCharge.setAmount(_otherCharge.getRate().multiply(grossWeight));
-
             }
 
         }
