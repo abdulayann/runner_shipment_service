@@ -43,4 +43,5 @@ public class ShipmentConstants {
     public static final String MASTER_DATA_RETRIEVE_SUCCESS = "Master Data Retrieve Successfully";
     public static final String CALCULATION_SUCCESSFUL = "calculation successful";
     public static final String ASSIGN_CONTAINERS_SUCCESSFUL = "Assign containers successful";
+    public static final String LIST_SHIPMENT_FROM_CONSOLE_ID = "/list-shipment-by-console";
 }
