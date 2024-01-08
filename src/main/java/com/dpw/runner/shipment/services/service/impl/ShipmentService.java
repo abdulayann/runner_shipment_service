@@ -3427,6 +3427,8 @@ public class ShipmentService implements IShipmentService {
 
         var origin = consolidation.getCarrierDetails() != null ? consolidation.getCarrierDetails().getOrigin() : null;
         var destination = consolidation.getCarrierDetails() != null ? consolidation.getCarrierDetails().getDestination() : null;
+        var originPort = consolidation.getCarrierDetails() != null ? consolidation.getCarrierDetails().getOriginPort() : null;
+        var destinationPort = consolidation.getCarrierDetails() != null ? consolidation.getCarrierDetails().getDestinationPort() : null;
         var voyage = consolidation.getCarrierDetails() != null ? consolidation.getCarrierDetails().getVoyage() : null;
         var vessel = consolidation.getCarrierDetails() != null ? consolidation.getCarrierDetails().getVessel() : null;
         var aircrafType = consolidation.getCarrierDetails() != null ? consolidation.getCarrierDetails().getAircraftType() : null;
@@ -3464,6 +3466,8 @@ public class ShipmentService implements IShipmentService {
                         .etd(etd)
                         .origin(origin)
                         .vessel(vessel)
+                        .originPort(originPort)
+                        .destinationPort(destinationPort)
                         .shippingLine(consolCarrier != null ? consolCarrier.getShippingLine() : null)
                         .voyage(voyage)
                         .aircraftType(aircrafType)
@@ -3484,6 +3488,7 @@ public class ShipmentService implements IShipmentService {
                 .createdBy(UserContext.getUser().getUsername())
                 .customerCategory(CustomerCategoryRates.CATEGORY_5)
                 .shipmentCreatedOn(LocalDateTime.now())
+                .consolRef(consolidation.getConsolidationNumber())
                 .build();
 
         if (consolidation.getConsolidationAddresses() != null) {
