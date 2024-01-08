@@ -730,6 +730,7 @@ public class AwbService implements IAwbService {
                         awbShipmentInfo.setIataCode(awbShipmentInfo.getIataCode() == null ? orgList.get(0).getAgentIATACode() : awbShipmentInfo.getIataCode());
                         awbShipmentInfo.setAgentCASSCode(awbShipmentInfo.getAgentCASSCode() == null ?
                                 orgList.get(0).getAgentCASSCode() : awbShipmentInfo.getAgentCASSCode());
+                        awbShipmentInfo.setIssuingAgentAddress(getFormattedAddress(orgList.get(0)));
                     }
 
                 } catch (Exception e) {
@@ -2542,6 +2543,19 @@ public class AwbService implements IAwbService {
         }
 
         return ResponseHelper.buildSuccessResponse(packsDescriptionValue);
+    }
+
+    private String getFormattedAddress(EntityTransferOrganizations organization) {
+        AwbAddressParam addressParam = AwbAddressParam.builder()
+                .address1(organization.getAddress1())
+                .address2(organization.getAddress2())
+                .city(organization.getCity())
+                .state(organization.getState())
+                .country(organization.getCountry())
+                .pinCode(organization.getZipPostCode())
+                .contactNumber(organization.getPhone())
+                .build();
+        return AwbUtility.getFormattedAddress(addressParam);
     }
 
 }
