@@ -237,4 +237,9 @@ public class Constants {
     public static final String POINT = "PT";
     public static final String ROD = "Rod";
     public static final String YARD = "YD";
+
+    public static final String DO_PRINT = "DOPR";
+    public static final String HAWB_PRINT = "HAWBPR";
+    public static final String MAWB_PRINT = "MAWBPR";
+    public static final String HBL_PRINT = "HBLPR";
 }

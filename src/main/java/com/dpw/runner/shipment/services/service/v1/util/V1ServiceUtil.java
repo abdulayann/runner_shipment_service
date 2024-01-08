@@ -2,9 +2,15 @@ package com.dpw.runner.shipment.services.service.v1.util;
 
 import com.dpw.runner.shipment.services.commons.constants.CustomerBookingConstants;
 import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
+import com.dpw.runner.shipment.services.commons.constants.ShipmentConstants;
 import com.dpw.runner.shipment.services.dao.interfaces.INotesDao;
 import com.dpw.runner.shipment.services.dto.request.CreateBookingModuleInV1;
+import com.dpw.runner.shipment.services.dto.v1.request.CreditLimitValidateRequest;
+import com.dpw.runner.shipment.services.dto.v1.response.CreditLimitValidateResponse;
 import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
+import com.dpw.runner.shipment.services.service.v1.IV1Service;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -14,9 +20,12 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 @Component
+@Slf4j
 public class V1ServiceUtil {
     @Autowired
     INotesDao notesDao;
+    @Autowired
+    IV1Service v1Service;
 
     public CreateBookingModuleInV1 createBookingRequestForV1(CustomerBooking customerBooking, boolean isShipmentEnabled, boolean isBillingEnabled, UUID shipmentGuid) {
         return CreateBookingModuleInV1.builder()
@@ -265,6 +274,30 @@ public class V1ServiceUtil {
                         .ReferenceGuid(container.getGuid())
                         .build()
         ).collect(Collectors.toList());
+    }
+
+    public void validateCreditLimit(Parties client, String restrictedItem, UUID shipmentGuid) {
+        try {
+            Integer clientId = null;
+            Integer clientAddressId = null;
+            if(client.getOrgData().containsKey("Id"))
+                clientId = (Integer) client.getOrgData().get("Id");
+            if(client.getAddressData().containsKey("Id"))
+                clientAddressId = (Integer)client.getAddressData().get("Id");
+            CreditLimitValidateResponse response = v1Service.checkCreditLimit(CreditLimitValidateRequest.builder()
+                    .restrictedItem(restrictedItem)
+                    .clientId(clientId)
+                    .clientAddressId(clientAddressId)
+                    .shipmentGuid(shipmentGuid != null ? shipmentGuid.toString(): null)
+                    .build());
+            if (!response.getIsValid()){
+                log.error(response.getMessage() + " " + response.getError());
+                throw new ValidationException(response.getMessage());
+            }
+        } catch (Exception ex) {
+            log.error("Check Credit Limit failed due to : " + ex.getMessage());
+            throw new ValidationException(ex.getMessage());
+        }
     }
 
 }
