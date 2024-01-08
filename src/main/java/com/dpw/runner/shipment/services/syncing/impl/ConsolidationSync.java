@@ -7,6 +7,7 @@ import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import com.dpw.runner.shipment.services.service.interfaces.ISyncService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.syncing.Entity.*;
 import com.dpw.runner.shipment.services.syncing.constants.SyncingConstants;
@@ -57,6 +58,8 @@ public class ConsolidationSync implements IConsolidationSync {
     private EmailServiceUtility emailServiceUtility;
     @Autowired
     private CommonUtils commonUtils;
+    @Autowired
+    private ISyncService syncService;
 
     private RetryTemplate retryTemplate = RetryTemplate.builder()
             .maxAttempts(3)
@@ -126,7 +129,8 @@ public class ConsolidationSync implements IConsolidationSync {
 
         response.setGuid(request.getGuid());
         String consolidationRequest = jsonHelper.convertToJson(V1DataSyncRequest.builder().entity(response).module(SyncingConstants.CONSOLIDATION).build());
-        CompletableFuture.runAsync(commonUtils.withMdc(() -> callSync(consolidationRequest, request.getId(), request.getGuid())), commonUtils.syncExecutorService);
+//        CompletableFuture.runAsync(commonUtils.withMdc(() -> callSync(consolidationRequest, request.getId(), request.getGuid())), commonUtils.syncExecutorService);
+        syncService.callSync(consolidationRequest, request.getId(), request.getGuid(), "Consolidation");
         return ResponseHelper.buildSuccessResponse(response);
     }
 
@@ -153,26 +157,26 @@ public class ConsolidationSync implements IConsolidationSync {
         });
     }
 
-    private void callSync(String consolidationRequest, Long id, UUID guid) {
-        retryTemplate.execute(ctx -> {
-            log.info("Current retry : {}", ctx.getRetryCount());
-            if (ctx.getLastThrowable() != null) {
-                log.error("V1 error -> {}", ctx.getLastThrowable().getMessage());
-            }
-
-            V1DataSyncResponse response_ = v1Service.v1DataSync(consolidationRequest);
-            if (!response_.getIsSuccess()) {
-                try {
-                    emailServiceUtility.sendEmailForSyncEntity(String.valueOf(id), String.valueOf(guid),
-                            "Consolidation", response_.getError().toString());
-                } catch (Exception ex) {
-                    log.error("Not able to send email for sync failure for Consolidation: " + ex.getMessage());
-                }
-            }
-            return ResponseHelper.buildSuccessResponse(response_);
-        });
-
-    }
+//    private void callSync(String consolidationRequest, Long id, UUID guid) {
+//        retryTemplate.execute(ctx -> {
+//            log.info("Current retry : {}", ctx.getRetryCount());
+//            if (ctx.getLastThrowable() != null) {
+//                log.error("V1 error -> {}", ctx.getLastThrowable().getMessage());
+//            }
+//
+//            V1DataSyncResponse response_ = v1Service.v1DataSync(consolidationRequest);
+//            if (!response_.getIsSuccess()) {
+//                try {
+//                    emailServiceUtility.sendEmailForSyncEntity(String.valueOf(id), String.valueOf(guid),
+//                            "Consolidation", response_.getError().toString());
+//                } catch (Exception ex) {
+//                    log.error("Not able to send email for sync failure for Consolidation: " + ex.getMessage());
+//                }
+//            }
+//            return ResponseHelper.buildSuccessResponse(response_);
+//        });
+//
+//    }
 
     private void mapShipmentGuids(CustomConsolidationRequest response, ConsolidationDetails request) {
         List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByConsolidationId(request.getId());

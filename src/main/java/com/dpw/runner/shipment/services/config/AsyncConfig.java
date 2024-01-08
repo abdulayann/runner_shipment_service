@@ -17,17 +17,17 @@ import java.util.concurrent.Executors;
 @Slf4j
 public class AsyncConfig implements AsyncConfigurer {
 
-    @Bean(name = "asyncExecutor")
-    public AsyncTaskExecutor getAsyncExecutor() {
-        return new SimpleAsyncTaskExecutor();
-    }
+//    @Bean(name = "asyncExecutor")
+//    public AsyncTaskExecutor getAsyncExecutor() {
+//        return new SimpleAsyncTaskExecutor();
+//    }
 
     // Used for Async
-    @Bean
+    @Bean(name = "asyncExecutor")
     public ThreadPoolTaskExecutor taskExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
         executor.setCorePoolSize(10);
-        executor.setMaxPoolSize(10);
+        executor.setMaxPoolSize(30);
         executor.setThreadNamePrefix("MyAsyncThread-");
         executor.setRejectedExecutionHandler((r, executor1) -> log.warn("Task rejected, thread pool is full and queue is also full"));
         executor.initialize();
