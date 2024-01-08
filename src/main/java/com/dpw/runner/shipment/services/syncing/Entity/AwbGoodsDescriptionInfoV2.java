@@ -3,10 +3,12 @@ package com.dpw.runner.shipment.services.syncing.Entity;
 import lombok.Data;
 
 import java.math.BigDecimal;
+import java.util.UUID;
 
 @Data
 public class AwbGoodsDescriptionInfoV2 {
     // public Int64 entityId;
+    public UUID guid;
     public String entityType;
     public Integer piecesNo;
     public BigDecimal grossWt;
