@@ -55,60 +55,67 @@ public class ConsolidationReverseSync implements IConsolidationReverseSync {
                 return syncQueueService.saveSyncRequest(SyncingConstants.CONSOLIDATION, StringUtility.convertToString(request.getGuid()), request);
             }
             response = modelMapper.map(request, ConsolidationDetailsRequest.class);
-        if(response.getCreditor() != null) {
-            if (request.getIsCreditorFreeTextAddress() != null && request.getIsCreditorFreeTextAddress()) {
-                if (request.getCreditorFreeTextAddress() != null) {
-                    Map<String, Object> addressDataMap = response.getCreditor().getAddressData();
-                    String key = Constants.RAW_DATA;
-                    Object value = request.getCreditorFreeTextAddress();
-                    if (addressDataMap != null) {
-                        addressDataMap.put(key, value);
-                        response.getCreditor().setAddressData(addressDataMap);
-                    } else {
-                        Map<String, Object> newAddressDataMap = new HashMap<>();
-                        newAddressDataMap.put(key, value);
-                        response.getCreditor().setAddressData(newAddressDataMap);
-                    }
-                }
-            }
-        }
 
-        if(response.getReceivingAgent() != null) {
-            if (request.getIsReceivingAgentFreeTextAddress() != null && request.getIsReceivingAgentFreeTextAddress()) {
-                if (request.getReceivingAgentFreeTextAddress() != null) {
+           if(request.getIsCreditorFreeTextAddress() != null && request.getIsCreditorFreeTextAddress()){
+               if(request.getCreditorFreeTextAddress() != null){
+                   if(response.getCreditor() == null){
+                       response.setCreditor(new PartiesRequest());
+                   }
+
+                   Map<String, Object> addressDataMap = response.getCreditor().getAddressData();
+                   String key = Constants.RAW_DATA;
+                   Object value = request.getCreditorFreeTextAddress();
+                   if(addressDataMap != null){
+                       addressDataMap.put(key, value);
+                       response.getCreditor().setAddressData(addressDataMap);
+                   }
+                   else{
+                       Map<String, Object> newAddressDataMap = new HashMap<>();
+                       newAddressDataMap.put(key, value);
+                       response.getCreditor().setAddressData(newAddressDataMap);
+                   }
+               }
+           }
+
+            if(request.getIsReceivingAgentFreeTextAddress() != null && request.getIsReceivingAgentFreeTextAddress()){
+                if(request.getReceivingAgentFreeTextAddress() != null){
+                    if(response.getReceivingAgent() == null){
+                        response.setReceivingAgent(new PartiesRequest());
+                    }
                     Map<String, Object> addressDataMap = response.getReceivingAgent().getAddressData();
                     String key = Constants.RAW_DATA;
                     Object value = request.getReceivingAgentFreeTextAddress();
-                    if (addressDataMap != null) {
+                    if(addressDataMap != null){
                         addressDataMap.put(key, value);
                         response.getReceivingAgent().setAddressData(addressDataMap);
-                    } else {
+                    }
+                    else{
                         Map<String, Object> newAddressDataMap = new HashMap<>();
                         newAddressDataMap.put(key, value);
                         response.getReceivingAgent().setAddressData(newAddressDataMap);
                     }
                 }
             }
-        }
 
-        if(request.getSendingAgent() != null) {
-            if (request.getIsSendingAgentFreeTextAddress() != null && request.getIsSendingAgentFreeTextAddress()) {
-                if (request.getSendingAgentFreeTextAddress() != null) {
+            if(request.getIsSendingAgentFreeTextAddress() != null && request.getIsSendingAgentFreeTextAddress()){
+                if(request.getSendingAgentFreeTextAddress() != null){
+                    if(response.getSendingAgent() == null){
+                        response.setSendingAgent(new PartiesRequest());
+                    }
                     Map<String, Object> addressDataMap = response.getSendingAgent().getAddressData();
                     String key = Constants.RAW_DATA;
                     Object value = request.getSendingAgentFreeTextAddress();
-                    if (addressDataMap != null) {
+                    if(addressDataMap != null){
                         addressDataMap.put(key, value);
                         response.getSendingAgent().setAddressData(addressDataMap);
-                    } else {
+                    }
+                    else{
                         Map<String, Object> newAddressDataMap = new HashMap<>();
                         newAddressDataMap.put(key, value);
                         response.getSendingAgent().setAddressData(newAddressDataMap);
                     }
                 }
             }
-        }
-
 
             response.setLockedBy(request.getLockedByUser());
             response.setMsnNumber(request.getMsnNumberStr());
