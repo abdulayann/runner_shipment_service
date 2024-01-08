@@ -16,6 +16,7 @@ import com.dpw.runner.shipment.services.dto.request.hbl.HblContainerDto;
 import com.dpw.runner.shipment.services.dto.request.hbl.HblDataDto;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.Hbl;
+import com.dpw.runner.shipment.services.entity.Parties;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.MasterData;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
@@ -25,7 +26,9 @@ import com.dpw.runner.shipment.services.masterdata.response.BillingResponse;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.masterdata.response.VesselsResponse;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
+import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.utils.StringUtility;
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -48,6 +51,11 @@ public class HblReport extends IReport{
     @Autowired
     private IV1Service v1Service;
 
+    @Autowired
+    private V1ServiceUtil v1ServiceUtil;
+    @Autowired
+    private ModelMapper modelMapper;
+
     @Override
     public Map<String, Object> getData(Long id) {
         HblModel hblModel = (HblModel) getDocumentModel(id);
@@ -58,6 +66,7 @@ public class HblReport extends IReport{
     public IDocumentModel getDocumentModel(Long id) {
         HblModel hblModel = new HblModel();
         hblModel.shipment = getShipment(id);
+        v1ServiceUtil.validateCreditLimit(modelMapper.map(hblModel.shipment.getClient(), Parties.class), Constants.HBL_PRINT, hblModel.shipment.getGuid());
         hblModel.shipmentSettingsDetails = getShipmentSettings(TenantContext.getCurrentTenant());
         hblModel.tenantSettingsResponse = getTenantSettings();
         hblModel.user = UserContext.getUser();
