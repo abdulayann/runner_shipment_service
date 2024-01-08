@@ -634,7 +634,7 @@ public class AwbService implements IAwbService {
                     V1DataResponse response = v1Service.fetchMasterData(request);
                     List<MasterData> entityTransferMasterLists = jsonHelper.convertValueToList(response.entities, MasterData.class);
                     if(entityTransferMasterLists != null && entityTransferMasterLists.size() > 0)
-                        res.setChargeCodeData(entityTransferMasterLists.get(0));
+                        res.setChargeDetails(entityTransferMasterLists.get(0));
                 } catch (Exception ignored) {}
             }
             responseList.add(res);
@@ -2282,17 +2282,29 @@ public class AwbService implements IAwbService {
                     .dueCarrierCharges(carrierOtherCharges != 0 ? new BigDecimal(carrierOtherCharges) : null)
                     .build();
         }
-        /*
-        How to deal w/  this ?
 
-							this.awbComparisonForm.TotalPrepaid.value =(this.awbComparisonForm.PrepaidWeightCharges.value != null? this.awbComparisonForm.PrepaidWeightCharges.value: 0) +(this.awbComparisonForm.PrepaidValuationCharge.value != null? this.awbComparisonForm.PrepaidValuationCharge.value: 0) +(this.awbComparisonForm.PrepaidTax.value != null ? this.awbComparisonForm.PrepaidTax.value : 0) +(this.awbComparisonForm.PrepaidDueAgentCharges.value != null? this.awbComparisonForm.PrepaidDueAgentCharges.value: 0) +(this.awbComparisonForm.PrepaidDueCarrierCharges.value != null? this.awbComparisonForm.PrepaidDueCarrierCharges.value: 0);
-							this.awbComparisonForm.TotalPrepaid.element.attr('disabled', 'true');
-							if (this.awbComparisonForm.TotalPrepaid.value == 0.0) {
-								this.awbComparisonForm.TotalPrepaid.value = null;
-							}
+        if(req.getChargeDetails() != null) {
+            double totalPrepaid = 0.00;
+            double totalCollect = 0.00;
 
-							this.awbComparisonForm.TotalCollect.value =	(this.awbComparisonForm.CollectWeightCharges.value != null? this.awbComparisonForm.CollectWeightCharges.value: 0) +(this.awbComparisonForm.CollectValuationCharge.value != null? this.awbComparisonForm.CollectValuationCharge.value: 0) +(this.awbComparisonForm.CollectTax.value != null ? this.awbComparisonForm.CollectTax.value : 0) +(this.awbComparisonForm.CollectDueAgentCharges.value != null? this.awbComparisonForm.CollectDueAgentCharges.value: 0) +(this.awbComparisonForm.CollectDueCarrierCharges.value != null? this.awbComparisonForm.CollectDueCarrierCharges.value: 0);
-         */
+            if(req.getChargeDetails().getIdentifier1().equals(true)) {
+                totalPrepaid += totalAmount;
+            }
+
+            if(req.getChargeDetails().getIdentifier2().equals(true)) {
+                totalCollect += totalAmount;
+            }
+
+            if(req.getChargeDetails().getIdentifier3().equals(true)) {
+                totalPrepaid += agentOtherCharges;
+                totalPrepaid += carrierOtherCharges;
+            }
+
+            if(req.getChargeDetails().getIdentifier4().equals(true)) {
+                totalCollect += agentOtherCharges;
+                totalCollect += carrierOtherCharges;
+            }
+        }
 
         /*
             1. Calculate good description based on packs

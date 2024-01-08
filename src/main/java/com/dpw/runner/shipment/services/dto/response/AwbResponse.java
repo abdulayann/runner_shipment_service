@@ -31,5 +31,5 @@ public class AwbResponse implements IRunnerResponse {
     public AwbShipConsoleDto awbKafkaEntity;
     public Map<String, String> masterData;
     public Map<String, String> unlocationData;
-    public MasterData chargeCodeData;
+    public MasterData chargeDetails;
 }
