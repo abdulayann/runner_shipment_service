@@ -3904,4 +3904,20 @@ public class ShipmentService implements IShipmentService {
         return events;
     }
 
+    public ResponseEntity<?> fetchShipmentsForConsoleId(CommonRequestModel commonRequestModel) {
+        CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
+        if(request.getId() == null) {
+            log.error("Request Id is null for Consolidation retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            throw new RunnerException("Id can't be null");
+        }
+        Long id = request.getId();
+        List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByConsolidationId(id);
+        List<Long> shipmentIdsList = new ArrayList<>();
+        if(consoleShipmentMappings != null && consoleShipmentMappings.size() > 0) {
+            shipmentIdsList = consoleShipmentMappings.stream().map(x -> x.getShipmentId()).collect(Collectors.toList());
+        }
+        ListCommonRequest listCommonRequest = CommonUtils.andCriteria("id", shipmentIdsList, "IN", null);
+        return fetchShipments(CommonRequestModel.buildRequest(listCommonRequest));
+    }
+
 }
