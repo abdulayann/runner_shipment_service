@@ -67,5 +67,6 @@ public interface IShipmentService extends ICommonService {
     ResponseEntity<?> getAllMasterData(CommonRequestModel commonRequestModel);
     String generateCustomHouseBL();
     ResponseEntity<?> getIdFromGuid(CommonRequestModel commonRequestModel);
+    ResponseEntity<?> fetchShipmentsForConsoleId(CommonRequestModel commonRequestModel);
 
 }
