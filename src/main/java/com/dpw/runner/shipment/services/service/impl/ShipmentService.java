@@ -1333,7 +1333,8 @@ public class ShipmentService implements IShipmentService {
                 if (!IsStringNullOrEmpty(container.getPacks())) {
                     packageCount = packageCount + Integer.parseInt(container.getPacks());
                 } else {
-                    packageCount = packageCount + container.getNoOfPackages();
+                    if(container.getNoOfPackages() != null)
+                        packageCount = packageCount + container.getNoOfPackages();
                 }
                 if (!IsStringNullOrEmpty(container.getPacks())) {
                     totalPacks = totalPacks + Integer.parseInt(container.getPacks());
@@ -3503,7 +3504,6 @@ public class ShipmentService implements IShipmentService {
             });
         }
 
-        shipment.setShipmentType(Constants.SHIPMENT_TYPE_STD);
         if(!IsStringNullOrEmpty(shipment.getCarrierDetails().getOrigin())) {
             if(IsStringNullOrEmpty(shipment.getAdditionalDetails().getPaidPlace()))
                 shipment.getAdditionalDetails().setPaidPlace(shipment.getCarrierDetails().getOrigin());
@@ -3902,6 +3902,22 @@ public class ShipmentService implements IShipmentService {
         // Persist the event
         eventDao.save(events);
         return events;
+    }
+
+    public ResponseEntity<?> fetchShipmentsForConsoleId(CommonRequestModel commonRequestModel) {
+        CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
+        if(request.getId() == null) {
+            log.error("Request Id is null for Consolidation retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            throw new RunnerException("Id can't be null");
+        }
+        Long id = request.getId();
+        List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByConsolidationId(id);
+        List<Long> shipmentIdsList = new ArrayList<>();
+        if(consoleShipmentMappings != null && consoleShipmentMappings.size() > 0) {
+            shipmentIdsList = consoleShipmentMappings.stream().map(x -> x.getShipmentId()).collect(Collectors.toList());
+        }
+        ListCommonRequest listCommonRequest = CommonUtils.andCriteria("id", shipmentIdsList, "IN", null);
+        return fetchShipments(CommonRequestModel.buildRequest(listCommonRequest));
     }
 
 }

@@ -366,6 +366,10 @@ public abstract class IReport {
                             getValueFromMap(consignerAddress,ZIP_POST_CODE));
                     dictionary.put(ReportConstants.CONSIGNER_NAME, consignerAddress.get(COMPANY_NAME));
                     dictionary.put(ReportConstants.CONSIGNER_CONTACT_PERSON, consignerAddress.get("ContactPerson"));
+                    try {
+                        dictionary.put(ReportConstants.ConsignerPhone, consignerAddress.get("ContactPhone"));
+                        dictionary.put(ReportConstants.ConsignerFullName, shipmentConsigner.getOrgData().get("FullName"));
+                    } catch (Exception ignored) { }
                 }
                 if(shipmentConsigner.getOrgData() != null)
                     dictionary.put(ReportConstants.CONSIGNER_LOCAL_NAME,shipmentConsigner.getOrgData().get("LocalName"));
@@ -918,6 +922,11 @@ public abstract class IReport {
         return DateTimeFormatter.ofPattern("MM/dd/yyyy");
     }
 
+    public static DateTimeFormatter GetDPWDateFormatWithTime()
+    {
+        return DateTimeFormatter.ofPattern("MM/dd/yyyy HH:mm:ss");
+    }
+
     public static String GetDPWDateFormatOrDefaultString()
     {
         return "MM/dd/yyyy";
@@ -929,6 +938,16 @@ public abstract class IReport {
         if (date != null)
         {
             strDate = date.format(GetDPWDateFormatOrDefault());
+        }
+        return strDate;
+    }
+
+    public static String ConvertToDPWDateFormatWithTime(LocalDateTime date)
+    {
+        String strDate = "";
+        if (date != null)
+        {
+            strDate = date.format(GetDPWDateFormatWithTime());
         }
         return strDate;
     }

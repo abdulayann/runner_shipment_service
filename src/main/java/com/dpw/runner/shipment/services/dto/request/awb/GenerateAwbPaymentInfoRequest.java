@@ -7,6 +7,8 @@ import java.util.List;
 
 @Data
 public class GenerateAwbPaymentInfoRequest implements IRunnerRequest {
+    private Boolean isFromShipment;
     private List<AwbGoodsDescriptionInfo> awbGoodsDescriptionInfo;
     private List<AwbOtherChargesInfo> awbOtherChargesInfo;
+    private List<AwbPackingInfo> awbPackingInfo;
 }
