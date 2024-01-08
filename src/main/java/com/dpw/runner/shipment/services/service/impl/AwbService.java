@@ -67,6 +67,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ISSUING_CARRIER_AGENT_NAME;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 
 @SuppressWarnings("ALL")
@@ -687,8 +688,8 @@ public class AwbService implements IAwbService {
             AwbRoutingInfo routingInfo = new AwbRoutingInfo();
             routingInfo.setIsShipmentCreated(true);
             routingInfo.setFlightDate(consolidationDetails.getCarrierDetails().getEtd());
-//            routingInfo.setOrigin(consolidationDetails.getCarrierDetails().getOriginPort()); // field missing: POLId
-//            routingInfo.setDestination(consolidationDetails.getCarrierDetails().getDestinationPort()); // field missing PODId:
+            routingInfo.setOrigin(consolidationDetails.getCarrierDetails().getOriginPort());
+            routingInfo.setDestination(consolidationDetails.getCarrierDetails().getDestinationPort());
             routingInfo.setOriginPortName(consolidationDetails.getCarrierDetails().getOriginPort());
             routingInfo.setDestinationPortName(consolidationDetails.getCarrierDetails().getDestinationPort());
             routingInfo.setByCarrier(consolidationDetails.getCarrierDetails().getShippingLine());
@@ -871,6 +872,26 @@ public class AwbService implements IAwbService {
                         : awbShipmentInfo.getAgentCASSCode());
                 // awbOtherInfoRow.setExecutedAt(getCityId(orgRow.OrgId)); // fetch from master data
                 // awbCargoInfo.CustomOriginCode(getCountryCode(orgRow.OrgCountry)); // fetch from master data
+            }
+        }
+
+        var consolidationDetails = consolidationDetailsDao.findById(request.getConsolidationId());
+        if (consolidationDetails.isPresent()) {
+            var consol = consolidationDetails.get();
+            for (var orgRow : consol.getConsolidationAddresses()) {
+                if (orgRow.getType().equals(ISSUING_CARRIER_AGENT_NAME)) {
+                    var issuingAgentName = StringUtility.convertToString(orgRow.getOrgData().get(PartiesConstants.FULLNAME));
+                    awbShipmentInfo.setIssuingAgentName(issuingAgentName == null ? issuingAgentName : issuingAgentName.toUpperCase()); // extract from orgdata
+                    var issuingAgentAddress = AwbUtility.constructAddress(orgRow.getAddressData());
+                    awbShipmentInfo.setIssuingAgentAddress(issuingAgentAddress == null ? issuingAgentAddress : issuingAgentAddress.toUpperCase());
+
+                    awbShipmentInfo.setIataCode(StringUtility.isEmpty(awbShipmentInfo.getIataCode())
+                            ? StringUtility.convertToString(shipmentDetails.getConsignee().getOrgData().get(PartiesConstants.AGENT_IATA_CODE))
+                            : awbShipmentInfo.getIataCode());
+                    awbShipmentInfo.setAgentCASSCode(StringUtility.isEmpty(awbShipmentInfo.getAgentCASSCode())
+                            ? StringUtility.convertToString(shipmentDetails.getConsignee().getOrgData().get(PartiesConstants.AGENT_CASS_CODE))
+                            : awbShipmentInfo.getAgentCASSCode());
+                }
             }
         }
 
