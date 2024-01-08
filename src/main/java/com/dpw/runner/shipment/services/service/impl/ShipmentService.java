@@ -3503,7 +3503,6 @@ public class ShipmentService implements IShipmentService {
             });
         }
 
-        shipment.setShipmentType(Constants.SHIPMENT_TYPE_STD);
         if(!IsStringNullOrEmpty(shipment.getCarrierDetails().getOrigin())) {
             if(IsStringNullOrEmpty(shipment.getAdditionalDetails().getPaidPlace()))
                 shipment.getAdditionalDetails().setPaidPlace(shipment.getCarrierDetails().getOrigin());
