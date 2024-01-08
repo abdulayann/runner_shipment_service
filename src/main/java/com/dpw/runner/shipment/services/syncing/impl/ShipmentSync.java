@@ -12,6 +12,7 @@ import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.enums.Ownership;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import com.dpw.runner.shipment.services.service.interfaces.ISyncService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.syncing.Entity.*;
 import com.dpw.runner.shipment.services.syncing.constants.SyncingConstants;
@@ -69,6 +70,8 @@ public class ShipmentSync implements IShipmentSync {
 
     @Value("${v1service.url.base}${v1service.url.shipmentSync}")
     private String SHIPMENT_V1_SYNC_URL;
+    @Autowired
+    private ISyncService syncService;
 
     @Override
     public ResponseEntity<?> sync(ShipmentDetails sd) {
@@ -132,31 +135,32 @@ public class ShipmentSync implements IShipmentSync {
         cs.setWeightVolumeUnit(sd.getVolumetricWeightUnit());
 
         String finalCs = jsonHelper.convertToJson(V1DataSyncRequest.builder().entity(cs).module(SyncingConstants.SHIPMENT).build());
-        CompletableFuture.runAsync(commonUtils.withMdc(() -> callSync(finalCs, cs, sd.getId(), sd.getGuid())), commonUtils.syncExecutorService);
+//        CompletableFuture.runAsync(commonUtils.withMdc(() -> callSync(finalCs, cs, sd.getId(), sd.getGuid())), commonUtils.syncExecutorService);
+        syncService.callSync(finalCs, sd.getId(), sd.getGuid(), "Shipments");
         return ResponseHelper.buildSuccessResponse(modelMapper.map(cs, CustomShipmentSyncRequest.class));
     }
 
 
-    public void callSync(String finalCs, CustomShipmentSyncRequest cs, Long id, UUID guid) {
-
-        retryTemplate.execute(ctx -> {
-            log.info("Current retry : {}", ctx.getRetryCount());
-            if (ctx.getLastThrowable() != null) {
-                log.error("V1 error -> {}", ctx.getLastThrowable().getMessage());
-            }
-            V1DataSyncResponse response_ = v1Service.v1DataSync(finalCs);
-            if (!response_.getIsSuccess()) {
-                try {
-                    emailServiceUtility.sendEmailForSyncEntity(String.valueOf(id), String.valueOf(guid),
-                            "Shipment Sync", response_.getError().toString());
-                } catch (Exception ex) {
-                    log.error("Not able to send email for sync failure for Shipment Sync " + ex.getMessage());
-                }
-            }
-            return ResponseHelper.buildSuccessResponse(response_);
-        });
-
-    }
+//    public void callSync(String finalCs, CustomShipmentSyncRequest cs, Long id, UUID guid) {
+//
+//        retryTemplate.execute(ctx -> {
+//            log.info("Current retry : {}", ctx.getRetryCount());
+//            if (ctx.getLastThrowable() != null) {
+//                log.error("V1 error -> {}", ctx.getLastThrowable().getMessage());
+//            }
+//            V1DataSyncResponse response_ = v1Service.v1DataSync(finalCs);
+//            if (!response_.getIsSuccess()) {
+//                try {
+//                    emailServiceUtility.sendEmailForSyncEntity(String.valueOf(id), String.valueOf(guid),
+//                            "Shipment Sync", response_.getError().toString());
+//                } catch (Exception ex) {
+//                    log.error("Not able to send email for sync failure for Shipment Sync " + ex.getMessage());
+//                }
+//            }
+//            return ResponseHelper.buildSuccessResponse(response_);
+//        });
+//
+//    }
 
     @Override
     public ResponseEntity<?> syncById(Long shipmentId) {
