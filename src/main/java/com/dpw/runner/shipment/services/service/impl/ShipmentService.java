@@ -1333,7 +1333,8 @@ public class ShipmentService implements IShipmentService {
                 if (!IsStringNullOrEmpty(container.getPacks())) {
                     packageCount = packageCount + Integer.parseInt(container.getPacks());
                 } else {
-                    packageCount = packageCount + container.getNoOfPackages();
+                    if(container.getNoOfPackages() != null)
+                        packageCount = packageCount + container.getNoOfPackages();
                 }
                 if (!IsStringNullOrEmpty(container.getPacks())) {
                     totalPacks = totalPacks + Integer.parseInt(container.getPacks());
