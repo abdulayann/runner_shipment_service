@@ -6,6 +6,8 @@ import com.dpw.runner.shipment.services.ReportingService.Models.DocPages;
 import com.dpw.runner.shipment.services.ReportingService.Models.DocUploadRequest;
 import com.dpw.runner.shipment.services.ReportingService.Models.DocumentRequest;
 import com.dpw.runner.shipment.services.ReportingService.Reports.HblReport;
+import com.dpw.runner.shipment.services.ReportingService.Reports.IReport;
+import com.dpw.runner.shipment.services.ReportingService.Reports.MawbReport;
 import com.dpw.runner.shipment.services.ReportingService.ReportsFactory;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
@@ -131,6 +133,14 @@ public class ReportService implements IReportService {
             dataRetrived = hblReport.getData(Long.parseLong(reportRequest.getReportId()));
         }
         else {
+            IReport report =  reportsFactory.getReport(reportRequest.getReportInfo());
+            if(report instanceof MawbReport) {
+                if(reportRequest.isFromShipment()) {
+                    ((MawbReport)report).isDMawb = true;
+                } else {
+                    ((MawbReport)report).isDMawb = false;
+                }
+            }
             dataRetrived = reportsFactory.getReport(reportRequest.getReportInfo()).getData(Long.parseLong(reportRequest.getReportId()));
         }
         boolean isOriginalPrinted = (boolean) dataRetrived.getOrDefault(ReportConstants.PRINTED_ORIGINAL, false);

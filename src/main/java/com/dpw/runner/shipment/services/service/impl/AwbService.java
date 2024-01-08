@@ -283,7 +283,9 @@ public class AwbService implements IAwbService {
                         List<Awb> linkedHawb = getLinkedAwbFromMawb(awb.getId());
                         List<AwbPackingInfo> linkedPacks = new ArrayList<>();
                         for (var hawb : linkedHawb) {
-                            linkedPacks.addAll(hawb.getAwbPackingInfo());
+                            if(hawb.getAwbPackingInfo() != null) {
+                                linkedPacks.addAll(hawb.getAwbPackingInfo());
+                            }
                         }
                         awb.setAwbPackingInfo(linkedPacks);
                     }
@@ -342,7 +344,9 @@ public class AwbService implements IAwbService {
                 List<AwbPackingInfo> linkedPacks = new ArrayList<>();
                 for(var hawb : linkedHawb){
 //                    awb.get().getAwbGoodsDescriptionInfo().addAll(hawb.getAwbGoodsDescriptionInfo());
-                    linkedPacks.addAll(hawb.getAwbPackingInfo());
+                    if(hawb.getAwbPackingInfo() != null) {
+                        linkedPacks.addAll(hawb.getAwbPackingInfo());
+                    }
                 }
                 awb.get().setAwbPackingInfo(linkedPacks);
             }
