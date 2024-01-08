@@ -24,4 +24,5 @@ public class ReportRequest implements IRunnerRequest {
     String multiTemplateCode = null;
     String requestSource = null;
     String noOfCopies = null;
+    boolean fromShipment;
 }

@@ -72,7 +72,12 @@ public class HawbReport extends IReport{
     public Map<String, Object> populateDictionary(IDocumentModel documentModel) {
 
         HawbModel hawbModel = (HawbModel) documentModel;
-        String json = jsonHelper.convertToJson(hawbModel.shipmentDetails);
+        String json;
+        if(hawbModel.shipmentDetails != null ) {
+            json = jsonHelper.convertToJson(hawbModel.shipmentDetails);
+        } else {
+            json = jsonHelper.convertToJson(hawbModel.getConsolidationDetails());
+        }
         Map<String, Object> dictionary = jsonHelper.convertJsonToMap(json);
 
         //TODO- Tenant data

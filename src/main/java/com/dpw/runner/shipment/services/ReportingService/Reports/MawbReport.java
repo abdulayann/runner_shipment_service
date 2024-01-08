@@ -15,6 +15,8 @@ public class MawbReport extends IReport{
     @Autowired
     private HawbReport hawbReport;
 
+    public boolean isDMawb;
+
     @Override
     public Map<String, Object> getData(Long id) {
         HawbModel mawbModel = (HawbModel) getDocumentModel(id);
@@ -24,20 +26,29 @@ public class MawbReport extends IReport{
     @Override
     public IDocumentModel getDocumentModel(Long id) {
         HawbModel hawbModel = new HawbModel();
-        hawbModel.usersDto = UserContext.getUser();
-        hawbModel.shipmentDetails = getShipment(id);
-        String entityType = "MAWB";
-        if(hawbModel.shipmentDetails != null && hawbModel.shipmentDetails.getConsolidationList() != null && !hawbModel.shipmentDetails.getConsolidationList().isEmpty())
-        {
-            hawbModel.setConsolidationDetails(hawbModel.shipmentDetails.getConsolidationList().get(0));
+        if(!isDMawb) {
+            hawbModel.usersDto = UserContext.getUser();
+            hawbModel.setConsolidationDetails(getConsolidation(id));
+            String entityType = "MAWB";
             hawbModel.setMawb(getMawb(hawbModel.getConsolidationDetails().getId()));
             hawbModel.awb = hawbModel.getMawb();
+            hawbModel.setEntityType(entityType);
+        } else {
+            hawbModel.usersDto = UserContext.getUser();
+            hawbModel.shipmentDetails = getShipment(id);
+            String entityType = "MAWB";
+            if(hawbModel.shipmentDetails != null && hawbModel.shipmentDetails.getConsolidationList() != null && !hawbModel.shipmentDetails.getConsolidationList().isEmpty())
+            {
+                hawbModel.setConsolidationDetails(hawbModel.shipmentDetails.getConsolidationList().get(0));
+                hawbModel.setMawb(getMawb(hawbModel.getConsolidationDetails().getId()));
+                hawbModel.awb = hawbModel.getMawb();
+            }
+            if(hawbModel.getMawb() == null){
+                hawbModel.awb = getHawb(id);
+                entityType = "DMAWB";
+            }
+            hawbModel.setEntityType(entityType);
         }
-        if(hawbModel.getMawb() == null){
-            hawbModel.awb = getHawb(id);
-            entityType = "DMAWB";
-        }
-        hawbModel.setEntityType(entityType);
         return hawbModel;
     }
 

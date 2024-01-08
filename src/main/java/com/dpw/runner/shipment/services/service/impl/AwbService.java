@@ -275,16 +275,33 @@ public class AwbService implements IAwbService {
 
             List<String>includeColumns = request.getIncludeColumns();
 
+            List<Awb> awbList = awbPage.getContent();
+
+            if(awbList != null) {
+                for (Awb awb : awbList) {
+                    if (awb.getAwbShipmentInfo().getEntityType().equals(Constants.MAWB)) {
+                        List<Awb> linkedHawb = getLinkedAwbFromMawb(awb.getId());
+                        List<AwbPackingInfo> linkedPacks = new ArrayList<>();
+                        for (var hawb : linkedHawb) {
+                            if(hawb.getAwbPackingInfo() != null) {
+                                linkedPacks.addAll(hawb.getAwbPackingInfo());
+                            }
+                        }
+                        awb.setAwbPackingInfo(linkedPacks);
+                    }
+                }
+            }
+
             if(includeColumns==null||includeColumns.size()==0){
                 return ResponseHelper.buildListSuccessResponse(
-                        convertEntityListToDtoList(awbPage.getContent()),
+                        convertEntityListToDtoList(awbList),
                         awbPage.getTotalPages(),
                         awbPage.getTotalElements());
             }
             else{
 
                 List<IRunnerResponse>filtered_list=new ArrayList<>();
-                for( var curr: convertEntityListToDtoList(awbPage.getContent())){
+                for( var curr: convertEntityListToDtoList(awbList)){
                     RunnerPartialListResponse res=new RunnerPartialListResponse();
                     res.setData(PartialFetchUtils.fetchPartialListData(curr,request.getIncludeColumns()));
                     filtered_list.add( res);
@@ -327,7 +344,9 @@ public class AwbService implements IAwbService {
                 List<AwbPackingInfo> linkedPacks = new ArrayList<>();
                 for(var hawb : linkedHawb){
 //                    awb.get().getAwbGoodsDescriptionInfo().addAll(hawb.getAwbGoodsDescriptionInfo());
-                    linkedPacks.addAll(hawb.getAwbPackingInfo());
+                    if(hawb.getAwbPackingInfo() != null) {
+                        linkedPacks.addAll(hawb.getAwbPackingInfo());
+                    }
                 }
                 awb.get().setAwbPackingInfo(linkedPacks);
             }
