@@ -2256,6 +2256,9 @@ public class AwbService implements IAwbService {
             var grossWeight = calculateGrossWeight(goodsDescriptionInfos);
 
             for (var _otherCharge : otherChargesInfos) {
+                if (_otherCharge.getChargeBasis() == 1)
+                    _otherCharge.setAmount(_otherCharge.getRate());
+
                 if (_otherCharge.getChargeBasis() == 2)
                     _otherCharge.setAmount(_otherCharge.getRate().multiply(chargeableWeight));
 
