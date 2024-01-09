@@ -2304,6 +2304,9 @@ public class AwbService implements IAwbService {
                 totalCollect += agentOtherCharges;
                 totalCollect += carrierOtherCharges;
             }
+
+            paymentInfo.setTotalCollect(convertToBigDecimal(totalCollect));
+            paymentInfo.setTotalPrepaid(convertToBigDecimal(totalPrepaid));
         }
 
         /*
