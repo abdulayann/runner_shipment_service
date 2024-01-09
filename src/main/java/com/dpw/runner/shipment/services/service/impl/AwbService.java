@@ -2344,22 +2344,42 @@ public class AwbService implements IAwbService {
             double totalPrepaid = 0.00;
             double totalCollect = 0.00;
 
-            if(req.getChargeDetails().getIdentifier1().equals(true)) {
+            if(req.getChargeDetails().getIdentifier1().equals(Constants.TRUE)) {
+                // Prepaid WeighCharges
                 totalPrepaid += totalAmount;
+            } else {
+                totalPrepaid += getDoubleValue(req.getAwbPaymentInfo().getWeightCharges());
+                totalPrepaid += getDoubleValue(req.getAwbPaymentInfo().getValuationCharge());
+                totalPrepaid += getDoubleValue(req.getAwbPaymentInfo().getTax());
             }
 
-            if(req.getChargeDetails().getIdentifier2().equals(true)) {
+            if(req.getChargeDetails().getIdentifier2().equals(Constants.TRUE)) {
+                // CollectWeightCharges
                 totalCollect += totalAmount;
+            } else {
+                totalCollect += getDoubleValue(req.getAwbPaymentInfo().getWeightCharges());
+                totalCollect += getDoubleValue(req.getAwbPaymentInfo().getValuationCharge());
+                totalCollect += getDoubleValue(req.getAwbPaymentInfo().getTax());
             }
 
-            if(req.getChargeDetails().getIdentifier3().equals(true)) {
+            if(req.getChargeDetails().getIdentifier3().equals(Constants.TRUE)) {
+                // PrepaidDueAgentCharges
+                // PrepaidDueCarrierCharges
                 totalPrepaid += agentOtherCharges;
                 totalPrepaid += carrierOtherCharges;
+            } else{
+                totalPrepaid += getDoubleValue(req.getAwbPaymentInfo().getDueAgentCharges());
+                totalPrepaid += getDoubleValue(req.getAwbPaymentInfo().getDueCarrierCharges());
             }
 
-            if(req.getChargeDetails().getIdentifier4().equals(true)) {
+            if(req.getChargeDetails().getIdentifier4().equals(Constants.TRUE)) {
+                // CollectDueAgentCharges
+                // CollectDueCarrierCharges
                 totalCollect += agentOtherCharges;
                 totalCollect += carrierOtherCharges;
+            } else {
+                totalCollect += getDoubleValue(req.getAwbPaymentInfo().getDueAgentCharges());
+                totalCollect += getDoubleValue(req.getAwbPaymentInfo().getDueCarrierCharges());
             }
 
             paymentInfo.setTotalCollect(convertToBigDecimal(totalCollect));
@@ -2628,6 +2648,12 @@ public class AwbService implements IAwbService {
                 .contactNumber(organization.getPhone())
                 .build();
         return AwbUtility.getFormattedAddress(addressParam);
+    }
+
+    private double getDoubleValue(BigDecimal number) {
+        if(number == null)
+            return 0.0;
+        return number.doubleValue();
     }
 
 }
