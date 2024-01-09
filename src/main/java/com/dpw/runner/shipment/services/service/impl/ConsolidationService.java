@@ -474,8 +474,6 @@ public class ConsolidationService implements IConsolidationService {
                 log.error("Error performing sync on consolidation entity, {}", e);
             }
             afterSave(consol.get(), true);
-            updateMasterBill(consol.get(), null);
-            updateLinkedShipmentData(consol.get(), null);
             // EventMessage eventMessage = EventMessage.builder().messageType(Constants.SERVICE).entity(Constants.CONSOLIDATION).request(consolidationDetails).build();
             // sbUtils.sendMessagesToTopic(isbProperties, azureServiceBusTopic.getTopic(), Arrays.asList(new ServiceBusMessage(jsonHelper.convertToJsonIncludeNulls(eventMessage))));
 
@@ -783,6 +781,8 @@ public class ConsolidationService implements IConsolidationService {
             }
         }
         Optional<ConsolidationDetails> consol = consolidationDetailsDao.findById(consolidationId);
+        updateMasterBill(consol.get(), null);
+        updateLinkedShipmentData(consol.get(), null);
         try {
             consolidationSync.sync(consol.get());
         }
