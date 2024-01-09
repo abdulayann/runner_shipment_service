@@ -7,7 +7,10 @@ import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentCANModel
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PartiesModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.dao.interfaces.IHblDao;
+import com.dpw.runner.shipment.services.entity.Hbl;
 import com.dpw.runner.shipment.services.entity.enums.MeasurementBasis;
+import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.response.BillChargesResponse;
 import com.dpw.runner.shipment.services.masterdata.response.BillingResponse;
@@ -31,6 +34,9 @@ public class ShipmentCANReport extends IReport {
     @Autowired
     private HblReport hblReport;
 
+    @Autowired
+    private IHblDao hblDao;
+
     @Override
     public Map<String, Object> getData(Long id) {
         ShipmentCANModel shipmentCANModel = (ShipmentCANModel) getDocumentModel(id);
@@ -40,6 +46,9 @@ public class ShipmentCANReport extends IReport {
     @Override
     public IDocumentModel getDocumentModel(Long id) {
         ShipmentCANModel shipmentCANModel = new ShipmentCANModel();
+            List<Hbl> hblList = hblDao.findByShipmentId(id);
+            if(hblList == null || hblList.size() == 0)
+                throw new ValidationException("Bl Object not found!");
             shipmentCANModel.shipmentDetails = getShipment(id);
             shipmentCANModel.tenantDetails = getTenant();
             shipmentCANModel.consolidationModel = getFirstConsolidationFromShipmentId(id);

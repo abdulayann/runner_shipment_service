@@ -9,12 +9,14 @@ import com.dpw.runner.shipment.services.dao.interfaces.IMawbStocksDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IMawbStocksLinkDao;
 import com.dpw.runner.shipment.services.dto.request.MawbStocksRequest;
 import com.dpw.runner.shipment.services.dto.response.MawbStocksResponse;
+import com.dpw.runner.shipment.services.entity.Events;
 import com.dpw.runner.shipment.services.entity.MawbStocks;
 import com.dpw.runner.shipment.services.entity.MawbStocksLink;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IMawbStocksService;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
@@ -209,6 +211,22 @@ public class MawbStocksService implements IMawbStocksService {
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(responseMsg);
         }
+    }
+
+    public ResponseEntity<?> getNextMawbNumberByCarrier(String airLinePrefix){
+        ListCommonRequest listCommonRequest;
+        listCommonRequest = CommonUtils.andCriteria("borrowedFrom", null, "ISNULL", null);
+        CommonUtils.andCriteria("id", 0, ">", listCommonRequest);
+        CommonUtils.andCriteria("consolidationId", null, "ISNULL", listCommonRequest);
+        CommonUtils.andCriteria("availableCount", "0", ">", listCommonRequest);
+        CommonUtils.andCriteria("airLinePrefix", airLinePrefix.toLowerCase(), "=", listCommonRequest);
+
+        Pair<Specification<MawbStocks>, Pageable> tuple = fetchData(listCommonRequest, MawbStocks.class);
+        Page<MawbStocks> mawbStocksPage = mawbStocksDao.findAll(tuple.getLeft(), tuple.getRight());
+        if(!mawbStocksPage.getContent().isEmpty()){
+            return ResponseHelper.buildSuccessResponse(mawbStocksPage.getContent().get(0).getNextMawbNumber());
+        }
+        return ResponseHelper.buildSuccessResponse(null);
     }
 
     private MawbStocksResponse convertEntityToDto(MawbStocks mawbStocks) {

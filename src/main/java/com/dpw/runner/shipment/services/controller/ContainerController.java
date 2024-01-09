@@ -228,4 +228,10 @@ public class ContainerController {
     public ResponseEntity<RunnerListResponse<EventsResponse>> list(@RequestBody @Valid ListCommonRequest listCommonRequest) {
         return (ResponseEntity<RunnerListResponse<EventsResponse>>) containerService.getContainers(CommonRequestModel.buildRequest(listCommonRequest));
     }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.SUCCESS)})
+    @GetMapping(ContainerConstants.CHECK_CONTAINERS_DELETE)
+    public ResponseEntity<RunnerListResponse<EventsResponse>> checkForDelete(@RequestParam Long containerId) {
+        return (ResponseEntity<RunnerListResponse<EventsResponse>>) containerService.checkForDelete(CommonRequestModel.buildRequest(containerId));
+    }
 }

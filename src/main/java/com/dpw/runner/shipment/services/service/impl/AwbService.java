@@ -73,6 +73,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.COUNTRY;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ISSUING_CARRIER_AGENT_NAME;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ISSUING_CARRIER_AGENT_NAME;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 
@@ -578,6 +580,11 @@ public class AwbService implements IAwbService {
             mawbGoodsDescriptionInfo.setChargeableWt(roundOffAirShipment(chargeableWeightOfMawbGood));
             mawbGoodsDescriptionInfo.setTotalAmount(totalAmountOfMawbGood);
         }
+        mawbGoodsDescriptionInfo.setGrossWt(totalGrossWeightOfMawbGood);
+        mawbGoodsDescriptionInfo.setGrossWtUnit(grossWeightUnit);
+        mawbGoodsDescriptionInfo.setPiecesNo(noOfPacks);
+        mawbGoodsDescriptionInfo.setChargeableWt(roundOffAirShipment(chargeableWeightOfMawbGood));
+        mawbGoodsDescriptionInfo.setTotalAmount(totalAmountOfMawbGood);
         return totalVolumetricWeight;
     }
 
@@ -684,14 +691,18 @@ public class AwbService implements IAwbService {
 
         awbShipmentInfo.setEntityId(consolidationDetails.getId());
         awbShipmentInfo.setEntityType(request.getAwbType());
-        // awbShipmentInfo.setShipperName(consolidationDetails.getSendingAgentName()); // missing
+        var shipperName = StringUtility.convertToString(consolidationDetails.getSendingAgent().getOrgData().get(PartiesConstants.FULLNAME));
+        awbShipmentInfo.setShipperName(shipperName == null ? shipperName : shipperName.toUpperCase());
         awbShipmentInfo.setAwbNumber(consolidationDetails.getMawb());
         awbShipmentInfo.setFirstCarrier(consolidationDetails.getCarrierDetails().getShippingLine());
-        awbShipmentInfo.setShipperAddress(consolidationDetails.getSendingAgentFreeTextAddress());
+        var shipperAddress = AwbUtility.constructAddress(consolidationDetails.getSendingAgent() != null ? consolidationDetails.getSendingAgent().getAddressData() : null);
+        awbShipmentInfo.setShipperAddress(shipperAddress == null ? shipperAddress : shipperAddress.toUpperCase());
         awbShipmentInfo.setShipperReferenceNumber(consolidationDetails.getAgentReference());
-        // awbShipmentInfo.setConsigneeName(consolidationDetails.getReceivingAgentName()); //missing
-        awbShipmentInfo.setConsigneeAddress(consolidationDetails.getReceivingAgentFreeTextAddress());
-        // awbShipmentInfo.setConsigneeReferenceNumber(consolidationDetails.getReceivingAgentId()); //missing
+        var consigneeName = StringUtility.convertToString(consolidationDetails.getReceivingAgent() != null && consolidationDetails.getReceivingAgent().getOrgData() != null? consolidationDetails.getReceivingAgent().getOrgData().get(PartiesConstants.FULLNAME) : "");
+        awbShipmentInfo.setConsigneeName(consigneeName == null ? consigneeName : consigneeName.toUpperCase());
+        var consigneeAddress = AwbUtility.constructAddress(consolidationDetails.getReceivingAgent() != null ? consolidationDetails.getReceivingAgent().getAddressData() : null);
+        awbShipmentInfo.setConsigneeAddress(consigneeAddress == null ? consigneeAddress : consigneeAddress.toUpperCase());
+        awbShipmentInfo.setConsigneeReferenceNumber(consolidationDetails.getReceivingAgent() != null ? consolidationDetails.getReceivingAgent() .getId().toString() : null);
         // AwbUtility.getConsolidationForwarderDetails(uow, consolidationRow, awbShipmentInfo, awbOtherInfoRow, awbCargoInfo); TODO
         awbShipmentInfo.setOriginAirport(consolidationDetails.getCarrierDetails() != null ? consolidationDetails.getCarrierDetails().getOriginPort() : null);
         awbShipmentInfo.setDestinationAirport(consolidationDetails.getCarrierDetails() != null ? consolidationDetails.getCarrierDetails().getDestinationPort() : null);
@@ -828,6 +839,18 @@ public class AwbService implements IAwbService {
         awbCargoInfo.setNtrQtyGoods(awbCargoInfo.getNtrQtyGoods() == null ? null : awbCargoInfo.getNtrQtyGoods().toUpperCase());
         awbCargoInfo.setShippingInformation(awbCargoInfo.getShippingInformation() == null ? null : awbCargoInfo.getShippingInformation().toUpperCase());
         awbCargoInfo.setShippingInformationOther(awbCargoInfo.getShippingInformationOther() == null ? null : awbCargoInfo.getShippingInformationOther().toUpperCase());
+        var consolOptional = consolidationDetailsDao.findById(request.getConsolidationId());
+        if (consolOptional.isPresent()) {
+            var consol = consolOptional.get();
+            for (var consolAddressRow : consol.getConsolidationAddresses()) {
+                if (consolAddressRow.getType() != null && consolAddressRow.getType().equals(Constants.FORWARDING_AGENT)) {
+                    String country = consolAddressRow.getAddressData() != null ?
+                            (String) consolAddressRow.getAddressData().get(COUNTRY) : null;
+                    if (country != null)
+                        awbCargoInfo.setCustomOriginCode(getCountryCode(country));
+                }
+            }
+        }
         return awbCargoInfo;
     }
 
@@ -851,7 +874,8 @@ public class AwbService implements IAwbService {
         AwbOtherInfo awbOtherInfo = new AwbOtherInfo();
         awbOtherInfo.setEntityId(consolidationDetails.getId());
         awbOtherInfo.setEntityType(request.getAwbType());
-        // awbOtherInfo.setShipper(consolidationDetails.getSendingAgentName()); //missing
+        var shipperName = StringUtility.convertToString(consolidationDetails.getSendingAgent() != null ? consolidationDetails.getSendingAgent().getOrgData().get(PartiesConstants.FULLNAME) : "");
+        awbOtherInfo.setShipper(shipperName == null ? null : shipperName.toUpperCase());
         awbOtherInfo.setExecutedOn(jsonHelper.convertValue(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss").format(LocalDateTime.now()), LocalDateTime.class));
         return awbOtherInfo;
     }
@@ -1082,6 +1106,31 @@ public class AwbService implements IAwbService {
         awbCargoInfo.setShippingInformation(awbCargoInfo.getShippingInformation() == null ? null : awbCargoInfo.getShippingInformation().toUpperCase());
         awbCargoInfo.setShippingInformationOther(awbCargoInfo.getShippingInformationOther() == null ? null : awbCargoInfo.getShippingInformationOther().toUpperCase());
         return awbCargoInfo;
+    }
+
+    private String getCountryCode(String country) {
+        CommonV1ListRequest request = new CommonV1ListRequest();
+        List<Object> criteria = new ArrayList<>();
+        List<Object> subCriteria1 = Arrays.asList(
+                Arrays.asList("ItemType"),
+                "=",
+                MasterDataType.COUNTRIES.getId()
+        );
+        List<Object> subCriteria2 = Arrays.asList(
+                Arrays.asList("ItemValue"),
+                "=",
+                country
+        );
+        criteria.addAll(List.of(subCriteria1, "and", subCriteria2));
+        request.setCriteriaRequests(criteria);
+        try {
+            V1DataResponse response = v1Service.fetchMasterData(request);
+            List<EntityTransferMasterLists> responseList = jsonHelper.convertValueToList(response.entities, EntityTransferMasterLists.class);
+            if (responseList != null && responseList.size() > 0)
+                return responseList.get(0).getIdentifier1();
+        } catch (Exception ignored) {
+        }
+        return null;
     }
 
     private AwbOtherInfo generateAwbOtherInfo(ShipmentDetails shipmentDetails, CreateAwbRequest request) {
@@ -1990,18 +2039,24 @@ public class AwbService implements IAwbService {
 
     private void updateMawbShipmentInfoFromShipment(ConsolidationDetails consolidationDetails, CreateAwbRequest request, Awb awb, MawbLockSettings mawbLockSettings) {
         AwbShipmentInfo awbShipmentInfo = awb.getAwbShipmentInfo();
-        // awbShipmentInfo.setShipperName(consolidationDetails.getSendingAgentName()); // missing
+        var shipperName = StringUtility.convertToString(consolidationDetails.getSendingAgent().getOrgData().get(PartiesConstants.FULLNAME));
+        awbShipmentInfo.setShipperName(shipperName == null ? shipperName : shipperName.toUpperCase());
         if(!mawbLockSettings.getFirstCarrierLock())
             awbShipmentInfo.setFirstCarrier(consolidationDetails.getCarrierDetails().getShippingLine());
-        if(!mawbLockSettings.getShipperAddressLock())
-            awbShipmentInfo.setShipperAddress(consolidationDetails.getSendingAgentFreeTextAddress());
-        // awbShipmentInfo.setConsigneeName(consolidationDetails.getReceivingAgentName()); //missing
-        if(!mawbLockSettings.getConsigneeAddressLock())
-            awbShipmentInfo.setConsigneeAddress(consolidationDetails.getReceivingAgentFreeTextAddress());
-        // awbShipmentInfo.setConsigneeReferenceNumber(consolidationDetails.getReceivingAgentId()); //missing
+        if(!mawbLockSettings.getShipperAddressLock()){
+            var shipperAddress = AwbUtility.constructAddress(consolidationDetails.getSendingAgent() != null ? consolidationDetails.getSendingAgent().getAddressData() : null);
+            awbShipmentInfo.setShipperAddress(shipperAddress == null ? shipperAddress : shipperAddress.toUpperCase());
+        }
+        var consigneeName = StringUtility.convertToString(consolidationDetails.getReceivingAgent() != null && consolidationDetails.getReceivingAgent().getOrgData() != null? consolidationDetails.getReceivingAgent().getOrgData().get(PartiesConstants.FULLNAME) : "");
+        awbShipmentInfo.setConsigneeName(consigneeName == null ? consigneeName : consigneeName.toUpperCase());
+        if(!mawbLockSettings.getConsigneeAddressLock()){
+            var consigneeAddress = AwbUtility.constructAddress(consolidationDetails.getReceivingAgent() != null ? consolidationDetails.getReceivingAgent().getAddressData() : null);
+            awbShipmentInfo.setConsigneeAddress(consigneeAddress == null ? consigneeAddress : consigneeAddress.toUpperCase());
+        }
+        awbShipmentInfo.setConsigneeReferenceNumber(consolidationDetails.getReceivingAgent() != null ? consolidationDetails.getReceivingAgent() .getId().toString() : null);
         // AwbUtility.getConsolidationForwarderDetails(uow, consolidationRow, awbShipmentInfo, awbOtherInfoRow, awbCargoInfo); TODO
-        // awbShipmentInfo.setOriginAirport(consolidationDetails.setOriginPort()); // missing
-        // awbShipmentInfo.setDestinationAirport(consolidationDetails.setDestinationPort()); // missing
+        awbShipmentInfo.setOriginAirport(consolidationDetails.getCarrierDetails() != null ? consolidationDetails.getCarrierDetails().getOriginPort() : null);
+        awbShipmentInfo.setDestinationAirport(consolidationDetails.getCarrierDetails() != null ? consolidationDetails.getCarrierDetails().getDestinationPort() : null);
     }
 
     private void generateMawbNotifyPartyinfo(ConsolidationDetails consolidationDetails, CreateAwbRequest request, Awb awb, MawbLockSettings mawbLockSettings) {
@@ -2127,7 +2182,8 @@ public class AwbService implements IAwbService {
     }
     private void generateMawbOtherInfo(ConsolidationDetails consolidationDetails, CreateAwbRequest request, Awb awb, MawbLockSettings mawbLockSettings) {
         AwbOtherInfo awbOtherInfo = awb.getAwbOtherInfo();
-        // awbOtherInfo.setShipper(consolidationDetails.getSendingAgentName()); //missing
+        var shipperName = StringUtility.convertToString(consolidationDetails.getSendingAgent() != null ? consolidationDetails.getSendingAgent().getOrgData().get(PartiesConstants.FULLNAME) : "");
+        awbOtherInfo.setShipper(shipperName == null ? null : shipperName.toUpperCase());
         if(!mawbLockSettings.getExecutedOnLock())
             awbOtherInfo.setExecutedOn(jsonHelper.convertValue(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss").format(LocalDateTime.now()), LocalDateTime.class));
 
