@@ -73,6 +73,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.COUNTRY;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ISSUING_CARRIER_AGENT_NAME;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ISSUING_CARRIER_AGENT_NAME;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 
@@ -828,6 +830,18 @@ public class AwbService implements IAwbService {
         awbCargoInfo.setNtrQtyGoods(awbCargoInfo.getNtrQtyGoods() == null ? null : awbCargoInfo.getNtrQtyGoods().toUpperCase());
         awbCargoInfo.setShippingInformation(awbCargoInfo.getShippingInformation() == null ? null : awbCargoInfo.getShippingInformation().toUpperCase());
         awbCargoInfo.setShippingInformationOther(awbCargoInfo.getShippingInformationOther() == null ? null : awbCargoInfo.getShippingInformationOther().toUpperCase());
+        var consolOptional = consolidationDetailsDao.findById(request.getConsolidationId());
+        if (consolOptional.isPresent()) {
+            var consol = consolOptional.get();
+            for (var consolAddressRow : consol.getConsolidationAddresses()) {
+                if (consolAddressRow.getType() != null && consolAddressRow.getType().equals(Constants.FORWARDING_AGENT)) {
+                    String country = consolAddressRow.getAddressData() != null ?
+                            (String) consolAddressRow.getAddressData().get(COUNTRY) : null;
+                    if (country != null)
+                        awbCargoInfo.setCustomOriginCode(getCountryCode(country));
+                }
+            }
+        }
         return awbCargoInfo;
     }
 
@@ -1082,6 +1096,31 @@ public class AwbService implements IAwbService {
         awbCargoInfo.setShippingInformation(awbCargoInfo.getShippingInformation() == null ? null : awbCargoInfo.getShippingInformation().toUpperCase());
         awbCargoInfo.setShippingInformationOther(awbCargoInfo.getShippingInformationOther() == null ? null : awbCargoInfo.getShippingInformationOther().toUpperCase());
         return awbCargoInfo;
+    }
+
+    private String getCountryCode(String country) {
+        CommonV1ListRequest request = new CommonV1ListRequest();
+        List<Object> criteria = new ArrayList<>();
+        List<Object> subCriteria1 = Arrays.asList(
+                Arrays.asList("ItemType"),
+                "=",
+                MasterDataType.COUNTRIES.getId()
+        );
+        List<Object> subCriteria2 = Arrays.asList(
+                Arrays.asList("ItemValue"),
+                "=",
+                country
+        );
+        criteria.addAll(List.of(subCriteria1, "and", subCriteria2));
+        request.setCriteriaRequests(criteria);
+        try {
+            V1DataResponse response = v1Service.fetchMasterData(request);
+            List<EntityTransferMasterLists> responseList = jsonHelper.convertValueToList(response.entities, EntityTransferMasterLists.class);
+            if (responseList != null && responseList.size() > 0)
+                return responseList.get(0).getIdentifier1();
+        } catch (Exception ignored) {
+        }
+        return null;
     }
 
     private AwbOtherInfo generateAwbOtherInfo(ShipmentDetails shipmentDetails, CreateAwbRequest request) {
