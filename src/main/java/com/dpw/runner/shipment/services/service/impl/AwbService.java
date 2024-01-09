@@ -497,16 +497,16 @@ public class AwbService implements IAwbService {
             mawbGoodsDescriptionInfo = mawb.getAwbGoodsDescriptionInfo().get(0);
             Map<String, List<AwbPackingInfo>> hawbPacksMap = new HashMap<>(); // map to store awbNumber -> packsList
 
-            calculateGoodsDescription(mawbGoodsDescriptionInfo, allHawbPacks, tenantSettings, hawbPacksMap);
+            var pair = calculateGoodsDescription(mawbGoodsDescriptionInfo, allHawbPacks, tenantSettings, hawbPacksMap);
 
             // Can there be a scenario of multiple Goods information ?
-            mawb.setAwbGoodsDescriptionInfo(List.of(mawbGoodsDescriptionInfo));
+            mawb.setAwbGoodsDescriptionInfo(List.of(pair.getRight()));
             saveHawbPacks(mawb, hawbPacksMap);
             awbDao.save(mawb);
         }
     }
 
-    private BigDecimal calculateGoodsDescription(AwbGoodsDescriptionInfo mawbGoodsDescriptionInfo, List<AwbPackingInfo> allHawbPacks, ShipmentSettingsDetails tenantSettings, Map<String, List<AwbPackingInfo>> hawbPacksMap) {
+    private Pair<BigDecimal, AwbGoodsDescriptionInfo> calculateGoodsDescription(AwbGoodsDescriptionInfo mawbGoodsDescriptionInfo, List<AwbPackingInfo> allHawbPacks, ShipmentSettingsDetails tenantSettings, Map<String, List<AwbPackingInfo>> hawbPacksMap) {
         Long mawbGoodsDescId = null; //mawbGoodsDescriptionInfo.getId();  // TODO goodsDescId where to get this
         UUID mawbGoodsDescGuid = mawbGoodsDescriptionInfo.getGuid();
         Integer noOfPacks = 0;
@@ -574,18 +574,13 @@ public class AwbService implements IAwbService {
         // Consolidation Lite flow
         if(tenantSettings != null && tenantSettings.getConsolidationLite() != true){
             mawbGoodsDescriptionInfo = new AwbGoodsDescriptionInfo();
-            mawbGoodsDescriptionInfo.setGrossWt(totalGrossWeightOfMawbGood);
-            mawbGoodsDescriptionInfo.setGrossWtUnit(grossWeightUnit);
-            mawbGoodsDescriptionInfo.setPiecesNo(noOfPacks);
-            mawbGoodsDescriptionInfo.setChargeableWt(roundOffAirShipment(chargeableWeightOfMawbGood));
-            mawbGoodsDescriptionInfo.setTotalAmount(totalAmountOfMawbGood);
         }
         mawbGoodsDescriptionInfo.setGrossWt(totalGrossWeightOfMawbGood);
         mawbGoodsDescriptionInfo.setGrossWtUnit(grossWeightUnit);
         mawbGoodsDescriptionInfo.setPiecesNo(noOfPacks);
         mawbGoodsDescriptionInfo.setChargeableWt(roundOffAirShipment(chargeableWeightOfMawbGood));
         mawbGoodsDescriptionInfo.setTotalAmount(totalAmountOfMawbGood);
-        return totalVolumetricWeight;
+        return Pair.of(totalVolumetricWeight, mawbGoodsDescriptionInfo);
     }
 
     private void saveHawbPacks(Awb mawb, Map<String, List<AwbPackingInfo>> hawbPacksMap) {
@@ -2463,11 +2458,17 @@ public class AwbService implements IAwbService {
             else
                 guidBasedAwbPackingList.put(goodsDescriptionInfos.get(0).getGuid(), packsInfo);
 
-            for (AwbGoodsDescriptionInfo goodDescription : goodsDescriptionInfos) {
+            for (int i = 0; i < goodsDescriptionInfos.size(); i++) {
 
-                if (guidBasedAwbPackingList.containsKey(goodDescription.getGuid())) {
-                    var allPacks = guidBasedAwbPackingList.get(goodDescription.getGuid());
-                    totalVolumeticWeight = totalVolumeticWeight.add(calculateGoodsDescription(goodDescription, allPacks, tenantSettings, new HashMap<>()));
+                if (guidBasedAwbPackingList.containsKey(goodsDescriptionInfos.get(i).getGuid())) {
+                    var allPacks = guidBasedAwbPackingList.get(goodsDescriptionInfos.get(i).getGuid());
+                    Pair<BigDecimal, AwbGoodsDescriptionInfo> pair = calculateGoodsDescription(goodsDescriptionInfos.get(i), allPacks, tenantSettings, new HashMap<>());
+                    totalVolumeticWeight = totalVolumeticWeight.add(pair.getLeft());
+                    goodsDescriptionInfos.get(i).setGrossWt(pair.getRight().getGrossWt());
+                    goodsDescriptionInfos.get(i).setGrossWtUnit(pair.getRight().getGrossWtUnit());
+                    goodsDescriptionInfos.get(i).setPiecesNo(pair.getRight().getPiecesNo());
+                    goodsDescriptionInfos.get(i).setChargeableWt(pair.getRight().getChargeableWt());
+                    goodsDescriptionInfos.get(i).setTotalAmount(pair.getRight().getTotalAmount());
                 }
 
             }
