@@ -236,6 +236,9 @@ public class ShipmentService implements IShipmentService {
 
     private ShipmentDetails currentShipment;
 
+    @Autowired
+    private ProductIdentifierUtility productEngine;
+
     private List<String> TRANSPORT_MODES = Arrays.asList("SEA", "ROAD", "RAIL", "AIR");
     private List<String> SHIPMENT_TYPE = Arrays.asList("FCL", "LCL");
     private List<String> WEIGHT_UNIT = Arrays.asList("KGS", "G", "DT");
@@ -2621,7 +2624,8 @@ public class ShipmentService implements IShipmentService {
                         //
                         shipmentId = Constants.SHIPMENT_ID_PREFIX + getShipmentsSerialNumber();
                     }
-                } else {
+                }
+                if(StringUtility.isEmpty(shipmentId)) {
                     shipmentId = Constants.SHIPMENT_ID_PREFIX + getShipmentsSerialNumber();
                 }
             }
@@ -2633,7 +2637,6 @@ public class ShipmentService implements IShipmentService {
     }
 
     private String getCustomizedShipmentProcessNumber(ShipmentSettingsDetails shipmentSettingsDetails, ProductProcessTypes productProcessType) {
-        var productEngine = new ProductIdentifierUtility();
         productEngine.populateEnabledTenantProducts(shipmentSettingsDetails);
         // to check the commmon sequence
         var sequenceNumber = productEngine.GetCommonSequenceNumber(currentShipment.getTransportMode(), ProductProcessTypes.Consol_Shipment_TI);
