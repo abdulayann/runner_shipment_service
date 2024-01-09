@@ -29,7 +29,7 @@ spec:
         image: ContainerRegistryURL/ACR_NAME:LATEST_IMAGE
         imagePullPolicy: Always
         command: [/bin/sh, -c]
-        args: [java HEAP_MIN HEAP_MAX JVM_ALG -javaagent:/usr/local/newrelic/newrelic.jar
+        args: [java HEAP_MIN HEAP_MAX JVM_ALG JVM_HEAP -javaagent:/usr/local/newrelic/newrelic.jar
             -jar /usr/local/lib/runner-shipment-services-0.0.1.jar]
         resources:
           requests:
