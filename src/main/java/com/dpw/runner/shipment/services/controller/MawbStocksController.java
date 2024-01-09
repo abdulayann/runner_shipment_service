@@ -88,4 +88,10 @@ public class MawbStocksController {
     public ResponseEntity list(@RequestBody @NonNull @Valid ListCommonRequest listCommonRequest) {
         return (ResponseEntity<RunnerListResponse<MawbStocksResponse>>) mawbStocksService.list(CommonRequestModel.buildRequest(listCommonRequest));
     }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = MawbStocksConstants.GET_NEXT_MAWB_SUCCESSFUL)})
+    @GetMapping(ApiConstants.API_GET_NEXT_MAWB)
+    public ResponseEntity getNextMawbNumberByCarrier(@RequestParam @NonNull String airlinePrefix) {
+        return (ResponseEntity<RunnerResponse<String>>) mawbStocksService.getNextMawbNumberByCarrier(airlinePrefix);
+    }
 }
