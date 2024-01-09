@@ -1778,7 +1778,7 @@ public class ShipmentService implements IShipmentService {
         if(!IsStringNullOrEmpty(shipmentDetails.getJobType()) && shipmentDetails.getJobType().equals(Constants.SHIPMENT_TYPE_DRT)){
             shipmentDetails.setHouseBill(shipmentDetails.getMasterBill());
         }
-        v1ServiceUtil.validateCreditLimit(shipmentDetails.getClient(), ShipmentConstants.SHIPMENT_CREATION, shipmentDetails.getGuid());
+//        v1ServiceUtil.validateCreditLimit(shipmentDetails.getClient(), ShipmentConstants.SHIPMENT_CREATION, shipmentDetails.getGuid());
 
         if(!Objects.isNull(shipmentDetails.getConsolidationList()) && !shipmentDetails.getConsolidationList().isEmpty()) {
             ConsolidationDetails console = shipmentDetails.getConsolidationList().get(0);
