@@ -1383,8 +1383,19 @@ public class AwbService implements IAwbService {
                             }
                         }
                     }
-                    awb = generateMawb(createAwbRequest, consolidationDetails.get(), mawbPackingInfo);
-                    //LinkHawbMawb(consolidationDetails.get(), awb, awbList);
+                    Awb resetAwb = generateMawb(createAwbRequest, consolidationDetails.get(), mawbPackingInfo);
+                    awb.setAwbShipmentInfo(resetAwb.getAwbShipmentInfo());
+                    awb.setAwbNotifyPartyInfo(resetAwb.getAwbNotifyPartyInfo());
+                    awb.setAwbRoutingInfo(resetAwb.getAwbRoutingInfo());
+                    awb.setAwbGoodsDescriptionInfo(resetAwb.getAwbGoodsDescriptionInfo());
+                    awb.setAwbCargoInfo(resetAwb.getAwbCargoInfo());
+                    awb.setAwbOtherInfo(resetAwb.getAwbOtherInfo());
+                    awb.setAwbOciInfo(resetAwb.getAwbOciInfo());
+                    awb.setAwbOtherChargesInfo(resetAwb.getAwbOtherChargesInfo());
+                    awb.setAwbPaymentInfo(resetAwb.getAwbPaymentInfo());
+                    awb.setAwbSpecialHandlingCodesMappings(resetAwb.getAwbSpecialHandlingCodesMappings());
+                    // Link
+                    LinkHawbMawb(consolidationDetails.get(), awb, awbList);
                 }
                 else awb = generateAwb(createAwbRequest);
                 break;
