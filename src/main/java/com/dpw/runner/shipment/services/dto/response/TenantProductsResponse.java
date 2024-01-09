@@ -16,5 +16,6 @@ public class TenantProductsResponse implements IRunnerResponse {
     private Boolean enabled;
     private Boolean enableGrouping;
     private Long shipmentSettingsId;
+    private Boolean isCommonSequence;
     private List<String> transportModes;
 }
