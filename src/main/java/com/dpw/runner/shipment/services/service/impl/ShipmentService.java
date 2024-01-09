@@ -3549,8 +3549,9 @@ public class ShipmentService implements IShipmentService {
         }
 
         if(res == null || res.isEmpty()) {
-            res = tenantSetting.getHousebillPrefix();
-            switch(tenantSetting.getHousebillNumberGeneration()) {
+            res = tenantSetting.getHousebillPrefix() ==  null ? "" : tenantSetting.getHousebillPrefix();
+            String numberGeneration = tenantSetting.getHousebillNumberGeneration() ==  null ? "" : tenantSetting.getHousebillNumberGeneration();
+            switch(numberGeneration) {
                 case "Random" :
                     res += StringUtility.getRandomString(10);
                     break;

@@ -395,10 +395,11 @@ public class AwbService implements IAwbService {
             List<AwbPackingInfo> mawbPackingInfo = new ArrayList<>();
             for (var consoleShipment : consolidationDetails.getShipmentsList()) {
                 if (consoleShipment.getId() != null) {
-                    Awb linkAwb = awbDao.findByShipmentId(consoleShipment.getId()).stream().findFirst().get();
-                    if (linkAwb == null) {
+                    List<Awb> optionalAwb = awbDao.findByShipmentId(consoleShipment.getId());
+                    if (optionalAwb == null || optionalAwb.isEmpty()) {
                         throw new ValidationException("To Generate Mawb, Please create Hawb for all the shipments attached");
                     }
+                    Awb linkAwb = optionalAwb.stream().findFirst().get();
                     awbList.add(linkAwb);
                     if(linkAwb.getAwbPackingInfo() != null) {
                         mawbPackingInfo.addAll(linkAwb.getAwbPackingInfo());
