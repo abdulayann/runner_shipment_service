@@ -847,8 +847,7 @@ public class HawbReport extends IReport{
         if(orgName != null){
             CommonV1ListRequest orgRequest = new CommonV1ListRequest();
             List<Object> orgField = new ArrayList<>(List.of("FullName"));
-            String operator = Operators.IN.getValue();
-            List<Object> orgCriteria = new ArrayList<>(List.of(orgField, operator, List.of(orgName)));
+            List<Object> orgCriteria = new ArrayList<>(List.of(orgField, "=", orgName));
             orgRequest.setCriteriaRequests(orgCriteria);
             V1DataResponse orgResponse = v1Service.fetchOrganization(orgRequest);
             List<EntityTransferOrganizations> orgList = jsonHelper.convertValueToList(orgResponse.entities, EntityTransferOrganizations.class);
