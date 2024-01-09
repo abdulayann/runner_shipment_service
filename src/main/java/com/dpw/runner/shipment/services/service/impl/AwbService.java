@@ -578,6 +578,11 @@ public class AwbService implements IAwbService {
             mawbGoodsDescriptionInfo.setChargeableWt(roundOffAirShipment(chargeableWeightOfMawbGood));
             mawbGoodsDescriptionInfo.setTotalAmount(totalAmountOfMawbGood);
         }
+        mawbGoodsDescriptionInfo.setGrossWt(totalGrossWeightOfMawbGood);
+        mawbGoodsDescriptionInfo.setGrossWtUnit(grossWeightUnit);
+        mawbGoodsDescriptionInfo.setPiecesNo(noOfPacks);
+        mawbGoodsDescriptionInfo.setChargeableWt(roundOffAirShipment(chargeableWeightOfMawbGood));
+        mawbGoodsDescriptionInfo.setTotalAmount(totalAmountOfMawbGood);
         return totalVolumetricWeight;
     }
 
