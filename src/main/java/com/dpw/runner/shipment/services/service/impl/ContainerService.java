@@ -911,6 +911,23 @@ public class ContainerService implements IContainerService {
 
     }
 
+    @Override
+    public ResponseEntity<?> checkForDelete(CommonRequestModel commonRequestModel) {
+        String responseMsg;
+        try {
+            Long id = commonRequestModel.getId();
+            List<ShipmentsContainersMapping> shipmentsContainersMappings = shipmentsContainersMappingDao.findByContainerId(id);
+            if(shipmentsContainersMappings != null && shipmentsContainersMappings.size() > 1)
+                return ResponseHelper.buildSuccessResponse(true);
+            return ResponseHelper.buildSuccessResponse(false);
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
     private List<Integer> assignEquivalentNumberValue() {
         List<Integer> eqvNumValue = new ArrayList<>();
         int val = 10;

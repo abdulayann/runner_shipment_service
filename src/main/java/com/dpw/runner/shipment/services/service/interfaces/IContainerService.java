@@ -42,6 +42,8 @@ public interface IContainerService extends ICommonService {
 
     ResponseEntity<?> getContainers(CommonRequestModel commonRequestModel);
 
+    ResponseEntity<?> checkForDelete(CommonRequestModel commonRequestModel);
+
     ContainerSummaryResponse calculateContainerSummary(List<Containers> containersList, String transportMode, String containerCategory) throws Exception;
     Containers calculateUtilization(Containers container);
 }
