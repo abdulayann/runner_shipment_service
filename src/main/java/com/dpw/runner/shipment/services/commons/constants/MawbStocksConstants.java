@@ -13,6 +13,8 @@ public class MawbStocksConstants {
 
     public static final String MAWB_STOCKS_RETRIEVE_BY_ID_SUCCESSFUL = "Successful MAWB Stocks Data Retrieval By Id";
 
+    public static final String GET_NEXT_MAWB_SUCCESSFUL = "Successful Next MAWB Number Retrieval By carrier";
+
     public static final String MAWB_STOCKS_ID = "MAWB Stocks Id";
 
     public static final String RESPONSE_CONTAINER_LIST = "List";
