@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.dto.response;
 import com.dpw.runner.shipment.services.Kafka.Dto.AwbShipConsoleDto;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.awb.*;
+import com.dpw.runner.shipment.services.masterdata.dto.MasterData;
 import lombok.Data;
 
 import java.util.List;
@@ -30,4 +31,5 @@ public class AwbResponse implements IRunnerResponse {
     public AwbShipConsoleDto awbKafkaEntity;
     public Map<String, String> masterData;
     public Map<String, String> unlocationData;
+    public MasterData chargeDetails;
 }
