@@ -254,4 +254,6 @@ public class Constants {
     public static final String KGS = "KGS";
     public static final String CMS = "CMS";
     public static final String FEET = "Feet";
+
+    public static final String TRUE = "true";
 }
