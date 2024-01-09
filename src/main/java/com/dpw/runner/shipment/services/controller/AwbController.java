@@ -240,4 +240,18 @@ public class AwbController {
         CommonGetRequest request = CommonGetRequest.builder().id(id).includeColumns(includeColumns).build();
         return (ResponseEntity<RunnerListResponse<AwbResponse>>) awbService.retrieveByAwbByMawb(CommonRequestModel.buildRequest(request));
     }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = AwbConstants.DIMS_TEXT_RETERIEVE_SUCCESS)})
+    @PostMapping(AwbConstants.DIMS_TEXT)
+    public ResponseEntity<?> dimsText(@RequestBody GenerateAwbPaymentInfoRequest req) {
+        String responseMsg = "failure executing :(";
+        try {
+            return (ResponseEntity<?>) awbService.generateUpdatedNatureAndQuantGoodsField(CommonRequestModel.buildRequest(req));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : "Error generating dims information";
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(e.getMessage());
+        }
+    }
 }

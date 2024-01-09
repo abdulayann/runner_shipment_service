@@ -20,5 +20,6 @@ public interface IAwbService {
     ResponseEntity<?> getAllMasterData(CommonRequestModel commonRequestModel, boolean isShipment);
     ResponseEntity<?> generateAwbPaymentInfo(CommonRequestModel commonRequestModel);
     ResponseEntity<?> retrieveByAwbByMawb(CommonRequestModel commonRequestModel);
+    ResponseEntity<?> generateUpdatedNatureAndQuantGoodsField(CommonRequestModel commonRequestModel);
 
 }

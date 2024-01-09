@@ -5,15 +5,19 @@ import com.dpw.runner.shipment.services.ReportingService.Models.DeliveryOrderMod
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ContainerModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
+import com.dpw.runner.shipment.services.entity.Parties;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.MasterData;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
+import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.utils.StringUtility;
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -27,6 +31,10 @@ public class DeliveryOrderReport extends IReport{
 
     @Autowired
     private IV1Service v1Service;
+    @Autowired
+    private V1ServiceUtil v1ServiceUtil;
+    @Autowired
+    private ModelMapper modelMapper;
 
     @Autowired
     private JsonHelper jsonHelper;
@@ -41,6 +49,7 @@ public class DeliveryOrderReport extends IReport{
     public IDocumentModel getDocumentModel(Long id) {
         DeliveryOrderModel deliveryOrderModel = new DeliveryOrderModel();
         deliveryOrderModel.shipmentDetails = getShipment(id);
+        v1ServiceUtil.validateCreditLimit(modelMapper.map(deliveryOrderModel.shipmentDetails.getClient(), Parties.class), Constants.DO_PRINT, deliveryOrderModel.shipmentDetails.getGuid());
         deliveryOrderModel.usersDto = UserContext.getUser();
         if(deliveryOrderModel.shipmentDetails.getConsolidationList() != null && deliveryOrderModel.shipmentDetails.getConsolidationList().size() > 0)
         {

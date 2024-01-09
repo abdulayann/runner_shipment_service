@@ -26,4 +26,7 @@ public class AwbConstants {
     public static final String MASTER_DATA_RETRIEVE_SUCCESS = "Master Data Retrieve Successfully";
     public static final String PAYMENT_INFO_RETRIEVE_SUCCESS = "Payment information created successfully !";
     public static final String GET_AWB_PAYMENT_INFO = "/generate/awb-payment-info";
+    public static final String DIMS_TEXT = "/dims/text";
+    public static final String DIMS_TEXT_RETERIEVE_SUCCESS = "Dims text created successfully !";
+
 }

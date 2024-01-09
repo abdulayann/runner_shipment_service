@@ -284,6 +284,8 @@ public class V1ServiceImpl implements IV1Service {
     private String GET_MAX_CONSOL_ID_URL;
     @Value("${v1service.url.base}${v1service.url.shipmentRetrieve}")
     private String SHIPMENT_RETRIEVE_URL;
+    @Value("${v1service.url.base}${v1service.url.creditLimitCheck}")
+    private String CREDIT_LIMIT_CHECK_URL;
 
     @Autowired
     private JsonHelper jsonHelper;
@@ -1797,6 +1799,24 @@ public class V1ServiceImpl implements IV1Service {
             HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
             masterDataResponse = this.restTemplate.postForEntity(this.SHIPMENT_RETRIEVE_URL, entity, V1RetrieveResponse.class, new Object[0]);
             return (V1RetrieveResponse) masterDataResponse.getBody();
+
+        } catch (HttpStatusCodeException var6) {
+            if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
+                throw new UnAuthorizedException("UnAuthorizedException");
+            } else {
+                throw new V1ServiceException(var6.getMessage());
+            }
+        } catch (Exception var7) {
+            throw new V1ServiceException(var7.getMessage());
+        }
+    }
+    @Override
+    public CreditLimitValidateResponse checkCreditLimit(CreditLimitValidateRequest request) {
+        ResponseEntity masterDataResponse = null;
+        try {
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            masterDataResponse = this.restTemplate.postForEntity(this.CREDIT_LIMIT_CHECK_URL, entity, CreditLimitValidateResponse.class, new Object[0]);
+            return (CreditLimitValidateResponse) masterDataResponse.getBody();
 
         } catch (HttpStatusCodeException var6) {
             if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {

@@ -237,4 +237,21 @@ public class Constants {
     public static final String POINT = "PT";
     public static final String ROD = "Rod";
     public static final String YARD = "YD";
+
+    public static final String DO_PRINT = "DOPR";
+    public static final String HAWB_PRINT = "HAWBPR";
+    public static final String MAWB_PRINT = "MAWBPR";
+    public static final String HBL_PRINT = "HBLPR";
+
+    public static final String MTR = "Meter";
+    public static final String CM = "CM";
+    public static final String IN = "IN";
+    public static final String FT = "FT";
+    public static final String M = "M";
+    public static final String EQUALS = "=";
+    public static final String CROSS = "X";
+    public static final String DEFAULT_DIMN_TEXT = "DIMS: In ";
+    public static final String KGS = "KGS";
+    public static final String CMS = "CMS";
+    public static final String FEET = "Feet";
 }
