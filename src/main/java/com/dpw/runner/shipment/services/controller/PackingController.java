@@ -7,6 +7,7 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.DetachPacksListDto;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackContainerNumberChangeRequest;
 import com.dpw.runner.shipment.services.dto.request.AutoCalculatePackingRequest;
 import com.dpw.runner.shipment.services.dto.request.PackingRequest;
@@ -136,10 +137,10 @@ public class PackingController {
             @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
     })
     @PostMapping(ApiConstants.API_LIST_PACKS_TO_DETACH)
-    public ResponseEntity<?> listPacksToDetach(@RequestParam @Valid Long containerId) {
+    public ResponseEntity<?> listPacksToDetach(@RequestBody @Valid DetachPacksListDto request) {
         String responseMsg = "failure executing :(";
         try {
-            return packingService.listPacksToDetach(CommonRequestModel.buildRequest(containerId));
+            return packingService.listPacksToDetach(CommonRequestModel.buildRequest(request));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : "Error listing packings";
