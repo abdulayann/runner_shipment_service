@@ -1115,6 +1115,7 @@ public class ShipmentService implements IShipmentService {
                 notesList(createNotes(notes)).
                 sourceTenantId(Long.valueOf(UserContext.getUser().TenantId)).
                 source("API").
+                bookingType("ONLINE").
                 build();
 
         return this.createFromBooking(CommonRequestModel.buildRequest(shipmentRequest));
