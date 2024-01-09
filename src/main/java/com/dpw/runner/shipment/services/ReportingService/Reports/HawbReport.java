@@ -14,6 +14,7 @@ import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject
 import com.dpw.runner.shipment.services.dto.request.awb.*;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.Awb;
+import com.dpw.runner.shipment.services.entity.Parties;
 import com.dpw.runner.shipment.services.entity.enums.ChargesDue;
 import com.dpw.runner.shipment.services.entity.enums.RateClass;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCarrier;
@@ -26,9 +27,11 @@ import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
+import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.dpw.runner.shipment.services.validator.enums.Operators;
 import com.fasterxml.jackson.core.type.TypeReference;
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -46,6 +49,10 @@ public class HawbReport extends IReport{
 
     @Autowired
     private IV1Service v1Service;
+    @Autowired
+    private V1ServiceUtil v1ServiceUtil;
+    @Autowired
+    private ModelMapper modelMapper;
 
     @Override
     public Map<String, Object> getData(Long id) {
@@ -58,6 +65,7 @@ public class HawbReport extends IReport{
         HawbModel hawbModel = new HawbModel();
         hawbModel.usersDto = UserContext.getUser();
         hawbModel.shipmentDetails = getShipment(id);
+        v1ServiceUtil.validateCreditLimit(modelMapper.map(hawbModel.shipmentDetails.getClient(), Parties.class), Constants.HAWB_PRINT, hawbModel.shipmentDetails.getGuid());
         if(hawbModel.shipmentDetails != null && hawbModel.shipmentDetails.getConsolidationList() != null && !hawbModel.shipmentDetails.getConsolidationList().isEmpty())
         {
             hawbModel.setConsolidationDetails(hawbModel.shipmentDetails.getConsolidationList().get(0));
@@ -72,7 +80,12 @@ public class HawbReport extends IReport{
     public Map<String, Object> populateDictionary(IDocumentModel documentModel) {
 
         HawbModel hawbModel = (HawbModel) documentModel;
-        String json = jsonHelper.convertToJson(hawbModel.shipmentDetails);
+        String json;
+        if(hawbModel.shipmentDetails != null ) {
+            json = jsonHelper.convertToJson(hawbModel.shipmentDetails);
+        } else {
+            json = jsonHelper.convertToJson(hawbModel.getConsolidationDetails());
+        }
         Map<String, Object> dictionary = jsonHelper.convertJsonToMap(json);
 
         //TODO- Tenant data

@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.dto.request.awb;
 
+import com.dpw.runner.shipment.services.utils.DedicatedMasterData;
 import io.swagger.annotations.ApiModel;
 import lombok.*;
 
@@ -23,6 +24,7 @@ public class AwbCargoInfo {
     private String shippingInformationOther;
     private String sci;
     private String currency;
+    @DedicatedMasterData
     private String chargeCode;
     private BigDecimal carriageValue;
     private BigDecimal customsValue;

@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.syncing.Entity;
 import lombok.Data;
 
 import java.math.BigDecimal;
+import java.util.UUID;
 
 @Data
 public class AwbPackingInfoV2 {
@@ -48,4 +49,5 @@ public class AwbPackingInfoV2 {
     public Integer transportId;
     public String awbNumber;
     public Long mawbGoodsDescId;
+    private UUID awbGoodsDescriptionInfoGuid;
 }

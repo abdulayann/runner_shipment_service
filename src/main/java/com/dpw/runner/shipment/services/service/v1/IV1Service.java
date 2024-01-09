@@ -152,5 +152,6 @@ public interface IV1Service {
     String getShipmentSerialNumber();
     String getMaxConsolidationId();
     V1RetrieveResponse getShipment(V1RetrieveRequest request);
+    CreditLimitValidateResponse checkCreditLimit(CreditLimitValidateRequest request);
 
 }

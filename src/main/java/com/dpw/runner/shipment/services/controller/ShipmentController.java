@@ -442,4 +442,12 @@ public class ShipmentController {
             return ResponseHelper.buildFailedResponse(e.getMessage());
         }
     }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = "Successful Shipment Details Data List Retrieval", responseContainer = "List")})
+    @GetMapping(value = ShipmentConstants.LIST_SHIPMENT_FROM_CONSOLE_ID)
+    public ResponseEntity<RunnerListResponse<ShipmentListResponse>> fetchShipmentsForConsoleId(@ApiParam(value = ConsolidationConstants.CONSOLIDATION_ID, required = true) @RequestParam Long id) {
+        CommonGetRequest request = CommonGetRequest.builder().id(id).build();
+        return (ResponseEntity<RunnerListResponse<ShipmentListResponse>>) shipmentService.fetchShipmentsForConsoleId(CommonRequestModel.buildRequest(request));
+    }
+
 }
