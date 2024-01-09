@@ -30,6 +30,7 @@ import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.service.interfaces.IHblService;
+import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
 import com.dpw.runner.shipment.services.service.interfaces.ISyncQueueService;
 import com.dpw.runner.shipment.services.syncing.Entity.HblRequestV2;
 import com.dpw.runner.shipment.services.syncing.constants.SyncingConstants;
@@ -81,6 +82,10 @@ public class HblService implements IHblService {
     private SyncConfig syncConfig;
     @Autowired
     private MasterDataUtils masterDataUtil;
+
+    @Autowired
+    @Lazy
+    IShipmentService shipmentService;
 
     private RetryTemplate retryTemplate = RetryTemplate.builder()
             .maxAttempts(3)
@@ -436,6 +441,11 @@ public class HblService implements IHblService {
         hblData.setCargoNetWeightUnit(shipmentDetail.getNetWeightUnit());
         hblData.setCargoGrossWeightUnit(shipmentDetail.getWeightUnit());
         hblData.setCargoGrossVolumeUnit(shipmentDetail.getVolumeUnit());
+        // generate HouseBill
+        if(StringUtility.isEmpty(shipmentDetail.getHouseBill())) {
+            shipmentDetail.setHouseBill(shipmentService.generateCustomHouseBL(shipmentDetail));
+            shipmentDao.save(shipmentDetail, false);
+        }
         hblData.setHouseBill(shipmentDetail.getHouseBill());
         hblData.setVesselName(carrierDetails.getVessel());
         hblData.setNoOfCopies(StringUtility.convertToString(additionalDetails.getCopy()));

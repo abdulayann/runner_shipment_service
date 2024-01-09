@@ -832,7 +832,7 @@ public class AwbService implements IAwbService {
         // fetch sehipment info
         ShipmentDetails shipmentDetails = shipmentDao.findById(request.getShipmentId()).get();
         if(shipmentDetails.getHouseBill() == null) {
-            shipmentDetails.setHouseBill(shipmentService.generateCustomHouseBL());
+            shipmentDetails.setHouseBill(shipmentService.generateCustomHouseBL(shipmentDetails));
             shipmentDao.save(shipmentDetails, false);
         }
 

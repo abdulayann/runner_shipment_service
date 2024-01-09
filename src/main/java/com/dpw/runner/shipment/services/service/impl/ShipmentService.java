@@ -3328,7 +3328,7 @@ public class ShipmentService implements IShipmentService {
             cloneShipmentDetails.setShipmentCreatedOn(LocalDateTime.now());
             
             if(Constants.TRANSPORT_MODE_SEA.equals(cloneShipmentDetails.getTransportMode()) && Constants.DIRECTION_EXP.equals(cloneShipmentDetails.getDirection()))
-                cloneShipmentDetails.setHouseBill(generateCustomHouseBL());
+                cloneShipmentDetails.setHouseBill(generateCustomHouseBL(null));
 
             CommonRequestModel requestModel = CommonRequestModel.buildRequest(cloneShipmentDetails);
             log.info("Shipment details cloning started for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
@@ -3406,7 +3406,7 @@ public class ShipmentService implements IShipmentService {
     @Override
     public ResponseEntity<?> generateCustomHouseBLNumber() {
         try {
-            return ResponseHelper.buildSuccessResponse(GenerateCustomHblResponse.builder().hblNumber(generateCustomHouseBL()).build());
+            return ResponseHelper.buildSuccessResponse(GenerateCustomHblResponse.builder().hblNumber(generateCustomHouseBL(null)).build());
         } catch (Exception e) {
             throw new RunnerException(e.getMessage());
         }
@@ -3523,7 +3523,7 @@ public class ShipmentService implements IShipmentService {
 
         //Generate HBL
         if(Constants.TRANSPORT_MODE_SEA.equals(shipment.getTransportMode()) && Constants.DIRECTION_EXP.equals(shipment.getDirection()))
-            shipment.setHouseBill(generateCustomHouseBL());
+            shipment.setHouseBill(generateCustomHouseBL(null));
 
         try {
             log.info("Fetching Tenant Model");
@@ -3539,16 +3539,25 @@ public class ShipmentService implements IShipmentService {
         return ResponseHelper.buildSuccessResponse(shipment);
     }
 
-    public String generateCustomHouseBL() {
-        String res = null;
+    public String generateCustomHouseBL(ShipmentDetails shipmentDetails) {
+        String res = shipmentDetails.getHouseBill();
         List<ShipmentSettingsDetails> shipmentSettingsDetailsList = shipmentSettingsDao.getSettingsByTenantIds(List.of(TenantContext.getCurrentTenant()));
         ShipmentSettingsDetails tenantSetting = null;
         if (shipmentSettingsDetailsList.get(0) != null)
             tenantSetting = shipmentSettingsDetailsList.get(0);
+        if(shipmentDetails == null && tenantSetting != null && tenantSetting.getRestrictHblGen()) {
+            return null;
+        }
 
-        if (tenantSetting.getRestrictHblGen() && tenantSetting.getCustomisedSequence()) {
-            // generate via Product Identifier Utility
-            // res = someMethod();
+        if (shipmentDetails != null && tenantSetting.getRestrictHblGen() && tenantSetting.getCustomisedSequence()) {
+
+            try {
+                res = productEngine.getCustomizedBLNumber(shipmentDetails, tenantSetting);
+                // generate via Product Identifier Utility
+                // res = someMethod();
+            } catch (Exception e) {
+                log.error(e.getMessage());
+            }
         }
 
         if(res == null || res.isEmpty()) {
@@ -3595,7 +3604,7 @@ public class ShipmentService implements IShipmentService {
             response.setShipmentCreatedOn(LocalDateTime.now());
             //Generate HBL
             if(Constants.TRANSPORT_MODE_SEA.equals(response.getTransportMode()) && Constants.DIRECTION_EXP.equals(response.getDirection()))
-                response.setHouseBill(generateCustomHouseBL());
+                response.setHouseBill(generateCustomHouseBL(null));
 
             try {
                 log.info("Fetching Tenant Model");
@@ -3607,7 +3616,7 @@ public class ShipmentService implements IShipmentService {
             }
 
             if(Constants.TRANSPORT_MODE_SEA.equals(response.getTransportMode()) && Constants.DIRECTION_EXP.equals(response.getDirection()))
-                response.setHouseBill(generateCustomHouseBL());
+                response.setHouseBill(generateCustomHouseBL(null));
 
             this.addAllMasterDataInSingleCall(null, response, null);
 

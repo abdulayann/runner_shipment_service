@@ -729,4 +729,54 @@ public class ProductIdentifierUtility {
       return null;
     }
   }
+
+  public String getCustomizedBLNumber(ShipmentDetails shipmentDetails, ShipmentSettingsDetails tenantSettings){
+    this.populateEnabledTenantProducts(tenantSettings);
+
+    TenantProducts identifiedProduct = this.IdentifyProduct(shipmentDetails);
+    if (identifiedProduct == null){
+      if(!shipmentDetails.getTransportMode().equalsIgnoreCase("Air")){
+        // to check the commmon sequence
+        String sequenceNumber = GetChildCommonSequenceNumber(shipmentDetails.getTransportMode(), shipmentDetails.getShipmentId(), ProductProcessTypes.HBLNumber);
+        if (StringUtility.isNotEmpty(sequenceNumber)) {
+          return sequenceNumber;
+        }
+      }
+      return "";
+    }
+    ProductProcessTypes processType;
+    if(shipmentDetails.getTransportMode().equalsIgnoreCase("Air"))
+      processType =  ProductProcessTypes.HAWB;
+    else
+    {
+      processType = ProductProcessTypes.HBLNumber;
+      // to check the commmon sequence
+      String sequenceNumber = GetChildCommonSequenceNumber(shipmentDetails.getTransportMode(), shipmentDetails.getShipmentId(), processType);
+      if (StringUtility.isNotEmpty(sequenceNumber)) {
+        return sequenceNumber;
+      }
+    }
+    ProductSequenceConfig sequenceSettings = getNextNumberHelper.getProductSequence(identifiedProduct.getId(), processType);
+    if(sequenceSettings == null){
+      sequenceSettings = getShipmentProductWithOutContainerType(shipmentDetails, processType);
+      if (sequenceSettings == null)
+      {
+        return "";
+      }
+    }
+    String prefix = sequenceSettings.getPrefix() == null ? "" : sequenceSettings.getPrefix();
+    return getNextNumberHelper.generateCustomSequence(sequenceSettings, prefix, UserContext.getUser().TenantId, true, null, false);
+  }
+
+  public String GetChildCommonSequenceNumber(String transportMode, String parentNumber, ProductProcessTypes productProcessTypes) {
+    String sequenceNumber = "";
+    ProductSequenceConfig productSequence = GetCommonProductSequence(transportMode, productProcessTypes);
+    if (productSequence != null) {
+      sequenceNumber = parentNumber;
+      if (productProcessTypes == ProductProcessTypes.HBLNumber) {
+        return sequenceNumber;
+      }
+    }
+    return sequenceNumber;
+  }
 }
