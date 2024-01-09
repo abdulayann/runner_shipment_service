@@ -1033,7 +1033,7 @@ public class ConsolidationService implements IConsolidationService {
                 List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByConsolidationId(console.getId());
                 List<Long> shipmentIdList = consoleShipmentMappings.stream().map(i -> i.getShipmentId()).collect(Collectors.toList());
                 ListCommonRequest listReq = constructListCommonRequest("id", shipmentIdList, "IN");
-                Pair<Specification<ShipmentDetails>, Pageable> pair = fetchData(listReq, ShipmentDetails.class, tableNames);
+                Pair<Specification<ShipmentDetails>, Pageable> pair = fetchData(listReq, ShipmentDetails.class);
                 Page<ShipmentDetails> page = shipmentDao.findAll(pair.getLeft(), pair.getRight());
 
                 List<ShipmentDetails> shipments = page.getContent();
@@ -1057,7 +1057,7 @@ public class ConsolidationService implements IConsolidationService {
             List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByConsolidationId(console.getId());
             List<Long> shipmentIdList = consoleShipmentMappings.stream().map(i -> i.getShipmentId()).collect(Collectors.toList());
             ListCommonRequest listReq = constructListCommonRequest("id", shipmentIdList, "IN");
-            Pair<Specification<ShipmentDetails>, Pageable> pair = fetchData(listReq, ShipmentDetails.class, tableNames);
+            Pair<Specification<ShipmentDetails>, Pageable> pair = fetchData(listReq, ShipmentDetails.class);
             Page<ShipmentDetails> page = shipmentDao.findAll(pair.getLeft(), pair.getRight());
 
             List<ShipmentDetails> shipments = page.getContent();
