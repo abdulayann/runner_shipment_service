@@ -6,9 +6,12 @@ import lombok.Data;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 @Data
 public class TenantProductsDto implements IRunnerRequest {
+    @JsonProperty("Guid")
+    private UUID Guid;
     @JsonProperty("ProductType")
     private String ProductType;
     @JsonProperty("Alias")

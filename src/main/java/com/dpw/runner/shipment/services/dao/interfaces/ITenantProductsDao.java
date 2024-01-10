@@ -14,5 +14,6 @@ public interface ITenantProductsDao {
     Page<TenantProducts> findAll(Specification<TenantProducts> spec, Pageable pageable);
     List<TenantProducts> saveEntityFromSettings(List<TenantProducts> tenantProductsList, Long shipmentSettingsId);
     List<TenantProducts> updateEntityFromSettings(List<TenantProducts> tenantProductsList, Long shipmentSettingsId) throws Exception;
+    List<TenantProducts> updateEntityFromV1Settings(List<TenantProducts> tenantProductsList, Long shipmentSettingsId, List<TenantProducts> oldTenantProducts) throws Exception;
 
 }
