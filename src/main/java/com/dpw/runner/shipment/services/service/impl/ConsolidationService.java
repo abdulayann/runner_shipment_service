@@ -1050,10 +1050,10 @@ public class ConsolidationService implements IConsolidationService {
      */
     private void updateLinkedShipmentData(ConsolidationDetails console, ConsolidationDetails oldEntity) {
         if(console != null && (oldEntity == null || (console.getCarrierDetails() != null && oldEntity.getCarrierDetails() != null &&
-                (!console.getShipmentType().equals(oldEntity.getShipmentType()) ||
-                        !console.getCarrierDetails().getVoyage().equals(oldEntity.getCarrierDetails().getVoyage()) ||
-                        !console.getCarrierDetails().getVessel().equals(oldEntity.getCarrierDetails().getVessel()) ||
-                        !console.getCarrierDetails().getShippingLine().equals(oldEntity.getCarrierDetails().getShippingLine()))))) {
+                (!Objects.equals(console.getShipmentType(),oldEntity.getShipmentType()) ||
+                        !Objects.equals(console.getCarrierDetails().getVoyage(),oldEntity.getCarrierDetails().getVoyage()) ||
+                        !Objects.equals(console.getCarrierDetails().getVessel(),oldEntity.getCarrierDetails().getVessel()) ||
+                        !Objects.equals(console.getCarrierDetails().getShippingLine(),oldEntity.getCarrierDetails().getShippingLine()))))) {
             List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByConsolidationId(console.getId());
             List<Long> shipmentIdList = consoleShipmentMappings.stream().map(i -> i.getShipmentId()).collect(Collectors.toList());
             ListCommonRequest listReq = constructListCommonRequest("id", shipmentIdList, "IN");
