@@ -781,6 +781,8 @@ public class ConsolidationService implements IConsolidationService {
             }
         }
         Optional<ConsolidationDetails> consol = consolidationDetailsDao.findById(consolidationId);
+        updateMasterBill(consol.get(), null);
+        updateLinkedShipmentData(consol.get(), null);
         try {
             consolidationSync.sync(consol.get());
         }
@@ -898,6 +900,8 @@ public class ConsolidationService implements IConsolidationService {
                 log.error("Error performing sync on consolidation entity, {}", e);
             }
             afterSave(entity, false);
+            updateMasterBill(entity, oldEntity.get().getBol());
+            updateLinkedShipmentData(entity, oldEntity.get());
 
             ConsolidationDetailsResponse response = jsonHelper.convertValue(entity, ConsolidationDetailsResponse.class);
             return ResponseHelper.buildSuccessResponse(response);
@@ -1003,6 +1007,8 @@ public class ConsolidationService implements IConsolidationService {
                 log.error("Error performing sync on consolidation entity, {}", e);
             }
             afterSave(entity, false);
+            updateMasterBill(entity, oldEntity.get().getBol());
+            updateLinkedShipmentData(entity, oldEntity.get());
             ConsolidationDetailsResponse response = jsonHelper.convertValue(entity, ConsolidationDetailsResponse.class);
 
             return ResponseHelper.buildSuccessResponse(response);
@@ -1012,6 +1018,61 @@ public class ConsolidationService implements IConsolidationService {
             log.error(responseMsg, e);
             TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
             throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * MBL update, propagate the new value to the linked shipments
+     * @param console
+     * @param oldMasterBill
+     */
+    private void updateMasterBill(ConsolidationDetails console, String oldMasterBill) {
+        var masterBill = console.getBol();
+        if(masterBill != null && (oldMasterBill == null || !masterBill.equals(oldMasterBill))) {
+            if(console != null) {
+                List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByConsolidationId(console.getId());
+                List<Long> shipmentIdList = consoleShipmentMappings.stream().map(i -> i.getShipmentId()).collect(Collectors.toList());
+                ListCommonRequest listReq = constructListCommonRequest("id", shipmentIdList, "IN");
+                Pair<Specification<ShipmentDetails>, Pageable> pair = fetchData(listReq, ShipmentDetails.class);
+                Page<ShipmentDetails> page = shipmentDao.findAll(pair.getLeft(), pair.getRight());
+
+                List<ShipmentDetails> shipments = page.getContent();
+                shipments.stream()
+                        .map(i -> i.setMasterBill(masterBill)).toList();
+            }
+        }
+    }
+
+    /**
+     * update data to all the shipments linked to console
+     * @param console
+     * @param oldEntity
+     */
+    private void updateLinkedShipmentData(ConsolidationDetails console, ConsolidationDetails oldEntity) {
+        if(console != null && (oldEntity == null || (console.getCarrierDetails() != null && oldEntity.getCarrierDetails() != null &&
+                (!console.getShipmentType().equals(oldEntity.getShipmentType()) ||
+                        !console.getCarrierDetails().getVoyage().equals(oldEntity.getCarrierDetails().getVoyage()) ||
+                        !console.getCarrierDetails().getVessel().equals(oldEntity.getCarrierDetails().getVessel()) ||
+                        !console.getCarrierDetails().getShippingLine().equals(oldEntity.getCarrierDetails().getShippingLine()))))) {
+            List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByConsolidationId(console.getId());
+            List<Long> shipmentIdList = consoleShipmentMappings.stream().map(i -> i.getShipmentId()).collect(Collectors.toList());
+            ListCommonRequest listReq = constructListCommonRequest("id", shipmentIdList, "IN");
+            Pair<Specification<ShipmentDetails>, Pageable> pair = fetchData(listReq, ShipmentDetails.class);
+            Page<ShipmentDetails> page = shipmentDao.findAll(pair.getLeft(), pair.getRight());
+
+            List<ShipmentDetails> shipments = page.getContent();
+            shipments.stream()
+                    .map(i -> {
+                        i.setDirection(console.getShipmentType());
+                        if (console.getCarrierDetails() != null) {
+                            i.getCarrierDetails().setVoyage(console.getCarrierDetails().getVoyage());
+                            i.getCarrierDetails().setVessel(console.getCarrierDetails().getVessel());
+                            i.getCarrierDetails().setShippingLine(console.getCarrierDetails().getShippingLine());
+                        }
+                        return i;
+                    }).toList();
+
+            shipmentDao.saveAll(shipments);
         }
     }
 

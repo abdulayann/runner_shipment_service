@@ -29,7 +29,8 @@ public class PickupOrderReport extends IReport {
     IDocumentModel getDocumentModel(Long id) {
         PickUpOrderReportModel pickUpOrderReportModel = new PickUpOrderReportModel();
         pickUpOrderReportModel.shipment = getShipment(id);
-        pickUpOrderReportModel.pickUpTransportAddress = pickUpOrderReportModel.shipment.getPickupDetails().getTransporterDetail();
+        if (pickUpOrderReportModel.shipment != null && pickUpOrderReportModel.shipment.getPickupDetails() != null)
+            pickUpOrderReportModel.pickUpTransportAddress = pickUpOrderReportModel.shipment.getPickupDetails().getTransporterDetail();
         return pickUpOrderReportModel;
     }
 
@@ -39,8 +40,10 @@ public class PickupOrderReport extends IReport {
         PickUpOrderReportModel pickUpOrderReportModel = (PickUpOrderReportModel) documentModel;
         dictionary.put(ReportConstants.PICKUP_TRANSPORT_CONTACT_PERSON, pickUpOrderReportModel.pickUpTransportAddress.getAddressData().get("ContactPerson"));
         try {
-            List<String> pickUpFrom = ReportHelper.getOrgAddress(pickUpOrderReportModel.shipment.getPickupDetails().getSourceDetail());
-            dictionary.put(ReportConstants.PickupFrom, pickUpFrom);
+            if (pickUpOrderReportModel.shipment != null && pickUpOrderReportModel.shipment.getPickupDetails() != null) {
+                List<String> pickUpFrom = ReportHelper.getOrgAddress(pickUpOrderReportModel.shipment.getPickupDetails().getSourceDetail());
+                dictionary.put(ReportConstants.PickupFrom, pickUpFrom);
+            }
         }
         catch (Exception ignored) {}
         return dictionary;

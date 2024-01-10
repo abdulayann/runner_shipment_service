@@ -290,6 +290,11 @@ public class AwbService implements IAwbService {
             List<Awb> awbList = awbPage.getContent();
 
             if(awbList != null) {
+                List<ShipmentSettingsDetails> tenantSettingsList = shipmentSettingsDao.getSettingsByTenantIds(Arrays.asList(UserContext.getUser().TenantId));
+                ShipmentSettingsDetails tenantSettings = null;
+                if (tenantSettingsList != null && tenantSettingsList.size() >= 1) {
+                    tenantSettings = tenantSettingsList.get(0);
+                }
                 for (Awb awb : awbList) {
                     if (awb.getAwbShipmentInfo().getEntityType().equals(Constants.MAWB)) {
                         List<Awb> linkedHawb = getLinkedAwbFromMawb(awb.getId());
@@ -300,6 +305,9 @@ public class AwbService implements IAwbService {
                             }
                         }
                         awb.setAwbPackingInfo(linkedPacks);
+                        if(awb.getAwbGoodsDescriptionInfo() != null && awb.getAwbGoodsDescriptionInfo().size() > 0) {
+                            calculateGoodsDescription(awb.getAwbGoodsDescriptionInfo().get(0), linkedPacks, tenantSettings, new HashMap<>());
+                        }
                     }
                 }
             }
@@ -352,6 +360,11 @@ public class AwbService implements IAwbService {
 
             // Get packs of all linked HAWB
             if(awb.get().getAwbShipmentInfo().getEntityType().equals(Constants.MAWB)) {
+                List<ShipmentSettingsDetails> tenantSettingsList = shipmentSettingsDao.getSettingsByTenantIds(Arrays.asList(UserContext.getUser().TenantId));
+                ShipmentSettingsDetails tenantSettings = null;
+                if (tenantSettingsList != null && tenantSettingsList.size() >= 1) {
+                    tenantSettings = tenantSettingsList.get(0);
+                }
                 List<Awb> linkedHawb = getLinkedAwbFromMawb(awb.get().getId());
                 List<AwbPackingInfo> linkedPacks = new ArrayList<>();
                 for(var hawb : linkedHawb){
@@ -361,6 +374,9 @@ public class AwbService implements IAwbService {
                     }
                 }
                 awb.get().setAwbPackingInfo(linkedPacks);
+                if(awb.get().getAwbGoodsDescriptionInfo() != null && awb.get().getAwbGoodsDescriptionInfo().size() > 0) {
+                    calculateGoodsDescription(awb.get().getAwbGoodsDescriptionInfo().get(0), linkedPacks, tenantSettings, new HashMap<>());
+                }
             }
             AwbResponse response = convertEntityToDto(awb.get());
 
@@ -497,16 +513,16 @@ public class AwbService implements IAwbService {
             mawbGoodsDescriptionInfo = mawb.getAwbGoodsDescriptionInfo().get(0);
             Map<String, List<AwbPackingInfo>> hawbPacksMap = new HashMap<>(); // map to store awbNumber -> packsList
 
-            calculateGoodsDescription(mawbGoodsDescriptionInfo, allHawbPacks, tenantSettings, hawbPacksMap);
+            var pair = calculateGoodsDescription(mawbGoodsDescriptionInfo, allHawbPacks, tenantSettings, hawbPacksMap);
 
             // Can there be a scenario of multiple Goods information ?
-            mawb.setAwbGoodsDescriptionInfo(List.of(mawbGoodsDescriptionInfo));
+            mawb.setAwbGoodsDescriptionInfo(List.of(pair.getRight()));
             saveHawbPacks(mawb, hawbPacksMap);
             awbDao.save(mawb);
         }
     }
 
-    private BigDecimal calculateGoodsDescription(AwbGoodsDescriptionInfo mawbGoodsDescriptionInfo, List<AwbPackingInfo> allHawbPacks, ShipmentSettingsDetails tenantSettings, Map<String, List<AwbPackingInfo>> hawbPacksMap) {
+    private Pair<BigDecimal, AwbGoodsDescriptionInfo> calculateGoodsDescription(AwbGoodsDescriptionInfo mawbGoodsDescriptionInfo, List<AwbPackingInfo> allHawbPacks, ShipmentSettingsDetails tenantSettings, Map<String, List<AwbPackingInfo>> hawbPacksMap) {
         Long mawbGoodsDescId = null; //mawbGoodsDescriptionInfo.getId();  // TODO goodsDescId where to get this
         UUID mawbGoodsDescGuid = mawbGoodsDescriptionInfo.getGuid();
         Integer noOfPacks = 0;
@@ -574,18 +590,13 @@ public class AwbService implements IAwbService {
         // Consolidation Lite flow
         if(tenantSettings != null && tenantSettings.getConsolidationLite() != true){
             mawbGoodsDescriptionInfo = new AwbGoodsDescriptionInfo();
-            mawbGoodsDescriptionInfo.setGrossWt(totalGrossWeightOfMawbGood);
-            mawbGoodsDescriptionInfo.setGrossWtUnit(grossWeightUnit);
-            mawbGoodsDescriptionInfo.setPiecesNo(noOfPacks);
-            mawbGoodsDescriptionInfo.setChargeableWt(roundOffAirShipment(chargeableWeightOfMawbGood));
-            mawbGoodsDescriptionInfo.setTotalAmount(totalAmountOfMawbGood);
         }
         mawbGoodsDescriptionInfo.setGrossWt(totalGrossWeightOfMawbGood);
         mawbGoodsDescriptionInfo.setGrossWtUnit(grossWeightUnit);
         mawbGoodsDescriptionInfo.setPiecesNo(noOfPacks);
         mawbGoodsDescriptionInfo.setChargeableWt(roundOffAirShipment(chargeableWeightOfMawbGood));
         mawbGoodsDescriptionInfo.setTotalAmount(totalAmountOfMawbGood);
-        return totalVolumetricWeight;
+        return Pair.of(totalVolumetricWeight, mawbGoodsDescriptionInfo);
     }
 
     private void saveHawbPacks(Awb mawb, Map<String, List<AwbPackingInfo>> hawbPacksMap) {
@@ -941,7 +952,7 @@ public class AwbService implements IAwbService {
         // fetch sehipment info
         ShipmentDetails shipmentDetails = shipmentDao.findById(request.getShipmentId()).get();
         if(shipmentDetails.getHouseBill() == null) {
-            shipmentDetails.setHouseBill(shipmentService.generateCustomHouseBL());
+            shipmentDetails.setHouseBill(shipmentService.generateCustomHouseBL(shipmentDetails));
             shipmentDao.save(shipmentDetails, false);
         }
 
@@ -2344,22 +2355,42 @@ public class AwbService implements IAwbService {
             double totalPrepaid = 0.00;
             double totalCollect = 0.00;
 
-            if(req.getChargeDetails().getIdentifier1().equals(true)) {
+            if(req.getChargeDetails().getIdentifier1().equals(Constants.TRUE)) {
+                // Prepaid WeighCharges
                 totalPrepaid += totalAmount;
+            } else {
+                totalPrepaid += getDoubleValue(req.getAwbPaymentInfo().getWeightCharges());
+                totalPrepaid += getDoubleValue(req.getAwbPaymentInfo().getValuationCharge());
+                totalPrepaid += getDoubleValue(req.getAwbPaymentInfo().getTax());
             }
 
-            if(req.getChargeDetails().getIdentifier2().equals(true)) {
+            if(req.getChargeDetails().getIdentifier2().equals(Constants.TRUE)) {
+                // CollectWeightCharges
                 totalCollect += totalAmount;
+            } else {
+                totalCollect += getDoubleValue(req.getAwbPaymentInfo().getWeightCharges());
+                totalCollect += getDoubleValue(req.getAwbPaymentInfo().getValuationCharge());
+                totalCollect += getDoubleValue(req.getAwbPaymentInfo().getTax());
             }
 
-            if(req.getChargeDetails().getIdentifier3().equals(true)) {
+            if(req.getChargeDetails().getIdentifier3().equals(Constants.TRUE)) {
+                // PrepaidDueAgentCharges
+                // PrepaidDueCarrierCharges
                 totalPrepaid += agentOtherCharges;
                 totalPrepaid += carrierOtherCharges;
+            } else{
+                totalPrepaid += getDoubleValue(req.getAwbPaymentInfo().getDueAgentCharges());
+                totalPrepaid += getDoubleValue(req.getAwbPaymentInfo().getDueCarrierCharges());
             }
 
-            if(req.getChargeDetails().getIdentifier4().equals(true)) {
+            if(req.getChargeDetails().getIdentifier4().equals(Constants.TRUE)) {
+                // CollectDueAgentCharges
+                // CollectDueCarrierCharges
                 totalCollect += agentOtherCharges;
                 totalCollect += carrierOtherCharges;
+            } else {
+                totalCollect += getDoubleValue(req.getAwbPaymentInfo().getDueAgentCharges());
+                totalCollect += getDoubleValue(req.getAwbPaymentInfo().getDueCarrierCharges());
             }
 
             paymentInfo.setTotalCollect(convertToBigDecimal(totalCollect));
@@ -2443,11 +2474,17 @@ public class AwbService implements IAwbService {
             else
                 guidBasedAwbPackingList.put(goodsDescriptionInfos.get(0).getGuid(), packsInfo);
 
-            for (AwbGoodsDescriptionInfo goodDescription : goodsDescriptionInfos) {
+            for (int i = 0; i < goodsDescriptionInfos.size(); i++) {
 
-                if (guidBasedAwbPackingList.containsKey(goodDescription.getGuid())) {
-                    var allPacks = guidBasedAwbPackingList.get(goodDescription.getGuid());
-                    totalVolumeticWeight = totalVolumeticWeight.add(calculateGoodsDescription(goodDescription, allPacks, tenantSettings, new HashMap<>()));
+                if (guidBasedAwbPackingList.containsKey(goodsDescriptionInfos.get(i).getGuid())) {
+                    var allPacks = guidBasedAwbPackingList.get(goodsDescriptionInfos.get(i).getGuid());
+                    Pair<BigDecimal, AwbGoodsDescriptionInfo> pair = calculateGoodsDescription(goodsDescriptionInfos.get(i), allPacks, tenantSettings, new HashMap<>());
+                    totalVolumeticWeight = totalVolumeticWeight.add(pair.getLeft());
+                    goodsDescriptionInfos.get(i).setGrossWt(pair.getRight().getGrossWt());
+                    goodsDescriptionInfos.get(i).setGrossWtUnit(pair.getRight().getGrossWtUnit());
+                    goodsDescriptionInfos.get(i).setPiecesNo(pair.getRight().getPiecesNo());
+                    goodsDescriptionInfos.get(i).setChargeableWt(pair.getRight().getChargeableWt());
+                    goodsDescriptionInfos.get(i).setTotalAmount(pair.getRight().getTotalAmount());
                 }
 
             }
@@ -2628,6 +2665,12 @@ public class AwbService implements IAwbService {
                 .contactNumber(organization.getPhone())
                 .build();
         return AwbUtility.getFormattedAddress(addressParam);
+    }
+
+    private double getDoubleValue(BigDecimal number) {
+        if(number == null)
+            return 0.0;
+        return number.doubleValue();
     }
 
 }
