@@ -8,7 +8,9 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IMawbStocksDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IMawbStocksLinkDao;
 import com.dpw.runner.shipment.services.dto.request.MawbStocksRequest;
+import com.dpw.runner.shipment.services.dto.response.GenerateCustomHblResponse;
 import com.dpw.runner.shipment.services.dto.response.MawbStocksResponse;
+import com.dpw.runner.shipment.services.dto.response.NextMawbCarrierResponse;
 import com.dpw.runner.shipment.services.entity.Events;
 import com.dpw.runner.shipment.services.entity.MawbStocks;
 import com.dpw.runner.shipment.services.entity.MawbStocksLink;
@@ -224,9 +226,11 @@ public class MawbStocksService implements IMawbStocksService {
         Pair<Specification<MawbStocks>, Pageable> tuple = fetchData(listCommonRequest, MawbStocks.class);
         Page<MawbStocks> mawbStocksPage = mawbStocksDao.findAll(tuple.getLeft(), tuple.getRight());
         if(!mawbStocksPage.getContent().isEmpty()){
-            return ResponseHelper.buildSuccessResponse(mawbStocksPage.getContent().get(0).getNextMawbNumber());
+            return ResponseHelper.buildSuccessResponse(NextMawbCarrierResponse.builder().nextMawbNumber(mawbStocksPage.getContent().get(0).getNextMawbNumber()).build());
+//            return ResponseHelper.buildSuccessResponse(mawbStocksPage.getContent().get(0).getNextMawbNumber());
         }
-        return ResponseHelper.buildSuccessResponse(null);
+        return ResponseHelper.buildSuccessResponse(NextMawbCarrierResponse.builder().nextMawbNumber(null).build());
+        //return ResponseHelper.buildSuccessResponse(null);
     }
 
     private MawbStocksResponse convertEntityToDto(MawbStocks mawbStocks) {
