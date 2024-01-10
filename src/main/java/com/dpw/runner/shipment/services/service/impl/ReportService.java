@@ -246,7 +246,7 @@ public class ReportService implements IReportService {
                 pdfByte_Content = CommonUtils.AddWatermark(pdfByte_Content, BaseFont.createFont(BaseFont.TIMES_BOLD, BaseFont.WINANSI, BaseFont.EMBEDDED), "DRAFT     DRAFT");
             }
             //Update shipment issue date
-            if ((isOriginalPrint || isSurrenderPrint) && reportRequest.getReportKey().equalsIgnoreCase(ReportConstants.SHIPMENT_ID))
+            if ((isOriginalPrint || isSurrenderPrint) && reportRequest.getReportKey() != null && reportRequest.getReportKey().equalsIgnoreCase(ReportConstants.SHIPMENT_ID))
             {
                 shipmentDao.updateDateAndStatus(Long.parseLong(reportRequest.getReportId()), LocalDate.now().atStartOfDay(), null);
             }
