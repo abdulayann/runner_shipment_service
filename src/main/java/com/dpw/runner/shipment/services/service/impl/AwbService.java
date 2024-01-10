@@ -2313,7 +2313,7 @@ public class AwbService implements IAwbService {
         if (!Objects.isNull(awbResponse.getAwbShipmentInfo()))
             locationCodes.addAll((masterDataUtils.createInBulkUnLocationsRequest(awbResponse.getAwbShipmentInfo(), AwbShipmentInfo.class, fieldNameKeyMap, AwbShipmentInfo.class.getSimpleName() )));
         if(!Objects.isNull(awbResponse.getAwbRoutingInfo()))
-            awbResponse.getAwbRoutingInfo().forEach(r -> locationCodes.addAll(masterDataUtils.createInBulkUnLocationsRequest(r, AwbRoutingInfo.class, fieldNameKeyMap, AwbPackingInfo.class.getSimpleName() )));
+            awbResponse.getAwbRoutingInfo().forEach(r -> locationCodes.addAll(masterDataUtils.createInBulkUnLocationsRequest(r, AwbRoutingInfo.class, fieldNameKeyMap, AwbRoutingInfo.class.getSimpleName() )));
         if(!Objects.isNull(awbResponse.getAwbPackingInfo()))
             awbResponse.getAwbPackingInfo().forEach(r -> locationCodes.addAll(masterDataUtils.createInBulkUnLocationsRequest(r, AwbPackingInfo.class, fieldNameKeyMap, AwbPackingInfo.class.getSimpleName() )));
         if(!Objects.isNull(awbResponse.getAwbGoodsDescriptionInfo()))
@@ -2370,18 +2370,18 @@ public class AwbService implements IAwbService {
                 // Prepaid WeighCharges
                 totalPrepaid += totalAmount;
             } else {
-                totalPrepaid += getDoubleValue(req.getAwbPaymentInfo().getWeightCharges());
-                totalPrepaid += getDoubleValue(req.getAwbPaymentInfo().getValuationCharge());
-                totalPrepaid += getDoubleValue(req.getAwbPaymentInfo().getTax());
+                totalCollect += getDoubleValue(req.getAwbPaymentInfo().getWeightCharges());
+                totalCollect += getDoubleValue(req.getAwbPaymentInfo().getValuationCharge());
+                totalCollect += getDoubleValue(req.getAwbPaymentInfo().getTax());
             }
 
             if(req.getChargeDetails().getIdentifier2().equals(Constants.TRUE)) {
                 // CollectWeightCharges
                 totalCollect += totalAmount;
             } else {
-                totalCollect += getDoubleValue(req.getAwbPaymentInfo().getWeightCharges());
-                totalCollect += getDoubleValue(req.getAwbPaymentInfo().getValuationCharge());
-                totalCollect += getDoubleValue(req.getAwbPaymentInfo().getTax());
+                totalPrepaid += getDoubleValue(req.getAwbPaymentInfo().getWeightCharges());
+                totalPrepaid += getDoubleValue(req.getAwbPaymentInfo().getValuationCharge());
+                totalPrepaid += getDoubleValue(req.getAwbPaymentInfo().getTax());
             }
 
             if(req.getChargeDetails().getIdentifier3().equals(Constants.TRUE)) {
@@ -2390,8 +2390,8 @@ public class AwbService implements IAwbService {
                 totalPrepaid += agentOtherCharges;
                 totalPrepaid += carrierOtherCharges;
             } else{
-                totalPrepaid += getDoubleValue(req.getAwbPaymentInfo().getDueAgentCharges());
-                totalPrepaid += getDoubleValue(req.getAwbPaymentInfo().getDueCarrierCharges());
+                totalCollect += getDoubleValue(req.getAwbPaymentInfo().getDueAgentCharges());
+                totalCollect += getDoubleValue(req.getAwbPaymentInfo().getDueCarrierCharges());
             }
 
             if(req.getChargeDetails().getIdentifier4().equals(Constants.TRUE)) {
@@ -2400,8 +2400,8 @@ public class AwbService implements IAwbService {
                 totalCollect += agentOtherCharges;
                 totalCollect += carrierOtherCharges;
             } else {
-                totalCollect += getDoubleValue(req.getAwbPaymentInfo().getDueAgentCharges());
-                totalCollect += getDoubleValue(req.getAwbPaymentInfo().getDueCarrierCharges());
+                totalPrepaid += getDoubleValue(req.getAwbPaymentInfo().getDueAgentCharges());
+                totalPrepaid += getDoubleValue(req.getAwbPaymentInfo().getDueCarrierCharges());
             }
 
             paymentInfo.setTotalCollect(convertToBigDecimal(totalCollect));
