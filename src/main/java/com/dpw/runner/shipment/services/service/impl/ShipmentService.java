@@ -3540,7 +3540,10 @@ public class ShipmentService implements IShipmentService {
     }
 
     public String generateCustomHouseBL(ShipmentDetails shipmentDetails) {
-        String res = shipmentDetails.getHouseBill();
+        String res = null;
+        if(shipmentDetails != null) {
+            res = shipmentDetails.getHouseBill();
+        }
         List<ShipmentSettingsDetails> shipmentSettingsDetailsList = shipmentSettingsDao.getSettingsByTenantIds(List.of(TenantContext.getCurrentTenant()));
         ShipmentSettingsDetails tenantSetting = null;
         if (shipmentSettingsDetailsList.get(0) != null)
