@@ -1,5 +1,7 @@
 package com.dpw.runner.shipment.services.syncing.impl;
 
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataSyncResponse;
 import com.dpw.runner.shipment.services.entity.ProductSequenceConfig;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
@@ -35,6 +37,8 @@ public class ShipmentSettingsSync implements IShipmentSettingsSync {
     RestTemplate restTemplate;
     @Autowired
     private IV1Service v1Service;
+    @Autowired
+    private IShipmentSettingsDao shipmentSettingsDao;
 
     @Autowired
     private EmailServiceUtility emailServiceUtility;
@@ -89,6 +93,12 @@ public class ShipmentSettingsSync implements IShipmentSettingsSync {
         });
 
         return ResponseHelper.buildSuccessResponse(modelMapper.map(syncRequest, ShipmentSettingsSyncRequest.class));
+    }
+
+    @Override
+    public ResponseEntity<?> syncSettings() {
+        ShipmentSettingsDetails shipmentSettingsDetails = shipmentSettingsDao.getSettingsByTenantIds(List.of(TenantContext.getCurrentTenant())).get(0);
+        return sync(shipmentSettingsDetails);
     }
 
     private ProductSequenceConfigDto mapProductSequenceConfig(ProductSequenceConfig req) {
