@@ -14,10 +14,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -101,11 +98,52 @@ public class TenantProductsDao implements ITenantProductsDao {
         }
     }
 
+    @Override
+    public List<TenantProducts> updateEntityFromV1Settings(List<TenantProducts> tenantProductsList, Long shipmentSettingsId, List<TenantProducts> oldTenantProducts) throws Exception {
+        String responseMsg;
+        List<TenantProducts> responseTenantProducts = new ArrayList<>();
+        try {
+            Map<UUID, TenantProducts> hashMap = new HashMap<>();
+            if(oldTenantProducts != null && oldTenantProducts.size() > 0)
+                hashMap = oldTenantProducts.stream().collect(Collectors.toMap(TenantProducts::getGuid, Function.identity()));
+            List<TenantProducts> tenantProductsRequestList = new ArrayList<>();
+            if (tenantProductsList != null && tenantProductsList.size() != 0) {
+                for (TenantProducts request : tenantProductsList) {
+                    UUID guid = request.getGuid();
+                    if(hashMap.containsKey(guid)) {
+                        request.setId(hashMap.get(guid).getId());
+                        hashMap.remove(guid);
+                    }
+                    tenantProductsRequestList.add(request);
+                }
+                responseTenantProducts = saveEntityFromSettings(tenantProductsRequestList, shipmentSettingsId);
+            }
+            deleteTenantProductsByUUID(hashMap);
+            return responseTenantProducts;
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
+            log.error(responseMsg, e);
+            throw new Exception(e);
+        }
+    }
+
     private void delete(TenantProducts tenantProducts) {
         tenantProductsRepository.delete(tenantProducts);
     }
 
     private void deleteTenantProducts(Map<Long, TenantProducts> hashMap) {
+        String responseMsg;
+        try {
+            hashMap.values().forEach(this::delete);
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_DELETE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+        }
+    }
+
+    private void deleteTenantProductsByUUID(Map<UUID, TenantProducts> hashMap) {
         String responseMsg;
         try {
             hashMap.values().forEach(this::delete);

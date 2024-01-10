@@ -25,7 +25,6 @@ import com.dpw.runner.shipment.services.service_bus.ISBUtils;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSettingsSync;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.kafka.common.protocol.types.Field;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
@@ -451,7 +450,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
                 response.setHblHawbBackPrintTemplate(convertToDtoList(hblHawbBackPrintTemplates, HblTermsConditionTemplateResponse.class));
             }
             if(tenantProductsList != null) {
-                List<TenantProducts> tenantProducts = tenantProductsDao.updateEntityFromSettings(convertToEntityList(tenantProductsList, TenantProducts.class), shipmentSettingsDetails.getId());
+                List<TenantProducts> tenantProducts = tenantProductsDao.updateEntityFromV1Settings(convertToEntityList(tenantProductsList, TenantProducts.class), shipmentSettingsDetails.getId(), oldTenantProductsList);
                 response.setTenantProducts(convertToDtoList(tenantProducts, TenantProductsResponse.class));
             }
             if(productSequenceConfigList != null) {
@@ -467,7 +466,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
                             productSequenceConfig.setTenantProducts(null);
                     }
                 }
-                List<ProductSequenceConfig> productSequenceConfigs = productSequenceConfigDao.updateEntityFromSettings(convertToEntityList(productSequenceConfigList, ProductSequenceConfig.class), shipmentSettingsDetails.getId());
+                List<ProductSequenceConfig> productSequenceConfigs = productSequenceConfigDao.updateEntityFromV1Settings(convertToEntityList(productSequenceConfigList, ProductSequenceConfig.class), shipmentSettingsDetails.getId(), oldProductSequenceConfigList);
                 response.setProductSequenceConfig(convertToDtoList(productSequenceConfigs, ProductSequenceConfigResponse.class));
             }
 

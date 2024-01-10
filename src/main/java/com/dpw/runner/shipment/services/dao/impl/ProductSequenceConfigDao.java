@@ -4,7 +4,6 @@ import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IProductSequenceConfigDao;
 import com.dpw.runner.shipment.services.entity.ProductSequenceConfig;
-import com.dpw.runner.shipment.services.entity.TenantProducts;
 import com.dpw.runner.shipment.services.repository.interfaces.IProductSequenceConfigRepository;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
@@ -15,10 +14,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -103,11 +99,52 @@ public class ProductSequenceConfigDao implements IProductSequenceConfigDao {
         }
     }
 
+    @Override
+    public List<ProductSequenceConfig> updateEntityFromV1Settings(List<ProductSequenceConfig> productSequenceConfigList, Long shipmentSettingsId, List<ProductSequenceConfig> oldProductSequenceConfig) throws Exception {
+        String responseMsg;
+        List<ProductSequenceConfig> responseProductSequenceConfig = new ArrayList<>();
+        try {
+            Map<UUID, ProductSequenceConfig> hashMap = new HashMap<>();
+            if(oldProductSequenceConfig != null && oldProductSequenceConfig.size() > 0)
+                hashMap = oldProductSequenceConfig.stream().collect(Collectors.toMap(ProductSequenceConfig::getGuid, Function.identity()));
+            List<ProductSequenceConfig> productSequenceConfigRequestList = new ArrayList<>();
+            if (productSequenceConfigList != null && productSequenceConfigList.size() != 0) {
+                for (ProductSequenceConfig request : productSequenceConfigList) {
+                    UUID guid = request.getGuid();
+                    if(hashMap.containsKey(guid)) {
+                        request.setId(hashMap.get(guid).getId());
+                        hashMap.remove(guid);
+                    }
+                    productSequenceConfigRequestList.add(request);
+                }
+                responseProductSequenceConfig = saveEntityFromSettings(productSequenceConfigRequestList, shipmentSettingsId);
+            }
+            deleteProductSequenceConfigByUUID(hashMap);
+            return responseProductSequenceConfig;
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
+            log.error(responseMsg, e);
+            throw new Exception(e);
+        }
+    }
+
     private void delete(ProductSequenceConfig tenantProducts) {
         productSequenceConfigRepository.delete(tenantProducts);
     }
 
     private void deleteProductSequenceConfig(Map<Long, ProductSequenceConfig> hashMap) {
+        String responseMsg;
+        try {
+            hashMap.values().forEach(this::delete);
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_DELETE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+        }
+    }
+
+    private void deleteProductSequenceConfigByUUID(Map<UUID, ProductSequenceConfig> hashMap) {
         String responseMsg;
         try {
             hashMap.values().forEach(this::delete);
