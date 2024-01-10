@@ -691,7 +691,7 @@ public class AwbService implements IAwbService {
 
         awbShipmentInfo.setEntityId(consolidationDetails.getId());
         awbShipmentInfo.setEntityType(request.getAwbType());
-        var shipperName = StringUtility.convertToString(consolidationDetails.getSendingAgent().getOrgData().get(PartiesConstants.FULLNAME));
+        var shipperName = StringUtility.convertToString(consolidationDetails.getSendingAgent() != null && consolidationDetails.getReceivingAgent().getOrgData() != null ? consolidationDetails.getSendingAgent().getOrgData().get(PartiesConstants.FULLNAME) : "");
         awbShipmentInfo.setShipperName(shipperName == null ? shipperName : shipperName.toUpperCase());
         awbShipmentInfo.setAwbNumber(consolidationDetails.getMawb());
         awbShipmentInfo.setFirstCarrier(consolidationDetails.getCarrierDetails().getShippingLine());
@@ -874,7 +874,7 @@ public class AwbService implements IAwbService {
         AwbOtherInfo awbOtherInfo = new AwbOtherInfo();
         awbOtherInfo.setEntityId(consolidationDetails.getId());
         awbOtherInfo.setEntityType(request.getAwbType());
-        var shipperName = StringUtility.convertToString(consolidationDetails.getSendingAgent() != null ? consolidationDetails.getSendingAgent().getOrgData().get(PartiesConstants.FULLNAME) : "");
+        var shipperName = StringUtility.convertToString(consolidationDetails.getSendingAgent() != null && consolidationDetails.getReceivingAgent().getOrgData() != null ? consolidationDetails.getSendingAgent().getOrgData().get(PartiesConstants.FULLNAME) : "");
         awbOtherInfo.setShipper(shipperName == null ? null : shipperName.toUpperCase());
         awbOtherInfo.setExecutedOn(jsonHelper.convertValue(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss").format(LocalDateTime.now()), LocalDateTime.class));
         return awbOtherInfo;
@@ -2355,43 +2355,61 @@ public class AwbService implements IAwbService {
             double totalPrepaid = 0.00;
             double totalCollect = 0.00;
 
+            double prepaidWeightCharge = 0.00;
+            double collectWeightCharge = 0.00;
+            double prepaidValuationCharge = 0.00;
+            double collectValuationCharge = 0.00;
+            double prepaidTax = 0.00;
+            double collectTax = 0.00;
+            double prepaidDueAgentCharges = 0.00;
+            double collectDueAgentCharges = 0.00;
+            double prepaidDueCarrierCharges = 0.00;
+            double collectDueCarrierCharges = 0.00;
+
             if(req.getChargeDetails().getIdentifier1().equals(Constants.TRUE)) {
                 // Prepaid WeighCharges
-                totalPrepaid += totalAmount;
+                prepaidWeightCharge = totalAmount;
+                prepaidValuationCharge = getDoubleValue(req.getAwbPaymentInfo().getValuationCharge());
+                prepaidTax = getDoubleValue(req.getAwbPaymentInfo().getTax());
             } else {
-                totalCollect += getDoubleValue(req.getAwbPaymentInfo().getWeightCharges());
-                totalCollect += getDoubleValue(req.getAwbPaymentInfo().getValuationCharge());
-                totalCollect += getDoubleValue(req.getAwbPaymentInfo().getTax());
+                prepaidWeightCharge = 0.00;
+                prepaidValuationCharge = 0.00;
+                prepaidTax = 0.00;
             }
 
             if(req.getChargeDetails().getIdentifier2().equals(Constants.TRUE)) {
                 // CollectWeightCharges
-                totalCollect += totalAmount;
+                collectWeightCharge = totalAmount;
+                collectValuationCharge = getDoubleValue(req.getAwbPaymentInfo().getValuationCharge());
+                collectTax = getDoubleValue(req.getAwbPaymentInfo().getTax());
             } else {
-                totalPrepaid += getDoubleValue(req.getAwbPaymentInfo().getWeightCharges());
-                totalPrepaid += getDoubleValue(req.getAwbPaymentInfo().getValuationCharge());
-                totalPrepaid += getDoubleValue(req.getAwbPaymentInfo().getTax());
+                collectWeightCharge = 0.00;
+                collectValuationCharge = 0.00;
+                collectTax = 0.00;
             }
 
             if(req.getChargeDetails().getIdentifier3().equals(Constants.TRUE)) {
                 // PrepaidDueAgentCharges
                 // PrepaidDueCarrierCharges
-                totalPrepaid += agentOtherCharges;
-                totalPrepaid += carrierOtherCharges;
+                prepaidDueAgentCharges = agentOtherCharges;
+                prepaidDueCarrierCharges = carrierOtherCharges;
             } else{
-                totalCollect += getDoubleValue(req.getAwbPaymentInfo().getDueAgentCharges());
-                totalCollect += getDoubleValue(req.getAwbPaymentInfo().getDueCarrierCharges());
+                prepaidDueAgentCharges = 0.00;
+                prepaidDueCarrierCharges = 0.00;
             }
 
             if(req.getChargeDetails().getIdentifier4().equals(Constants.TRUE)) {
                 // CollectDueAgentCharges
                 // CollectDueCarrierCharges
-                totalCollect += agentOtherCharges;
-                totalCollect += carrierOtherCharges;
+                collectDueAgentCharges = agentOtherCharges;
+                collectDueCarrierCharges = carrierOtherCharges;
             } else {
-                totalPrepaid += getDoubleValue(req.getAwbPaymentInfo().getDueAgentCharges());
-                totalPrepaid += getDoubleValue(req.getAwbPaymentInfo().getDueCarrierCharges());
+                collectDueAgentCharges = 0.00;
+                collectDueCarrierCharges = 0.00;
             }
+
+            totalPrepaid = prepaidWeightCharge + prepaidValuationCharge + prepaidTax + prepaidDueAgentCharges + prepaidDueCarrierCharges;
+            totalCollect = collectWeightCharge + collectValuationCharge + collectTax + collectDueAgentCharges + collectDueCarrierCharges;
 
             paymentInfo.setTotalCollect(convertToBigDecimal(totalCollect));
             paymentInfo.setTotalPrepaid(convertToBigDecimal(totalPrepaid));
