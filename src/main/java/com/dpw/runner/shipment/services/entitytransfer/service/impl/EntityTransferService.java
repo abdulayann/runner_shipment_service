@@ -644,7 +644,7 @@ public class EntityTransferService implements IEntityTransferService {
         Long consolId = sendConsolidationRequest.getConsolId();
         List<Integer> sendToBranch = sendConsolidationRequest.getSendToBranch();
         List<String> additionalDocs = sendConsolidationRequest.getAdditionalDocs();
-        Map<Long, List<String>> shipAdditionalDocs = sendConsolidationRequest.getShipAdditionalDocs();
+        Map<String, List<String>> shipAdditionalDocs = sendConsolidationRequest.getShipAdditionalDocs();
         List<String> sendToOrg = sendConsolidationRequest.getSendToOrg();
 
         if((sendToBranch == null || sendToBranch.size() == 0) && (sendToOrg == null || sendToOrg.size() == 0)){
@@ -692,14 +692,14 @@ public class EntityTransferService implements IEntityTransferService {
                             containerVsShipmentGuid.put(cont.getGuid(), List.of(shipment.getGuid()));
                         }
                     });
-                    if(shipAdditionalDocs != null && shipAdditionalDocs.containsKey(shipment.getId())){
-                        if(shipAdditionalDocs.get(shipment.getId()) != null) {
+                    if(shipAdditionalDocs != null && shipAdditionalDocs.containsKey(shipment.getGuid().toString())){
+                        if(shipAdditionalDocs.get(shipment.getGuid().toString()) != null) {
                             var shipFileRepoList = shipment.getFileRepoList().stream().filter(fileRepo -> {
-                                return shipAdditionalDocs.get(shipment.getId()).indexOf(fileRepo.getId()) != -1;
+                                return shipAdditionalDocs.get(shipment.getGuid().toString()).indexOf(fileRepo.getId()) != -1;
                             }).collect(Collectors.toList());
                             shipment.setFileRepoList(shipFileRepoList);
                             shipId.add(shipment.getShipmentId());
-                            docList.add(shipAdditionalDocs.get(shipment.getId()));
+                            docList.add(shipAdditionalDocs.get(shipment.getGuid().toString()));
                         } else {
                             shipment.setFileRepoList(null);
                         }
