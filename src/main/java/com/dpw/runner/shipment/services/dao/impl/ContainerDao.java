@@ -250,7 +250,7 @@ public class ContainerDao implements IContainerDao {
                                     packing.setContainerId(null);
                                 }
                                 packingDao.saveAll(packingPage.getContent());
-                                packingsSync.sync(packingPage.getContent());
+                                try { packingsSync.sync(packingPage.getContent()); } catch (Exception e) { log.error("Error performing sync on packings list, {}", e); }
                             }
                         }
                     }

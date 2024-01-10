@@ -482,4 +482,6 @@ public class CustomShipmentSyncRequest implements IRunnerRequest, IRunnerRespons
     private LocalDateTime VesselBerthingDate;
     @JsonProperty("FmcTlcId")
     private String FmcTlcId;
+    @JsonProperty("DeletedContGuids")
+    private List<UUID> DeletedContGuids;
 }

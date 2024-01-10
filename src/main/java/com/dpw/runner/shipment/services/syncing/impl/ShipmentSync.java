@@ -71,7 +71,7 @@ public class ShipmentSync implements IShipmentSync {
     private String SHIPMENT_V1_SYNC_URL;
 
     @Override
-    public ResponseEntity<?> sync(ShipmentDetails sd) {
+    public ResponseEntity<?> sync(ShipmentDetails sd, List<UUID> deletedContGuids) {
         CustomShipmentSyncRequest temp = new CustomShipmentSyncRequest();
 
         CustomShipmentSyncRequest cs = modelMapper.map(sd, CustomShipmentSyncRequest.class);
@@ -156,7 +156,7 @@ public class ShipmentSync implements IShipmentSync {
         }
         else cs.setIsNotifyPartyFreeTextAddress(false);
 
-
+        cs.setDeletedContGuids(deletedContGuids);
 
         String finalCs = jsonHelper.convertToJson(V1DataSyncRequest.builder().entity(cs).module(SyncingConstants.SHIPMENT).build());
         return callSync(finalCs, cs, sd.getId(), sd.getGuid());
@@ -189,7 +189,7 @@ public class ShipmentSync implements IShipmentSync {
     public ResponseEntity<?> syncById(Long shipmentId) {
         Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(shipmentId);
         if(shipmentDetails.isPresent()) {
-            return sync(shipmentDetails.get());
+            return sync(shipmentDetails.get(), null);
         }
         else {
             throw new DataRetrievalFailureException("");

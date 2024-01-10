@@ -9,6 +9,7 @@ import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.config.SyncConfig;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.DetachPacksListDto;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackContainerNumberChangeRequest;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryResponse;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentMeasurementDetailsDto;
@@ -20,6 +21,7 @@ import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.PackingResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
@@ -60,8 +62,7 @@ import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.*;
 import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
 
 @Slf4j
@@ -739,8 +740,12 @@ public class PackingService implements IPackingService {
 
     @Override
     public ResponseEntity<?> listPacksToDetach(CommonRequestModel commonRequestModel) throws Exception {
-        Long containerId = commonRequestModel.getId();
-        ListCommonRequest listCommonRequest = constructListCommonRequest("containerId", containerId, "=");
+        DetachPacksListDto request = (DetachPacksListDto) commonRequestModel.getData();
+        if(request == null || request.getContainerId() == null || request.getShipmentId() == null) {
+            throw new ValidationException("Either shipmentId or containerId is incorrect!");
+        }
+        ListCommonRequest listCommonRequest = andCriteria("containerId", request.getContainerId(), "=", null);
+        listCommonRequest  = andCriteria("shipmentId", request.getShipmentId(), "=", listCommonRequest);
         return list(CommonRequestModel.buildRequest(listCommonRequest));
     }
 

@@ -19,7 +19,8 @@ public class TenantProductsDto implements IRunnerRequest {
     private Boolean Enabled;
     @JsonProperty("EnableGrouping")
     private Boolean EnableGrouping;
-
+    @JsonProperty("IsCommonSequence")
+    private Boolean IsCommonSequence;
     @JsonProperty("TransportModes")
     private List<String> TransportModes = new ArrayList<>();
 }

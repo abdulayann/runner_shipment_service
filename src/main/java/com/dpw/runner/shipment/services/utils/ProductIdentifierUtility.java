@@ -1,11 +1,5 @@
 package com.dpw.runner.shipment.services.utils;
 
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.AIR;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SEA;
-import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
-import static java.io.FileDescriptor.out;
-
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.RunnerEntityMapping;
@@ -14,25 +8,35 @@ import com.dpw.runner.shipment.services.dao.interfaces.ITenantProductsDao;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.ProductProcessTypes;
 import com.dpw.runner.shipment.services.entity.enums.ProductType;
+import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSettingsSync;
 import com.nimbusds.jose.util.Pair;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.AIR;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SEA;
+import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
+
 @Component
+@Slf4j
 public class ProductIdentifierUtility {
 
   private List<TenantProducts> enabledTenantProducts = new ArrayList<>();
 
   @Autowired ITenantProductsDao tenantProductsDao;
   @Autowired ProductSequenceConfigDao productSequenceConfigDao;
+  @Autowired IShipmentSettingsSync shipmentSettingsSync;
   @Autowired GetNextNumberHelper getNextNumberHelper;
 
   /**
@@ -447,6 +451,12 @@ public class ProductIdentifierUtility {
                     getNextNumberHelper.padLeft(productSequence.getSerialCounter().toString(), numberOfDigits, '0');
             result = (result == null ? new StringBuilder("null") : result).append(counter);
             productSequenceConfigDao.save(productSequence);
+            try {
+              shipmentSettingsSync.syncSettings();
+            }
+            catch (Exception e) {
+              log.error("Error performing sync on shipment settings entity, {}", e);
+            }
           }
           default -> {}
         }

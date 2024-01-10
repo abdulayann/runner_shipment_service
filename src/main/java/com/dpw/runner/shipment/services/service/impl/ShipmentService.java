@@ -46,6 +46,7 @@ import com.dpw.runner.shipment.services.service_bus.ISBProperties;
 import com.dpw.runner.shipment.services.service_bus.ISBUtils;
 import com.dpw.runner.shipment.services.syncing.interfaces.IConsolidationSync;
 import com.dpw.runner.shipment.services.syncing.interfaces.IHblSync;
+import com.dpw.runner.shipment.services.syncing.interfaces.IPackingsSync;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
 import com.dpw.runner.shipment.services.utils.*;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -122,6 +123,9 @@ public class ShipmentService implements IShipmentService {
 
     @Autowired
     private IPackingDao packingDao;
+
+    @Autowired
+    private IPackingsSync packingsSync;
 
     @Autowired
     private IPackingService packingService;
@@ -607,7 +611,7 @@ public class ShipmentService implements IShipmentService {
 
             afterSave(shipmentDetails, true);
             try {
-                shipmentSync.sync(shipmentDetails);
+                shipmentSync.sync(shipmentDetails, null);
             } catch (Exception e){
                 log.error("Error performing sync on shipment entity, {}", e);
             }
@@ -780,7 +784,7 @@ public class ShipmentService implements IShipmentService {
             // Create events on basis of shipment status Confirmed/Created
             autoGenerateEvents(shipmentDetails, null);
             try {
-                shipmentSync.sync(shipmentDetails);
+                shipmentSync.sync(shipmentDetails, null);
             } catch (Exception e){
                 log.error("Error performing sync on shipment entity, {}", e);
             }
@@ -1475,7 +1479,7 @@ public class ShipmentService implements IShipmentService {
         entity = shipmentDao.update(entity, false);
         afterSave(entity, false);
         try {
-            shipmentSync.sync(entity);
+            shipmentSync.sync(entity, null);
         } catch (Exception e){
             log.error("Error performing sync on shipment entity, {}", e);
         }
@@ -1625,8 +1629,10 @@ public class ShipmentService implements IShipmentService {
                 updatedPackings = packingDao.updateEntityFromShipment(convertToEntityList(packingRequestList, Packing.class), id, deleteContainerIds);
                 entity.setPackingList(updatedPackings);
             }
+            List<UUID> deletedContGuids = new ArrayList<>();
+            List<Packing> packsForSync = null;
             if(deleteContainerIds != null && deleteContainerIds.size() > 0) {
-                ListCommonRequest listCommonRequest = andCriteria("containerId", deleteContainerIds, "IN", null);
+                ListCommonRequest listCommonRequest = constructListCommonRequest("containerId", deleteContainerIds, "IN");
                 Pair<Specification<Packing>, Pageable> pair = fetchData(listCommonRequest, Packing.class);
                 Page<Packing> packings = packingDao.findAll(pair.getLeft(), pair.getRight());
                 if(packings != null && packings.getContent() != null && !packings.getContent().isEmpty()) {
@@ -1636,7 +1642,13 @@ public class ShipmentService implements IShipmentService {
                         packingList.add(packing);
                     }
                     packingDao.saveAll(packingList);
+                    packsForSync = packingList;
                 }
+                listCommonRequest = constructListCommonRequest("id", deleteContainerIds, "IN");
+                Pair<Specification<Containers>, Pageable> pair2 = fetchData(listCommonRequest, Containers.class);
+                Page<Containers> containersPage = containerDao.findAll(pair2.getLeft(), pair2.getRight());
+                if(containersPage != null && !containersPage.isEmpty())
+                    deletedContGuids = containersPage.stream().map(e -> e.getGuid()).collect(Collectors.toList());
             }
             if (elDetailsRequestList != null) {
                 List<ELDetails> updatedELDetails = elDetailsDao.updateEntityFromShipment(convertToEntityList(elDetailsRequestList, ELDetails.class), id);
@@ -1695,7 +1707,7 @@ public class ShipmentService implements IShipmentService {
             updateMasterBill(entity, oldEntity.get().getMasterBill());
             updateLinkedShipmentData(entity, oldEntity.get());
             try {
-                shipmentSync.sync(entity);
+                shipmentSync.sync(entity, deletedContGuids);
             } catch (Exception e){
                 log.error("Error performing sync on shipment entity, {}", e);
             }
@@ -1712,6 +1724,13 @@ public class ShipmentService implements IShipmentService {
                     consolidationSync.sync(consolidationDetails);
                 } catch (Exception e) {
                     log.error("Error performing sync on consol entity, {}", e);
+                }
+            }
+            if(packsForSync != null) {
+                try {
+                    packingsSync.sync(packsForSync);
+                } catch (Exception e) {
+                    log.error("Error performing sync on packings list, {}", e);
                 }
             }
             ShipmentDetailsResponse response = shipmentDetailsMapper.map(entity);
@@ -2557,7 +2576,7 @@ public class ShipmentService implements IShipmentService {
             }
 
             try {
-                shipmentSync.sync(entity);
+                shipmentSync.sync(entity, null);
             } catch (Exception e) {
                 log.error("Error performing sync on shipment entity, {}", e);
             }
