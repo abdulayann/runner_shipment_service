@@ -759,9 +759,9 @@ public class AwbService implements IAwbService {
                 consolidationDetails.getConsolidationAddresses().size() > 0) {
             List<AwbNotifyPartyInfo> notifyPartyList = new ArrayList<>();
             for (var party : consolidationDetails.getConsolidationAddresses()) {
-                if (party.getOrgData().get("Type") == "Notify Part 1" ||
-                        party.getOrgData().get("Type") == "Notify Part 2" ||
-                        party.getOrgData().get("Type") == "Notify Part 3") {
+                if (party.getType() != null && (party.getType().equals("Notify Part 1") ||
+                        party.getType().equals("Notify Part 2") ||
+                        party.getType().equals("Notify Part 3"))) {
                     AwbNotifyPartyInfo notifyPartyInfo = new AwbNotifyPartyInfo();
                     var name = StringUtility.convertToString(party.getOrgData().get(PartiesConstants.FULLNAME));
                     notifyPartyInfo.setName(name == null ? name : name.toUpperCase());
@@ -770,9 +770,15 @@ public class AwbService implements IAwbService {
                     notifyPartyInfo.setEntityType(request.getAwbType());
                     notifyPartyInfo.setGuid(party.getGuid());
                     notifyPartyInfo.setIsShipmentCreated(true);
-                    // notifyPartyInfo.setAddressId(shipmentNotifyParty.getAddressData()); // field missing: AddressId
-                    notifyPartyInfo.setNotifyOrgId(consolidationDetails.getId());
+                    // org and address data
+                    var orgId = party.getOrgData() != null ?  (Integer) party.getOrgData().get("Id") : null;
+                    var addressId = party.getAddressData() != null ?  (Integer) party.getAddressData().get("Id") : null;
+                    notifyPartyInfo.setOrgId(orgId);
+                    notifyPartyInfo.setAddressId(addressId);
+                    notifyPartyInfo.setNotifyOrgId(Long.valueOf(orgId));
+
                     notifyPartyList.add(notifyPartyInfo);
+                    
                 }
             }
 
