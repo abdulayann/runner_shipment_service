@@ -451,12 +451,12 @@ public class ProductIdentifierUtility {
                     getNextNumberHelper.padLeft(productSequence.getSerialCounter().toString(), numberOfDigits, '0');
             result = (result == null ? new StringBuilder("null") : result).append(counter);
             productSequenceConfigDao.save(productSequence);
-            try {
-              shipmentSettingsSync.syncSettings();
-            }
-            catch (Exception e) {
-              log.error("Error performing sync on shipment settings entity, {}", e);
-            }
+//            try {
+//              shipmentSettingsSync.syncSettings();
+//            }
+//            catch (Exception e) {
+//              log.error("Error performing sync on shipment settings entity, {}", e);
+//            }
           }
           default -> {}
         }
