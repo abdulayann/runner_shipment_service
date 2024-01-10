@@ -290,6 +290,11 @@ public class AwbService implements IAwbService {
             List<Awb> awbList = awbPage.getContent();
 
             if(awbList != null) {
+                List<ShipmentSettingsDetails> tenantSettingsList = shipmentSettingsDao.getSettingsByTenantIds(Arrays.asList(UserContext.getUser().TenantId));
+                ShipmentSettingsDetails tenantSettings = null;
+                if (tenantSettingsList != null && tenantSettingsList.size() >= 1) {
+                    tenantSettings = tenantSettingsList.get(0);
+                }
                 for (Awb awb : awbList) {
                     if (awb.getAwbShipmentInfo().getEntityType().equals(Constants.MAWB)) {
                         List<Awb> linkedHawb = getLinkedAwbFromMawb(awb.getId());
@@ -300,6 +305,9 @@ public class AwbService implements IAwbService {
                             }
                         }
                         awb.setAwbPackingInfo(linkedPacks);
+                        if(awb.getAwbGoodsDescriptionInfo() != null && awb.getAwbGoodsDescriptionInfo().size() > 0) {
+                            calculateGoodsDescription(awb.getAwbGoodsDescriptionInfo().get(0), linkedPacks, tenantSettings, new HashMap<>());
+                        }
                     }
                 }
             }
@@ -352,6 +360,11 @@ public class AwbService implements IAwbService {
 
             // Get packs of all linked HAWB
             if(awb.get().getAwbShipmentInfo().getEntityType().equals(Constants.MAWB)) {
+                List<ShipmentSettingsDetails> tenantSettingsList = shipmentSettingsDao.getSettingsByTenantIds(Arrays.asList(UserContext.getUser().TenantId));
+                ShipmentSettingsDetails tenantSettings = null;
+                if (tenantSettingsList != null && tenantSettingsList.size() >= 1) {
+                    tenantSettings = tenantSettingsList.get(0);
+                }
                 List<Awb> linkedHawb = getLinkedAwbFromMawb(awb.get().getId());
                 List<AwbPackingInfo> linkedPacks = new ArrayList<>();
                 for(var hawb : linkedHawb){
@@ -361,6 +374,9 @@ public class AwbService implements IAwbService {
                     }
                 }
                 awb.get().setAwbPackingInfo(linkedPacks);
+                if(awb.get().getAwbGoodsDescriptionInfo() != null && awb.get().getAwbGoodsDescriptionInfo().size() > 0) {
+                    calculateGoodsDescription(awb.get().getAwbGoodsDescriptionInfo().get(0), linkedPacks, tenantSettings, new HashMap<>());
+                }
             }
             AwbResponse response = convertEntityToDto(awb.get());
 
@@ -941,7 +957,7 @@ public class AwbService implements IAwbService {
         // fetch sehipment info
         ShipmentDetails shipmentDetails = shipmentDao.findById(request.getShipmentId()).get();
         if(shipmentDetails.getHouseBill() == null) {
-            shipmentDetails.setHouseBill(shipmentService.generateCustomHouseBL());
+            shipmentDetails.setHouseBill(shipmentService.generateCustomHouseBL(shipmentDetails));
             shipmentDao.save(shipmentDetails, false);
         }
 

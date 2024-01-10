@@ -8,6 +8,7 @@ import static java.io.FileDescriptor.out;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.commons.requests.RunnerEntityMapping;
 import com.dpw.runner.shipment.services.dao.impl.ProductSequenceConfigDao;
 import com.dpw.runner.shipment.services.dao.interfaces.ITenantProductsDao;
 import com.dpw.runner.shipment.services.entity.*;
@@ -63,8 +64,7 @@ public class ProductIdentifierUtility {
     Page<TenantProducts> tenantProducts =
         tenantProductsDao.findAll(pair.getLeft(), pair.getRight());
 
-    return tenantProducts.get().max(Comparator.comparing(TenantProducts::getPriority)).stream()
-        .toList();
+    return tenantProducts.get().sorted(Comparator.comparing(TenantProducts::getPriority)).toList();
   }
 
   public String GetCommonSequenceNumber(
@@ -92,9 +92,25 @@ public class ProductIdentifierUtility {
 
     if (tenantProductList.size() > 0) {
       var tenantProductIds = tenantProductList.stream().map(TenantProducts::getId).toList();
-      listRequest = constructListCommonRequest("id", tenantProductIds, "IN");
+      listRequest = constructListCommonRequest("tenantProductId", tenantProductIds, "IN");
+      Map<String, RunnerEntityMapping> tableNames =
+              Map.ofEntries(
+                      Map.entry(
+                              "tenantProductId",
+                              RunnerEntityMapping.builder()
+                                      .tableName("tenantProducts")
+                                      .dataType(Long.class)
+                                      .fieldName("id")
+                                      .build()),
+                      Map.entry(
+                              "productProcessTypes",
+                              RunnerEntityMapping.builder()
+                                      .tableName("ProductSequenceConfig")
+                                      .dataType(ProductProcessTypes.class)
+                                      .fieldName("productProcessTypes")
+                                      .build()));
       Pair<Specification<ProductSequenceConfig>, Pageable> productSequenceConfigPair =
-          fetchData(listRequest, ProductSequenceConfig.class);
+          fetchData(listRequest, ProductSequenceConfig.class, tableNames);
       Page<ProductSequenceConfig> productSequenceConfigPage =
           productSequenceConfigDao.findAll(
               productSequenceConfigPair.getLeft(), productSequenceConfigPair.getRight());
@@ -371,14 +387,15 @@ public class ProductIdentifierUtility {
         var splitArray = segment.split(";");
         var regexKey = splitArray[0];
         var format = splitArray[1];
-        int numberOfCharactersToRetain = 0;
+        Integer numberOfCharactersToRetain = 0;
         switch (regexKey.toLowerCase()) {
           case "branchcode" -> {
             var user = UserContext.getUser();
             String tenantCode = user.getCode();
             if (format.contains("L")) {
               format = format.replace("L", "");
-              if (tryParse(format, numberOfCharactersToRetain) != null)
+              numberOfCharactersToRetain = tryParse(format, numberOfCharactersToRetain);
+              if (numberOfCharactersToRetain!= null)
                 result =
                     (result == null ? new StringBuilder("null") : result)
                         .append(
@@ -388,7 +405,8 @@ public class ProductIdentifierUtility {
                                 : tenantCode);
 
             } else {
-              if (tryParse(format, numberOfCharactersToRetain) != null) {
+              numberOfCharactersToRetain = tryParse(format, numberOfCharactersToRetain);
+              if (numberOfCharactersToRetain != null) {
                 result =
                     (result == null ? new StringBuilder("null") : result)
                         .append(
@@ -398,7 +416,8 @@ public class ProductIdentifierUtility {
             }
           }
           case "transportmode" -> {
-            if (tryParse(format, numberOfCharactersToRetain) != null) {
+            numberOfCharactersToRetain = tryParse(format, numberOfCharactersToRetain);
+            if (numberOfCharactersToRetain != null) {
               result =
                   (result == null ? new StringBuilder("null") : result)
                       .append(
@@ -418,8 +437,9 @@ public class ProductIdentifierUtility {
                 productSequence.getSerialCounter() == null
                     ? 1
                     : (productSequence.getSerialCounter() + 1));
-            int numberOfDigits = 0;
-            if (tryParse(format, numberOfDigits) != null) {
+            Integer numberOfDigits = 0;
+            numberOfDigits = tryParse(format, numberOfCharactersToRetain);
+            if (numberOfDigits != null) {
             } else {
               numberOfDigits = 3;
             }
@@ -708,5 +728,55 @@ public class ProductIdentifierUtility {
     } catch (Exception e) {
       return null;
     }
+  }
+
+  public String getCustomizedBLNumber(ShipmentDetails shipmentDetails, ShipmentSettingsDetails tenantSettings){
+    this.populateEnabledTenantProducts(tenantSettings);
+
+    TenantProducts identifiedProduct = this.IdentifyProduct(shipmentDetails);
+    if (identifiedProduct == null){
+      if(!shipmentDetails.getTransportMode().equalsIgnoreCase("Air")){
+        // to check the commmon sequence
+        String sequenceNumber = GetChildCommonSequenceNumber(shipmentDetails.getTransportMode(), shipmentDetails.getShipmentId(), ProductProcessTypes.HBLNumber);
+        if (StringUtility.isNotEmpty(sequenceNumber)) {
+          return sequenceNumber;
+        }
+      }
+      return "";
+    }
+    ProductProcessTypes processType;
+    if(shipmentDetails.getTransportMode().equalsIgnoreCase("Air"))
+      processType =  ProductProcessTypes.HAWB;
+    else
+    {
+      processType = ProductProcessTypes.HBLNumber;
+      // to check the commmon sequence
+      String sequenceNumber = GetChildCommonSequenceNumber(shipmentDetails.getTransportMode(), shipmentDetails.getShipmentId(), processType);
+      if (StringUtility.isNotEmpty(sequenceNumber)) {
+        return sequenceNumber;
+      }
+    }
+    ProductSequenceConfig sequenceSettings = getNextNumberHelper.getProductSequence(identifiedProduct.getId(), processType);
+    if(sequenceSettings == null){
+      sequenceSettings = getShipmentProductWithOutContainerType(shipmentDetails, processType);
+      if (sequenceSettings == null)
+      {
+        return "";
+      }
+    }
+    String prefix = sequenceSettings.getPrefix() == null ? "" : sequenceSettings.getPrefix();
+    return getNextNumberHelper.generateCustomSequence(sequenceSettings, prefix, UserContext.getUser().TenantId, true, null, false);
+  }
+
+  public String GetChildCommonSequenceNumber(String transportMode, String parentNumber, ProductProcessTypes productProcessTypes) {
+    String sequenceNumber = "";
+    ProductSequenceConfig productSequence = GetCommonProductSequence(transportMode, productProcessTypes);
+    if (productSequence != null) {
+      sequenceNumber = parentNumber;
+      if (productProcessTypes == ProductProcessTypes.HBLNumber) {
+        return sequenceNumber;
+      }
+    }
+    return sequenceNumber;
   }
 }
