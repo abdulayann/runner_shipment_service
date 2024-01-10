@@ -2302,7 +2302,7 @@ public class AwbService implements IAwbService {
         if (!Objects.isNull(awbResponse.getAwbShipmentInfo()))
             locationCodes.addAll((masterDataUtils.createInBulkUnLocationsRequest(awbResponse.getAwbShipmentInfo(), AwbShipmentInfo.class, fieldNameKeyMap, AwbShipmentInfo.class.getSimpleName() )));
         if(!Objects.isNull(awbResponse.getAwbRoutingInfo()))
-            awbResponse.getAwbRoutingInfo().forEach(r -> locationCodes.addAll(masterDataUtils.createInBulkUnLocationsRequest(r, AwbRoutingInfo.class, fieldNameKeyMap, AwbPackingInfo.class.getSimpleName() )));
+            awbResponse.getAwbRoutingInfo().forEach(r -> locationCodes.addAll(masterDataUtils.createInBulkUnLocationsRequest(r, AwbRoutingInfo.class, fieldNameKeyMap, AwbRoutingInfo.class.getSimpleName() )));
         if(!Objects.isNull(awbResponse.getAwbPackingInfo()))
             awbResponse.getAwbPackingInfo().forEach(r -> locationCodes.addAll(masterDataUtils.createInBulkUnLocationsRequest(r, AwbPackingInfo.class, fieldNameKeyMap, AwbPackingInfo.class.getSimpleName() )));
         if(!Objects.isNull(awbResponse.getAwbGoodsDescriptionInfo()))
