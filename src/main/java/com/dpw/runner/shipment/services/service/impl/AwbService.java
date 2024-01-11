@@ -553,11 +553,6 @@ public class AwbService implements IAwbService {
                         totalGrossWeightOfMawbGood = totalGrossWeightOfMawbGood.add( convertToBigDecimal(unitConversionUtility.convertUnit(Constants.MASS, i.getWeight(), i.getWeightUnit(), tenantSettings.getWeightChargeableUnit())) );
                 }
 
-                // Link pack to Goods if link not already present and save
-                // save part will happen in awbDao.save()
-//                if (i.getMawbGoodsDescId() == null)
-//                    i.setMawbGoodsDescId(mawbGoodsDescId);
-
                 if(hawbPacksMap.get(i.getAwbNumber()) == null) {
                     hawbPacksMap.put(i.getAwbNumber(), new ArrayList<>());
                 }else {
@@ -587,10 +582,6 @@ public class AwbService implements IAwbService {
         }
         totalAmountOfMawbGood = mawbGoodsDescriptionInfo.getTotalAmount();
 
-        // Consolidation Lite flow
-        if(tenantSettings != null && tenantSettings.getConsolidationLite() != true){
-            mawbGoodsDescriptionInfo = new AwbGoodsDescriptionInfo();
-        }
         mawbGoodsDescriptionInfo.setGrossWt(totalGrossWeightOfMawbGood);
         mawbGoodsDescriptionInfo.setGrossWtUnit(grossWeightUnit);
         mawbGoodsDescriptionInfo.setPiecesNo(noOfPacks);
@@ -2522,11 +2513,6 @@ public class AwbService implements IAwbService {
                     var allPacks = guidBasedAwbPackingList.get(goodsDescriptionInfos.get(i).getGuid());
                     Pair<BigDecimal, AwbGoodsDescriptionInfo> pair = calculateGoodsDescription(goodsDescriptionInfos.get(i), allPacks, tenantSettings, new HashMap<>());
                     totalVolumeticWeight = totalVolumeticWeight.add(pair.getLeft());
-                    goodsDescriptionInfos.get(i).setGrossWt(pair.getRight().getGrossWt());
-                    goodsDescriptionInfos.get(i).setGrossWtUnit(pair.getRight().getGrossWtUnit());
-                    goodsDescriptionInfos.get(i).setPiecesNo(pair.getRight().getPiecesNo());
-                    goodsDescriptionInfos.get(i).setChargeableWt(pair.getRight().getChargeableWt());
-                    goodsDescriptionInfos.get(i).setTotalAmount(pair.getRight().getTotalAmount());
                 }
 
             }
