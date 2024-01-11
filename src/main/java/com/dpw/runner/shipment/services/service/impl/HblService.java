@@ -21,6 +21,7 @@ import com.dpw.runner.shipment.services.dto.request.hbl.HblContainerDto;
 import com.dpw.runner.shipment.services.dto.request.hbl.HblDataDto;
 import com.dpw.runner.shipment.services.dto.response.AdditionalDetailResponse;
 import com.dpw.runner.shipment.services.dto.response.HblResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.CompanySettingsResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.HblReset;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
@@ -32,6 +33,7 @@ import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.service.interfaces.IHblService;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
 import com.dpw.runner.shipment.services.service.interfaces.ISyncQueueService;
+import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.syncing.Entity.HblRequestV2;
 import com.dpw.runner.shipment.services.syncing.constants.SyncingConstants;
 import com.dpw.runner.shipment.services.syncing.interfaces.IHblSync;
@@ -53,6 +55,7 @@ import org.springframework.retry.support.RetryTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.interceptor.TransactionAspectSupport;
 
+import java.math.BigDecimal;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
@@ -86,6 +89,8 @@ public class HblService implements IHblService {
     @Autowired
     @Lazy
     IShipmentService shipmentService;
+    @Autowired
+    private IV1Service v1Service;
 
     private RetryTemplate retryTemplate = RetryTemplate.builder()
             .maxAttempts(3)
@@ -204,7 +209,8 @@ public class HblService implements IHblService {
             return ResponseHelper.buildSuccessResponse(PartialFetchUtils.fetchPartialListData(convertEntityToDto(hbl.get()),request.getIncludeColumns()));
     }
 
-    public Hbl checkAllContainerAssigned(Long shipmentId, List<Containers> containersList, List<Packing> packings) {
+    public Hbl checkAllContainerAssigned(ShipmentDetails shipment, List<Containers> containersList, List<Packing> packings) {
+        var shipmentId = shipment.getId();
         boolean allContainerAssigned = true;
         Hbl hbl = null;
         for(Containers container: containersList) {
@@ -229,7 +235,7 @@ public class HblService implements IHblService {
                 else
                     isContainerWithoutNumberOrNoContainer = true;
                 if (isContainerWithoutNumberOrNoContainer) {
-                    hbl.setHblContainer(mapShipmentContainersToHBL(containersList));
+                    hbl.setHblContainer(mapShipmentContainersToHBL(shipment));
                     hbl.setHblCargo(mapShipmentCargoToHBL(packings, containersList));
                     hbl = hblDao.save(hbl);
                 }
@@ -351,7 +357,7 @@ public class HblService implements IHblService {
                 break;
 
             case HBL_CONTAINERS:
-                hbl.setHblContainer(mapShipmentContainersToHBL(shipmentDetails.get().getContainersList()));
+                hbl.setHblContainer(mapShipmentContainersToHBL(shipmentDetails.get()));
                 break;
 
             case HBL_PARTIES:
@@ -374,7 +380,7 @@ public class HblService implements IHblService {
     private Hbl getDefaultHblFromShipment(ShipmentDetails shipmentDetails) {
         HblDataDto hblData = mapShipmentToHBL(shipmentDetails);
         List<HblCargoDto> hblCargos = mapShipmentCargoToHBL(shipmentDetails.getPackingList(), shipmentDetails.getContainersList());
-        List<HblContainerDto> hblContainers = mapShipmentContainersToHBL(shipmentDetails.getContainersList());
+        List<HblContainerDto> hblContainers = mapShipmentContainersToHBL(shipmentDetails);
         List<HblPartyDto> hblParties = mapShipmentPartiesToHBL(shipmentDetails.getAdditionalDetails() != null ? shipmentDetails.getAdditionalDetails().getNotifyParty() : null);
 
         Hbl hbl = Hbl.builder().shipmentId(shipmentDetails.getId())
@@ -508,7 +514,49 @@ public class HblService implements IHblService {
         return sb.toString();
     }
 
-    private List<HblContainerDto> mapShipmentContainersToHBL(List<Containers> containers) {
+    private List<HblContainerDto> mapShipmentContainersToHBL(ShipmentDetails shipment) {
+        if(shipment == null)
+            return null;
+        CompanySettingsResponse companySettingsResponse = v1Service.retrieveCompanySettings();
+        var referenceNumber = (shipment.getReferenceNumbersList() != null && shipment.getReferenceNumbersList().size() > 0) ? shipment.getReferenceNumbersList().stream().filter(x -> Objects.equals(x.getType(), "Container")).toList() : null;
+        Long noOfPackage = 0L;
+        String packsType = null;
+        String weightUnit = null;
+        String volumeUnit = null;
+        BigDecimal volume = BigDecimal.valueOf(0);
+        BigDecimal weight = BigDecimal.valueOf(0);
+        if(shipment.getPackingList() != null && shipment.getPackingList().size() > 0)
+        {
+            for(Packing packing: shipment.getPackingList())
+            {
+                if(packing.getPacks() != null)
+                    noOfPackage += Long.parseLong(packing.getPacks());
+                if(packing.getVolume() != null)
+                    volume = volume.add(packing.getVolume());
+                if(packing.getWeight() != null)
+                    weight = weight.add(packing.getWeight());
+            }
+            var packTypes = shipment.getPackingList().stream().map(Packing::getPacksType).distinct().toList();
+            packsType = packTypes != null && packTypes.size() == 1 ? packTypes.get(0) : "MultiPack";
+            var weightTypes = shipment.getPackingList().stream().map(Packing::getWeightUnit).distinct().toList();
+            weightUnit = weightTypes != null && weightTypes.size() == 1 ? weightTypes.get(0) : "KG";
+            var volumeTypes = shipment.getPackingList().stream().map(Packing::getVolumeUnit).distinct().toList();
+            volumeUnit = volumeTypes != null && volumeTypes.size() == 1 ? volumeTypes.get(0) : "M3";
+        }
+        if(referenceNumber != null && referenceNumber.size() > 0 && (shipment.getContainersList() == null || shipment.getContainersList().isEmpty()) && Objects.equals(shipment.getTransportMode(), "SEA") && Objects.equals(shipment.getShipmentType(), "LCL") && companySettingsResponse.getSeaLclContainerFlag())
+        {
+            return List.of(HblContainerDto.builder().
+                    containerNumber(referenceNumber.get(0).getReferenceNumber()).
+                    containerCount(1L).
+                    noOfPackages(noOfPackage).
+                    packsType(packsType).
+                    containerGrossVolume(volume).
+                    containerGrossWeight(weight).
+                    containerGrossVolumeUnit(volumeUnit).
+                    containerGrossWeightUnit(weightUnit).
+                    build());
+        }
+        var containers = shipment.getContainersList();
         List<HblContainerDto> hblContainers = new ArrayList<>();
         containers.forEach(container -> {
             HblContainerDto hblContainer = HblContainerDto.builder().build();
