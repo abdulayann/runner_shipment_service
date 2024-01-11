@@ -861,8 +861,8 @@ public class ConsolidationService implements IConsolidationService {
             if (carrierDetailRequest != null) {
                 updatedCarrierDetails = oldEntity.get().getCarrierDetails();
                 carrierDetailsMapper.update(carrierDetailRequest, updatedCarrierDetails);
-                entity.setCarrierDetails(oldEntity.get().getCarrierDetails());
             }
+            entity.setCarrierDetails(oldEntity.get().getCarrierDetails());
 
             beforeSave(entity);
             updateLinkedShipmentData(entity, oldEntity.get());
