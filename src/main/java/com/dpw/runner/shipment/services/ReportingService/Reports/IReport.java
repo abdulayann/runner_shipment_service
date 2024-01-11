@@ -274,8 +274,7 @@ public abstract class IReport {
         dictionary.put(ReportConstants.SHIPMENT_TYPE,shipment.getDirection());
         dictionary.put(ReportConstants.CUSTOM_SHIPMENT_TYPE, shipment.getDirection() != null ? Character.toUpperCase(shipment.getDirection().charAt(0)) : null);
         Long containerCount = 0L;
-        if(shipment.getContainersList().size() > 0)
-        {
+        if (shipment.getContainersList().size() > 0) {
             for (ContainerModel container : shipment.getContainersList()) {
                 if (container.getContainerCount() != null && container.getContainerCount() != 0) {
                     containerCount += container.getContainerCount();
@@ -283,7 +282,8 @@ public abstract class IReport {
             }
         }
         dictionary.put(ReportConstants.CONTAINER_COUNT, containerCount);
-
+        dictionary.put(PICKUP_INSTRUCTION, shipment.getPickupDetails() != null ? shipment.getPickupDetails().getPickupDeliveryInstruction() : null);
+        dictionary.put(DELIVERY_INSTRUCTIONS, shipment.getDeliveryDetails() != null ? shipment.getDeliveryDetails().getPickupDeliveryInstruction() : null);
         dictionary.put(ReportConstants.ETA, shipment.getCarrierDetails() != null ? shipment.getCarrierDetails().getEta() : null);
         dictionary.put(ReportConstants.ETD, shipment.getCarrierDetails() != null ? shipment.getCarrierDetails().getEtd() : null);
         dictionary.put(ReportConstants.ATA, shipment.getCarrierDetails() != null ? shipment.getCarrierDetails().getAta() : null);
