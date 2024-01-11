@@ -535,7 +535,7 @@ public class AwbService implements IAwbService {
         BigDecimal totalVolumetricWeight = BigDecimal.ZERO;
 
         for(var i : allHawbPacks) {
-            noOfPacks += Integer.parseInt(i.getPacks());
+            noOfPacks += Integer.parseInt(Objects.isNull(i.getPacks()) ? "0" : i.getPacks());
             try {
                 // Populate volume related fields
                 if(i.getVolume() != null) {
