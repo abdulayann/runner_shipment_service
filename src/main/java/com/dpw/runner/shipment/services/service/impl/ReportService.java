@@ -530,6 +530,17 @@ public class ReportService implements IReportService {
                 }
             }
         }
+        if(reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.SHIPMENT_CAN_DOCUMENT) ||
+                reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.PICKUP_ORDER) ||
+            reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.DELIVERY_ORDER)) {
+            Map<String, String> eventCodeMapping = new HashMap<>();
+            eventCodeMapping.put(ReportConstants.SHIPMENT_CAN_DOCUMENT.toUpperCase(), ReportConstants.CAN_GEN);
+            eventCodeMapping.put(ReportConstants.PICKUP_ORDER.toUpperCase(), ReportConstants.PICKUP_ORDER_GEN);
+            eventCodeMapping.put(ReportConstants.DELIVERY_ORDER.toUpperCase(), ReportConstants.DELIVERY_ORDER_GEN);
+            if(eventCodeMapping.containsKey(reportRequest.getReportInfo().toUpperCase())){
+                createAutoEvent(reportRequest.getReportId(), eventCodeMapping.get(reportRequest.getReportInfo().toUpperCase()) , tenantSettingsRow);
+            }
+        }
 
         return pdfByteContent;
     }
