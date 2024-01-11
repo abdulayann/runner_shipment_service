@@ -194,10 +194,10 @@ public class ContainerController {
             @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
     })
     @PostMapping(ApiConstants.SYNC)
-    public ResponseEntity<?> syncContainerToService(@RequestBody @Valid ContainerRequestV2 request){
+    public ResponseEntity<?> syncContainerToService(@RequestBody @Valid ContainerRequestV2 request, @RequestParam(required = false, defaultValue = "true") boolean checkForSync){
         String responseMsg = "failure executing :(";
         try {
-            return containerService.V1ContainerCreateAndUpdate(CommonRequestModel.buildRequest(request), true);
+            return containerService.V1ContainerCreateAndUpdate(CommonRequestModel.buildRequest(request), checkForSync);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : "Error syncing provided Container";

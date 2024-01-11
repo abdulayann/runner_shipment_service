@@ -12,6 +12,16 @@ import com.dpw.runner.shipment.services.entity.enums.GenerationType;
 import com.dpw.runner.shipment.services.entity.enums.ProductProcessTypes;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
+import com.dpw.runner.shipment.services.helpers.DbAccessHelper;
+import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSettingsSync;
+import com.nimbusds.jose.util.Pair;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.stereotype.Component;
+
 import java.text.SimpleDateFormat;
 import java.time.Clock;
 import java.time.LocalDateTime;
@@ -20,19 +30,15 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.dpw.runner.shipment.services.helpers.DbAccessHelper;
-import com.nimbusds.jose.util.Pair;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.domain.Specification;
-import org.springframework.stereotype.Component;
-
+@Slf4j
 @Component
 public class GetNextNumberHelper {
 
   @Autowired
   private IProductSequenceConfigDao productSequenceConfigDao;
+
+  @Autowired
+  private IShipmentSettingsSync shipmentSettingsSync;
 
   public String generateCustomSequence(
       ProductSequenceConfig sequenceSettings,
@@ -120,6 +126,11 @@ public class GetNextNumberHelper {
     }
     if (updateCounter) {
       productSequenceConfigDao.save(sequenceSettings);
+      try {
+        shipmentSettingsSync.syncProductSequence(sequenceSettings);
+      } catch (Exception e) {
+        log.error("Error performing sync on shipment settings product sequence entity, {}", e);
+      }
     }
     return prefix + suffix;
   }

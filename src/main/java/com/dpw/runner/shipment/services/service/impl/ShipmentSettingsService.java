@@ -10,10 +10,7 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.response.*;
-import com.dpw.runner.shipment.services.entity.HblTermsConditionTemplate;
-import com.dpw.runner.shipment.services.entity.ProductSequenceConfig;
-import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
-import com.dpw.runner.shipment.services.entity.TenantProducts;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
@@ -25,7 +22,6 @@ import com.dpw.runner.shipment.services.service_bus.ISBUtils;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSettingsSync;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.kafka.common.protocol.types.Field;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
@@ -451,23 +447,37 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
                 response.setHblHawbBackPrintTemplate(convertToDtoList(hblHawbBackPrintTemplates, HblTermsConditionTemplateResponse.class));
             }
             if(tenantProductsList != null) {
-                List<TenantProducts> tenantProducts = tenantProductsDao.updateEntityFromSettings(convertToEntityList(tenantProductsList, TenantProducts.class), shipmentSettingsDetails.getId());
+                ListCommonRequest listCommonRequest = constructListCommonRequest("shipmentSettingsId", shipmentSettingsDetails.getId(), "=");
+                Pair<Specification<TenantProducts>, Pageable> pair = fetchData(listCommonRequest, TenantProducts.class);
+                Page<TenantProducts> tenantProductsPage = tenantProductsDao.findAll(pair.getLeft(), pair.getRight());
+                if(tenantProductsPage != null && !tenantProductsPage.isEmpty())
+                    oldTenantProductsList = tenantProductsPage.getContent();
+                else
+                    oldTenantProductsList = null;
+                List<TenantProducts> tenantProducts = tenantProductsDao.updateEntityFromV1Settings(convertToEntityList(tenantProductsList, TenantProducts.class), shipmentSettingsDetails.getId(), oldTenantProductsList);
                 response.setTenantProducts(convertToDtoList(tenantProducts, TenantProductsResponse.class));
             }
             if(productSequenceConfigList != null) {
+                ListCommonRequest listCommonRequest = constructListCommonRequest("shipmentSettingsId", shipmentSettingsDetails.getId(), "=");
+                Pair<Specification<ProductSequenceConfig>, Pageable> pair = fetchData(listCommonRequest, ProductSequenceConfig.class);
+                Page<ProductSequenceConfig> productsPage = productSequenceConfigDao.findAll(pair.getLeft(), pair.getRight());
+                if(productsPage != null && !productsPage.isEmpty())
+                    oldProductSequenceConfigList = productsPage.getContent();
+                else
+                    oldProductSequenceConfigList = null;
                 if(productSequenceConfigList.size() > 0) {
                     for (ProductSequenceConfigRequest productSequenceConfig: productSequenceConfigList) {
                         if(productSequenceConfig.getTenantProducts() != null && productSequenceConfig.getTenantProducts().getProductType() != null) {
-                            ListCommonRequest listCommonRequest = constructListCommonRequest("productType", stringValueOf(productSequenceConfig.getTenantProducts().getProductType()), "=");
-                            Pair<Specification<TenantProducts>, Pageable> pair = fetchData(listCommonRequest, TenantProducts.class);
-                            Page<TenantProducts> tenantProducts = tenantProductsDao.findAll(pair.getLeft(), pair.getRight());
+                            listCommonRequest = constructListCommonRequest("productType", stringValueOf(productSequenceConfig.getTenantProducts().getProductType()), "=");
+                            Pair<Specification<TenantProducts>, Pageable> pair2 = fetchData(listCommonRequest, TenantProducts.class);
+                            Page<TenantProducts> tenantProducts = tenantProductsDao.findAll(pair2.getLeft(), pair2.getRight());
                             productSequenceConfig.setTenantProducts(convertToClass(tenantProducts.getContent().get(0), TenantProductsRequest.class));
                         }
                         else
                             productSequenceConfig.setTenantProducts(null);
                     }
                 }
-                List<ProductSequenceConfig> productSequenceConfigs = productSequenceConfigDao.updateEntityFromSettings(convertToEntityList(productSequenceConfigList, ProductSequenceConfig.class), shipmentSettingsDetails.getId());
+                List<ProductSequenceConfig> productSequenceConfigs = productSequenceConfigDao.updateEntityFromV1Settings(convertToEntityList(productSequenceConfigList, ProductSequenceConfig.class), shipmentSettingsDetails.getId(), oldProductSequenceConfigList);
                 response.setProductSequenceConfig(convertToDtoList(productSequenceConfigs, ProductSequenceConfigResponse.class));
             }
 

@@ -9,6 +9,7 @@ import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.MawbStocksRequest;
 import com.dpw.runner.shipment.services.dto.response.JobResponse;
 import com.dpw.runner.shipment.services.dto.response.MawbStocksResponse;
+import com.dpw.runner.shipment.services.dto.response.NextMawbCarrierResponse;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IMawbStocksService;
 import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
@@ -92,6 +93,6 @@ public class MawbStocksController {
     @ApiResponses(value = {@ApiResponse(code = 200, message = MawbStocksConstants.GET_NEXT_MAWB_SUCCESSFUL)})
     @GetMapping(ApiConstants.API_GET_NEXT_MAWB)
     public ResponseEntity getNextMawbNumberByCarrier(@RequestParam @NonNull String airlinePrefix) {
-        return (ResponseEntity<RunnerResponse<String>>) mawbStocksService.getNextMawbNumberByCarrier(airlinePrefix);
+        return (ResponseEntity<RunnerResponse<NextMawbCarrierResponse>>) mawbStocksService.getNextMawbNumberByCarrier(airlinePrefix);
     }
 }

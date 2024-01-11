@@ -783,7 +783,6 @@ public class ShipmentService implements IShipmentService {
                 }
             }
             afterSave(shipmentDetails, true);
-            updateMasterBill(shipmentDetails, null);
             updateLinkedShipmentData(shipmentDetails, null);
             // Create events on basis of shipment status Confirmed/Created
             autoGenerateEvents(shipmentDetails, null);
@@ -1596,6 +1595,7 @@ public class ShipmentService implements IShipmentService {
 
             String oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
             beforeSave(entity);
+            updateLinkedShipmentData(entity, oldEntity.get());
             entity = shipmentDao.update(entity, false);
             try {
                 // audit logs
@@ -1708,8 +1708,6 @@ public class ShipmentService implements IShipmentService {
                 }
             }
             afterSave(entity, false);
-            updateMasterBill(entity, oldEntity.get().getMasterBill());
-            updateLinkedShipmentData(entity, oldEntity.get());
             try {
                 shipmentSync.sync(entity, deletedContGuids);
             } catch (Exception e){
@@ -2448,7 +2446,7 @@ public class ShipmentService implements IShipmentService {
     }
 
     @Transactional
-    public ResponseEntity<?> partialUpdate(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<?> partialUpdate(CommonRequestModel commonRequestModel, Boolean fromV1) throws Exception {
 
         ShipmentPatchRequest shipmentRequest = (ShipmentPatchRequest) commonRequestModel.getData();
         if ((shipmentRequest.getId() == null && shipmentRequest.getGuid() == null) && (shipmentRequest.getShipmentId() == null || shipmentRequest.getShipmentId().get() == "")) {
@@ -2528,9 +2526,8 @@ public class ShipmentService implements IShipmentService {
                 entity.setCarrierDetails(oldEntity.get().getCarrierDetails());
             }
             beforeSave(entity);
-            updateMasterBill(entity, oldEntity.get().getMasterBill());
-            updateLinkedShipmentData(entity, oldEntity.get());
 
+            updateLinkedShipmentData(entity, oldEntity.get());
             entity = shipmentDao.update(entity, false);
 
             entity.setContainersList(updatedContainers);
@@ -2583,10 +2580,12 @@ public class ShipmentService implements IShipmentService {
                 entity.setServicesList(updatedServiceDetails);
             }
 
-            try {
-                shipmentSync.sync(entity, null);
-            } catch (Exception e) {
-                log.error("Error performing sync on shipment entity, {}", e);
+            if(fromV1 == null || !fromV1) {
+                try {
+                    shipmentSync.sync(entity, null);
+                } catch (Exception e) {
+                    log.error("Error performing sync on shipment entity, {}", e);
+                }
             }
 
             afterSave(entity, false);
@@ -3835,32 +3834,6 @@ public class ShipmentService implements IShipmentService {
     }
 
     /**
-     * MBL update, propagate the new value to the attached console and its linked shipments
-     * @param shipment
-     * @param oldMasterBill
-     */
-    private void updateMasterBill(ShipmentDetails shipment, String oldMasterBill) {
-        var masterBill = shipment.getMasterBill();
-        if(masterBill != null && (oldMasterBill == null || !masterBill.equals(oldMasterBill))) {
-            List<ConsolidationDetails> consolidationList = shipment.getConsolidationList();
-            var linkedConsol = (consolidationList != null && consolidationList.size() > 0) ? consolidationList.get(0) : null;
-            if(linkedConsol != null) {
-                linkedConsol.setBol(masterBill);
-                List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByConsolidationId(linkedConsol.getId());
-                List<Long> shipmentIdList = consoleShipmentMappings.stream().map(i -> i.getShipmentId()).collect(Collectors.toList());
-                ListCommonRequest listReq = constructListCommonRequest("id", shipmentIdList, "IN");
-                Pair<Specification<ShipmentDetails>, Pageable> pair = fetchData(listReq, ShipmentDetails.class, tableNames);
-                Page<ShipmentDetails> page = shipmentDao.findAll(pair.getLeft(), pair.getRight());
-
-                List<ShipmentDetails> shipments = page.getContent();
-                shipments.stream()
-                        .map(i -> i.setMasterBill(masterBill)).toList();
-                consolidationDetailsDao.save(linkedConsol, false);
-            }
-        }
-    }
-
-    /**
      * back flows data of the current updated shipment to all its sibling shipments attached to the common console
      * @param shipment
      * @param oldMasterBill
@@ -3868,11 +3841,13 @@ public class ShipmentService implements IShipmentService {
     private void updateLinkedShipmentData(ShipmentDetails shipment, ShipmentDetails oldEntity) {
         List<ConsolidationDetails> consolidationList = shipment.getConsolidationList();
         var linkedConsol = (consolidationList != null && consolidationList.size() > 0) ? consolidationList.get(0) : null;
-        if(linkedConsol != null && (oldEntity == null || (shipment.getCarrierDetails() != null && oldEntity.getCarrierDetails() != null &&
-                (!Objects.equals(shipment.getDirection(),oldEntity.getDirection()) ||
-                        !Objects.equals(shipment.getCarrierDetails().getVoyage(),oldEntity.getCarrierDetails().getVoyage()) ||
+        if(linkedConsol != null && (oldEntity == null || !Objects.equals(shipment.getMasterBill(),oldEntity.getMasterBill()) ||
+                !Objects.equals(shipment.getDirection(),oldEntity.getDirection()) ||
+                (shipment.getCarrierDetails() != null && oldEntity.getCarrierDetails() != null &&
+                (!Objects.equals(shipment.getCarrierDetails().getVoyage(),oldEntity.getCarrierDetails().getVoyage()) ||
                         !Objects.equals(shipment.getCarrierDetails().getVessel(),oldEntity.getCarrierDetails().getVessel()) ||
                         !Objects.equals(shipment.getCarrierDetails().getShippingLine(),oldEntity.getCarrierDetails().getShippingLine()))))) {
+            linkedConsol.setBol(shipment.getMasterBill());
             List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByConsolidationId(linkedConsol.getId());
             List<Long> shipmentIdList = consoleShipmentMappings.stream().map(i -> i.getShipmentId()).collect(Collectors.toList());
             ListCommonRequest listReq = constructListCommonRequest("id", shipmentIdList, "IN");
@@ -3882,6 +3857,7 @@ public class ShipmentService implements IShipmentService {
             List<ShipmentDetails> shipments = page.getContent();
             shipments.stream()
               .map(i -> {
+                  i.setMasterBill(shipment.getMasterBill());
                   i.setDirection(shipment.getDirection());
                   if (shipment.getCarrierDetails() != null) {
                       i.getCarrierDetails().setVoyage(shipment.getCarrierDetails().getVoyage());
@@ -3890,7 +3866,7 @@ public class ShipmentService implements IShipmentService {
                   }
                   return i;
               }).toList();
-
+            consolidationDetailsDao.save(linkedConsol, false);
             shipmentDao.saveAll(shipments);
         }
     }

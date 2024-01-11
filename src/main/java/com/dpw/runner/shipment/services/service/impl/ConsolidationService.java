@@ -786,7 +786,6 @@ public class ConsolidationService implements IConsolidationService {
             }
         }
         Optional<ConsolidationDetails> consol = consolidationDetailsDao.findById(consolidationId);
-        updateMasterBill(consol.get(), null);
         updateLinkedShipmentData(consol.get(), null);
         try {
             consolidationSync.sync(consol.get());
@@ -844,7 +843,7 @@ public class ConsolidationService implements IConsolidationService {
     }
 
     @Transactional
-    public ResponseEntity<?> partialUpdate(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<?> partialUpdate(CommonRequestModel commonRequestModel, Boolean fromV1) throws Exception {
         ConsolidationPatchRequest consolidationDetailsRequest = (ConsolidationPatchRequest) commonRequestModel.getData();
         // Get old entity to be updated
         ConsolidationDetailsRequest req = new ConsolidationDetailsRequest();
@@ -866,6 +865,7 @@ public class ConsolidationService implements IConsolidationService {
             }
 
             beforeSave(entity);
+            updateLinkedShipmentData(entity, oldEntity.get());
             entity = consolidationDetailsDao.update(entity, false);
 
             List<PackingRequest> packingRequestList = consolidationDetailsRequest.getPackingList();
@@ -909,14 +909,14 @@ public class ConsolidationService implements IConsolidationService {
                 List<Parties> updatedFileRepos = partiesDao.updateEntityFromOtherEntity(convertToEntityList(consolidationAddressRequest, Parties.class), id, Constants.CONSOLIDATION_ADDRESSES);
                 entity.setConsolidationAddresses(updatedFileRepos);
             }
-            try {
-                consolidationSync.sync(entity);
-            } catch (Exception e){
-                log.error("Error performing sync on consolidation entity, {}", e);
+            if(fromV1 == null || !fromV1) {
+                try {
+                    consolidationSync.sync(entity);
+                } catch (Exception e){
+                    log.error("Error performing sync on consolidation entity, {}", e);
+                }
             }
             afterSave(entity, false);
-            updateMasterBill(entity, oldEntity.get().getBol());
-            updateLinkedShipmentData(entity, oldEntity.get());
 
             ConsolidationDetailsResponse response = jsonHelper.convertValue(entity, ConsolidationDetailsResponse.class);
             return ResponseHelper.buildSuccessResponse(response);
@@ -958,6 +958,7 @@ public class ConsolidationService implements IConsolidationService {
             ConsolidationDetails entity = jsonHelper.convertValue(consolidationDetailsRequest, ConsolidationDetails.class);
             String oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
             beforeSave(entity);
+            updateLinkedShipmentData(entity, oldEntity.get());
             entity = consolidationDetailsDao.update(entity, false);
             try {
                 // audit logs
@@ -1010,20 +1011,12 @@ public class ConsolidationService implements IConsolidationService {
                 List<Parties> updatedFileRepos = partiesDao.updateEntityFromOtherEntity(convertToEntityList(consolidationAddressRequest, Parties.class), id, Constants.CONSOLIDATION_ADDRESSES);
                 entity.setConsolidationAddresses(updatedFileRepos);
             }
-            // Propagate master bill from console to all the attached shipments
-            String masterBill = entity.getBol();
-            if(masterBill != null && !masterBill.equals(oldEntity.get().getBol())) {
-                List<ShipmentDetails> shipments = entity.getShipmentsList() != null ? entity.getShipmentsList() : Collections.emptyList();
-                shipments.stream().forEach(i -> i.setMasterBill(masterBill));
-            }
             try {
                 consolidationSync.sync(entity);
             } catch (Exception e){
                 log.error("Error performing sync on consolidation entity, {}", e);
             }
             afterSave(entity, false);
-            updateMasterBill(entity, oldEntity.get().getBol());
-            updateLinkedShipmentData(entity, oldEntity.get());
             ConsolidationDetailsResponse response = jsonHelper.convertValue(entity, ConsolidationDetailsResponse.class);
 
             return ResponseHelper.buildSuccessResponse(response);
@@ -1037,36 +1030,15 @@ public class ConsolidationService implements IConsolidationService {
     }
 
     /**
-     * MBL update, propagate the new value to the linked shipments
-     * @param console
-     * @param oldMasterBill
-     */
-    private void updateMasterBill(ConsolidationDetails console, String oldMasterBill) {
-        var masterBill = console.getBol();
-        if(masterBill != null && (oldMasterBill == null || !masterBill.equals(oldMasterBill))) {
-            if(console != null) {
-                List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByConsolidationId(console.getId());
-                List<Long> shipmentIdList = consoleShipmentMappings.stream().map(i -> i.getShipmentId()).collect(Collectors.toList());
-                ListCommonRequest listReq = constructListCommonRequest("id", shipmentIdList, "IN");
-                Pair<Specification<ShipmentDetails>, Pageable> pair = fetchData(listReq, ShipmentDetails.class);
-                Page<ShipmentDetails> page = shipmentDao.findAll(pair.getLeft(), pair.getRight());
-
-                List<ShipmentDetails> shipments = page.getContent();
-                shipments.stream()
-                        .map(i -> i.setMasterBill(masterBill)).toList();
-            }
-        }
-    }
-
-    /**
      * update data to all the shipments linked to console
      * @param console
      * @param oldEntity
      */
     private void updateLinkedShipmentData(ConsolidationDetails console, ConsolidationDetails oldEntity) {
-        if(console != null && (oldEntity == null || (console.getCarrierDetails() != null && oldEntity.getCarrierDetails() != null &&
-                (!Objects.equals(console.getShipmentType(),oldEntity.getShipmentType()) ||
-                        !Objects.equals(console.getCarrierDetails().getVoyage(),oldEntity.getCarrierDetails().getVoyage()) ||
+        if(console != null && (oldEntity == null ||  !Objects.equals(console.getBol(),oldEntity.getBol()) ||
+                !Objects.equals(console.getShipmentType(),oldEntity.getShipmentType()) ||
+                (console.getCarrierDetails() != null && oldEntity.getCarrierDetails() != null &&
+                (!Objects.equals(console.getCarrierDetails().getVoyage(),oldEntity.getCarrierDetails().getVoyage()) ||
                         !Objects.equals(console.getCarrierDetails().getVessel(),oldEntity.getCarrierDetails().getVessel()) ||
                         !Objects.equals(console.getCarrierDetails().getShippingLine(),oldEntity.getCarrierDetails().getShippingLine()))))) {
             List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByConsolidationId(console.getId());
@@ -1078,6 +1050,7 @@ public class ConsolidationService implements IConsolidationService {
             List<ShipmentDetails> shipments = page.getContent();
             shipments.stream()
                     .map(i -> {
+                        i.setMasterBill(console.getBol());
                         i.setDirection(console.getShipmentType());
                         if (console.getCarrierDetails() != null) {
                             i.getCarrierDetails().setVoyage(console.getCarrierDetails().getVoyage());

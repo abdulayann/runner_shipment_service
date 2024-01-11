@@ -9,13 +9,13 @@ import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.*;
 import com.dpw.runner.shipment.services.dto.patchRequest.ConsolidationPatchRequest;
 import com.dpw.runner.shipment.services.dto.patchRequest.ShipmentPatchRequest;
+import com.dpw.runner.shipment.services.dto.patchRequest.ConsolidationPatchRequest;
 import com.dpw.runner.shipment.services.dto.request.AutoAttachConsolidationRequest;
 import com.dpw.runner.shipment.services.dto.request.ConsolidationDetailsRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentAttachDetachRequest;
 import com.dpw.runner.shipment.services.dto.response.AutoAttachConsolidationResponse;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
-import com.dpw.runner.shipment.services.dto.response.GenerateCustomHblResponse;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
@@ -150,11 +150,11 @@ public class ConsolidationController {
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.UPDATE_SUCCESSFUL, response = RunnerResponse.class)})
     @PatchMapping(ApiConstants.API_PARTIAL_UPDATE)
-    public ResponseEntity<RunnerResponse> partialUpdate(@RequestBody @Valid Object request) {
+    public ResponseEntity<RunnerResponse> partialUpdate(@RequestBody @Valid Object request, @RequestParam(required = false, defaultValue = "false") Boolean fromV1) {
         String responseMsg;
         try {
             ConsolidationPatchRequest req = jsonHelper.convertValue(request, ConsolidationPatchRequest.class);
-            return (ResponseEntity<RunnerResponse>) consolidationService.partialUpdate(CommonRequestModel.buildRequest(req));
+            return (ResponseEntity<RunnerResponse>) consolidationService.partialUpdate(CommonRequestModel.buildRequest(req), fromV1);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
