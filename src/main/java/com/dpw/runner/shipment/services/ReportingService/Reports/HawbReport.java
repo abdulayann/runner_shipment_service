@@ -153,18 +153,21 @@ public class HawbReport extends IReport{
                     dictionary.put(ReportConstants.MAWB_NO, shipmentInfo.getAwbNumber());
                     AwbNumber = shipmentInfo.getAwbNumber();
                 }
-                else
-                {
+                else {
                     dictionary.put(ReportConstants.HAWB_NO, shipmentInfo.getAwbNumber());
-                    AwbNumber = hawbModel.getMawb() == null || hawbModel.getMawb().getAwbShipmentInfo() == null || StringUtility.isEmpty(hawbModel.getMawb().getAwbShipmentInfo().getAwbNumber()) ? "": hawbModel.getMawb().getAwbShipmentInfo().getAwbNumber() ;
+                    AwbNumber = hawbModel.getMawb() == null || hawbModel.getMawb().getAwbShipmentInfo() == null || StringUtility.isEmpty(hawbModel.getMawb().getAwbShipmentInfo().getAwbNumber()) ? "" : hawbModel.getMawb().getAwbShipmentInfo().getAwbNumber();
                 }
                 dictionary.put(ReportConstants.NEUTRAL_AWB_NO, shipmentInfo.getAwbNumber());
 
-                if (StringUtility.isNotEmpty(shipmentRow.getPaymentTerms()))
-                {
+                if (StringUtility.isNotEmpty(shipmentRow.getPaymentTerms())) {
                     masterDataQuery.add(MasterDataType.PAYMENT.getDescription() + "#" + shipmentRow.getPaymentTerms());
                 }
                 dictionary.put(ReportConstants.PRINT_USER_NAME, shipmentRow.getAssignedTo());
+                if (shipmentRow != null && shipmentRow.getDeliveryDetails() != null)
+                    dictionary.put(ReportConstants.SHIPMENT_DELIVERY_DELIVERYINSTRUCTION, shipmentRow.getDeliveryDetails().getPickupDeliveryInstruction());
+
+                if (shipmentRow != null && shipmentRow.getPickupDetails() != null)
+                    dictionary.put(ReportConstants.SHIPMENT_PICKUP_PICKUPINSTRUCTION, shipmentRow.getPickupDetails().getPickupDeliveryInstruction());
             }
             if(StringUtility.isNotEmpty(AwbNumber)){
                 AwbNumber = AwbNumber.replace("-", "");
