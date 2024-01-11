@@ -264,4 +264,19 @@ public class HblLockSettings extends MultiTenancy {
 
     @Column(name = "bl_delivery_agent_address")
     private Boolean blDeliveryAgentAddress;
+
+    @Column(name = "bl_terms_and_conditions_id_lock")
+    private Boolean bLTermsandConditionsIdLock;
+
+    @Column(name = "cargo_terms_lock")
+    private Boolean cargoTermsLock;
+
+    @Column(name = "cargo_terms_description_lock")
+    private Boolean cargoTermsDescriptionLock;
+
+    @Column(name = "bl_remarks_lock")
+    private Boolean bLRemarksLock;
+
+    @Column(name = "bl_remarks_description_lock")
+    private Boolean bLRemarksDescriptionLock;
 }
