@@ -44,6 +44,7 @@ import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
 import com.dpw.runner.shipment.services.service.interfaces.ISyncQueueService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.syncing.Entity.AwbRequestV2;
+import com.dpw.runner.shipment.services.syncing.Entity.SaveStatus;
 import com.dpw.runner.shipment.services.syncing.constants.SyncingConstants;
 import com.dpw.runner.shipment.services.syncing.interfaces.IAwbSync;
 import com.dpw.runner.shipment.services.utils.*;
@@ -171,7 +172,7 @@ public class AwbService implements IAwbService {
         try {
             awb = awbDao.save(generateAwb(request));
             try {
-                callV1Sync(awb);
+                callV1Sync(awb, SaveStatus.CREATE);
             } catch (Exception e) {
                 log.error("Error performing sync on AWB entity, {}", e);
             }
@@ -227,7 +228,7 @@ public class AwbService implements IAwbService {
             awb = awbDao.save(awb);
 
             try {
-                callV1Sync(awb);
+                callV1Sync(awb, SaveStatus.UPDATE);
             } catch (Exception e) {
                 log.error("Error performing sync on AWB entity, {}", e);
             }
@@ -428,7 +429,7 @@ public class AwbService implements IAwbService {
             // save awb details
             awb = awbDao.save(generateMawb(request, consolidationDetails, mawbPackingInfo));
             try {
-                callV1Sync(awb);
+                callV1Sync(awb, SaveStatus.CREATE);
             } catch (Exception e) {
                 log.error("Error performing sync on AWB entity, {}", e);
             }
@@ -1324,8 +1325,8 @@ public class AwbService implements IAwbService {
 
 
     @Async
-    private void callV1Sync(Awb entity){
-        awbSync.sync(entity);
+    private void callV1Sync(Awb entity, SaveStatus saveStatus){
+        awbSync.sync(entity, saveStatus);
     }
 
     public ResponseEntity<?> customAwbRetrieve(CommonRequestModel commonRequestModel) {
@@ -1442,7 +1443,7 @@ public class AwbService implements IAwbService {
         awb.setId(resetAwbRequest.getId());
         awb = awbDao.save(awb);
         try {
-            callV1Sync(awb);
+            callV1Sync(awb, SaveStatus.RESET);
         } catch (Exception e) {
             log.error("Error performing sync on AWB entity, {}", e);
         }
