@@ -27,4 +27,6 @@ public class UnlocationsResponse {
     private String lookupDescSea;
     @JsonProperty("CountryName")
     private String countryName;
+    @JsonProperty("CountryThreeDigitCode")
+    private String CountryThreeDigitCode;
 }
