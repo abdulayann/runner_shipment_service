@@ -2442,7 +2442,7 @@ public class ShipmentService implements IShipmentService {
     }
 
     @Transactional
-    public ResponseEntity<?> partialUpdate(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<?> partialUpdate(CommonRequestModel commonRequestModel, Boolean fromV1) throws Exception {
 
         ShipmentPatchRequest shipmentRequest = (ShipmentPatchRequest) commonRequestModel.getData();
         if ((shipmentRequest.getId() == null && shipmentRequest.getGuid() == null) && (shipmentRequest.getShipmentId() == null || shipmentRequest.getShipmentId().get() == "")) {
@@ -2574,10 +2574,12 @@ public class ShipmentService implements IShipmentService {
                 entity.setServicesList(updatedServiceDetails);
             }
 
-            try {
-                shipmentSync.sync(entity, null);
-            } catch (Exception e) {
-                log.error("Error performing sync on shipment entity, {}", e);
+            if(fromV1 == null || !fromV1) {
+                try {
+                    shipmentSync.sync(entity, null);
+                } catch (Exception e) {
+                    log.error("Error performing sync on shipment entity, {}", e);
+                }
             }
 
             afterSave(entity, false);

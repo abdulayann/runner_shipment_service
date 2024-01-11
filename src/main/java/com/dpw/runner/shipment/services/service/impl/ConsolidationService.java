@@ -838,7 +838,7 @@ public class ConsolidationService implements IConsolidationService {
     }
 
     @Transactional
-    public ResponseEntity<?> partialUpdate(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<?> partialUpdate(CommonRequestModel commonRequestModel, Boolean fromV1) throws Exception {
         ConsolidationPatchRequest consolidationDetailsRequest = (ConsolidationPatchRequest) commonRequestModel.getData();
         // Get old entity to be updated
         ConsolidationDetailsRequest req = new ConsolidationDetailsRequest();
@@ -894,10 +894,12 @@ public class ConsolidationService implements IConsolidationService {
                 List<Parties> updatedFileRepos = partiesDao.updateEntityFromOtherEntity(convertToEntityList(consolidationAddressRequest, Parties.class), id, Constants.CONSOLIDATION_ADDRESSES);
                 entity.setConsolidationAddresses(updatedFileRepos);
             }
-            try {
-                consolidationSync.sync(entity);
-            } catch (Exception e){
-                log.error("Error performing sync on consolidation entity, {}", e);
+            if(fromV1 == null || !fromV1) {
+                try {
+                    consolidationSync.sync(entity);
+                } catch (Exception e){
+                    log.error("Error performing sync on consolidation entity, {}", e);
+                }
             }
             afterSave(entity, false);
 
