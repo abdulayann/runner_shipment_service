@@ -18,7 +18,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.retry.support.RetryTemplate;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
@@ -54,7 +53,6 @@ public class ShipmentSettingsSync implements IShipmentSettingsSync {
     private String SHIPMENT_SETTING_V1_SYNC_URL;
 
     @Override
-    @Async
     public ResponseEntity<?> sync(ShipmentSettingsDetails req) {
         ShipmentSettingsSyncRequest syncRequest = modelMapper.map(req, ShipmentSettingsSyncRequest.class);
 
@@ -63,11 +61,11 @@ public class ShipmentSettingsSync implements IShipmentSettingsSync {
         syncRequest.setHblLock(convertToList(List.of(req.getHblLockSettings()), HblLockDto.class));
         syncRequest.setHawbLock(convertToList(List.of(req.getHawbLockSettings()), HawbLockDto.class));
         syncRequest.setMawbLock(convertToList(List.of(req.getMawbLockSettings()), MawbLockDto.class));
-        syncRequest.setTenantProducts(convertToList(req.getTenantProducts(), TenantProductsDto.class));
-        if(req.getProductSequenceConfig() != null) {
-            syncRequest.setProductSequenceConfig(req.getProductSequenceConfig().stream()
-                    .map(this::mapProductSequenceConfig).toList());
-        }
+//        syncRequest.setTenantProducts(convertToList(req.getTenantProducts(), TenantProductsDto.class)); // Removing for now as tenant products and product sequence should not sync from v2 to v1
+//        if(req.getProductSequenceConfig() != null) {
+//            syncRequest.setProductSequenceConfig(req.getProductSequenceConfig().stream()
+//                    .map(this::mapProductSequenceConfig).toList());
+//        }
 
         syncRequest.setShipmentImportApproverRole(req.getShipmentConsoleImportApproverRole());
         syncRequest.setIsLowMarginApprovalRequired(req.getLowMarginApproval());
@@ -93,6 +91,29 @@ public class ShipmentSettingsSync implements IShipmentSettingsSync {
         });
 
         return ResponseHelper.buildSuccessResponse(modelMapper.map(syncRequest, ShipmentSettingsSyncRequest.class));
+    }
+
+    public ResponseEntity<?> syncProductSequence(ProductSequenceConfig productSequenceConfig) {
+        ProductSequenceConfigDto productSequenceConfigDto = mapProductSequenceConfig(productSequenceConfig);
+        String payload = jsonHelper.convertToJson(V1DataSyncRequest.builder().entity(productSequenceConfigDto).module(SyncingConstants.PRODUCT_SEQUENCE).build());
+        retryTemplate.execute(ctx -> {
+            log.info("Current retry : {}", ctx.getRetryCount());
+            if (ctx.getLastThrowable() != null) {
+                log.error("V1 error -> {}", ctx.getLastThrowable().getMessage());
+            }
+            V1DataSyncResponse response_ = v1Service.v1DataSync(payload);
+            if (!response_.getIsSuccess()) {
+                try {
+                    emailServiceUtility.sendEmailForSyncEntity(String.valueOf(productSequenceConfig.getId()), String.valueOf(productSequenceConfig.getGuid()),
+                            "Shipment Settings product sequence Details", response_.getError().toString());
+                } catch (Exception ex) {
+                    log.error("Not able to send email for sync failure for Shipment Settings product sequence Details: " + ex.getMessage());
+                }
+            }
+            return ResponseHelper.buildSuccessResponse(response_);
+        });
+
+        return ResponseHelper.buildSuccessResponse(productSequenceConfigDto);
     }
 
     @Override
