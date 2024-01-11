@@ -690,6 +690,11 @@ public class ReportConstants {
     public static final String PICKUP_INSTRUCTION = "PickUpInstructions";
     public static final String LOADED_DATE = "LoadedDate";
     public static final String ACTUAL_DELIVERY = "ActualDelivery";
+
+    public static final String DELIVERY_INSTRUCTIONS = "DeliveryInstructions";
+    public static final String SHIPMENT_DELIVERY_DELIVERYINSTRUCTION = "DeliveryInstruction";
+    public static final String SHIPMENT_PICKUP_PICKUPINSTRUCTION = "PickUpInstruction";
+
     public static final String ORG_FULL_NAME = "OrgFullName";
     public static final String CONTACT_PERSON = "ContactPerson";
     public static final String PRE_CARRIAGE_MODE = "Precarriagemode";
