@@ -32,4 +32,7 @@ public class AwbResponse implements IRunnerResponse {
     public Map<String, String> masterData;
     public Map<String, String> unlocationData;
     public MasterData chargeDetails;
+    // Default Awb objects for UI
+    private AwbShipmentInfoResponse defaultAwbShipmentInfo;
+
 }
