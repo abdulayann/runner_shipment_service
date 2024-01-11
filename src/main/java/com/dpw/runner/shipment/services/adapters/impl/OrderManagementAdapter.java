@@ -68,10 +68,10 @@ public class OrderManagementAdapter implements IOrderManagementAdapter {
 
         // TODO : to revert this change once order team gets back on this
         // Skipping this fields for now as integration for LocationReferenceGuid is pending from order team
-//        shipmentDetails.getCarrierDetails().setOrigin(order.getOriginName());
-//        shipmentDetails.getCarrierDetails().setOriginPort(order.getOriginPortName());
-//        shipmentDetails.getCarrierDetails().setDestination(order.getDestinationName());
-//        shipmentDetails.getCarrierDetails().setDestinationPort(order.getDestinationPortName());
+        shipmentDetails.getCarrierDetails().setOrigin(order.getOrigin());
+        shipmentDetails.getCarrierDetails().setOriginPort(order.getOriginPort());
+        shipmentDetails.getCarrierDetails().setDestination(order.getDestination());
+        shipmentDetails.getCarrierDetails().setDestinationPort(order.getDestinationPort());
 
 
 

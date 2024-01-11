@@ -3423,6 +3423,7 @@ public class ShipmentService implements IShipmentService {
         try {
             ShipmentDetailsResponse response = jsonHelper.convertValue(orderManagementAdapter.getOrder(orderId), ShipmentDetailsResponse.class);
             this.addAllMasterDataInSingleCall(null, response, null);
+            this.addAllUnlocationDataInSingleCall(null, response, null);
             return ResponseHelper.buildSuccessResponse(response);
         } catch (Exception e){
             throw new RunnerException(e.getMessage());
