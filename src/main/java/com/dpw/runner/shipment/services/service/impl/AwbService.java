@@ -19,6 +19,7 @@ import com.dpw.runner.shipment.services.dto.request.ResetAwbRequest;
 import com.dpw.runner.shipment.services.dto.request.awb.*;
 import com.dpw.runner.shipment.services.dto.response.AwbCalculationResponse;
 import com.dpw.runner.shipment.services.dto.response.AwbResponse;
+import com.dpw.runner.shipment.services.dto.response.AwbShipmentInfoResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.AwbReset;
@@ -73,9 +74,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.COUNTRY;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ISSUING_CARRIER_AGENT_NAME;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ISSUING_CARRIER_AGENT_NAME;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 
 @SuppressWarnings("ALL")
@@ -645,6 +644,7 @@ public class AwbService implements IAwbService {
                         res.setChargeDetails(entityTransferMasterLists.get(0));
                 } catch (Exception ignored) {}
             }
+            generateDefaultAwbInformation(awbShipmentInfo, res);
             responseList.add(res);
         });
         return responseList;
@@ -2689,6 +2689,32 @@ public class AwbService implements IAwbService {
         if(number == null)
             return 0.0;
         return number.doubleValue();
+    }
+
+    private AwbShipmentInfoResponse generateDefaultAwbInformation(Awb awb, AwbResponse awbResponse) {
+        String awbType = awb.getAwbShipmentInfo().getEntityType();
+        // Default objects for UI
+        AwbShipmentInfoResponse defaultAwbShipmentInfo = null;
+
+        CreateAwbRequest createAwbRequest = CreateAwbRequest.builder()
+                .ConsolidationId(awb.getConsolidationId())
+                .ShipmentId(awb.getShipmentId())
+                .AwbType(awb.getAwbShipmentInfo().getEntityType())
+                .build();
+        try {
+            if(awbType.equalsIgnoreCase(MAWB)) {
+                ConsolidationDetails consol = consolidationDetailsDao.findById(awb.getConsolidationId()).get();
+                defaultAwbShipmentInfo = jsonHelper.convertValue(generateMawbShipmentInfo(consol, createAwbRequest), AwbShipmentInfoResponse.class);
+            } else {
+                ShipmentDetails shipment = shipmentDao.findById(awb.getShipmentId()).get();
+                defaultAwbShipmentInfo = jsonHelper.convertValue(generateAwbShipmentInfo(shipment, createAwbRequest), AwbShipmentInfoResponse.class);
+            }
+            awbResponse.setDefaultAwbShipmentInfo(defaultAwbShipmentInfo);
+        } catch (Exception e) {
+            log.error("Error while creating default awbShipmentInfo object for {}", awb);
+        }
+
+        return defaultAwbShipmentInfo;
     }
 
 }
