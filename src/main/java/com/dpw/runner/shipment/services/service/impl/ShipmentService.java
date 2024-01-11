@@ -19,6 +19,7 @@ import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.*;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
 import com.dpw.runner.shipment.services.dto.TrackingService.UniversalTrackingPayload;
+import com.dpw.runner.shipment.services.dto.patchRequest.CarrierPatchRequest;
 import com.dpw.runner.shipment.services.dto.patchRequest.ShipmentPatchRequest;
 import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.response.*;
@@ -35,6 +36,7 @@ import com.dpw.runner.shipment.services.exception.exceptions.ValidationException
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import com.dpw.runner.shipment.services.mapper.CarrierDetailsMapper;
 import com.dpw.runner.shipment.services.mapper.ShipmentDetailsMapper;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequestV2;
@@ -105,6 +107,8 @@ public class ShipmentService implements IShipmentService {
     private ObjectMapper objectMapper;
     @Autowired
     private ShipmentDetailsMapper shipmentDetailsMapper;
+    @Autowired
+    private CarrierDetailsMapper carrierDetailsMapper;
 
     private final CSVParsingUtil<ShipmentDetails> parser = new CSVParsingUtil<>(ShipmentDetails.class);
 
@@ -2461,7 +2465,7 @@ public class ShipmentService implements IShipmentService {
         List<ReferenceNumbersRequest> referenceNumbersRequestList = shipmentRequest.getReferenceNumbersList();
         List<RoutingsRequest> routingsRequestList = shipmentRequest.getRoutingsList();
         List<ServiceDetailsRequest> serviceDetailsRequestList = shipmentRequest.getServicesList();
-        CarrierDetailRequest carrierDetailRequest = shipmentRequest.getCarrierDetails();
+        CarrierPatchRequest carrierDetailRequest = shipmentRequest.getCarrierDetails();
         // TODO- implement Validation logic
         Long id = null;
         Optional<ShipmentDetails> oldEntity = null;
@@ -2517,10 +2521,12 @@ public class ShipmentService implements IShipmentService {
             }
             CarrierDetails updatedCarrierDetails = null;
             if (carrierDetailRequest != null) {
-                updatedCarrierDetails = carrierDao.updateEntityFromShipmentConsole(convertToClass(carrierDetailRequest, CarrierDetails.class));
-                entity.setCarrierDetails(updatedCarrierDetails);
+                updatedCarrierDetails = oldEntity.get().getCarrierDetails();
+                carrierDetailsMapper.update(carrierDetailRequest, updatedCarrierDetails);
+                entity.setCarrierDetails(oldEntity.get().getCarrierDetails());
             }
             beforeSave(entity);
+
             updateLinkedShipmentData(entity, oldEntity.get());
             entity = shipmentDao.update(entity, false);
 
@@ -3422,6 +3428,7 @@ public class ShipmentService implements IShipmentService {
         try {
             ShipmentDetailsResponse response = jsonHelper.convertValue(orderManagementAdapter.getOrder(orderId), ShipmentDetailsResponse.class);
             this.addAllMasterDataInSingleCall(null, response, null);
+            this.addAllUnlocationDataInSingleCall(null, response, null);
             return ResponseHelper.buildSuccessResponse(response);
         } catch (Exception e){
             throw new RunnerException(e.getMessage());
