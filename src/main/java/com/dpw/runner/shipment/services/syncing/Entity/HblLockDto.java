@@ -168,4 +168,14 @@ public class HblLockDto implements IRunnerRequest {
     private Boolean BlDeliveryAgent;
     @JsonProperty("BlDeliveryAgentAddress")
     private Boolean BlDeliveryAgentAddress;
+    @JsonProperty("BLTermsandConditionsIdLock")
+    private Boolean BLTermsandConditionsIdLock;
+    @JsonProperty("CargoTermsLock")
+    private Boolean CargoTermsLock;
+    @JsonProperty("CargoTermsDescriptionLock")
+    private Boolean CargoTermsDescriptionLock;
+    @JsonProperty("BLRemarksLock")
+    private Boolean BLRemarksLock;
+    @JsonProperty("BLRemarksDescriptionLock")
+    private Boolean BLRemarksDescriptionLock;
 }
