@@ -19,6 +19,7 @@ import com.dpw.runner.shipment.services.dto.request.ResetAwbRequest;
 import com.dpw.runner.shipment.services.dto.request.awb.*;
 import com.dpw.runner.shipment.services.dto.response.AwbCalculationResponse;
 import com.dpw.runner.shipment.services.dto.response.AwbResponse;
+import com.dpw.runner.shipment.services.dto.response.AwbRoutingInfoResponse;
 import com.dpw.runner.shipment.services.dto.response.AwbShipmentInfoResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.*;
@@ -1438,6 +1439,12 @@ public class AwbService implements IAwbService {
         }
         awb.setId(resetAwbRequest.getId());
         awb = awbDao.save(awb);
+        try {
+            callV1Sync(awb);
+        } catch (Exception e) {
+            log.error("Error performing sync on AWB entity, {}", e);
+        }
+
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(awb));
     }
 
@@ -2695,7 +2702,8 @@ public class AwbService implements IAwbService {
         String awbType = awb.getAwbShipmentInfo().getEntityType();
         // Default objects for UI
         AwbShipmentInfoResponse defaultAwbShipmentInfo = null;
-
+        List<AwbNotifyPartyInfo> defaultNotifyPartyInfo = null;
+        List<AwbRoutingInfoResponse> defaultRoutingInfo = null;
         CreateAwbRequest createAwbRequest = CreateAwbRequest.builder()
                 .ConsolidationId(awb.getConsolidationId())
                 .ShipmentId(awb.getShipmentId())
@@ -2705,11 +2713,17 @@ public class AwbService implements IAwbService {
             if(awbType.equalsIgnoreCase(MAWB)) {
                 ConsolidationDetails consol = consolidationDetailsDao.findById(awb.getConsolidationId()).get();
                 defaultAwbShipmentInfo = jsonHelper.convertValue(generateMawbShipmentInfo(consol, createAwbRequest), AwbShipmentInfoResponse.class);
+                defaultRoutingInfo = jsonHelper.convertValueToList(generateMawbRoutingInfo(consol, createAwbRequest), AwbRoutingInfoResponse.class);
+                defaultNotifyPartyInfo = generateMawbNotifyPartyinfo(consol, createAwbRequest);
             } else {
                 ShipmentDetails shipment = shipmentDao.findById(awb.getShipmentId()).get();
                 defaultAwbShipmentInfo = jsonHelper.convertValue(generateAwbShipmentInfo(shipment, createAwbRequest), AwbShipmentInfoResponse.class);
+                defaultRoutingInfo = jsonHelper.convertValueToList(generateAwbRoutingInfo(shipment, createAwbRequest), AwbRoutingInfoResponse.class);
+                defaultNotifyPartyInfo = generateAwbNotifyPartyinfo(shipment, createAwbRequest);
             }
             awbResponse.setDefaultAwbShipmentInfo(defaultAwbShipmentInfo);
+            awbResponse.setDefaultAwbNotifyPartyInfo(defaultNotifyPartyInfo);
+            awbResponse.setDefaultAwbRoutingInfo(defaultRoutingInfo);
         } catch (Exception e) {
             log.error("Error while creating default awbShipmentInfo object for {}", awb);
         }

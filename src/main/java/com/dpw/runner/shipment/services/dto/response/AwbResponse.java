@@ -34,5 +34,7 @@ public class AwbResponse implements IRunnerResponse {
     public MasterData chargeDetails;
     // Default Awb objects for UI
     private AwbShipmentInfoResponse defaultAwbShipmentInfo;
+    public List<AwbNotifyPartyInfo> defaultAwbNotifyPartyInfo;
+    public List<AwbRoutingInfoResponse> defaultAwbRoutingInfo;
 
 }
