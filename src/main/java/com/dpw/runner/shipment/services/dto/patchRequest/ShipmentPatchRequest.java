@@ -27,7 +27,7 @@ public class ShipmentPatchRequest extends CommonRequest implements IRunnerReques
     private JsonNullable<String> bookingReference;
     private JsonNullable<String> bookingType;
     private JsonNullable<Boolean> cargoFinanceBooking;
-    private CarrierDetailRequest carrierDetails;
+    private CarrierPatchRequest carrierDetails;
     private JsonNullable<BigDecimal> chargable;
     private JsonNullable<String> chargeableUnit;
     private PartiesRequest client;

@@ -7,6 +7,7 @@ import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.*;
+import com.dpw.runner.shipment.services.dto.patchRequest.ConsolidationPatchRequest;
 import com.dpw.runner.shipment.services.dto.patchRequest.ShipmentPatchRequest;
 import com.dpw.runner.shipment.services.dto.request.AutoAttachConsolidationRequest;
 import com.dpw.runner.shipment.services.dto.request.ConsolidationDetailsRequest;
@@ -152,7 +153,7 @@ public class ConsolidationController {
     public ResponseEntity<RunnerResponse> partialUpdate(@RequestBody @Valid Object request) {
         String responseMsg;
         try {
-            ShipmentPatchRequest req = jsonHelper.convertValue(request, ShipmentPatchRequest.class);
+            ConsolidationPatchRequest req = jsonHelper.convertValue(request, ConsolidationPatchRequest.class);
             return (ResponseEntity<RunnerResponse>) consolidationService.partialUpdate(CommonRequestModel.buildRequest(req));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()

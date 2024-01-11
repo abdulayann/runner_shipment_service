@@ -91,7 +91,7 @@ public class ConsolidationPatchRequest extends CommonRequest implements IRunnerR
     private JsonNullable<Boolean> isSendingAgentFreeTextAddress;
     private JsonNullable<String> sendingAgentFreeTextAddress;
     private JsonNullable<String> placeOfIssue;
-    private JsonNullable<CarrierDetailRequest> carrierDetails;
+    private CarrierPatchRequest carrierDetails;
     private JsonNullable<AchievedQuantitiesRequest> achievedQuantities;
     private JsonNullable<AllocationsRequest> allocations;
     private JsonNullable<ArrivalDepartureDetailsRequest> arrivalDetails;

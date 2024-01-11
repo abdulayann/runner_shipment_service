@@ -19,6 +19,7 @@ import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.*;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
 import com.dpw.runner.shipment.services.dto.TrackingService.UniversalTrackingPayload;
+import com.dpw.runner.shipment.services.dto.patchRequest.CarrierPatchRequest;
 import com.dpw.runner.shipment.services.dto.patchRequest.ConsolidationPatchRequest;
 import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.response.*;
@@ -37,6 +38,7 @@ import com.dpw.runner.shipment.services.exception.exceptions.ValidationException
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import com.dpw.runner.shipment.services.mapper.CarrierDetailsMapper;
 import com.dpw.runner.shipment.services.mapper.ConsolidationDetailsMapper;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequestV2;
@@ -193,6 +195,9 @@ public class ConsolidationService implements IConsolidationService {
 
     @Autowired
     private ConsolidationDetailsMapper consolidationDetailsMapper;
+
+    @Autowired
+    private CarrierDetailsMapper carrierDetailsMapper;
 
     @Autowired
     private ProductIdentifierUtility productEngine;
@@ -850,6 +855,16 @@ public class ConsolidationService implements IConsolidationService {
             ConsolidationDetails entity = oldEntity.get();
             long id = oldEntity.get().getId();
             consolidationDetailsMapper.update(consolidationDetailsRequest, entity);
+
+            // Carrier Details Update
+            CarrierPatchRequest carrierDetailRequest = consolidationDetailsRequest.getCarrierDetails();
+            CarrierDetails updatedCarrierDetails = null;
+            if (carrierDetailRequest != null) {
+                updatedCarrierDetails = oldEntity.get().getCarrierDetails();
+                carrierDetailsMapper.update(carrierDetailRequest, updatedCarrierDetails);
+                entity.setCarrierDetails(oldEntity.get().getCarrierDetails());
+            }
+
             beforeSave(entity);
             entity = consolidationDetailsDao.update(entity, false);
 
