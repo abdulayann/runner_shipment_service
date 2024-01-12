@@ -5,6 +5,8 @@ import com.dpw.runner.shipment.services.ReportingService.Models.HawbModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.OtherChargesResponse;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ConsolidationModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PickupDeliveryDetailsModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ReferenceNumbersModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ShipmentModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.AwbConstants;
@@ -15,12 +17,15 @@ import com.dpw.runner.shipment.services.dto.request.awb.*;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.Awb;
 import com.dpw.runner.shipment.services.entity.Parties;
+import com.dpw.runner.shipment.services.entity.PickupDeliveryDetails;
 import com.dpw.runner.shipment.services.entity.enums.ChargesDue;
 import com.dpw.runner.shipment.services.entity.enums.RateClass;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCarrier;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferOrganizations;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.masterdata.dto.CarrierMasterData;
+import com.dpw.runner.shipment.services.masterdata.dto.MasterData;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequestV2;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
@@ -31,6 +36,8 @@ import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.dpw.runner.shipment.services.validator.enums.Operators;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.google.common.base.Strings;
+import org.apache.kafka.common.protocol.types.Field;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -39,6 +46,7 @@ import java.math.BigDecimal;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.emptyIfNull;
 
 @Component
@@ -168,6 +176,53 @@ public class HawbReport extends IReport{
 
                 if (shipmentRow != null && shipmentRow.getPickupDetails() != null)
                     dictionary.put(ReportConstants.SHIPMENT_PICKUP_PICKUPINSTRUCTION, shipmentRow.getPickupDetails().getPickupDeliveryInstruction());
+                if(shipmentRow.getReferenceNumbersList() != null) {
+                    List<String> referenceNumberList = new ArrayList<>();
+                    referenceNumberList = shipmentRow.getReferenceNumbersList().stream()
+                            .filter(i -> i.getType().equals(ERN)).map(ReferenceNumbersModel::getReferenceNumber).toList();
+                    if(!referenceNumberList.isEmpty()){
+                        dictionary.put(EXPORTER_REFERENCE_NUMBER, String.join(",", referenceNumberList));
+                    }
+                }
+                if(shipmentRow.getReferenceNumbersList() != null) {
+                    List<String> referenceNumberList = new ArrayList<>();
+                    referenceNumberList = shipmentRow.getReferenceNumbersList().stream()
+                            .filter(i -> i.getType().equals(CEN)).map(ReferenceNumbersModel::getReferenceNumber).toList();
+                    if(!referenceNumberList.isEmpty()){
+                        dictionary.put(CUSTOMS_REFERENCE_NUMBER, String.join(",", referenceNumberList));
+                    }
+                }
+                if(shipmentRow.getReferenceNumbersList() != null) {
+                    List<String> referenceNumberList = new ArrayList<>();
+                    referenceNumberList = shipmentRow.getReferenceNumbersList().stream()
+                            .filter(i -> i.getType().equals(FRN)).map(ReferenceNumbersModel::getReferenceNumber).toList();
+                    if(!referenceNumberList.isEmpty()){
+                        dictionary.put(FORWARDER_REFERENCE_NUMBER, String.join(",", referenceNumberList));
+                    }
+                }
+                if(Strings.isNullOrEmpty(shipmentRow.getCarrierDetails().getShippingLine())){
+                    CarrierMasterData carrierData = getCarrier(shipmentRow.getCarrierDetails().getShippingLine());
+                    if(!Objects.isNull(carrierData))
+                        dictionary.put(CARRIER_NAME, carrierData.getItemDescription());
+                }
+                PickupDeliveryDetailsModel pickup = shipmentRow.getPickupDetails();
+                if(pickup != null && pickup.getTransporterDetail() != null){
+                    dictionary.put(PRE_CARRIAGE_PARTY, pickup.getTransporterDetail().getOrgData() != null ?
+                            pickup.getTransporterDetail().getOrgData().get("FullName") : "");
+                }
+                if(!Objects.isNull(shipmentRow.getPackingList()) && !shipmentRow.getPackingList().isEmpty()){
+                    var values = shipmentRow.getPackingList().stream()
+                        .map(i -> jsonHelper.convertJsonToMap(jsonHelper.convertToJson(i)))
+                        .toList();
+                    values.forEach(v -> {
+                        if(v.containsKey(COMMODITY_GROUP) && v.get(COMMODITY_GROUP) != null){
+                            MasterData commodity = getMasterListData(MasterDataType.COMMODITY_GROUP, v.get(COMMODITY_GROUP).toString());
+                            if(!Objects.isNull(commodity))
+                                v.put(PACKS_COMMODITY_GROUP, commodity.getItemDescription());
+                        }
+                    });
+                    dictionary.put(SHIPMENT_PACKS, values);
+                }
             }
             if(StringUtility.isNotEmpty(AwbNumber)){
                 AwbNumber = AwbNumber.replace("-", "");

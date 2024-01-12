@@ -45,4 +45,5 @@ public class ShipmentContainers {
     public String BL_PackageUnit;
     public String BL_CustomSealNumber;
     public String CommodityDescription;
+    public String CommodityGroup;
 }

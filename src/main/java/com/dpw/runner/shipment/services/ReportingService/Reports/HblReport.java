@@ -438,7 +438,6 @@ public class HblReport extends IReport{
                     .filter(i -> i.getType().equals(SHIPMENT_CAN_DOCUMENT));
         }
         referenceNumber.ifPresent(i -> dictionary.put(CAN_NUMBER, i.getReferenceNumber()));
-
         dictionary.put(ReportConstants.BILL_REMARKS, billRow != null ? billRow.getRemarks() : "");
         List<BillChargesResponse> originalChargesRows = new ArrayList<>();
         List<BillChargesResponse> copyChargesRows = new ArrayList<>();
@@ -886,6 +885,11 @@ public class HblReport extends IReport{
                 }
                 if(hblModel.shipment.getPickupDetails() != null && hblModel.shipment.getPickupDetails().getActualPickupOrDelivery() != null) {
                     v.put(LOADED_DATE, ConvertToDPWDateFormat(hblModel.shipment.getPickupDetails().getActualPickupOrDelivery()));
+                }
+                if(v.containsKey(COMMODITY_GROUP) && !Objects.isNull(v.get(COMMODITY_GROUP))) {
+                    MasterData commodity = getMasterListData(MasterDataType.COMMODITY_GROUP, v.get(COMMODITY_GROUP).toString());
+                    if(!Objects.isNull(commodity))
+                        v.put(PACKS_COMMODITY_GROUP, commodity.getItemDescription());
                 }
             });
             dictionary.put(PACKS_DETAILS, values);

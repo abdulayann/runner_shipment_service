@@ -1096,7 +1096,7 @@ public class ReportService implements IReportService {
         if (tenantSettingsRow.getAutoEventCreate() && StringUtility.isNotEmpty(ReportId)) {
             CustomAutoEventRequest eventReq = new CustomAutoEventRequest();
             eventReq.entityId = Long.parseLong(ReportId);
-            eventReq.entityType = Constants.Shipments;
+            eventReq.entityType = Constants.SHIPMENT;
             eventReq.eventCode = eventCode;
             eventDao.autoGenerateEvents(eventReq);
         }
