@@ -535,44 +535,50 @@ public class AwbService implements IAwbService {
 
         BigDecimal totalVolumetricWeight = BigDecimal.ZERO;
 
-        for(var i : allHawbPacks) {
-            noOfPacks += Integer.parseInt(Objects.isNull(i.getPacks()) ? "0" : i.getPacks());
-            try {
-                // Populate volume related fields
-                if(i.getVolume() != null) {
-                    if(i.getVolumeUnit() == null || i.getVolumeUnit().isEmpty())
-                        totalGrossVolumeOfMawbGood = totalGrossVolumeOfMawbGood.add(convertToBigDecimal(unitConversionUtility.convertUnit(Constants.VOLUME, i.getVolume(), Constants.VOLUME_UNIT_M3, tenantSettings.getVolumeChargeableUnit())));
+        if(allHawbPacks != null && allHawbPacks.size() > 0) {
+            for (var i : allHawbPacks) {
+                noOfPacks += Integer.parseInt(Objects.isNull(i.getPacks()) ? "0" : i.getPacks());
+                try {
+                    // Populate volume related fields
+                    if (i.getVolume() != null) {
+                        if (i.getVolumeUnit() == null || i.getVolumeUnit().isEmpty())
+                            totalGrossVolumeOfMawbGood = totalGrossVolumeOfMawbGood.add(convertToBigDecimal(unitConversionUtility.convertUnit(Constants.VOLUME, i.getVolume(), Constants.VOLUME_UNIT_M3, tenantSettings.getVolumeChargeableUnit())));
 
-                    else
-                        totalGrossVolumeOfMawbGood = totalGrossVolumeOfMawbGood.add( convertToBigDecimal(unitConversionUtility.convertUnit(Constants.VOLUME, i.getVolume(), i.getVolumeUnit(), tenantSettings.getVolumeChargeableUnit())) );
-                }
-                // Populate weight related fields
-                if(i.getWeight() != null) {
-                    if(i.getWeightUnit() == null || i.getWeightUnit().isEmpty())
-                        totalGrossWeightOfMawbGood = totalGrossWeightOfMawbGood.add( convertToBigDecimal(unitConversionUtility.convertUnit(Constants.MASS, i.getWeight(), Constants.WEIGHT_UNIT_KG, tenantSettings.getWeightChargeableUnit())) );
-                    else
-                        totalGrossWeightOfMawbGood = totalGrossWeightOfMawbGood.add( convertToBigDecimal(unitConversionUtility.convertUnit(Constants.MASS, i.getWeight(), i.getWeightUnit(), tenantSettings.getWeightChargeableUnit())) );
-                }
+                        else
+                            totalGrossVolumeOfMawbGood = totalGrossVolumeOfMawbGood.add(convertToBigDecimal(unitConversionUtility.convertUnit(Constants.VOLUME, i.getVolume(), i.getVolumeUnit(), tenantSettings.getVolumeChargeableUnit())));
+                    }
+                    // Populate weight related fields
+                    if (i.getWeight() != null) {
+                        if (i.getWeightUnit() == null || i.getWeightUnit().isEmpty())
+                            totalGrossWeightOfMawbGood = totalGrossWeightOfMawbGood.add(convertToBigDecimal(unitConversionUtility.convertUnit(Constants.MASS, i.getWeight(), Constants.WEIGHT_UNIT_KG, tenantSettings.getWeightChargeableUnit())));
+                        else
+                            totalGrossWeightOfMawbGood = totalGrossWeightOfMawbGood.add(convertToBigDecimal(unitConversionUtility.convertUnit(Constants.MASS, i.getWeight(), i.getWeightUnit(), tenantSettings.getWeightChargeableUnit())));
+                    }
 
-                if(hawbPacksMap.get(i.getAwbNumber()) == null) {
-                    hawbPacksMap.put(i.getAwbNumber(), new ArrayList<>());
-                }else {
-                    List<AwbPackingInfo> existingPacks = hawbPacksMap.get(i.getAwbNumber());
-                    existingPacks.add(i);
-                    hawbPacksMap.put(i.getAwbNumber(), existingPacks);
-                }
+                    if (hawbPacksMap.get(i.getAwbNumber()) == null) {
+                        hawbPacksMap.put(i.getAwbNumber(), new ArrayList<>());
+                    } else {
+                        List<AwbPackingInfo> existingPacks = hawbPacksMap.get(i.getAwbNumber());
+                        existingPacks.add(i);
+                        hawbPacksMap.put(i.getAwbNumber(), existingPacks);
+                    }
 
-            } catch (Exception e) {
-                log.error(e.getMessage());
-                throw new RunnerException(e.getMessage());
+                } catch (Exception e) {
+                    log.error(e.getMessage());
+                    throw new RunnerException(e.getMessage());
+                }
             }
-        }
-        if (tenantSettings != null && Constants.VOLUME_UNIT_M3.equalsIgnoreCase(tenantSettings.getVolumeChargeableUnit()) && Constants.WEIGHT_UNIT_KG.equalsIgnoreCase(tenantSettings.getWeightChargeableUnit())) {
-            grossWeightUnit = Constants.WEIGHT_UNIT_KG;
-            chargeableWeightOfMawbGood = totalGrossWeightOfMawbGood;
-            BigDecimal volumetricWeightOfMawbGood = totalGrossVolumeOfMawbGood.multiply(BigDecimal.valueOf(Constants.FACTOR_VOL_WT));
-            chargeableWeightOfMawbGood = chargeableWeightOfMawbGood.max(volumetricWeightOfMawbGood);
-            totalVolumetricWeight = volumetricWeightOfMawbGood;
+            if (tenantSettings != null && Constants.VOLUME_UNIT_M3.equalsIgnoreCase(tenantSettings.getVolumeChargeableUnit()) && Constants.WEIGHT_UNIT_KG.equalsIgnoreCase(tenantSettings.getWeightChargeableUnit())) {
+                grossWeightUnit = Constants.WEIGHT_UNIT_KG;
+                chargeableWeightOfMawbGood = totalGrossWeightOfMawbGood;
+                BigDecimal volumetricWeightOfMawbGood = totalGrossVolumeOfMawbGood.multiply(BigDecimal.valueOf(Constants.FACTOR_VOL_WT));
+                chargeableWeightOfMawbGood = chargeableWeightOfMawbGood.max(volumetricWeightOfMawbGood);
+                totalVolumetricWeight = volumetricWeightOfMawbGood;
+            }
+            mawbGoodsDescriptionInfo.setGrossWt(totalGrossWeightOfMawbGood);
+            mawbGoodsDescriptionInfo.setGrossWtUnit(grossWeightUnit);
+            mawbGoodsDescriptionInfo.setPiecesNo(noOfPacks);
+            mawbGoodsDescriptionInfo.setChargeableWt(roundOffAirShipment(chargeableWeightOfMawbGood));
         }
 
         if (mawbGoodsDescriptionInfo.getRateCharge() != null && mawbGoodsDescriptionInfo.getRateClass() != null) {
@@ -582,11 +588,6 @@ public class AwbService implements IAwbService {
                 mawbGoodsDescriptionInfo.setTotalAmount(mawbGoodsDescriptionInfo.getRateCharge().multiply(roundOffAirShipment(chargeableWeightOfMawbGood)));
         }
         totalAmountOfMawbGood = mawbGoodsDescriptionInfo.getTotalAmount();
-
-        mawbGoodsDescriptionInfo.setGrossWt(totalGrossWeightOfMawbGood);
-        mawbGoodsDescriptionInfo.setGrossWtUnit(grossWeightUnit);
-        mawbGoodsDescriptionInfo.setPiecesNo(noOfPacks);
-        mawbGoodsDescriptionInfo.setChargeableWt(roundOffAirShipment(chargeableWeightOfMawbGood));
         mawbGoodsDescriptionInfo.setTotalAmount(totalAmountOfMawbGood);
         return Pair.of(totalVolumetricWeight, mawbGoodsDescriptionInfo);
     }
@@ -2500,22 +2501,20 @@ public class AwbService implements IAwbService {
             tenantSettings = tenantSettingsList.get(0);
         }
 
-        if (!Objects.isNull(packsInfo) && !Objects.isNull(goodsDescriptionInfos)) {
+        if (!Objects.isNull(goodsDescriptionInfos)) {
             Map<UUID, List<AwbPackingInfo>> guidBasedAwbPackingList = new HashMap<>();
-            if (!Objects.isNull(request.getIsFromShipment()) && request.getIsFromShipment())
-                guidBasedAwbPackingList = packsInfo.stream().filter(c -> !Objects.isNull(c.getAwbGoodsDescriptionInfoGuid()))
-                    .collect(Collectors.groupingBy(AwbPackingInfo::getAwbGoodsDescriptionInfoGuid));
-            else
-                guidBasedAwbPackingList.put(goodsDescriptionInfos.get(0).getGuid(), packsInfo);
+            if (!Objects.isNull(packsInfo)) {
+                if (!Objects.isNull(request.getIsFromShipment()) && request.getIsFromShipment())
+                    guidBasedAwbPackingList = packsInfo.stream().filter(c -> !Objects.isNull(c.getAwbGoodsDescriptionInfoGuid()))
+                            .collect(Collectors.groupingBy(AwbPackingInfo::getAwbGoodsDescriptionInfoGuid));
+                else
+                    guidBasedAwbPackingList.put(goodsDescriptionInfos.get(0).getGuid(), packsInfo);
+            }
 
             for (int i = 0; i < goodsDescriptionInfos.size(); i++) {
-
-                if (guidBasedAwbPackingList.containsKey(goodsDescriptionInfos.get(i).getGuid())) {
-                    var allPacks = guidBasedAwbPackingList.get(goodsDescriptionInfos.get(i).getGuid());
-                    Pair<BigDecimal, AwbGoodsDescriptionInfo> pair = calculateGoodsDescription(goodsDescriptionInfos.get(i), allPacks, tenantSettings, new HashMap<>());
-                    totalVolumeticWeight = totalVolumeticWeight.add(pair.getLeft());
-                }
-
+                var allPacks = guidBasedAwbPackingList.get(goodsDescriptionInfos.get(i).getGuid());
+                Pair<BigDecimal, AwbGoodsDescriptionInfo> pair = calculateGoodsDescription(goodsDescriptionInfos.get(i), allPacks, tenantSettings, new HashMap<>());
+                totalVolumeticWeight = totalVolumeticWeight.add(pair.getLeft());
             }
         }
         return totalVolumeticWeight;
