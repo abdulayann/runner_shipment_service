@@ -349,7 +349,7 @@ public class ReportHelper {
             List<UnlocationsResponse> unlocationsResponse = jsonHelper.convertValueToList(v1DataResponse.entities, UnlocationsResponse.class);
             if (unlocationsResponse != null && unlocationsResponse.size() > 0) {
                 for (UnlocationsResponse unlocation : unlocationsResponse) {
-                    locationMap.put(unlocation.getLocCode(), unlocation);
+                    locationMap.put(unlocation.getLocationsReferenceGUID(), unlocation);
                 }
             }
         }

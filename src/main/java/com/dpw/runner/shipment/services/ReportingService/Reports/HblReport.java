@@ -17,8 +17,11 @@ import com.dpw.runner.shipment.services.dto.request.hbl.HblDataDto;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.Hbl;
 import com.dpw.runner.shipment.services.entity.Parties;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.MasterData;
+import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest;
+import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequestV2;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.masterdata.response.BillChargesResponse;
@@ -101,72 +104,51 @@ public class HblReport extends IReport{
                 hblModel.commonContainers.add(shipmentContainer);
             }
         }
-        MasterData masterData = getMasterListData(MasterDataType.PAYMENT, hblModel.shipment.getPaymentTerms());
-        hblModel.paymentTerms = (masterData != null ? masterData.getItemDescription() : null);
-        masterData = getMasterListData(MasterDataType.SERVICE_MODE, hblModel.shipment.getServiceType());
-        hblModel.serviceMode = (masterData != null ? masterData.getItemDescription() : null);
-        if (hblModel.shipment.getAdditionalDetails() != null)
-            masterData = getMasterListData(MasterDataType.RELEASE_TYPE, hblModel.shipment.getAdditionalDetails().getReleaseType());
-        hblModel.releaseType = (masterData != null ? masterData.getItemDescription() : null);
+        // UnLocations Master-data
+        List<String> unlocoRequests = this.createUnLocoRequestFromShipmentModel(hblModel.shipment);
+        Map<String, UnlocationsResponse> unlocationsMap = getLocationData(new HashSet<>(unlocoRequests));
+        // Master lists Master-data
+        List<MasterListRequest> masterListRequest = createMasterListsRequestFromShipment(hblModel.shipment);
+        masterListRequest.addAll(createMasterListsRequestFromUnLocoMap(unlocationsMap));
+        Map<String, MasterData> masterListsMap = fetchInBulkMasterList(MasterListRequestV2.builder().MasterListRequests(masterListRequest.stream().filter(Objects::nonNull).collect(Collectors.toList())).build());
 
-        UnlocationsResponse paidPlace = null;
+        if (masterListsMap.containsKey(hblModel.shipment.getPaymentTerms()))
+            hblModel.paymentTerms = masterListsMap.get(hblModel.shipment.getPaymentTerms()).getItemDescription();
+        if (masterListsMap.containsKey(hblModel.shipment.getServiceType()))
+            hblModel.serviceMode = masterListsMap.get(hblModel.shipment.getServiceType()).getItemDescription();
+
+        if (hblModel.shipment.getAdditionalDetails() != null && masterListsMap.containsKey(hblModel.shipment.getAdditionalDetails().getReleaseType()) )
+            hblModel.releaseType = masterListsMap.get(hblModel.shipment.getAdditionalDetails().getReleaseType()).getItemDescription();
+
+        if (masterListsMap.containsKey(hblModel.shipment.getServiceType()))
+            hblModel.serviceMode = masterListsMap.get(hblModel.shipment.getServiceType()).getItemDescription();
+
         if (hblModel.shipment.getAdditionalDetails() != null) {
-            List<Object> criteria = Arrays.asList(
-                    Arrays.asList(EntityTransferConstants.LOCATION_SERVICE_GUID),
-                    "=",
-                    hblModel.shipment.getAdditionalDetails().getPaidPlace()
-            );
-
-            CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(criteria).build();
-            V1DataResponse v1DataResponse = v1Service.fetchUnlocation(commonV1ListRequest);
-            List<UnlocationsResponse> unlocationsResponse = jsonHelper.convertValueToList(v1DataResponse.entities, UnlocationsResponse.class);
-            if (unlocationsResponse != null && unlocationsResponse.size() > 0) {
-                paidPlace = unlocationsResponse.get(0);
-                masterData = getMasterListData(MasterDataType.COUNTRIES, paidPlace.getCountry());
+            // PaidPlace master data
+            if (!Objects.isNull(hblModel.shipment.getAdditionalDetails().getPaidPlace()) && unlocationsMap.containsKey(hblModel.shipment.getAdditionalDetails().getPaidPlace())) {
+                UnlocationsResponse location = unlocationsMap.get(hblModel.shipment.getAdditionalDetails().getPaidPlace());
+                if (masterListsMap.containsKey(location.getCountry()))
+                    hblModel.paidPlaceCountry = masterListsMap.get(location.getCountry()).getItemDescription();
             }
-            hblModel.paidPlaceCountry = (masterData != null ? masterData.getItemDescription() : null);
-
-
             // IssuePlace master data
-            criteria = Arrays.asList(
-                    Arrays.asList(EntityTransferConstants.LOCATION_SERVICE_GUID),
-                    "=",
-                    hblModel.shipment.getAdditionalDetails().getPlaceOfIssue()
-            );
+            if (!Objects.isNull(hblModel.shipment.getAdditionalDetails().getPlaceOfIssue()) && unlocationsMap.containsKey(hblModel.shipment.getAdditionalDetails().getPlaceOfIssue())) {
+                hblModel.placeOfIssue = unlocationsMap.get(hblModel.shipment.getAdditionalDetails().getPlaceOfIssue());
+                if (masterListsMap.containsKey(hblModel.placeOfIssue.getCountry()))
+                    hblModel.issuePlaceCountry = masterListsMap.get(hblModel.placeOfIssue.getCountry()).getItemDescription();
 
-            commonV1ListRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(criteria).build();
-            v1DataResponse = v1Service.fetchUnlocation(commonV1ListRequest);
-            unlocationsResponse = jsonHelper.convertValueToList(v1DataResponse.entities, UnlocationsResponse.class);
-            if (unlocationsResponse != null && unlocationsResponse.size() > 0)
-                hblModel.placeOfIssue = unlocationsResponse.get(0);
-            masterData = getMasterListData(MasterDataType.COUNTRIES, Objects.isNull(hblModel.placeOfIssue) ? StringUtility.getEmptyString() : hblModel.placeOfIssue.getCountry());
-            hblModel.issuePlaceCountry = (masterData != null ? masterData.getItemDescription() : null);
+            }
         }
-        // polPort
+
         if (hblModel.shipment.getCarrierDetails() != null) {
-            var criteria = Arrays.asList(
-                    Arrays.asList(EntityTransferConstants.LOCATION_SERVICE_GUID),
-                    "=",
-                    hblModel.shipment.getCarrierDetails().getOriginPort()
-            );
-            var commonV1ListRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(criteria).build();
-            var v1DataResponse = v1Service.fetchUnlocation(commonV1ListRequest);
-            var unlocationsResponse = jsonHelper.convertValueToList(v1DataResponse.entities, UnlocationsResponse.class);
-            if (unlocationsResponse != null && unlocationsResponse.size() > 0)
-                hblModel.polPort = unlocationsResponse.get(0);
-
-
-            // podPort
-            criteria = Arrays.asList(
-                    Arrays.asList(EntityTransferConstants.LOCATION_SERVICE_GUID),
-                    "=",
-                    hblModel.shipment.getCarrierDetails().getDestinationPort()
-            );
-            commonV1ListRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(criteria).build();
-            v1DataResponse = v1Service.fetchUnlocation(commonV1ListRequest);
-            unlocationsResponse = jsonHelper.convertValueToList(v1DataResponse.entities, UnlocationsResponse.class);
-            if (unlocationsResponse != null && unlocationsResponse.size() > 0)
-                hblModel.podPort = unlocationsResponse.get(0);
+            // OriginPort master data
+            if (!Objects.isNull(hblModel.shipment.getCarrierDetails().getOriginPort()) && unlocationsMap.containsKey(hblModel.shipment.getCarrierDetails().getOriginPort())) {
+                hblModel.polPort = unlocationsMap.get(hblModel.shipment.getCarrierDetails().getOriginPort());
+            }
+            // IssuePlace master data
+            if (!Objects.isNull(hblModel.shipment.getCarrierDetails().getDestinationPort()) && unlocationsMap.containsKey(hblModel.shipment.getCarrierDetails().getDestinationPort())) {
+                hblModel.podPort = unlocationsMap.get(hblModel.shipment.getCarrierDetails().getDestinationPort());
+                hblModel.podCountry = hblModel.podPort.getCountry();
+            }
         }
 
         List<BookingCarriageModel> bookingCarriages = hblModel.shipment.getBookingCarriagesList();
@@ -227,13 +209,6 @@ public class HblReport extends IReport{
                         grossVolume = container.getGrossVolume().doubleValue();
                     hblModel.containerVolumeGrouped.put(container.getGrossVolumeUnit(), hblModel.containerWeightGrouped.containsKey(container.getGrossVolumeUnit()) ? hblModel.containerWeightGrouped.get(container.getGrossVolumeUnit()) + grossVolume : grossVolume);
                 }
-            }
-        }
-        if (!Objects.isNull(hblModel.shipment.getCarrierDetails()) && !Objects.isNull(hblModel.shipment.getCarrierDetails().getDestinationPort())) {
-            Map<String, UnlocationsResponse> unlocationMap = getLocationData(Set.of(hblModel.shipment.getCarrierDetails().getDestinationPort()));
-            UnlocationsResponse location = unlocationMap.get(hblModel.shipment.getCarrierDetails().getDestinationPort());
-            if (location != null) {
-                hblModel.podCountry = location.getCountry();
             }
         }
 

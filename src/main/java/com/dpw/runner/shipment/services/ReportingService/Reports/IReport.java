@@ -19,6 +19,7 @@ import com.dpw.runner.shipment.services.dto.request.HblPartyDto;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.request.hbl.HblContainerDto;
 import com.dpw.runner.shipment.services.dto.request.hbl.HblDataDto;
+import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -32,6 +33,7 @@ import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.masterdata.request.ShipmentGuidRequest;
 import com.dpw.runner.shipment.services.masterdata.response.*;
 import com.dpw.runner.shipment.services.repository.interfaces.IAwbRepository;
+import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.nimbusds.jose.util.Pair;
 import org.modelmapper.ModelMapper;
@@ -47,8 +49,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.GenerateFormattedDate;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.combineStringsWithComma;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.*;
 
 public abstract class IReport {
 
@@ -81,6 +82,8 @@ public abstract class IReport {
 
     @Autowired
     MasterDataFactory masterDataFactory;
+    @Autowired
+    private IV1Service v1Service;
 
     public abstract Map<String, Object> getData(Long id);
     abstract IDocumentModel getDocumentModel(Long id);
@@ -171,87 +174,22 @@ public abstract class IReport {
         if(shipment.getAdditionalDetails() != null) {
             additionalDetails = shipment.getAdditionalDetails();
         }
-
+        // UnLocations Master-data
+        List<String> unlocoRequests = this.createUnLocoRequestFromShipmentModel(shipment);
+        Map<String, UnlocationsResponse> unlocationsMap = getLocationData(new HashSet<>(unlocoRequests));
+        // Master lists Master-data
+        List<MasterListRequest> masterListRequest = createMasterListsRequestFromShipment(shipment);
+        masterListRequest.addAll(createMasterListsRequestFromUnLocoMap(unlocationsMap));
+        Map<String, MasterData> masterListsMap = fetchInBulkMasterList(MasterListRequestV2.builder().MasterListRequests(masterListRequest.stream().filter(Objects::nonNull).collect(Collectors.toList())).build());
         PartiesModel shipmentNotify = additionalDetails.getNotifyParty();
 
-        UnlocationsResponse pol = null, pod = null, origin = null, destination = null, paidPlace = null, placeOfIssue = null, placeOfSupply = null;
-
-        List<Object> criteria = Arrays.asList(
-                Arrays.asList(EntityTransferConstants.LOCATION_SERVICE_GUID),
-                "=",
-                shipment.getCarrierDetails().getOriginPort()
-        );
-        CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(criteria).build();
-        Object unlocations = masterDataFactory.getMasterDataService().fetchUnlocationData(commonV1ListRequest).getData();
-        List<UnlocationsResponse> unlocationsResponse = jsonHelper.convertValueToList(unlocations, UnlocationsResponse.class);
-        if(unlocationsResponse.size() > 0)
-            pol = unlocationsResponse.get(0);
-
-        criteria = Arrays.asList(
-                Arrays.asList(EntityTransferConstants.LOCATION_SERVICE_GUID),
-                "=",
-                shipment.getCarrierDetails().getDestinationPort()
-        );
-        commonV1ListRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(criteria).build();
-        unlocations = masterDataFactory.getMasterDataService().fetchUnlocationData(commonV1ListRequest).getData();
-        unlocationsResponse = jsonHelper.convertValueToList(unlocations, UnlocationsResponse.class);
-        if(unlocationsResponse.size() > 0)
-            pod = unlocationsResponse.get(0);
-
-        criteria = Arrays.asList(
-                Arrays.asList(EntityTransferConstants.LOCATION_SERVICE_GUID),
-                "=",
-                shipment.getCarrierDetails().getOrigin()
-        );
-        commonV1ListRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(criteria).build();
-        unlocations = masterDataFactory.getMasterDataService().fetchUnlocationData(commonV1ListRequest).getData();
-        unlocationsResponse = jsonHelper.convertValueToList(unlocations, UnlocationsResponse.class);
-        if(unlocationsResponse.size() > 0)
-            origin = unlocationsResponse.get(0);
-
-        criteria = Arrays.asList(
-                Arrays.asList(EntityTransferConstants.LOCATION_SERVICE_GUID),
-                "=",
-                shipment.getCarrierDetails().getDestination()
-        );
-        commonV1ListRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(criteria).build();
-        unlocations = masterDataFactory.getMasterDataService().fetchUnlocationData(commonV1ListRequest).getData();
-        unlocationsResponse = jsonHelper.convertValueToList(unlocations, UnlocationsResponse.class);
-        if(unlocationsResponse.size() > 0)
-            destination = unlocationsResponse.get(0);
-
-        criteria = Arrays.asList(
-                Arrays.asList(EntityTransferConstants.LOCATION_SERVICE_GUID),
-                "=",
-                additionalDetails.getPaidPlace()
-        );
-        commonV1ListRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(criteria).build();
-        unlocations = masterDataFactory.getMasterDataService().fetchUnlocationData(commonV1ListRequest).getData();
-        unlocationsResponse = jsonHelper.convertValueToList(unlocations, UnlocationsResponse.class);
-        if(unlocationsResponse.size() > 0)
-            paidPlace = unlocationsResponse.get(0);
-
-        criteria = Arrays.asList(
-                Arrays.asList(EntityTransferConstants.LOCATION_SERVICE_GUID),
-                "=",
-                additionalDetails.getPlaceOfIssue()
-        );
-        commonV1ListRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(criteria).build();
-        unlocations = masterDataFactory.getMasterDataService().fetchUnlocationData(commonV1ListRequest).getData();
-        unlocationsResponse = jsonHelper.convertValueToList(unlocations, UnlocationsResponse.class);
-        if(unlocationsResponse.size() > 0)
-            placeOfIssue = unlocationsResponse.get(0);
-
-        criteria = Arrays.asList(
-                Arrays.asList(EntityTransferConstants.LOCATION_SERVICE_GUID),
-                "=",
-                additionalDetails.getPlaceOfSupply()
-        );
-        commonV1ListRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(criteria).build();
-        unlocations = masterDataFactory.getMasterDataService().fetchUnlocationData(commonV1ListRequest).getData();
-        unlocationsResponse = jsonHelper.convertValueToList(unlocations, UnlocationsResponse.class);
-        if(unlocationsResponse.size() > 0)
-            placeOfSupply = unlocationsResponse.get(0);
+        UnlocationsResponse pol = unlocationsMap.get(shipment.getCarrierDetails().getOriginPort());
+        UnlocationsResponse pod = unlocationsMap.get(shipment.getCarrierDetails().getDestinationPort());
+        UnlocationsResponse origin = unlocationsMap.get(shipment.getCarrierDetails().getOrigin());
+        UnlocationsResponse destination = unlocationsMap.get(shipment.getCarrierDetails().getDestination());
+        UnlocationsResponse paidPlace = unlocationsMap.get(shipment.getAdditionalDetails().getPaidPlace());
+        UnlocationsResponse placeOfSupply = unlocationsMap.get(shipment.getAdditionalDetails().getPlaceOfSupply());
+        UnlocationsResponse placeOfIssue = unlocationsMap.get(shipment.getAdditionalDetails().getPlaceOfIssue());
 
         dictionary.put(ReportConstants.MASTER_BILL,shipment.getMasterBill());
         dictionary.put(ReportConstants.HOUSE_BILL,shipment.getHouseBill());
@@ -301,9 +239,12 @@ public abstract class IReport {
         dictionary.put(ReportConstants.CHARGEABLE, shipment.getChargable());
         dictionary.put(ReportConstants.CHARGEABLE_UNIT, shipment.getChargeableUnit());
         dictionary.put(ReportConstants.TRANSPORT_MODE, shipment.getTransportMode());
-        MasterData masterData = getMasterListData(MasterDataType.TRANSPORT_MODE, shipment.getTransportMode());
+        MasterData masterData = null;
+        if (masterListsMap.containsKey(shipment.getTransportMode()))
+            masterData = masterListsMap.get(shipment.getTransportMode());
         dictionary.put(ReportConstants.TRANSPORT_MODE_DESCRIPTION, masterData != null ? masterData.getItemDescription() : shipment.getTransportMode());
-        masterData = getMasterListData(MasterDataType.CUSTOM_SHIPMENT_TYPE, shipment.getDirection());
+        if (masterListsMap.containsKey(shipment.getDirection()))
+            masterData = masterListsMap.get(shipment.getDirection());
         dictionary.put(ReportConstants.SHIPMENT_TYPE_DESCRIPTION, masterData != null ? masterData.getItemDescription() : shipment.getDirection());
         dictionary.put(ReportConstants.SHIPMENT_NUMBER, shipment.getShipmentId());
         dictionary.put(ReportConstants.FLIGHT_NUMBER, shipment.getCarrierDetails().getFlightNumber());
@@ -311,7 +252,8 @@ public abstract class IReport {
 
         dictionary.put(ReportConstants.PACKS,shipment.getNoOfPacks());
         dictionary.put(ReportConstants.PACKS_UNIT,shipment.getPacksUnit());
-        masterData = getMasterListData(MasterDataType.PACKS_UNIT, shipment.getPacksUnit());
+        if (masterListsMap.containsKey(shipment.getPacksUnit()))
+            masterData = masterListsMap.get(shipment.getPacksUnit());
         dictionary.put(ReportConstants.PACKS_UNIT_DESC, masterData != null && StringUtility.isNotEmpty(masterData.getItemDescription()) ? masterData.getItemDescription() : shipment.getPacksUnit());
         dictionary.put(ReportConstants.GROSS_WEIGHT,shipment.getWeight());
         dictionary.put(ReportConstants.GROSS_WEIGHT_UNIT,shipment.getWeightUnit());
@@ -347,9 +289,8 @@ public abstract class IReport {
 
         dictionary.put(ReportConstants.WAREHOUSE_NAME, additionalDetails.getWarehouseId());
         masterData = null;
-        if(placeOfIssue != null)
-        {
-            masterData = getMasterListData(MasterDataType.COUNTRIES, placeOfIssue.getCountry());
+        if(placeOfIssue != null && masterListsMap.containsKey(placeOfIssue.getCountry()))  {
+            masterData = masterListsMap.get(placeOfIssue.getCountry());
         }
         dictionary.put(ReportConstants.ISSUEPLACECOUNTRYNAME, masterData != null ? masterData.getItemDescription() : null);
 
@@ -709,8 +650,6 @@ public abstract class IReport {
         dictionary.put(ReportConstants.PLACE_OF_RECEIPT, hblDataDto.getPlaceOfReceipt());
         dictionary.put(ReportConstants.PACKS, hblDataDto.getPackageCount());
         dictionary.put(ReportConstants.PACKS_UNIT, hblDataDto.getPackageType());
-        MasterData masterData = getMasterListData(MasterDataType.PACKS_UNIT, hblDataDto.getPackageType());
-        dictionary.put(ReportConstants.PACKS_UNIT_DESC, masterData != null && masterData.getItemDescription() != null ? masterData.getItemDescription() : hblDataDto.getPackageType());
         dictionary.put(ReportConstants.DESCRIPTION, hblDataDto.getCargoDescription());
         dictionary.put(ReportConstants.DESCRIPTION_CAPS, hblDataDto.getCargoDescription() != null ? hblDataDto.getCargoDescription().toUpperCase() : null);
         dictionary.put(ReportConstants.PLACE_OF_DELIVERY, hblDataDto.getPlaceOfDelivery());
@@ -1213,5 +1152,64 @@ public abstract class IReport {
             return true;
         }
         return false;
+    }
+
+    public List<String> createUnLocoRequestFromShipmentModel(ShipmentModel shipmentModel) {
+        List<String> request = new ArrayList<>();
+        if (Objects.isNull(shipmentModel)) return request;
+
+        if (!Objects.isNull(shipmentModel.getAdditionalDetails())) {
+            request.add(shipmentModel.getAdditionalDetails().getPaidPlace());
+            request.add(shipmentModel.getAdditionalDetails().getPlaceOfIssue());
+            request.add(shipmentModel.getAdditionalDetails().getPlaceOfSupply());
+        }
+
+        if (!Objects.isNull(shipmentModel.getCarrierDetails())) {
+            request.add(shipmentModel.getCarrierDetails().getOriginPort());
+            request.add(shipmentModel.getCarrierDetails().getDestinationPort());
+            request.add(shipmentModel.getCarrierDetails().getOrigin());
+            request.add(shipmentModel.getCarrierDetails().getDestination());
+        }
+        return request.stream().filter(Objects::nonNull).collect(Collectors.toList());
+    }
+
+    public List<MasterListRequest> createMasterListsRequestFromShipment(ShipmentModel shipmentModel) {
+        List<MasterListRequest> request = new ArrayList<>();
+        if (Objects.isNull(shipmentModel)) return request;
+        request.add(createMasterListRequest(MasterDataType.PAYMENT, shipmentModel.getPaymentTerms()));
+        request.add(createMasterListRequest(MasterDataType.SERVICE_MODE, shipmentModel.getServiceType()));
+        request.add(createMasterListRequest(MasterDataType.TRANSPORT_MODE, shipmentModel.getTransportMode()));
+        request.add(createMasterListRequest(MasterDataType.CUSTOM_SHIPMENT_TYPE, shipmentModel.getDirection()));
+        request.add(createMasterListRequest(MasterDataType.PACKS_UNIT, shipmentModel.getPacksUnit()));
+
+        if (!Objects.isNull(shipmentModel.getAdditionalDetails())) {
+            request.add(createMasterListRequest(MasterDataType.RELEASE_TYPE, shipmentModel.getAdditionalDetails().getReleaseType()));
+        }
+        return request;
+    }
+
+    public List<MasterListRequest> createMasterListsRequestFromUnLocoMap(Map<String, UnlocationsResponse> unlocationsMap) {
+        List<MasterListRequest> request = new ArrayList<>();
+        for (String key : unlocationsMap.keySet())
+            request.add(createMasterListRequest(MasterDataType.COUNTRIES, unlocationsMap.get(key).getCountry()));
+        return request;
+    }
+
+
+    public MasterListRequest createMasterListRequest (MasterDataType itemType, String itemValue) {
+        if (StringUtility.isEmpty(itemValue)) return null;
+        return MasterListRequest.builder().ItemType(itemType.getDescription()).ItemValue(itemValue).build();
+    }
+
+    public Map<String, MasterData> fetchInBulkMasterList(MasterListRequestV2 requests) {
+        Map<String, MasterData> keyMasterDataMap = new HashMap<>();
+        if(requests.getMasterListRequests() != null && requests.getMasterListRequests().size() > 0) {
+            V1DataResponse response = v1Service.fetchMultipleMasterData(requests);
+            List<MasterData> masterLists = jsonHelper.convertValueToList(response.entities, MasterData.class);
+            masterLists.forEach(masterData -> {
+                keyMasterDataMap.put(masterData.getItemValue(), masterData);
+            });
+        }
+        return keyMasterDataMap;
     }
 }
