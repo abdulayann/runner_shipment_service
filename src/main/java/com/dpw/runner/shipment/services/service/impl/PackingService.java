@@ -613,6 +613,9 @@ public class PackingService implements IPackingService {
             String weightUnit = request.getWeightUnit();
             BigDecimal volume = request.getVolume();
             String volumeUnit = request.getVolumeUnit();
+            if(!request.isVolumeChange()) {
+                checkVolumeUnit(VOLUME_UNIT_M3, request.getWidthUnit(), request.getLengthUnit(), request.getHeightUnit(), request, response);
+            }
             if (weightUnit != null && volumeUnit != null) {
                 VolumeWeightChargeable vwOb = consolidationService.calculateVolumeWeight(transportMode, weightUnit, volumeUnit, weight, volume);
                 response.setChargeable(vwOb.getChargeable());
@@ -637,7 +640,6 @@ public class PackingService implements IPackingService {
                 response.setVolumeWeight(vwOb.getVolumeWeight());
                 response.setVolumeWeightUnit(vwOb.getVolumeWeightUnit());
                 response.setChargeableUnit(vwOb.getChargeableUnit());
-                checkVolumeUnit(request.getVolumeUnit(), request.getWidthUnit(), request.getLengthUnit(), request.getHeightUnit(), request, response);
             }
             return ResponseHelper.buildSuccessResponse(response);
         } catch (Exception e) {
