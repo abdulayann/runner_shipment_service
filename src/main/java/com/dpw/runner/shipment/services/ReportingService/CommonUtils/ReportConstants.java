@@ -735,4 +735,7 @@ public class ReportConstants {
     public static final String PortofArrivalInCaps = "PortofArrivalInCaps";
     public static final String SHIPMENT_DETAILS_PORTOFDEPARTURECOUNTRYINCAPS = "PortofDepartureCountryInCaps";
     public static final String PortofDepartureInCaps = "PortofDepartureInCaps";
+    public static final String CAN_GEN = "CRGARVNTC";
+    public static final String DELIVERY_ORDER_GEN = "DELORD";
+    public static final String PICKUP_ORDER_GEN = "PICORDCNF";
 }

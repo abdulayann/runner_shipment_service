@@ -19,6 +19,7 @@ import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.*;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
 import com.dpw.runner.shipment.services.dto.TrackingService.UniversalTrackingPayload;
+import com.dpw.runner.shipment.services.dto.patchRequest.CarrierPatchRequest;
 import com.dpw.runner.shipment.services.dto.patchRequest.ConsolidationPatchRequest;
 import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.response.*;
@@ -37,6 +38,7 @@ import com.dpw.runner.shipment.services.exception.exceptions.ValidationException
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import com.dpw.runner.shipment.services.mapper.CarrierDetailsMapper;
 import com.dpw.runner.shipment.services.mapper.ConsolidationDetailsMapper;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequestV2;
@@ -193,6 +195,9 @@ public class ConsolidationService implements IConsolidationService {
 
     @Autowired
     private ConsolidationDetailsMapper consolidationDetailsMapper;
+
+    @Autowired
+    private CarrierDetailsMapper carrierDetailsMapper;
 
     @Autowired
     private ProductIdentifierUtility productEngine;
@@ -838,7 +843,7 @@ public class ConsolidationService implements IConsolidationService {
     }
 
     @Transactional
-    public ResponseEntity<?> partialUpdate(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<?> partialUpdate(CommonRequestModel commonRequestModel, Boolean fromV1) throws Exception {
         ConsolidationPatchRequest consolidationDetailsRequest = (ConsolidationPatchRequest) commonRequestModel.getData();
         // Get old entity to be updated
         ConsolidationDetailsRequest req = new ConsolidationDetailsRequest();
@@ -849,6 +854,16 @@ public class ConsolidationService implements IConsolidationService {
             ConsolidationDetails entity = oldEntity.get();
             long id = oldEntity.get().getId();
             consolidationDetailsMapper.update(consolidationDetailsRequest, entity);
+
+            // Carrier Details Update
+            CarrierPatchRequest carrierDetailRequest = consolidationDetailsRequest.getCarrierDetails();
+            CarrierDetails updatedCarrierDetails = null;
+            if (carrierDetailRequest != null) {
+                updatedCarrierDetails = oldEntity.get().getCarrierDetails();
+                carrierDetailsMapper.update(carrierDetailRequest, updatedCarrierDetails);
+            }
+            entity.setCarrierDetails(oldEntity.get().getCarrierDetails());
+
             beforeSave(entity);
             updateLinkedShipmentData(entity, oldEntity.get());
             entity = consolidationDetailsDao.update(entity, false);
@@ -894,10 +909,12 @@ public class ConsolidationService implements IConsolidationService {
                 List<Parties> updatedFileRepos = partiesDao.updateEntityFromOtherEntity(convertToEntityList(consolidationAddressRequest, Parties.class), id, Constants.CONSOLIDATION_ADDRESSES);
                 entity.setConsolidationAddresses(updatedFileRepos);
             }
-            try {
-                consolidationSync.sync(entity);
-            } catch (Exception e){
-                log.error("Error performing sync on consolidation entity, {}", e);
+            if(fromV1 == null || !fromV1) {
+                try {
+                    consolidationSync.sync(entity);
+                } catch (Exception e){
+                    log.error("Error performing sync on consolidation entity, {}", e);
+                }
             }
             afterSave(entity, false);
 
@@ -3164,6 +3181,7 @@ public class ConsolidationService implements IConsolidationService {
 
             response.setCreatedBy(UserContext.getUser().getUsername());
             response.setCreatedAt(LocalDateTime.now());
+            response.setSourceTenantId(Long.valueOf(UserContext.getUser().TenantId));
 
 //            try {
 //                log.info("Fetching Tenant Model");
@@ -3178,6 +3196,7 @@ public class ConsolidationService implements IConsolidationService {
 //                response.setHouseBill(generateCustomHouseBL());
 
             this.addAllMasterDataInSingleCall(null, response, null);
+            this.addAllTenantDataInSingleCall(null, response, null);
 
             return ResponseHelper.buildSuccessResponse(response);
         } catch(Exception e) {

@@ -36,4 +36,6 @@ public class HblContainerDto {
     private String  packageUnit;
     private Long  quantity;
     private String  quantityCode;
+    private String packsType;
+    private Long containerCount;
 }

@@ -19,6 +19,7 @@ import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.*;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
 import com.dpw.runner.shipment.services.dto.TrackingService.UniversalTrackingPayload;
+import com.dpw.runner.shipment.services.dto.patchRequest.CarrierPatchRequest;
 import com.dpw.runner.shipment.services.dto.patchRequest.ShipmentPatchRequest;
 import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.response.*;
@@ -35,6 +36,7 @@ import com.dpw.runner.shipment.services.exception.exceptions.ValidationException
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import com.dpw.runner.shipment.services.mapper.CarrierDetailsMapper;
 import com.dpw.runner.shipment.services.mapper.ShipmentDetailsMapper;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequestV2;
@@ -105,6 +107,8 @@ public class ShipmentService implements IShipmentService {
     private ObjectMapper objectMapper;
     @Autowired
     private ShipmentDetailsMapper shipmentDetailsMapper;
+    @Autowired
+    private CarrierDetailsMapper carrierDetailsMapper;
 
     private final CSVParsingUtil<ShipmentDetails> parser = new CSVParsingUtil<>(ShipmentDetails.class);
 
@@ -596,7 +600,7 @@ public class ShipmentService implements IShipmentService {
                 shipmentDetails.setRoutingsList(routingsDao.saveEntityFromShipment(jsonHelper.convertValueToList(routingsRequest, Routings.class), shipmentId));
             Hbl hbl = null;
             if(shipmentDetails.getContainersList() != null && shipmentDetails.getContainersList().size() > 0) {
-                hbl = hblService.checkAllContainerAssigned(shipmentId, shipmentDetails.getContainersList(), updatedPackings);
+                hbl = hblService.checkAllContainerAssigned(shipmentDetails, shipmentDetails.getContainersList(), updatedPackings);
             }
 
             List<NotesRequest> notesRequest = request.getNotesList();
@@ -773,7 +777,7 @@ public class ShipmentService implements IShipmentService {
             Hbl hbl = null;
             ConsolidationDetails consolidationDetails = null;
             if(updatedContainers.size() > 0) {
-                hbl = hblService.checkAllContainerAssigned(shipmentId, updatedContainers, updatedPackings);
+                hbl = hblService.checkAllContainerAssigned(shipmentDetails, updatedContainers, updatedPackings);
                 if((tempConsolIds == null || tempConsolIds.size() == 0) && (shipmentSettingsDetails.getIsShipmentLevelContainer() == null || !shipmentSettingsDetails.getIsShipmentLevelContainer())) {
                     consolidationDetails = createConsolidation(shipmentDetails, updatedContainers);
                 }
@@ -1698,7 +1702,7 @@ public class ShipmentService implements IShipmentService {
             Hbl hbl = null;
             ConsolidationDetails consolidationDetails = null;
             if(updatedContainers.size() > 0) {
-                hbl = hblService.checkAllContainerAssigned(id, updatedContainers, updatedPackings);
+                hbl = hblService.checkAllContainerAssigned(entity, updatedContainers, updatedPackings);
                 if((tempConsolIds == null || tempConsolIds.size() == 0) && (shipmentSettingsDetails.getIsShipmentLevelContainer() == null || !shipmentSettingsDetails.getIsShipmentLevelContainer())) {
                     consolidationDetails = createConsolidation(entity, updatedContainers);
                 }
@@ -2442,7 +2446,7 @@ public class ShipmentService implements IShipmentService {
     }
 
     @Transactional
-    public ResponseEntity<?> partialUpdate(CommonRequestModel commonRequestModel) throws Exception {
+    public ResponseEntity<?> partialUpdate(CommonRequestModel commonRequestModel, Boolean fromV1) throws Exception {
 
         ShipmentPatchRequest shipmentRequest = (ShipmentPatchRequest) commonRequestModel.getData();
         if ((shipmentRequest.getId() == null && shipmentRequest.getGuid() == null) && (shipmentRequest.getShipmentId() == null || shipmentRequest.getShipmentId().get() == "")) {
@@ -2461,7 +2465,7 @@ public class ShipmentService implements IShipmentService {
         List<ReferenceNumbersRequest> referenceNumbersRequestList = shipmentRequest.getReferenceNumbersList();
         List<RoutingsRequest> routingsRequestList = shipmentRequest.getRoutingsList();
         List<ServiceDetailsRequest> serviceDetailsRequestList = shipmentRequest.getServicesList();
-        CarrierDetailRequest carrierDetailRequest = shipmentRequest.getCarrierDetails();
+        CarrierPatchRequest carrierDetailRequest = shipmentRequest.getCarrierDetails();
         // TODO- implement Validation logic
         Long id = null;
         Optional<ShipmentDetails> oldEntity = null;
@@ -2517,10 +2521,13 @@ public class ShipmentService implements IShipmentService {
             }
             CarrierDetails updatedCarrierDetails = null;
             if (carrierDetailRequest != null) {
-                updatedCarrierDetails = carrierDao.updateEntityFromShipmentConsole(convertToClass(carrierDetailRequest, CarrierDetails.class));
-                entity.setCarrierDetails(updatedCarrierDetails);
+                updatedCarrierDetails = oldEntity.get().getCarrierDetails();
+                carrierDetailsMapper.update(carrierDetailRequest, updatedCarrierDetails);
+                entity.setCarrierDetails(oldEntity.get().getCarrierDetails());
             }
+            entity.setCarrierDetails(oldEntity.get().getCarrierDetails());
             beforeSave(entity);
+
             updateLinkedShipmentData(entity, oldEntity.get());
             entity = shipmentDao.update(entity, false);
 
@@ -2574,10 +2581,12 @@ public class ShipmentService implements IShipmentService {
                 entity.setServicesList(updatedServiceDetails);
             }
 
-            try {
-                shipmentSync.sync(entity, null);
-            } catch (Exception e) {
-                log.error("Error performing sync on shipment entity, {}", e);
+            if(fromV1 == null || !fromV1) {
+                try {
+                    shipmentSync.sync(entity, null);
+                } catch (Exception e) {
+                    log.error("Error performing sync on shipment entity, {}", e);
+                }
             }
 
             afterSave(entity, false);
@@ -3420,6 +3429,7 @@ public class ShipmentService implements IShipmentService {
         try {
             ShipmentDetailsResponse response = jsonHelper.convertValue(orderManagementAdapter.getOrder(orderId), ShipmentDetailsResponse.class);
             this.addAllMasterDataInSingleCall(null, response, null);
+            this.addAllUnlocationDataInSingleCall(null, response, null);
             return ResponseHelper.buildSuccessResponse(response);
         } catch (Exception e){
             throw new RunnerException(e.getMessage());
@@ -3629,6 +3639,7 @@ public class ShipmentService implements IShipmentService {
             response.setCreatedBy(UserContext.getUser().getUsername());
             response.setCustomerCategory(CustomerCategoryRates.CATEGORY_5);
             response.setShipmentCreatedOn(LocalDateTime.now());
+            response.setSourceTenantId(Long.valueOf(UserContext.getUser().TenantId));
             //Generate HBL
             if(Constants.TRANSPORT_MODE_SEA.equals(response.getTransportMode()) && Constants.DIRECTION_EXP.equals(response.getDirection()))
                 response.setHouseBill(generateCustomHouseBL(null));
@@ -3646,6 +3657,7 @@ public class ShipmentService implements IShipmentService {
                 response.setHouseBill(generateCustomHouseBL(null));
 
             this.addAllMasterDataInSingleCall(null, response, null);
+            this.addAllTenantDataInSingleCall(null, response, null);
 
             return ResponseHelper.buildSuccessResponse(response);
         } catch(Exception e) {

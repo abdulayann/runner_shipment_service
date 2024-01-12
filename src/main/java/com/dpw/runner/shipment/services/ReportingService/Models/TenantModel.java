@@ -24,4 +24,5 @@ public class TenantModel implements Serializable {
     public String AgentIATACode;
     public String AgentCASSCode;
     public Long DefaultOrgId;
+    public String AgentIATANumber;
 }
