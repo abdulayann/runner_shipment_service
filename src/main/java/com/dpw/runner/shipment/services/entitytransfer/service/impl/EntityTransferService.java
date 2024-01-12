@@ -11,6 +11,7 @@ import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
 import com.dpw.runner.shipment.services.dto.request.ConsolidationDetailsRequest;
+import com.dpw.runner.shipment.services.dto.request.CustomAutoEventRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
@@ -38,6 +39,7 @@ import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.DedicatedMasterData;
 import com.dpw.runner.shipment.services.utils.MasterData;
+import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.dpw.runner.shipment.services.utils.UnlocationData;
 import com.dpw.runner.shipment.services.validator.enums.Operators;
 import com.google.common.base.Strings;
@@ -81,6 +83,8 @@ public class EntityTransferService implements IEntityTransferService {
     private IHblDao hblDao;
     @Autowired
     private IAwbDao awbDao;
+    @Autowired
+    private IEventDao eventDao;
     @Autowired
     MasterDataFactory masterDataFactory;
     @Transactional
@@ -768,7 +772,10 @@ public class EntityTransferService implements IEntityTransferService {
                     }
                 }
             }
-
+            this.createAutoEvent(consolidationDetails.get().getId().toString(), Constants.PRE_ALERT_EVENT_CODE, Constants.CONSOLIDATION);
+            for (var shipment: consolidationDetails.get().getShipmentsList()) {
+                this.createAutoEvent(shipment.getId().toString(), Constants.PRE_ALERT_EVENT_CODE, Constants.SHIPMENT);
+            }
             SendConsolidationResponse sendConsolidationResponse = SendConsolidationResponse.builder().successTenantIds(successTenantIds).build();
             return ResponseHelper.buildSuccessResponse(sendConsolidationResponse);
         }
@@ -1625,6 +1632,16 @@ public class EntityTransferService implements IEntityTransferService {
             throw new RuntimeException("Check Task exist failed to check from V1: " + ex);
         }
         return ResponseHelper.buildSuccessResponse(response);
+    }
+
+    private void createAutoEvent(String entityId, String eventCode, String entityType) {
+        if (StringUtility.isNotEmpty(entityId)) {
+            CustomAutoEventRequest eventReq = new CustomAutoEventRequest();
+            eventReq.entityId = Long.parseLong(entityId);
+            eventReq.entityType = entityType;
+            eventReq.eventCode = eventCode;
+            eventDao.autoGenerateEvents(eventReq);
+        }
     }
 
 }

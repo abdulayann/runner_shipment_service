@@ -43,6 +43,8 @@ public class PackingModel {
     private String origin;
     @JsonProperty("Commodity")
     private String commodity;
+    @JsonProperty("CommodityGroup")
+    private String commodityGroup;
     @JsonProperty("PackingOrder")
     private String packingOrder;
     @JsonProperty("Length")

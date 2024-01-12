@@ -609,6 +609,15 @@ public class ReportConstants {
     public static final String PICKUP_ORDER = "PickupOrder";
     public static final String CSR = "CSR";
     public static final String ERN = "ERN";
+    public static final String CEN = "CEN";
+    public static final String FRN = "FRN";
+    public static final String EXPORTER_REFERENCE_NUMBER = "ExporterReferenceNumber";
+    public static final String CUSTOMS_REFERENCE_NUMBER = "CustomsReferenceNumber";
+    public static final String FORWARDER_REFERENCE_NUMBER = "ForwarderReferenceNumber";
+    public static final String PRE_CARRIAGE_PARTY = "PreCarriageParty";
+    public static final String COMMODITY_GROUP = "CommodityGroup";
+    public static final String PACKS_COMMODITY_GROUP = "PacksCommodityGroup";
+    public static final String SHIPMENT_PACKS = "ShipmentPacks";
     public static final String SHIPPING_REQUEST = "ShippingRequest";
     public static final String SHIPPING_REQUEST_OUT = "ShippingRequestOut";
     public static final String SHIPPING_REQUEST_AIR = "ShippingRequestAir";

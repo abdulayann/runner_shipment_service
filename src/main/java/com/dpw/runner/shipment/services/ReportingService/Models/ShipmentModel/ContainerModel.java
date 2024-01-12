@@ -49,6 +49,8 @@ public class ContainerModel {
     private String measurementUnit;
     @JsonProperty("CommodityCode")
     private String commodityCode;
+    @JsonProperty("CommodityGroup")
+    private String commodityGroup;
     @JsonProperty("HsCode")
     private String hsCode;
     @JsonProperty("IsShipperOwned")

@@ -257,4 +257,5 @@ public class Constants {
     public static final String FEET = "Feet";
 
     public static final String TRUE = "true";
+    public static final String PRE_ALERT_EVENT_CODE = "PREALSNT";
 }

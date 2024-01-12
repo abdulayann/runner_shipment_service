@@ -35,6 +35,7 @@ import com.dpw.runner.shipment.services.masterdata.response.*;
 import com.dpw.runner.shipment.services.repository.interfaces.IAwbRepository;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.StringUtility;
+import com.google.common.base.Strings;
 import com.nimbusds.jose.util.Pair;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -121,6 +122,11 @@ public abstract class IReport {
         CommodityResponse commodityResponse = getCommodity(row.getCommodityCode());
         if (commodityResponse != null)
             ship.CommodityDescription = commodityResponse.getDescription();
+        if(row.getCommodityGroup() != null) {
+            MasterData commodity = getMasterListData(MasterDataType.COMMODITY_GROUP, row.getCommodityGroup());
+            if (commodity != null)
+                ship.CommodityGroup = commodity.getItemDescription();
+        }
         return ship;
     }
 
@@ -377,6 +383,40 @@ public abstract class IReport {
             dictionary.put(ReportConstants.CONSIGNER_FREETEXT,dictionary.get(ReportConstants.CONSIGNER));
             dictionary.put(ReportConstants.NOTIFY_PARTY_FREETEXT, dictionary.get(ReportConstants.NOTIFY_PARTY));
             dictionary.put(ReportConstants.CLIENT, client);
+        }
+        if(shipment.getReferenceNumbersList() != null) {
+            List<String> referenceNumberList = new ArrayList<>();
+            referenceNumberList = shipment.getReferenceNumbersList().stream()
+                    .filter(i -> i.getType().equals(ERN)).map(ReferenceNumbersModel::getReferenceNumber).toList();
+            if(!referenceNumberList.isEmpty()){
+                dictionary.put(EXPORTER_REFERENCE_NUMBER, String.join(",", referenceNumberList));
+            }
+        }
+        if(shipment.getReferenceNumbersList() != null) {
+            List<String> referenceNumberList = new ArrayList<>();
+            referenceNumberList = shipment.getReferenceNumbersList().stream()
+                    .filter(i -> i.getType().equals(CEN)).map(ReferenceNumbersModel::getReferenceNumber).toList();
+            if(!referenceNumberList.isEmpty()){
+                dictionary.put(CUSTOMS_REFERENCE_NUMBER, String.join(",", referenceNumberList));
+            }
+        }
+        if(shipment.getReferenceNumbersList() != null) {
+            List<String> referenceNumberList = new ArrayList<>();
+            referenceNumberList = shipment.getReferenceNumbersList().stream()
+                    .filter(i -> i.getType().equals(FRN)).map(ReferenceNumbersModel::getReferenceNumber).toList();
+            if(!referenceNumberList.isEmpty()){
+                dictionary.put(FORWARDER_REFERENCE_NUMBER, String.join(",", referenceNumberList));
+            }
+        }
+        if(!Strings.isNullOrEmpty(shipment.getCarrierDetails().getShippingLine())){
+            CarrierMasterData carrierData = getCarrier(shipment.getCarrierDetails().getShippingLine());
+            if(!Objects.isNull(carrierData))
+                dictionary.put(CARRIER_NAME, carrierData.getItemDescription());
+        }
+        if(!Objects.isNull(pickup) && !Objects.isNull(pickup.getTransporterDetail())){
+            dictionary.put(PRE_CARRIAGE_PARTY, pickup.getTransporterDetail().getOrgData() != null &&
+                    pickup.getTransporterDetail().getOrgData().containsKey("FullName") ?
+                    pickup.getTransporterDetail().getOrgData().get("FullName") : "");
         }
         dictionary.put(ReportConstants.NO_OF_PACKAGES, shipment.getNoOfPacks());
     }
