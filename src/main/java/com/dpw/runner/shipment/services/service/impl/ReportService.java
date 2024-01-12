@@ -547,6 +547,7 @@ public class ReportService implements IReportService {
 
     public byte[] GetFromDocumentService(Object json, String templateId) {
         try {
+            if (Objects.isNull(templateId)) return null;
             DocumentRequest documentRequest = new DocumentRequest();
             documentRequest.setData(json);
             return (byte[]) documentService.DownloadDocumentTemplate(jsonHelper.convertToJson(documentRequest), templateId).getBody();
