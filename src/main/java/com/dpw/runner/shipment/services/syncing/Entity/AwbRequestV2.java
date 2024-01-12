@@ -21,4 +21,5 @@ public class AwbRequestV2 {
     public List<AwbGoodsDescriptionInfoV2> awbGoodsDescriptionInfo;
     public List<AwbPackingInfoV2> awbPackingInfo;
     public List<AwbSpecialHandlingCodesMappingInfoV2> awbSpecialHandlingCodesMappings;
+    public SaveStatus saveStatus;
 }

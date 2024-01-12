@@ -130,6 +130,7 @@ public interface IV1Service {
     V1DataResponse fetchListUnlocationTransportModeBased(Object request);
     V1DataResponse fetchActivityMaster(Object request);
     V1RetrieveResponse retrieveTenantSettings();
+    CompanySettingsResponse retrieveCompanySettings();
     V1RetrieveResponse retrieveTenant();
 
     V1DataResponse fetchOwnType(Object request);
