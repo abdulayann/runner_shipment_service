@@ -1438,7 +1438,7 @@ public class V1ServiceImpl implements IV1Service {
         try {
             long time = System.currentTimeMillis();
             HttpEntity<V1DataResponse> entity = new HttpEntity(V1AuthHelper.getHeaders());
-            masterDataResponse = this.restTemplate.postForEntity(this.RETRIEVE_COMPANY_SETTINGS, entity, V1RetrieveResponse.class, new Object[0]);
+            masterDataResponse = this.restTemplate.postForEntity(this.RETRIEVE_COMPANY_SETTINGS, entity, CompanySettingsResponse.class, new Object[0]);
             log.info("Token time taken in retrieveCompanySettings() function " + (System.currentTimeMillis() - time));
             return (CompanySettingsResponse) masterDataResponse.getBody();
         } catch (HttpClientErrorException | HttpServerErrorException ex) {
