@@ -3,7 +3,9 @@ package com.dpw.runner.shipment.services.syncing.impl;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.impl.AwbDao;
 import com.dpw.runner.shipment.services.dao.impl.MawbHawbLinkDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IAwbDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IMawbHawbLinkDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.request.AwbRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataSyncResponse;
@@ -68,10 +70,10 @@ public class AwbSync implements IAwbSync {
     private EmailServiceUtility emailServiceUtility;
 
     @Autowired
-    private AwbDao awbDao;
+    private IAwbDao awbDao;
 
     @Autowired
-    private MawbHawbLinkDao mawbHawbLinkDao;
+    private IMawbHawbLinkDao mawbHawbLinkDao;
 
     private RetryTemplate retryTemplate = RetryTemplate.builder()
             .maxAttempts(3)
