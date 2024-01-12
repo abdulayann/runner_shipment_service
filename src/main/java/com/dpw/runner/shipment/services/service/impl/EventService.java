@@ -14,7 +14,9 @@ import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.request.EventsRequest;
 import com.dpw.runner.shipment.services.dto.request.TrackingRequest;
 import com.dpw.runner.shipment.services.dto.response.EventsResponse;
+import com.dpw.runner.shipment.services.dto.response.TrackingEventsResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
+import com.dpw.runner.shipment.services.entity.CarrierDetails;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.Events;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
@@ -363,23 +365,23 @@ public class EventService implements IEventService {
     }
 
   public ResponseEntity<?> trackEvents(Long id) {
-    Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(id);
-    if (shipmentDetails.isEmpty()) {
+    Optional<ShipmentDetails> optionalShipmentDetails = shipmentDao.findById(id);
+    if (optionalShipmentDetails.isEmpty()) {
       log.debug(
           "No Shipment present for the current Event",
               id,
           LoggerHelper.getRequestIdFromMDC());
       throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
     }
-    String shipmentId = shipmentDetails.get().getShipmentId();
+    ShipmentDetails shipment = optionalShipmentDetails.get();
+    String shipmentId = shipment.getShipmentId();
     TrackingRequest trackingRequest = TrackingRequest.builder().referenceNumber(shipmentId).build();
+    TrackingEventsResponse trackingEventsResponse = null;
 
     HttpEntity<V1DataResponse> entity = new HttpEntity(trackingRequest, V1AuthHelper.getHeaders());
-    V1DataResponse response = new V1DataResponse();
     try {
-      var v1response =
-          this.restTemplate.postForEntity(TRACK_EVENT_DETAILS_URL, entity, V1DataResponse.class);
-      response = v1response.getBody();
+      var v1Response = this.restTemplate.postForEntity(TRACK_EVENT_DETAILS_URL, entity, TrackingEventsResponse.class);
+      trackingEventsResponse = v1Response.getBody();
     } catch (HttpClientErrorException | HttpServerErrorException ex) {
       throw new V1ServiceException(
           jsonHelper
@@ -388,14 +390,26 @@ public class EventService implements IEventService {
               .getMessage());
     }
     List<EventsResponse> res = new ArrayList<>();
-    if (response != null && response.getEntities() != null) {
-      List<EventsRequestV2> responseEvents =
-          jsonHelper.convertValue(response.getEntities(), new TypeReference<>() {});
-      for (var i : responseEvents) {
-        EventsResponse eventsResponse = modelMapper.map(i, EventsResponse.class);
-        eventsResponse.setShipmentId(id);
-        res.add(eventsResponse);
+    if (trackingEventsResponse != null) {
+      if (trackingEventsResponse.getEvents() != null){
+          for (var i : trackingEventsResponse.getEvents()) {
+              EventsResponse eventsResponse = modelMapper.map(i, EventsResponse.class);
+              eventsResponse.setShipmentId(id);
+              res.add(eventsResponse);
+          }
       }
+
+      CarrierDetails carrierDetails =
+          shipment.getCarrierDetails() != null
+              ? shipment.getCarrierDetails()
+              : new CarrierDetails();
+
+      if(trackingEventsResponse.getShipmentAta() != null)
+        carrierDetails.setAta(trackingEventsResponse.getShipmentAta());
+      if(trackingEventsResponse.getShipmentAtd() != null)
+        carrierDetails.setAtd(trackingEventsResponse.getShipmentAtd());
+
+      shipmentDao.save(shipment, false);
     }
 
     return ResponseHelper.buildSuccessResponse(res);
