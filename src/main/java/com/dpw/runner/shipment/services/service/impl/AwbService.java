@@ -708,8 +708,9 @@ public class AwbService implements IAwbService {
         awbShipmentInfo.setConsigneeAddress(consigneeAddress == null ? consigneeAddress : consigneeAddress.toUpperCase());
         awbShipmentInfo.setConsigneeReferenceNumber(consolidationDetails.getReceivingAgent() != null ? consolidationDetails.getReceivingAgent() .getId().toString() : null);
         // AwbUtility.getConsolidationForwarderDetails(uow, consolidationRow, awbShipmentInfo, awbOtherInfoRow, awbCargoInfo); TODO
-        awbShipmentInfo.setOriginAirport(consolidationDetails.getCarrierDetails() != null ? consolidationDetails.getCarrierDetails().getOriginPort() : null);
-        awbShipmentInfo.setDestinationAirport(consolidationDetails.getCarrierDetails() != null ? consolidationDetails.getCarrierDetails().getDestinationPort() : null);
+//        awbShipmentInfo.setOriginAirport(consolidationDetails.getCarrierDetails() != null ? consolidationDetails.getCarrierDetails().getOriginPort() : null);
+//        awbShipmentInfo.setDestinationAirport(consolidationDetails.getCarrierDetails() != null ? consolidationDetails.getCarrierDetails().getDestinationPort() : null);
+        setAwbShipmentInfoUnLocationData(awbShipmentInfo, consolidationDetails.getCarrierDetails());
         awbShipmentInfo.setIataCode(tenantModel.AgentIATACode);
         awbShipmentInfo.setAgentCASSCode(tenantModel.AgentCASSCode);
 
@@ -994,8 +995,10 @@ public class AwbService implements IAwbService {
         awbShipmentInfo.setConsigneeAddress(consigneeAddress == null ? consigneeAddress : consigneeAddress.toUpperCase());
 
         awbShipmentInfo.setConsigneeReferenceNumber(shipmentDetails.getConsignee() != null ? shipmentDetails.getConsignee().getId().toString() : null);
-        awbShipmentInfo.setOriginAirport(shipmentDetails.getCarrierDetails() != null ? shipmentDetails.getCarrierDetails().getOriginPort() : null);
-        awbShipmentInfo.setDestinationAirport(shipmentDetails.getCarrierDetails() != null ? shipmentDetails.getCarrierDetails().getDestinationPort() : null);
+//        awbShipmentInfo.setOriginAirport(shipmentDetails.getCarrierDetails() != null ? shipmentDetails.getCarrierDetails().getOriginPort() : null);
+//        awbShipmentInfo.setDestinationAirport(shipmentDetails.getCarrierDetails() != null ? shipmentDetails.getCarrierDetails().getDestinationPort() : null);
+        setAwbShipmentInfoUnLocationData(awbShipmentInfo,shipmentDetails.getCarrierDetails());
+
         awbShipmentInfo.setFirstCarrier(shipmentDetails.getCarrierDetails() != null ? shipmentDetails.getCarrierDetails().getShippingLine() : null);
 
         setTenantFieldsInAwbShipmentInfo(awbShipmentInfo);
@@ -2733,6 +2736,27 @@ public class AwbService implements IAwbService {
         }
 
         return defaultAwbShipmentInfo;
+    }
+
+    private void setAwbShipmentInfoUnLocationData(AwbShipmentInfo awbShipmentInfo, CarrierDetails carrierDetails) {
+
+        List<String> locationReferenceGuids = new ArrayList<>();
+        locationReferenceGuids.add(carrierDetails.getOriginPort());
+        locationReferenceGuids.add(carrierDetails.getDestinationPort());
+
+        List<Object> criteria = Arrays.asList(
+                Arrays.asList(EntityTransferConstants.LOCATION_SERVICE_GUID),
+                "in",
+                List.of(locationReferenceGuids)
+        );
+        CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(criteria).build();
+        V1DataResponse v1DataResponse = v1Service.fetchUnlocation(commonV1ListRequest);
+
+        List<EntityTransferUnLocations> locationDataList = jsonHelper.convertValueToList(v1DataResponse.entities, EntityTransferUnLocations.class);
+        var locMap = locationDataList.stream().collect(Collectors.toMap(EntityTransferUnLocations::getLocationsReferenceGUID, EntityTransferUnLocations::getName));
+
+        awbShipmentInfo.setOriginAirport(locMap.get(carrierDetails.getOriginPort()));
+        awbShipmentInfo.setDestinationAirport(locMap.get(carrierDetails.getDestinationPort()));
     }
 
 }
