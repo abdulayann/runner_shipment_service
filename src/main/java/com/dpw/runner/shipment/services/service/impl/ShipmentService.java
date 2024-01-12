@@ -2525,6 +2525,7 @@ public class ShipmentService implements IShipmentService {
                 carrierDetailsMapper.update(carrierDetailRequest, updatedCarrierDetails);
                 entity.setCarrierDetails(oldEntity.get().getCarrierDetails());
             }
+            entity.setCarrierDetails(oldEntity.get().getCarrierDetails());
             beforeSave(entity);
 
             updateLinkedShipmentData(entity, oldEntity.get());
