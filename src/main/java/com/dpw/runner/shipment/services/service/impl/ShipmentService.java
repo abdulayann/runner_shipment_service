@@ -3639,6 +3639,7 @@ public class ShipmentService implements IShipmentService {
             response.setCreatedBy(UserContext.getUser().getUsername());
             response.setCustomerCategory(CustomerCategoryRates.CATEGORY_5);
             response.setShipmentCreatedOn(LocalDateTime.now());
+            response.setSourceTenantId(Long.valueOf(UserContext.getUser().TenantId));
             //Generate HBL
             if(Constants.TRANSPORT_MODE_SEA.equals(response.getTransportMode()) && Constants.DIRECTION_EXP.equals(response.getDirection()))
                 response.setHouseBill(generateCustomHouseBL(null));
@@ -3656,6 +3657,7 @@ public class ShipmentService implements IShipmentService {
                 response.setHouseBill(generateCustomHouseBL(null));
 
             this.addAllMasterDataInSingleCall(null, response, null);
+            this.addAllTenantDataInSingleCall(null, response, null);
 
             return ResponseHelper.buildSuccessResponse(response);
         } catch(Exception e) {

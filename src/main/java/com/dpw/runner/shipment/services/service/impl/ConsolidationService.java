@@ -3181,6 +3181,7 @@ public class ConsolidationService implements IConsolidationService {
 
             response.setCreatedBy(UserContext.getUser().getUsername());
             response.setCreatedAt(LocalDateTime.now());
+            response.setSourceTenantId(Long.valueOf(UserContext.getUser().TenantId));
 
 //            try {
 //                log.info("Fetching Tenant Model");
@@ -3195,6 +3196,7 @@ public class ConsolidationService implements IConsolidationService {
 //                response.setHouseBill(generateCustomHouseBL());
 
             this.addAllMasterDataInSingleCall(null, response, null);
+            this.addAllTenantDataInSingleCall(null, response, null);
 
             return ResponseHelper.buildSuccessResponse(response);
         } catch(Exception e) {
