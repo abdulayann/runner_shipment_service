@@ -161,6 +161,7 @@ public class Constants {
     public static final String AMSEDI = "AMSEDI";
     public static final String SHPCNFRM = "SHPCNFRM";
     public static final String SHPCMPLT = "SHPCMPLT";
+    public static final String CONCRTD = "CONCRTD";
 
     public static final String COMMODITY_TYPE_MASTER_DATA = "CommodityType";
     public static final String WARE_HOUSE_DATA = "WareHouse";

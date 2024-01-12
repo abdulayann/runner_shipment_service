@@ -451,6 +451,9 @@ public class ConsolidationService implements IConsolidationService {
             List<EventsRequest> eventsRequest = request.getEventsList();
             if (eventsRequest != null)
                 createEventsAsync(consolidationDetails, eventsRequest);
+            if(shipmentSettingsDetails.getAutoEventCreate() != null && shipmentSettingsDetails.getAutoEventCreate()) {
+                autoGenerateEvents(consolidationDetails);
+            }
 
             List<FileRepoRequest> fileRepoRequest = request.getFileRepoList();
             if (fileRepoRequest != null)
@@ -3264,5 +3267,34 @@ public class ConsolidationService implements IConsolidationService {
         }
 
         return res;
+    }
+
+    // Create Auto event
+
+    private void autoGenerateEvents(ConsolidationDetails consolidationDetails) {
+        Events response = null;
+        response = createAutomatedEvents(consolidationDetails, Constants.CONCRTD);
+
+        if(response != null) {
+            if (consolidationDetails.getEventsList() == null)
+                consolidationDetails.setEventsList(new ArrayList<>());
+            consolidationDetails.getEventsList().add(response);
+        }
+    }
+
+    private Events createAutomatedEvents(ConsolidationDetails consolidationDetails, String eventCode) {
+        Events events = new Events();
+        // Set event fields from consolidation
+        events.setActual(LocalDateTime.now());
+        events.setEstimated(LocalDateTime.now());
+        events.setSource(Constants.CARGO_RUNNER);
+        events.setIsPublicTrackingEvent(true);
+        events.setEntityType(Constants.CONSOLIDATION);
+        events.setEntityId(consolidationDetails.getId());
+        events.setTenantId(TenantContext.getCurrentTenant());
+        events.setEventCode(eventCode);
+        // Persist the event
+        eventDao.save(events);
+        return events;
     }
 }
