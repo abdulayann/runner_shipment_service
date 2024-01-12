@@ -1741,14 +1741,8 @@ public class V1ServiceImpl implements IV1Service {
             log.info("Request: {} || Response for event: {} with response{}", LoggerHelper.getRequestIdFromMDC(), IntegrationType.V1_DATA_SYNC, jsonHelper.convertToJson(tiDataResponse.getBody()));
             log.info("Request: {} || Total time taken in v1DataSync() function: {}", LoggerHelper.getRequestIdFromMDC() ,(System.currentTimeMillis() - time));
             return (V1DataSyncResponse) tiDataResponse.getBody();
-        } catch (HttpStatusCodeException var6) {
-            if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
-                throw new UnAuthorizedException("UnAuthorizedException");
-            } else {
-                throw new V1ServiceException(var6.getMessage());
-            }
         } catch (Exception var7) {
-            throw new V1ServiceException(var7.getMessage());
+            return V1DataSyncResponse.builder().error(var7.getMessage()).isSuccess(false).build();
         }
     }
 
