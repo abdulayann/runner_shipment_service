@@ -600,7 +600,7 @@ public class ShipmentService implements IShipmentService {
                 shipmentDetails.setRoutingsList(routingsDao.saveEntityFromShipment(jsonHelper.convertValueToList(routingsRequest, Routings.class), shipmentId));
             Hbl hbl = null;
             if(shipmentDetails.getContainersList() != null && shipmentDetails.getContainersList().size() > 0) {
-                hbl = hblService.checkAllContainerAssigned(shipmentId, shipmentDetails.getContainersList(), updatedPackings);
+                hbl = hblService.checkAllContainerAssigned(shipmentDetails, shipmentDetails.getContainersList(), updatedPackings);
             }
 
             List<NotesRequest> notesRequest = request.getNotesList();
@@ -777,7 +777,7 @@ public class ShipmentService implements IShipmentService {
             Hbl hbl = null;
             ConsolidationDetails consolidationDetails = null;
             if(updatedContainers.size() > 0) {
-                hbl = hblService.checkAllContainerAssigned(shipmentId, updatedContainers, updatedPackings);
+                hbl = hblService.checkAllContainerAssigned(shipmentDetails, updatedContainers, updatedPackings);
                 if((tempConsolIds == null || tempConsolIds.size() == 0) && (shipmentSettingsDetails.getIsShipmentLevelContainer() == null || !shipmentSettingsDetails.getIsShipmentLevelContainer())) {
                     consolidationDetails = createConsolidation(shipmentDetails, updatedContainers);
                 }
@@ -1702,7 +1702,7 @@ public class ShipmentService implements IShipmentService {
             Hbl hbl = null;
             ConsolidationDetails consolidationDetails = null;
             if(updatedContainers.size() > 0) {
-                hbl = hblService.checkAllContainerAssigned(id, updatedContainers, updatedPackings);
+                hbl = hblService.checkAllContainerAssigned(entity, updatedContainers, updatedPackings);
                 if((tempConsolIds == null || tempConsolIds.size() == 0) && (shipmentSettingsDetails.getIsShipmentLevelContainer() == null || !shipmentSettingsDetails.getIsShipmentLevelContainer())) {
                     consolidationDetails = createConsolidation(entity, updatedContainers);
                 }
