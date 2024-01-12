@@ -233,6 +233,9 @@ public class ReportConstants {
     public static final String VOLUME_AND_UNIT_PACKS = "VolumeAndUnitPacks";
     public static final String TOTAL_PACKS = "TotalPacks";
     public static final String TOTAL_PACKS_TYPE = "TotalPacksType";
+    public static final String HAS_PACK_DETAILS = "HasPackDetails";
+    public static final String HAS_DANGEROUS_GOODS = "HasDangerousGoods";
+    public static final String HAS_TEMPERATURE_DETAILS = "HasTemperatureDetails";
     public static final String TOTAL_VOLUME_ = "TotalVolume";
     public static final String TOTAL_WEIGHT_ = "TotalWeight";
     public static final String BL_WEIGHT = "BL_Weight";
