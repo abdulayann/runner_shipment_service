@@ -838,8 +838,7 @@ public class HblReport extends IReport{
         else
             dictionary.put(STATUS, PLANNED);
 
-        if(!Objects.isNull(hblModel.shipment.getPackingList()) && !hblModel.shipment.getPackingList().isEmpty())
-        {
+        if(!Objects.isNull(hblModel.shipment.getPackingList()) && !hblModel.shipment.getPackingList().isEmpty()) {
             var values = hblModel.shipment.getPackingList().stream()
                     .map(i -> jsonHelper.convertJsonToMap(jsonHelper.convertToJson(i)))
                     .toList();
@@ -855,15 +854,29 @@ public class HblReport extends IReport{
                     v.put(VOLUME_AND_UNIT_PACKS, String.format("%s %s", twoDecimalPlacesFormat(v.get(VOLUME).toString()),
                             v.get(VOLUME_UNIT)));
                 }
-                if(v.get(VOLUME_WEIGHT) != null){
+                if (v.get(VOLUME_WEIGHT) != null) {
                     v.put(V_WEIGHT_AND_UNIT_PACKS, String.format("%s %s", twoDecimalPlacesFormat(v.get(VOLUME_WEIGHT).toString()),
                             v.get(WEIGHT_UNIT)));
                 }
-                if(hblModel.shipment.getPickupDetails() != null && hblModel.shipment.getPickupDetails().getActualPickupOrDelivery() != null) {
+                if (hblModel.shipment.getPickupDetails() != null && hblModel.shipment.getPickupDetails().getActualPickupOrDelivery() != null) {
                     v.put(LOADED_DATE, ConvertToDPWDateFormat(hblModel.shipment.getPickupDetails().getActualPickupOrDelivery()));
                 }
             });
+            dictionary.put(HAS_PACK_DETAILS, true);
+            var hazardousCheck = hblModel.shipment.getPackingList().stream().anyMatch(x -> x.getHazardous() == true);
+            var temperatureCheck = hblModel.shipment.getPackingList().stream().anyMatch(x -> x.getIsTemperatureControlled() == true);
+            if (hazardousCheck)
+                dictionary.put(HAS_DANGEROUS_GOODS, true);
+            else
+                dictionary.put(HAS_DANGEROUS_GOODS, false);
+            if (temperatureCheck)
+                dictionary.put(HAS_TEMPERATURE_DETAILS, true);
+            else
+                dictionary.put(HAS_TEMPERATURE_DETAILS, false);
+
             dictionary.put(PACKS_DETAILS, values);
+        } else {
+            dictionary.put(HAS_PACK_DETAILS, false);
         }
 
         dictionary.put(PICKUP_ORDER_CONTACT_PERSON, EMPTY_STRING);
