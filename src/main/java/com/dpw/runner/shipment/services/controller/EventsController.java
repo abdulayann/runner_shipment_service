@@ -86,10 +86,10 @@ public class EventsController {
             @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
     })
     @PostMapping(ApiConstants.SYNC)
-    public ResponseEntity<?> syncEventsToService(@RequestBody @Valid EventsRequestV2 request) {
+    public ResponseEntity<?> syncEventsToService(@RequestBody @Valid EventsRequestV2 request, @RequestParam(required = false, defaultValue = "true") boolean checkForSync) {
         String responseMsg = "failure executing :(";
         try {
-            return eventService.V1EventsCreateAndUpdate(CommonRequestModel.buildRequest(request), true);
+            return eventService.V1EventsCreateAndUpdate(CommonRequestModel.buildRequest(request), checkForSync);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : "Error syncing provided Events";

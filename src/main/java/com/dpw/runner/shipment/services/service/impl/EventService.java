@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
@@ -34,7 +35,6 @@ import com.dpw.runner.shipment.services.syncing.constants.SyncingConstants;
 import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.dpw.runner.shipment.services.utils.V1AuthHelper;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
@@ -56,7 +56,6 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestTemplate;
 
-import javax.json.JsonString;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -332,24 +331,19 @@ public class EventService implements IEventService {
             Events events = modelMapper.map(eventsRequestV2, Events.class);
             if (existingEvent != null && existingEvent.isPresent()) {
                 events.setId(existingEvent.get().getId());
-                events.setEntityId(existingEvent.get().getEntityId());
-                events.setEntityType(existingEvent.get().getEntityType());
-            } else {
-                if (eventsRequestV2.getEntityType() != null
-                        && eventsRequestV2.getEntityType().equals("Shipment")
-                        && eventsRequestV2.getShipmentGuid() != null) {
-                    Optional<ShipmentDetails> shipmentDetails = shipmentDao.findByGuid(eventsRequestV2.getShipmentGuid());
-                    if (shipmentDetails.isPresent()) {
-                        events.setEntityId(shipmentDetails.get().getId());
-                        events.setEntityType(eventsRequestV2.getEntityType());
-                    }
+            }
+            if (eventsRequestV2.getShipmentGuid() != null) {
+                Optional<ShipmentDetails> shipmentDetails = shipmentDao.findByGuid(eventsRequestV2.getShipmentGuid());
+                if (shipmentDetails.isPresent()) {
+                    events.setEntityId(shipmentDetails.get().getId());
+                    events.setEntityType(Constants.SHIPMENT);
                 }
-                if (eventsRequestV2.getConsolidationGuid() != null) {
-                    Optional<ConsolidationDetails> consolidationDetails = consolidationDao.findByGuid(eventsRequestV2.getConsolidationGuid());
-                    if (consolidationDetails.isPresent()) {
-                        events.setEntityId(consolidationDetails.get().getId());
-                        events.setEntityType(eventsRequestV2.getEntityType());
-                    }
+            }
+            if (eventsRequestV2.getConsolidationGuid() != null) {
+                Optional<ConsolidationDetails> consolidationDetails = consolidationDao.findByGuid(eventsRequestV2.getConsolidationGuid());
+                if (consolidationDetails.isPresent()) {
+                    events.setEntityId(consolidationDetails.get().getId());
+                    events.setEntityType(Constants.CONSOLIDATION);
                 }
             }
             events = eventDao.save(events);
