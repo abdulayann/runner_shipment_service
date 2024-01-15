@@ -1,5 +1,7 @@
 package com.dpw.runner.shipment.services.commons.constants;
 
+import java.util.List;
+
 public class Constants {
     public static final String TRANSPORT_MODE = "transportMode";
     public static final int TRANSPORT_MODE_INDEX = 0;
@@ -163,6 +165,9 @@ public class Constants {
     public static final String SHPCMPLT = "SHPCMPLT";
     public static final String CONCRTD = "CONCRTD";
     public static final String SHPCRTD = "SHPCRTD";
+    public static final List<String> ATD_EVENT_CODES = List.of("VESSELDEPARTUREWITHCONTAINER", "VSDPR");
+    public static final List<String> ATA_EVENT_CODES = List.of("VESSELARRIVALWITHCONTAINER", "VSARV");
+
 
     public static final String COMMODITY_TYPE_MASTER_DATA = "CommodityType";
     public static final String WARE_HOUSE_DATA = "WareHouse";

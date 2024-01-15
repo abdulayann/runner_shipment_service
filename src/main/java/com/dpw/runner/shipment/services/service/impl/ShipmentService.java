@@ -189,6 +189,9 @@ public class ShipmentService implements IShipmentService {
     private IConsolidationService consolidationService;
 
     @Autowired
+    private IEventService eventService;
+
+    @Autowired
     private ISBUtils sbUtils;
 
     @Autowired
@@ -1475,7 +1478,8 @@ public class ShipmentService implements IShipmentService {
 //        }
         // TODO- implement Validation logic
 
-      Optional<ShipmentDetails>oldEntity =retrieveByIdOrGuid(request);
+        Optional<ShipmentDetails>oldEntity =retrieveByIdOrGuid(request);
+        ShipmentSettingsDetails shipmentSettingsDetails = getShipmentSettingsDetails();
 
         ShipmentDetails entity = objectMapper.convertValue(request, ShipmentDetails.class);
         entity.setId(oldEntity.get().getId());
@@ -1484,6 +1488,8 @@ public class ShipmentService implements IShipmentService {
         }
         if (entity.getContainersList() == null)
             entity.setContainersList(oldEntity.get().getContainersList());
+        // update Ata/Atd in shipment from events
+        eventService.updateAtaAtdInShipment(entity.getEventsList(), entity, shipmentSettingsDetails);
         entity = shipmentDao.update(entity, false);
         afterSave(entity, false);
         try {
@@ -1562,10 +1568,7 @@ public class ShipmentService implements IShipmentService {
             tempConsolIds = oldEntity.get().getConsolidationList().stream().map(e -> e.getId()).collect(Collectors.toList());
 
         try {
-            List<ShipmentSettingsDetails> shipmentSettingsDetailsList = shipmentSettingsDao.getSettingsByTenantIds(List.of(TenantContext.getCurrentTenant()));
-            ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
-            if(shipmentSettingsDetailsList.size() > 0)
-                shipmentSettingsDetails = shipmentSettingsDetailsList.get(0);
+            ShipmentSettingsDetails shipmentSettingsDetails = getShipmentSettingsDetails();
             ShipmentDetails entity = objectMapper.convertValue(shipmentRequest, ShipmentDetails.class);
             entity.setId(oldEntity.get().getId());
             List<Containers> updatedContainers = new ArrayList<>();
@@ -1666,6 +1669,7 @@ public class ShipmentService implements IShipmentService {
             if (eventsRequestList != null) {
                 List<Events> updatedEvents = eventDao.updateEntityFromOtherEntity(convertToEntityList(eventsRequestList, Events.class), id, Constants.SHIPMENT);
                 entity.setEventsList(updatedEvents);
+                eventService.updateAtaAtdInShipment(updatedEvents, entity, shipmentSettingsDetails);
             }
             // Create events on basis of shipment status Confirmed/Created
             autoGenerateEvents(entity, previousStatus);
@@ -2510,6 +2514,7 @@ public class ShipmentService implements IShipmentService {
             ShipmentDetails entity = oldEntity.get();
             Integer previousStatus = oldEntity.get().getStatus();
             shipmentDetailsMapper.update(shipmentRequest, entity);
+            ShipmentSettingsDetails shipmentSettingsDetails = getShipmentSettingsDetails();
 
             entity.setId(oldEntity.get().getId());
             List<Containers> updatedContainers = null;
@@ -2561,6 +2566,7 @@ public class ShipmentService implements IShipmentService {
             if (eventsRequestList != null) {
                 List<Events> updatedEvents = eventDao.updateEntityFromOtherEntity(convertToEntityList(eventsRequestList, Events.class), id, Constants.SHIPMENT);
                 entity.setEventsList(updatedEvents);
+                eventService.updateAtaAtdInShipment(updatedEvents, entity, shipmentSettingsDetails);
             }
             // Create events on basis of shipment status Confirmed/Created
             autoGenerateEvents(entity, previousStatus);
@@ -3968,6 +3974,15 @@ public class ShipmentService implements IShipmentService {
         }
         ListCommonRequest listCommonRequest = CommonUtils.andCriteria("id", shipmentIdsList, "IN", null);
         return fetchShipments(CommonRequestModel.buildRequest(listCommonRequest));
+    }
+
+    private ShipmentSettingsDetails getShipmentSettingsDetails() {
+        List<ShipmentSettingsDetails> shipmentSettingsDetailsList = shipmentSettingsDao.getSettingsByTenantIds(List.of(TenantContext.getCurrentTenant()));
+        ShipmentSettingsDetails tenantSettings = new ShipmentSettingsDetails();
+        if(shipmentSettingsDetailsList.size() > 0)
+            tenantSettings = shipmentSettingsDetailsList.get(0);
+
+        return tenantSettings;
     }
 
 }
