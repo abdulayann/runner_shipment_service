@@ -1,7 +1,6 @@
 package com.dpw.runner.shipment.services.dto.response;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.entity.MawbStocksLink;
 import lombok.Data;
 
 import java.util.List;
@@ -16,7 +15,7 @@ public class MawbStocksResponse implements IRunnerResponse {
     private String nextMawbNumber;
     private String availableCount;
     private String status;
-    private Long homePort;
+    private String homePort;
     private String airLinePrefix;
     private String prefix;
     private String seqNumber;
