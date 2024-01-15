@@ -159,4 +159,6 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     private String consignorCountry;
     private String consigneeCountry;
     private String notifyPartyCountry;
+    private String salesBranch;
+    private String salesAgentEmail;
 }
