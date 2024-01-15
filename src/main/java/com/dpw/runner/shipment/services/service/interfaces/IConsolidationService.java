@@ -41,6 +41,7 @@ public interface IConsolidationService extends ICommonService{
     void afterSave(ConsolidationDetails consolidationDetails, boolean isCreate);
 
     void generateConsolidationNumber(ConsolidationDetails consolidationDetails);
+    void autoGenerateEvents(ConsolidationDetails consolidationDetails);
 
     ResponseEntity<?> getConsolFromShipment(Long shipmentId);
 

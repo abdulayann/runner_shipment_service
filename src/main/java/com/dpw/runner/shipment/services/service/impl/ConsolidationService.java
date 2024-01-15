@@ -3271,7 +3271,7 @@ public class ConsolidationService implements IConsolidationService {
 
     // Create Auto event
 
-    private void autoGenerateEvents(ConsolidationDetails consolidationDetails) {
+    public void autoGenerateEvents(ConsolidationDetails consolidationDetails) {
         Events response = null;
         response = createAutomatedEvents(consolidationDetails, Constants.CONCRTD);
 
