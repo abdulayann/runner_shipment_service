@@ -409,4 +409,10 @@ public class ShipmentDetails extends MultiTenancy {
     @MasterData(type = MasterDataType.COUNTRIES)
     @Column(name = "notify_party_country")
     private String notifyPartyCountry;
+
+    @Column(name = "sales_agent_email")
+    private String salesAgentEmail;
+
+    @Column(name = "sales_branch")
+    private String salesBranch;
 }
