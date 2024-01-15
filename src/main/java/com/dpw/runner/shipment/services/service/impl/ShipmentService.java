@@ -1120,6 +1120,8 @@ public class ShipmentService implements IShipmentService {
                 consignorCountry(customerBookingRequest.getConsignorCountry()).
                 consigneeCountry(customerBookingRequest.getConsigneeCountry()).
                 notifyPartyCountry(customerBookingRequest.getNotifyPartyCountry()).
+                salesBranch(customerBookingRequest.getSalesBranch()).
+                salesAgentEmail(customerBookingRequest.getSalesAgentEmail()).
                 containersList(consolidationDetails != null && consolidationDetails.size() > 0 ? containerList : null).
                 packingList(customerBookingRequest.getPackingList()).
                 fileRepoList(customerBookingRequest.getFileRepoList()).
