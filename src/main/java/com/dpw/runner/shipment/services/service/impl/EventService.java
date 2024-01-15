@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
@@ -14,7 +15,9 @@ import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.request.EventsRequest;
 import com.dpw.runner.shipment.services.dto.request.TrackingRequest;
 import com.dpw.runner.shipment.services.dto.response.EventsResponse;
+import com.dpw.runner.shipment.services.dto.response.TrackingEventsResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
+import com.dpw.runner.shipment.services.entity.CarrierDetails;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.Events;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
@@ -32,10 +35,11 @@ import com.dpw.runner.shipment.services.syncing.constants.SyncingConstants;
 import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.dpw.runner.shipment.services.utils.V1AuthHelper;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.poi.sl.draw.geom.GuideIf;
+import org.junit.runner.Runner;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -54,7 +58,6 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestTemplate;
 
-import javax.json.JsonString;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -330,24 +333,19 @@ public class EventService implements IEventService {
             Events events = modelMapper.map(eventsRequestV2, Events.class);
             if (existingEvent != null && existingEvent.isPresent()) {
                 events.setId(existingEvent.get().getId());
-                events.setEntityId(existingEvent.get().getEntityId());
-                events.setEntityType(existingEvent.get().getEntityType());
-            } else {
-                if (eventsRequestV2.getEntityType() != null
-                        && eventsRequestV2.getEntityType().equals("Shipment")
-                        && eventsRequestV2.getShipmentGuid() != null) {
-                    Optional<ShipmentDetails> shipmentDetails = shipmentDao.findByGuid(eventsRequestV2.getShipmentGuid());
-                    if (shipmentDetails.isPresent()) {
-                        events.setEntityId(shipmentDetails.get().getId());
-                        events.setEntityType(eventsRequestV2.getEntityType());
-                    }
+            }
+            if (eventsRequestV2.getShipmentGuid() != null) {
+                Optional<ShipmentDetails> shipmentDetails = shipmentDao.findByGuid(eventsRequestV2.getShipmentGuid());
+                if (shipmentDetails.isPresent()) {
+                    events.setEntityId(shipmentDetails.get().getId());
+                    events.setEntityType(Constants.SHIPMENT);
                 }
-                if (eventsRequestV2.getConsolidationGuid() != null) {
-                    Optional<ConsolidationDetails> consolidationDetails = consolidationDao.findByGuid(eventsRequestV2.getConsolidationGuid());
-                    if (consolidationDetails.isPresent()) {
-                        events.setEntityId(consolidationDetails.get().getId());
-                        events.setEntityType(eventsRequestV2.getEntityType());
-                    }
+            }
+            if (eventsRequestV2.getConsolidationGuid() != null) {
+                Optional<ConsolidationDetails> consolidationDetails = consolidationDao.findByGuid(eventsRequestV2.getConsolidationGuid());
+                if (consolidationDetails.isPresent()) {
+                    events.setEntityId(consolidationDetails.get().getId());
+                    events.setEntityType(Constants.CONSOLIDATION);
                 }
             }
             events = eventDao.save(events);
@@ -362,24 +360,40 @@ public class EventService implements IEventService {
         }
     }
 
-  public ResponseEntity<?> trackEvents(Long id) {
-    Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(id);
-    if (shipmentDetails.isEmpty()) {
-      log.debug(
-          "No Shipment present for the current Event",
-              id,
-          LoggerHelper.getRequestIdFromMDC());
-      throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+  public ResponseEntity<?> trackEvents(Optional<Long> shipmentId, Optional<Long> consolidationId) {
+    Optional<ShipmentDetails> optionalShipmentDetails = Optional.empty();
+    Optional<ConsolidationDetails> optionalConsolidationDetails = Optional.empty();
+    String referenceNumber = null;
+    if(shipmentId.isPresent()) {
+        optionalShipmentDetails = shipmentDao.findById(shipmentId.get());
+        if (optionalShipmentDetails.isEmpty()) {
+            log.debug(
+                    "No Shipment present for the current Event ",
+                    LoggerHelper.getRequestIdFromMDC());
+            throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+        }
+        referenceNumber = optionalShipmentDetails.get().getShipmentId();
     }
-    String shipmentId = shipmentDetails.get().getShipmentId();
-    TrackingRequest trackingRequest = TrackingRequest.builder().referenceNumber(shipmentId).build();
+    else if(consolidationId.isPresent()) {
+        optionalConsolidationDetails = consolidationDao.findById(consolidationId.get());
+        if (optionalConsolidationDetails.isEmpty()) {
+            log.debug(
+                    "No Consolidation present for the current Event",
+                    LoggerHelper.getRequestIdFromMDC());
+            throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+        }
+        referenceNumber = optionalConsolidationDetails.get().getReferenceNumber();
+    } else {
+        throw new RunnerException("Both shipmentId and consolidationId are empty !");
+    }
+
+    TrackingRequest trackingRequest = TrackingRequest.builder().referenceNumber(referenceNumber).build();
+    TrackingEventsResponse trackingEventsResponse = null;
 
     HttpEntity<V1DataResponse> entity = new HttpEntity(trackingRequest, V1AuthHelper.getHeaders());
-    V1DataResponse response = new V1DataResponse();
     try {
-      var v1response =
-          this.restTemplate.postForEntity(TRACK_EVENT_DETAILS_URL, entity, V1DataResponse.class);
-      response = v1response.getBody();
+      var v1Response = this.restTemplate.postForEntity(TRACK_EVENT_DETAILS_URL, entity, TrackingEventsResponse.class);
+      trackingEventsResponse = v1Response.getBody();
     } catch (HttpClientErrorException | HttpServerErrorException ex) {
       throw new V1ServiceException(
           jsonHelper
@@ -388,13 +402,28 @@ public class EventService implements IEventService {
               .getMessage());
     }
     List<EventsResponse> res = new ArrayList<>();
-    if (response != null && response.getEntities() != null) {
-      List<EventsRequestV2> responseEvents =
-          jsonHelper.convertValue(response.getEntities(), new TypeReference<>() {});
-      for (var i : responseEvents) {
-        EventsResponse eventsResponse = modelMapper.map(i, EventsResponse.class);
-        eventsResponse.setShipmentId(id);
-        res.add(eventsResponse);
+    if (trackingEventsResponse != null) {
+      if (trackingEventsResponse.getEvents() != null){
+          for (var i : trackingEventsResponse.getEvents()) {
+              EventsResponse eventsResponse = modelMapper.map(i, EventsResponse.class);
+              shipmentId.ifPresent(eventsResponse::setShipmentId);
+              res.add(eventsResponse);
+          }
+      }
+
+      if(optionalShipmentDetails.isPresent()) {
+          ShipmentDetails shipment = optionalShipmentDetails.get();
+          CarrierDetails carrierDetails =
+                  shipment.getCarrierDetails() != null
+                          ? shipment.getCarrierDetails()
+                          : new CarrierDetails();
+
+          if(trackingEventsResponse.getShipmentAta() != null)
+              carrierDetails.setAta(trackingEventsResponse.getShipmentAta());
+          if(trackingEventsResponse.getShipmentAtd() != null)
+              carrierDetails.setAtd(trackingEventsResponse.getShipmentAtd());
+
+          shipmentDao.save(shipment, false);
       }
     }
 
