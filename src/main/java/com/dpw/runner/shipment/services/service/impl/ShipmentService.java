@@ -784,6 +784,9 @@ public class ShipmentService implements IShipmentService {
             }
             afterSave(shipmentDetails, true);
             updateLinkedShipmentData(shipmentDetails, null);
+            // create Shipment event on the bases of auto create event flag
+            if(shipmentSettingsDetails.getAutoEventCreate() != null && shipmentSettingsDetails.getAutoEventCreate())
+                autoGenerateCreateEvent(shipmentDetails);
             // Create events on basis of shipment status Confirmed/Created
             autoGenerateEvents(shipmentDetails, null);
             try {
@@ -1886,6 +1889,9 @@ public class ShipmentService implements IShipmentService {
             }
             consolidationDetails.setContainersList(containers);
             attachConsolidations(shipmentDetails.getId(), List.of(id));
+            if(shipmentSettings.getAutoEventCreate() != null && shipmentSettings.getAutoEventCreate()) {
+                consolidationService.autoGenerateEvents(consolidationDetails);
+            }
             consolidationService.afterSave(consolidationDetails, true);
             return consolidationDetails;
         }
@@ -3916,6 +3922,17 @@ public class ShipmentService implements IShipmentService {
                     shipmentDetails.setEventsList(new ArrayList<>());
                 shipmentDetails.getEventsList().add(response);
             }
+        }
+    }
+
+    private void autoGenerateCreateEvent(ShipmentDetails shipmentDetails) {
+        Events response = null;
+        response = createAutomatedEvents(shipmentDetails, Constants.SHPCRTD);
+
+        if(response != null) {
+            if (shipmentDetails.getEventsList() == null)
+                shipmentDetails.setEventsList(new ArrayList<>());
+            shipmentDetails.getEventsList().add(response);
         }
     }
 
