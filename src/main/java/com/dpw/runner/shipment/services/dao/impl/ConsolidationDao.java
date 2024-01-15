@@ -118,7 +118,7 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
                 && (oldConsole == null || oldConsole.getMawb() == null || !oldConsole.getMawb().equalsIgnoreCase(consolidationDetails.getMawb())))
             consolidationMAWBCheck(consolidationDetails);
         consolidationDetails = consolidationRepository.save(consolidationDetails);
-        if(!fromV1Sync && consolidationDetails.getMawb() != null && consolidationDetails.getShipmentType().equals(Constants.IMP)) {
+        if(!fromV1Sync && StringUtility.isNotEmpty(consolidationDetails.getMawb()) && StringUtility.isNotEmpty(consolidationDetails.getShipmentType()) && !consolidationDetails.getShipmentType().equalsIgnoreCase(Constants.IMP)) {
             setMawbStock(consolidationDetails);
         }
     }
@@ -268,7 +268,7 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
         List<MawbStocksLink> mawbStocksLinks = mawbStocksLinkDao.findByMawbNumber(consolidationDetails.getMawb());
         if(mawbStocksLinks != null && mawbStocksLinks.size() > 0) {
             MawbStocksLink res = mawbStocksLinks.get(0);
-            if(res.getStatus() != "Consumed") {
+            if(!res.getStatus().equalsIgnoreCase("Consumed")) {
                 res.setEntityId(consolidationDetails.getId());
                 res.setEntityType(Constants.CONSOLIDATION);
                 res.setStatus("Consumed");
@@ -282,7 +282,7 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
         Optional<MawbStocks> mawbStocks = mawbStocksDao.findById(parentId);
         if(!mawbStocks.isEmpty()) {
             MawbStocks res = mawbStocks.get();
-            res.setAvailableCount(String.valueOf(Integer.parseInt(res.getAvailableCount() == null ? res.getAvailableCount() : "0") - 1));
+            res.setAvailableCount(String.valueOf(Integer.parseInt(res.getAvailableCount() != null ? res.getAvailableCount() : "0") - 1));
             res.setNextMawbNumber(assignNextMawbNumber(parentId));
             mawbStocksDao.save(res);
         }
