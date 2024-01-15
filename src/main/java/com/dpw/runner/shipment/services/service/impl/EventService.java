@@ -366,12 +366,12 @@ public class EventService implements IEventService {
         }
     }
 
-  public ResponseEntity<?> trackEvents(Long shipmentId, Long consolidationId) {
+  public ResponseEntity<?> trackEvents(Optional<Long> shipmentId, Optional<Long> consolidationId) {
     Optional<ShipmentDetails> optionalShipmentDetails = Optional.empty();
     Optional<ConsolidationDetails> optionalConsolidationDetails = Optional.empty();
     String referenceNumber = null;
-    if(shipmentId != null) {
-        optionalShipmentDetails = shipmentDao.findById(shipmentId);
+    if(shipmentId.isPresent()) {
+        optionalShipmentDetails = shipmentDao.findById(shipmentId.get());
         if (optionalShipmentDetails.isEmpty()) {
             log.debug(
                     "No Shipment present for the current Event ",
@@ -380,8 +380,8 @@ public class EventService implements IEventService {
         }
         referenceNumber = optionalShipmentDetails.get().getShipmentId();
     }
-    else if(consolidationId != null) {
-        optionalConsolidationDetails = consolidationDao.findById(consolidationId);
+    else if(consolidationId.isPresent()) {
+        optionalConsolidationDetails = consolidationDao.findById(consolidationId.get());
         if (optionalConsolidationDetails.isEmpty()) {
             log.debug(
                     "No Consolidation present for the current Event",
@@ -412,7 +412,7 @@ public class EventService implements IEventService {
       if (trackingEventsResponse.getEvents() != null){
           for (var i : trackingEventsResponse.getEvents()) {
               EventsResponse eventsResponse = modelMapper.map(i, EventsResponse.class);
-              eventsResponse.setShipmentId(shipmentId);
+              shipmentId.ifPresent(eventsResponse::setShipmentId);
               res.add(eventsResponse);
           }
       }
