@@ -78,6 +78,7 @@ import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.stringValueOf;
 
 @SuppressWarnings("ALL")
 @Service
@@ -155,6 +156,7 @@ public class AwbService implements IAwbService {
     private String AWB_V1_SYNC_URL;
 
     private String iataCode;
+    private String executedAt;
 
     public ResponseEntity<?> createAwb(CommonRequestModel commonRequestModel) {
         String responseMsg;
@@ -728,6 +730,8 @@ public class AwbService implements IAwbService {
                 awbShipmentInfo.setAgentCASSCode(StringUtility.isEmpty(awbShipmentInfo.getAgentCASSCode())
                         ? StringUtility.convertToString(orgRow.getOrgData().get(PartiesConstants.AGENT_IATA_CODE))
                         : awbShipmentInfo.getAgentCASSCode());
+
+                executedAt = orgRow.getOrgData() != null ? stringValueOf(orgRow.getOrgData().get(CITY)) : null;
             }
         }
 
@@ -889,6 +893,8 @@ public class AwbService implements IAwbService {
         var shipperName = StringUtility.convertToString(consolidationDetails.getSendingAgent() != null && consolidationDetails.getReceivingAgent().getOrgData() != null ? consolidationDetails.getSendingAgent().getOrgData().get(PartiesConstants.FULLNAME) : "");
         awbOtherInfo.setShipper(shipperName == null ? null : shipperName.toUpperCase());
         awbOtherInfo.setExecutedOn(jsonHelper.convertValue(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss").format(LocalDateTime.now()), LocalDateTime.class));
+        awbOtherInfo.setExecutedAt(executedAt);
+        getAwbOtherInfoMasterData(awbOtherInfo, request.getAwbType());
         return awbOtherInfo;
     }
 
@@ -1018,6 +1024,7 @@ public class AwbService implements IAwbService {
                         : awbShipmentInfo.getAgentCASSCode());
                 // awbOtherInfoRow.setExecutedAt(getCityId(orgRow.OrgId)); // fetch from master data
                 // awbCargoInfo.CustomOriginCode(getCountryCode(orgRow.OrgCountry)); // fetch from master data
+                executedAt = orgRow.getOrgData() != null ? stringValueOf(orgRow.getOrgData().get(CITY)) : null;
             }
         }
 
@@ -1154,6 +1161,8 @@ public class AwbService implements IAwbService {
         var shipperName = StringUtility.convertToString(shipmentDetails.getConsigner() != null ? shipmentDetails.getConsigner().getOrgData().get(PartiesConstants.FULLNAME) : "");
         awbOtherInfo.setShipper(shipperName == null ? null : shipperName.toUpperCase());
         awbOtherInfo.setExecutedOn(jsonHelper.convertValue(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss").format(LocalDateTime.now()), LocalDateTime.class));
+        awbOtherInfo.setExecutedAt(executedAt);
+        getAwbOtherInfoMasterData(awbOtherInfo, request.getAwbType());
         return awbOtherInfo;
     }
 
@@ -2756,6 +2765,27 @@ public class AwbService implements IAwbService {
 
         awbShipmentInfo.setOriginAirport(locMap.get(carrierDetails.getOriginPort()));
         awbShipmentInfo.setDestinationAirport(locMap.get(carrierDetails.getDestinationPort()));
+    }
+
+    private void getAwbOtherInfoMasterData(AwbOtherInfo awbOtherInfo, String awbType) {
+        MasterDataType masterDataType;
+        if(awbType.equalsIgnoreCase("HAWB")) {
+            masterDataType = MasterDataType.HAWB_CARRIER_AGENT;
+        } else {
+            masterDataType = MasterDataType.MAWB_CARRIER_AGENT;
+        }
+        List<Object> criteria = Arrays.asList(
+                List.of("ItemType"),
+                "=",
+                masterDataType.getId()
+        );
+        CommonV1ListRequest listRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(criteria).build();
+        V1DataResponse v1DataResponse = v1Service.fetchMasterData(listRequest);
+        List<EntityTransferMasterLists> entityTransferMasterList = jsonHelper.convertValueToList(v1DataResponse.entities, EntityTransferMasterLists.class);
+        if(entityTransferMasterList != null && entityTransferMasterList.size() > 0) {
+            awbOtherInfo.setCarrier(entityTransferMasterList.get(0).getItemValue());
+        }
+
     }
 
 }
