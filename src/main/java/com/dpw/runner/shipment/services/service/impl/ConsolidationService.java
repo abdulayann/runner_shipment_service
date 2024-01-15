@@ -23,8 +23,10 @@ import com.dpw.runner.shipment.services.dto.patchRequest.CarrierPatchRequest;
 import com.dpw.runner.shipment.services.dto.patchRequest.ConsolidationPatchRequest;
 import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.response.*;
+import com.dpw.runner.shipment.services.dto.v1.request.ConsoleBookingIdFilterRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.ConsoleBookingListRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.ConsoleBookingListResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.GuidsListResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
@@ -1856,6 +1858,7 @@ public class ConsolidationService implements IConsolidationService {
             if (request == null) {
                 log.error("Request is empty for Consolidation list with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
+            checkBookingIdCriteria(request);
             Pair<Specification<ConsolidationDetails>, Pageable> tuple = fetchData(request, ConsolidationDetails.class, tableNames);
             Page<ConsolidationDetails> consolidationDetailsPage = consolidationDetailsDao.findAll(tuple.getLeft(), tuple.getRight());
             List<IRunnerResponse> consoleResponse = convertEntityListToDtoList(consolidationDetailsPage.getContent());
@@ -1871,6 +1874,33 @@ public class ConsolidationService implements IConsolidationService {
             return ResponseHelper.buildFailedResponse(responseMsg);
         }
 
+    }
+
+    private void checkBookingIdCriteria(ListCommonRequest request)
+    {
+        if(request != null && request.getFilterCriteria() != null && request.getFilterCriteria().size() > 0)
+        {
+            checkForBookingIdFilter(request.getFilterCriteria());
+        }
+    }
+
+    private void checkForBookingIdFilter(List<FilterCriteria> filterCriteriaList) {
+        for(FilterCriteria filterCriteria: filterCriteriaList)
+        {
+            if(filterCriteria.getCriteria() != null && filterCriteria.getCriteria().getFieldName() != null &&
+                    filterCriteria.getCriteria().getFieldName().equals("bookingId") && filterCriteria.getCriteria().getValue() != null) {
+
+                ConsoleBookingIdFilterRequest consoleBookingIdFilterRequest = new ConsoleBookingIdFilterRequest();
+                consoleBookingIdFilterRequest.setIntraBookingId(filterCriteria.getCriteria().getValue().toString());
+                GuidsListResponse guidsListResponse = v1Service.fetchBookingIdFilterGuids(consoleBookingIdFilterRequest);
+                filterCriteria.getCriteria().setFieldName("guid");
+                filterCriteria.getCriteria().setOperator("IN");
+                filterCriteria.getCriteria().setValue(guidsListResponse.getGuidsList());
+            }
+            if(filterCriteria.getInnerFilter() != null && filterCriteria.getInnerFilter().size() > 0) {
+                checkForBookingIdFilter(filterCriteria.getInnerFilter());
+            }
+        }
     }
 
     @Override
