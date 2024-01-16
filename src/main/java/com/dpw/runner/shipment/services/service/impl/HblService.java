@@ -243,7 +243,11 @@ public class HblService implements IHblService {
             else {
                 List<ShipmentSettingsDetails> shipmentSettingsDetails = shipmentSettingsDao.getSettingsByTenantIds(List.of(TenantContext.getCurrentTenant()));
                 if(shipmentSettingsDetails.size() > 0 && (shipmentSettingsDetails.get(0).getRestrictHblGen() == null || !shipmentSettingsDetails.get(0).getRestrictHblGen())) {
-                    hbl = getHblFromShipmentId(shipmentId);
+                    try {
+                        hbl = getHblFromShipmentId(shipmentId);
+                    } catch (Exception ex) {
+                        log.error("HBL generation from Containers addition failed: " + ex.getMessage());
+                    }
                 }
             }
         }
@@ -254,6 +258,7 @@ public class HblService implements IHblService {
         Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(shipmentId);
         if (shipmentDetails.isEmpty())
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+        this. validateBeforeGeneration(shipmentDetails.get());
 
         List<Hbl> hbls = hblDao.findByShipmentId(shipmentId);
         if (! hbls.isEmpty())
@@ -264,13 +269,29 @@ public class HblService implements IHblService {
         hbl = hblDao.save(hbl);
         return hbl;
     }
+    private void validateBeforeGeneration(ShipmentDetails shipmentDetails){
+        if(!Objects.isNull(shipmentDetails.getContainersList())) {
+            List<Containers> containers = shipmentDetails.getContainersList().stream().filter(c -> StringUtility.isEmpty(c.getContainerNumber())).toList();
+            if (!containers.isEmpty())
+                throw new ValidationException("Please assign container number to all the containers before generating the HBL.");
+        }
+        if(!shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_SEA)
+                || !shipmentDetails.getDirection().equals(Constants.DIRECTION_EXP)
+                || (!shipmentDetails.getShipmentType().equals(Constants.CARGO_TYPE_FCL) && !shipmentDetails.getShipmentType().equals(Constants.SHIPMENT_TYPE_LCL))
+                || (shipmentDetails.getShipmentType().equals(Constants.SHIPMENT_TYPE_LCL) && shipmentDetails.getJobType().equals(Constants.JOB_TYPE_CLB))){
+            return;
+        }
+        if(!Objects.isNull(shipmentDetails.getPackingList())) {
+            var packsList = shipmentDetails.getPackingList().stream().filter(x -> Objects.isNull(x.getContainerId())).toList();
+            if(!packsList.isEmpty()){
+                throw new ValidationException("Container Number is Mandatory for HBL Generation, please assign the container number for all the packages in the shipment.");
+            }
+        }
+    }
 
     @Override
     public ResponseEntity<?> generateHBL(CommonRequestModel commonRequestModel) {
         HblGenerateRequest request = (HblGenerateRequest) commonRequestModel.getData();
-        List<Containers> containers = containerDao.findByShipmentId(request.getShipmentId()).stream().filter(c -> StringUtility.isEmpty(c.getContainerNumber())).toList();
-        if (!containers.isEmpty())
-            throw new ValidationException("Please assign container number to all the containers before generating the HBL.");
         Hbl hbl = getHblFromShipmentId(request.getShipmentId());
 
         try {

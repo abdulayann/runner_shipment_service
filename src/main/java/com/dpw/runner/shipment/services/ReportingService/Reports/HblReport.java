@@ -867,8 +867,8 @@ public class HblReport extends IReport{
                 }
             });
             dictionary.put(HAS_PACK_DETAILS, true);
-            var hazardousCheck = hblModel.shipment.getPackingList().stream().anyMatch(x -> x.getHazardous() == true);
-            var temperatureCheck = hblModel.shipment.getPackingList().stream().anyMatch(x -> x.getIsTemperatureControlled() == true);
+            var hazardousCheck = hblModel.shipment.getPackingList().stream().anyMatch(x -> !Objects.isNull(x.getHazardous()) && x.getHazardous());
+            var temperatureCheck = hblModel.shipment.getPackingList().stream().anyMatch(x -> !Objects.isNull(x.getIsTemperatureControlled()) && x.getIsTemperatureControlled());
             if (hazardousCheck)
                 dictionary.put(HAS_DANGEROUS_GOODS, true);
             else
