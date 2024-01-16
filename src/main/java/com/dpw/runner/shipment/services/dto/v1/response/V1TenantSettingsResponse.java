@@ -24,4 +24,5 @@ public class V1TenantSettingsResponse {
     private Boolean ShipmentServiceV2Enabled;
     private Boolean UseV2ScreenForBillCharges;
     private Boolean P100Branch;
+    private String DPWDateFormat;
 }
