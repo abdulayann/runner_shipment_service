@@ -213,6 +213,7 @@ public abstract class IReport {
         dictionary.put(ReportConstants.PLACE_OF_DELIVERY, destination != null ? destination.getName() : null);
         dictionary.put(ReportConstants.REFERENCE_NUMBER,shipment.getBookingReference());
         dictionary.put(ReportConstants.ORIGIN_NAME, origin != null ? origin.getName() : null);
+        dictionary.put(ReportConstants.ORIGIN, origin != null ? origin.getName() : null);
         dictionary.put(ReportConstants.ORIGIN_COUNTRY, origin != null ? origin.getCountry() : null);
         dictionary.put(ReportConstants.DESCRIPTION,shipment.getGoodsDescription());
         dictionary.put(ReportConstants.SHIPMENT_TYPE,shipment.getDirection());
@@ -282,6 +283,7 @@ public abstract class IReport {
         dictionary.put(ReportConstants.SHIPMENT_BOOKING_NUMBER, shipment.getBookingNumber());
 
         dictionary.put(ReportConstants.DESTINATION_NAME_, destination != null ? destination.getName() : null);
+        dictionary.put(ReportConstants.DESTINATION, destination != null ? destination.getName() : null);
         dictionary.put(ReportConstants.DESTINATION_COUNTRY, destination != null ? destination.getCountry() : null);
 
         if (Objects.equals(shipment.getPaymentTerms(), "PPD")) {
