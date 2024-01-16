@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.Pa
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.Hbl;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferDGSubstance;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
@@ -349,6 +350,21 @@ public class ReportHelper {
         if (amount == null) return null;
         DecimalFormat decimalFormat = new DecimalFormat("#,###");
         return decimalFormat.format(amount);
+    }
+
+    public static EntityTransferDGSubstance fetchDgSubstanceRow(Integer dgSubstanceId) {
+        var dgSubstanceRow = new EntityTransferDGSubstance();
+        if(dgSubstanceId == null)
+            return dgSubstanceRow;
+        List<Object> criteria = Arrays.asList(List.of("Id"), "=", dgSubstanceId);
+        CommonV1ListRequest listRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(criteria).build();
+        V1DataResponse v1DataResponse = v1Service.fetchDangerousGoodData(listRequest);
+
+        if(v1DataResponse.entities != null) {
+            dgSubstanceRow = jsonHelper.convertValueToList(v1DataResponse.entities, EntityTransferDGSubstance.class).get(0);
+        }
+
+        return dgSubstanceRow;
     }
 
 }

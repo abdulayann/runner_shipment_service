@@ -479,6 +479,8 @@ public abstract class IReport {
                     pickup.getTransporterDetail().getOrgData().get("FullName") : "");
         }
         dictionary.put(ReportConstants.NO_OF_PACKAGES, shipment.getNoOfPacks());
+
+        populateHasContainerFields(shipment, dictionary);
     }
 
     public ShipmentModel getShipment(Long Id)
@@ -783,6 +785,7 @@ public abstract class IReport {
         dictionary.put(ReportConstants.USER_FULLNAME, user.DisplayName);
         dictionary.put(ReportConstants.TENANT_NAME, user.TenantDisplayName);
         dictionary.put(ReportConstants.USER_NAME, user.Username);
+        dictionary.put(PRINT_USER, user.Username.toUpperCase());
         dictionary.put(ReportConstants.USER_EMAIL, user.Email);
         dictionary.put(ReportConstants.TENANT_CURRENCY, user.CompanyCurrency);
     }
@@ -1333,5 +1336,93 @@ public abstract class IReport {
             });
         }
         return keyMasterDataMap;
+    }
+
+    public void populateHasContainerFields(ShipmentModel shipmentModel, Map<String, Object> dictionary) {
+        if (shipmentModel.getContainersList() != null && shipmentModel.getContainersList().size() > 0) {
+            dictionary.put(ReportConstants.SHIPMENT_PACKING_HAS_CONTAINERS, true);
+            dictionary.put(ReportConstants.SHIPMENT_CONTAINERS, shipmentModel.getContainersList());
+        }
+        else {
+            dictionary.put(ReportConstants.SHIPMENT_PACKING_HAS_CONTAINERS, false);
+        }
+    }
+
+    // Populates packing details fields in the source dictionary
+    // can return List<Map<String, Object>> packing Dictionary, keeping it void for now
+    public void getPackingDetails(ShipmentModel shipment, Map<String, Object> dictionary) {
+        if(shipment.getPackingList() == null || shipment.getPackingList().size() == 0) {
+            dictionary.put(HAS_PACK_DETAILS, false);
+            return;
+        }
+
+        List<Map<String, Object>> packsDictionary = (List<Map<String, Object>>) new HashMap<>();
+
+        for(var pack : shipment.getPackingList()) {
+            Map<String, Object> dict = new HashMap<>();
+            if(pack.getCommodity() != null)
+                dict.put(COMMODITY_DESC, pack.getCommodity());
+            if(pack.getWeight() != null){
+                dict.put(WEIGHT_AND_UNIT_PACKS, String.format("%s %s", twoDecimalPlacesFormat(pack.getWeight().toString()),
+                        pack.getWeightUnit()));
+            }
+            if(pack.getVolume() != null){
+                dict.put(VOLUME_AND_UNIT_PACKS, String.format("%s %s", twoDecimalPlacesFormat(pack.getVolume().toString()),
+                        pack.getVolumeUnit()));
+            }
+            if (pack.getVolumeWeight() != null) {
+                dict.put(V_WEIGHT_AND_UNIT_PACKS, String.format("%s %s", twoDecimalPlacesFormat(pack.getVolumeWeight().toString()),
+                        pack.getVolumeWeightUnit()));
+            }
+            if (shipment.getPickupDetails() != null && shipment.getPickupDetails().getActualPickupOrDelivery() != null) {
+                dict.put(LOADED_DATE, ConvertToDPWDateFormat(shipment.getPickupDetails().getActualPickupOrDelivery()));
+            }
+            if(pack.getCommodityGroup() != null) {
+                MasterData commodity = getMasterListData(MasterDataType.COMMODITY_GROUP, pack.getCommodityGroup());
+                if(!Objects.isNull(commodity))
+                    dict.put(PACKS_COMMODITY_GROUP, commodity.getItemDescription());
+            }
+
+            dict.put(SHIPMENT_PACKING_LENGTH, pack.getLength());
+            dict.put(SHIPMENT_PACKING_LENGTH_UNIT, pack.getLengthUnit());
+            dict.put(SHIPMENT_PACKING_WIDTH, pack.getWidth());
+            dict.put(SHIPMENT_PACKING_WIDTH_UNIT, pack.getWidthUnit());
+            dict.put(SHIPMENT_PACKING_HEIGHT, pack.getHeight());
+            dict.put(SHIPMENT_PACKING_HEIGHT_UNIT, pack.getHeightUnit());
+            dict.put(CHARGEABLE, pack.getChargeable());
+            dict.put(ChargeableUnit, pack.getChargeableUnit());
+
+            if(pack.getHazardous() != null && pack.getHazardous().equals(true)){
+                var dgSubstanceRow = ReportHelper.fetchDgSubstanceRow(pack.getDGSubstanceId());
+                dict.put(DG_SUBSTANCE, dgSubstanceRow.ProperShippingName);
+                dict.put(DG_CLASS, pack.getDGClass());
+                dict.put(CLASS_DIVISION, dgSubstanceRow.ClassDivision);
+                dict.put(UNID_NO, pack.getUNDGContact());
+                dict.put(DANGEROUS_GOODS, "HAZARDOUS");
+            } else {
+                dict.put(DG_SUBSTANCE, "");
+                dict.put(DG_CLASS, "");
+                dict.put(CLASS_DIVISION, "");
+                dict.put(UNID_NO, "");
+                dict.put(DANGEROUS_GOODS, "General");
+            }
+
+            if(pack.getIsTemperatureControlled() != null && pack.getIsTemperatureControlled().equals(true)) {
+                dict.put(MIN_TEMP, pack.getMinTemp());
+                dict.put(MAX_TEMP, pack.getMaxTemp());
+                dict.put(MIN_TEMP_UNIT, pack.getMinTempUnit());
+                dict.put(MAX_TEMP_UNIT, pack.getMaxTempUnit());
+            } else {
+                dict.put(MIN_TEMP, "");
+                dict.put(MAX_TEMP, "");
+                dict.put(MIN_TEMP_UNIT, "");
+                dict.put(MAX_TEMP_UNIT, "");
+            }
+            packsDictionary.add(dict);
+        }
+
+        dictionary.put(HAS_PACK_DETAILS, true);
+        dictionary.put(PACKS_DETAILS, packsDictionary);
+
     }
 }

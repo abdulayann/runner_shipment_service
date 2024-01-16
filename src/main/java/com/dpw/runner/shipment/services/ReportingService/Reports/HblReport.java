@@ -839,34 +839,7 @@ public class HblReport extends IReport{
             dictionary.put(STATUS, PLANNED);
 
         if(!Objects.isNull(hblModel.shipment.getPackingList()) && !hblModel.shipment.getPackingList().isEmpty()) {
-            var values = hblModel.shipment.getPackingList().stream()
-                    .map(i -> jsonHelper.convertJsonToMap(jsonHelper.convertToJson(i)))
-                    .toList();
-            values.forEach(v -> {
-                JsonDateFormat(v);
-                if(v.containsKey(COMMODITY_NAME))
-                    v.put(COMMODITY_DESC, v.get(COMMODITY_NAME).toString());
-                if(v.get(WEIGHT) != null){
-                    v.put(WEIGHT_AND_UNIT_PACKS, String.format("%s %s", twoDecimalPlacesFormat(v.get(WEIGHT).toString()),
-                            v.get(WEIGHT_UNIT)));
-                }
-                if(v.get(VOLUME) != null){
-                    v.put(VOLUME_AND_UNIT_PACKS, String.format("%s %s", twoDecimalPlacesFormat(v.get(VOLUME).toString()),
-                            v.get(VOLUME_UNIT)));
-                }
-                if (v.get(VOLUME_WEIGHT) != null) {
-                    v.put(V_WEIGHT_AND_UNIT_PACKS, String.format("%s %s", twoDecimalPlacesFormat(v.get(VOLUME_WEIGHT).toString()),
-                            v.get(WEIGHT_UNIT)));
-                }
-                if (hblModel.shipment.getPickupDetails() != null && hblModel.shipment.getPickupDetails().getActualPickupOrDelivery() != null) {
-                    v.put(LOADED_DATE, ConvertToDPWDateFormat(hblModel.shipment.getPickupDetails().getActualPickupOrDelivery(), tsDateTimeFormat));
-                }
-                if(v.containsKey(COMMODITY_GROUP) && !Objects.isNull(v.get(COMMODITY_GROUP))) {
-                    MasterData commodity = getMasterListData(MasterDataType.COMMODITY_GROUP, v.get(COMMODITY_GROUP).toString());
-                    if(!Objects.isNull(commodity))
-                        v.put(PACKS_COMMODITY_GROUP, commodity.getItemDescription());
-                }
-            });
+            getPackingDetails(hblModel.shipment, dictionary);
             dictionary.put(HAS_PACK_DETAILS, true);
             var hazardousCheck = hblModel.shipment.getPackingList().stream().anyMatch(x -> !Objects.isNull(x.getHazardous()) && x.getHazardous());
             var temperatureCheck = hblModel.shipment.getPackingList().stream().anyMatch(x -> !Objects.isNull(x.getIsTemperatureControlled()) && x.getIsTemperatureControlled());
@@ -879,7 +852,6 @@ public class HblReport extends IReport{
             else
                 dictionary.put(HAS_TEMPERATURE_DETAILS, false);
 
-            dictionary.put(PACKS_DETAILS, values);
         } else {
             dictionary.put(HAS_PACK_DETAILS, false);
         }

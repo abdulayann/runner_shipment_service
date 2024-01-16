@@ -4,11 +4,16 @@ import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConst
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper;
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.PickUpOrderReportModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PickupDeliveryDetailsModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ShipmentModel;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Map;
+
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
 
 @Component
 public class PickupOrderReport extends IReport {
@@ -41,9 +46,17 @@ public class PickupOrderReport extends IReport {
         dictionary.put(ReportConstants.PICKUP_TRANSPORT_CONTACT_PERSON, pickUpOrderReportModel.pickUpTransportAddress.getAddressData().get("ContactPerson"));
         try {
             if (pickUpOrderReportModel.shipment != null && pickUpOrderReportModel.shipment.getPickupDetails() != null) {
-                List<String> pickUpFrom = ReportHelper.getOrgAddress(pickUpOrderReportModel.shipment.getPickupDetails().getSourceDetail());
+                PickupDeliveryDetailsModel pickupDetails = pickUpOrderReportModel.shipment.getPickupDetails();
+                List<String> pickUpFrom = ReportHelper.getOrgAddress(pickupDetails.getSourceDetail());
                 dictionary.put(ReportConstants.PickupFrom, pickUpFrom);
+
+                // P0 tags pickup order doc
+                dictionary.put(ReportConstants.PICKUP_TRANSPORT_COMPANY, getValueFromMap(pickupDetails.getTransporterDetail().getOrgData(), ReportConstants.FULL_NAME));
+                dictionary.put(ReportConstants.PICKUP_TRANSPORT_CONTACT_PERSON, getValueFromMap(pickupDetails.getTransporterDetail().getAddressData(), CONTACT_PERSON));
+                dictionary.put(ReportConstants.PICKUP_COMPANY, getValueFromMap(pickupDetails.getSourceDetail().getOrgData(), ReportConstants.FULL_NAME));
             }
+
+            dictionary.put(ReportConstants.PRINT_USER, UserContext.getUser().getUsername());
         }
         catch (Exception ignored) {}
         return dictionary;
