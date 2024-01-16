@@ -239,8 +239,11 @@ public abstract class IReport {
         dictionary.put(ReportConstants.ONBOARD_DATE, ConvertToDPWDateFormat(additionalDetails.getOnBoardDate()));
         dictionary.put(ReportConstants.ESTIMATED_READY_FOR_PICKUP, pickup != null ? pickup.getEstimatedPickupOrDelivery() : null);
         String formatPattern = "dd/MMM/y";
-        dictionary.put(ReportConstants.DATE_OF_ISSUE, ConvertToDPWDateFormat(additionalDetails.getDateOfIssue()));
-        dictionary.put(SHIPMENT_DETAIL_DATE_OF_ISSUE, ConvertToDPWDateFormat(additionalDetails.getDateOfIssue()));
+        V1TenantSettingsResponse v1TenantSettingsResponse = getTenantSettings();
+        if(!CommonUtils.IsStringNullOrEmpty(v1TenantSettingsResponse.getDPWDateFormat()))
+            formatPattern = v1TenantSettingsResponse.getDPWDateFormat();
+        dictionary.put(ReportConstants.DATE_OF_ISSUE, GenerateFormattedDate(additionalDetails.getDateOfIssue(), formatPattern));
+        dictionary.put(SHIPMENT_DETAIL_DATE_OF_ISSUE, GenerateFormattedDate(additionalDetails.getDateOfIssue(), formatPattern));
         dictionary.put(ReportConstants.DATE_OF_RECEIPT, additionalDetails.getDateOfReceipt());
 
         dictionary.put(ReportConstants.INCO_TERM, shipment.getIncoterms());
