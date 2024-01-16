@@ -31,4 +31,7 @@ public interface IShipmentRepository extends MultiTenancyRepository<ShipmentDeta
 
     @Query(value = "SELECT MAX(c.id) FROM consolidation_details c", nativeQuery = true)
     Long findMaxId();
+
+    @Query(value = "Update shipment_details set job_status = ?2 Where id = ?1", nativeQuery = true)
+    void saveJobStatus(Long id, String jobStatus);
 }

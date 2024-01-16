@@ -23,7 +23,10 @@ import com.dpw.runner.shipment.services.dto.patchRequest.CarrierPatchRequest;
 import com.dpw.runner.shipment.services.dto.patchRequest.ShipmentPatchRequest;
 import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.response.*;
-import com.dpw.runner.shipment.services.dto.v1.request.*;
+import com.dpw.runner.shipment.services.dto.v1.request.ShipmentBillingListRequest;
+import com.dpw.runner.shipment.services.dto.v1.request.TIContainerListRequest;
+import com.dpw.runner.shipment.services.dto.v1.request.TIListRequest;
+import com.dpw.runner.shipment.services.dto.v1.request.WayBillNumberFilterRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.*;
@@ -2382,12 +2385,24 @@ public class ShipmentService implements IShipmentService {
                 log.debug("Shipment Details is null for the input with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
+            // TODO- Remove this call and sync job staus from billing using producer and consumer
+            ShipmentBillingListRequest shipmentBillingListRequest = new ShipmentBillingListRequest();
+            shipmentBillingListRequest.setGuidsList(List.of(shipmentDetails.get().getGuid()));
+            ShipmentBillingListResponse shipmentBillingListResponse = v1Service.fetchShipmentBillingData(shipmentBillingListRequest);
+            if(shipmentBillingListResponse != null && shipmentBillingListResponse.getData() != null && shipmentBillingListResponse.getData().containsKey(shipmentDetails.get().getGuid())) {
+                shipmentDetails.get().setJobStatus(shipmentBillingListResponse.getData().get(shipmentDetails.get().getGuid()).getJobStatus());
+            }
             log.info("Shipment details fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
             List<Notes> notes = notesDao.findByEntityIdAndEntityType(request.getId(), Constants.SHIPMENT_BOOKING);
             ShipmentDetailsResponse response = modelMapper.map(shipmentDetails.get(), ShipmentDetailsResponse.class);
             response.setCustomerBookingNotesList(convertToDtoList(notes,NotesResponse.class));
             createShipmentPayload(shipmentDetails.get(), response);
-            //containerCountUpdate(shipmentDetails.get(), response);
+            Optional<ShipmentDetails> finalShipmentDetails = shipmentDetails;
+            ExecutorService executorService = Executors.newFixedThreadPool(1);
+            executorService.submit(() -> {
+                saveJobStatus(finalShipmentDetails.get().getId(), finalShipmentDetails.get().getJobStatus());
+            });
+            executorService.shutdown();
             return ResponseHelper.buildSuccessResponse(response);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -2395,6 +2410,11 @@ public class ShipmentService implements IShipmentService {
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(responseMsg);
         }
+    }
+
+    @Transactional
+    private void saveJobStatus(Long id, String jobStatus) {
+        shipmentDao.saveJobStatus(id, jobStatus);
     }
 
     @Async
