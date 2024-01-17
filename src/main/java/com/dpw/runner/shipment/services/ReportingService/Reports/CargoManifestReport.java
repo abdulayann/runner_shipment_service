@@ -101,12 +101,12 @@ public class CargoManifestReport extends IReport{
         dictionary.put(ReportConstants.POL, getPortDetails(cargoManifestModel.shipmentDetails.getCarrierDetails().getOriginPort()));
         dictionary.put(ReportConstants.POD, getPortDetails(cargoManifestModel.shipmentDetails.getCarrierDetails().getDestinationPort()));
         dictionary.put(ReportConstants.FPOD, getPortDetails(cargoManifestModel.shipmentDetails.getCarrierDetails().getDestination()));
-        dictionary.put(ReportConstants.CURRENT_DATE, IReport.ConvertToDPWDateFormat(LocalDateTime.now()));
+        dictionary.put(ReportConstants.CURRENT_DATE, ConvertToDPWDateFormat(LocalDateTime.now()));
         if(cargoManifestModel.shipmentDetails.getCarrierDetails().getEtd() != null) {
-            dictionary.put(ReportConstants.ETD_CAPS, IReport.ConvertToDPWDateFormat(cargoManifestModel.shipmentDetails.getCarrierDetails().getEtd()));
+            dictionary.put(ReportConstants.ETD_CAPS, ConvertToDPWDateFormat(cargoManifestModel.shipmentDetails.getCarrierDetails().getEtd()));
         }
         if(cargoManifestModel.shipmentDetails.getCarrierDetails().getEta() != null) {
-            dictionary.put(ReportConstants.ETA_CAPS, IReport.ConvertToDPWDateFormat(cargoManifestModel.shipmentDetails.getCarrierDetails().getEta()));
+            dictionary.put(ReportConstants.ETA_CAPS, ConvertToDPWDateFormat(cargoManifestModel.shipmentDetails.getCarrierDetails().getEta()));
         }
         dictionary.put(ReportConstants.FLIGHT_NAME, cargoManifestModel.shipmentDetails.getCarrierDetails().getShippingLine());
         dictionary.put(ReportConstants.FLIGHT_NUMBER, cargoManifestModel.shipmentDetails.getCarrierDetails().getFlightNumber());

@@ -2,7 +2,6 @@ package com.dpw.runner.shipment.services.ReportingService.CommonUtils;
 
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PartiesModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
-import com.dpw.runner.shipment.services.ReportingService.Reports.IReport;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.Hbl;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -210,19 +209,6 @@ public class ReportHelper {
             return combineStringsWithComma(unlocationsResponse.getName(), unlocationsResponse.getCountry());
         }
         return "";
-    }
-
-    public static void JsonDateFormat(Map<String, Object> dictionary) {
-        if (dictionary != null) {
-            Map<String, Object> dictionaryCopy = new LinkedHashMap<>(dictionary);
-            for (Map.Entry<String, Object> entry : dictionaryCopy.entrySet()) {
-                Object value = entry.getValue();
-                if (value != null && value instanceof LocalDateTime) {
-                    LocalDateTime val = (LocalDateTime) value;
-                    dictionary.put(entry.getKey(), IReport.ConvertToDPWDateFormat(val));
-                }
-            }
-        }
     }
 
     public static String twoDecimalPlacesFormat(String value){

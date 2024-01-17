@@ -5,7 +5,6 @@ import com.dpw.runner.shipment.services.ReportingService.Models.ArrivalNoticeMod
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ContainerModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
-import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -47,7 +46,7 @@ public class ArrivalNoticeReport extends IReport {
     @Override
     public Map<String, Object> populateDictionary(IDocumentModel documentModel) {
         ArrivalNoticeModel arrivalNoticeModel = (ArrivalNoticeModel) documentModel;
-        String json = jsonHelper.convertToJson(arrivalNoticeModel.shipmentDetails);
+        String json = jsonHelper.convertToJsonWithDateTimeFormatter(arrivalNoticeModel.shipmentDetails, GetDPWDateFormatOrDefault());
         Map<String, Object> dictionary = jsonHelper.convertJsonToMap(json);
         populateShipmentFields(arrivalNoticeModel.shipmentDetails, false, dictionary);
         populateUserFields(arrivalNoticeModel.usersDto, dictionary);

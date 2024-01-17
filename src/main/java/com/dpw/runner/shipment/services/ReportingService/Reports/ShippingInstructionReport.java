@@ -4,7 +4,9 @@ import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelpe
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PartiesModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShippingInstructionModel;
+import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -98,6 +100,9 @@ public class ShippingInstructionReport extends IReport{
             dictionary.put(POFD, ReportHelper.getPortDetails(model.getShipment().getCarrierDetails().getDestination()));
             dictionary.put(PO_DELIVERY, ReportHelper.getPortDetails(model.getShipment().getCarrierDetails().getDestinationPort()));
             String formatPattern = "dd/MMM/y";
+            V1TenantSettingsResponse v1TenantSettingsResponse = getTenantSettings();
+            if(!CommonUtils.IsStringNullOrEmpty(v1TenantSettingsResponse.getDPWDateFormat()))
+                formatPattern = v1TenantSettingsResponse.getDPWDateFormat();
             dictionary.put(ETD, GenerateFormattedDate(model.getShipment().getCarrierDetails().getEtd(), formatPattern));
             dictionary.put(ETA, GenerateFormattedDate(model.getShipment().getCarrierDetails().getEta(), formatPattern));
             dictionary.put(VESSEL_NAME, model.getShipment().getCarrierDetails().getVessel());

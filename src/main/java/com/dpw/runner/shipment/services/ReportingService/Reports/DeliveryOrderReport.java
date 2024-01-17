@@ -88,7 +88,7 @@ public class DeliveryOrderReport extends IReport{
     @Override
     public Map<String, Object> populateDictionary(IDocumentModel documentModel) {
         DeliveryOrderModel deliveryOrderModel = (DeliveryOrderModel) documentModel;
-        String json = jsonHelper.convertToJson(deliveryOrderModel.shipmentDetails);
+        String json = jsonHelper.convertToJsonWithDateTimeFormatter(deliveryOrderModel.shipmentDetails, GetDPWDateFormatOrDefault());
         Map<String, Object> dictionary = jsonHelper.convertJsonToMap(json);
         populateShipmentFields(deliveryOrderModel.shipmentDetails, false, dictionary);
         populateConsolidationFields(deliveryOrderModel.consolidationDetails, dictionary);

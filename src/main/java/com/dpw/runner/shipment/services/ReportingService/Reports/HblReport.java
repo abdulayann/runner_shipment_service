@@ -9,7 +9,6 @@ import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.*;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
-import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
 import com.dpw.runner.shipment.services.dto.request.HblPartyDto;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.request.hbl.HblContainerDto;
@@ -17,7 +16,6 @@ import com.dpw.runner.shipment.services.dto.request.hbl.HblDataDto;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.Hbl;
 import com.dpw.runner.shipment.services.entity.Parties;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.MasterData;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest;
@@ -218,7 +216,7 @@ public class HblReport extends IReport{
     @Override
     public Map<String, Object> populateDictionary(IDocumentModel documentModel) {
         HblModel hblModel = (HblModel) documentModel;
-        String json = jsonHelper.convertToJson(hblModel.shipment);
+        String json = jsonHelper.convertToJsonWithDateTimeFormatter(hblModel.shipment, GetDPWDateFormatOrDefault());
         if(hblModel.blObject == null) {
             hblModel.blObject = new Hbl();
             hblModel.blObject.setHblData(new HblDataDto());

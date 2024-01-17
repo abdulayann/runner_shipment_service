@@ -48,7 +48,7 @@ public class CustomsInstructionsReport extends IReport{
     @Override
     public Map<String, Object> populateDictionary(IDocumentModel documentModel) {
         CustomsInstructionsModel customsInstructionsModel = (CustomsInstructionsModel) documentModel;
-        String json = jsonHelper.convertToJson(customsInstructionsModel.shipmentDetails);
+        String json = jsonHelper.convertToJsonWithDateTimeFormatter(customsInstructionsModel.shipmentDetails, GetDPWDateFormatOrDefault());
         Map<String, Object> dictionary = jsonHelper.convertJsonToMap(json);
         JsonDateFormat(dictionary);
         List<String> consigner = getOrgAddress(customsInstructionsModel.shipmentDetails.getConsigner());

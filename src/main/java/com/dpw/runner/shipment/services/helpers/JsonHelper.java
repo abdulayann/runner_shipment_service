@@ -8,12 +8,15 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateTimeSerializer;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.json.JsonParseException;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 
@@ -23,6 +26,8 @@ public class JsonHelper {
 
     @Autowired
     private ObjectMapper mapper;
+
+    private ObjectMapper dateFormatMapper = new ObjectMapper();
 
     private ObjectMapper mapper1 = new ObjectMapper();
 
@@ -52,9 +57,14 @@ public class JsonHelper {
         createMapper.addMixIn(ConsolidationDetails.class, ShipmentMixIn.class);
         createMapper.addMixIn(BookingCarriage.class, ShipmentMixIn.class);
         createMapper.addMixIn(Notes.class, ShipmentMixIn.class);
+
         mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
         mapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
         mapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
+
+        dateFormatMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+        dateFormatMapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
+        dateFormatMapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
     }
 
     public <T> T readFromJson(String jsonString, Class<T> clazz) {
@@ -69,6 +79,19 @@ public class JsonHelper {
     public <T> String convertToJson(T object) {
         try {
             return mapper.writeValueAsString(object);
+        } catch (JsonProcessingException e) {
+            log.error("Failed to Parse given Json");
+            throw new JsonParseException(e);
+        }
+    }
+
+    public <T> String convertToJsonWithDateTimeFormatter(T object, DateTimeFormatter dateTimeFormatter) {
+        try {
+            JavaTimeModule javaTimeModule = new JavaTimeModule();
+            LocalDateTimeSerializer localDateTimeSerializer = new LocalDateTimeSerializer(dateTimeFormatter);
+            javaTimeModule.addSerializer(LocalDateTime.class, localDateTimeSerializer);
+            dateFormatMapper.registerModule(javaTimeModule);
+            return dateFormatMapper.writeValueAsString(object);
         } catch (JsonProcessingException e) {
             log.error("Failed to Parse given Json");
             throw new JsonParseException(e);

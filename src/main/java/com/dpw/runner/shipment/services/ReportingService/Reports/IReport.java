@@ -34,6 +34,7 @@ import com.dpw.runner.shipment.services.masterdata.request.ShipmentGuidRequest;
 import com.dpw.runner.shipment.services.masterdata.response.*;
 import com.dpw.runner.shipment.services.repository.interfaces.IAwbRepository;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.google.common.base.Strings;
 import com.nimbusds.jose.util.Pair;
@@ -229,15 +230,18 @@ public abstract class IReport {
         dictionary.put(ReportConstants.CONTAINER_COUNT, containerCount);
         dictionary.put(PICKUP_INSTRUCTION, shipment.getPickupDetails() != null ? shipment.getPickupDetails().getPickupDeliveryInstruction() : null);
         dictionary.put(DELIVERY_INSTRUCTIONS, shipment.getDeliveryDetails() != null ? shipment.getDeliveryDetails().getPickupDeliveryInstruction() : null);
-        dictionary.put(ReportConstants.ETA, shipment.getCarrierDetails() != null ? shipment.getCarrierDetails().getEta() : null);
-        dictionary.put(ReportConstants.ETD, shipment.getCarrierDetails() != null ? shipment.getCarrierDetails().getEtd() : null);
-        dictionary.put(ReportConstants.ATA, shipment.getCarrierDetails() != null ? shipment.getCarrierDetails().getAta() : null);
-        dictionary.put(ReportConstants.ATD, shipment.getCarrierDetails() != null ? shipment.getCarrierDetails().getAtd() : null);
+        dictionary.put(ReportConstants.ETA, ConvertToDPWDateFormat(shipment.getCarrierDetails() != null ? shipment.getCarrierDetails().getEta() : null));
+        dictionary.put(ReportConstants.ETD, ConvertToDPWDateFormat(shipment.getCarrierDetails() != null ? shipment.getCarrierDetails().getEtd() : null));
+        dictionary.put(ReportConstants.ATA, ConvertToDPWDateFormat(shipment.getCarrierDetails() != null ? shipment.getCarrierDetails().getAta() : null));
+        dictionary.put(ReportConstants.ATD, ConvertToDPWDateFormat(shipment.getCarrierDetails() != null ? shipment.getCarrierDetails().getAtd() : null));
         dictionary.put(ReportConstants.DATE_OF_DEPARTURE, dictionary.get(ReportConstants.ATD) == null ? dictionary.get(ReportConstants.ETD) : dictionary.get(ReportConstants.ATD));
-        dictionary.put(ReportConstants.SYSTEM_DATE, LocalDateTime.now());
-        dictionary.put(ReportConstants.ONBOARD_DATE, additionalDetails.getOnBoardDate());
+        dictionary.put(ReportConstants.SYSTEM_DATE, ConvertToDPWDateFormat(LocalDateTime.now()));
+        dictionary.put(ReportConstants.ONBOARD_DATE, ConvertToDPWDateFormat(additionalDetails.getOnBoardDate()));
         dictionary.put(ReportConstants.ESTIMATED_READY_FOR_PICKUP, pickup != null ? pickup.getEstimatedPickupOrDelivery() : null);
         String formatPattern = "dd/MMM/y";
+        V1TenantSettingsResponse v1TenantSettingsResponse = getTenantSettings();
+        if(!CommonUtils.IsStringNullOrEmpty(v1TenantSettingsResponse.getDPWDateFormat()))
+            formatPattern = v1TenantSettingsResponse.getDPWDateFormat();
         dictionary.put(ReportConstants.DATE_OF_ISSUE, GenerateFormattedDate(additionalDetails.getDateOfIssue(), formatPattern));
         dictionary.put(SHIPMENT_DETAIL_DATE_OF_ISSUE, GenerateFormattedDate(additionalDetails.getDateOfIssue(), formatPattern));
         dictionary.put(ReportConstants.DATE_OF_RECEIPT, additionalDetails.getDateOfReceipt());
@@ -878,6 +882,19 @@ public abstract class IReport {
         return value;
     }
 
+    public void JsonDateFormat(Map<String, Object> dictionary) {
+        if (dictionary != null) {
+            Map<String, Object> dictionaryCopy = new LinkedHashMap<>(dictionary);
+            for (Map.Entry<String, Object> entry : dictionaryCopy.entrySet()) {
+                Object value = entry.getValue();
+                if (value != null && value instanceof LocalDateTime) {
+                    LocalDateTime val = (LocalDateTime) value;
+                    dictionary.put(entry.getKey(), ConvertToDPWDateFormat(val));
+                }
+            }
+        }
+    }
+
     public static String twoDecimalPlacesFormat(String value)
     {
         if(StringUtility.isEmpty(value))
@@ -900,8 +917,11 @@ public abstract class IReport {
         return twoDecimalPlacesFormat(value.toString());
     }
 
-    public static DateTimeFormatter GetDPWDateFormatOrDefault()
+    public DateTimeFormatter GetDPWDateFormatOrDefault()
     {
+        V1TenantSettingsResponse v1TenantSettingsResponse = getTenantSettings();
+        if(!CommonUtils.IsStringNullOrEmpty(v1TenantSettingsResponse.getDPWDateFormat()))
+            return DateTimeFormatter.ofPattern(v1TenantSettingsResponse.getDPWDateFormat());
         return DateTimeFormatter.ofPattern("MM/dd/yyyy");
     }
 
@@ -915,7 +935,7 @@ public abstract class IReport {
         return "MM/dd/yyyy";
     }
 
-    public static String ConvertToDPWDateFormat(LocalDateTime date)
+    public String ConvertToDPWDateFormat(LocalDateTime date)
     {
         String strDate = "";
         if (date != null)
