@@ -69,6 +69,8 @@ public class MawbStocksService implements IMawbStocksService {
 
         try {
            mawbStocks = mawbStocksDao.save(mawbStocks);
+           request.setId(mawbStocks.getId());
+           this.mawbStocksLinkBulkUpdate(request);
             log.info("MAWB stocks created successfully for Id {} with Request Id {}", mawbStocks.getId(), LoggerHelper.getRequestIdFromMDC());
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -227,10 +229,42 @@ public class MawbStocksService implements IMawbStocksService {
         Page<MawbStocks> mawbStocksPage = mawbStocksDao.findAll(tuple.getLeft(), tuple.getRight());
         if(!mawbStocksPage.getContent().isEmpty()){
             return ResponseHelper.buildSuccessResponse(NextMawbCarrierResponse.builder().nextMawbNumber(mawbStocksPage.getContent().get(0).getNextMawbNumber()).build());
-//            return ResponseHelper.buildSuccessResponse(mawbStocksPage.getContent().get(0).getNextMawbNumber());
         }
         return ResponseHelper.buildSuccessResponse(NextMawbCarrierResponse.builder().nextMawbNumber(null).build());
-        //return ResponseHelper.buildSuccessResponse(null);
+    }
+
+    private void mawbStocksLinkBulkUpdate(MawbStocksRequest mawbStocksRequest){
+        int count =  Integer.parseInt(mawbStocksRequest.getAvailableCount());
+        List<MawbStocksLink> requestlist = new ArrayList<>();
+
+        List<String> nums = new ArrayList<>();
+        String startingNum = mawbStocksRequest.getMawbNumber();
+        for (int i = 0; i < count; i++) {
+            int val = (Integer.parseInt(startingNum) + i) % 7;
+            String stNum = Integer.parseInt(startingNum) + i + "" + val;
+            int appendLeadingZeros = 8 - stNum.length();
+            for (int ind = 0; ind < appendLeadingZeros; ind++) {
+                stNum = "0" + stNum;
+            }
+            nums.add(stNum);
+        }
+
+        for (int i = 0; i < count; i++) {
+            MawbStocksLink mawbStocksLink = new MawbStocksLink();
+            mawbStocksLink.setParentId(mawbStocksRequest.getId());
+            mawbStocksLink.setSeqNumber(Long.toString(Long.parseLong(mawbStocksRequest.getMawbNumber())  + i));
+            var leadingZerosForSeqNumber = 7 - mawbStocksLink.getSeqNumber().length();
+            for(int itr = 0; itr<leadingZerosForSeqNumber;itr++){
+                mawbStocksLink.setSeqNumber("0" + mawbStocksLink.getSeqNumber());
+            }
+            mawbStocksLink.setMawbNumber((mawbStocksRequest.getAirLinePrefix() + "-" + nums.get(i)));
+            mawbStocksLink.setStatus("Unused");
+            requestlist.add(mawbStocksLink);
+        }
+
+        for (MawbStocksLink request:requestlist) {
+            mawbStocksLinkDao.save(request);
+        }
     }
 
     private MawbStocksResponse convertEntityToDto(MawbStocks mawbStocks) {
