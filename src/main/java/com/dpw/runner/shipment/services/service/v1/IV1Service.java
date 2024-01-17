@@ -140,6 +140,7 @@ public interface IV1Service {
     V1DataResponse fetchContainersListForTI(Object request);
     ConsoleBookingListResponse fetchConsolidationBookingData(Object request);
     GuidsListResponse fetchWayBillNumberFilterGuids(Object request);
+    GuidsListResponse fetchBookingIdFilterGuids(Object request);
     V1DataResponse fetchGetTemplateMainPage(Object request);
     HblTaskCreationResponse createTaskforHBL(Object request);
     ShipmentBillingListResponse fetchShipmentBillingData(Object request);

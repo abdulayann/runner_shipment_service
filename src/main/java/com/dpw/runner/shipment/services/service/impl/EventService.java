@@ -17,10 +17,7 @@ import com.dpw.runner.shipment.services.dto.request.TrackingRequest;
 import com.dpw.runner.shipment.services.dto.response.EventsResponse;
 import com.dpw.runner.shipment.services.dto.response.TrackingEventsResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
-import com.dpw.runner.shipment.services.entity.CarrierDetails;
-import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
-import com.dpw.runner.shipment.services.entity.Events;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.V1ServiceException;
 import com.dpw.runner.shipment.services.exception.response.V1ErrorResponse;
@@ -39,6 +36,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.sl.draw.geom.GuideIf;
+import org.apache.tomcat.util.bcel.Const;
 import org.junit.runner.Runner;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -428,5 +426,21 @@ public class EventService implements IEventService {
     }
 
     return ResponseHelper.buildSuccessResponse(res);
+  }
+
+  @Override
+  public void updateAtaAtdInShipment(List<Events> events, ShipmentDetails shipmentDetails, ShipmentSettingsDetails tenantSettings) {
+        if(events != null && events.size() > 0) {
+            Events lastEvent = events.get(events.size()-1);
+            if(tenantSettings.getIsAtdAtaAutoPopulateEnabled() != null && tenantSettings.getIsAtdAtaAutoPopulateEnabled().equals(true)) {
+                if(lastEvent.getActual() != null) {
+                    shipmentDetails.setCarrierDetails(shipmentDetails.getCarrierDetails() == null ? new CarrierDetails() : shipmentDetails.getCarrierDetails());
+                    if(Constants.ATA_EVENT_CODES.contains(lastEvent.getEventCode()))
+                        shipmentDetails.getCarrierDetails().setAta(lastEvent.getActual());
+                    if(Constants.ATD_EVENT_CODES.contains(lastEvent.getEventCode()))
+                        shipmentDetails.getCarrierDetails().setAtd(lastEvent.getActual());
+                }
+            }
+        }
   }
 }
