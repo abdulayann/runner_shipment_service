@@ -60,7 +60,7 @@ public class MawbStocks extends MultiTenancy {
     private String to;
 
     @Column(name = "borrowed_from")
-    private Long borrowedFrom;
+    private String borrowedFrom;
 
     @Column(name = "borrowed_from_full_name")
     private String borrowedFromFullName;
