@@ -489,4 +489,8 @@ public class ShipmentDao implements IShipmentDao {
         return response;
     }
 
+    public void saveJobStatus(Long id, String jobStatus) {
+        shipmentRepository.saveJobStatus(id, jobStatus);
+    }
+
 }

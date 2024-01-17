@@ -279,4 +279,8 @@ public class ShipmentSettingsSyncRequest implements IRunnerRequest {
     private Boolean eManifest;
     @JsonProperty("ISFFileMainPage")
     private String ISFFileMainPage;
+    @JsonProperty("WeightDecimalPlace")
+    private String weightDecimalPlace;
+    @JsonProperty("VolumeDecimalPlace")
+    private String volumeDecimalPlace;
 }

@@ -10,9 +10,11 @@ import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.*;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
+import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
+import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
 import com.dpw.runner.shipment.services.dto.request.HblPartyDto;
@@ -22,6 +24,7 @@ import com.dpw.runner.shipment.services.dto.request.hbl.HblDataDto;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.CarrierMasterData;
 import com.dpw.runner.shipment.services.masterdata.dto.MasterData;
@@ -34,11 +37,15 @@ import com.dpw.runner.shipment.services.masterdata.request.ShipmentGuidRequest;
 import com.dpw.runner.shipment.services.masterdata.response.*;
 import com.dpw.runner.shipment.services.repository.interfaces.IAwbRepository;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
+import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.google.common.base.Strings;
 import com.nimbusds.jose.util.Pair;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -85,6 +92,12 @@ public abstract class IReport {
     MasterDataFactory masterDataFactory;
     @Autowired
     private IV1Service v1Service;
+    @Autowired
+    CacheManager cacheManager;
+    @Autowired
+    private MasterDataUtils masterDataUtils;
+    @Autowired
+    CustomKeyGenerator keyGenerator;
 
     public abstract Map<String, Object> getData(Long id);
     abstract IDocumentModel getDocumentModel(Long id);
@@ -119,6 +132,35 @@ public abstract class IReport {
         ship.CarrierSealNumber = row.getCarrierSealNumber();
         ship.CustomsSealNumber = row.getCustomsSealNumber();
         ship.ShipperSealNumber = row.getShipperSealNumber();
+
+        try {
+            List<MasterListRequest> requests = new ArrayList<>();
+            Cache cache = cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA);
+
+            Cache.ValueWrapper value1 = cache.get(keyGenerator.customCacheKeyForMasterData(CacheConstants.MASTER_LIST, ship.GrossVolumeUnit));
+            if(Objects.isNull(value1))
+                requests.add(MasterListRequest.builder().ItemType(MasterDataType.VOLUME_UNIT.getDescription()).ItemValue(ship.GrossVolumeUnit).Cascade(null).build());
+
+            Cache.ValueWrapper value2 = cache.get(keyGenerator.customCacheKeyForMasterData(CacheConstants.MASTER_LIST, ship.GrossWeightUnit));
+            if(Objects.isNull(value2))
+                requests.add(MasterListRequest.builder().ItemType(MasterDataType.WEIGHT_UNIT.getDescription()).ItemValue(ship.GrossWeightUnit).Cascade(null).build());
+
+            Cache.ValueWrapper value3 = cache.get(keyGenerator.customCacheKeyForMasterData(CacheConstants.MASTER_LIST, ship.ShipmentPacksUnit));
+            if(Objects.isNull(value3))
+                requests.add(MasterListRequest.builder().ItemType(MasterDataType.PACKS_UNIT.getDescription()).ItemValue(ship.ShipmentPacksUnit).Cascade(null).build());
+
+            if(requests.size() > 0) {
+                MasterListRequestV2 masterListRequestV2 = new MasterListRequestV2();
+                masterListRequestV2.setMasterListRequests(requests);
+                masterListRequestV2.setIncludeCols(Arrays.asList("ItemType", "ItemValue", "ItemDescription", "ValuenDesc", "Cascade"));
+                Map<String, EntityTransferMasterLists> keyMasterDataMap = masterDataUtils.fetchInBulkMasterList(masterListRequestV2);
+                masterDataUtils.pushToCache(keyMasterDataMap, CacheConstants.MASTER_LIST);
+            }
+            ship.VolumeUnitDescription = getMasterListItemDesc(ship.GrossVolumeUnit);
+            ship.WeightUnitDescription = getMasterListItemDesc(ship.GrossWeightUnit);
+            ship.PacksUnitDescription = getMasterListItemDesc(ship.ShipmentPacksUnit);
+            ship.VGMWeight = ship.GrossWeight.add(ship.TareWeight);
+        } catch (Exception ignored) { }
         CommodityResponse commodityResponse = getCommodity(row.getCommodityCode());
         if (commodityResponse != null)
             ship.CommodityDescription = commodityResponse.getDescription();
@@ -128,6 +170,18 @@ public abstract class IReport {
                 ship.CommodityGroup = commodity.getItemDescription();
         }
         return ship;
+    }
+
+    private String getMasterListItemDesc(String value) {
+        var valueMapper = cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA).get(keyGenerator.customCacheKeyForMasterData(CacheConstants.MASTER_LIST, value));
+        if(!Objects.isNull(valueMapper)) {
+            EntityTransferMasterLists object = (EntityTransferMasterLists) valueMapper.get();
+            String val = value;
+            if(!Objects.isNull(object) && object.getItemDescription() != null)
+                val = object.getItemDescription();
+            return val.toUpperCase();
+        }
+        return value;
     }
 
     public String getTotalPackUnitCode(List<ShipmentModel> shipmentModelList) {
@@ -229,15 +283,19 @@ public abstract class IReport {
         dictionary.put(ReportConstants.CONTAINER_COUNT, containerCount);
         dictionary.put(PICKUP_INSTRUCTION, shipment.getPickupDetails() != null ? shipment.getPickupDetails().getPickupDeliveryInstruction() : null);
         dictionary.put(DELIVERY_INSTRUCTIONS, shipment.getDeliveryDetails() != null ? shipment.getDeliveryDetails().getPickupDeliveryInstruction() : null);
-        dictionary.put(ReportConstants.ETA, shipment.getCarrierDetails() != null ? shipment.getCarrierDetails().getEta() : null);
-        dictionary.put(ReportConstants.ETD, shipment.getCarrierDetails() != null ? shipment.getCarrierDetails().getEtd() : null);
-        dictionary.put(ReportConstants.ATA, shipment.getCarrierDetails() != null ? shipment.getCarrierDetails().getAta() : null);
-        dictionary.put(ReportConstants.ATD, shipment.getCarrierDetails() != null ? shipment.getCarrierDetails().getAtd() : null);
+        V1TenantSettingsResponse v1TenantSettingsResponse = getTenantSettings();
+        String tsDateTimeFormat = v1TenantSettingsResponse.getDPWDateFormat();
+        dictionary.put(ReportConstants.ETA, ConvertToDPWDateFormat(shipment.getCarrierDetails() != null ? shipment.getCarrierDetails().getEta() : null, tsDateTimeFormat));
+        dictionary.put(ReportConstants.ETD, ConvertToDPWDateFormat(shipment.getCarrierDetails() != null ? shipment.getCarrierDetails().getEtd() : null, tsDateTimeFormat));
+        dictionary.put(ReportConstants.ATA, ConvertToDPWDateFormat(shipment.getCarrierDetails() != null ? shipment.getCarrierDetails().getAta() : null, tsDateTimeFormat));
+        dictionary.put(ReportConstants.ATD, ConvertToDPWDateFormat(shipment.getCarrierDetails() != null ? shipment.getCarrierDetails().getAtd() : null, tsDateTimeFormat));
         dictionary.put(ReportConstants.DATE_OF_DEPARTURE, dictionary.get(ReportConstants.ATD) == null ? dictionary.get(ReportConstants.ETD) : dictionary.get(ReportConstants.ATD));
-        dictionary.put(ReportConstants.SYSTEM_DATE, LocalDateTime.now());
-        dictionary.put(ReportConstants.ONBOARD_DATE, additionalDetails.getOnBoardDate());
+        dictionary.put(ReportConstants.SYSTEM_DATE, ConvertToDPWDateFormat(LocalDateTime.now(), tsDateTimeFormat));
+        dictionary.put(ReportConstants.ONBOARD_DATE, ConvertToDPWDateFormat(additionalDetails.getOnBoardDate(), tsDateTimeFormat));
         dictionary.put(ReportConstants.ESTIMATED_READY_FOR_PICKUP, pickup != null ? pickup.getEstimatedPickupOrDelivery() : null);
         String formatPattern = "dd/MMM/y";
+        if(!CommonUtils.IsStringNullOrEmpty(v1TenantSettingsResponse.getDPWDateFormat()))
+            formatPattern = v1TenantSettingsResponse.getDPWDateFormat();
         dictionary.put(ReportConstants.DATE_OF_ISSUE, GenerateFormattedDate(additionalDetails.getDateOfIssue(), formatPattern));
         dictionary.put(SHIPMENT_DETAIL_DATE_OF_ISSUE, GenerateFormattedDate(additionalDetails.getDateOfIssue(), formatPattern));
         dictionary.put(ReportConstants.DATE_OF_RECEIPT, additionalDetails.getDateOfReceipt());
@@ -421,6 +479,8 @@ public abstract class IReport {
                     pickup.getTransporterDetail().getOrgData().get("FullName") : "");
         }
         dictionary.put(ReportConstants.NO_OF_PACKAGES, shipment.getNoOfPacks());
+
+        populateHasContainerFields(shipment, dictionary);
     }
 
     public ShipmentModel getShipment(Long Id)
@@ -725,6 +785,7 @@ public abstract class IReport {
         dictionary.put(ReportConstants.USER_FULLNAME, user.DisplayName);
         dictionary.put(ReportConstants.TENANT_NAME, user.TenantDisplayName);
         dictionary.put(ReportConstants.USER_NAME, user.Username);
+        dictionary.put(PRINT_USER, user.Username.toUpperCase());
         dictionary.put(ReportConstants.USER_EMAIL, user.Email);
         dictionary.put(ReportConstants.TENANT_CURRENCY, user.CompanyCurrency);
     }
@@ -878,6 +939,19 @@ public abstract class IReport {
         return value;
     }
 
+    public void JsonDateFormat(Map<String, Object> dictionary) {
+        if (dictionary != null) {
+            Map<String, Object> dictionaryCopy = new LinkedHashMap<>(dictionary);
+            for (Map.Entry<String, Object> entry : dictionaryCopy.entrySet()) {
+                Object value = entry.getValue();
+                if (value != null && value instanceof LocalDateTime) {
+                    LocalDateTime val = (LocalDateTime) value;
+                    dictionary.put(entry.getKey(), ConvertToDPWDateFormat(val));
+                }
+            }
+        }
+    }
+
     public static String twoDecimalPlacesFormat(String value)
     {
         if(StringUtility.isEmpty(value))
@@ -900,8 +974,11 @@ public abstract class IReport {
         return twoDecimalPlacesFormat(value.toString());
     }
 
-    public static DateTimeFormatter GetDPWDateFormatOrDefault()
+    public DateTimeFormatter GetDPWDateFormatOrDefault()
     {
+        V1TenantSettingsResponse v1TenantSettingsResponse = getTenantSettings();
+        if(!CommonUtils.IsStringNullOrEmpty(v1TenantSettingsResponse.getDPWDateFormat()))
+            return DateTimeFormatter.ofPattern(v1TenantSettingsResponse.getDPWDateFormat());
         return DateTimeFormatter.ofPattern("MM/dd/yyyy");
     }
 
@@ -915,12 +992,18 @@ public abstract class IReport {
         return "MM/dd/yyyy";
     }
 
-    public static String ConvertToDPWDateFormat(LocalDateTime date)
+    public String ConvertToDPWDateFormat(LocalDateTime date) {
+        return ConvertToDPWDateFormat(date, null);
+    }
+    public String ConvertToDPWDateFormat(LocalDateTime date, String tsDatetimeFormat)
     {
         String strDate = "";
         if (date != null)
         {
-            strDate = date.format(GetDPWDateFormatOrDefault());
+            if(!IsStringNullOrEmpty(tsDatetimeFormat))
+                strDate = date.format(DateTimeFormatter.ofPattern(tsDatetimeFormat));
+            else
+                strDate = date.format(GetDPWDateFormatOrDefault());
         }
         return strDate;
     }
@@ -1253,5 +1336,93 @@ public abstract class IReport {
             });
         }
         return keyMasterDataMap;
+    }
+
+    public void populateHasContainerFields(ShipmentModel shipmentModel, Map<String, Object> dictionary) {
+        if (shipmentModel.getContainersList() != null && shipmentModel.getContainersList().size() > 0) {
+            dictionary.put(ReportConstants.SHIPMENT_PACKING_HAS_CONTAINERS, true);
+            dictionary.put(ReportConstants.SHIPMENT_CONTAINERS, shipmentModel.getContainersList());
+        }
+        else {
+            dictionary.put(ReportConstants.SHIPMENT_PACKING_HAS_CONTAINERS, false);
+        }
+    }
+
+    // Populates packing details fields in the source dictionary
+    // can return List<Map<String, Object>> packing Dictionary, keeping it void for now
+    public void getPackingDetails(ShipmentModel shipment, Map<String, Object> dictionary) {
+        if(shipment.getPackingList() == null || shipment.getPackingList().size() == 0) {
+            dictionary.put(HAS_PACK_DETAILS, false);
+            return;
+        }
+
+        List<Map<String, Object>> packsDictionary = (List<Map<String, Object>>) new HashMap<>();
+
+        for(var pack : shipment.getPackingList()) {
+            Map<String, Object> dict = new HashMap<>();
+            if(pack.getCommodity() != null)
+                dict.put(COMMODITY_DESC, pack.getCommodity());
+            if(pack.getWeight() != null){
+                dict.put(WEIGHT_AND_UNIT_PACKS, String.format("%s %s", twoDecimalPlacesFormat(pack.getWeight().toString()),
+                        pack.getWeightUnit()));
+            }
+            if(pack.getVolume() != null){
+                dict.put(VOLUME_AND_UNIT_PACKS, String.format("%s %s", twoDecimalPlacesFormat(pack.getVolume().toString()),
+                        pack.getVolumeUnit()));
+            }
+            if (pack.getVolumeWeight() != null) {
+                dict.put(V_WEIGHT_AND_UNIT_PACKS, String.format("%s %s", twoDecimalPlacesFormat(pack.getVolumeWeight().toString()),
+                        pack.getVolumeWeightUnit()));
+            }
+            if (shipment.getPickupDetails() != null && shipment.getPickupDetails().getActualPickupOrDelivery() != null) {
+                dict.put(LOADED_DATE, ConvertToDPWDateFormat(shipment.getPickupDetails().getActualPickupOrDelivery()));
+            }
+            if(pack.getCommodityGroup() != null) {
+                MasterData commodity = getMasterListData(MasterDataType.COMMODITY_GROUP, pack.getCommodityGroup());
+                if(!Objects.isNull(commodity))
+                    dict.put(PACKS_COMMODITY_GROUP, commodity.getItemDescription());
+            }
+
+            dict.put(SHIPMENT_PACKING_LENGTH, pack.getLength());
+            dict.put(SHIPMENT_PACKING_LENGTH_UNIT, pack.getLengthUnit());
+            dict.put(SHIPMENT_PACKING_WIDTH, pack.getWidth());
+            dict.put(SHIPMENT_PACKING_WIDTH_UNIT, pack.getWidthUnit());
+            dict.put(SHIPMENT_PACKING_HEIGHT, pack.getHeight());
+            dict.put(SHIPMENT_PACKING_HEIGHT_UNIT, pack.getHeightUnit());
+            dict.put(CHARGEABLE, pack.getChargeable());
+            dict.put(ChargeableUnit, pack.getChargeableUnit());
+
+            if(pack.getHazardous() != null && pack.getHazardous().equals(true)){
+                var dgSubstanceRow = ReportHelper.fetchDgSubstanceRow(pack.getDGSubstanceId());
+                dict.put(DG_SUBSTANCE, dgSubstanceRow.ProperShippingName);
+                dict.put(DG_CLASS, pack.getDGClass());
+                dict.put(CLASS_DIVISION, dgSubstanceRow.ClassDivision);
+                dict.put(UNID_NO, pack.getUNDGContact());
+                dict.put(DANGEROUS_GOODS, "HAZARDOUS");
+            } else {
+                dict.put(DG_SUBSTANCE, "");
+                dict.put(DG_CLASS, "");
+                dict.put(CLASS_DIVISION, "");
+                dict.put(UNID_NO, "");
+                dict.put(DANGEROUS_GOODS, "General");
+            }
+
+            if(pack.getIsTemperatureControlled() != null && pack.getIsTemperatureControlled().equals(true)) {
+                dict.put(MIN_TEMP, pack.getMinTemp());
+                dict.put(MAX_TEMP, pack.getMaxTemp());
+                dict.put(MIN_TEMP_UNIT, pack.getMinTempUnit());
+                dict.put(MAX_TEMP_UNIT, pack.getMaxTempUnit());
+            } else {
+                dict.put(MIN_TEMP, "");
+                dict.put(MAX_TEMP, "");
+                dict.put(MIN_TEMP_UNIT, "");
+                dict.put(MAX_TEMP_UNIT, "");
+            }
+            packsDictionary.add(dict);
+        }
+
+        dictionary.put(HAS_PACK_DETAILS, true);
+        dictionary.put(PACKS_DETAILS, packsDictionary);
+
     }
 }

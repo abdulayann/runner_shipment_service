@@ -2,14 +2,21 @@ package com.dpw.runner.shipment.services.ReportingService.Reports;
 
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.Models.CargoManifestModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentContainers;
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.BookingCarriageModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ContainerModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PackingModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -101,12 +108,14 @@ public class CargoManifestReport extends IReport{
         dictionary.put(ReportConstants.POL, getPortDetails(cargoManifestModel.shipmentDetails.getCarrierDetails().getOriginPort()));
         dictionary.put(ReportConstants.POD, getPortDetails(cargoManifestModel.shipmentDetails.getCarrierDetails().getDestinationPort()));
         dictionary.put(ReportConstants.FPOD, getPortDetails(cargoManifestModel.shipmentDetails.getCarrierDetails().getDestination()));
-        dictionary.put(ReportConstants.CURRENT_DATE, IReport.ConvertToDPWDateFormat(LocalDateTime.now()));
+        V1TenantSettingsResponse v1TenantSettingsResponse = getTenantSettings();
+        String tsDateTimeFormat = v1TenantSettingsResponse.getDPWDateFormat();
+        dictionary.put(ReportConstants.CURRENT_DATE, ConvertToDPWDateFormat(LocalDateTime.now(), tsDateTimeFormat));
         if(cargoManifestModel.shipmentDetails.getCarrierDetails().getEtd() != null) {
-            dictionary.put(ReportConstants.ETD_CAPS, IReport.ConvertToDPWDateFormat(cargoManifestModel.shipmentDetails.getCarrierDetails().getEtd()));
+            dictionary.put(ReportConstants.ETD_CAPS, ConvertToDPWDateFormat(cargoManifestModel.shipmentDetails.getCarrierDetails().getEtd(), tsDateTimeFormat));
         }
         if(cargoManifestModel.shipmentDetails.getCarrierDetails().getEta() != null) {
-            dictionary.put(ReportConstants.ETA_CAPS, IReport.ConvertToDPWDateFormat(cargoManifestModel.shipmentDetails.getCarrierDetails().getEta()));
+            dictionary.put(ReportConstants.ETA_CAPS, ConvertToDPWDateFormat(cargoManifestModel.shipmentDetails.getCarrierDetails().getEta(), tsDateTimeFormat));
         }
         dictionary.put(ReportConstants.FLIGHT_NAME, cargoManifestModel.shipmentDetails.getCarrierDetails().getShippingLine());
         dictionary.put(ReportConstants.FLIGHT_NUMBER, cargoManifestModel.shipmentDetails.getCarrierDetails().getFlightNumber());
@@ -124,6 +133,73 @@ public class CargoManifestReport extends IReport{
         dictionary.put(ReportConstants.CMS_REMARKS, cargoManifestModel.shipmentDetails.getAdditionalTerms());
         dictionary.put(ReportConstants.USER_EMAIL, cargoManifestModel.usersDto.Email);
         dictionary.put(ReportConstants.DATE_TIME, LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MMM/y hh:mm a")));
+        if(cargoManifestModel.shipmentDetails.getBookingCarriagesList() != null && cargoManifestModel.shipmentDetails.getBookingCarriagesList().size() > 0) {
+            for (BookingCarriageModel bookingCarriageModel : cargoManifestModel.shipmentDetails.getBookingCarriagesList()) {
+                if (bookingCarriageModel.getCarriageType() != null && (bookingCarriageModel.getCarriageType().equals(Constants.PreCarriage) || bookingCarriageModel.getCarriageType().equals(Constants.Main))) {
+                    dictionary.put(bookingCarriageModel.getCarriageType() + ReportConstants.Vessel, bookingCarriageModel.getVessel());
+                    dictionary.put(bookingCarriageModel.getCarriageType() + ReportConstants.VOYAGE, bookingCarriageModel.getVoyage());
+                    dictionary.put(bookingCarriageModel.getCarriageType() + ReportConstants.ETD_CAPS, ConvertToDPWDateFormat(bookingCarriageModel.getEtd(), tsDateTimeFormat));
+                    dictionary.put(bookingCarriageModel.getCarriageType() + ReportConstants.ETA_CAPS, ConvertToDPWDateFormat(bookingCarriageModel.getEta(), tsDateTimeFormat));
+                    UnlocationsResponse pol = getUNLocRow(bookingCarriageModel.getPortOfLoading());
+                    if (pol != null) {
+                        dictionary.put(bookingCarriageModel.getCarriageType() + ReportConstants.PlaceofLoadCountry, pol.getCountry());
+                        dictionary.put(bookingCarriageModel.getCarriageType() + ReportConstants.PlaceofLoadPort, pol.getPortName());
+                        dictionary.put(bookingCarriageModel.getCarriageType() + ReportConstants.PlaceofLoadCode, pol.getLocCode());
+                    }
+                    UnlocationsResponse pod = getUNLocRow(bookingCarriageModel.getPortOfDischarge());
+                    if (pod != null) {
+                        dictionary.put(bookingCarriageModel.getCarriageType() + ReportConstants.PlaceofDischargeCountry, pod.getCountry());
+                        dictionary.put(bookingCarriageModel.getCarriageType() + ReportConstants.PlaceofDischargePort, pod.getPortName());
+                        dictionary.put(bookingCarriageModel.getCarriageType() + ReportConstants.PlaceofDischargeCode, pod.getLocCode());
+                    }
+                }
+            }
+        }
+        dictionary.put(ReportConstants.ContainerType, cargoManifestModel.shipmentDetails.getShipmentType());
+        BigDecimal Total_GrossWeight = BigDecimal.ZERO;
+        BigDecimal Total_GrossVolume = BigDecimal.ZERO;
+        long Total_ContainerCount = 0;
+        long Total_Packs = 0;
+        if(cargoManifestModel.shipmentDetails.getContainersList() != null && cargoManifestModel.shipmentDetails.getContainersList().size() > 0) {
+            List<ShipmentContainers> shipmentContainersList = new ArrayList<>();
+            for (ContainerModel item : cargoManifestModel.shipmentDetails.getContainersList()) {
+                ShipmentContainers shipmentContainers = getShipmentContainer(item);
+                shipmentContainersList.add(shipmentContainers);
+                if(item.getGrossWeight() != null)
+                    Total_GrossWeight = Total_GrossWeight.add(item.getGrossWeight());
+                if(item.getGrossVolume() != null)
+                    Total_GrossVolume = Total_GrossVolume.add(item.getGrossVolume());
+                if(item.getContainerCount() != null) {
+                    Total_ContainerCount = Total_ContainerCount + item.getContainerCount();
+                }
+                if(!CommonUtils.IsStringNullOrEmpty(item.getPacks())) {
+                    Total_Packs = Total_Packs + Long.parseLong(item.getPacks());
+                }
+            }
+            dictionary.put(ReportConstants.SHIPMENT_CONTAINERS, shipmentContainersList);
+            List<Map<String, Object>> valuesContainer = new ArrayList<>();
+            for (ShipmentContainers shipmentContainers : shipmentContainersList) {
+                String shipContJson = jsonHelper.convertToJson(shipmentContainers);
+                valuesContainer.add(jsonHelper.convertJsonToMap(shipContJson));
+            }
+            for (Map<String, Object> v : valuesContainer) {
+                if(v.containsKey(ReportConstants.GROSS_VOLUME) && v.get(ReportConstants.GROSS_VOLUME) != null)
+                    v.put(ReportConstants.GROSS_VOLUME, addCommas(v.get(ReportConstants.GROSS_VOLUME).toString()));
+                if (v.containsKey(ReportConstants.GROSS_WEIGHT) && v.get(ReportConstants.GROSS_WEIGHT) != null)
+                    v.put(ReportConstants.GROSS_WEIGHT, addCommas(v.get(ReportConstants.GROSS_WEIGHT).toString()));
+                if (v.containsKey(ReportConstants.SHIPMENT_PACKS) && v.get(ReportConstants.SHIPMENT_PACKS) != null)
+                    v.put(ReportConstants.SHIPMENT_PACKS, addCommaWithoutDecimal(new BigDecimal(v.get(ReportConstants.SHIPMENT_PACKS).toString())));
+                if (v.containsKey(ReportConstants.TareWeight) && v.get(ReportConstants.TareWeight) != null)
+                    v.put(ReportConstants.TareWeight, addCommas(v.get(ReportConstants.TareWeight).toString()));
+                if (v.containsKey(ReportConstants.VGMWeight) && v.get(ReportConstants.VGMWeight) != null)
+                    v.put(ReportConstants.VGMWeight, addCommas(v.get(ReportConstants.VGMWeight).toString()));
+            }
+            dictionary.put(ReportConstants.SHIPMENT_CONTAINERS, valuesContainer);
+            dictionary.put(ReportConstants.TotalCntrWeight, addCommas(Total_GrossWeight));
+            dictionary.put(ReportConstants.TotalCntrVolume, addCommas(Total_GrossVolume));
+            dictionary.put(ReportConstants.TotalCntrCount, addCommaWithoutDecimal(new BigDecimal(Total_ContainerCount)));
+            dictionary.put(ReportConstants.TotalCntrPacks, addCommaWithoutDecimal(new BigDecimal(Total_Packs)));
+        }
         return dictionary;
     }
 

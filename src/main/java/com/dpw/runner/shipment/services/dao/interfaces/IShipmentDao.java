@@ -22,4 +22,5 @@ public interface IShipmentDao {
     List<ShipmentDetails> findByBookingReference(String Hbl);
     void updateDateAndStatus(long id, LocalDateTime date, Integer status);
     Long findMaxId();
+    void saveJobStatus(Long id, String jobStatus);
 }

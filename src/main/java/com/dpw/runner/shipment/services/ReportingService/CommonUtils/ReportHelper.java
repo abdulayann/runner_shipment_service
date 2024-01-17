@@ -2,9 +2,9 @@ package com.dpw.runner.shipment.services.ReportingService.CommonUtils;
 
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PartiesModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
-import com.dpw.runner.shipment.services.ReportingService.Reports.IReport;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.Hbl;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferDGSubstance;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
@@ -153,8 +153,10 @@ public class ReportHelper {
     }
 
     public static String getValueFromMap(Map<String, Object> dataMap, String key) {
+        if (dataMap == null)
+            return null;
         Object value = dataMap.get(key);
-        if(value == null || ! (value instanceof String)) {
+        if (value == null || !(value instanceof String)) {
             return null;
         }
         return value.toString();
@@ -210,19 +212,6 @@ public class ReportHelper {
             return combineStringsWithComma(unlocationsResponse.getName(), unlocationsResponse.getCountry());
         }
         return "";
-    }
-
-    public static void JsonDateFormat(Map<String, Object> dictionary) {
-        if (dictionary != null) {
-            Map<String, Object> dictionaryCopy = new LinkedHashMap<>(dictionary);
-            for (Map.Entry<String, Object> entry : dictionaryCopy.entrySet()) {
-                Object value = entry.getValue();
-                if (value != null && value instanceof LocalDateTime) {
-                    LocalDateTime val = (LocalDateTime) value;
-                    dictionary.put(entry.getKey(), IReport.ConvertToDPWDateFormat(val));
-                }
-            }
-        }
     }
 
     public static String twoDecimalPlacesFormat(String value){
@@ -361,6 +350,21 @@ public class ReportHelper {
         if (amount == null) return null;
         DecimalFormat decimalFormat = new DecimalFormat("#,###");
         return decimalFormat.format(amount);
+    }
+
+    public static EntityTransferDGSubstance fetchDgSubstanceRow(Integer dgSubstanceId) {
+        var dgSubstanceRow = new EntityTransferDGSubstance();
+        if(dgSubstanceId == null)
+            return dgSubstanceRow;
+        List<Object> criteria = Arrays.asList(List.of("Id"), "=", dgSubstanceId);
+        CommonV1ListRequest listRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(criteria).build();
+        V1DataResponse v1DataResponse = v1Service.fetchDangerousGoodData(listRequest);
+
+        if(v1DataResponse.entities != null) {
+            dgSubstanceRow = jsonHelper.convertValueToList(v1DataResponse.entities, EntityTransferDGSubstance.class).get(0);
+        }
+
+        return dgSubstanceRow;
     }
 
 }
