@@ -17,6 +17,14 @@ public class ReportConstants {
     public static final String MASTER_BILL = "MasterBill";
     public static final String HOUSE_BILL = "HouseBill";
     public static final String VESSEL_NAME = "VesselName";
+    public static final String Vessel = "Vessel";
+    public static final String PlaceofLoadCountry = "PlaceofLoadCountry";
+    public static final String PlaceofLoadPort = "PlaceofLoadPort";
+    public static final String PlaceofLoadCode = "PlaceofLoadCode";
+    public static final String PlaceofDischargeCountry = "PlaceofDischargeCountry";
+    public static final String PlaceofDischargePort = "PlaceofDischargePort";
+    public static final String PlaceofDischargeCode = "PlaceofDischargeCode";
+    public static final String ContainerType = "ContainerType";
     public static final String VOYAGE = "Voyage";
     public static final String POR = "POR";
     public static final String POL = "POL";
@@ -85,6 +93,12 @@ public class ReportConstants {
     public static final String COMMODITY_DESC = "CommodityDesc";
     public static final String PACKS_DETAILS = "PacksDetails";
     public static final String HAS_PACKAGES = "hasPackages";
+    public static final String TareWeight = "TareWeight";
+    public static final String VGMWeight = "VGMWeight";
+    public static final String TotalCntrWeight = "TotalCntrWeight";
+    public static final String TotalCntrVolume = "TotalCntrVolume";
+    public static final String TotalCntrCount = "TotalCntrCount";
+    public static final String TotalCntrPacks = "TotalCntrPacks";
     public static final String GROSS_WEIGHT = "GrossWeight";
     public static final String SHIPMENT_DETAIL_DATE_OF_ISSUE = "DateofIssue";
     public static final String GROSS_WEIGHT_UNIT = "GrossWeightUnit";

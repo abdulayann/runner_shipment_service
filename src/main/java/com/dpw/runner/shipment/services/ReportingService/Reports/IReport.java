@@ -10,9 +10,11 @@ import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.*;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
+import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
+import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
 import com.dpw.runner.shipment.services.dto.request.HblPartyDto;
@@ -22,6 +24,7 @@ import com.dpw.runner.shipment.services.dto.request.hbl.HblDataDto;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.CarrierMasterData;
 import com.dpw.runner.shipment.services.masterdata.dto.MasterData;
@@ -35,11 +38,14 @@ import com.dpw.runner.shipment.services.masterdata.response.*;
 import com.dpw.runner.shipment.services.repository.interfaces.IAwbRepository;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
+import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.google.common.base.Strings;
 import com.nimbusds.jose.util.Pair;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -86,6 +92,12 @@ public abstract class IReport {
     MasterDataFactory masterDataFactory;
     @Autowired
     private IV1Service v1Service;
+    @Autowired
+    CacheManager cacheManager;
+    @Autowired
+    private MasterDataUtils masterDataUtils;
+    @Autowired
+    CustomKeyGenerator keyGenerator;
 
     public abstract Map<String, Object> getData(Long id);
     abstract IDocumentModel getDocumentModel(Long id);
@@ -120,6 +132,35 @@ public abstract class IReport {
         ship.CarrierSealNumber = row.getCarrierSealNumber();
         ship.CustomsSealNumber = row.getCustomsSealNumber();
         ship.ShipperSealNumber = row.getShipperSealNumber();
+
+        try {
+            List<MasterListRequest> requests = new ArrayList<>();
+            Cache cache = cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA);
+
+            Cache.ValueWrapper value1 = cache.get(keyGenerator.customCacheKeyForMasterData(CacheConstants.MASTER_LIST, ship.GrossVolumeUnit));
+            if(Objects.isNull(value1))
+                requests.add(MasterListRequest.builder().ItemType(MasterDataType.VOLUME_UNIT.getDescription()).ItemValue(ship.GrossVolumeUnit).Cascade(null).build());
+
+            Cache.ValueWrapper value2 = cache.get(keyGenerator.customCacheKeyForMasterData(CacheConstants.MASTER_LIST, ship.GrossWeightUnit));
+            if(Objects.isNull(value2))
+                requests.add(MasterListRequest.builder().ItemType(MasterDataType.WEIGHT_UNIT.getDescription()).ItemValue(ship.GrossWeightUnit).Cascade(null).build());
+
+            Cache.ValueWrapper value3 = cache.get(keyGenerator.customCacheKeyForMasterData(CacheConstants.MASTER_LIST, ship.ShipmentPacksUnit));
+            if(Objects.isNull(value3))
+                requests.add(MasterListRequest.builder().ItemType(MasterDataType.PACKS_UNIT.getDescription()).ItemValue(ship.ShipmentPacksUnit).Cascade(null).build());
+
+            if(requests.size() > 0) {
+                MasterListRequestV2 masterListRequestV2 = new MasterListRequestV2();
+                masterListRequestV2.setMasterListRequests(requests);
+                masterListRequestV2.setIncludeCols(Arrays.asList("ItemType", "ItemValue", "ItemDescription", "ValuenDesc", "Cascade"));
+                Map<String, EntityTransferMasterLists> keyMasterDataMap = masterDataUtils.fetchInBulkMasterList(masterListRequestV2);
+                masterDataUtils.pushToCache(keyMasterDataMap, CacheConstants.MASTER_LIST);
+            }
+            ship.VolumeUnitDescription = getMasterListItemDesc(ship.GrossVolumeUnit);
+            ship.WeightUnitDescription = getMasterListItemDesc(ship.GrossWeightUnit);
+            ship.PacksUnitDescription = getMasterListItemDesc(ship.ShipmentPacksUnit);
+            ship.VGMWeight = ship.GrossWeight.add(ship.TareWeight);
+        } catch (Exception ignored) { }
         CommodityResponse commodityResponse = getCommodity(row.getCommodityCode());
         if (commodityResponse != null)
             ship.CommodityDescription = commodityResponse.getDescription();
@@ -129,6 +170,18 @@ public abstract class IReport {
                 ship.CommodityGroup = commodity.getItemDescription();
         }
         return ship;
+    }
+
+    private String getMasterListItemDesc(String value) {
+        var valueMapper = cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA).get(keyGenerator.customCacheKeyForMasterData(CacheConstants.MASTER_LIST, value));
+        if(!Objects.isNull(valueMapper)) {
+            EntityTransferMasterLists object = (EntityTransferMasterLists) valueMapper.get();
+            String val = value;
+            if(!Objects.isNull(object) && object.getItemDescription() != null)
+                val = object.getItemDescription();
+            return val.toUpperCase();
+        }
+        return value;
     }
 
     public String getTotalPackUnitCode(List<ShipmentModel> shipmentModelList) {
@@ -230,16 +283,17 @@ public abstract class IReport {
         dictionary.put(ReportConstants.CONTAINER_COUNT, containerCount);
         dictionary.put(PICKUP_INSTRUCTION, shipment.getPickupDetails() != null ? shipment.getPickupDetails().getPickupDeliveryInstruction() : null);
         dictionary.put(DELIVERY_INSTRUCTIONS, shipment.getDeliveryDetails() != null ? shipment.getDeliveryDetails().getPickupDeliveryInstruction() : null);
-        dictionary.put(ReportConstants.ETA, ConvertToDPWDateFormat(shipment.getCarrierDetails() != null ? shipment.getCarrierDetails().getEta() : null));
-        dictionary.put(ReportConstants.ETD, ConvertToDPWDateFormat(shipment.getCarrierDetails() != null ? shipment.getCarrierDetails().getEtd() : null));
-        dictionary.put(ReportConstants.ATA, ConvertToDPWDateFormat(shipment.getCarrierDetails() != null ? shipment.getCarrierDetails().getAta() : null));
-        dictionary.put(ReportConstants.ATD, ConvertToDPWDateFormat(shipment.getCarrierDetails() != null ? shipment.getCarrierDetails().getAtd() : null));
+        V1TenantSettingsResponse v1TenantSettingsResponse = getTenantSettings();
+        String tsDateTimeFormat = v1TenantSettingsResponse.getDPWDateFormat();
+        dictionary.put(ReportConstants.ETA, ConvertToDPWDateFormat(shipment.getCarrierDetails() != null ? shipment.getCarrierDetails().getEta() : null, tsDateTimeFormat));
+        dictionary.put(ReportConstants.ETD, ConvertToDPWDateFormat(shipment.getCarrierDetails() != null ? shipment.getCarrierDetails().getEtd() : null, tsDateTimeFormat));
+        dictionary.put(ReportConstants.ATA, ConvertToDPWDateFormat(shipment.getCarrierDetails() != null ? shipment.getCarrierDetails().getAta() : null, tsDateTimeFormat));
+        dictionary.put(ReportConstants.ATD, ConvertToDPWDateFormat(shipment.getCarrierDetails() != null ? shipment.getCarrierDetails().getAtd() : null, tsDateTimeFormat));
         dictionary.put(ReportConstants.DATE_OF_DEPARTURE, dictionary.get(ReportConstants.ATD) == null ? dictionary.get(ReportConstants.ETD) : dictionary.get(ReportConstants.ATD));
-        dictionary.put(ReportConstants.SYSTEM_DATE, ConvertToDPWDateFormat(LocalDateTime.now()));
-        dictionary.put(ReportConstants.ONBOARD_DATE, ConvertToDPWDateFormat(additionalDetails.getOnBoardDate()));
+        dictionary.put(ReportConstants.SYSTEM_DATE, ConvertToDPWDateFormat(LocalDateTime.now(), tsDateTimeFormat));
+        dictionary.put(ReportConstants.ONBOARD_DATE, ConvertToDPWDateFormat(additionalDetails.getOnBoardDate(), tsDateTimeFormat));
         dictionary.put(ReportConstants.ESTIMATED_READY_FOR_PICKUP, pickup != null ? pickup.getEstimatedPickupOrDelivery() : null);
         String formatPattern = "dd/MMM/y";
-        V1TenantSettingsResponse v1TenantSettingsResponse = getTenantSettings();
         if(!CommonUtils.IsStringNullOrEmpty(v1TenantSettingsResponse.getDPWDateFormat()))
             formatPattern = v1TenantSettingsResponse.getDPWDateFormat();
         dictionary.put(ReportConstants.DATE_OF_ISSUE, GenerateFormattedDate(additionalDetails.getDateOfIssue(), formatPattern));
@@ -935,12 +989,18 @@ public abstract class IReport {
         return "MM/dd/yyyy";
     }
 
-    public String ConvertToDPWDateFormat(LocalDateTime date)
+    public String ConvertToDPWDateFormat(LocalDateTime date) {
+        return ConvertToDPWDateFormat(date, null);
+    }
+    public String ConvertToDPWDateFormat(LocalDateTime date, String tsDatetimeFormat)
     {
         String strDate = "";
         if (date != null)
         {
-            strDate = date.format(GetDPWDateFormatOrDefault());
+            if(!IsStringNullOrEmpty(tsDatetimeFormat))
+                strDate = date.format(DateTimeFormatter.ofPattern(tsDatetimeFormat));
+            else
+                strDate = date.format(GetDPWDateFormatOrDefault());
         }
         return strDate;
     }
