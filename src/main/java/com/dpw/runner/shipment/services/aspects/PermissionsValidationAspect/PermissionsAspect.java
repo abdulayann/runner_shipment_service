@@ -19,6 +19,7 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOLIDATION_LIST_PERMISSION;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_LIST_PERMISSION;
 
 @Aspect
@@ -44,11 +45,40 @@ public class PermissionsAspect {
                 return Integer.compare(o1.length(), o2.length());
             }
         });
-        List<FilterCriteria> criterias = PermissionUtil.generateFilterCriteriaFromPermissions(permissionList);
+        List<FilterCriteria> criterias = PermissionUtil.generateFilterCriteriaFromPermissions(permissionList, true);
 
         FilterCriteria criteria1 = null;
         if(listCommonRequest.getFilterCriteria() != null && listCommonRequest.getFilterCriteria().size() > 1) {
            criteria1 = FilterCriteria.builder().innerFilter(listCommonRequest.getFilterCriteria()).build();
+        }
+        FilterCriteria criteria2 = FilterCriteria.builder().innerFilter(criterias).build();
+        if(criteria2 != null && (criteria2.getCriteria() != null || (criteria2.getInnerFilter() != null && criteria2.getInnerFilter().size() > 0))) {
+            if (criteria1 != null && criteria1.getInnerFilter().size() > 0) {
+                criteria2.setLogicOperator("AND");
+                listCommonRequest.setFilterCriteria(Arrays.asList(criteria1, criteria2));
+            } else
+                listCommonRequest.setFilterCriteria(Arrays.asList(criteria2));
+        }
+    }
+
+    @Before("execution(* com.dpw.runner.shipment.services.service.interfaces.IConsolidationService+.*(..)) && args(commonRequestModel)")
+    public void beforeConsolidationList(JoinPoint joinPoint, CommonRequestModel commonRequestModel) {
+        if (commonRequestModel.getData() == null || !commonRequestModel.getData().getClass().isAssignableFrom(ListCommonRequest.class)) {
+            return;
+        }
+        ListCommonRequest listCommonRequest = (ListCommonRequest) commonRequestModel.getData();
+        List<String> permissionList = PermissionsContext.getPermissions(CONSOLIDATION_LIST_PERMISSION);
+        permissionList.sort(new Comparator<String>() {
+            @Override
+            public int compare(String o1, String o2) {
+                return Integer.compare(o1.length(), o2.length());
+            }
+        });
+        List<FilterCriteria> criterias = PermissionUtil.generateFilterCriteriaFromPermissions(permissionList, false);
+
+        FilterCriteria criteria1 = null;
+        if(listCommonRequest.getFilterCriteria() != null && listCommonRequest.getFilterCriteria().size() > 1) {
+            criteria1 = FilterCriteria.builder().innerFilter(listCommonRequest.getFilterCriteria()).build();
         }
         FilterCriteria criteria2 = FilterCriteria.builder().innerFilter(criterias).build();
         if(criteria2 != null && (criteria2.getCriteria() != null || (criteria2.getInnerFilter() != null && criteria2.getInnerFilter().size() > 0))) {

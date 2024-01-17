@@ -7,6 +7,7 @@ public class Constants {
     public static final int TRANSPORT_MODE_INDEX = 0;
     public static final String DIRECTION = "direction";
     public static final String SHIPMENT_TYPE = "shipmentType";
+    public static final String CONTAINER_CATEGORY = "containerCategory";
     public static final int DIRECTION_INDEX = 1;
     public static final int SHIPMENT_TYPE_INDEX = 2;
 
@@ -17,8 +18,12 @@ public class Constants {
     public static final String DELIMITER = "-";
     public static final String SHIPMENT_LIST_PERMISSION = "ShipmentList";
     public static final String SHIPMENT_RETRIEVE_PERMISSION = "ShipmentRetrive";
+    public static final String SHIPMENT_CREATE_PERMISSION = "ShipmentCreate";
+    public static final String SHIPMENT_UPDATE_PERMISSION = "ShipmentUpdate";
     public static final String CONSOLIDATION_LIST_PERMISSION = "ConsolidationList";
     public static final String CONSOLIDATION_RETRIEVE_PERMISSION = "ConsolidationRetrive";
+    public static final String CONSOLIDATION_CREATE_PERMISSION = "ConsolidationCreate";
+    public static final String CONSOLIDATION_UPDATE_PERMISSION = "ConsolidationUpdate";
 
     public static final String ALL = "all";
     public static final String BROWSER_TIMEZONE = "browser-timezone";
