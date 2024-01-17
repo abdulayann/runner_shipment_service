@@ -75,7 +75,7 @@ public class PreAlertReport extends IReport {
         if (preAlertModel.shipmentDetails.getAdditionalDetails().getNotifyParty() != null) {
             notify = getOrgAddressWithPhoneEmail(preAlertModel.shipmentDetails.getAdditionalDetails().getNotifyParty());
         }
-        if (preAlertModel.shipmentDetails.getClient().getAddressData() != null && getValueFromMap(preAlertModel.shipmentDetails.getClient().getAddressData(), ReportConstants.COMPANY_NAME) != null) {
+        if (preAlertModel.shipmentDetails.getClient() != null && preAlertModel.shipmentDetails.getClient().getAddressData() != null && getValueFromMap(preAlertModel.shipmentDetails.getClient().getAddressData(), ReportConstants.COMPANY_NAME) != null) {
             dictionary.put(ReportConstants.CLIENT_NAME, getValueFromMap(preAlertModel.shipmentDetails.getClient().getAddressData(), ReportConstants.COMPANY_NAME));
         }
         if (preAlertModel.shipmentDetails.getConsigner() != null &&

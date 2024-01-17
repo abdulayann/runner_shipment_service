@@ -153,8 +153,10 @@ public class ReportHelper {
     }
 
     public static String getValueFromMap(Map<String, Object> dataMap, String key) {
+        if (dataMap == null)
+            return null;
         Object value = dataMap.get(key);
-        if(value == null || ! (value instanceof String)) {
+        if (value == null || !(value instanceof String)) {
             return null;
         }
         return value.toString();
