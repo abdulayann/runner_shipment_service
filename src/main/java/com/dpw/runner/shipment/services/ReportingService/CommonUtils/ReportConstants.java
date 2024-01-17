@@ -118,6 +118,7 @@ public class ReportConstants {
     public static final String DELIVERY_CFS = "DeliveryCfs";
     public static final String PICKUP_CFS = "PickUpCfs";
     public static final String PICKUP_TRANSPORT = "PickUpTransport";
+    public static final String DELIVERY_TIME = "DeliveryTime";
     public static final String DELIVERY_AGENT = "DeliveryAgent";
     public static final String MARKS_N_NUMS = "MarksnNums";
     public static final String MARKS_NO = "MarksNo";
@@ -486,6 +487,7 @@ public class ReportConstants {
     public static final String MAWB_NO = "MAWBNo";
     public static final String NEUTRAL_AWB_NO = "NeutralAWBNo";
     public static final String HAWB_NO = "HAWBNo";
+    public static final String PRINT_USER = "PrintUser";
     public static final String PRINT_USER_NAME = "PrintUserName";
     public static final String MAWB_REMAINING = "MAWBRemaining";
     public static final String SPECIAL_HANDLING_CODE = "SpecialHandlingCodes";
@@ -714,6 +716,7 @@ public class ReportConstants {
     public static final String LOADED_TRUCK_GATE_OUT_DATE = "LoadedTruckGateOutDate";
     public static final String PICKUP_PORT_TRANSPORT_ADVISED = "PickupPortTransportAdvised";
     public static final String PICKUP_INSTRUCTION = "PickUpInstruction";
+    public static final String PICKUP_COMPANY = "PickUpCompany";
     public static final String LOADED_DATE = "LoadedDate";
     public static final String ACTUAL_DELIVERY = "ActualDelivery";
 
@@ -764,4 +767,28 @@ public class ReportConstants {
     public static final String CAN_GEN = "CRGARVNTC";
     public static final String DELIVERY_ORDER_GEN = "DELORD";
     public static final String PICKUP_ORDER_GEN = "PICORDCNF";
+
+    // P0 new document keys
+    public static final String HAZARDOUS_DETAILS = "HazardousDetails";
+    public static final String QUOTE_HAS_CONTAINERS = "HasContainers";
+    public static final String SHIPMENT_PACKING_HAS_CONTAINERS = QUOTE_HAS_CONTAINERS;
+
+    public static final String DG_SUBSTANCE = "DGSubstance";
+    public static final String DG_CLASS = "DGClass";
+    public static final String CLASS_DIVISION = "ClassDivision";
+    public static final String UNID_NO = "UNIDNo";
+    public static final String DANGEROUS_GOODS = "DangerousGoods";
+
+    public static final String MIN_TEMP = "MinTemp";
+    public static final String MAX_TEMP = "MaxTemp";
+    public static final String MIN_TEMP_UNIT = "MinTempUnit";
+    public static final String MAX_TEMP_UNIT = "MaxTempUnit";
+
+    public static final String SHIPMENT_PACKING_LENGTH = "Length";
+    public static final String SHIPMENT_PACKING_LENGTH_UNIT = "LengthUnit";
+    public static final String SHIPMENT_PACKING_WIDTH = "Width";
+    public static final String SHIPMENT_PACKING_WIDTH_UNIT = "WidthUnit";
+    public static final String SHIPMENT_PACKING_HEIGHT = "Height";
+    public static final String SHIPMENT_PACKING_HEIGHT_UNIT = "HeightUnit";
+    public static final String ChargeableUnit = "ChargeableUnit";
 }

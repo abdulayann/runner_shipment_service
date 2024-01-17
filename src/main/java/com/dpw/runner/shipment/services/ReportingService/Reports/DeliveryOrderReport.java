@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConst
 import com.dpw.runner.shipment.services.ReportingService.Models.DeliveryOrderModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ContainerModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PickupDeliveryDetailsModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
@@ -21,10 +22,13 @@ import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.DELIVERY_TIME;
 
 @Component
 public class DeliveryOrderReport extends IReport{
@@ -98,6 +102,18 @@ public class DeliveryOrderReport extends IReport{
         dictionary.put(ReportConstants.PPCC, deliveryOrderModel.paymentTerms);
         dictionary.put(ReportConstants.CONTAINER_COUNT_BY_CODE, getCountByContainerTypeCode(deliveryOrderModel.containers));
         dictionary.put(ReportConstants.SHIPMENT_CONTAINERS, deliveryOrderModel.containers);
+
+        //Add P0 tags
+        PickupDeliveryDetailsModel deliveryDetails = deliveryOrderModel.shipmentDetails.getDeliveryDetails();
+        if(deliveryDetails != null) {
+            LocalDateTime deliveryTime = deliveryDetails.getActualPickupOrDelivery() != null ? deliveryDetails.getActualPickupOrDelivery() :
+                    deliveryDetails.getEstimatedPickupOrDelivery();
+            dictionary.put(DELIVERY_TIME,  ConvertToDPWDateFormat(deliveryTime));
+        }
+
+        getPackingDetails(deliveryOrderModel.shipmentDetails, dictionary);
+
+
         return dictionary;
     }
 }

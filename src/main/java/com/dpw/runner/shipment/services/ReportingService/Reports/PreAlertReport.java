@@ -217,6 +217,7 @@ public class PreAlertReport extends IReport {
             }
             dictionary.put(ReportConstants.PACKS_DETAILS, packDictionary);
         }
+        populateHasContainerFields(preAlertModel.shipmentDetails, dictionary);
         return dictionary;
     }
 }
