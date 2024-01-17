@@ -699,11 +699,11 @@ public class ReportConstants {
     public static final String EMPTY_TRUCK_IN_DATE = "EmptyTruckInDate";
     public static final String LOADED_TRUCK_GATE_OUT_DATE = "LoadedTruckGateOutDate";
     public static final String PICKUP_PORT_TRANSPORT_ADVISED = "PickupPortTransportAdvised";
-    public static final String PICKUP_INSTRUCTION = "PickUpInstructions";
+    public static final String PICKUP_INSTRUCTION = "PickUpInstruction";
     public static final String LOADED_DATE = "LoadedDate";
     public static final String ACTUAL_DELIVERY = "ActualDelivery";
 
-    public static final String DELIVERY_INSTRUCTIONS = "DeliveryInstructions";
+    public static final String DELIVERY_INSTRUCTIONS = "DeliveryInstruction";
     public static final String SHIPMENT_DELIVERY_DELIVERYINSTRUCTION = "DeliveryInstruction";
     public static final String SHIPMENT_PICKUP_PICKUPINSTRUCTION = "PickUpInstruction";
 
