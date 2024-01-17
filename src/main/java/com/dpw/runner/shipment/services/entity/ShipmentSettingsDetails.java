@@ -15,6 +15,7 @@ import java.util.List;
 @Entity
 @Setter
 @Getter
+@Builder
 @Table(name = "shipment_setting")
 @Accessors(chain = true)
 @ToString(onlyExplicitlyIncluded = true)
