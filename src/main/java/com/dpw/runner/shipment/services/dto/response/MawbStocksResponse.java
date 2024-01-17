@@ -23,7 +23,7 @@ public class MawbStocksResponse implements IRunnerResponse {
     private Long startNumber;
     private String from;
     private String to;
-    private Long borrowedFrom;
+    private String borrowedFrom;
     private String borrowedFromFullName;
     private List<MawbStocksLinkResponse> mawbStocksLinkRows;
 }
