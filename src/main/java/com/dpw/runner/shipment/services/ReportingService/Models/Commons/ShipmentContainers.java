@@ -46,4 +46,8 @@ public class ShipmentContainers {
     public String BL_CustomSealNumber;
     public String CommodityDescription;
     public String CommodityGroup;
+    public BigDecimal VGMWeight;
+    public String WeightUnitDescription;
+    public String VolumeUnitDescription;
+    public String PacksUnitDescription;
 }
