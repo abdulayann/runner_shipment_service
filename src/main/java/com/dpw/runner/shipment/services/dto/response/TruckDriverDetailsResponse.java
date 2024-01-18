@@ -28,4 +28,6 @@ public class TruckDriverDetailsResponse implements IRunnerResponse {
     private Long containerId;
     private Long consolidationId;
     private String selfTransporterName;
+    private String remarks;
+    private String truckStatus;
 }

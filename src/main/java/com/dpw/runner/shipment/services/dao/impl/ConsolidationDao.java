@@ -4,10 +4,8 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext
 import com.dpw.runner.shipment.services.commons.constants.ConsolidationConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
-import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.SortRequest;
-import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
@@ -19,7 +17,6 @@ import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.masterdata.response.CarrierResponse;
 import com.dpw.runner.shipment.services.repository.interfaces.IConsolidationRepository;
 import com.dpw.runner.shipment.services.repository.interfaces.IShipmentRepository;
-import com.dpw.runner.shipment.services.service.interfaces.IMasterDataService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
@@ -31,9 +28,10 @@ import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Repository;
 
+import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.*;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
@@ -107,18 +105,26 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
         return consolidationDetails;
     }
 
-    private void onSave(ConsolidationDetails consolidationDetails, Set<String> errors, ConsolidationDetails oldConsole, boolean fromV1Sync)
-    {
+    private void onSave(ConsolidationDetails consolidationDetails, Set<String> errors, ConsolidationDetails oldConsole, boolean fromV1Sync) {
         errors.addAll(applyConsolidationValidations(consolidationDetails, oldConsole));
-        if (! errors.isEmpty())
+        if (!errors.isEmpty())
             throw new ValidationException(errors.toString());
-        if(!fromV1Sync && consolidationDetails.getTransportMode() != null
+        if (consolidationDetails.getTransportMode() != null && consolidationDetails.getCarrierDetails() != null &&
+                consolidationDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)) {
+            LocalDateTime eta = consolidationDetails.getCarrierDetails().getEta();
+            LocalDateTime etd = consolidationDetails.getCarrierDetails().getEtd();
+            Duration duration = Duration.between(etd, eta);
+            if (duration.toHours() > 24) {
+                throw new ValidationException("Difference between ETA and ETD should not be more than 24 hours");
+            }
+        }
+        if (!fromV1Sync && consolidationDetails.getTransportMode() != null
                 && consolidationDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)
                 && consolidationDetails.getMawb() != null
                 && (oldConsole == null || oldConsole.getMawb() == null || !oldConsole.getMawb().equalsIgnoreCase(consolidationDetails.getMawb())))
             consolidationMAWBCheck(consolidationDetails);
         consolidationDetails = consolidationRepository.save(consolidationDetails);
-        if(!fromV1Sync && StringUtility.isNotEmpty(consolidationDetails.getMawb()) && StringUtility.isNotEmpty(consolidationDetails.getShipmentType()) && !consolidationDetails.getShipmentType().equalsIgnoreCase(Constants.IMP)) {
+        if (!fromV1Sync && StringUtility.isNotEmpty(consolidationDetails.getMawb()) && StringUtility.isNotEmpty(consolidationDetails.getShipmentType()) && !consolidationDetails.getShipmentType().equalsIgnoreCase(Constants.IMP)) {
             setMawbStock(consolidationDetails);
         }
     }
