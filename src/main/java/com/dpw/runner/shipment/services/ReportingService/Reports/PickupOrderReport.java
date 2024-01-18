@@ -43,8 +43,10 @@ public class PickupOrderReport extends IReport {
     Map<String, Object> populateDictionary(IDocumentModel documentModel) {
         Map<String, Object> dictionary = hblReport.getData(this.id);
         PickUpOrderReportModel pickUpOrderReportModel = (PickUpOrderReportModel) documentModel;
-        dictionary.put(ReportConstants.PICKUP_TRANSPORT_CONTACT_PERSON, pickUpOrderReportModel.pickUpTransportAddress.getAddressData().get("ContactPerson"));
         try {
+            if(pickUpOrderReportModel.pickUpTransportAddress != null && pickUpOrderReportModel.pickUpTransportAddress.getAddressData() != null)
+                dictionary.put(ReportConstants.PICKUP_TRANSPORT_CONTACT_PERSON, pickUpOrderReportModel.pickUpTransportAddress.getAddressData().get("ContactPerson"));
+
             if (pickUpOrderReportModel.shipment != null && pickUpOrderReportModel.shipment.getPickupDetails() != null) {
                 PickupDeliveryDetailsModel pickupDetails = pickUpOrderReportModel.shipment.getPickupDetails();
                 List<String> pickUpFrom = ReportHelper.getOrgAddress(pickupDetails.getSourceDetail());
