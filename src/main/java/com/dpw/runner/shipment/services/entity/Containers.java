@@ -312,4 +312,7 @@ public class Containers extends MultiTenancy {
 
     @Column(name = "is_attached")
     private Boolean isAttached;
+
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "shipmentId")
+    private List<TruckDriverDetails> truckingDetails;
 }

@@ -27,4 +27,8 @@ public class TruckDriverDetailsRequestV2 {
     private String TruckNumberPlate;
     @JsonProperty("TruckOrTrailerType")
     private String TruckOrTrailerType;
+    @JsonProperty("Remarks")
+    private String Remarks;
+    @JsonProperty("TruckStatus")
+    private String TruckStatus;
 }
