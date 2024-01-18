@@ -2930,9 +2930,6 @@ public class ConsolidationService implements IConsolidationService {
         if (consolidationDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)) {
             consolidationDetails.setMawb(consolidationDetails.getBol());
         }
-        if(consolidationDetails.getGuid() != null && consolidationDetails.getSourceGuid() == null){
-            consolidationDetails.setSourceGuid(consolidationDetails.getGuid());
-        }
     }
 
     @Override
