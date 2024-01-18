@@ -1761,6 +1761,14 @@ public class ShipmentService implements IShipmentService {
         if(!IsStringNullOrEmpty(shipmentDetails.getJobType()) && shipmentDetails.getJobType().equals(Constants.SHIPMENT_TYPE_DRT)){
             shipmentDetails.setHouseBill(shipmentDetails.getMasterBill());
         }
+        // set shipment date of Issue in case of Original / surrender release Type ( valid for HBL | HAWB)
+        if(shipmentHasHblOrHawb(shipmentDetails)) {
+            List<String> releaseTypes = List.of("OBO", "OBL", "OBR");
+            if(shipmentDetails.getAdditionalDetails() != null && releaseTypes.contains(shipmentDetails.getAdditionalDetails().getReleaseType())) {
+                shipmentDetails.getAdditionalDetails().setDateOfIssue(LocalDateTime.now());
+            }
+        }
+
         v1ServiceUtil.validateCreditLimit(shipmentDetails.getClient(), ShipmentConstants.SHIPMENT_CREATION, shipmentDetails.getGuid());
     }
 
@@ -4003,6 +4011,18 @@ public class ShipmentService implements IShipmentService {
             tenantSettings = shipmentSettingsDetailsList.get(0);
 
         return tenantSettings;
+    }
+
+    private boolean shipmentHasHblOrHawb(ShipmentDetails shipmentDetails) {
+        boolean res = false;
+        if(shipmentDetails.getTransportMode() == null || shipmentDetails.getDirection() == null)
+            return false;
+        if(shipmentDetails.getTransportMode().equals("AIR") && shipmentDetails.getDirection().equals("EXP") && (
+                shipmentDetails.getJobType() != null && shipmentDetails.getJobType().equals("STD")))
+            res = true;
+        if(shipmentDetails.getTransportMode().equals("SEA") && shipmentDetails.getDirection().equals("EXP"))
+            res = true;
+        return res;
     }
 
 }
