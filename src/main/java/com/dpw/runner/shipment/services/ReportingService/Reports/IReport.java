@@ -329,9 +329,9 @@ public abstract class IReport {
         if (masterListsMap.containsKey(shipment.getPacksUnit()))
             masterData = masterListsMap.get(shipment.getPacksUnit());
         dictionary.put(ReportConstants.PACKS_UNIT_DESC, masterData != null && StringUtility.isNotEmpty(masterData.getItemDescription()) ? masterData.getItemDescription() : shipment.getPacksUnit());
-        dictionary.put(ReportConstants.GROSS_WEIGHT,shipment.getWeight());
+        dictionary.put(ReportConstants.GROSS_WEIGHT, ReportHelper.ConvertToWeightNumberFormat(shipment.getWeight()));
         dictionary.put(ReportConstants.GROSS_WEIGHT_UNIT,shipment.getWeightUnit());
-        dictionary.put(ReportConstants.GROSS_VOLUME,shipment.getVolume());
+        dictionary.put(ReportConstants.GROSS_VOLUME, ReportHelper.ConvertToVolumeNumberFormat(shipment.getVolume()));
         dictionary.put(ReportConstants.GROSS_VOLUME_UNIT,shipment.getVolumeUnit());
 
         dictionary.put(ReportConstants.DELIVERY_CFS, (delivery != null && !Objects.isNull(delivery.getSourceDetail()) && !Objects.isNull(delivery.getSourceDetail().getOrgData())) ? delivery.getSourceDetail().getOrgData().get(FULL_NAME) : null);
@@ -764,14 +764,14 @@ public abstract class IReport {
         dictionary.put(ReportConstants.DESCRIPTION, hblDataDto.getCargoDescription());
         dictionary.put(ReportConstants.DESCRIPTION_CAPS, hblDataDto.getCargoDescription() != null ? hblDataDto.getCargoDescription().toUpperCase() : null);
         dictionary.put(ReportConstants.PLACE_OF_DELIVERY, hblDataDto.getPlaceOfDelivery());
-        dictionary.put(ReportConstants.CARGO_NET_WEIGHT, hblDataDto.getCargoNetWeight());
+        dictionary.put(ReportConstants.CARGO_NET_WEIGHT, ReportHelper.ConvertToWeightNumberFormat(hblDataDto.getCargoNetWeight()));
         dictionary.put(ReportConstants.CARGO_NET_WEIGHT_UNIT, hblDataDto.getCargoNetWeightUnit());
         dictionary.put(ReportConstants.FINAL_DESTINATION, hblDataDto.getFinalDestination());
-        dictionary.put(ReportConstants.CARGO_GROSS_VOLUME, hblDataDto.getCargoGrossVolume());
+        dictionary.put(ReportConstants.CARGO_GROSS_VOLUME, ReportHelper.ConvertToVolumeNumberFormat(hblDataDto.getCargoGrossVolume()));
         dictionary.put(ReportConstants.CARGO_GROSS_VOLUME_UNIT, hblDataDto.getCargoGrossVolumeUnit());
-        dictionary.put(ReportConstants.CARGO_GROSS_WEIGHT, hblDataDto.getCargoGrossWeight());
+        dictionary.put(ReportConstants.CARGO_GROSS_WEIGHT, ReportHelper.ConvertToWeightNumberFormat(hblDataDto.getCargoGrossWeight()));
         dictionary.put(ReportConstants.CARGO_GROSS_WEIGHT_UNIT, hblDataDto.getCargoGrossWeightUnit());
-        dictionary.put(ReportConstants.CARGO_NET_WEIGHT, hblDataDto.getCargoNetWeight());
+        dictionary.put(ReportConstants.CARGO_NET_WEIGHT, ReportHelper.ConvertToWeightNumberFormat(hblDataDto.getCargoNetWeight()));
         dictionary.put(ReportConstants.CARGO_NET_WEIGHT_UNIT, hblDataDto.getCargoNetWeightUnit());
         dictionary.put(ReportConstants.CARGO_GROSS_PACKAGE_COUNT, hblDataDto.getPackageCount());
         dictionary.put(ReportConstants.CARGO_GROSS_PACKAGE_TYPE, hblDataDto.getPackageType());
