@@ -15,6 +15,7 @@ import javax.persistence.*;
 import javax.validation.constraints.Size;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 @Entity
 @Table(name = "consolidation_details")
@@ -372,4 +373,7 @@ public class ConsolidationDetails extends MultiTenancy {
 
     @Column(name = "auto_update_goods_desc")
     private Boolean autoUpdateGoodsDesc;
+
+    @Column(name = "source_guid")
+    private UUID sourceGuid;
 }

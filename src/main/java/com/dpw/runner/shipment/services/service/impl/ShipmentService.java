@@ -1781,6 +1781,9 @@ public class ShipmentService implements IShipmentService {
         }
 
         v1ServiceUtil.validateCreditLimit(shipmentDetails.getClient(), ShipmentConstants.SHIPMENT_CREATION, shipmentDetails.getGuid());
+        if(shipmentDetails.getGuid() != null && shipmentDetails.getSourceGuid() == null){
+            shipmentDetails.setSourceGuid(shipmentDetails.getGuid());
+        }
     }
 
     public void afterSave(ShipmentDetails shipmentDetails, boolean isCreate) {
