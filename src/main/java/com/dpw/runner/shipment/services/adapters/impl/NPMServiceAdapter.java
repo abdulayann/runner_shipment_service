@@ -16,6 +16,7 @@ import com.dpw.runner.shipment.services.dto.response.FetchOffersResponse;
 import com.dpw.runner.shipment.services.dto.response.ListContractResponse;
 import com.dpw.runner.shipment.services.dto.response.npm.NPMContractsResponse;
 import com.dpw.runner.shipment.services.dto.response.npm.NPMContractsRunnerResponse;
+import com.dpw.runner.shipment.services.dto.response.npm.NPMFetchLangChargeCodeResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.request.npm.*;
 import com.dpw.runner.shipment.services.dto.response.FetchOffersResponse;
@@ -74,6 +75,8 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
 
     @Value("${npmservice.url.importrates}")
     private String npmAwbImportRates;
+    @Value("${NPM.FetchMultiLangChargeCode}")
+    private String npmMultiLangChargeCode;
 
     @Autowired
     JsonHelper jsonHelper;
@@ -93,6 +96,9 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
     @Autowired
     @Qualifier("restTemplateForNpmService")
     private RestTemplate npmServiceRestTemplate;
+    @Autowired
+    @Qualifier("restTemplateForNpmMultiLangChargeCode")
+    private RestTemplate restTemplateMultiLang;
 
     @Autowired
     private IAwbDao awbDao;
@@ -603,6 +609,20 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
                         .weight_uom(containerFromRequest.getGrossWeightUnit())
                         .build())
                 .build();
+    }
+    @Override
+    public NPMFetchLangChargeCodeResponse fetchMultiLangChargeCode(CommonRequestModel commonRequestModel) throws Exception {
+        try {
+            NPMFetchMultiLangChargeCodeRequest request = (NPMFetchMultiLangChargeCodeRequest) commonRequestModel.getData();
+            String url = npmBaseUrl + npmMultiLangChargeCode;
+            log.info("Payload sent for event: {} with request payload: {}", IntegrationType.NPM_FETCH_MULTI_LANG_CHARGE_CODE, jsonHelper.convertToJson(request));
+            ResponseEntity<NPMFetchLangChargeCodeResponse> response = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJson(request)), NPMFetchLangChargeCodeResponse.class);
+            return response.getBody();
+        } catch (HttpStatusCodeException ex) {
+            NpmErrorResponse npmErrorResponse = jsonHelper.readFromJson(ex.getResponseBodyAsString(), NpmErrorResponse.class);
+            log.error("NPM Fetch MultiLang Charge Code failed due to: {}", jsonHelper.convertToJson(npmErrorResponse));
+            throw new NPMException("Error from NPM while fetching MultiLang Charge Code: " + npmErrorResponse.getErrorMessage());
+        }
     }
 
 }

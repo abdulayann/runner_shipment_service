@@ -98,6 +98,7 @@ public class DeliveryOrderReport extends IReport{
         populateConsolidationFields(deliveryOrderModel.consolidationDetails, dictionary);
         populateUserFields(deliveryOrderModel.usersDto, dictionary);
         populateBlFields(deliveryOrderModel.hbl, dictionary);
+        populateShipmentOrganizationsLL(deliveryOrderModel.shipmentDetails, dictionary);
         dictionary.put(ReportConstants.MASTER_BILL_ISSUE_PLACE, deliveryOrderModel.placeOfIssueName);
         dictionary.put(ReportConstants.PPCC, deliveryOrderModel.paymentTerms);
         dictionary.put(ReportConstants.CONTAINER_COUNT_BY_CODE, getCountByContainerTypeCode(deliveryOrderModel.containers));
