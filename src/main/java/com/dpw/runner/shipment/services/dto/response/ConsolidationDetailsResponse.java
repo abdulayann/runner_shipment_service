@@ -130,4 +130,5 @@ public class ConsolidationDetailsResponse implements IRunnerResponse {
     private PackSummaryResponse packSummary;
     private String modeOfBooking;
     private Boolean autoUpdateGoodsDesc;
+    private UUID sourceGuid;
 }

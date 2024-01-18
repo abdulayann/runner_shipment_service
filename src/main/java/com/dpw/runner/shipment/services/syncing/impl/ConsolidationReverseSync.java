@@ -85,6 +85,7 @@ public class ConsolidationReverseSync implements IConsolidationReverseSync {
 
             mapReverseShipmentGuids(response, request);
             response.setGuid(request.getGuid());
+            response.setSourceGuid(request.getSourceGuid());
             return consolidationService.completeV1ConsolidationCreateAndUpdate(CommonRequestModel.buildRequest(response));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
