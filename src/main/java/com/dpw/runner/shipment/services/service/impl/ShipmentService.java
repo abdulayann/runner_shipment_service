@@ -3408,7 +3408,7 @@ public class ShipmentService implements IShipmentService {
             }
             ShipmentRequest cloneShipmentDetails = jsonHelper.convertValue(shipmentDetails.get(), ShipmentRequest.class);
             cloneShipmentDetails.setHouseBill(null);
-            cloneShipmentDetails.setBookingReference(null);
+            cloneShipmentDetails.setBookingNumber(null);
             cloneShipmentDetails.setContainersList(null);
             cloneShipmentDetails.setRoutingsList(null);
             cloneShipmentDetails.setShipmentId(null);
