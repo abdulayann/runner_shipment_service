@@ -28,4 +28,8 @@ public class BookingCarriageRequestV2 {
     private Long VesselId;
     @JsonProperty("Voyage")
     private String Voyage;
+    @JsonProperty("PortOfLoading")
+    private String portOfLoading;
+    @JsonProperty("PortOfDischarge")
+    private String portOfDischarge;
 }

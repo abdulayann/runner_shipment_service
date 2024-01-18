@@ -26,4 +26,6 @@ public class TruckDriverDetailsRequest extends CommonRequest implements IRunnerR
     private Long containerId;
     private Long consolidationId;
     private String selfTransporterName;
+    private String remarks;
+    private String truckStatus;
 }

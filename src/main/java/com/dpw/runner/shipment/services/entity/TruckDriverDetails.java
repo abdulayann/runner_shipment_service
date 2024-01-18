@@ -64,4 +64,10 @@ public class TruckDriverDetails extends MultiTenancy {
 
     @Column(name = "self_transporter_name")
     private String selfTransporterName;
+
+    @Column(name = "remarks")
+    private String remarks;
+
+    @Column(name = "truck_status")
+    private String truckStatus;
 }
