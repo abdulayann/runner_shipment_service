@@ -51,6 +51,7 @@ public class ArrivalNoticeReport extends IReport {
         populateShipmentFields(arrivalNoticeModel.shipmentDetails, false, dictionary);
         populateUserFields(arrivalNoticeModel.usersDto, dictionary);
         populateBlFields(arrivalNoticeModel.hbl, dictionary);
+        populateShipmentOrganizationsLL(arrivalNoticeModel.shipmentDetails, dictionary);
         dictionary.put(ReportConstants.CONTAINER_COUNT_BY_CODE, getCountByContainerTypeCode(arrivalNoticeModel.containers));
         dictionary.put(ReportConstants.SHIPMENT_CONTAINERS, arrivalNoticeModel.containers);
         return dictionary;
