@@ -158,9 +158,11 @@ public class ShipmentDao implements IShipmentDao {
                 shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)) {
             LocalDateTime eta = shipmentDetails.getCarrierDetails().getEta();
             LocalDateTime etd = shipmentDetails.getCarrierDetails().getEtd();
-            Duration duration = Duration.between(etd, eta);
-            if (duration.toHours() > 24) {
-                throw new ValidationException("Difference between ETA and ETD should not be more than 24 hours");
+            if(eta != null && etd != null) {
+                Duration duration = Duration.between(etd, eta);
+                if (duration.toHours() > 24) {
+                    throw new ValidationException("Difference between ETA and ETD should not be more than 24 hours");
+                }
             }
         }
         if (!fromV1Sync && shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)
