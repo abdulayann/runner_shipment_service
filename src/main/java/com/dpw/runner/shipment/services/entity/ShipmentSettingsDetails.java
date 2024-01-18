@@ -15,6 +15,7 @@ import java.util.List;
 @Entity
 @Setter
 @Getter
+@Builder
 @Table(name = "shipment_setting")
 @Accessors(chain = true)
 @ToString(onlyExplicitlyIncluded = true)
@@ -481,4 +482,10 @@ public class ShipmentSettingsDetails extends MultiTenancy {
 
     @Column(name = "isf_file_main_page")
     private String isfFileMainPage;
+
+    @Column(name = "weight_decimal_place")
+    private Integer weightDecimalPlace;
+
+    @Column(name = "volume_decimal_place")
+    private Integer volumeDecimalPlace;
 }

@@ -1,12 +1,15 @@
 package com.dpw.runner.shipment.services.filters;
 
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.LoggingConstants;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.RequestAuthContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.aspects.PermissionsValidationAspect.PermissionsContext;
+import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.service.impl.GetUserServiceFactory;
@@ -44,6 +47,9 @@ public class AuthFilter extends OncePerRequestFilter {
     private GetUserServiceFactory getUserServiceFactory;
     @Autowired
     TokenUtility tokenUtility;
+    @Autowired
+    IShipmentSettingsDao shipmentSettingsDao;
+
     private static final String VALIDATION_ERROR = "Failed to Validate Auth Token";
 
     private final String[] ignoredPaths = new String[]{"/actuator/**",
@@ -106,6 +112,7 @@ public class AuthFilter extends OncePerRequestFilter {
         UserContext.setUser(user);
         RequestAuthContext.setAuthToken(authToken);
         TenantContext.setCurrentTenant(user.getTenantId());
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(getTenantSettings());
         List<String> grantedPermissions = new ArrayList<>();
         for (Map.Entry<String,Boolean> entry : user.getPermissions().entrySet())
         {
@@ -168,7 +175,10 @@ public class AuthFilter extends OncePerRequestFilter {
 //        baseResponse.setErrorMessage(er.getMessage());
 //        return new ObjectMapper().writeValueAsString(baseResponse);
 //    }
-
+    private ShipmentSettingsDetails getTenantSettings() {
+        Optional<ShipmentSettingsDetails> optional = shipmentSettingsDao.findByTenantId(TenantContext.getCurrentTenant());
+        return optional.orElseGet(() -> ShipmentSettingsDetails.builder().weightDecimalPlace(2).volumeDecimalPlace(3).build());
+    }
 
 }
 

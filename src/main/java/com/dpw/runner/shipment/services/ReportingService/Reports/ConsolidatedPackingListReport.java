@@ -57,7 +57,7 @@ public class ConsolidatedPackingListReport extends IReport {
     @Override
     Map<String, Object> populateDictionary(IDocumentModel documentModel) {
         ConsolidatedPackingListModel cplData = (ConsolidatedPackingListModel) documentModel;
-        String json = jsonHelper.convertToJson(cplData.getConsolidationDetails());
+        String json = jsonHelper.convertToJsonWithDateTimeFormatter(cplData.getConsolidationDetails(), GetDPWDateFormatOrDefault());
         Map<String, Object> dictionary = jsonHelper.convertJsonToMap(json);
 
 

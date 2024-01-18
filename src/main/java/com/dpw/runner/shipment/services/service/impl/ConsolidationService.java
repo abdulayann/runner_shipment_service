@@ -197,6 +197,12 @@ public class ConsolidationService implements IConsolidationService {
     private MasterDataUtils masterDataUtils;
 
     @Autowired
+    CacheManager cacheManager;
+
+    @Autowired
+    CustomKeyGenerator keyGenerator;
+
+    @Autowired
     private MasterDataKeyUtils masterDataKeyUtils;
 
     @Autowired
@@ -1372,6 +1378,41 @@ public class ConsolidationService implements IConsolidationService {
             else {
                 response.setSummaryShipmentsCount(0);
             }
+            Double consoleTeu = 0.0;
+            Double shipmentTeu = 0.0;
+            Double consoleCont = 0.0;
+            Double shipmentCont = 0.0;
+            if(consolidationDetails.getContainersList() != null && consolidationDetails.getContainersList().size() > 0) {
+                Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
+                List<String> containerTypes = new ArrayList<>();
+                List<ContainerResponse> containerResponseList = jsonHelper.convertValueToList(consolidationDetails.getContainersList(), ContainerResponse.class);
+                if (!Objects.isNull(containerResponseList))
+                    containerResponseList.forEach(r -> containerTypes.addAll(masterDataUtils.createInBulkContainerTypeRequest(r, Containers.class, fieldNameKeyMap, Containers.class.getSimpleName() + r.getId() )));
+                Map<String, EntityTransferContainerType> v1Data = masterDataUtils.fetchInBulkContainerTypes(containerTypes);
+                masterDataUtils.pushToCache(v1Data, CacheConstants.CONTAINER_TYPE);
+
+                for(Containers containers : consolidationDetails.getContainersList()) {
+                    var cache = cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA).get(keyGenerator.customCacheKeyForMasterData(CacheConstants.CONTAINER_TYPE, containers.getContainerCode()));
+                    EntityTransferContainerType object = (EntityTransferContainerType) cache.get();
+                    if(containers.getContainerCount() != null) {
+                        consoleCont = consoleCont + containers.getContainerCount();
+                        if(containers.getShipmentsList() != null && containers.getShipmentsList().size() > 0) {
+                            shipmentCont = shipmentCont + containers.getContainerCount();
+                        }
+                        if(object != null && object.getTeu() != null) {
+                            consoleTeu = consoleTeu + (containers.getContainerCount() * object.getTeu());
+                            if(containers.getShipmentsList() != null && containers.getShipmentsList().size() > 0) {
+                                shipmentTeu = shipmentTeu + (containers.getContainerCount() * object.getTeu());
+                            }
+                        }
+                    }
+                }
+            }
+            response.setSummaryConsoleTEU(consoleTeu.toString());
+            response.setSummaryConsolContainer(consoleCont.toString());
+            response.setSummaryShipmentTEU(shipmentTeu.toString());
+            response.setSummaryShipmentContainer(shipmentCont.toString());
+
             if(consolidationDetails.getAchievedQuantities() == null)
                 consolidationDetails.setAchievedQuantities(new AchievedQuantities());
             consolidationDetails.getAchievedQuantities().setConsolidatedWeight(sumWeight);
@@ -1384,10 +1425,6 @@ public class ConsolidationService implements IConsolidationService {
             String transportMode = consolidationDetails.getTransportMode();
             if(consolidationDetails.getAllocations() == null)
                 consolidationDetails.setAllocations(new Allocations());
-            BigDecimal weight = consolidationDetails.getAllocations().getWeight();
-            String weightUnit = consolidationDetails.getAllocations().getWeightUnit();
-            BigDecimal volume = consolidationDetails.getAllocations().getVolume();
-            String volumeUnit = consolidationDetails.getAllocations().getVolumeUnit();
             VolumeWeightChargeable vwOb = calculateVolumeWeight(transportMode, weightChargeableUnit, volumeChargeableUnit, sumWeight, sumVolume);
 
             consolidationDetails.getAchievedQuantities().setConsolidationChargeQuantity(vwOb.getChargeable());
@@ -2116,7 +2153,8 @@ public class ConsolidationService implements IConsolidationService {
         var wareHouseDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllWarehouseDataInSingleCall(consolidationDetails, consolidationDetailsResponse, response)), executorService);
         var vesselDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> addAllVesselDataInSingleCall(consolidationDetails, consolidationDetailsResponse, response)), executorService);
         var dgSubstanceFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> addAllDGSubstanceDataInSingleCall(consolidationDetails, consolidationDetailsResponse, response)), executorService);
-        CompletableFuture.allOf(masterListFuture, unLocationsFuture, carrierFuture, currencyFuture, commodityTypesFuture, tenantDataFuture, wareHouseDataFuture, vesselDataFuture, dgSubstanceFuture).join();
+        var containerTypeFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllContainerTypesInSingleCall(consolidationDetails, consolidationDetailsResponse, response)), executorService);
+        CompletableFuture.allOf(masterListFuture, unLocationsFuture, carrierFuture, currencyFuture, commodityTypesFuture, tenantDataFuture, wareHouseDataFuture, vesselDataFuture, dgSubstanceFuture, containerTypeFuture).join();
 
         return response;
     }
@@ -2354,6 +2392,26 @@ public class ConsolidationService implements IConsolidationService {
         if(masterDataResponse == null) { }
         else {
             masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.DG_SUBSTANCES, masterDataResponse);
+        }
+
+        return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(v1Data));
+    }
+
+    private CompletableFuture<ResponseEntity<?>> addAllContainerTypesInSingleCall(ConsolidationDetails consolidationDetails, ConsolidationDetailsResponse consolidationDetailsResponse, Map<String, Object> masterDataResponse) {
+        Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
+        List<String> containerTypes = new ArrayList<>();
+        if (!Objects.isNull(consolidationDetailsResponse.getContainersList()))
+            consolidationDetailsResponse.getContainersList().forEach(r -> containerTypes.addAll(masterDataUtils.createInBulkContainerTypeRequest(r, Containers.class, fieldNameKeyMap, Containers.class.getSimpleName() + r.getId() )));
+
+        Map<String, EntityTransferContainerType> v1Data = masterDataUtils.fetchInBulkContainerTypes(containerTypes);
+        masterDataUtils.pushToCache(v1Data, CacheConstants.CONTAINER_TYPE);
+
+        if(masterDataResponse == null) {
+            if (!Objects.isNull(consolidationDetailsResponse.getContainersList()))
+                consolidationDetailsResponse.getContainersList().forEach(r -> r.setContainerCodeData(masterDataUtils.setMasterData(fieldNameKeyMap.get(Containers.class.getSimpleName() + r.getId()), CacheConstants.CONTAINER_TYPE)));
+        }
+        else {
+            masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.CONTAINER_TYPE, masterDataResponse);
         }
 
         return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(v1Data));

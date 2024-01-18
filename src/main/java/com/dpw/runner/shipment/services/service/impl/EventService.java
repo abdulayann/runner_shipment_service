@@ -430,14 +430,16 @@ public class EventService implements IEventService {
 
   @Override
   public void updateAtaAtdInShipment(List<Events> events, ShipmentDetails shipmentDetails, ShipmentSettingsDetails tenantSettings) {
-        Events lastEvent = events.get(events.size()-1);
-        if(tenantSettings.getIsAtdAtaAutoPopulateEnabled() != null && tenantSettings.getIsAtdAtaAutoPopulateEnabled().equals(true)) {
-            if(lastEvent.getActual() != null) {
-                shipmentDetails.setCarrierDetails(shipmentDetails.getCarrierDetails() == null ? new CarrierDetails() : shipmentDetails.getCarrierDetails());
-                if(Constants.ATA_EVENT_CODES.contains(lastEvent.getEventCode()))
-                    shipmentDetails.getCarrierDetails().setAta(lastEvent.getActual());
-                if(Constants.ATD_EVENT_CODES.contains(lastEvent.getEventCode()))
-                    shipmentDetails.getCarrierDetails().setAtd(lastEvent.getActual());
+        if(events != null && events.size() > 0) {
+            Events lastEvent = events.get(events.size()-1);
+            if(tenantSettings.getIsAtdAtaAutoPopulateEnabled() != null && tenantSettings.getIsAtdAtaAutoPopulateEnabled().equals(true)) {
+                if(lastEvent.getActual() != null) {
+                    shipmentDetails.setCarrierDetails(shipmentDetails.getCarrierDetails() == null ? new CarrierDetails() : shipmentDetails.getCarrierDetails());
+                    if(Constants.ATA_EVENT_CODES.contains(lastEvent.getEventCode()))
+                        shipmentDetails.getCarrierDetails().setAta(lastEvent.getActual());
+                    if(Constants.ATD_EVENT_CODES.contains(lastEvent.getEventCode()))
+                        shipmentDetails.getCarrierDetails().setAtd(lastEvent.getActual());
+                }
             }
         }
   }

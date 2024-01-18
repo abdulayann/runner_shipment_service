@@ -68,7 +68,7 @@ public class FreightCertificationReport extends IReport{
     @Override
     public Map<String, Object> populateDictionary(IDocumentModel documentModel) {
         FreightCertificationModel freightCertificationModel = (FreightCertificationModel) documentModel;
-        String json = jsonHelper.convertToJson(freightCertificationModel.shipmentDetails);
+        String json = jsonHelper.convertToJsonWithDateTimeFormatter(freightCertificationModel.shipmentDetails, GetDPWDateFormatOrDefault());
         Map<String, Object> dictionary = jsonHelper.convertJsonToMap(json);
         addTenantDetails(dictionary, freightCertificationModel.tenantDetails);
 
@@ -122,7 +122,7 @@ public class FreightCertificationReport extends IReport{
         dictionary.put(ReportConstants.TENANT_COUNTRY, freightCertificationModel.tenantDetails.country);
         dictionary.put(ReportConstants.NO_OF_PACKAGES_WORD, freightCertificationModel.noofpackages_word);
         dictionary.put(ReportConstants.USER_DISPLAY_NAME, freightCertificationModel.userdisplayname);
-        dictionary.put(ReportConstants.CURRENT_DATE, IReport.ConvertToDPWDateFormat(LocalDateTime.now()));
+        dictionary.put(ReportConstants.CURRENT_DATE, ConvertToDPWDateFormat(LocalDateTime.now()));
         if(freightCertificationModel.shipmentDetails != null && freightCertificationModel.shipmentDetails.getFreightLocal() != null)
             dictionary.put(ReportConstants.FREIGHT_LOCAL, freightCertificationModel.shipmentDetails.getFreightLocal());
         if(freightCertificationModel.shipmentDetails != null && freightCertificationModel.shipmentDetails.getFreightLocalCurrency() != null && !freightCertificationModel.shipmentDetails.getFreightLocalCurrency().isEmpty())

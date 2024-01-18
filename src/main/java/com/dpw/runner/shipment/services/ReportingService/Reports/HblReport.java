@@ -9,15 +9,14 @@ import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.*;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
-import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
 import com.dpw.runner.shipment.services.dto.request.HblPartyDto;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.request.hbl.HblContainerDto;
 import com.dpw.runner.shipment.services.dto.request.hbl.HblDataDto;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.Hbl;
 import com.dpw.runner.shipment.services.entity.Parties;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.MasterData;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest;
@@ -218,7 +217,7 @@ public class HblReport extends IReport{
     @Override
     public Map<String, Object> populateDictionary(IDocumentModel documentModel) {
         HblModel hblModel = (HblModel) documentModel;
-        String json = jsonHelper.convertToJson(hblModel.shipment);
+        String json = jsonHelper.convertToJsonWithDateTimeFormatter(hblModel.shipment, GetDPWDateFormatOrDefault());
         if(hblModel.blObject == null) {
             hblModel.blObject = new Hbl();
             hblModel.blObject.setHblData(new HblDataDto());
@@ -592,8 +591,10 @@ public class HblReport extends IReport{
             }
             dictionary.put(CONTAINER_COUNT, numberToWords(containerCount).toUpperCase());
         }
+        V1TenantSettingsResponse v1TenantSettingsResponse = getTenantSettings();
+        String tsDateTimeFormat = v1TenantSettingsResponse.getDPWDateFormat();
 
-        dictionary.put(CURRENT_DATE, ConvertToDPWDateFormat(LocalDateTime.now()));
+        dictionary.put(CURRENT_DATE, ConvertToDPWDateFormat(LocalDateTime.now(), tsDateTimeFormat));
         dictionary.put(HOUSE_BILL, hblModel.shipment.getHouseBill());
 //        dictionary.put(SUMMARY, hblModel.shipment.getSummary);
         dictionary.put(SHIPMENT_ID, hblModel.shipment.getShipmentId());
@@ -605,19 +606,19 @@ public class HblReport extends IReport{
 
 
         if (hblModel.shipment.getCarrierDetails().getEtd() != null)
-            dictionary.put(ETD, ConvertToDPWDateFormat(hblModel.shipment.getCarrierDetails().getEtd()));
+            dictionary.put(ETD, ConvertToDPWDateFormat(hblModel.shipment.getCarrierDetails().getEtd(), tsDateTimeFormat));
         if (hblModel.shipment.getCarrierDetails().getEta() != null)
-            dictionary.put(ETA, ConvertToDPWDateFormat(hblModel.shipment.getCarrierDetails().getEta()));
+            dictionary.put(ETA, ConvertToDPWDateFormat(hblModel.shipment.getCarrierDetails().getEta(), tsDateTimeFormat));
         if (hblModel.shipment.getAdditionalDetails().getDateOfIssue() != null) {
-            dictionary.put(DATE_OF_ISSUE_MDY, ConvertToDPWDateFormat(hblModel.shipment.getAdditionalDetails().getDateOfIssue()));
+            dictionary.put(DATE_OF_ISSUE_MDY, ConvertToDPWDateFormat(hblModel.shipment.getAdditionalDetails().getDateOfIssue(), tsDateTimeFormat));
             dictionary.put(DATE_OF_ISSUE_DMY, DateTimeFormatter.ofPattern("dd/MM/yyyy").format(hblModel.shipment.getAdditionalDetails().getDateOfIssue()));
             dictionary.put(DATE_OF_ISSUE_DMMY, DateTimeFormatter.ofPattern("dd-MMM-yyyy").format(hblModel.shipment.getAdditionalDetails().getDateOfIssue()));
         }
         if (hblModel.shipment.getAdditionalDetails().getDateOfReceipt() != null)
-            dictionary.put(DATE_OF_RECEIPT, ConvertToDPWDateFormat(hblModel.shipment.getAdditionalDetails().getDateOfReceipt()));
+            dictionary.put(DATE_OF_RECEIPT, ConvertToDPWDateFormat(hblModel.shipment.getAdditionalDetails().getDateOfReceipt(), tsDateTimeFormat));
         if (hblModel.shipment.getCarrierDetails().getAtd() != null) {
             LocalDateTime atd = hblModel.shipment.getCarrierDetails().getAtd();
-            dictionary.put(ATD_MDY, ConvertToDPWDateFormat(atd));
+            dictionary.put(ATD_MDY, ConvertToDPWDateFormat(atd, tsDateTimeFormat));
             dictionary.put(ATD_DMY, DateTimeFormatter.ofPattern("dd/MM/yyyy").format(atd));
             dictionary.put(ATD_DMMY, DateTimeFormatter.ofPattern("dd-MMM-yyyy").format(atd));
         }
@@ -779,7 +780,7 @@ public class HblReport extends IReport{
             }
             dictionary.put(ONBOARD_DATE, OnBoardValue);
             dictionary.put(ONBOARD_TYPE_DATE, hblModel.shipment.getAdditionalDetails().getOnBoardDate() != null ?
-                    ConvertToDPWDateFormat(hblModel.shipment.getAdditionalDetails().getOnBoardDate()) : null);
+                    ConvertToDPWDateFormat(hblModel.shipment.getAdditionalDetails().getOnBoardDate(), tsDateTimeFormat) : null);
         }
 // TODO
 //        if(!String.IsNullOrEmpty(PrintType)) {
@@ -791,9 +792,9 @@ public class HblReport extends IReport{
 //        }
 
         if (hblModel.shipment.getCarrierDetails().getAtd() != null)
-            dictionary.put(ATD, ConvertToDPWDateFormat(hblModel.shipment.getCarrierDetails().getAtd()));
+            dictionary.put(ATD, ConvertToDPWDateFormat(hblModel.shipment.getCarrierDetails().getAtd(), tsDateTimeFormat));
         if (hblModel.shipment.getCarrierDetails().getAta() != null)
-            dictionary.put(ATA, ConvertToDPWDateFormat(hblModel.shipment.getCarrierDetails().getAta()));
+            dictionary.put(ATA, ConvertToDPWDateFormat(hblModel.shipment.getCarrierDetails().getAta(), tsDateTimeFormat));
 
         dictionary.put(ATTENTION, dictionary.get(CONSIGNEE));
         dictionary.put(DO_NO, hblModel.shipment.getShipmentId());
@@ -838,37 +839,10 @@ public class HblReport extends IReport{
             dictionary.put(STATUS, PLANNED);
 
         if(!Objects.isNull(hblModel.shipment.getPackingList()) && !hblModel.shipment.getPackingList().isEmpty()) {
-            var values = hblModel.shipment.getPackingList().stream()
-                    .map(i -> jsonHelper.convertJsonToMap(jsonHelper.convertToJson(i)))
-                    .toList();
-            values.forEach(v -> {
-                JsonDateFormat(v);
-                if(v.containsKey(COMMODITY_NAME))
-                    v.put(COMMODITY_DESC, v.get(COMMODITY_NAME).toString());
-                if(v.get(WEIGHT) != null){
-                    v.put(WEIGHT_AND_UNIT_PACKS, String.format("%s %s", twoDecimalPlacesFormat(v.get(WEIGHT).toString()),
-                            v.get(WEIGHT_UNIT)));
-                }
-                if(v.get(VOLUME) != null){
-                    v.put(VOLUME_AND_UNIT_PACKS, String.format("%s %s", twoDecimalPlacesFormat(v.get(VOLUME).toString()),
-                            v.get(VOLUME_UNIT)));
-                }
-                if (v.get(VOLUME_WEIGHT) != null) {
-                    v.put(V_WEIGHT_AND_UNIT_PACKS, String.format("%s %s", twoDecimalPlacesFormat(v.get(VOLUME_WEIGHT).toString()),
-                            v.get(WEIGHT_UNIT)));
-                }
-                if (hblModel.shipment.getPickupDetails() != null && hblModel.shipment.getPickupDetails().getActualPickupOrDelivery() != null) {
-                    v.put(LOADED_DATE, ConvertToDPWDateFormat(hblModel.shipment.getPickupDetails().getActualPickupOrDelivery()));
-                }
-                if(v.containsKey(COMMODITY_GROUP) && !Objects.isNull(v.get(COMMODITY_GROUP))) {
-                    MasterData commodity = getMasterListData(MasterDataType.COMMODITY_GROUP, v.get(COMMODITY_GROUP).toString());
-                    if(!Objects.isNull(commodity))
-                        v.put(PACKS_COMMODITY_GROUP, commodity.getItemDescription());
-                }
-            });
+            getPackingDetails(hblModel.shipment, dictionary);
             dictionary.put(HAS_PACK_DETAILS, true);
-            var hazardousCheck = hblModel.shipment.getPackingList().stream().anyMatch(x -> x.getHazardous() == true);
-            var temperatureCheck = hblModel.shipment.getPackingList().stream().anyMatch(x -> x.getIsTemperatureControlled() == true);
+            var hazardousCheck = hblModel.shipment.getPackingList().stream().anyMatch(x -> !Objects.isNull(x.getHazardous()) && x.getHazardous());
+            var temperatureCheck = hblModel.shipment.getPackingList().stream().anyMatch(x -> !Objects.isNull(x.getIsTemperatureControlled()) && x.getIsTemperatureControlled());
             if (hazardousCheck)
                 dictionary.put(HAS_DANGEROUS_GOODS, true);
             else
@@ -878,7 +852,6 @@ public class HblReport extends IReport{
             else
                 dictionary.put(HAS_TEMPERATURE_DETAILS, false);
 
-            dictionary.put(PACKS_DETAILS, values);
         } else {
             dictionary.put(HAS_PACK_DETAILS, false);
         }
@@ -909,7 +882,7 @@ public class HblReport extends IReport{
 
         dictionary.put(BOOKING_NUMBER, hblModel.shipment.getBookingNumber());
         dictionary.put(ADDITIONAL_TERMS, hblModel.shipment.getAdditionalTerms());
-        dictionary.put(VESSEL_BERTHING_DATE, ConvertToDPWDateFormat(hblModel.shipment.getCarrierDetails().getVesselBerthingDate()));
+        dictionary.put(VESSEL_BERTHING_DATE, ConvertToDPWDateFormat(hblModel.shipment.getCarrierDetails().getVesselBerthingDate(), tsDateTimeFormat));
 
         dictionary.put(UCR_REFERENCE, EMPTY_STRING);
         dictionary.put(EMPTY_TRUCK_IN_DATE, EMPTY_STRING);
@@ -918,9 +891,9 @@ public class HblReport extends IReport{
         {
             PickupDeliveryDetailsModel pickupDetails = hblModel.shipment.getPickupDetails();
             dictionary.put(UCR_REFERENCE, pickupDetails.getUcrReference());
-            dictionary.put(EMPTY_TRUCK_IN_DATE, ConvertToDPWDateFormat(pickupDetails.getEmptyTruckInDate()));
-            dictionary.put(LOADED_TRUCK_GATE_OUT_DATE, ConvertToDPWDateFormat(pickupDetails.getLoadedTruckGateOutDate()));
-            dictionary.put(PICKUP_PORT_TRANSPORT_ADVISED, ConvertToDPWDateFormat(pickupDetails.getPortTransportAdvised()));
+            dictionary.put(EMPTY_TRUCK_IN_DATE, ConvertToDPWDateFormat(pickupDetails.getEmptyTruckInDate(), tsDateTimeFormat));
+            dictionary.put(LOADED_TRUCK_GATE_OUT_DATE, ConvertToDPWDateFormat(pickupDetails.getLoadedTruckGateOutDate(), tsDateTimeFormat));
+            dictionary.put(PICKUP_PORT_TRANSPORT_ADVISED, ConvertToDPWDateFormat(pickupDetails.getPortTransportAdvised(), tsDateTimeFormat));
         }
 
         List<String> bookingPreCarriageMode = new ArrayList<>();
