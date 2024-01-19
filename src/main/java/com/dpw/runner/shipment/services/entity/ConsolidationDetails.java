@@ -139,6 +139,15 @@ public class ConsolidationDetails extends MultiTenancy {
     @Column(name = "hazardous_booking_cutoff")
     private LocalDateTime hazardousBookingCutoff;
 
+    @Column(name = "latest_full_equ_delivered_to_carrier")
+    private LocalDateTime latestFullEquDeliveredToCarrier;
+
+    @Column(name = "earliest_drop_off_full_equ_to_carrier")
+    private LocalDateTime earliestDropOffFullEquToCarrier;
+
+    @Column(name = "earliest_empty_equ_pick_up")
+    private LocalDateTime earliestEmptyEquPickUp;
+
     @Column(name = "volume_utilization")
     private String volumeUtilization;
 
