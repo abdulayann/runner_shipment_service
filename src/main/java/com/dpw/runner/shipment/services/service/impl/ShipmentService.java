@@ -1781,7 +1781,6 @@ public class ShipmentService implements IShipmentService {
         }
 
         v1ServiceUtil.validateCreditLimit(shipmentDetails.getClient(), ShipmentConstants.SHIPMENT_CREATION, shipmentDetails.getGuid());
-        v1ServiceUtil.validateCreditLimit(shipmentDetails.getClient(), ShipmentConstants.SHIPMENT_CREATION, shipmentDetails.getGuid());
         if(shipmentDetails.getGuid() != null && shipmentDetails.getSourceGuid() == null){
             shipmentDetails.setSourceGuid(shipmentDetails.getGuid());
         }
@@ -3430,21 +3429,12 @@ public class ShipmentService implements IShipmentService {
 
             cloneShipmentDetails.setShipmentCreatedOn(LocalDateTime.now());
 
-            // Container summary
-            ContainerSummaryResponse containerSummaryResponse = containerService.calculateContainerSummary(
-                    shipmentDetails.get().getContainersList(),
-                    cloneShipmentDetails.getTransportMode(),
-                    cloneShipmentDetails.getShipmentType()
-            );
-
-
             if(Constants.TRANSPORT_MODE_SEA.equals(cloneShipmentDetails.getTransportMode()) && Constants.DIRECTION_EXP.equals(cloneShipmentDetails.getDirection()))
                 cloneShipmentDetails.setHouseBill(generateCustomHouseBL(null));
 
             CommonRequestModel requestModel = CommonRequestModel.buildRequest(cloneShipmentDetails);
             log.info("Shipment details cloning started for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
             ShipmentDetailsResponse response = jsonHelper.convertValue(cloneShipmentDetails, ShipmentDetailsResponse.class);
-            response.setContainerSummary(containerSummaryResponse);
             addAllUnlocationDataInSingleCall(null, response, null);
             addAllTenantDataInSingleCall(null, response, null);
             return ResponseHelper.buildSuccessResponse(response);
