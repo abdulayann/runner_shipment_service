@@ -43,7 +43,7 @@ public class PickupOrderReport extends IReport {
     Map<String, Object> populateDictionary(IDocumentModel documentModel) {
         Map<String, Object> dictionary = hblReport.getData(this.id);
         PickUpOrderReportModel pickUpOrderReportModel = (PickUpOrderReportModel) documentModel;
-        dictionary.put(ReportConstants.PICKUP_TRANSPORT_CONTACT_PERSON, pickUpOrderReportModel.pickUpTransportAddress.getAddressData().get("ContactPerson"));
+        dictionary.put(ReportConstants.PICKUP_TRANSPORT_CONTACT_PERSON, (pickUpOrderReportModel.pickUpTransportAddress == null || pickUpOrderReportModel.pickUpTransportAddress.getAddressData() == null) ? "" :pickUpOrderReportModel.pickUpTransportAddress.getAddressData().get("ContactPerson"));
         try {
             if (pickUpOrderReportModel.shipment != null && pickUpOrderReportModel.shipment.getPickupDetails() != null) {
                 PickupDeliveryDetailsModel pickupDetails = pickUpOrderReportModel.shipment.getPickupDetails();
@@ -51,9 +51,13 @@ public class PickupOrderReport extends IReport {
                 dictionary.put(ReportConstants.PickupFrom, pickUpFrom);
 
                 // P0 tags pickup order doc
-                dictionary.put(ReportConstants.PICKUP_TRANSPORT_COMPANY, getValueFromMap(pickupDetails.getTransporterDetail().getOrgData(), ReportConstants.FULL_NAME));
-                dictionary.put(ReportConstants.PICKUP_TRANSPORT_CONTACT_PERSON, getValueFromMap(pickupDetails.getTransporterDetail().getAddressData(), CONTACT_PERSON));
-                dictionary.put(ReportConstants.PICKUP_COMPANY, getValueFromMap(pickupDetails.getSourceDetail().getOrgData(), ReportConstants.FULL_NAME));
+                if(pickupDetails.getTransporterDetail() != null) {
+                    dictionary.put(ReportConstants.PICKUP_TRANSPORT_COMPANY, getValueFromMap(pickupDetails.getTransporterDetail().getOrgData(), ReportConstants.FULL_NAME));
+                    dictionary.put(ReportConstants.PICKUP_TRANSPORT_CONTACT_PERSON, getValueFromMap(pickupDetails.getTransporterDetail().getAddressData(), CONTACT_PERSON));
+                }
+                if(pickupDetails.getSourceDetail() != null) {
+                    dictionary.put(ReportConstants.PICKUP_COMPANY, getValueFromMap(pickupDetails.getSourceDetail().getOrgData(), ReportConstants.FULL_NAME));
+                }
             }
 
             dictionary.put(ReportConstants.PRINT_USER, UserContext.getUser().getUsername());
