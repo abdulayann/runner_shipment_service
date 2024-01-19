@@ -12,6 +12,8 @@ import java.util.UUID;
 public class EventsResponse implements IRunnerResponse {
     private Long id;
     private UUID guid;
+    private Long entityId;
+    private String entityType;
     private String eventCode;
     private Long shipmentId;
     private String description;

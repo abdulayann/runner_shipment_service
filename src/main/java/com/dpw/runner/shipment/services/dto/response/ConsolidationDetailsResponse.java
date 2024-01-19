@@ -54,6 +54,9 @@ public class ConsolidationDetailsResponse implements IRunnerResponse {
     private LocalDateTime bookingCutoff;
     private LocalDateTime shipInstructionCutoff;
     private LocalDateTime hazardousBookingCutoff;
+    private LocalDateTime latestFullEquDeliveredToCarrier;
+    private LocalDateTime earliestDropOffFullEquToCarrier;
+    private LocalDateTime earliestEmptyEquPickUp;
     private String volumeUtilization;
     private String weightUtilization;
     private String shipmentType;
