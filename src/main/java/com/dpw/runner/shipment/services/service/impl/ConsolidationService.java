@@ -1102,6 +1102,7 @@ public class ConsolidationService implements IConsolidationService {
             List<ShipmentDetails> shipments = page.getContent();
             shipments.stream()
                     .map(i -> {
+                        i.setConsolRef(console.getReferenceNumber());
                         i.setMasterBill(console.getBol());
                         i.setDirection(console.getShipmentType());
                         if (console.getCarrierDetails() != null) {

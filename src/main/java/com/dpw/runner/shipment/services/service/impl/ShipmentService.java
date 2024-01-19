@@ -1773,6 +1773,8 @@ public class ShipmentService implements IShipmentService {
             shipmentDetails.setHouseBill(shipmentDetails.getMasterBill());
         }
         v1ServiceUtil.validateCreditLimit(shipmentDetails.getClient(), ShipmentConstants.SHIPMENT_CREATION, shipmentDetails.getGuid());
+        if(!Objects.isNull(shipmentDetails.getConsolidationList()) && !shipmentDetails.getConsolidationList().isEmpty())
+            shipmentDetails.setConsolRef(shipmentDetails.getConsolidationList().get(0).getReferenceNumber());
     }
 
     public void afterSave(ShipmentDetails shipmentDetails, boolean isCreate) {
