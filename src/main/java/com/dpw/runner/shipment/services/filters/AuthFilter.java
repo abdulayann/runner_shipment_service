@@ -133,7 +133,7 @@ public class AuthFilter extends OncePerRequestFilter {
         if (_timeTaken > 500)
             log.info(" RequestId: {} || {} for event: {} Actual time taken: {} ms for API :{}",LoggerHelper.getRequestIdFromMDC(), LoggerEvent.MORE_TIME_TAKEN, LoggerEvent.COMPLETE_API_TIME, _timeTaken, servletRequest.getRequestURI());
         }finally {
-            MDC.remove(LoggingConstants.REQUEST_ID);
+            MDC.clear();
             TenantContext.removeTenant();
             RequestAuthContext.removeToken();
             UserContext.removeUser();

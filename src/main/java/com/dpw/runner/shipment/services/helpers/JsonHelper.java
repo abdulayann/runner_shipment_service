@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.helpers;
 
 import com.dpw.runner.shipment.services.commons.objectMapperMixin.ShipmentMixIn;
+import com.dpw.runner.shipment.services.config.LocalDateTimeWithTimeZoneSerializer;
 import com.dpw.runner.shipment.services.entity.*;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -10,15 +11,21 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateTimeSerializer;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.json.JsonParseException;
 import org.springframework.stereotype.Component;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 import javax.annotation.PostConstruct;
+import javax.servlet.http.HttpServletRequest;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
+import java.util.TimeZone;
 
 @Component
 @Slf4j
@@ -87,9 +94,11 @@ public class JsonHelper {
 
     public <T> String convertToJsonWithDateTimeFormatter(T object, DateTimeFormatter dateTimeFormatter) {
         try {
+            String timeZone = MDC.get("x-browser-time-zone");
             JavaTimeModule javaTimeModule = new JavaTimeModule();
-            LocalDateTimeSerializer localDateTimeSerializer = new LocalDateTimeSerializer(dateTimeFormatter);
+            LocalDateTimeWithTimeZoneSerializer localDateTimeSerializer = new LocalDateTimeWithTimeZoneSerializer(ZoneId.of(timeZone), dateTimeFormatter);
             javaTimeModule.addSerializer(LocalDateTime.class, localDateTimeSerializer);
+            dateFormatMapper.setTimeZone(TimeZone.getTimeZone("UTC"));
             dateFormatMapper.registerModule(javaTimeModule);
             return dateFormatMapper.writeValueAsString(object);
         } catch (JsonProcessingException e) {
