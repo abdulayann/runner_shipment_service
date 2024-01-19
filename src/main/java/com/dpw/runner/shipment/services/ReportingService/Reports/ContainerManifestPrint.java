@@ -67,13 +67,13 @@ public class ContainerManifestPrint extends IReport {
 
 
         if (consol.getAchievedQuantities() != null && consol.getAchievedQuantities().getConsolidatedWeight() != null) {
-            dictionary.put(ReportConstants.PWEIGHT_UNIT, consol.getAchievedQuantities().getConsolidatedWeight() + " " + consol.getAchievedQuantities().getConsolidatedWeightUnit());
+            dictionary.put(ReportConstants.PWEIGHT_UNIT, ReportHelper.ConvertToWeightNumberFormat(consol.getAchievedQuantities().getConsolidatedWeight()) + " " + consol.getAchievedQuantities().getConsolidatedWeightUnit());
         } else {
             dictionary.put(ReportConstants.PWEIGHT_UNIT, StringUtil.EMPTY_STRING);
         }
 
         if (consol.getAchievedQuantities() != null && consol.getAchievedQuantities().getConsolidatedVolume() != null) {
-            dictionary.put(ReportConstants.PVOLUME_UNIT, consol.getAchievedQuantities().getConsolidatedVolume() + " " + consol.getAchievedQuantities().getConsolidatedVolumeUnit());
+            dictionary.put(ReportConstants.PVOLUME_UNIT, ReportHelper.ConvertToVolumeNumberFormat(consol.getAchievedQuantities().getConsolidatedVolume()) + " " + consol.getAchievedQuantities().getConsolidatedVolumeUnit());
         } else {
             dictionary.put(ReportConstants.PVOLUME_UNIT, StringUtil.EMPTY_STRING);
         }
