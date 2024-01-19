@@ -1365,7 +1365,7 @@ public abstract class IReport {
             return;
         }
 
-        List<Map<String, Object>> packsDictionary = (List<Map<String, Object>>) new HashMap<>();
+        List<Map<String, Object>> packsDictionary = new ArrayList<>();
 
         for(var pack : shipment.getPackingList()) {
             Map<String, Object> dict = new HashMap<>();
