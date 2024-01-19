@@ -2,7 +2,6 @@ package com.dpw.runner.shipment.services.dto.request;
 
 import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -50,6 +49,9 @@ public class ConsolidationDetailsRequest extends CommonRequest implements IRunne
     private LocalDateTime bookingCutoff;
     private LocalDateTime shipInstructionCutoff;
     private LocalDateTime hazardousBookingCutoff;
+    private LocalDateTime latestFullEquDeliveredToCarrier;
+    private LocalDateTime earliestDropOffFullEquToCarrier;
+    private LocalDateTime earliestEmptyEquPickUp;
     private String volumeUtilization;
     private String weightUtilization;
     private String shipmentType;
