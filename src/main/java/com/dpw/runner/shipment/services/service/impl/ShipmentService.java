@@ -705,7 +705,13 @@ public class ShipmentService implements IShipmentService {
                 updatedContainers = containerDao.saveAll(commonUtils.convertToCreateEntityList(containerRequest, Containers.class));
                 shipmentDetails.setContainersList(updatedContainers);
             }
-
+            ConsolidationDetails consolidationDetails = null;
+            if(updatedContainers.size() > 0) {
+                if((tempConsolIds == null || tempConsolIds.size() == 0) && (shipmentSettingsDetails.getIsShipmentLevelContainer() == null || !shipmentSettingsDetails.getIsShipmentLevelContainer())) {
+                    consolidationDetails = createConsolidation(shipmentDetails, updatedContainers);
+                    shipmentDetails.setConsolidationList(new ArrayList<>(Arrays.asList(consolidationDetails)));
+                }
+            }
             beforeSave(shipmentDetails);
             shipmentDetails = getShipment(shipmentDetails);
             Long shipmentId = shipmentDetails.getId();
@@ -787,12 +793,8 @@ public class ShipmentService implements IShipmentService {
             }
 
             Hbl hbl = null;
-            ConsolidationDetails consolidationDetails = null;
             if(updatedContainers.size() > 0) {
                 hbl = hblService.checkAllContainerAssigned(shipmentDetails, updatedContainers, updatedPackings);
-                if((tempConsolIds == null || tempConsolIds.size() == 0) && (shipmentSettingsDetails.getIsShipmentLevelContainer() == null || !shipmentSettingsDetails.getIsShipmentLevelContainer())) {
-                    consolidationDetails = createConsolidation(shipmentDetails, updatedContainers);
-                }
             }
             afterSave(shipmentDetails, true);
             updateLinkedShipmentData(shipmentDetails, null);
@@ -1612,6 +1614,13 @@ public class ShipmentService implements IShipmentService {
             entity.setContainersList(updatedContainers);
 
             String oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
+            ConsolidationDetails consolidationDetails = null;
+            if(updatedContainers.size() > 0) {
+                if((tempConsolIds == null || tempConsolIds.size() == 0) && (shipmentSettingsDetails.getIsShipmentLevelContainer() == null || !shipmentSettingsDetails.getIsShipmentLevelContainer())) {
+                    consolidationDetails = createConsolidation(entity, updatedContainers);
+                    entity.setConsolidationList(new ArrayList<>(Arrays.asList(consolidationDetails)));
+                }
+            }
             beforeSave(entity);
             updateLinkedShipmentData(entity, oldEntity.get());
             entity = shipmentDao.update(entity, false);
@@ -1723,12 +1732,8 @@ public class ShipmentService implements IShipmentService {
             }
 
             Hbl hbl = null;
-            ConsolidationDetails consolidationDetails = null;
             if(updatedContainers.size() > 0) {
                 hbl = hblService.checkAllContainerAssigned(entity, updatedContainers, updatedPackings);
-                if((tempConsolIds == null || tempConsolIds.size() == 0) && (shipmentSettingsDetails.getIsShipmentLevelContainer() == null || !shipmentSettingsDetails.getIsShipmentLevelContainer())) {
-                    consolidationDetails = createConsolidation(entity, updatedContainers);
-                }
             }
             afterSave(entity, false);
             try {
@@ -1773,8 +1778,17 @@ public class ShipmentService implements IShipmentService {
             shipmentDetails.setHouseBill(shipmentDetails.getMasterBill());
         }
         v1ServiceUtil.validateCreditLimit(shipmentDetails.getClient(), ShipmentConstants.SHIPMENT_CREATION, shipmentDetails.getGuid());
-        if(!Objects.isNull(shipmentDetails.getConsolidationList()) && !shipmentDetails.getConsolidationList().isEmpty())
+
+        if(!Objects.isNull(shipmentDetails.getConsolidationList()) && !shipmentDetails.getConsolidationList().isEmpty()) {
+            ConsolidationDetails console = shipmentDetails.getConsolidationList().get(0);
+            ConsolidationDetails tempConsole = new ConsolidationDetails();
+            tempConsole.setId(console.getId());
+            if(console.equals(tempConsole)){
+                console = consolidationDetailsDao.findById(console.getId()).get();
+                shipmentDetails.setConsolidationList(new ArrayList<>(Arrays.asList(console)));
+            }
             shipmentDetails.setConsolRef(shipmentDetails.getConsolidationList().get(0).getReferenceNumber());
+        }
     }
 
     public void afterSave(ShipmentDetails shipmentDetails, boolean isCreate) {
@@ -1910,7 +1924,6 @@ public class ShipmentService implements IShipmentService {
                 containers = containerDao.saveAll(containers);
             }
             consolidationDetails.setContainersList(containers);
-            attachConsolidations(shipmentDetails.getId(), List.of(id));
             if(shipmentSettings.getAutoEventCreate() != null && shipmentSettings.getAutoEventCreate()) {
                 consolidationService.autoGenerateEvents(consolidationDetails);
             }
