@@ -849,4 +849,19 @@ public class ReportConstants {
     public static final String SHIPMENT_PACKING_PACKS_PACKSTYPE = "PacksType";
 
 
+    public static final String CHARGE_TYPE_CODE = "ChargeTypeCode";
+    // Local Language Tags
+    public static final String CLIENT_LL = "ClientLL";
+    public static final String CLIENT_ADDRESS_LL = "ClientAddressLL";
+    public static final String CONSIGNER_LL = "ConsignerLL";
+    public static final String CONSIGNER_ADDRESS_LL = "ConsignerAddressLL";
+    public static final String CONSIGNEE_LL = "ConsigneeLL";
+    public static final String CONSIGNEE_ADDRESS_LL = "ConsigneeAddressLL";
+    public static final String NOTIFY_PARTY_LL = "NotifyPartyLL";
+    public static final String NOTIFY_PARTY_ADDRESS_LL = "NotifyPartyAddressLL";
+    public static final String PICKUP_FROM_LL = "PickupFromLL";
+    public static final String PICKUP_FROM_ADDRESS_LL = "PickupFromAddressLL";
+    public static final String DELIVERY_TO_LL = "DeliveryToLL";
+    public static final String DELIVERY_TO_ADDRESS_LL = "DeliveryToAddressLL";
+    public static final String CHARGE_TYPE_DESCRIPTION_LL = "ChargeTypeDescriptionLL";
 }

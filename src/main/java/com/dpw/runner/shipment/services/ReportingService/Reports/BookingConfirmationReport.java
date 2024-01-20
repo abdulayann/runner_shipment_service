@@ -22,6 +22,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.*;
 
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.getLocationData;
 
 @Component
@@ -145,6 +146,15 @@ public class BookingConfirmationReport extends IReport{
         Map<String, Object> dictionary = hblReport.getData(this.id);
 
         BookingConfirmationModel bookingConfirmationModel = (BookingConfirmationModel) documentModel;
+        populateShipmentOrganizationsLL(bookingConfirmationModel.shipment, dictionary);
+        if(dictionary.containsKey(CHARGES_SMALL) && dictionary.get(CHARGES_SMALL) instanceof List){
+            List<Map<String, Object>> values = (List<Map<String, Object>>)dictionary.get(CHARGES_SMALL);
+            for (Map<String, Object> v: values) {
+                if(v.containsKey(CHARGE_TYPE_CODE) && v.get(CHARGE_TYPE_CODE) != null) {
+                    v.put(CHARGE_TYPE_DESCRIPTION_LL, GetChargeTypeDescriptionLL((String)v.get(CHARGE_TYPE_CODE)));
+                }
+            }
+        }
 
         dictionary.put(ReportConstants.HAWB_NO, bookingConfirmationModel.shipment.getHouseBill());
         dictionary.put(ReportConstants.MAWB_NO, bookingConfirmationModel.shipment.getMasterBill());

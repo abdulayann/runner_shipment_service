@@ -30,6 +30,7 @@ import com.dpw.runner.shipment.services.masterdata.response.VesselsResponse;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.utils.StringUtility;
+import com.google.common.base.Strings;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -951,8 +952,8 @@ public class HblReport extends IReport{
     }
 
     private void getChargeRows(List<BillChargesResponse> originalChargesRows, List<BillChargesResponse> copyChargesRows, List<BillChargesResponse> charges, String type) {
-        List<BillChargesResponse> prepaid = charges.stream().filter(x -> x.getPaymentType().equals("PPD")).collect(Collectors.toList());
-        List<BillChargesResponse> collect = charges.stream().filter(x -> x.getPaymentType().equals("CCX")).collect(Collectors.toList());
+        List<BillChargesResponse> prepaid = charges.stream().filter(x -> !Strings.isNullOrEmpty(x.getPaymentType()) && x.getPaymentType().equals("PPD")).collect(Collectors.toList());
+        List<BillChargesResponse> collect = charges.stream().filter(x -> !Strings.isNullOrEmpty(x.getPaymentType()) && x.getPaymentType().equals("CCX")).collect(Collectors.toList());
 
         switch (type)
         {

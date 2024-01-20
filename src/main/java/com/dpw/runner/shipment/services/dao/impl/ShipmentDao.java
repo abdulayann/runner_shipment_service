@@ -154,14 +154,21 @@ public class ShipmentDao implements IShipmentDao {
         errors.addAll(applyShipmentValidations(shipmentDetails, oldShipment));
         if (!errors.isEmpty())
             throw new ValidationException(errors.toString());
-        if (shipmentDetails.getTransportMode() != null && shipmentDetails.getCarrierDetails() != null &&
-                shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)) {
+        if (shipmentDetails.getTransportMode() != null && shipmentDetails.getCarrierDetails() != null) {
             LocalDateTime eta = shipmentDetails.getCarrierDetails().getEta();
             LocalDateTime etd = shipmentDetails.getCarrierDetails().getEtd();
-            if(eta != null && etd != null) {
-                Duration duration = Duration.between(etd, eta);
-                if (duration.toHours() > 24) {
-                    throw new ValidationException("Difference between ETA and ETD should not be more than 24 hours");
+            if (shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)) {
+                //for air shipment, ETA can be less than ETD
+                if (eta != null && etd != null && eta.isBefore(etd)) {
+                    Duration duration = Duration.between(etd, eta);
+                    if (duration.toHours() > 24) {
+                        throw new ValidationException("Difference between ETA and ETD should not be more than 24 hours");
+                    }
+                }
+            } else {
+                //for other transport modes other than AIR, ETA cannot be less than ETD
+                if (eta != null && etd != null && eta.isBefore(etd)) {
+                    throw new ValidationException("ETA should not be less than ETD");
                 }
             }
         }

@@ -19,6 +19,8 @@ public class NPMConfig {
 
     @Value("${npm.exchange.rate.api.key}")
     private String xApiKey;
+    @Value("${NPM.multiLang.xApiKey}")
+    private String multiLangXApiKey;
 
     @Bean
     public RestTemplate restTemplateForNPM() {
@@ -53,6 +55,17 @@ public class NPMConfig {
             headers.set("x-api-key", xApiKey);
             headers.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
             headers.add("Authorization", RequestAuthContext.getAuthToken());
+            return execution.execute(request, body);
+        });
+        return restTemplate;
+    }
+    @Bean
+    public RestTemplate restTemplateForNpmMultiLangChargeCode() {
+        RestTemplate restTemplate = new RestTemplate(new HttpComponentsClientHttpRequestFactory());
+        restTemplate.getInterceptors().add((request, body, execution) -> {
+            HttpHeaders headers = request.getHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            headers.set("x-api-key", multiLangXApiKey);
             return execution.execute(request, body);
         });
         return restTemplate;

@@ -3,12 +3,12 @@ package com.dpw.runner.shipment.services.entity;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.entity.enums.ContainerStatus;
-import com.dpw.runner.shipment.services.utils.UnlocationData;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.utils.DedicatedMasterData;
 import com.dpw.runner.shipment.services.utils.MasterData;
+import com.dpw.runner.shipment.services.utils.UnlocationData;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.*;
 import lombok.experimental.Accessors;
 import org.hibernate.annotations.SQLDelete;
@@ -271,8 +271,9 @@ public class Containers extends MultiTenancy {
     @JoinColumn(name = "delivery_address_id", referencedColumnName = "id")
     private Parties deliveryAddress;
 
-    @OneToMany(fetch = FetchType.LAZY, mappedBy = "entityId")
-    @Where(clause = "entity_type = 'CONTAINERS'")
+    @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @JoinColumn(name = "entity_id")
+    @Where(clause = "entity_type = 'CONTAINER'")
     private List<Events> eventsList;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "containerId")
@@ -313,6 +314,7 @@ public class Containers extends MultiTenancy {
     @Column(name = "is_attached")
     private Boolean isAttached;
 
-    @OneToMany(fetch = FetchType.LAZY, mappedBy = "shipmentId")
+    @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @JoinColumn(name = "container_id")
     private List<TruckDriverDetails> truckingDetails;
 }
