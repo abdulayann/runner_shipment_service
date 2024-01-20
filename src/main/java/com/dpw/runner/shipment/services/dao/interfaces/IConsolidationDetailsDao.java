@@ -22,4 +22,5 @@ public interface IConsolidationDetailsDao {
     List<ConsolidationDetails> findByBol (String bol);
     List<ConsolidationDetails> findByReferenceNumber(String ref);
     Long findMaxId();
+    Boolean isMAWBNumberValid(String masterBill);
 }

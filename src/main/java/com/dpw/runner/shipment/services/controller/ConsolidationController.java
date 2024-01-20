@@ -11,9 +11,11 @@ import com.dpw.runner.shipment.services.dto.patchRequest.ConsolidationPatchReque
 import com.dpw.runner.shipment.services.dto.request.AutoAttachConsolidationRequest;
 import com.dpw.runner.shipment.services.dto.request.ConsolidationDetailsRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentAttachDetachRequest;
+import com.dpw.runner.shipment.services.dto.request.ValidateMawbNumberRequest;
 import com.dpw.runner.shipment.services.dto.response.AutoAttachConsolidationResponse;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
+import com.dpw.runner.shipment.services.dto.response.ValidateMawbNumberResponse;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
@@ -350,7 +352,7 @@ public class ConsolidationController {
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = "Successful Shipment Details Data List Retrieval")})
-    @PostMapping(value = "/auto-attach-Consolidation")
+    @PostMapping(value = ApiConstants.AUTO_ATTACH_CONSOLIDATION)
     public ResponseEntity<?> getAutoAttachConsolidationDetails(@Valid @RequestBody @NonNull AutoAttachConsolidationRequest request) {
         try {
             return (ResponseEntity<RunnerListResponse<AutoAttachConsolidationResponse>>) consolidationService.getAutoAttachConsolidationDetails(CommonRequestModel.buildRequest(request));
@@ -401,6 +403,16 @@ public class ConsolidationController {
             CommonGetRequest request = CommonGetRequest.builder().guid(guid).build();
             return consolidationService.getIdFromGuid(CommonRequestModel.buildRequest(request));
         } catch (Exception e) {
+            return ResponseHelper.buildFailedResponse(e.getMessage());
+        }
+    }
+    @ApiResponses(value = {@ApiResponse(code = 200, message = "Successful Shipment Details Data List Retrieval")})
+    @PostMapping(value = ApiConstants.VALIDATE_MAWB)
+    public ResponseEntity<?> validateMawbNumber(@Valid @RequestBody @NonNull ValidateMawbNumberRequest request) {
+        try {
+            return (ResponseEntity<ValidateMawbNumberResponse>) consolidationService.validateMawbNumber(CommonRequestModel.buildRequest(request));
+        } catch (Exception e) {
+            log.error(e.getLocalizedMessage());
             return ResponseHelper.buildFailedResponse(e.getMessage());
         }
     }

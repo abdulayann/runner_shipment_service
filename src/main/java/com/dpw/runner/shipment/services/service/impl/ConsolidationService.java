@@ -18,6 +18,7 @@ import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.*;
+import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
 import com.dpw.runner.shipment.services.dto.TrackingService.UniversalTrackingPayload;
 import com.dpw.runner.shipment.services.dto.patchRequest.CarrierPatchRequest;
@@ -48,6 +49,7 @@ import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequestV2;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
+import com.dpw.runner.shipment.services.masterdata.response.CarrierResponse;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationService;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerService;
@@ -3433,5 +3435,38 @@ public class ConsolidationService implements IConsolidationService {
         // Persist the event
         eventDao.save(events);
         return events;
+    }
+    public ResponseEntity<?> validateMawbNumber(CommonRequestModel commonRequestModel) {
+        ValidateMawbNumberRequest request = (ValidateMawbNumberRequest) commonRequestModel.getData();
+        ValidateMawbNumberResponse response = ValidateMawbNumberResponse.builder().success(true).build();
+        if(Strings.isNullOrEmpty(request.getMawb())){
+            return ResponseHelper.buildSuccessResponse(response);
+        }
+        if(!consolidationDetailsDao.isMAWBNumberValid(request.getMawb())){
+            throw new ValidationException("Please enter a valid MAWB number.");
+        }
+        String mawbAirlineCode = request.getMawb().substring(0, 3);
+        V1DataResponse v1DataResponse = fetchCarrierDetailsFromV1(mawbAirlineCode);
+        List<CarrierResponse> carrierDetails = jsonHelper.convertValueToList(v1DataResponse.entities, CarrierResponse.class);
+        if (carrierDetails == null || carrierDetails.isEmpty())
+            throw new ValidationException("Airline for the entered MAWB Number doesn't exist in Carrier Master");
+        var correspondingCarrier = carrierDetails.get(0).getItemValue();
+        if (!Strings.isNullOrEmpty(request.getShippingLine()) && !request.getShippingLine().equals(correspondingCarrier)){
+            response = ValidateMawbNumberResponse.builder()
+                    .success(false)
+                    .message("MAWB Number prefix is not matching with entered Flight Carrier. Do you want to proceed?")
+                    .build();
+        }
+        return ResponseHelper.buildSuccessResponse(response);
+    }
+    private V1DataResponse fetchCarrierDetailsFromV1(String mawbAirlineCode) {
+        CommonV1ListRequest request = new CommonV1ListRequest();
+        List<Object> criteria = new ArrayList<>();
+        criteria.addAll(List.of(List.of("AirlineCode"), "=", mawbAirlineCode));
+        request.setCriteriaRequests(criteria);
+        CarrierListObject carrierListObject = new CarrierListObject();
+        carrierListObject.setListObject(request);
+        V1DataResponse response = v1Service.fetchCarrierMasterData(carrierListObject, true);
+        return response;
     }
 }
