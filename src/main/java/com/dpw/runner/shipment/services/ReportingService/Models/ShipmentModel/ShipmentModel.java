@@ -1,8 +1,10 @@
 package com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel;
 
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentContainers;
+import com.dpw.runner.shipment.services.config.LocalDateTimeWithTimeZoneSerializer;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -70,6 +72,7 @@ public class ShipmentModel {
     @JsonProperty("FinanceClosedBy")
     private String financeClosedBy;
     @JsonProperty("FinanceClosedOn")
+    @JsonSerialize(using = LocalDateTimeWithTimeZoneSerializer.class)
     private LocalDateTime financeClosedOn;
     @JsonProperty("FreightLocal")
     private BigDecimal freightLocal;
@@ -148,8 +151,10 @@ public class ShipmentModel {
     @JsonProperty("ShipmentCompletedBy")
     private String shipmentCompletedBy;
     @JsonProperty("ShipmentCompletedOn")
+    @JsonSerialize(using = LocalDateTimeWithTimeZoneSerializer.class)
     private LocalDateTime shipmentCompletedOn;
     @JsonProperty("ShipmentCreatedOn")
+    @JsonSerialize(using = LocalDateTimeWithTimeZoneSerializer.class)
     private LocalDateTime shipmentCreatedOn;
     @JsonProperty("ShipmentId")
     private String shipmentId;

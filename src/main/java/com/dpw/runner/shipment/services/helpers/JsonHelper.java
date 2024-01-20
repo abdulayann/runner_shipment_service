@@ -94,11 +94,9 @@ public class JsonHelper {
 
     public <T> String convertToJsonWithDateTimeFormatter(T object, DateTimeFormatter dateTimeFormatter) {
         try {
-            String timeZone = MDC.get("x-browser-time-zone");
             JavaTimeModule javaTimeModule = new JavaTimeModule();
-            LocalDateTimeWithTimeZoneSerializer localDateTimeSerializer = new LocalDateTimeWithTimeZoneSerializer(ZoneId.of(timeZone), dateTimeFormatter);
+            LocalDateTimeSerializer localDateTimeSerializer = new LocalDateTimeSerializer(dateTimeFormatter);
             javaTimeModule.addSerializer(LocalDateTime.class, localDateTimeSerializer);
-            dateFormatMapper.setTimeZone(TimeZone.getTimeZone("UTC"));
             dateFormatMapper.registerModule(javaTimeModule);
             return dateFormatMapper.writeValueAsString(object);
         } catch (JsonProcessingException e) {
