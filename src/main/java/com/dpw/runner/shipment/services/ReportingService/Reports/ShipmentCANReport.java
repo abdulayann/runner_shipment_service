@@ -101,13 +101,13 @@ public class ShipmentCANReport extends IReport {
         }
         if(shipmentCANModel.tenantSettingsResponse != null && shipmentCANModel.tenantSettingsResponse.isGSTTaxAutoCalculation()) {
             for (TaxPair<String, String> tax : taxes) {
-                if(tax.getTaxType() == "TaxType1")
+                if(tax.getTaxType().equalsIgnoreCase("TaxType1"))
                     tax.setTaxType("SGST");
-                if(tax.getTaxType() == "TaxType2")
+                if(tax.getTaxType().equalsIgnoreCase("TaxType2"))
                     tax.setTaxType("CGST");
-                if(tax.getTaxType() == "TaxType3")
+                if(tax.getTaxType().equalsIgnoreCase("TaxType3"))
                     tax.setTaxType("UGST");
-                if(tax.getTaxType() == "TaxType4")
+                if(tax.getTaxType().equalsIgnoreCase("TaxType4"))
                     tax.setTaxType("IGST");
             }
         }
