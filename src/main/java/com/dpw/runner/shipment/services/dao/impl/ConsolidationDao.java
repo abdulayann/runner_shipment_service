@@ -401,7 +401,7 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
         }
     }
 
-    private Boolean isMAWBNumberValid(String masterBill) {
+    public Boolean isMAWBNumberValid(String masterBill) {
         Boolean MAWBNumberValidity = true;
         if (masterBill.length() == 12) {
             String mawbSeqNum = masterBill.substring(4, 11);
