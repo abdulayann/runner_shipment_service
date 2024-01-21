@@ -23,6 +23,7 @@ import javax.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 
 @Entity
@@ -415,4 +416,7 @@ public class ShipmentDetails extends MultiTenancy {
 
     @Column(name = "sales_branch")
     private String salesBranch;
+
+    @Column(name = "source_guid")
+    private UUID sourceGuid;
 }

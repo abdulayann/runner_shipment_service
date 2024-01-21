@@ -18,6 +18,7 @@ import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.*;
+import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
 import com.dpw.runner.shipment.services.dto.TrackingService.UniversalTrackingPayload;
 import com.dpw.runner.shipment.services.dto.patchRequest.CarrierPatchRequest;
@@ -48,6 +49,7 @@ import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequestV2;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
+import com.dpw.runner.shipment.services.masterdata.response.CarrierResponse;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationService;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerService;
@@ -59,6 +61,7 @@ import com.dpw.runner.shipment.services.service_bus.ISBUtils;
 import com.dpw.runner.shipment.services.syncing.interfaces.IConsolidationSync;
 import com.dpw.runner.shipment.services.syncing.interfaces.IPackingsSync;
 import com.dpw.runner.shipment.services.utils.*;
+import com.dpw.runner.shipment.services.validator.enums.Operators;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
 import com.nimbusds.jose.util.Pair;
@@ -146,6 +149,9 @@ public class ConsolidationService implements IConsolidationService {
 
     @Autowired
     private IReferenceNumbersDao referenceNumbersDao;
+
+    @Autowired
+    private ITruckDriverDetailsDao truckDriverDetailsDao;
 
     @Autowired
     private IRoutingsDao routingsDao;
@@ -361,6 +367,12 @@ public class ConsolidationService implements IConsolidationService {
         consolidationListResponses.forEach(consolidationDetails -> {
             responseList.add(consolidationDetails);
         });
+        try {
+            masterDataUtils.setConsolidationContainerTeuData(lst, responseList);
+        }
+        catch (Exception ex) {
+            log.error("Request: {} || Error occured for event: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), IntegrationType.MASTER_DATA_FETCH_FOR_SHIPMENT_LIST, ex.getLocalizedMessage());
+        }
         return responseList;
     }
 
@@ -440,6 +452,8 @@ public class ConsolidationService implements IConsolidationService {
 
         try {
             consolidationDetails.setShipmentsList(null);
+            if (Objects.isNull(consolidationDetails.getSourceTenantId()))
+                consolidationDetails.setSourceTenantId(Long.valueOf(UserContext.getUser().TenantId));
 
             beforeSave(consolidationDetails);
             getConsolidation(consolidationDetails);
@@ -477,6 +491,10 @@ public class ConsolidationService implements IConsolidationService {
             List<ReferenceNumbersRequest> referenceNumbersRequest = request.getReferenceNumbersList();
             if (referenceNumbersRequest != null)
                 createReferenceNumbersAsync(consolidationDetails, referenceNumbersRequest);
+
+            List<TruckDriverDetailsRequest> truckDriverDetailsRequest = request.getTruckDriverDetails();
+            if (truckDriverDetailsRequest != null)
+                createTruckDriverDetailsAsync(consolidationDetails, truckDriverDetailsRequest);
 
             List<RoutingsRequest> routingsRequest = request.getRoutingsList();
             if (routingsRequest != null)
@@ -609,6 +627,12 @@ public class ConsolidationService implements IConsolidationService {
         });
     }
 
+    private void createTruckDriverDetailsAsync(ConsolidationDetails consolidationDetails, List<TruckDriverDetailsRequest> truckDriverDetailsRequest) {
+        truckDriverDetailsRequest.forEach(truckDriverDetails -> {
+            createTruckDriver(consolidationDetails, truckDriverDetails);
+        });
+    }
+
     private void createNotesAsync(ConsolidationDetails consolidationDetails, List<NotesRequest> notesRequest) {
         notesRequest.forEach(notes -> {
             createNote(consolidationDetails, notes);
@@ -678,6 +702,12 @@ public class ConsolidationService implements IConsolidationService {
     public void createReferenceNumber(ConsolidationDetails consolidationDetails, ReferenceNumbersRequest referenceNumbersRequest) {
         referenceNumbersRequest.setConsolidationId(consolidationDetails.getId());
         referenceNumbersDao.save(jsonHelper.convertValue(referenceNumbersRequest, ReferenceNumbers.class));
+    }
+
+    @Transactional
+    public void createTruckDriver(ConsolidationDetails consolidationDetails, TruckDriverDetailsRequest truckDriverDetailsRequest) {
+        truckDriverDetailsRequest.setConsolidationId(consolidationDetails.getId());
+        truckDriverDetailsDao.save(jsonHelper.convertValue(truckDriverDetailsRequest, TruckDriverDetails.class));
     }
 
     @Transactional
@@ -888,6 +918,7 @@ public class ConsolidationService implements IConsolidationService {
             List<FileRepoRequest> fileRepoRequestList = consolidationDetailsRequest.getFileRepoList();
             List<JobRequest> jobRequestList = consolidationDetailsRequest.getJobsList();
             List<ReferenceNumbersRequest> referenceNumbersRequestList = consolidationDetailsRequest.getReferenceNumbersList();
+            List<TruckDriverDetailsRequest> truckDriverDetailsRequestList = consolidationDetailsRequest.getTruckDriverDetails();
             List<RoutingsRequest> routingsRequestList = consolidationDetailsRequest.getRoutingsList();
             List<PartiesRequest> consolidationAddressRequest = consolidationDetailsRequest.getConsolidationAddresses();
 
@@ -914,6 +945,10 @@ public class ConsolidationService implements IConsolidationService {
             if (referenceNumbersRequestList != null) {
                 List<ReferenceNumbers> updatedReferenceNumbers = referenceNumbersDao.updateEntityFromConsole(convertToEntityList(referenceNumbersRequestList, ReferenceNumbers.class), id);
                 entity.setReferenceNumbersList(updatedReferenceNumbers);
+            }
+            if (truckDriverDetailsRequestList != null) {
+                List<TruckDriverDetails> updatedTruckDriverDetails = truckDriverDetailsDao.updateEntityFromConsole(convertToEntityList(truckDriverDetailsRequestList, TruckDriverDetails.class), id);
+                entity.setTruckDriverDetails(updatedTruckDriverDetails);
             }
             if (routingsRequestList != null) {
                 List<Routings> updatedRoutings = routingsDao.updateEntityFromConsole(convertToEntityList(routingsRequestList, Routings.class), id);
@@ -954,6 +989,7 @@ public class ConsolidationService implements IConsolidationService {
         List<FileRepoRequest> fileRepoRequestList = consolidationDetailsRequest.getFileRepoList();
         List<JobRequest> jobRequestList = consolidationDetailsRequest.getJobsList();
         List<ReferenceNumbersRequest> referenceNumbersRequestList = consolidationDetailsRequest.getReferenceNumbersList();
+        List<TruckDriverDetailsRequest> truckDriverDetailsRequestList = consolidationDetailsRequest.getTruckDriverDetails();
         List<RoutingsRequest> routingsRequestList = consolidationDetailsRequest.getRoutingsList();
         List<PartiesRequest> consolidationAddressRequest = consolidationDetailsRequest.getConsolidationAddresses();
         // TODO- implement Validation logic
@@ -1017,6 +1053,10 @@ public class ConsolidationService implements IConsolidationService {
                 List<ReferenceNumbers> updatedReferenceNumbers = referenceNumbersDao.updateEntityFromConsole(convertToEntityList(referenceNumbersRequestList, ReferenceNumbers.class), id);
                 entity.setReferenceNumbersList(updatedReferenceNumbers);
             }
+            if (truckDriverDetailsRequestList != null) {
+                List<TruckDriverDetails> updatedTruckDriverDetails = truckDriverDetailsDao.updateEntityFromConsole(convertToEntityList(truckDriverDetailsRequestList, TruckDriverDetails.class), id);
+                entity.setTruckDriverDetails(updatedTruckDriverDetails);
+            }
             if (routingsRequestList != null) {
                 List<Routings> updatedRoutings = routingsDao.updateEntityFromConsole(convertToEntityList(routingsRequestList, Routings.class), id);
                 entity.setRoutingsList(updatedRoutings);
@@ -1064,6 +1104,7 @@ public class ConsolidationService implements IConsolidationService {
             List<ShipmentDetails> shipments = page.getContent();
             shipments.stream()
                     .map(i -> {
+                        i.setConsolRef(console.getReferenceNumber());
                         i.setMasterBill(console.getBol());
                         i.setDirection(console.getShipmentType());
                         if (console.getCarrierDetails() != null) {
@@ -2709,6 +2750,13 @@ public class ConsolidationService implements IConsolidationService {
                 List<ReferenceNumbers> updatedReferenceNumbers = referenceNumbersDao.updateEntityFromConsole(convertToEntityList(referenceNumbersRequestList, ReferenceNumbers.class), id, oldReferenceNumbers.stream().toList());
                 entity.setReferenceNumbersList(updatedReferenceNumbers);
             }
+            if (truckDriverDetailsRequestList != null) {
+                ListCommonRequest listCommonRequest = constructListCommonRequest("consolidationId", entity.getId(), "=");
+                Pair<Specification<TruckDriverDetails>, Pageable> pair = fetchData(listCommonRequest, TruckDriverDetails.class);
+                Page<TruckDriverDetails> oldTruckDriverDetails = truckDriverDetailsDao.findAll(pair.getLeft(), pair.getRight());
+                List<TruckDriverDetails> updatedReferenceNumbers = truckDriverDetailsDao.updateEntityFromConsole(convertToEntityList(truckDriverDetailsRequestList, TruckDriverDetails.class), id, oldTruckDriverDetails.stream().toList());
+                entity.setTruckDriverDetails(updatedReferenceNumbers);
+            }
             if (routingsRequestList != null) {
                 ListCommonRequest listCommonRequest = constructListCommonRequest("consolidationId", entity.getId(), "=");
                 Pair<Specification<Routings>, Pageable> pair = fetchData(listCommonRequest, Routings.class);
@@ -3387,5 +3435,38 @@ public class ConsolidationService implements IConsolidationService {
         // Persist the event
         eventDao.save(events);
         return events;
+    }
+    public ResponseEntity<?> validateMawbNumber(CommonRequestModel commonRequestModel) {
+        ValidateMawbNumberRequest request = (ValidateMawbNumberRequest) commonRequestModel.getData();
+        ValidateMawbNumberResponse response = ValidateMawbNumberResponse.builder().success(true).build();
+        if(Strings.isNullOrEmpty(request.getMawb())){
+            return ResponseHelper.buildSuccessResponse(response);
+        }
+        if(!consolidationDetailsDao.isMAWBNumberValid(request.getMawb())){
+            throw new ValidationException("Please enter a valid MAWB number.");
+        }
+        String mawbAirlineCode = request.getMawb().substring(0, 3);
+        V1DataResponse v1DataResponse = fetchCarrierDetailsFromV1(mawbAirlineCode);
+        List<CarrierResponse> carrierDetails = jsonHelper.convertValueToList(v1DataResponse.entities, CarrierResponse.class);
+        if (carrierDetails == null || carrierDetails.isEmpty())
+            throw new ValidationException("Airline for the entered MAWB Number doesn't exist in Carrier Master");
+        var correspondingCarrier = carrierDetails.get(0).getItemValue();
+        if (!Strings.isNullOrEmpty(request.getShippingLine()) && !request.getShippingLine().equals(correspondingCarrier)){
+            response = ValidateMawbNumberResponse.builder()
+                    .success(false)
+                    .message("MAWB Number prefix is not matching with entered Flight Carrier. Do you want to proceed?")
+                    .build();
+        }
+        return ResponseHelper.buildSuccessResponse(response);
+    }
+    private V1DataResponse fetchCarrierDetailsFromV1(String mawbAirlineCode) {
+        CommonV1ListRequest request = new CommonV1ListRequest();
+        List<Object> criteria = new ArrayList<>();
+        criteria.addAll(List.of(List.of("AirlineCode"), "=", mawbAirlineCode));
+        request.setCriteriaRequests(criteria);
+        CarrierListObject carrierListObject = new CarrierListObject();
+        carrierListObject.setListObject(request);
+        V1DataResponse response = v1Service.fetchCarrierMasterData(carrierListObject, true);
+        return response;
     }
 }

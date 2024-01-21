@@ -79,4 +79,6 @@ public class ApiConstants {
     public static final String API_DEFAULT_CONSOLIDATION = "/getDefaultConsolidation";
     public static final String GET_ID_BY_GUID = "/get/id";
     public static final String RETIEVE_BY_MAWB_ID = "/get/mawbId";
+    public static final String VALIDATE_MAWB = "/validate-mawb";
+    public static final String AUTO_ATTACH_CONSOLIDATION = "/auto-attach-Consolidation";
 }

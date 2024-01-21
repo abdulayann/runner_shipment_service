@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.ReportingService.Reports;
 
+import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper;
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentContainers;
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ManifestConsolModel;
@@ -89,7 +90,7 @@ public class ManifestConsolReport extends IReport {
         dictionary.put(CONSOL_CARRIER, model.getCarrierMasterData().getItemDescription());
 
         if (weightAndUnit.getLeft().compareTo(BigDecimal.ZERO) > 0)
-            dictionary.put(TOTAL_WEIGHT, weightAndUnit.getLeft());
+            dictionary.put(TOTAL_WEIGHT, ReportHelper.ConvertToWeightNumberFormat(weightAndUnit.getLeft()));
         else
             dictionary.put(TOTAL_WEIGHT, "-");
 
@@ -112,7 +113,7 @@ public class ManifestConsolReport extends IReport {
         dictionary.put(TOTAL_PACKS_TYPE, allPacksTypes.size() > 0 ? String.join(",", allPacksTypes) : "");
 
         if (volumeAndUnit.getLeft().compareTo(BigDecimal.ZERO) > 0)
-            dictionary.put(TOTAL_VOLUME, volumeAndUnit.getLeft());
+            dictionary.put(TOTAL_VOLUME, ReportHelper.ConvertToVolumeNumberFormat(volumeAndUnit.getLeft()));
         else
             dictionary.put(TOTAL_VOLUME, "-");
 

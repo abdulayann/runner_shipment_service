@@ -64,6 +64,7 @@ public class PreAlertReport extends IReport {
         Map<String, Object> dictionary = jsonHelper.convertJsonToMap(json);
         JsonDateFormat(dictionary);
         addTenantDetails(dictionary, preAlertModel.tenantDetails);
+        populateShipmentOrganizationsLL(preAlertModel.shipmentDetails, dictionary);
         List<String> consigner = new ArrayList<>();
         if(preAlertModel.shipmentDetails.getConsigner() != null) {
             consigner = getOrgAddressWithPhoneEmail(preAlertModel.shipmentDetails.getConsigner());

@@ -35,6 +35,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
 
 import javax.validation.ConstraintViolationException;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -149,19 +150,36 @@ public class ShipmentDao implements IShipmentDao {
         return shipmentDetails;
     }
 
-    private void onSave(ShipmentDetails shipmentDetails, Set<String> errors, ShipmentDetails oldShipment, boolean fromV1Sync)
-    {
+    private void onSave(ShipmentDetails shipmentDetails, Set<String> errors, ShipmentDetails oldShipment, boolean fromV1Sync) {
         errors.addAll(applyShipmentValidations(shipmentDetails, oldShipment));
-        if (! errors.isEmpty())
+        if (!errors.isEmpty())
             throw new ValidationException(errors.toString());
-        if(!fromV1Sync && shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)
+        if (shipmentDetails.getTransportMode() != null && shipmentDetails.getCarrierDetails() != null) {
+            LocalDateTime eta = shipmentDetails.getCarrierDetails().getEta();
+            LocalDateTime etd = shipmentDetails.getCarrierDetails().getEtd();
+            if (shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)) {
+                //for air shipment, ETA can be less than ETD
+                if (eta != null && etd != null && eta.isBefore(etd)) {
+                    Duration duration = Duration.between(etd, eta);
+                    if (duration.toHours() > 24) {
+                        throw new ValidationException("Difference between ETA and ETD should not be more than 24 hours");
+                    }
+                }
+            } else {
+                //for other transport modes other than AIR, ETA cannot be less than ETD
+                if (eta != null && etd != null && eta.isBefore(etd)) {
+                    throw new ValidationException("ETA should not be less than ETD");
+                }
+            }
+        }
+        if (!fromV1Sync && shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)
                 && shipmentDetails.getJobType() != null && shipmentDetails.getJobType().equals(Constants.SHIPMENT_TYPE_DRT)
                 && shipmentDetails.getMasterBill() != null
                 && (oldShipment == null || oldShipment.getMasterBill() == null || !oldShipment.getMasterBill().equalsIgnoreCase(shipmentDetails.getMasterBill())))
             directShipmentMAWBCheck(shipmentDetails);
         shipmentDetails = shipmentRepository.save(shipmentDetails);
-        if(!fromV1Sync && shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && shipmentDetails.getJobType() != null && shipmentDetails.getJobType().equals(Constants.SHIPMENT_TYPE_DRT)) {
-            if(shipmentDetails.getMasterBill() != null && !shipmentDetails.getDirection().equals(Constants.IMP)) {
+        if (!fromV1Sync && shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && shipmentDetails.getJobType() != null && shipmentDetails.getJobType().equals(Constants.SHIPMENT_TYPE_DRT)) {
+            if (shipmentDetails.getMasterBill() != null && !shipmentDetails.getDirection().equals(Constants.IMP)) {
                 setMawbStock(shipmentDetails);
             }
         }

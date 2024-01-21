@@ -167,4 +167,5 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     private String notifyPartyCountry;
     private String salesBranch;
     private String salesAgentEmail;
+    private UUID sourceGuid;
 }

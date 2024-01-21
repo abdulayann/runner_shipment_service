@@ -9,10 +9,12 @@ import com.dpw.runner.shipment.services.ReportingService.Models.Commons.Shipment
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.*;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
+import com.dpw.runner.shipment.services.adapters.interfaces.INPMServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
+import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
@@ -21,10 +23,15 @@ import com.dpw.runner.shipment.services.dto.request.HblPartyDto;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.request.hbl.HblContainerDto;
 import com.dpw.runner.shipment.services.dto.request.hbl.HblDataDto;
+import com.dpw.runner.shipment.services.dto.request.npm.NPMFetchMultiLangChargeCodeRequest;
+import com.dpw.runner.shipment.services.dto.response.npm.NPMFetchLangChargeCodeResponse;
+import com.dpw.runner.shipment.services.dto.v1.request.AddressTranslationRequest;
+import com.dpw.runner.shipment.services.dto.v1.response.AddressTranslationListResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
+import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.CarrierMasterData;
 import com.dpw.runner.shipment.services.masterdata.dto.MasterData;
@@ -87,6 +94,8 @@ public abstract class IReport {
 
     @Autowired
     private  IAwbDao awbDao;
+    @Autowired
+    private INPMServiceAdapter npmServiceAdapter;
 
     @Autowired
     MasterDataFactory masterDataFactory;
@@ -320,9 +329,9 @@ public abstract class IReport {
         if (masterListsMap.containsKey(shipment.getPacksUnit()))
             masterData = masterListsMap.get(shipment.getPacksUnit());
         dictionary.put(ReportConstants.PACKS_UNIT_DESC, masterData != null && StringUtility.isNotEmpty(masterData.getItemDescription()) ? masterData.getItemDescription() : shipment.getPacksUnit());
-        dictionary.put(ReportConstants.GROSS_WEIGHT,shipment.getWeight());
+        dictionary.put(ReportConstants.GROSS_WEIGHT, ReportHelper.ConvertToWeightNumberFormat(shipment.getWeight()));
         dictionary.put(ReportConstants.GROSS_WEIGHT_UNIT,shipment.getWeightUnit());
-        dictionary.put(ReportConstants.GROSS_VOLUME,shipment.getVolume());
+        dictionary.put(ReportConstants.GROSS_VOLUME, ReportHelper.ConvertToVolumeNumberFormat(shipment.getVolume()));
         dictionary.put(ReportConstants.GROSS_VOLUME_UNIT,shipment.getVolumeUnit());
 
         dictionary.put(ReportConstants.DELIVERY_CFS, (delivery != null && !Objects.isNull(delivery.getSourceDetail()) && !Objects.isNull(delivery.getSourceDetail().getOrgData())) ? delivery.getSourceDetail().getOrgData().get(FULL_NAME) : null);
@@ -755,14 +764,14 @@ public abstract class IReport {
         dictionary.put(ReportConstants.DESCRIPTION, hblDataDto.getCargoDescription());
         dictionary.put(ReportConstants.DESCRIPTION_CAPS, hblDataDto.getCargoDescription() != null ? hblDataDto.getCargoDescription().toUpperCase() : null);
         dictionary.put(ReportConstants.PLACE_OF_DELIVERY, hblDataDto.getPlaceOfDelivery());
-        dictionary.put(ReportConstants.CARGO_NET_WEIGHT, hblDataDto.getCargoNetWeight());
+        dictionary.put(ReportConstants.CARGO_NET_WEIGHT, ReportHelper.ConvertToWeightNumberFormat(hblDataDto.getCargoNetWeight()));
         dictionary.put(ReportConstants.CARGO_NET_WEIGHT_UNIT, hblDataDto.getCargoNetWeightUnit());
         dictionary.put(ReportConstants.FINAL_DESTINATION, hblDataDto.getFinalDestination());
-        dictionary.put(ReportConstants.CARGO_GROSS_VOLUME, hblDataDto.getCargoGrossVolume());
+        dictionary.put(ReportConstants.CARGO_GROSS_VOLUME, ReportHelper.ConvertToVolumeNumberFormat(hblDataDto.getCargoGrossVolume()));
         dictionary.put(ReportConstants.CARGO_GROSS_VOLUME_UNIT, hblDataDto.getCargoGrossVolumeUnit());
-        dictionary.put(ReportConstants.CARGO_GROSS_WEIGHT, hblDataDto.getCargoGrossWeight());
+        dictionary.put(ReportConstants.CARGO_GROSS_WEIGHT, ReportHelper.ConvertToWeightNumberFormat(hblDataDto.getCargoGrossWeight()));
         dictionary.put(ReportConstants.CARGO_GROSS_WEIGHT_UNIT, hblDataDto.getCargoGrossWeightUnit());
-        dictionary.put(ReportConstants.CARGO_NET_WEIGHT, hblDataDto.getCargoNetWeight());
+        dictionary.put(ReportConstants.CARGO_NET_WEIGHT, ReportHelper.ConvertToWeightNumberFormat(hblDataDto.getCargoNetWeight()));
         dictionary.put(ReportConstants.CARGO_NET_WEIGHT_UNIT, hblDataDto.getCargoNetWeightUnit());
         dictionary.put(ReportConstants.CARGO_GROSS_PACKAGE_COUNT, hblDataDto.getPackageCount());
         dictionary.put(ReportConstants.CARGO_GROSS_PACKAGE_TYPE, hblDataDto.getPackageType());
@@ -1356,7 +1365,7 @@ public abstract class IReport {
             return;
         }
 
-        List<Map<String, Object>> packsDictionary = (List<Map<String, Object>>) new HashMap<>();
+        List<Map<String, Object>> packsDictionary = new ArrayList<>();
 
         for(var pack : shipment.getPackingList()) {
             Map<String, Object> dict = new HashMap<>();
@@ -1424,5 +1433,127 @@ public abstract class IReport {
         dictionary.put(HAS_PACK_DETAILS, true);
         dictionary.put(PACKS_DETAILS, packsDictionary);
 
+    }
+    public void populateShipmentOrganizationsLL(ShipmentModel shipmentDetails, Map<String, Object> dictionary) {
+        var languageCode = UserContext.getUser().getLanguageCode();
+        List<AddressTranslationRequest.OrgAddressCode> orgAddressCodeList = new ArrayList<>();
+        if(!Objects.isNull(shipmentDetails.getClient()) && !Strings.isNullOrEmpty(shipmentDetails.getClient().getOrgCode()))
+            orgAddressCodeList.add(new AddressTranslationRequest.OrgAddressCode(shipmentDetails.getClient().getOrgCode(), shipmentDetails.getClient().getAddressCode()));
+        if(!Objects.isNull(shipmentDetails.getConsigner()) && !Strings.isNullOrEmpty(shipmentDetails.getConsigner().getOrgCode()))
+            orgAddressCodeList.add(new AddressTranslationRequest.OrgAddressCode(shipmentDetails.getConsigner().getOrgCode(), shipmentDetails.getConsigner().getAddressCode()));
+        if(!Objects.isNull(shipmentDetails.getConsignee()) && !Strings.isNullOrEmpty(shipmentDetails.getConsignee().getOrgCode()))
+            orgAddressCodeList.add(new AddressTranslationRequest.OrgAddressCode(shipmentDetails.getConsignee().getOrgCode(), shipmentDetails.getConsignee().getAddressCode()));
+        if(!Objects.isNull(shipmentDetails.getAdditionalDetails()) && !Objects.isNull(shipmentDetails.getAdditionalDetails().getNotifyParty()) && !Strings.isNullOrEmpty(shipmentDetails.getAdditionalDetails().getNotifyParty().getOrgCode()))
+            orgAddressCodeList.add(new AddressTranslationRequest.OrgAddressCode(shipmentDetails.getAdditionalDetails().getNotifyParty().getOrgCode(), shipmentDetails.getAdditionalDetails().getNotifyParty().getAddressCode()));
+        if(!Objects.isNull(shipmentDetails.getPickupDetails()) && !Objects.isNull(shipmentDetails.getPickupDetails().getSourceDetail()) && !Strings.isNullOrEmpty(shipmentDetails.getPickupDetails().getSourceDetail().getOrgCode()))
+            orgAddressCodeList.add(new AddressTranslationRequest.OrgAddressCode(shipmentDetails.getPickupDetails().getSourceDetail().getOrgCode(), shipmentDetails.getPickupDetails().getSourceDetail().getAddressCode()));
+        if(!Objects.isNull(shipmentDetails.getDeliveryDetails()) && !Objects.isNull(shipmentDetails.getDeliveryDetails().getDestinationDetail()) && !Strings.isNullOrEmpty(shipmentDetails.getDeliveryDetails().getDestinationDetail().getOrgCode()))
+            orgAddressCodeList.add(new AddressTranslationRequest.OrgAddressCode(shipmentDetails.getDeliveryDetails().getDestinationDetail().getOrgCode(), shipmentDetails.getDeliveryDetails().getDestinationDetail().getAddressCode()));
+
+        if(Strings.isNullOrEmpty(languageCode) || orgAddressCodeList.isEmpty()){
+            return;
+        }
+        AddressTranslationRequest request = AddressTranslationRequest.builder()
+                .OrgAddressCodeList(orgAddressCodeList)
+                .LanguageCode(languageCode)
+                .build();
+        AddressTranslationListResponse response = null;
+        try {
+            response = v1Service.getAddressTranslation(request);
+        } catch (Exception ex) { }
+        Map<String, AddressTranslationListResponse.AddressTranslationResponse> orgVsAddressTranslationMap = new HashMap<>();
+        if(!Objects.isNull(response) && !Objects.isNull(response.getAddressTranslationList()) && !response.getAddressTranslationList().isEmpty()){
+           orgVsAddressTranslationMap =
+                    response.getAddressTranslationList().stream().collect(Collectors.toMap(obj -> obj.getOrgCode() + "_" + obj.getAddressCode(), obj -> obj));
+        }
+        if(!Objects.isNull(shipmentDetails.getClient()) && !Strings.isNullOrEmpty(shipmentDetails.getClient().getOrgCode())){
+            String orgCode = shipmentDetails.getClient().getOrgCode();
+            String addressCode = shipmentDetails.getClient().getAddressCode();
+            if(orgVsAddressTranslationMap.containsKey(orgCode + "_" + addressCode)){
+                AddressTranslationListResponse.AddressTranslationResponse address = orgVsAddressTranslationMap.get(orgCode + "_" + addressCode);
+                dictionary.put(CLIENT_LL, address.getOrgName());
+                dictionary.put(CLIENT_ADDRESS_LL, ReportHelper.getOrgAddress(null, address.getAddress(), null, null, ReportHelper.combineStringsWithComma(address.getCityName(),address.getPostalCode()), address.getStateName()));
+            } else {
+                throw new ValidationException("Translation not available for Client Organization");
+            }
+        }
+        if(!Objects.isNull(shipmentDetails.getConsigner()) && !Strings.isNullOrEmpty(shipmentDetails.getConsigner().getOrgCode())){
+            String orgCode = shipmentDetails.getConsigner().getOrgCode();
+            String addressCode = shipmentDetails.getConsigner().getAddressCode();
+            if(orgVsAddressTranslationMap.containsKey(orgCode + "_" + addressCode)){
+                AddressTranslationListResponse.AddressTranslationResponse address = orgVsAddressTranslationMap.get(orgCode + "_" + addressCode);
+                dictionary.put(CONSIGNER_LL, address.getOrgName());
+                dictionary.put(CONSIGNER_ADDRESS_LL, ReportHelper.getOrgAddress(null, address.getAddress(), null, null, ReportHelper.combineStringsWithComma(address.getCityName(),address.getPostalCode()), address.getStateName()));
+            } else {
+                throw new ValidationException("Translation not available for Consigner Organization");
+            }
+        }
+        if(!Objects.isNull(shipmentDetails.getConsignee()) && !Strings.isNullOrEmpty(shipmentDetails.getConsignee().getOrgCode())){
+            String orgCode = shipmentDetails.getConsignee().getOrgCode();
+            String addressCode = shipmentDetails.getConsignee().getAddressCode();
+            if(orgVsAddressTranslationMap.containsKey(orgCode + "_" + addressCode)){
+                AddressTranslationListResponse.AddressTranslationResponse address = orgVsAddressTranslationMap.get(orgCode + "_" + addressCode);
+                dictionary.put(CONSIGNEE_LL, address.getOrgName());
+                dictionary.put(CONSIGNEE_ADDRESS_LL, ReportHelper.getOrgAddress(null, address.getAddress(), null, null, ReportHelper.combineStringsWithComma(address.getCityName(),address.getPostalCode()), address.getStateName()));
+            } else {
+                throw new ValidationException("Translation not available for Consignee Organization");
+            }
+        }
+        if(!Objects.isNull(shipmentDetails.getAdditionalDetails()) && !Objects.isNull(shipmentDetails.getAdditionalDetails().getNotifyParty()) && !Strings.isNullOrEmpty(shipmentDetails.getAdditionalDetails().getNotifyParty().getOrgCode())){
+            String orgCode = shipmentDetails.getAdditionalDetails().getNotifyParty().getOrgCode();
+            String addressCode = shipmentDetails.getAdditionalDetails().getNotifyParty().getAddressCode();
+            if(orgVsAddressTranslationMap.containsKey(orgCode + "_" + addressCode)){
+                AddressTranslationListResponse.AddressTranslationResponse address = orgVsAddressTranslationMap.get(orgCode + "_" + addressCode);
+                dictionary.put(NOTIFY_PARTY_LL, address.getOrgName());
+                dictionary.put(NOTIFY_PARTY_ADDRESS_LL, ReportHelper.getOrgAddress(null, address.getAddress(), null, null, ReportHelper.combineStringsWithComma(address.getCityName(),address.getPostalCode()), address.getStateName()));
+            } else {
+                throw new ValidationException("Translation not available for Notify Party Organization");
+            }
+        }
+        if(!Objects.isNull(shipmentDetails.getPickupDetails()) && !Objects.isNull(shipmentDetails.getPickupDetails().getSourceDetail()) && !Strings.isNullOrEmpty(shipmentDetails.getPickupDetails().getSourceDetail().getOrgCode())){
+            String orgCode = shipmentDetails.getPickupDetails().getSourceDetail().getOrgCode();
+            String addressCode = shipmentDetails.getPickupDetails().getSourceDetail().getAddressCode();
+            if(orgVsAddressTranslationMap.containsKey(orgCode + "_" + addressCode)){
+                AddressTranslationListResponse.AddressTranslationResponse address = orgVsAddressTranslationMap.get(orgCode + "_" + addressCode);
+                dictionary.put(PICKUP_FROM_LL, address.getOrgName());
+                dictionary.put(PICKUP_FROM_ADDRESS_LL, ReportHelper.getOrgAddress(null, address.getAddress(), null, null, ReportHelper.combineStringsWithComma(address.getCityName(),address.getPostalCode()), address.getStateName()));
+            } else {
+                throw new ValidationException("Translation not available for PickupFrom Organization");
+            }
+        }
+        if(!Objects.isNull(shipmentDetails.getDeliveryDetails()) && !Objects.isNull(shipmentDetails.getDeliveryDetails().getDestinationDetail()) && !Strings.isNullOrEmpty(shipmentDetails.getDeliveryDetails().getDestinationDetail().getOrgCode())){
+            String orgCode = shipmentDetails.getDeliveryDetails().getDestinationDetail().getOrgCode();
+            String addressCode = shipmentDetails.getDeliveryDetails().getDestinationDetail().getAddressCode();
+            if(orgVsAddressTranslationMap.containsKey(orgCode + "_" + addressCode)){
+                AddressTranslationListResponse.AddressTranslationResponse address = orgVsAddressTranslationMap.get(orgCode + "_" + addressCode);
+                dictionary.put(DELIVERY_TO_LL, address.getOrgName());
+                dictionary.put(DELIVERY_TO_ADDRESS_LL, ReportHelper.getOrgAddress(null, address.getAddress(), null, null, ReportHelper.combineStringsWithComma(address.getCityName(),address.getPostalCode()), address.getStateName()));
+            } else {
+                throw new ValidationException("Translation not available for DeliveryTo Organization");
+            }
+        }
+    }
+
+    public String GetChargeTypeDescriptionLL(String chargeCode) {
+        var languageCode = UserContext.getUser().getLanguageCode();
+        if(Strings.isNullOrEmpty(languageCode) || Strings.isNullOrEmpty(chargeCode)){
+            return null;
+        }
+        NPMFetchMultiLangChargeCodeRequest request = NPMFetchMultiLangChargeCodeRequest.builder()
+                .key(chargeCode)
+                .lang(languageCode)
+                .key_type("charge_code_desc")
+                .build();
+        String translatedChargeTypeDescription = null;
+        try {
+            NPMFetchLangChargeCodeResponse response = npmServiceAdapter.fetchMultiLangChargeCode(CommonRequestModel.buildRequest(request));
+            translatedChargeTypeDescription = response.getTranslation();
+            if(Strings.isNullOrEmpty(translatedChargeTypeDescription)){
+                throw new ValidationException("Translation not available for Charge Type Description for Charge Code: " + chargeCode);
+            }
+        } catch (Exception ex){
+            throw new ValidationException("NPM service response failed for ChargeType translation due to: " + ex.getMessage());
+        }
+        return translatedChargeTypeDescription;
     }
 }

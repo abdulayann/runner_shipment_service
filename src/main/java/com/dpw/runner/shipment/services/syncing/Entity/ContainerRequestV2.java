@@ -174,4 +174,6 @@ public class ContainerRequestV2 implements IRunnerRequest {
     private Boolean IsPart;
     @JsonProperty("IsAttached")
     private Boolean IsAttached;
+    @JsonProperty("TruckingDetails")
+    private List<TruckDriverDetailsRequestV2> TruckingDetails;
 }

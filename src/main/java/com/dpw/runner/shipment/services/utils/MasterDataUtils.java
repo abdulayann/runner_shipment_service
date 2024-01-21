@@ -13,10 +13,7 @@ import com.dpw.runner.shipment.services.dto.v1.response.ActivityMasterResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.SalesAgentResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.WareHouseResponse;
-import com.dpw.runner.shipment.services.entity.CarrierDetails;
-import com.dpw.runner.shipment.services.entity.Containers;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.entitytransfer.dto.*;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -554,6 +551,41 @@ public class MasterDataUtils{
                 }
             }
             dataMap.get(shipment.getId()).setTeuCount(teu);
+        }
+    }
+
+    public void setConsolidationContainerTeuData(List<ConsolidationDetails> consolidationDetailsList, List<IRunnerResponse> responseList) {
+        Map<Long, ConsolidationListResponse> dataMap = new HashMap<>();
+        for (IRunnerResponse response : responseList)
+            dataMap.put(((ConsolidationListResponse) response).getId(), (ConsolidationListResponse) response);
+
+        Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
+        Set<String> containerTypes = new HashSet<>();
+
+        for(ConsolidationDetails consolidationDetails : consolidationDetailsList) {
+            if(!Objects.isNull(consolidationDetails.getContainersList()) && !consolidationDetails.getContainersList().isEmpty())
+                consolidationDetails.getContainersList().forEach(r -> containerTypes.add(r.getContainerCode()));
+        }
+
+        Map v1Data = fetchInBulkContainerTypes(containerTypes.stream().filter(Objects::nonNull).toList());
+        pushToCache(v1Data, CacheConstants.CONTAINER_TYPE);
+
+        BigDecimal teu;
+        for(ConsolidationDetails consolidationDetails : consolidationDetailsList) {
+            teu = BigDecimal.ZERO;
+            if (consolidationDetails.getContainersList() != null) {
+                for(Containers c : consolidationDetails.getContainersList()) {
+                    if (!Objects.isNull(c.getContainerCode()) && !Objects.isNull(c.getContainerCount())) {
+                        var cache = cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA).get(keyGenerator.customCacheKeyForMasterData(CacheConstants.CONTAINER_TYPE, c.getContainerCode()));
+                        if (!Objects.isNull(cache)) {
+                            EntityTransferContainerType object = (EntityTransferContainerType) cache.get();
+                            if (!Objects.isNull(object.getTeu()))
+                                teu = teu.add(BigDecimal.valueOf(object.getTeu()).multiply(BigDecimal.valueOf(c.getContainerCount())));
+                        }
+                    }
+                }
+            }
+            dataMap.get(consolidationDetails.getId()).setTeuCount(teu);
         }
     }
 
