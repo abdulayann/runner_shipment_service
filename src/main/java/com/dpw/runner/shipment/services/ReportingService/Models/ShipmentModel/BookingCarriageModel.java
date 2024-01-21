@@ -19,7 +19,7 @@ public class BookingCarriageModel {
     private String portOfLoading;
     @JsonProperty("PortOfDischarge")
     private String portOfDischarge;
-    @JsonProperty("Eta")
+    @JsonProperty("Eta") //TODO - check if annotation is needed or not
     private LocalDateTime eta;
     @JsonProperty("Etd")
     private LocalDateTime etd;

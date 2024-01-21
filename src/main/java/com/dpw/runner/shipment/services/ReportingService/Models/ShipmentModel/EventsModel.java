@@ -1,6 +1,8 @@
 package com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel;
 
+import com.dpw.runner.shipment.services.config.LocalDateTimeWithTimeZoneSerializer;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -12,6 +14,7 @@ import java.time.LocalDateTime;
 @Data
 public class EventsModel {
     @JsonProperty("Actual")
+    @JsonSerialize(using = LocalDateTimeWithTimeZoneSerializer.class)
     private LocalDateTime actual;
     @JsonProperty("Description")
     private String description;
@@ -20,6 +23,7 @@ public class EventsModel {
     @JsonProperty("EntityType")
     private String entityType;
     @JsonProperty("Estimated")
+    @JsonSerialize(using = LocalDateTimeWithTimeZoneSerializer.class)
     private LocalDateTime estimated;
     @JsonProperty("Event_estimate_update_reasons")
     private String event_estimate_update_reasons;

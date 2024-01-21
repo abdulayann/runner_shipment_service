@@ -34,7 +34,6 @@ public class JsonHelper {
     @Autowired
     private ObjectMapper mapper;
 
-    private ObjectMapper dateFormatMapper = new ObjectMapper();
 
     private ObjectMapper mapper1 = new ObjectMapper();
 
@@ -69,9 +68,6 @@ public class JsonHelper {
         mapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
         mapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
 
-        dateFormatMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
-        dateFormatMapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
-        dateFormatMapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
     }
 
     public <T> T readFromJson(String jsonString, Class<T> clazz) {
@@ -94,6 +90,10 @@ public class JsonHelper {
 
     public <T> String convertToJsonWithDateTimeFormatter(T object, DateTimeFormatter dateTimeFormatter) {
         try {
+            ObjectMapper dateFormatMapper = new ObjectMapper();
+            dateFormatMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+            dateFormatMapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
+            dateFormatMapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
             JavaTimeModule javaTimeModule = new JavaTimeModule();
             LocalDateTimeSerializer localDateTimeSerializer = new LocalDateTimeSerializer(dateTimeFormatter);
             javaTimeModule.addSerializer(LocalDateTime.class, localDateTimeSerializer);

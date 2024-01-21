@@ -1,23 +1,24 @@
 package com.dpw.runner.shipment.services.filters;
 
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.*;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.LoggingConstants;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.RequestAuthContext;
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.aspects.PermissionsValidationAspect.PermissionsContext;
+import com.dpw.runner.shipment.services.dto.v1.response.V1RetrieveResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.service.impl.GetUserServiceFactory;
 import com.dpw.runner.shipment.services.service.interfaces.IUserService;
+import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.TokenUtility;
 import com.nimbusds.jwt.proc.BadJWTException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
+import org.modelmapper.ModelMapper;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.annotation.Order;
@@ -49,6 +50,10 @@ public class AuthFilter extends OncePerRequestFilter {
     TokenUtility tokenUtility;
     @Autowired
     IShipmentSettingsDao shipmentSettingsDao;
+    @Autowired
+    private ModelMapper modelMapper;
+    @Autowired
+    private IV1Service v1Service;
 
     private static final String VALIDATION_ERROR = "Failed to Validate Auth Token";
 
@@ -113,6 +118,7 @@ public class AuthFilter extends OncePerRequestFilter {
         RequestAuthContext.setAuthToken(authToken);
         TenantContext.setCurrentTenant(user.getTenantId());
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(getTenantSettings());
+        TenantSettingsDetailsContext.setCurrentTenantSettings(getV1TenantSettings());
         List<String> grantedPermissions = new ArrayList<>();
         for (Map.Entry<String,Boolean> entry : user.getPermissions().entrySet())
         {
@@ -137,6 +143,8 @@ public class AuthFilter extends OncePerRequestFilter {
             TenantContext.removeTenant();
             RequestAuthContext.removeToken();
             UserContext.removeUser();
+            ShipmentSettingsDetailsContext.remove();
+            TenantSettingsDetailsContext.remove();
         }
 
     }
@@ -178,6 +186,17 @@ public class AuthFilter extends OncePerRequestFilter {
     private ShipmentSettingsDetails getTenantSettings() {
         Optional<ShipmentSettingsDetails> optional = shipmentSettingsDao.findByTenantId(TenantContext.getCurrentTenant());
         return optional.orElseGet(() -> ShipmentSettingsDetails.builder().weightDecimalPlace(2).volumeDecimalPlace(3).build());
+    }
+
+    public V1TenantSettingsResponse getV1TenantSettings()
+    {
+        V1RetrieveResponse dependentServiceResponse = v1Service.retrieveTenantSettings();
+        if(dependentServiceResponse != null)
+        {
+            var tenantSettings = modelMapper.map(dependentServiceResponse.getEntity(), V1TenantSettingsResponse.class);
+            return tenantSettings;
+        }
+        return null;
     }
 
 }

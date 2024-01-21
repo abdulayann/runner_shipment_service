@@ -1,7 +1,9 @@
 package com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel;
 
+import com.dpw.runner.shipment.services.config.LocalDateTimeWithTimeZoneSerializer;
 import com.dpw.runner.shipment.services.entity.enums.ContainerStatus;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -92,6 +94,7 @@ public class ContainerModel {
     @JsonProperty("HblDeliveryMode")
     private String hblDeliveryMode;
     @JsonProperty("AllocationDate")
+    @JsonSerialize(using = LocalDateTimeWithTimeZoneSerializer.class)
     private LocalDateTime allocationDate;
     @JsonProperty("DgClass")
     private String dgClass;
