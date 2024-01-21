@@ -1981,4 +1981,18 @@ public abstract class IReport {
         }
         return count;
     }
+
+    public void populateTenantFields(Map<String, Object> dictionary, TenantModel tenantModel) {
+        dictionary.put(ReportConstants.BRANCH_BASIC_INFO_TENANTNAME, tenantModel.getTenantName());
+        dictionary.put(ReportConstants.BRANCH_BASIC_INFO_TENANTADDRESS1, tenantModel.getAddress1());
+        dictionary.put(ReportConstants.BRANCH_BASIC_INFO_TENANTADDRESS2, tenantModel.getAddress2());
+        dictionary.put(ReportConstants.BRANCH_BASIC_INFO_TENANTEMAIL, tenantModel.getEmail());
+        dictionary.put(ReportConstants.BRANCH_BASIC_INFO_TENANTCITY, tenantModel.getCity());
+        dictionary.put(ReportConstants.BRANCH_BASIC_INFO_TENANTSTATE, tenantModel.getState());
+        dictionary.put(ReportConstants.BRANCH_BASIC_INFO_TENANTCOUNTRY, tenantModel.getCountry());
+        dictionary.put(ReportConstants.BRANCH_BASIC_INFO_TENANTCONTACTPHONE, tenantModel.getPhone());
+        dictionary.put(ReportConstants.BRANCH_BASIC_INFO_TENANTMOBILE, tenantModel.getMobile());
+        dictionary.put(ReportConstants.BRANCH_BASIC_INFO_TENANTZIPPOSTCODE, tenantModel.getZipPostCode());
+        dictionary.put(ReportConstants.BRANCH_BASIC_INFO_TENANTURL, tenantModel.getWebsiteUrl());
+    }
 }

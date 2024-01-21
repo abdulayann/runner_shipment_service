@@ -243,6 +243,7 @@ public class ReportConstants {
     public static final String VOLUME = "Volume";
     public static final String VOLUME_UNIT = "VolumeUnit";
     public static final String NET_WEIGHT = "NetWeight";
+    public static final String NET_WEIGHT_UNIT = "NetWeightUnit";
     public static final String VOLUME_WEIGHT = "VolumeWeight";
     public static final String V_WEIGHT_AND_UNIT = "VWeightAndUnit";
     public static final String V_WEIGHT_AND_UNIT_PACKS = "VWeightAndUnitPacks";
@@ -905,4 +906,58 @@ public class ReportConstants {
     public static final String CONSIGNEE_FREETEXTInCaps = "ConsigneeAddressFreeTextInCaps";
     public static final String CONTAINER_NUMBER_WITH_ETC_COUNT = "ContainerNumberwithEtcCount";
     public static final String CONTAINER_COUNT_WITH_ETC_COUNT = "ContainerTypewithEtcCount";
+
+    /*
+    Tenant Fields
+     */
+    public static final String BRANCH_BASIC_INFO_TENANTNAME = TENANT_NAME;
+    public static final String BRANCH_BASIC_INFO_TENANTADDRESS1 = "TenantAddress1";
+    public static final String BRANCH_BASIC_INFO_TENANTADDRESS2 = "TenantAddress2";
+    public static final String BRANCH_BASIC_INFO_TENANTEMAIL = "TenantEmail";
+    public static final String BRANCH_BASIC_INFO_TENANTCITY = "TenantCity";
+    public static final String BRANCH_BASIC_INFO_TENANTSTATE = "TenantState";
+    public static final String BRANCH_BASIC_INFO_TENANTCOUNTRY = "TenantCountry";
+    public static final String BRANCH_BASIC_INFO_TENANTCONTACTPHONE = "TenantContactPhone";
+    public static final String BRANCH_BASIC_INFO_TENANTMOBILE = "TenantMobile";
+    public static final String BRANCH_BASIC_INFO_TENANTZIPPOSTCODE = "TenantZipPostCode";
+    public static final String BRANCH_BASIC_INFO_TENANTURL = "TenantURL";
+    public static final String BRANCH_BASIC_INFO_LOCALCURRENCY = LOCAL_CURRENCY;
+
+
+    /*
+    Packing
+     */
+    public static final String SHIPMENT_PACKING_PACKCOUNT = "PackCount";
+    public static final String SHIPMENT_PACKING_ITEMS = "Items";
+    public static final String SHIPMENT_PACKING_GROSSWEIGHT = GROSS_WEIGHT;
+    public static final String SHIPMENT_PACKING_VOLUME = VOLUME;
+    public static final String SHIPMENT_PACKING_PACKS = PACKS;
+    public static final String SHIPMENT_PACKING_PACKS_VOLUMEWEIGHT = "VolumeWeight";
+    public static final String SHIPMENT_PACKING_PACKS_WEIGHT = "Weight";
+    public static final String SHIPMENT_PACKING_PACKS_NETWEIGHT = NET_WEIGHT;
+    public static final String SHIPMENT_PACKING_PACKS_COMMODITYNAME = "CommodityName";
+    public static final String SHIPMENT_PACKING_PACKS_COMMODITYID = "CommodityId";
+    public static final String SHIPMENT_PACKING_PACKS_PACKSTYPEDESCRIPTION = "PacksTypeDescription";
+    public static final String SHIPMENT_PACKING_PACKS_NETWEIGHTUNIT = "NetWeightUnit";
+    public static final String SHIPMENT_PACKING_TOTALNETWEIGHT = "TotalNetWeight";
+    public static final String SHIPMENT_PACKING_PACKSDETAILS = "PacksDetails";
+    public static final String SHIPMENT_PACKING_PACKS_TOTALPACKS = TOTAL_PACKS;
+    public static final String SHIPMENT_PACKING_PACKS_DATEOFISSUE = DATE_OF_ISSUE;
+    public static final String SHIPMENT_DETAILS_INNERS = "Inners";
+    public static final String SHIPMENT_DETAILS_SUPPLIERADDRESS = "SupplierAddress";
+    public static final String SHIPMENT_DETAILS_SUPPLIERADDRESS1 = "SupplierAddress1";
+    public static final String SHIPMENT_DETAILS_SUPPLIERADDRESS2 = "SupplierAddress2";
+    public static final String SHIPMENT_DETAILS_SUPPLIERNAME = "SupplierName";
+    public static final String SHIPMENT_DETAILS_SUPPLIERCITY = "SupplierCity";
+    public static final String SHIPMENT_DETAILS_SUPPLIERPHONE = "SupplierPhone";
+    public static final String SHIPMENT_DETAILS_SUPPLIEREMAIL = "SupplierEmail";
+    public static final String SHIPMENT_DETAILS_SUPPLIERFAX = "SupplierFax";
+    public static final String SHIPMENT_DETAILS_SUMMARY = "Summary";
+
+    public static String SHIPMENT_PACKING_PACKS_LISTOFPACKINGS = "ListOfPackings";
+    public static String SHIPMENT_PACKING_PACKS_COMMODITIES = "Commodities";
+    public static String SHIPMENT_PACKING_PACKS_PRINTDATE = "PrintDate";
+    public static String SHIPMENT_PACKING_PACKS_UOTNW = "UOTNW";
+    public static String SHIPMENT_PACKING_PACKS_PCKGSUMMARY = "pckgsummary";
+    public static String SHIPMENT_PACKING_PACKS_COMMERCIALINVOICENUMBER = "CommercialInvoiceNumber";
 }

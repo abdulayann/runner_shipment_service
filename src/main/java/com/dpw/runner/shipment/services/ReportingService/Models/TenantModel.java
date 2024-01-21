@@ -1,7 +1,10 @@
 package com.dpw.runner.shipment.services.ReportingService.Models;
 
+import lombok.Getter;
+
 import java.io.Serializable;
 
+@Getter
 public class TenantModel implements Serializable {
     public String tenantName;
     public String address1;
