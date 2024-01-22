@@ -1,7 +1,9 @@
 package com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel;
 
+import com.dpw.runner.shipment.services.config.LocalDateTimeWithTimeZoneSerializer;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -64,6 +66,7 @@ public class ConsolidationModel {
     @JsonProperty("ReleaseType")
     private String releaseType;
     @JsonProperty("MasterBillIssueDate")
+    @JsonSerialize(using = LocalDateTimeWithTimeZoneSerializer.class)
     private LocalDateTime masterBillIssueDate;
     @JsonProperty("DgClass")
     private String dgClass;
@@ -72,18 +75,25 @@ public class ConsolidationModel {
     @JsonProperty("Override")
     private Boolean override;
     @JsonProperty("EstimatedTerminalCutoff")
+    @JsonSerialize(using = LocalDateTimeWithTimeZoneSerializer.class)
     private LocalDateTime estimatedTerminalCutoff;
     @JsonProperty("TerminalCutoff")
+    @JsonSerialize(using = LocalDateTimeWithTimeZoneSerializer.class)
     private LocalDateTime terminalCutoff;
     @JsonProperty("VerifiedGrossMassCutoff")
+    @JsonSerialize(using = LocalDateTimeWithTimeZoneSerializer.class)
     private LocalDateTime verifiedGrossMassCutoff;
     @JsonProperty("ReeferCutoff")
+    @JsonSerialize(using = LocalDateTimeWithTimeZoneSerializer.class)
     private LocalDateTime reeferCutoff;
     @JsonProperty("BookingCutoff")
+    @JsonSerialize(using = LocalDateTimeWithTimeZoneSerializer.class)
     private LocalDateTime bookingCutoff;
     @JsonProperty("ShipInstructionCutoff")
+    @JsonSerialize(using = LocalDateTimeWithTimeZoneSerializer.class)
     private LocalDateTime shipInstructionCutoff;
     @JsonProperty("HazardousBookingCutoff")
+    @JsonSerialize(using = LocalDateTimeWithTimeZoneSerializer.class)
     private LocalDateTime hazardousBookingCutoff;
     @JsonProperty("VolumeUtilization")
     private String volumeUtilization;
@@ -108,24 +118,30 @@ public class ConsolidationModel {
     @JsonProperty("AdditionalTerms")
     private String additionalTerms;
     @JsonProperty("DocsClosingTime")
+    @JsonSerialize(using = LocalDateTimeWithTimeZoneSerializer.class)
     private LocalDateTime docsClosingTime;
     @JsonProperty("CargoClosingTime")
+    @JsonSerialize(using = LocalDateTimeWithTimeZoneSerializer.class)
     private LocalDateTime cargoClosingTime;
     @JsonProperty("MrnNumber")
     private String mrnNumber;
     @JsonProperty("MsnNumber")
     private String msnNumber;
     @JsonProperty("IgmFileDate")
+    @JsonSerialize(using = LocalDateTimeWithTimeZoneSerializer.class)
     private LocalDateTime igmFileDate;
     @JsonProperty("IgmInwardDate")
+    @JsonSerialize(using = LocalDateTimeWithTimeZoneSerializer.class)
     private LocalDateTime igmInwardDate;
     @JsonProperty("InwardDateAndTime")
+    @JsonSerialize(using = LocalDateTimeWithTimeZoneSerializer.class)
     private LocalDateTime inwardDateAndTime;
     @JsonProperty("IgmFileNo")
     private String igmFileNo;
     @JsonProperty("SmtpigmNumber")
     private String smtpigmNumber;
     @JsonProperty("SmtpigmDate")
+    @JsonSerialize(using = LocalDateTimeWithTimeZoneSerializer.class)
     private LocalDateTime smtpigmDate;
     @JsonProperty("IsInland")
     private Boolean isInland;
@@ -136,6 +152,7 @@ public class ConsolidationModel {
     @JsonProperty("DoPlaceOfIssue")
     private String doPlaceOfIssue;
     @JsonProperty("DoIssueDate")
+    @JsonSerialize(using = LocalDateTimeWithTimeZoneSerializer.class)
     private LocalDateTime doIssueDate;
     @JsonProperty("BondedWarehouseId")
     private Long bondedWarehouseId;

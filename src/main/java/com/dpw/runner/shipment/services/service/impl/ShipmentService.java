@@ -23,10 +23,7 @@ import com.dpw.runner.shipment.services.dto.patchRequest.CarrierPatchRequest;
 import com.dpw.runner.shipment.services.dto.patchRequest.ShipmentPatchRequest;
 import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.response.*;
-import com.dpw.runner.shipment.services.dto.v1.request.ShipmentBillingListRequest;
-import com.dpw.runner.shipment.services.dto.v1.request.TIContainerListRequest;
-import com.dpw.runner.shipment.services.dto.v1.request.TIListRequest;
-import com.dpw.runner.shipment.services.dto.v1.request.WayBillNumberFilterRequest;
+import com.dpw.runner.shipment.services.dto.v1.request.*;
 import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.*;
@@ -4036,6 +4033,16 @@ public class ShipmentService implements IShipmentService {
         }
         ListCommonRequest listCommonRequest = CommonUtils.andCriteria("id", shipmentIdsList, "IN", null);
         return fetchShipments(CommonRequestModel.buildRequest(listCommonRequest));
+    }
+
+    public ResponseEntity<?> fetchActiveInvoices(CommonRequestModel commonRequestModel) {
+        CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
+        if(request.getGuid() == null) {
+            log.error("Request guid is null for fetch active invoices with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            throw new RunnerException("Shipment Guid can't be null");
+        }
+        CheckActiveInvoiceRequest checkActiveInvoiceRequest = CheckActiveInvoiceRequest.builder().BillGuid(request.getGuid()).build();
+        return ResponseHelper.buildSuccessResponse(v1Service.getActiveInvoices(checkActiveInvoiceRequest));
     }
 
     private ShipmentSettingsDetails getShipmentSettingsDetails() {

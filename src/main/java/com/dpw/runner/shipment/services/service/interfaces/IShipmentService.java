@@ -68,5 +68,6 @@ public interface IShipmentService extends ICommonService {
     String generateCustomHouseBL(ShipmentDetails shipmentDetails);
     ResponseEntity<?> getIdFromGuid(CommonRequestModel commonRequestModel);
     ResponseEntity<?> fetchShipmentsForConsoleId(CommonRequestModel commonRequestModel);
+    ResponseEntity<?> fetchActiveInvoices(CommonRequestModel commonRequestModel);
 
 }

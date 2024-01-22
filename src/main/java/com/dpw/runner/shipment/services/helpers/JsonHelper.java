@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.helpers;
 
 import com.dpw.runner.shipment.services.commons.objectMapperMixin.ShipmentMixIn;
+import com.dpw.runner.shipment.services.config.LocalDateTimeWithTimeZoneSerializer;
 import com.dpw.runner.shipment.services.entity.*;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -10,15 +11,21 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateTimeSerializer;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.json.JsonParseException;
 import org.springframework.stereotype.Component;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 import javax.annotation.PostConstruct;
+import javax.servlet.http.HttpServletRequest;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
+import java.util.TimeZone;
 
 @Component
 @Slf4j
@@ -27,7 +34,6 @@ public class JsonHelper {
     @Autowired
     private ObjectMapper mapper;
 
-    private ObjectMapper dateFormatMapper = new ObjectMapper();
 
     private ObjectMapper mapper1 = new ObjectMapper();
 
@@ -62,9 +68,6 @@ public class JsonHelper {
         mapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
         mapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
 
-        dateFormatMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
-        dateFormatMapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
-        dateFormatMapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
     }
 
     public <T> T readFromJson(String jsonString, Class<T> clazz) {
@@ -87,6 +90,10 @@ public class JsonHelper {
 
     public <T> String convertToJsonWithDateTimeFormatter(T object, DateTimeFormatter dateTimeFormatter) {
         try {
+            ObjectMapper dateFormatMapper = new ObjectMapper();
+            dateFormatMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+            dateFormatMapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
+            dateFormatMapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
             JavaTimeModule javaTimeModule = new JavaTimeModule();
             LocalDateTimeSerializer localDateTimeSerializer = new LocalDateTimeSerializer(dateTimeFormatter);
             javaTimeModule.addSerializer(LocalDateTime.class, localDateTimeSerializer);
