@@ -498,6 +498,12 @@ public class MasterDataUtils{
                     locCodes.addAll(createInBulkUnLocationsRequest(shipmentListResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName() + shipmentListResponse.getCarrierDetails().getId()));
                 }
             }
+            else if (response instanceof ConsolidationListResponse) {
+                ConsolidationListResponse consolidationListResponse = (ConsolidationListResponse) response;
+                if (consolidationListResponse != null && consolidationListResponse.getCarrierDetails() != null) {
+                    locCodes.addAll(createInBulkUnLocationsRequest(consolidationListResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName() + consolidationListResponse.getCarrierDetails().getId()));
+                }
+            }
         }
 
         Map<String, EntityTransferUnLocations> v1Data = fetchInBulkUnlocations(locCodes.stream().toList(), onField);
@@ -514,6 +520,12 @@ public class MasterDataUtils{
                 ShipmentListResponse shipmentListResponse = (ShipmentListResponse) response;
                 if (shipmentListResponse != null && shipmentListResponse.getCarrierDetails() != null) {
                     shipmentListResponse.getCarrierDetails().setUnlocationData(setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName() + shipmentListResponse.getCarrierDetails().getId()), CacheConstants.UNLOCATIONS));
+                }
+            }
+            else if (response instanceof ConsolidationListResponse) {
+                ConsolidationListResponse consolidationListResponse = (ConsolidationListResponse) response;
+                if (consolidationListResponse != null && consolidationListResponse.getCarrierDetails() != null) {
+                    consolidationListResponse.getCarrierDetails().setUnlocationData(setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName() + consolidationListResponse.getCarrierDetails().getId()), CacheConstants.UNLOCATIONS));
                 }
             }
         }
