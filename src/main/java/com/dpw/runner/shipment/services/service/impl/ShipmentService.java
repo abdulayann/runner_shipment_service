@@ -3774,19 +3774,30 @@ public class ShipmentService implements IShipmentService {
             log.debug("Consolidation Details is null for Id {} with Request Id {}", request.getConsolidationId(), LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
+        ShipmentSettingsDetails shipmentSettingsDetails = getShipmentSettingsDetails();
         request.setIncludeTbls(Arrays.asList("additionalDetails", "client", "consigner", "consignee", "carrierDetails", "pickupDetails", "deliveryDetails"));
         ListCommonRequest listRequest = setCrieteriaForAttachShipment(request, consolidationDetails.get());
         Pair<Specification<ShipmentDetails>, Pageable> tuple = fetchData(listRequest, ShipmentDetails.class, tableNames);
+        Specification<ShipmentDetails> spec = tuple.getLeft();
+        if(shipmentSettingsDetails.getIsShipmentLevelContainer() != null && shipmentSettingsDetails.getIsShipmentLevelContainer())
+            spec = spec.and(notInConsoleMappingTable());
+        else
+            spec = spec.and(notInConsoleMappingTable()).and(notInContainerMappingTable());
 
-        Page<ShipmentDetails> shipmentDetailsPage = shipmentDao.findAll(tuple.getLeft().and(notInMappingTable()), tuple.getRight());
+        Page<ShipmentDetails> shipmentDetailsPage = shipmentDao.findAll(spec , tuple.getRight());
         return ResponseHelper.buildListSuccessResponse(
                 convertEntityListToDtoList(shipmentDetailsPage.getContent()),
                 shipmentDetailsPage.getTotalPages(),
                 shipmentDetailsPage.getTotalElements());
     }
-    public static Specification<ShipmentDetails> notInMappingTable() {
+    public static Specification<ShipmentDetails> notInConsoleMappingTable() {
         return (root, query, criteriaBuilder) -> {
             return criteriaBuilder.isEmpty(root.get("consolidationList"));
+        };
+    }
+    public static Specification<ShipmentDetails> notInContainerMappingTable() {
+        return (root, query, criteriaBuilder) -> {
+            return criteriaBuilder.isEmpty(root.get("containersList"));
         };
     }
 
