@@ -330,6 +330,20 @@ public class ReportService implements IReportService {
 
 //        Long id = (Long) dataRetrived.getOrDefault(ReportConstants.ID, null); TODO- Removed this code for now, not in use
 
+        if (StringUtility.isNotEmpty(reportRequest.getPrintType()))
+        {
+            String documentPrintType = "ZERO (0)"; //Draft
+            if (reportRequest.getPrintType().equalsIgnoreCase("ORIGINAL"))
+            {
+                documentPrintType = "THREE (3)"; //Original
+            }
+            else if(reportRequest.getPrintType().equalsIgnoreCase("SURRENDER"))
+            {
+                documentPrintType = "ONE (1)"; //Surrender
+            }
+
+           dataRetrived.put(ReportConstants.DOCUMENT_PRINT_TYPE, documentPrintType);
+        }
 
         if (reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.PACKING_LIST) || reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.FREIGHT_CERTIFICATION) || reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.PRE_ALERT) ||
                 reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.BOOKING_CONFIRMATION) || reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.PICKUP_ORDER) || reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.DELIVERY_ORDER) ||

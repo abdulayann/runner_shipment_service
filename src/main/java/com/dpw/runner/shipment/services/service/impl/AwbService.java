@@ -731,7 +731,12 @@ public class AwbService implements IAwbService {
                         ? StringUtility.convertToString(orgRow.getOrgData().get(PartiesConstants.AGENT_IATA_CODE))
                         : awbShipmentInfo.getAgentCASSCode());
 
-                executedAt = orgRow.getOrgData() != null ? stringValueOf(orgRow.getOrgData().get(CITY)) : null;
+                String city = orgRow.getOrgData() != null ? stringValueOf(orgRow.getOrgData().get(CITY)) : null;
+                if(StringUtility.isNotEmpty(city)) {
+                    executedAt = setUnLocationDataWithDiarcties(city);
+                } else {
+                    executedAt = null;
+                }
             }
         }
 
@@ -1024,7 +1029,12 @@ public class AwbService implements IAwbService {
                         : awbShipmentInfo.getAgentCASSCode());
                 // awbOtherInfoRow.setExecutedAt(getCityId(orgRow.OrgId)); // fetch from master data
                 // awbCargoInfo.CustomOriginCode(getCountryCode(orgRow.OrgCountry)); // fetch from master data
-                executedAt = orgRow.getOrgData() != null ? stringValueOf(orgRow.getOrgData().get(CITY)) : null;
+                String city = orgRow.getOrgData() != null ? stringValueOf(orgRow.getOrgData().get(CITY)) : null;
+                if(StringUtility.isNotEmpty(city)) {
+                    executedAt = setUnLocationDataWithDiarcties(city);
+                } else {
+                    executedAt = null;
+                }
             }
         }
 
@@ -2330,6 +2340,8 @@ public class AwbService implements IAwbService {
         // Populate all the unlocation data in inner objects
         if (!Objects.isNull(awbResponse.getAwbShipmentInfo()))
             locationCodes.addAll((masterDataUtils.createInBulkUnLocationsRequest(awbResponse.getAwbShipmentInfo(), AwbShipmentInfo.class, fieldNameKeyMap, AwbShipmentInfo.class.getSimpleName() )));
+        if (!Objects.isNull(awbResponse.getAwbOtherInfo()))
+            locationCodes.addAll((masterDataUtils.createInBulkUnLocationsRequest(awbResponse.getAwbOtherInfo(), AwbOtherInfo.class, fieldNameKeyMap, AwbShipmentInfo.class.getSimpleName() )));
         if(!Objects.isNull(awbResponse.getAwbRoutingInfo()))
             awbResponse.getAwbRoutingInfo().forEach(r -> locationCodes.addAll(masterDataUtils.createInBulkUnLocationsRequest(r, AwbRoutingInfo.class, fieldNameKeyMap, AwbRoutingInfo.class.getSimpleName() )));
         if(!Objects.isNull(awbResponse.getAwbPackingInfo()))
@@ -2786,6 +2798,23 @@ public class AwbService implements IAwbService {
             awbOtherInfo.setCarrier(entityTransferMasterList.get(0).getItemValue());
         }
 
+    }
+
+    private String setUnLocationDataWithDiarcties(String name) {
+        List<String> diarcties = new ArrayList<>();
+        diarcties.add(name);
+
+        List<Object> criteria = Arrays.asList(
+                Arrays.asList(EntityTransferConstants.NAME_WO_DIACRITICS),
+                "in",
+                List.of(name)
+        );
+        CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(criteria).build();
+        V1DataResponse v1DataResponse = v1Service.fetchUnlocation(commonV1ListRequest);
+
+        List<EntityTransferUnLocations> locationDataList = jsonHelper.convertValueToList(v1DataResponse.entities, EntityTransferUnLocations.class);
+        var locMap = locationDataList.stream().collect(Collectors.toMap(EntityTransferUnLocations::getNameWoDiacritics, EntityTransferUnLocations::getLocationsReferenceGUID));
+        return locMap.get(name);
     }
 
 }

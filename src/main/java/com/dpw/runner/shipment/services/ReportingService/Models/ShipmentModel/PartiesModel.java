@@ -29,4 +29,5 @@ public class PartiesModel {
     private Map<String, Object> orgData;
     @JsonProperty("AddressData")
     private Map<String, Object> addressData;
+    private Boolean isAddressFreeText;
 }
