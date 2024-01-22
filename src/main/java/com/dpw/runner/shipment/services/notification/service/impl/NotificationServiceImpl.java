@@ -53,6 +53,10 @@ public class NotificationServiceImpl implements INotificationService {
     private NotificationServiceSendEmailRequest createNotificationServiceRequest(SendEmailBaseRequest request) throws JsonProcessingException {
         NotificationServiceSendEmailRequest notificationServiceSendEmailRequest = new NotificationServiceSendEmailRequest();
         notificationServiceSendEmailRequest.setBccEmails(request.getBcc());
+        notificationServiceSendEmailRequest.setModuleName(request.getModuleName());
+        notificationServiceSendEmailRequest.setItem(request.getItem());
+        notificationServiceSendEmailRequest.setHtmlBody(request.getHtmlBody());
+        notificationServiceSendEmailRequest.setSubject(request.getSubject());
         notificationServiceSendEmailRequest.setCcEmails(request.getCc());
         notificationServiceSendEmailRequest.setRecipientEmails(request.getTo());
         notificationServiceSendEmailRequest.setApplicationId(notificationConfig.getApplicationId());
