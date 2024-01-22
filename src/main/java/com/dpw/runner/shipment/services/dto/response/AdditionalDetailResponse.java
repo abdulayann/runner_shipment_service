@@ -132,6 +132,12 @@ public class AdditionalDetailResponse implements IRunnerResponse {
     public Map<String, String> tenantIdsData;
     private String customDeclType;
     private String agentReference;
+    private String bLTermsandConditionsId;
+    private String blComments;
+    private String cargoTerms;
+    private String cargoTermsDescription;
+    private String bLRemarks;
+    private String bLRemarksDescription;
     public Map<String, String> textData;
 
     public void addTextData(Map<String, String> dataMap) {

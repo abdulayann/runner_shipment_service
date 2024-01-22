@@ -486,4 +486,16 @@ public class CustomShipmentSyncRequest implements IRunnerRequest, IRunnerRespons
     private String FmcTlcId;
     @JsonProperty("DeletedContGuids")
     private List<UUID> DeletedContGuids;
+    @JsonProperty("BLTermsandConditionsId")
+    private String BLTermsandConditionsId;
+    @JsonProperty("BlComments")
+    private String BlComments;
+    @JsonProperty("CargoTerms")
+    private String CargoTerms;
+    @JsonProperty("CargoTermsDescription")
+    private String CargoTermsDescription;
+    @JsonProperty("BLRemarks")
+    private String BLRemarks;
+    @JsonProperty("BLRemarksDescription")
+    private String BLRemarksDescription;
 }

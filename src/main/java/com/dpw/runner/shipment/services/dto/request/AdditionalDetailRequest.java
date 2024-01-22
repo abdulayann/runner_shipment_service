@@ -112,4 +112,10 @@ public class AdditionalDetailRequest extends CommonRequest implements IRunnerReq
     private PartiesRequest receivingAgent;
     private String customDeclType;
     private String agentReference;
+    private String bLTermsandConditionsId;
+    private String blComments;
+    private String cargoTerms;
+    private String cargoTermsDescription;
+    private String bLRemarks;
+    private String bLRemarksDescription;
 }
