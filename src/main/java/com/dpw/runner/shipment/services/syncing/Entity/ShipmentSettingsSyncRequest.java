@@ -283,4 +283,6 @@ public class ShipmentSettingsSyncRequest implements IRunnerRequest {
     private String weightDecimalPlace;
     @JsonProperty("VolumeDecimalPlace")
     private String volumeDecimalPlace;
+    @JsonProperty("CancelledBLSuffix")
+    private String cancelledBLSuffix;
 }
