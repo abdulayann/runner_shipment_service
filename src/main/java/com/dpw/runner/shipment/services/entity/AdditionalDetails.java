@@ -373,4 +373,31 @@ public class AdditionalDetails extends MultiTenancy {
 
     @Column(name = "agent_reference")
     private String agentReference;
+
+    @Column(name = "bl_terms_and_conditions_id")
+    @MasterData(type = MasterDataType.BL_TERMS_AND_CONDITIONS)
+    @Size(max=16, message = "max size is 16 for bl_terms_and_conditions_id")
+    private String bLTermsandConditionsId;
+
+    @Column(name = "bl_comments")
+    @Size(max=2500, message = "max size is 2500 for bl_comments")
+    private String blComments;
+
+    @Column(name = "cargo_terms")
+    @MasterData(type = MasterDataType.BL_CARGO_TERMS)
+    @Size(max=16, message = "max size is 16 for cargo_terms")
+    private String cargoTerms;
+
+    @Column(name = "cargo_terms_description")
+    @Size(max=2500, message = "max size is 2500 for cargo_terms_description")
+    private String cargoTermsDescription;
+
+    @Column(name = "bl_remarks")
+    @MasterData(type = MasterDataType.BL_REMARKS)
+    @Size(max=16, message = "max size is 16 for bl_remarks")
+    private String bLRemarks;
+
+    @Column(name = "bl_remarks_description")
+    @Size(max=2500, message = "max size is 2500 for bl_remarks_description")
+    private String bLRemarksDescription;
 }
