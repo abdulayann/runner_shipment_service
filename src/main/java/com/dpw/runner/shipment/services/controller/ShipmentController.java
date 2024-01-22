@@ -451,4 +451,10 @@ public class ShipmentController {
         return (ResponseEntity<RunnerListResponse<ShipmentListResponse>>) shipmentService.fetchShipmentsForConsoleId(CommonRequestModel.buildRequest(request));
     }
 
+    @ApiResponses(value = {@ApiResponse(code = 200, message = "Successful Active Invoices Retrieval")})
+    @GetMapping(value = ShipmentConstants.GET_ACTIVE_INVOICES)
+    public ResponseEntity<RunnerListResponse<ShipmentListResponse>> fetchActiveInvoices(@RequestParam String shipmentGuid) {
+        CommonGetRequest request = CommonGetRequest.builder().guid(shipmentGuid).build();
+        return (ResponseEntity<RunnerListResponse<ShipmentListResponse>>) shipmentService.fetchActiveInvoices(CommonRequestModel.buildRequest(request));
+    }
 }
