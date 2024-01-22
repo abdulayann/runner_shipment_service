@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @Builder
@@ -108,4 +109,11 @@ public class ConsolidationListResponse implements IRunnerResponse {
     private String bookingId;
     private String bookingStatus;
     private BigDecimal teuCount;
+    private Long container20Count;
+    private Long container40Count;
+    private Long container20GPCount;
+    private Long container20RECount;
+    private Long container40GPCount;
+    private Long container40RECount;
+    private Set<String> containerNumbers;
 }
