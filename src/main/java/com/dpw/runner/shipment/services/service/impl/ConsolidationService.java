@@ -390,6 +390,7 @@ public class ConsolidationService implements IConsolidationService {
         Long container20RECount = 0L;
         Long container40GPCount = 0L;
         Long container40RECount = 0L;
+        Long containerCount = 0L;
         Set<String> containerNumber = new HashSet<>();
         List<Containers> containersList = new ArrayList<>();
         containersList = consolidationDetails.getContainersList();
@@ -423,6 +424,7 @@ public class ConsolidationService implements IConsolidationService {
                         ++container40RECount;
                     }
                 }
+                ++containerCount;
                 if (StringUtility.isNotEmpty(container.getContainerNumber())) {
                     containerNumber.add(container.getContainerNumber());
                 }
@@ -434,6 +436,7 @@ public class ConsolidationService implements IConsolidationService {
         response.setContainer20RECount(container20RECount);
         response.setContainer40GPCount(container40GPCount);
         response.setContainer40RECount(container40RECount);
+        response.setContainerCount(containerCount);
         response.setContainerNumbers(containerNumber);
     }
 

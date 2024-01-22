@@ -115,5 +115,6 @@ public class ConsolidationListResponse implements IRunnerResponse {
     private Long container20RECount;
     private Long container40GPCount;
     private Long container40RECount;
+    private Long containerCount;
     private Set<String> containerNumbers;
 }
