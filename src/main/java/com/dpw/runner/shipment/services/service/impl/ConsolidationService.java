@@ -332,11 +332,17 @@ public class ConsolidationService implements IConsolidationService {
     }
 
     private List<IRunnerResponse> convertEntityListToDtoList(List<ConsolidationDetails> lst) {
+        List<ShipmentSettingsDetails> shipmentSettingsDetailsList = shipmentSettingsDao.getSettingsByTenantIds(List.of(TenantContext.getCurrentTenant()));
+        ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
+        if(shipmentSettingsDetailsList.size() > 0)
+            shipmentSettingsDetails = shipmentSettingsDetailsList.get(0);
         List<IRunnerResponse> responseList = new ArrayList<>();
         List<ConsolidationListResponse> consolidationListResponses = new ArrayList<>();
+        ShipmentSettingsDetails finalShipmentSettingsDetails = shipmentSettingsDetails;
         lst.forEach(consolidationDetails -> {
             var res = (modelMapper.map(consolidationDetails, ConsolidationListResponse.class));
             updateHouseBillsShippingIds(consolidationDetails, res);
+            containerCountUpdate(consolidationDetails, res, finalShipmentSettingsDetails.getIsShipmentLevelContainer() != null && finalShipmentSettingsDetails.getIsShipmentLevelContainer());
             consolidationListResponses.add(res);
         });
         if(consolidationListResponses != null && consolidationListResponses.size() > 0) {
@@ -366,12 +372,67 @@ public class ConsolidationService implements IConsolidationService {
             responseList.add(consolidationDetails);
         });
         try {
+            masterDataUtils.setLocationData(responseList, EntityTransferConstants.LOCATION_SERVICE_GUID);
             masterDataUtils.setConsolidationContainerTeuData(lst, responseList);
         }
         catch (Exception ex) {
             log.error("Request: {} || Error occured for event: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), IntegrationType.MASTER_DATA_FETCH_FOR_SHIPMENT_LIST, ex.getLocalizedMessage());
         }
         return responseList;
+    }
+
+    private void containerCountUpdate(ConsolidationDetails consolidationDetails, ConsolidationListResponse response, boolean isShipmentLevelContainer) {
+        Long container20Count = 0L;
+        Long container40Count = 0L;
+        Long container20GPCount = 0L;
+        Long container20RECount = 0L;
+        Long container40GPCount = 0L;
+        Long container40RECount = 0L;
+        Set<String> containerNumber = new HashSet<>();
+        List<Containers> containersList = new ArrayList<>();
+        containersList = consolidationDetails.getContainersList();
+        if(isShipmentLevelContainer) {
+            List<ShipmentDetails> shipmentDetails = consolidationDetails.getShipmentsList();
+            if(shipmentDetails != null && shipmentDetails.size() > 0) {
+                containersList = new ArrayList<>();
+                for(ShipmentDetails shipmentDetails1 : shipmentDetails) {
+                    if(shipmentDetails1.getContainersList() != null && shipmentDetails1.getContainersList().size() > 0) {
+                        containersList.addAll(shipmentDetails1.getContainersList());
+                    }
+                }
+            }
+        } else {
+            containersList = consolidationDetails.getContainersList();
+        }
+        if (containersList != null && containersList.size() > 0) {
+            for (Containers container : containersList) {
+                if(container.getContainerCode() != null) {
+                    if (container.getContainerCode().contains(Constants.Cont20)) {
+                        ++container20Count;
+                    } else if (container.getContainerCode().contains(Constants.Cont40)) {
+                        ++container40Count;
+                    } else if (container.getContainerCode().equals(Constants.Cont20GP)) {
+                        ++container20GPCount;
+                    } else if (container.getContainerCode().equals(Constants.Cont20RE)) {
+                        ++container20RECount;
+                    } else if (container.getContainerCode().equals(Constants.Cont40GP)) {
+                        ++container40GPCount;
+                    } else if (container.getContainerCode().equals(Constants.Cont40RE)) {
+                        ++container40RECount;
+                    }
+                }
+                if (StringUtility.isNotEmpty(container.getContainerNumber())) {
+                    containerNumber.add(container.getContainerNumber());
+                }
+            }
+        }
+        response.setContainer20Count(container20Count);
+        response.setContainer40Count(container40Count);
+        response.setContainer20GPCount(container20GPCount);
+        response.setContainer20RECount(container20RECount);
+        response.setContainer40GPCount(container40GPCount);
+        response.setContainer40RECount(container40RECount);
+        response.setContainerNumbers(containerNumber);
     }
 
     private void updateHouseBillsShippingIds(ConsolidationDetails consol, ConsolidationListResponse consolidationRes) {
