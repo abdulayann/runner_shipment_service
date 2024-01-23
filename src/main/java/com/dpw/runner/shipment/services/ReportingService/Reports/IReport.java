@@ -876,7 +876,8 @@ public abstract class IReport {
                 dictionary.put(ReportConstants.CREDITOR_LOCAL_NAME, orgData.get("LocalName"));
             }
             creditorAgentAddress = ReportHelper.getOrgAddress(creditor);
-            dictionary.put(CREDITOR_AGENT_NAME, StringUtility.toUpperCase(StringUtility.convertToString(addressData.get(COMPANY_NAME))));
+            if (addressData != null)
+                dictionary.put(CREDITOR_AGENT_NAME, StringUtility.toUpperCase(StringUtility.convertToString(addressData.get(COMPANY_NAME))));
             if (!Objects.isNull(addressData) && addressData.containsKey(PartiesConstants.RAW_DATA)) {
                 creditorAgentFreeTextAddress = ReportHelper.getAddressList(StringUtility.convertToString(addressData.get(PartiesConstants.RAW_DATA)));
             }
