@@ -373,7 +373,10 @@ public class ProductIdentifierUtility {
       ProductSequenceConfig productSequence, String transportMode) {
     StringBuilder result = new StringBuilder();
     var regexValue = productSequence.getPrefix();
-    var regexPattern = "\\{(.*?)\\}"; // original pattern @"\{(.*?)\}"
+
+    //var regexPattern = "(?:\\w+)\\{(.*?);(.*?)\\}\\{(.*?);(.*?)\\}\\{(.*?);(.*?)\\}\\{(.*?);(.*?)\\}"; // original pattern @"\{(.*?)\}"
+    var regexPattern = "(?:\\{([^{}]+)\\}|([^{}]+))";
+
     Pattern pattern = Pattern.compile(regexPattern);
     // Use a Matcher to find all matches
     Matcher matcher = pattern.matcher(regexValue);
@@ -381,7 +384,7 @@ public class ProductIdentifierUtility {
 
     // Find all matches and add them to the list
     while (matcher.find()) {
-      segments.add(matcher.group(1));
+      segments.add(matcher.group(1) != null ? matcher.group(1) : matcher.group(2));
     }
     // Filter out empty or whitespace-only segments
     segments = segments.stream().filter(s -> !s.trim().isEmpty()).toList();
