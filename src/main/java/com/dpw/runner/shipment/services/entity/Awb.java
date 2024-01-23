@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.entity;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.dto.request.awb.*;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
 import lombok.*;
 import lombok.experimental.Accessors;
@@ -22,6 +23,7 @@ import java.util.List;
 @Builder
 @Accessors(chain = true)
 @TypeDef(name = "jsonb", typeClass = JsonBinaryType.class )
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class Awb extends MultiTenancy {
     @Column(name = "shipment_id")
     private Long shipmentId;
