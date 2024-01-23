@@ -30,4 +30,5 @@ public class AwbShipmentInfoResponse implements IRunnerResponse {
     // Master Data
     private Map<String, String> masterData;
     private Map<String, String> unlocationData;
+    private Map<String, String> commodityMasterData;
 }
