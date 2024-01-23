@@ -8,6 +8,7 @@ import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.Co
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PackingModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ShipmentModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
+import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.utils.StringUtility;
@@ -46,6 +47,7 @@ public class ContainerManifestPrint extends IReport {
     Map<String, Object> populateDictionary(IDocumentModel documentModel) {
         ConsolidationManifestPrintModel manifestPrintModel = (ConsolidationManifestPrintModel) documentModel;
         Map<String, Object> dictionary = new HashMap<>();
+        V1TenantSettingsResponse v1TenantSettingsResponse = getTenantSettings();
         for (var shipmentDetails : manifestPrintModel.getShipments()) {
             populateShipmentFields(shipmentDetails, false, dictionary);
         }
@@ -60,9 +62,9 @@ public class ContainerManifestPrint extends IReport {
         if (Objects.isNull(values)) values = new ArrayList<>();
         values.forEach(v -> {
             if (v.containsKey(ReportConstants.WEIGHT))
-                v.put(ReportConstants.WEIGHT, addCommas(v.get(ReportConstants.WEIGHT).toString()));
+                v.put(ReportConstants.WEIGHT, ConvertToWeightNumberFormat(new BigDecimal(v.get(ReportConstants.WEIGHT).toString()), v1TenantSettingsResponse));
             if (v.containsKey(ReportConstants.TOTAL_PACKS))
-                v.put(ReportConstants.TOTAL_PACKS, addCommas(v.get(ReportConstants.TOTAL_PACKS).toString()));
+                v.put(ReportConstants.TOTAL_PACKS, ConvertToVolumeNumberFormat(new BigDecimal(v.get(ReportConstants.TOTAL_PACKS).toString()), v1TenantSettingsResponse));
             if (v.containsKey(ReportConstants.DESCRIPTION))
                 v.put(ReportConstants.DESCRIPTION, StringUtility.toUpperCase(StringUtility.convertToString(v.get(ReportConstants.DESCRIPTION))));
         });
@@ -70,13 +72,13 @@ public class ContainerManifestPrint extends IReport {
 
 
         if (consol.getAchievedQuantities() != null && consol.getAchievedQuantities().getConsolidatedWeight() != null) {
-            dictionary.put(ReportConstants.PWEIGHT_UNIT, ReportHelper.ConvertToWeightNumberFormat(consol.getAchievedQuantities().getConsolidatedWeight()) + " " + consol.getAchievedQuantities().getConsolidatedWeightUnit());
+            dictionary.put(ReportConstants.PWEIGHT_UNIT, ConvertToWeightNumberFormat(consol.getAchievedQuantities().getConsolidatedWeight(), v1TenantSettingsResponse) + " " + consol.getAchievedQuantities().getConsolidatedWeightUnit());
         } else {
             dictionary.put(ReportConstants.PWEIGHT_UNIT, StringUtil.EMPTY_STRING);
         }
 
         if (consol.getAchievedQuantities() != null && consol.getAchievedQuantities().getConsolidatedVolume() != null) {
-            dictionary.put(ReportConstants.PVOLUME_UNIT, ReportHelper.ConvertToVolumeNumberFormat(consol.getAchievedQuantities().getConsolidatedVolume()) + " " + consol.getAchievedQuantities().getConsolidatedVolumeUnit());
+            dictionary.put(ReportConstants.PVOLUME_UNIT, ConvertToVolumeNumberFormat(consol.getAchievedQuantities().getConsolidatedVolume(), v1TenantSettingsResponse) + " " + consol.getAchievedQuantities().getConsolidatedVolumeUnit());
         } else {
             dictionary.put(ReportConstants.PVOLUME_UNIT, StringUtil.EMPTY_STRING);
         }
@@ -151,9 +153,9 @@ public class ContainerManifestPrint extends IReport {
         }
 
         dictionary.put(ReportConstants.CTO_ADDRESS, ctoAddress);
-        dictionary.put(ReportConstants.TOTAL_WEIGHT, addCommas(weightAndUnit.getLeft()));
+        dictionary.put(ReportConstants.TOTAL_WEIGHT, ConvertToWeightNumberFormat(weightAndUnit.getLeft(), v1TenantSettingsResponse));
         dictionary.put(ReportConstants.TOTAL_WEIGHT_UNIT, weightAndUnit.getRight());
-        dictionary.put(ReportConstants.TOTAL_VOLUME, addCommas(volumeAndUnit.getLeft()));
+        dictionary.put(ReportConstants.TOTAL_VOLUME, ConvertToVolumeNumberFormat(volumeAndUnit.getLeft(), v1TenantSettingsResponse));
         dictionary.put(ReportConstants.TOTAL_VOLUME_UNIT, volumeAndUnit.getRight());
         var user = UserContext.getUser();
         dictionary.put(ReportConstants.UN, user.getUsername());
