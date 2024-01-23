@@ -34,4 +34,16 @@ public class ShipmentAndContainerResponse {
         public List<String> consigneeAddressFreeText;
         public List<String> notifyPartyAddressFreeText;
         public List<ShipmentContainers> shipmentContainers;
+        
+        public String description;
+        public String weight;
+        public String volume;
+        public String packs;
+        public String packsUnit;
+        public String weightUnit;
+        public String volumeUnit;
+        public String volumeUnitDescription;
+        public String weightUnitDescription;
+        public String packsUnitDescription;
+        public String marksnNumbers;
 }

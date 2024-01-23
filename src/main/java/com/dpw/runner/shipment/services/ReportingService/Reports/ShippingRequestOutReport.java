@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.ReportingService.Reports;
 
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
+import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper;
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentContainers;
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.BookingCarriageModel;
@@ -19,6 +20,7 @@ import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.math.BigDecimal;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -62,6 +64,9 @@ public class ShippingRequestOutReport extends IReport {
                     shipment.setShipmentContainersList(shipmentsContainersList);
                 }
             }
+        } else {
+            if (model.getConsolidation() != null)
+                allCommonContainers.addAll(model.getConsolidation().getContainersList());
         }
 
         model.setShipmentList(shipments);
@@ -201,7 +206,7 @@ public class ShippingRequestOutReport extends IReport {
             dictionary.put(ReportConstants.CONSOL_CONTAINERSUMMARY, containerSummary);
         }
 
-        dictionary.put(ReportConstants.TOTAL_PACKS, getTotalPacks(model.getShipment()));
+        dictionary.put(ReportConstants.TOTAL_PACKS, ReportHelper.addCommaWithoutDecimal(BigDecimal.valueOf(getTotalPacks(model.getShipment()))));
         String unitCode = getTotalPackUnitCode(model.getShipmentList());
         dictionary.put(ReportConstants.TOTAL_PACK_UNIT_CODE, unitCode);
         dictionary.put(ReportConstants.TOTAL_PACK_UNIT_DESCRIPTION, masterListDescriptionPacksUnit(unitCode));
