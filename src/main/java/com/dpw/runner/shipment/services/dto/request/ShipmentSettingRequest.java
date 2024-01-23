@@ -155,4 +155,7 @@ public class ShipmentSettingRequest extends CommonRequest implements IRunnerRequ
     private Integer restrictBlApprovalRole;
     private Boolean eManifest;
     private String isfFileMainPage;
+    private String cancelledBLSuffix;
+    private Integer volumeDecimalPlace;
+    private Integer weightDecimalPlace;
 }

@@ -488,4 +488,7 @@ public class ShipmentSettingsDetails extends MultiTenancy {
 
     @Column(name = "volume_decimal_place")
     private Integer volumeDecimalPlace;
+
+    @Column(name = "cancelled_bl_suffix")
+    private String cancelledBLSuffix;
 }
