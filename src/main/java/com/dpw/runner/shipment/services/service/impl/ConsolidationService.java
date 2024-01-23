@@ -4,6 +4,7 @@ package com.dpw.runner.shipment.services.service.impl;
 import com.dpw.runner.shipment.services.Kafka.Dto.KafkaResponse;
 import com.dpw.runner.shipment.services.Kafka.Producer.KafkaProducer;
 import com.dpw.runner.shipment.services.adapters.interfaces.ITrackingServiceAdapter;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
@@ -558,10 +559,6 @@ public class ConsolidationService implements IConsolidationService {
         if(consolidationDetails.getConsolidationNumber() == null) {
             if(shipmentSettingsList.get(0) != null && shipmentSettingsList.get(0).getCustomisedSequence()) {
                 String consoleNumber = getCustomizedConsolidationProcessNumber(consolidationDetails, shipmentSettingsList.get(0), ProductProcessTypes.ReferenceNumber);
-                String bol = getCustomizedConsolidationProcessNumber(consolidationDetails, shipmentSettingsList.get(0), ProductProcessTypes.BOLNumber);
-
-                if(bol != null && !bol.isEmpty())
-                    consolidationDetails.setBol(bol);
                 if(consoleNumber != null && !consoleNumber.isEmpty())
                     consolidationDetails.setConsolidationNumber(consoleNumber);
                 if (consolidationDetails.getConsolidationNumber() == null || consolidationDetails.getConsolidationNumber().isEmpty())
@@ -573,6 +570,18 @@ public class ConsolidationService implements IConsolidationService {
                 consolidationDetails.setConsolidationNumber("CONS000" + getConsolidationSerialNumber());
                 if (consolidationDetails.getReferenceNumber() == null || consolidationDetails.getReferenceNumber().isEmpty())
                     consolidationDetails.setReferenceNumber(consolidationDetails.getConsolidationNumber());
+            }
+        }
+
+        if(StringUtility.isEmpty(consolidationDetails.getBol())) {
+            if(Objects.equals(ShipmentSettingsDetailsContext.getCurrentTenantSettings().getConsolidationLite(), false)) {
+                String bol = getCustomizedConsolidationProcessNumber(consolidationDetails, shipmentSettingsList.get(0), ProductProcessTypes.BOLNumber);
+                if (StringUtility.isEmpty(bol)) {
+                    bol = generateCustomBolNumber();
+                }
+                if (StringUtility.isNotEmpty(bol)) {
+                    consolidationDetails.setBol(bol);
+                }
             }
         }
     }
@@ -3391,6 +3400,10 @@ public class ConsolidationService implements IConsolidationService {
         ShipmentSettingsDetails tenantSetting = null;
         if (shipmentSettingsDetailsList.get(0) != null)
             tenantSetting = shipmentSettingsDetailsList.get(0);
+
+        if(tenantSetting.getConsolidationLite() != null && tenantSetting.getConsolidationLite()) {
+            return  res;
+        }
 
         if(tenantSetting.getBolNumberGeneration() != null) {
             res = tenantSetting.getBolNumberPrefix() != null ? tenantSetting.getBolNumberPrefix() : "";
