@@ -30,6 +30,8 @@ import com.dpw.runner.shipment.services.dto.v1.response.AddressTranslationListRe
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entity.enums.DigitGrouping;
+import com.dpw.runner.shipment.services.entity.enums.GroupingNumber;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -57,6 +59,8 @@ import org.springframework.cache.CacheManager;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
+import java.text.NumberFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -1187,6 +1191,71 @@ public abstract class IReport {
             strDate = date.format(GetDPWDateFormatWithTime());
         }
         return strDate;
+    }
+
+    public String ConvertToWeightNumberFormat(BigDecimal weight) {
+        V1TenantSettingsResponse v1TenantSettingsResponse = getTenantSettings();
+        return ConvertToWeightNumberFormat(weight, v1TenantSettingsResponse);
+    }
+    public static String ConvertToWeightNumberFormat(BigDecimal weight, V1TenantSettingsResponse v1TenantSettingsResponse) {
+        if(weight != null) {
+            int numberDecimalDigits = 0;
+            if(v1TenantSettingsResponse.getWeightDecimalPlace() != null)
+                numberDecimalDigits = v1TenantSettingsResponse.getWeightDecimalPlace();
+            return GetDPWWeightVolumeFormat(weight, numberDecimalDigits, v1TenantSettingsResponse);
+        }
+        return null;
+    }
+
+    public String ConvertToVolumeNumberFormat(BigDecimal volume) {
+        V1TenantSettingsResponse v1TenantSettingsResponse = getTenantSettings();
+        return ConvertToVolumeNumberFormat(volume, v1TenantSettingsResponse);
+    }
+    public static String ConvertToVolumeNumberFormat(BigDecimal volume, V1TenantSettingsResponse v1TenantSettingsResponse) {
+        if(volume != null) {
+            int numberDecimalDigits = 0;
+            if(v1TenantSettingsResponse.getVolumeDecimalPlace() != null)
+                numberDecimalDigits = v1TenantSettingsResponse.getVolumeDecimalPlace();
+            return GetDPWWeightVolumeFormat(volume, numberDecimalDigits, v1TenantSettingsResponse);
+        }
+        return null;
+    }
+
+    private static String GetDPWWeightVolumeFormat(BigDecimal value, int numberDecimalDigits, V1TenantSettingsResponse v1TenantSettingsResponse) {
+        if(value != null && v1TenantSettingsResponse != null) {
+            if(v1TenantSettingsResponse.getWVDigitGrouping() != null) {
+                char customThousandsSeparator = ',';
+                char customDecimalSeparator = '.';
+                if(v1TenantSettingsResponse.getWVGroupingNumber() != null && v1TenantSettingsResponse.getWVGroupingNumber() == GroupingNumber.DotAndComma.getValue()) {
+                    customThousandsSeparator = '.';
+                    customDecimalSeparator = ',';
+                }
+                return formatValue(value, customDecimalSeparator, customThousandsSeparator, numberDecimalDigits, v1TenantSettingsResponse);
+            }
+        }
+        return null;
+    }
+
+    public static String formatValue(BigDecimal value, char customDecimalSeparator, char customThousandsSeparator, int numberDecimalDigits, V1TenantSettingsResponse v1TenantSettingsResponse) {
+        int[] dynamicGroupSizes = (v1TenantSettingsResponse.getWVDigitGrouping() == DigitGrouping.THREE.getValue()) ? new int[]{3, 3} : new int[]{3, 2};
+
+        NumberFormat customFormat = NumberFormat.getNumberInstance(Locale.US);
+        DecimalFormat customDecimalFormat = (DecimalFormat) customFormat;
+
+        customDecimalFormat.applyPattern("#,##0.0#");
+        customDecimalFormat.setDecimalSeparatorAlwaysShown(true);
+        customDecimalFormat.setMaximumFractionDigits(numberDecimalDigits);
+        customDecimalFormat.setMinimumFractionDigits(numberDecimalDigits);
+
+        DecimalFormatSymbols symbols = customDecimalFormat.getDecimalFormatSymbols();
+        symbols.setDecimalSeparator(customDecimalSeparator);
+        symbols.setGroupingSeparator(customThousandsSeparator);
+        customDecimalFormat.setDecimalFormatSymbols(symbols);
+
+        customDecimalFormat.setGroupingUsed(true);
+        customDecimalFormat.setGroupingSize(dynamicGroupSizes[0]);
+
+        return value != null ? customDecimalFormat.format(value) : null;
     }
 
     public static BigDecimal getRoundedBigDecimal(BigDecimal value, int scale, RoundingMode roundingMode) {

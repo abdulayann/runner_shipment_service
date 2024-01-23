@@ -1646,9 +1646,28 @@ public class ShipmentService implements IShipmentService {
             }
             List<Packing> updatedPackings = new ArrayList<>();
             List<Long> deleteContainerIds = new ArrayList<>();
+            List<Packing> packsForSync = null;
+            List<UUID> deletedContGuids = new ArrayList<>();
             if(shipmentRequest.getDeletedContainerIds() != null && shipmentRequest.getDeletedContainerIds().size() > 0) {
                 deleteContainerIds = shipmentRequest.getDeletedContainerIds().stream().filter(e -> e.getId() != null).map(e -> e.getId()).collect(Collectors.toList());
                 if(deleteContainerIds != null && deleteContainerIds.size() > 0) {
+                    ListCommonRequest listCommonRequest = constructListCommonRequest("containerId", deleteContainerIds, "IN");
+                    Pair<Specification<Packing>, Pageable> pair = fetchData(listCommonRequest, Packing.class);
+                    Page<Packing> packings = packingDao.findAll(pair.getLeft(), pair.getRight());
+                    if(packings != null && packings.getContent() != null && !packings.getContent().isEmpty()) {
+                        List<Packing> packingList = new ArrayList<>();
+                        for (Packing packing : packings.getContent()) {
+                            packing.setContainerId(null);
+                            packingList.add(packing);
+                        }
+                        packingDao.saveAll(packingList);
+                        packsForSync = packingList;
+                    }
+                    listCommonRequest = constructListCommonRequest("id", deleteContainerIds, "IN");
+                    Pair<Specification<Containers>, Pageable> pair2 = fetchData(listCommonRequest, Containers.class);
+                    Page<Containers> containersPage = containerDao.findAll(pair2.getLeft(), pair2.getRight());
+                    if(containersPage != null && !containersPage.isEmpty())
+                        deletedContGuids = containersPage.stream().map(e -> e.getGuid()).collect(Collectors.toList());
                     for (Long containerId : deleteContainerIds) {
                         containerDao.deleteById(containerId);
                     }
@@ -1660,27 +1679,6 @@ public class ShipmentService implements IShipmentService {
                 packingRequestList = setPackingDetails(updatedContainers, packingRequestList, entity.getTransportMode(), consolidationId);
                 updatedPackings = packingDao.updateEntityFromShipment(convertToEntityList(packingRequestList, Packing.class), id, deleteContainerIds);
                 entity.setPackingList(updatedPackings);
-            }
-            List<UUID> deletedContGuids = new ArrayList<>();
-            List<Packing> packsForSync = null;
-            if(deleteContainerIds != null && deleteContainerIds.size() > 0) {
-                ListCommonRequest listCommonRequest = constructListCommonRequest("containerId", deleteContainerIds, "IN");
-                Pair<Specification<Packing>, Pageable> pair = fetchData(listCommonRequest, Packing.class);
-                Page<Packing> packings = packingDao.findAll(pair.getLeft(), pair.getRight());
-                if(packings != null && packings.getContent() != null && !packings.getContent().isEmpty()) {
-                    List<Packing> packingList = new ArrayList<>();
-                    for (Packing packing : packings.getContent()) {
-                        packing.setContainerId(null);
-                        packingList.add(packing);
-                    }
-                    packingDao.saveAll(packingList);
-                    packsForSync = packingList;
-                }
-                listCommonRequest = constructListCommonRequest("id", deleteContainerIds, "IN");
-                Pair<Specification<Containers>, Pageable> pair2 = fetchData(listCommonRequest, Containers.class);
-                Page<Containers> containersPage = containerDao.findAll(pair2.getLeft(), pair2.getRight());
-                if(containersPage != null && !containersPage.isEmpty())
-                    deletedContGuids = containersPage.stream().map(e -> e.getGuid()).collect(Collectors.toList());
             }
             if (elDetailsRequestList != null) {
                 List<ELDetails> updatedELDetails = elDetailsDao.updateEntityFromShipment(convertToEntityList(elDetailsRequestList, ELDetails.class), id);
