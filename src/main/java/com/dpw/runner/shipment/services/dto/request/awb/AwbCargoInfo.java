@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.dto.request.awb;
 
 import com.dpw.runner.shipment.services.utils.DedicatedMasterData;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.swagger.annotations.ApiModel;
 import lombok.*;
 
@@ -12,6 +13,7 @@ import java.math.BigDecimal;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class AwbCargoInfo {
     private Long entityId;
     private String entityType;
