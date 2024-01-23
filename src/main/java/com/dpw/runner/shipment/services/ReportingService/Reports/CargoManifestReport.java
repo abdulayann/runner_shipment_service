@@ -215,19 +215,19 @@ public class CargoManifestReport extends IReport{
             }
             for (Map<String, Object> v : valuesContainer) {
                 if(v.containsKey(ReportConstants.GROSS_VOLUME) && v.get(ReportConstants.GROSS_VOLUME) != null)
-                    v.put(ReportConstants.GROSS_VOLUME, addCommas(v.get(ReportConstants.GROSS_VOLUME).toString()));
+                    v.put(ReportConstants.GROSS_VOLUME, ConvertToVolumeNumberFormat(v.get(ReportConstants.GROSS_VOLUME), v1TenantSettingsResponse));
                 if (v.containsKey(ReportConstants.GROSS_WEIGHT) && v.get(ReportConstants.GROSS_WEIGHT) != null)
-                    v.put(ReportConstants.GROSS_WEIGHT, addCommas(v.get(ReportConstants.GROSS_WEIGHT).toString()));
+                    v.put(ReportConstants.GROSS_WEIGHT, ConvertToWeightNumberFormat(v.get(ReportConstants.GROSS_WEIGHT), v1TenantSettingsResponse));
                 if (v.containsKey(ReportConstants.SHIPMENT_PACKS) && v.get(ReportConstants.SHIPMENT_PACKS) != null)
                     v.put(ReportConstants.SHIPMENT_PACKS, addCommaWithoutDecimal(new BigDecimal(v.get(ReportConstants.SHIPMENT_PACKS).toString())));
                 if (v.containsKey(ReportConstants.TareWeight) && v.get(ReportConstants.TareWeight) != null)
-                    v.put(ReportConstants.TareWeight, addCommas(v.get(ReportConstants.TareWeight).toString()));
+                    v.put(ReportConstants.TareWeight, ConvertToWeightNumberFormat(v.get(ReportConstants.TareWeight), v1TenantSettingsResponse));
                 if (v.containsKey(ReportConstants.VGMWeight) && v.get(ReportConstants.VGMWeight) != null)
-                    v.put(ReportConstants.VGMWeight, addCommas(v.get(ReportConstants.VGMWeight).toString()));
+                    v.put(ReportConstants.VGMWeight, ConvertToWeightNumberFormat(v.get(ReportConstants.VGMWeight), v1TenantSettingsResponse));
             }
             dictionary.put(ReportConstants.SHIPMENT_CONTAINERS, valuesContainer);
-            dictionary.put(ReportConstants.TotalCntrWeight, addCommas(Total_GrossWeight));
-            dictionary.put(ReportConstants.TotalCntrVolume, addCommas(Total_GrossVolume));
+            dictionary.put(ReportConstants.TotalCntrWeight, ConvertToWeightNumberFormat(Total_GrossWeight, v1TenantSettingsResponse));
+            dictionary.put(ReportConstants.TotalCntrVolume, ConvertToVolumeNumberFormat(Total_GrossVolume, v1TenantSettingsResponse));
             dictionary.put(ReportConstants.TotalCntrCount, addCommaWithoutDecimal(new BigDecimal(Total_ContainerCount)));
             dictionary.put(ReportConstants.TotalCntrPacks, addCommaWithoutDecimal(new BigDecimal(Total_Packs)));
         }

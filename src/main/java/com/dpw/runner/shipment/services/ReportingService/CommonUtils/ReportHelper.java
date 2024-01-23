@@ -2,8 +2,6 @@ package com.dpw.runner.shipment.services.ReportingService.CommonUtils;
 
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PartiesModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
-import com.dpw.runner.shipment.services.ReportingService.Reports.IReport;
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.Hbl;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferDGSubstance;
@@ -370,60 +368,6 @@ public class ReportHelper {
         }
 
         return dgSubstanceRow;
-    }
-
-    public static String ConvertToVolumeNumberFormat(BigDecimal volume) {
-        if(volume == null)
-            return "";
-        int numberDecimalDigits = ShipmentSettingsDetailsContext.getCurrentTenantSettings().getVolumeDecimalPlace();
-        return GetDPWWeightVolumeFormat(volume, numberDecimalDigits);
-    }
-
-    public static String ConvertToWeightNumberFormat(BigDecimal weight) {
-        if(weight == null)
-            return "";
-        int numberDecimalDigits = ShipmentSettingsDetailsContext.getCurrentTenantSettings().getWeightDecimalPlace();
-        return GetDPWWeightVolumeFormat(weight, numberDecimalDigits);
-    }
-
-    private static String GetDPWWeightVolumeFormat(BigDecimal weight, int numberDecimalDigits)
-    {
-        var tenantSettings = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
-//            if (tenantSettings.getWVDigitGrouping() && tenantSettings.getWVGroupingNumber())
-//            {
-//                char customThousandsSeparator = ',';
-//                char customDecimalSeparator = '.';
-//
-//                // if (tenantSettings.WVGroupingNumber == DPWBooking.Modules.Default.GroupingNumber.ApostropheAndDot)
-//                // {
-//                //     customThousandsSeparator = '\'';
-//                // }
-//                // else
-//                if (tenantSettings.WVGroupingNumber == DPWBooking.Modules.Default.GroupingNumber.DotAndComma)
-//                {
-//                    customThousandsSeparator = '.';
-//                    customDecimalSeparator = ',';
-//                }
-//
-//                var dynamicGroupSizes = tenantSettings.WVDigitGrouping.Value == DPWBooking.Modules.Default.DigitGrouping.THREE ? new[] { 3, 3 } : new[] { 3, 2 };
-//
-//                var customCulture = new CultureInfo("en-US")
-//                {
-//                    NumberFormat =
-//                    {
-//                        NumberDecimalSeparator = customDecimalSeparator.ToString(),
-//                                NumberGroupSeparator = customThousandsSeparator.ToString(),
-//                                NumberDecimalDigits = numberDecimalDigits,
-//                                NumberGroupSizes = dynamicGroupSizes
-//                    }
-//                };
-//
-//                return weight?.ToString("N", customCulture) ?? null;
-//            }
-//            else
-//            {
-                return IReport.addCommas(weight);
-//            }
     }
 
     public static List<EntityTransferOrganizations> fetchOrganizations(Object field, Object value) {

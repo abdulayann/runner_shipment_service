@@ -7,6 +7,7 @@ import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.Pa
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PartiesModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ShipmentModel;
 import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
+import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -61,7 +62,7 @@ public class ConsolidatedPackingListReport extends IReport {
         ConsolidatedPackingListModel cplData = (ConsolidatedPackingListModel) documentModel;
         String json = jsonHelper.convertToJsonWithDateTimeFormatter(cplData.getConsolidationDetails(), GetDPWDateFormatOrDefault());
         Map<String, Object> dictionary = jsonHelper.convertJsonToMap(json);
-
+        V1TenantSettingsResponse v1TenantSettingsResponse = getTenantSettings();
 
         List<String> exporter = getOrgAddressWithPhoneEmail(jsonHelper.convertValue(
                 cplData.getConsolidationDetails().getSendingAgent(), PartiesModel.class
@@ -162,7 +163,7 @@ public class ConsolidatedPackingListReport extends IReport {
                         totalWeight = totalWeight.add(BigDecimal.valueOf((double) v.get(WEIGHT)));
                 }
                 if(v.get(WEIGHT) != null)
-                    v.put(WEIGHT, twoDecimalPlacesFormat(v.get(WEIGHT).toString()));
+                    v.put(WEIGHT, ConvertToWeightNumberFormat(v.get(WEIGHT), v1TenantSettingsResponse));
             }
             dictionary.put(ITEMS ,values);
         }
@@ -176,7 +177,7 @@ public class ConsolidatedPackingListReport extends IReport {
       dictionary.put(TOTAL_WEIGHT, null);
       dictionary.put(UOTW, null);
     } else {
-        dictionary.put(TOTAL_WEIGHT, twoDecimalPlacesFormat(totalWeight.toString()));
+        dictionary.put(TOTAL_WEIGHT, ConvertToWeightNumberFormat(totalWeight, v1TenantSettingsResponse));
         dictionary.put(UOTW, unitOfTotalWeight);
     }
 
