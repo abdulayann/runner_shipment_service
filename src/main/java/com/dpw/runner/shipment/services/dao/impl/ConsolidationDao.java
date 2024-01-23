@@ -109,13 +109,22 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
         errors.addAll(applyConsolidationValidations(consolidationDetails, oldConsole));
         if (!errors.isEmpty())
             throw new ValidationException(errors.toString());
-        if (consolidationDetails.getTransportMode() != null && consolidationDetails.getCarrierDetails() != null &&
-                consolidationDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)) {
+        if (consolidationDetails.getTransportMode() != null && consolidationDetails.getCarrierDetails() != null) {
             LocalDateTime eta = consolidationDetails.getCarrierDetails().getEta();
             LocalDateTime etd = consolidationDetails.getCarrierDetails().getEtd();
-            Duration duration = Duration.between(etd, eta);
-            if (duration.toHours() > 24) {
-                throw new ValidationException("Difference between ETA and ETD should not be more than 24 hours");
+            if (consolidationDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)) {
+                //for air consolidation, ETA can be less than ETD and difference should not be more than 24 hours
+                if (eta != null && etd != null && eta.isBefore(etd)) {
+                    Duration duration = Duration.between(etd, eta);
+                    if (duration.toHours() > 24) {
+                        throw new ValidationException("Difference between ETA and ETD should not be more than 24 hours");
+                    }
+                }
+            } else {
+                //for other transport modes other than AIR, ETA cannot be less than ETD
+                if (eta != null && etd != null && eta.isBefore(etd)) {
+                    throw new ValidationException("ETA should not be less than ETD");
+                }
             }
         }
         if (!fromV1Sync && consolidationDetails.getTransportMode() != null
@@ -392,7 +401,7 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
         }
     }
 
-    private Boolean isMAWBNumberValid(String masterBill) {
+    public Boolean isMAWBNumberValid(String masterBill) {
         Boolean MAWBNumberValidity = true;
         if (masterBill.length() == 12) {
             String mawbSeqNum = masterBill.substring(4, 11);

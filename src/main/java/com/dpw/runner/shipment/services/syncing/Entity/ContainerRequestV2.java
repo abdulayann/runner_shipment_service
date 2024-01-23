@@ -1,7 +1,6 @@
 package com.dpw.runner.shipment.services.syncing.Entity;
 
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
-import com.dpw.runner.shipment.services.dto.response.TruckDriverDetailsResponse;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
@@ -176,5 +175,5 @@ public class ContainerRequestV2 implements IRunnerRequest {
     @JsonProperty("IsAttached")
     private Boolean IsAttached;
     @JsonProperty("TruckingDetails")
-    private List<TruckDriverDetailsResponse> TruckingDetails;
+    private List<TruckDriverDetailsRequestV2> TruckingDetails;
 }

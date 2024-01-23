@@ -23,10 +23,7 @@ import com.dpw.runner.shipment.services.dto.patchRequest.CarrierPatchRequest;
 import com.dpw.runner.shipment.services.dto.patchRequest.ShipmentPatchRequest;
 import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.response.*;
-import com.dpw.runner.shipment.services.dto.v1.request.ShipmentBillingListRequest;
-import com.dpw.runner.shipment.services.dto.v1.request.TIContainerListRequest;
-import com.dpw.runner.shipment.services.dto.v1.request.TIListRequest;
-import com.dpw.runner.shipment.services.dto.v1.request.WayBillNumberFilterRequest;
+import com.dpw.runner.shipment.services.dto.v1.request.*;
 import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.*;
@@ -705,7 +702,13 @@ public class ShipmentService implements IShipmentService {
                 updatedContainers = containerDao.saveAll(commonUtils.convertToCreateEntityList(containerRequest, Containers.class));
                 shipmentDetails.setContainersList(updatedContainers);
             }
-
+            ConsolidationDetails consolidationDetails = null;
+            if(updatedContainers.size() > 0) {
+                if((tempConsolIds == null || tempConsolIds.size() == 0) && (shipmentSettingsDetails.getIsShipmentLevelContainer() == null || !shipmentSettingsDetails.getIsShipmentLevelContainer())) {
+                    consolidationDetails = createConsolidation(shipmentDetails, updatedContainers);
+                    shipmentDetails.setConsolidationList(new ArrayList<>(Arrays.asList(consolidationDetails)));
+                }
+            }
             beforeSave(shipmentDetails);
             shipmentDetails = getShipment(shipmentDetails);
             Long shipmentId = shipmentDetails.getId();
@@ -787,12 +790,8 @@ public class ShipmentService implements IShipmentService {
             }
 
             Hbl hbl = null;
-            ConsolidationDetails consolidationDetails = null;
             if(updatedContainers.size() > 0) {
                 hbl = hblService.checkAllContainerAssigned(shipmentDetails, updatedContainers, updatedPackings);
-                if((tempConsolIds == null || tempConsolIds.size() == 0) && (shipmentSettingsDetails.getIsShipmentLevelContainer() == null || !shipmentSettingsDetails.getIsShipmentLevelContainer())) {
-                    consolidationDetails = createConsolidation(shipmentDetails, updatedContainers);
-                }
             }
             afterSave(shipmentDetails, true);
             updateLinkedShipmentData(shipmentDetails, null);
@@ -1612,6 +1611,13 @@ public class ShipmentService implements IShipmentService {
             entity.setContainersList(updatedContainers);
 
             String oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
+            ConsolidationDetails consolidationDetails = null;
+            if(updatedContainers.size() > 0) {
+                if((tempConsolIds == null || tempConsolIds.size() == 0) && (shipmentSettingsDetails.getIsShipmentLevelContainer() == null || !shipmentSettingsDetails.getIsShipmentLevelContainer())) {
+                    consolidationDetails = createConsolidation(entity, updatedContainers);
+                    entity.setConsolidationList(new ArrayList<>(Arrays.asList(consolidationDetails)));
+                }
+            }
             beforeSave(entity);
             updateLinkedShipmentData(entity, oldEntity.get());
             entity = shipmentDao.update(entity, false);
@@ -1640,9 +1646,28 @@ public class ShipmentService implements IShipmentService {
             }
             List<Packing> updatedPackings = new ArrayList<>();
             List<Long> deleteContainerIds = new ArrayList<>();
+            List<Packing> packsForSync = null;
+            List<UUID> deletedContGuids = new ArrayList<>();
             if(shipmentRequest.getDeletedContainerIds() != null && shipmentRequest.getDeletedContainerIds().size() > 0) {
                 deleteContainerIds = shipmentRequest.getDeletedContainerIds().stream().filter(e -> e.getId() != null).map(e -> e.getId()).collect(Collectors.toList());
                 if(deleteContainerIds != null && deleteContainerIds.size() > 0) {
+                    ListCommonRequest listCommonRequest = constructListCommonRequest("containerId", deleteContainerIds, "IN");
+                    Pair<Specification<Packing>, Pageable> pair = fetchData(listCommonRequest, Packing.class);
+                    Page<Packing> packings = packingDao.findAll(pair.getLeft(), pair.getRight());
+                    if(packings != null && packings.getContent() != null && !packings.getContent().isEmpty()) {
+                        List<Packing> packingList = new ArrayList<>();
+                        for (Packing packing : packings.getContent()) {
+                            packing.setContainerId(null);
+                            packingList.add(packing);
+                        }
+                        packingDao.saveAll(packingList);
+                        packsForSync = packingList;
+                    }
+                    listCommonRequest = constructListCommonRequest("id", deleteContainerIds, "IN");
+                    Pair<Specification<Containers>, Pageable> pair2 = fetchData(listCommonRequest, Containers.class);
+                    Page<Containers> containersPage = containerDao.findAll(pair2.getLeft(), pair2.getRight());
+                    if(containersPage != null && !containersPage.isEmpty())
+                        deletedContGuids = containersPage.stream().map(e -> e.getGuid()).collect(Collectors.toList());
                     for (Long containerId : deleteContainerIds) {
                         containerDao.deleteById(containerId);
                     }
@@ -1654,27 +1679,6 @@ public class ShipmentService implements IShipmentService {
                 packingRequestList = setPackingDetails(updatedContainers, packingRequestList, entity.getTransportMode(), consolidationId);
                 updatedPackings = packingDao.updateEntityFromShipment(convertToEntityList(packingRequestList, Packing.class), id, deleteContainerIds);
                 entity.setPackingList(updatedPackings);
-            }
-            List<UUID> deletedContGuids = new ArrayList<>();
-            List<Packing> packsForSync = null;
-            if(deleteContainerIds != null && deleteContainerIds.size() > 0) {
-                ListCommonRequest listCommonRequest = constructListCommonRequest("containerId", deleteContainerIds, "IN");
-                Pair<Specification<Packing>, Pageable> pair = fetchData(listCommonRequest, Packing.class);
-                Page<Packing> packings = packingDao.findAll(pair.getLeft(), pair.getRight());
-                if(packings != null && packings.getContent() != null && !packings.getContent().isEmpty()) {
-                    List<Packing> packingList = new ArrayList<>();
-                    for (Packing packing : packings.getContent()) {
-                        packing.setContainerId(null);
-                        packingList.add(packing);
-                    }
-                    packingDao.saveAll(packingList);
-                    packsForSync = packingList;
-                }
-                listCommonRequest = constructListCommonRequest("id", deleteContainerIds, "IN");
-                Pair<Specification<Containers>, Pageable> pair2 = fetchData(listCommonRequest, Containers.class);
-                Page<Containers> containersPage = containerDao.findAll(pair2.getLeft(), pair2.getRight());
-                if(containersPage != null && !containersPage.isEmpty())
-                    deletedContGuids = containersPage.stream().map(e -> e.getGuid()).collect(Collectors.toList());
             }
             if (elDetailsRequestList != null) {
                 List<ELDetails> updatedELDetails = elDetailsDao.updateEntityFromShipment(convertToEntityList(elDetailsRequestList, ELDetails.class), id);
@@ -1723,12 +1727,8 @@ public class ShipmentService implements IShipmentService {
             }
 
             Hbl hbl = null;
-            ConsolidationDetails consolidationDetails = null;
             if(updatedContainers.size() > 0) {
                 hbl = hblService.checkAllContainerAssigned(entity, updatedContainers, updatedPackings);
-                if((tempConsolIds == null || tempConsolIds.size() == 0) && (shipmentSettingsDetails.getIsShipmentLevelContainer() == null || !shipmentSettingsDetails.getIsShipmentLevelContainer())) {
-                    consolidationDetails = createConsolidation(entity, updatedContainers);
-                }
             }
             afterSave(entity, false);
             try {
@@ -1773,6 +1773,17 @@ public class ShipmentService implements IShipmentService {
             shipmentDetails.setHouseBill(shipmentDetails.getMasterBill());
         }
         v1ServiceUtil.validateCreditLimit(shipmentDetails.getClient(), ShipmentConstants.SHIPMENT_CREATION, shipmentDetails.getGuid());
+
+        if(!Objects.isNull(shipmentDetails.getConsolidationList()) && !shipmentDetails.getConsolidationList().isEmpty()) {
+            ConsolidationDetails console = shipmentDetails.getConsolidationList().get(0);
+            ConsolidationDetails tempConsole = new ConsolidationDetails();
+            tempConsole.setId(console.getId());
+            if(console.equals(tempConsole)){
+                console = consolidationDetailsDao.findById(console.getId()).get();
+                shipmentDetails.setConsolidationList(new ArrayList<>(Arrays.asList(console)));
+            }
+            shipmentDetails.setConsolRef(shipmentDetails.getConsolidationList().get(0).getReferenceNumber());
+        }
     }
 
     public void afterSave(ShipmentDetails shipmentDetails, boolean isCreate) {
@@ -1908,7 +1919,6 @@ public class ShipmentService implements IShipmentService {
                 containers = containerDao.saveAll(containers);
             }
             consolidationDetails.setContainersList(containers);
-            attachConsolidations(shipmentDetails.getId(), List.of(id));
             if(shipmentSettings.getAutoEventCreate() != null && shipmentSettings.getAutoEventCreate()) {
                 consolidationService.autoGenerateEvents(consolidationDetails);
             }
@@ -4021,6 +4031,16 @@ public class ShipmentService implements IShipmentService {
         }
         ListCommonRequest listCommonRequest = CommonUtils.andCriteria("id", shipmentIdsList, "IN", null);
         return fetchShipments(CommonRequestModel.buildRequest(listCommonRequest));
+    }
+
+    public ResponseEntity<?> fetchActiveInvoices(CommonRequestModel commonRequestModel) {
+        CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
+        if(request.getGuid() == null) {
+            log.error("Request guid is null for fetch active invoices with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            throw new RunnerException("Shipment Guid can't be null");
+        }
+        CheckActiveInvoiceRequest checkActiveInvoiceRequest = CheckActiveInvoiceRequest.builder().BillGuid(request.getGuid()).build();
+        return ResponseHelper.buildSuccessResponse(v1Service.getActiveInvoices(checkActiveInvoiceRequest));
     }
 
     private ShipmentSettingsDetails getShipmentSettingsDetails() {

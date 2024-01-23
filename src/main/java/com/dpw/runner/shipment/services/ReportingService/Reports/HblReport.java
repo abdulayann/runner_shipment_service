@@ -30,6 +30,7 @@ import com.dpw.runner.shipment.services.masterdata.response.VesselsResponse;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.utils.StringUtility;
+import com.google.common.base.Strings;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -109,31 +110,28 @@ public class HblReport extends IReport{
         // Master lists Master-data
         List<MasterListRequest> masterListRequest = createMasterListsRequestFromShipment(hblModel.shipment);
         masterListRequest.addAll(createMasterListsRequestFromUnLocoMap(unlocationsMap));
-        Map<String, MasterData> masterListsMap = fetchInBulkMasterList(MasterListRequestV2.builder().MasterListRequests(masterListRequest.stream().filter(Objects::nonNull).collect(Collectors.toList())).build());
+        Map<Integer, Map<String, MasterData>> masterListsMap = fetchInBulkMasterList(MasterListRequestV2.builder().MasterListRequests(masterListRequest.stream().filter(Objects::nonNull).collect(Collectors.toList())).build());
 
-        if (masterListsMap.containsKey(hblModel.shipment.getPaymentTerms()))
-            hblModel.paymentTerms = masterListsMap.get(hblModel.shipment.getPaymentTerms()).getItemDescription();
-        if (masterListsMap.containsKey(hblModel.shipment.getServiceType()))
-            hblModel.serviceMode = masterListsMap.get(hblModel.shipment.getServiceType()).getItemDescription();
+        if (masterListsMap.containsKey(MasterDataType.PAYMENT.getId()) && masterListsMap.get(MasterDataType.PAYMENT.getId()).containsKey(hblModel.shipment.getPaymentTerms()))
+            hblModel.paymentTerms = masterListsMap.get(MasterDataType.PAYMENT.getId()).get(hblModel.shipment.getPaymentTerms()).getItemDescription();
+        if (masterListsMap.containsKey(MasterDataType.SERVICE_MODE.getId()) && masterListsMap.get(MasterDataType.SERVICE_MODE.getId()).containsKey(hblModel.shipment.getServiceType()))
+            hblModel.serviceMode = masterListsMap.get(MasterDataType.SERVICE_MODE.getId()).get(hblModel.shipment.getServiceType()).getItemDescription();
 
-        if (hblModel.shipment.getAdditionalDetails() != null && masterListsMap.containsKey(hblModel.shipment.getAdditionalDetails().getReleaseType()) )
-            hblModel.releaseType = masterListsMap.get(hblModel.shipment.getAdditionalDetails().getReleaseType()).getItemDescription();
-
-        if (masterListsMap.containsKey(hblModel.shipment.getServiceType()))
-            hblModel.serviceMode = masterListsMap.get(hblModel.shipment.getServiceType()).getItemDescription();
+        if (hblModel.shipment.getAdditionalDetails() != null && masterListsMap.containsKey(MasterDataType.RELEASE_TYPE.getId()) && masterListsMap.get(MasterDataType.RELEASE_TYPE.getId()).containsKey(hblModel.shipment.getAdditionalDetails().getReleaseType()) )
+            hblModel.releaseType = masterListsMap.get(MasterDataType.RELEASE_TYPE.getId()).get(hblModel.shipment.getAdditionalDetails().getReleaseType()).getItemDescription();
 
         if (hblModel.shipment.getAdditionalDetails() != null) {
             // PaidPlace master data
             if (!Objects.isNull(hblModel.shipment.getAdditionalDetails().getPaidPlace()) && unlocationsMap.containsKey(hblModel.shipment.getAdditionalDetails().getPaidPlace())) {
                 UnlocationsResponse location = unlocationsMap.get(hblModel.shipment.getAdditionalDetails().getPaidPlace());
-                if (masterListsMap.containsKey(location.getCountry()))
-                    hblModel.paidPlaceCountry = masterListsMap.get(location.getCountry()).getItemDescription();
+                if (masterListsMap.containsKey(MasterDataType.COUNTRIES.getId()) && masterListsMap.get(MasterDataType.COUNTRIES.getId()).containsKey(location.getCountry()))
+                    hblModel.paidPlaceCountry = masterListsMap.get(MasterDataType.COUNTRIES.getId()).get(location.getCountry()).getItemDescription();
             }
             // IssuePlace master data
             if (!Objects.isNull(hblModel.shipment.getAdditionalDetails().getPlaceOfIssue()) && unlocationsMap.containsKey(hblModel.shipment.getAdditionalDetails().getPlaceOfIssue())) {
                 hblModel.placeOfIssue = unlocationsMap.get(hblModel.shipment.getAdditionalDetails().getPlaceOfIssue());
-                if (masterListsMap.containsKey(hblModel.placeOfIssue.getCountry()))
-                    hblModel.issuePlaceCountry = masterListsMap.get(hblModel.placeOfIssue.getCountry()).getItemDescription();
+                if (masterListsMap.containsKey(MasterDataType.COUNTRIES.getId()) && masterListsMap.get(MasterDataType.COUNTRIES.getId()).containsKey(hblModel.placeOfIssue.getCountry()))
+                    hblModel.issuePlaceCountry = masterListsMap.get(MasterDataType.COUNTRIES.getId()).get(hblModel.placeOfIssue.getCountry()).getItemDescription();
 
             }
         }
@@ -276,7 +274,7 @@ public class HblReport extends IReport{
             dictionary.put(ReportConstants.FREIGHT_OVERSEAS_CURRENCY, hblModel.shipment.getFreightOverseasCurrency());
         if (hblModel.shipment.getShipmentAddresses() != null && hblModel.shipment.getShipmentAddresses().size() > 0) {
             for (PartiesModel shipmentAddress : hblModel.shipment.getShipmentAddresses()) {
-                if (shipmentAddress.getType() == CUSTOM_HOUSE_AGENT && shipmentAddress.getOrgData() != null && getValueFromMap(shipmentAddress.getOrgData(), FULL_NAME) != null) {
+                if (shipmentAddress.getType() != null && shipmentAddress.getType().equalsIgnoreCase(CUSTOM_HOUSE_AGENT) && shipmentAddress.getOrgData() != null && getValueFromMap(shipmentAddress.getOrgData(), FULL_NAME) != null) {
                     dictionary.put(CHAPartyDescription, getValueFromMap(shipmentAddress.getOrgData(), FULL_NAME));
                 }
             }
@@ -662,6 +660,9 @@ public class HblReport extends IReport{
             dictionary.put(BL_DELIVERYAGENT_ADDRESS, hblModel.blObject.getHblData().getDeliveryAgentAddress());
             dictionary.put(BL_CARGO_TERMS_DESCRIPTION, hblModel.blObject.getHblData().getBlRemarksDescription());
             dictionary.put(BL_REMARKS_DESCRIPTION, hblModel.blObject.getHblData().getBlRemarksDescription());
+            dictionary.put(ReportConstants.BL_PLACE_OF_RECEIPT, hblModel.blObject.getHblData().getPlaceOfDelivery() == null ? "" : hblModel.blObject.getHblData().getPlaceOfDelivery().toUpperCase());
+            dictionary.put(ReportConstants.BL_PORT_OF_LOADING, hblModel.blObject.getHblData().getPortOfLoad() == null ? "" : hblModel.blObject.getHblData().getPortOfLoad().toUpperCase());
+            dictionary.put(ReportConstants.BL_PORT_OF_DISCHARGE, hblModel.blObject.getHblData().getPortOfDischarge() == null ? "" : hblModel.blObject.getHblData().getPortOfDischarge().toUpperCase());
         }
         PartiesModel deliveryToAddress = null;
         if (hblModel.shipment.getDeliveryDetails() != null)
@@ -823,7 +824,10 @@ public class HblReport extends IReport{
         dictionary.put(PORT_OF_LOADING_COUNTRY, hblModel.polPort != null ? hblModel.polPort.getCountry() : null);
         dictionary.put(PORT_OF_DISCHARGE, hblModel.podPort != null ? hblModel.podPort.getPortName() : null);
         dictionary.put(PORT_OF_DISCHARGE_COUNTRY, hblModel.podPort != null ? hblModel.podPort.getCountry() : null);
-        dictionary.put(PLACE_oF_RECEIPT, hblModel.shipment.getCarrierDetails().getOrigin());
+        if(hblModel.shipment.getCarrierDetails()!= null && hblModel.shipment.getCarrierDetails().getOrigin() != null) {
+            dictionary.put(PLACE_oF_RECEIPT, hblModel.shipment.getCarrierDetails().getOrigin());
+            dictionary.put(PLACE_OF_RECIEPT_IN_CAPS, hblModel.shipment.getCarrierDetails().getOrigin().toUpperCase());
+        }
         dictionary.put(PLACE_oF_DELIVERY, hblModel.shipment.getCarrierDetails().getDestination());
         dictionary.put(PORT_OF_FINAL_DESTINATION, hblModel.podPort != null ? hblModel.podPort.getPortName() : null);
         dictionary.put(PORT_OF_FINAL_DESTINATION_COUNTRY, hblModel.podPort != null ? hblModel.podPort.getCountry() : null);
@@ -948,8 +952,8 @@ public class HblReport extends IReport{
     }
 
     private void getChargeRows(List<BillChargesResponse> originalChargesRows, List<BillChargesResponse> copyChargesRows, List<BillChargesResponse> charges, String type) {
-        List<BillChargesResponse> prepaid = charges.stream().filter(x -> x.getPaymentType().equals("PPD")).collect(Collectors.toList());
-        List<BillChargesResponse> collect = charges.stream().filter(x -> x.getPaymentType().equals("CCX")).collect(Collectors.toList());
+        List<BillChargesResponse> prepaid = charges.stream().filter(x -> !Strings.isNullOrEmpty(x.getPaymentType()) && x.getPaymentType().equals("PPD")).collect(Collectors.toList());
+        List<BillChargesResponse> collect = charges.stream().filter(x -> !Strings.isNullOrEmpty(x.getPaymentType()) && x.getPaymentType().equals("CCX")).collect(Collectors.toList());
 
         switch (type)
         {

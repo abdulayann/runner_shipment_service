@@ -84,6 +84,7 @@ public class ShipmentSync implements IShipmentSync {
         // example Guid
         // assigning root level properties not previously mapped
         mapConsolidationGuids(cs, sd);
+        cs.setSourceGuid(sd.getSourceGuid());
         cs.setReferenceNo(sd.getBookingReference());
         cs.setCustom_ShipType(sd.getDirection());
         cs.setContainerType(sd.getShipmentType());

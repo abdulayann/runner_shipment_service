@@ -7,10 +7,7 @@ import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IPackingDao;
-import com.dpw.runner.shipment.services.entity.Containers;
-import com.dpw.runner.shipment.services.entity.CustomerBooking;
-import com.dpw.runner.shipment.services.entity.Packing;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.LifecycleHooks;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -79,6 +76,17 @@ public class ContainerDao implements IContainerDao {
             containers.setCreatedBy(oldEntity.get().getCreatedBy());
             if(containers.getShipmentsList() == null) {
                 containers.setShipmentsList(oldEntity.get().getShipmentsList());
+            }
+            if(containers.getEventsList() == null) {
+                containers.setEventsList(oldEntity.get().getEventsList());
+            }
+            if(containers.getTruckingDetails() == null) {
+                containers.setTruckingDetails(oldEntity.get().getTruckingDetails());
+            }
+        }
+        if(containers.getEventsList() != null && containers.getEventsList().size() > 0) {
+            for (Events events : containers.getEventsList()) {
+                events.setEntityType(Constants.CONTAINER);
             }
         }
         return containerRepository.save(containers);

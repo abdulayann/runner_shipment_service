@@ -25,4 +25,8 @@ public class V1TenantSettingsResponse {
     private Boolean UseV2ScreenForBillCharges;
     private Boolean P100Branch;
     private String DPWDateFormat;
+    private Integer VolumeDecimalPlace;
+    private Integer WeightDecimalPlace;
+    private Integer WVDigitGrouping;
+    private Integer WVGroupingNumber;
 }

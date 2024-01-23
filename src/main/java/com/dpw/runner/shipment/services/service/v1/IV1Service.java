@@ -155,5 +155,6 @@ public interface IV1Service {
     String getMaxConsolidationId();
     V1RetrieveResponse getShipment(V1RetrieveRequest request);
     CreditLimitValidateResponse checkCreditLimit(CreditLimitValidateRequest request);
-
+    AddressTranslationListResponse getAddressTranslation(AddressTranslationRequest request);
+    CheckActiveInvoiceResponse getActiveInvoices(CheckActiveInvoiceRequest request);
 }

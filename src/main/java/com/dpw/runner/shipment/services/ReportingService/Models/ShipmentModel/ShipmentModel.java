@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel;
 
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentContainers;
+import com.dpw.runner.shipment.services.config.LocalDateTimeWithTimeZoneSerializer;
 import com.dpw.runner.shipment.services.config.CustomVolumeValueSerializer;
 import com.dpw.runner.shipment.services.config.CustomWeightValueSerializer;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -73,6 +74,7 @@ public class ShipmentModel {
     @JsonProperty("FinanceClosedBy")
     private String financeClosedBy;
     @JsonProperty("FinanceClosedOn")
+    @JsonSerialize(using = LocalDateTimeWithTimeZoneSerializer.class)
     private LocalDateTime financeClosedOn;
     @JsonProperty("FreightLocal")
     private BigDecimal freightLocal;
@@ -152,8 +154,10 @@ public class ShipmentModel {
     @JsonProperty("ShipmentCompletedBy")
     private String shipmentCompletedBy;
     @JsonProperty("ShipmentCompletedOn")
+    @JsonSerialize(using = LocalDateTimeWithTimeZoneSerializer.class)
     private LocalDateTime shipmentCompletedOn;
     @JsonProperty("ShipmentCreatedOn")
+    @JsonSerialize(using = LocalDateTimeWithTimeZoneSerializer.class)
     private LocalDateTime shipmentCreatedOn;
     @JsonProperty("ShipmentId")
     private String shipmentId;

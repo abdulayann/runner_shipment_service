@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.dto.request.awb;
 
+import com.dpw.runner.shipment.services.utils.UnlocationData;
 import io.swagger.annotations.ApiModel;
 import lombok.*;
 
@@ -16,6 +17,7 @@ public class AwbOtherInfo {
     private String entityType;
     private String shipper;
     private String carrier;
+    @UnlocationData
     private String executedAt;
     private LocalDateTime executedOn;
 }

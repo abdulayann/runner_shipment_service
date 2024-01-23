@@ -67,6 +67,8 @@ public class CustomConsolidationRequest implements IRunnerResponse, IRunnerReque
 
     @JsonProperty("Guid")
     private UUID Guid;
+    @JsonProperty("SourceGuid")
+    private UUID SourceGuid;
 //    @JsonProperty("Id")
 //    private Long Id;
     @JsonProperty("IntraBranch")
@@ -438,6 +440,12 @@ public class CustomConsolidationRequest implements IRunnerResponse, IRunnerReque
     private LocalDateTime VerifiedGrossMassCutoff;
     @JsonProperty("ReeferCutoff")
     private LocalDateTime ReeferCutoff;
+    @JsonProperty("LatestFullEquDeliveredToCarrier")
+    private LocalDateTime LatestFullEquDeliveredToCarrier;
+    @JsonProperty("EarliestDropOffFullEquToCarrier")
+    private LocalDateTime EarliestDropOffFullEquToCarrier;
+    @JsonProperty("EarliestEmptyEquPickUp")
+    private LocalDateTime EarliestEmptyEquPickUp;
 
     @JsonProperty("ShipmentType")
     private String ShipmentType;

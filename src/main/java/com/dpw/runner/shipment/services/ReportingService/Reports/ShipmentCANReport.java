@@ -62,6 +62,7 @@ public class ShipmentCANReport extends IReport {
     public Map<String, Object> populateDictionary(IDocumentModel documentModel) {
         ShipmentCANModel shipmentCANModel = (ShipmentCANModel) documentModel;
         Map<String, Object> dictionary = hblReport.getData(shipmentCANModel.shipmentDetails.getId());
+        populateShipmentOrganizationsLL(shipmentCANModel.shipmentDetails, dictionary);
         List<BillChargesResponse> allBillCharges = new ArrayList<>();
         TaxPair<String, String> tax1 = new TaxPair<>("TaxType1", "0");
         TaxPair<String, String> tax2 = new TaxPair<>("TaxType2", "0");
@@ -101,13 +102,13 @@ public class ShipmentCANReport extends IReport {
         }
         if(shipmentCANModel.tenantSettingsResponse != null && shipmentCANModel.tenantSettingsResponse.isGSTTaxAutoCalculation()) {
             for (TaxPair<String, String> tax : taxes) {
-                if(tax.getTaxType() == "TaxType1")
+                if(tax.getTaxType().equalsIgnoreCase("TaxType1"))
                     tax.setTaxType("SGST");
-                if(tax.getTaxType() == "TaxType2")
+                if(tax.getTaxType().equalsIgnoreCase("TaxType2"))
                     tax.setTaxType("CGST");
-                if(tax.getTaxType() == "TaxType3")
+                if(tax.getTaxType().equalsIgnoreCase("TaxType3"))
                     tax.setTaxType("UGST");
-                if(tax.getTaxType() == "TaxType4")
+                if(tax.getTaxType().equalsIgnoreCase("TaxType4"))
                     tax.setTaxType("IGST");
             }
         }
@@ -259,6 +260,9 @@ public class ShipmentCANReport extends IReport {
                     v.put(TAX_PERCENTAGE, twoDecimalPlacesFormat(v.get(TAX_PERCENTAGE).toString()));
                 if(v.containsKey(TOTAL_AMOUNT) && v.get(TOTAL_AMOUNT) != null)
                     v.put(TOTAL_AMOUNT, twoDecimalPlacesFormat(v.get(TOTAL_AMOUNT).toString()));
+                if(v.containsKey(CHARGE_TYPE_CODE) && v.get(CHARGE_TYPE_CODE) != null) {
+                    v.put(CHARGE_TYPE_DESCRIPTION_LL, GetChargeTypeDescriptionLL((String)v.get(CHARGE_TYPE_CODE)));
+                }
             }
             dictionary.put(BILL_CHARGES, billChargesDict);
         }

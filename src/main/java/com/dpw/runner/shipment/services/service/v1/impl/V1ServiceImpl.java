@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.service.v1.impl;
 
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
 import com.dpw.runner.shipment.services.dto.response.CheckCreditLimitResponse;
@@ -32,6 +33,7 @@ import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.Objects;
 import java.util.UUID;
 
 @Service
@@ -292,6 +294,10 @@ public class V1ServiceImpl implements IV1Service {
     private String SHIPMENT_RETRIEVE_URL;
     @Value("${v1service.url.base}${v1service.url.creditLimitCheck}")
     private String CREDIT_LIMIT_CHECK_URL;
+    @Value("${v1service.url.base}${v1service.url.getAddressTranslation}")
+    private String GET_ADDRESS_TRANSLATION;
+    @Value("${v1service.url.base}${v1service.url.fetchActiveInvoices}")
+    private String GET_ACTIVE_INVOICES;
 
     @Autowired
     private JsonHelper jsonHelper;
@@ -1855,6 +1861,47 @@ public class V1ServiceImpl implements IV1Service {
             HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
             masterDataResponse = this.restTemplate.postForEntity(this.CREDIT_LIMIT_CHECK_URL, entity, CreditLimitValidateResponse.class, new Object[0]);
             return (CreditLimitValidateResponse) masterDataResponse.getBody();
+        } catch (HttpStatusCodeException var6) {
+            if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
+                throw new UnAuthorizedException("UnAuthorizedException");
+            } else {
+                throw new V1ServiceException(var6.getMessage());
+            }
+        } catch (Exception var7) {
+            throw new V1ServiceException(var7.getMessage());
+        }
+    }
+
+    @Override
+    public AddressTranslationListResponse getAddressTranslation(AddressTranslationRequest request) {
+        ResponseEntity masterDataResponse = null;
+        try {
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            masterDataResponse = this.restTemplate.postForEntity(this.GET_ADDRESS_TRANSLATION, entity, AddressTranslationListResponse.class, new Object[0]);
+            return (AddressTranslationListResponse) masterDataResponse.getBody();
+
+        } catch (HttpStatusCodeException var6) {
+            if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
+                throw new UnAuthorizedException("UnAuthorizedException");
+            } else {
+                throw new V1ServiceException(var6.getMessage());
+            }
+        } catch (Exception var7) {
+            throw new V1ServiceException(var7.getMessage());
+        }
+    }
+
+    @Override
+    public CheckActiveInvoiceResponse getActiveInvoices(CheckActiveInvoiceRequest request) {
+        ResponseEntity masterDataResponse = null;
+        try {
+            if(Objects.equals(ShipmentSettingsDetailsContext.getCurrentTenantSettings().getShipmentLite(), false))
+            {
+                return CheckActiveInvoiceResponse.builder().IsAnyActiveInvoiceFound(false).build();
+            }
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            masterDataResponse = this.restTemplate.postForEntity(this.GET_ACTIVE_INVOICES, entity, CheckActiveInvoiceResponse.class, new Object[0]);
+            return (CheckActiveInvoiceResponse) masterDataResponse.getBody();
 
         } catch (HttpStatusCodeException var6) {
             if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {

@@ -22,4 +22,8 @@ public class ShipmentSettingsDetailsContext {
          tenantSettingsThreadLocal.set(shipmentSettingsDetails);
     }
 
+    public static void remove() {
+        tenantSettingsThreadLocal.remove();
+    }
+
 }

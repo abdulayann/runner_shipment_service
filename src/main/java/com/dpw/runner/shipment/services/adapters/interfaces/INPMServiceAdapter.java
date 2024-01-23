@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.adapters.interfaces;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.dto.request.npm.UpdateContractRequest;
+import com.dpw.runner.shipment.services.dto.response.npm.NPMFetchLangChargeCodeResponse;
 import org.springframework.http.ResponseEntity;
 import org.testcontainers.shaded.org.bouncycastle.jcajce.provider.asymmetric.ec.KeyFactorySpi;
 
@@ -20,4 +21,5 @@ public interface INPMServiceAdapter {
 
     ResponseEntity<?> awbAutoSell(CommonRequestModel commonRequestModel) throws Exception;
     ResponseEntity<?> awbImportRates(CommonRequestModel commonRequestModel) throws Exception;
+    NPMFetchLangChargeCodeResponse fetchMultiLangChargeCode(CommonRequestModel commonRequestModel) throws Exception;
 }
