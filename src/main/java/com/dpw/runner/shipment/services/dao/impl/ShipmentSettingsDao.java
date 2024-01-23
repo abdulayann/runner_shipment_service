@@ -2,13 +2,13 @@ package com.dpw.runner.shipment.services.dao.impl;
 
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.repository.interfaces.IShipmentSettingsRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -22,6 +22,9 @@ public class ShipmentSettingsDao implements IShipmentSettingsDao {
 
     @Override
     public ShipmentSettingsDetails save(ShipmentSettingsDetails shipmentSetting) {
+        if (shipmentSetting.getCancelledBLSuffix() != null && shipmentSetting.getCancelledBLSuffix().length() > 5) {
+            throw new ValidationException("Maximum allowed characters is only upto 5 for cancelled bl suffix");
+        }
         return shipmentSettingsRepository.save(shipmentSetting);
     }
 

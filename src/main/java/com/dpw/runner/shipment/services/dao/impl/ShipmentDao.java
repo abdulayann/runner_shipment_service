@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
@@ -12,6 +13,7 @@ import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.entity.enums.LifecycleHooks;
+import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -26,6 +28,7 @@ import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.dpw.runner.shipment.services.validator.ValidatorUtility;
 import com.nimbusds.jose.util.Pair;
+import io.netty.util.internal.StringUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
@@ -151,6 +154,17 @@ public class ShipmentDao implements IShipmentDao {
     }
 
     private void onSave(ShipmentDetails shipmentDetails, Set<String> errors, ShipmentDetails oldShipment, boolean fromV1Sync) {
+        if (!StringUtil.isNullOrEmpty(shipmentDetails.getHouseBill()) &&
+                Objects.equals(shipmentDetails.getStatus(), ShipmentStatus.Cancelled.getValue())) {
+            ShipmentSettingsDetails tenantSettings = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
+            if (tenantSettings != null) {
+                String suffix = tenantSettings.getCancelledBLSuffix();
+                if (suffix != null) {
+                    String newHouseBill = shipmentDetails.getHouseBill() + suffix;
+                    shipmentDetails.setHouseBill(newHouseBill);
+                }
+            }
+        }
         errors.addAll(applyShipmentValidations(shipmentDetails, oldShipment));
         if (!errors.isEmpty())
             throw new ValidationException(errors.toString());
@@ -160,8 +174,8 @@ public class ShipmentDao implements IShipmentDao {
             if (shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)) {
                 //for air shipment, ETA can be less than ETD
                 if (eta != null && etd != null && eta.isBefore(etd)) {
-                    Duration duration = Duration.between(etd, eta);
-                    if (duration.toHours() > 24) {
+                    Duration duration = Duration.between(eta, etd);
+                    if (Math.abs(duration.toHours()) > 24) {
                         throw new ValidationException("Difference between ETA and ETD should not be more than 24 hours");
                     }
                 }
@@ -345,7 +359,10 @@ public class ShipmentDao implements IShipmentDao {
         if(!IsStringNullOrEmpty(request.getHouseBill())) {
             List<ShipmentDetails> shipmentDetails = findByHouseBill(request.getHouseBill());
             if(shipmentDetails != null && shipmentDetails.size() > 0 && (request.getId() == null || shipmentDetails.get(0).getId().longValue() != request.getId().longValue())) {
-                errors.add("Shipment with BL# " + request.getHouseBill() + " already exists.");
+                if (Objects.equals(request.getStatus(), ShipmentStatus.Cancelled.getValue()))
+                    errors.add("Canceled HBL is already available in the application. Please remove/ modify the HBL number to proceed further");
+                else
+                    errors.add("Shipment with BL# " + request.getHouseBill() + " already exists.");
             }
         }
         if(!IsStringNullOrEmpty(request.getBookingReference())) {

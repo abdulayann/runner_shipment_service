@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.dto.request;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import lombok.*;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Getter
@@ -17,5 +18,6 @@ public class ListContractRequest implements IRunnerRequest {
     private List<String> filter_contract_states;
     private String filter_contract_id;
     private Long filter_per_page_records;
+    private LocalDate filter_start_date;
     private List<String> filter_attributes;
 }
