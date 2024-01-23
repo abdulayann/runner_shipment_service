@@ -1,8 +1,11 @@
 package com.dpw.runner.shipment.services.dto.request.awb;
 
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
+import com.dpw.runner.shipment.services.utils.DedicatedMasterData;
 import com.dpw.runner.shipment.services.utils.MasterData;
 import com.dpw.runner.shipment.services.utils.UnlocationData;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.swagger.annotations.ApiModel;
 import lombok.*;
 
@@ -15,6 +18,7 @@ import java.util.UUID;
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class AwbPackingInfo {
     private UUID guid;
     private Integer dgGoodsId;
@@ -31,8 +35,8 @@ public class AwbPackingInfo {
     private String inspections;
     @UnlocationData
     private String origin;
+    @DedicatedMasterData(type = Constants.COMMODITY_TYPE_MASTER_DATA)
     private String commodity;
-    private Long CommodityId;
     private String packingOrder;
     private BigDecimal length;
     @MasterData(type = MasterDataType.DIMENSION_UNIT)
@@ -59,7 +63,6 @@ public class AwbPackingInfo {
     private String referenceNumber;
     private String dgClass;
     private Boolean hazardous;
-    private Integer nommodityId;
     private BigDecimal netWeight;
     @MasterData(type = MasterDataType.WEIGHT_UNIT)
     private String netWeightUnit;
