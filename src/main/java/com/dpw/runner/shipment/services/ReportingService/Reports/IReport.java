@@ -449,10 +449,6 @@ public abstract class IReport {
         if (shipment.getPaymentTerms() != null && masterListsMap.containsKey(MasterDataType.PAYMENT.getId()) && masterListsMap.get(MasterDataType.PAYMENT.getId()).containsKey(shipment.getPaymentTerms())) {
             dictionary.put(PaymentTermsDescription,  StringUtility.toUpperCase(masterListsMap.get(MasterDataType.PAYMENT.getId()).get(shipment.getPaymentTerms()).getItemDescription()));
         }
-//        TODO:
-//        dictionary.put(BLDescription, BLRemarksDescription);
-//        dictionary.put(CargoTermsDescription, CargoTermsDescription);
-//        dictionary.put(LoadRemarksDescription, BlComments);
         dictionary.put(ReportConstants.MARKS_N_NUMS_CAPS, StringUtility.toUpperCase(shipment.getMarksNum()));
 
 
