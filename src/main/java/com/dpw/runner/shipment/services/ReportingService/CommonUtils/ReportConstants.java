@@ -960,4 +960,5 @@ public class ReportConstants {
     public static String SHIPMENT_PACKING_PACKS_UOTNW = "UOTNW";
     public static String SHIPMENT_PACKING_PACKS_PCKGSUMMARY = "pckgsummary";
     public static String SHIPMENT_PACKING_PACKS_COMMERCIALINVOICENUMBER = "CommercialInvoiceNumber";
+
 }

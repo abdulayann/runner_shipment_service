@@ -105,13 +105,13 @@ public class PackingListReport extends IReport {
         dictionary.put(ReportConstants.CONSIGNER, consigner);
         dictionary.put(ReportConstants.CONSIGNEE, consignee);
 
-        if (shipment.getConsignee() != null && shipment.getConsignee().getIsAddressFreeText()) {
+        if (shipment.getConsignee() != null && shipment.getConsignee().getIsAddressFreeText() != null) {
             dictionary.put(ReportConstants.CONSIGNEE_FREETEXT, ReportHelper.getAddressList(stringValueOf(shipment.getConsignee().getAddressData().get("rawData"))));
         } else {
             dictionary.put(ReportConstants.CONSIGNEE_FREETEXT, consignee);
         }
 
-        if (shipment.getConsigner() != null && shipment.getConsigner().getIsAddressFreeText()) {
+        if (shipment.getConsigner() != null && shipment.getConsigner().getIsAddressFreeText() != null) {
             dictionary.put(ReportConstants.CONSIGNER_FREETEXT, ReportHelper.getAddressList(stringValueOf(shipment.getConsigner().getAddressData().get("rawData"))));
         } else {
             dictionary.put(ReportConstants.CONSIGNER_FREETEXT, consigner);
