@@ -1,12 +1,13 @@
 package com.dpw.runner.shipment.services.syncing.Entity;
 
+import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import lombok.Data;
 
 import java.util.List;
 import java.util.UUID;
 
 @Data
-public class AwbRequestV2 {
+public class AwbRequestV2 implements IRunnerRequest {
     public UUID guid;
     public UUID shipmentGuid;
     public UUID consolidationGuid;
