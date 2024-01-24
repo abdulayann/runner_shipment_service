@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.ReportingService.Reports;
 
+import com.dpw.runner.shipment.services.ReportingService.CommonUtils.AmountNumberFormatter;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper;
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
@@ -11,8 +12,6 @@ import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.utils.GetNextNumberHelper;
-import com.fasterxml.jackson.core.type.TypeReference;
-import lombok.Data;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -22,7 +21,6 @@ import java.util.List;
 import java.util.Map;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ZIP_POST_CODE;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.*;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.stringValueOf;
 
@@ -38,7 +36,7 @@ public class PackingListReport extends IReport {
     @Override
     public Map<String, Object> getData(Long id) {
         PackingListModel model = (PackingListModel) getDocumentModel(id);
-        return jsonHelper.convertValue(model, new TypeReference<Map<String, Object>>() {});
+        return populateDictionary(model);
     }
 
     @Override
@@ -160,14 +158,14 @@ public class PackingListReport extends IReport {
         if (!flag) {
             dictionary.put(ReportConstants.INVOICE_NUMBER, null);
         }
-
+//        Mapping unclear
 //        dictionary.put(ReportConstants.EXPORTER_TAX_ID, shipment.getConsigner().ConsignerVatRegNumber);
 //        dictionary.put(ReportConstants.CONSIGNEE_TAX_ID, shipment.getConsignee().ConsignerVatRegNumber);
 
         dictionary.put(ReportConstants.AIRWAY_BILL_NUMBER, shipment.getHouseBill());
         dictionary.put(ReportConstants.SPECIAL_INSTRUCTION, shipment.getAdditionalTerms());
 
-//        dictionary.put(ReportConstants.SHIP_DATE, ConvertToDPWDateFormat(shipment.InsertDate));
+        dictionary.put(ReportConstants.SHIP_DATE, ConvertToDPWDateFormat(shipment.getShipmentCreatedOn()));
 
         long totalPacks = 0L;
         BigDecimal totalNetWeight = BigDecimal.ZERO;
@@ -216,7 +214,7 @@ public class PackingListReport extends IReport {
         }
 
         if (totalPacks != 0) {
-//            dictionary.put(ReportConstants.TOTAL_PACKS, AmountNumberFormatter.Format(totalPacks, shipment.getFreightLocalCurrency(), tenantSettingsRow));
+            dictionary.put(ReportConstants.TOTAL_PACKS, AmountNumberFormatter.Format(BigDecimal.valueOf(totalPacks), shipment.getFreightLocalCurrency(), model.getTenant()));
         } else {
             dictionary.put(ReportConstants.TOTAL_PACKS, null);
         }
@@ -230,36 +228,34 @@ public class PackingListReport extends IReport {
             dictionary.put(ReportConstants.SHIPMENT_PACKING_PACKS_UOTNW, unitOfTotalNetWeight);
         }
 
-//        dictionary.put(ReportConstants.PAYMENT_TERMS_DESCRIPTION,
-//                shipment.PaymentTermsMasterData != null ? shipment.PaymentTermsMasterData.ItemDescription : null);
+        if(shipment.getPaymentTerms() != null) {
+            var packsMasterData = getMasterListData(MasterDataType.PAYMENT, shipment.getPaymentTerms());
+            dictionary.put(ReportConstants.PACKS_UNIT_DESC, packsMasterData != null ? packsMasterData.getItemDescription() : null);
+        }
 
         if(shipment.getPacksUnit() != null) {
             var packsMasterData = getMasterListData(MasterDataType.PACKS_UNIT, shipment.getPacksUnit());
             dictionary.put(ReportConstants.PACKS_UNIT_DESC, packsMasterData != null ? packsMasterData.getItemDescription() : null);
         }
 
-//        if(shipment.CountryOfOriginofGoods != null) {
-//            var masterData = getMasterListData(MasterDataType.PACKS_UNIT, shipment.CountryOfOriginofGoods);
-//            dictionary.put(ReportConstants.COUNTRY_OF_GOODS_ORIGIN, masterData != null ? masterData.getItemDescription() : null);
-//        }
+        if(shipment.getAdditionalDetails() != null && shipment.getAdditionalDetails().getGoodsCO() != null) {
+            var masterData = getMasterListData(MasterDataType.COUNTRIES, shipment.getAdditionalDetails().getGoodsCO());
+            dictionary.put(ReportConstants.COUNTRY_OF_GOODS_ORIGIN, masterData != null ? masterData.getItemDescription() : null);
+        }
 
         return dictionary;
     }
 
-    private String getLogoPath(UsersDto user)
-    {
+    private String getLogoPath(UsersDto user) {
         String basePath = "Upload/";
-        String path = basePath + user.TenantId + "/Assets/" + user.TenantPrintLogo;
-        return path;
+        return basePath + user.TenantId + "/Assets/" + user.TenantPrintLogo;
 
     }
 
-    private String getPrintLogoPath(UsersDto user)
-    {
+    private String getPrintLogoPath(UsersDto user) {
         var pathbase = "Upload/";
         var path = pathbase + user.TenantId + "/Assets/" + user.TenantPrintLogo;
-        if (user.TenantPrintLogo != null)
-        {
+        if (user.TenantPrintLogo != null) {
             return path;
         }
         return null;

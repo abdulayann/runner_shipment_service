@@ -1,5 +1,7 @@
 package com.dpw.runner.shipment.services.ReportingService.Models;
 
+import com.dpw.runner.shipment.services.ReportingService.Enums.DigitGrouping;
+import com.dpw.runner.shipment.services.ReportingService.Enums.GroupingNumber;
 import lombok.Getter;
 
 import java.io.Serializable;
@@ -28,4 +30,9 @@ public class TenantModel implements Serializable {
     public String AgentCASSCode;
     public Long DefaultOrgId;
     public String AgentIATANumber;
+
+    public Boolean RoundoffLocalCurrencyAmount;
+    public Boolean IsGroupingOverseas;
+    public DigitGrouping CurrencyDigitGrouping;
+    public GroupingNumber CurrencyGroupingNumber;
 }
