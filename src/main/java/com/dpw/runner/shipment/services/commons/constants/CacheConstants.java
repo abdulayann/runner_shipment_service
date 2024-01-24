@@ -11,6 +11,8 @@ public class CacheConstants {
     public static final String EVICTION_EXCEPTION = "Redis cache eviction exception";
     public static final String GET_USER_BY_TOKEN = "getUserByToken";
     public static final String USER_DEFINITION = "UserDefinition:";
+    public static final String GET_TENANT_SETTINGS = "getV1TenantSettings";
+    public static final String TENANT_SETTINGS = "TenantSettings:";
     public static final String UNLOCATIONS = "Unlocations";
     public static final String CONTAINER_TYPE = "ContainerTypes";
     public static final String CHARGE_TYPE = "ChargeTypes";

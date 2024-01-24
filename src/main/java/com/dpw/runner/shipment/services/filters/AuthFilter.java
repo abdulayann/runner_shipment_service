@@ -12,6 +12,7 @@ import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.service.impl.GetUserServiceFactory;
+import com.dpw.runner.shipment.services.service.impl.TenantSettingsService;
 import com.dpw.runner.shipment.services.service.interfaces.IUserService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.TokenUtility;
@@ -53,7 +54,7 @@ public class AuthFilter extends OncePerRequestFilter {
     @Autowired
     private ModelMapper modelMapper;
     @Autowired
-    private IV1Service v1Service;
+    private TenantSettingsService tenantSettingsService;
 
     private static final String VALIDATION_ERROR = "Failed to Validate Auth Token";
 
@@ -118,7 +119,7 @@ public class AuthFilter extends OncePerRequestFilter {
         RequestAuthContext.setAuthToken(authToken);
         TenantContext.setCurrentTenant(user.getTenantId());
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(getTenantSettings());
-        TenantSettingsDetailsContext.setCurrentTenantSettings(getV1TenantSettings());
+        TenantSettingsDetailsContext.setCurrentTenantSettings(tenantSettingsService.getV1TenantSettings(user.getTenantId()));
         List<String> grantedPermissions = new ArrayList<>();
         for (Map.Entry<String,Boolean> entry : user.getPermissions().entrySet())
         {
@@ -188,16 +189,6 @@ public class AuthFilter extends OncePerRequestFilter {
         return optional.orElseGet(() -> ShipmentSettingsDetails.builder().weightDecimalPlace(2).volumeDecimalPlace(3).build());
     }
 
-    public V1TenantSettingsResponse getV1TenantSettings()
-    {
-        V1RetrieveResponse dependentServiceResponse = v1Service.retrieveTenantSettings();
-        if(dependentServiceResponse != null)
-        {
-            var tenantSettings = modelMapper.map(dependentServiceResponse.getEntity(), V1TenantSettingsResponse.class);
-            return tenantSettings;
-        }
-        return null;
-    }
 
 }
 
