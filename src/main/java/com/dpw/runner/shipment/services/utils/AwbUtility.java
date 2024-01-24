@@ -178,6 +178,9 @@ public class AwbUtility {
         if (shipmentDetails.getConsignee() == null || shipmentDetails.getConsignee().getId() == null) {
             throw new ValidationException("Consignee details are required in shipment to generate the document.");
         }
+        if (shipmentDetails.getCarrierDetails() == null || shipmentDetails.getCarrierDetails().getShippingLine() == null) {
+            throw new ValidationException("Flight carrier details are required in shipment to generate the document.");
+        }
         if (shipmentDetails.getCarrierDetails().getOriginPort() == null) {
             throw new ValidationException("Port Of Loading is required in shipment to generate the document.");
         }
