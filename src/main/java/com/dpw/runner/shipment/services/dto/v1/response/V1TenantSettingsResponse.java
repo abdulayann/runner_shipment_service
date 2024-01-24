@@ -5,13 +5,14 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.io.Serializable;
 import java.util.List;
 
 @Data
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class V1TenantSettingsResponse {
+public class V1TenantSettingsResponse implements Serializable {
     private List<String> RestrictedItemsForCreditLimit;
     private Boolean EnableCreditLimitManagement;
     private Boolean IsCreditLimitWithFusionEnabled;
