@@ -45,5 +45,7 @@ public class ShipmentConstants {
     public static final String ASSIGN_CONTAINERS_SUCCESSFUL = "Assign containers successful";
     public static final String LIST_SHIPMENT_FROM_CONSOLE_ID = "/list-shipment-by-console";
     public static final String GET_ACTIVE_INVOICES = "/get-active-invoices";
+    public static final String FETCH_CREDIT_LIMIT = "/creditLimit";
+
     public static final String SHIPMENT_CREATION = "SHPCR";
 }

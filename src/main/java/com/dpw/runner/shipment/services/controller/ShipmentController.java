@@ -457,4 +457,10 @@ public class ShipmentController {
         CommonGetRequest request = CommonGetRequest.builder().guid(shipmentGuid).build();
         return (ResponseEntity<RunnerListResponse<ShipmentListResponse>>) shipmentService.fetchActiveInvoices(CommonRequestModel.buildRequest(request));
     }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = "Successful Creditn Limit Retrieval")})
+    @GetMapping(value = ShipmentConstants.FETCH_CREDIT_LIMIT)
+    public ResponseEntity<?> fetchCreditLimit(@RequestParam String orgCode, @RequestParam(required = false) String addressCode) {
+        return (ResponseEntity<?>) shipmentService.fetchCreditLimit(orgCode, addressCode);
+    }
 }

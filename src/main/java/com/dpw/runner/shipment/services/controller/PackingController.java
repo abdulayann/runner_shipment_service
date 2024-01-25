@@ -45,7 +45,7 @@ public class PackingController {
             @ApiResponse(code = 404, message = ContainerConstants.NO_DATA, response = RunnerResponse.class)
     })
     @PostMapping(ApiConstants.API_UPLOAD)
-    public ResponseEntity<String> uploadCSV(@ModelAttribute BulkUploadRequest request) throws IOException {
+    public ResponseEntity<?> uploadCSV(@ModelAttribute BulkUploadRequest request) throws IOException {
         if (request.getFile().isEmpty()) {
             return ResponseEntity.badRequest().body("No File Found !");
         }
@@ -57,8 +57,8 @@ public class PackingController {
             String responseMessage = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
             log.error(responseMessage, e);
+            return ResponseHelper.buildFailedResponse(responseMessage, HttpStatus.EXPECTATION_FAILED);
         }
-        return ResponseEntity.status(HttpStatus.EXPECTATION_FAILED).body("CSV File upload failed");
     }
 
     @GetMapping(ApiConstants.API_DOWNLOAD)
