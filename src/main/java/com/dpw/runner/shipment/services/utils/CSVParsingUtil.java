@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.Events;
 import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.entity.enums.ContainerStatus;
+import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.opencsv.CSVReader;
 import com.opencsv.exceptions.CsvException;
 import lombok.extern.slf4j.Slf4j;
@@ -455,12 +456,22 @@ public class CSVParsingUtil<T> {
         List<T> entityList = new ArrayList<>();
         try (Workbook workbook = new XSSFWorkbook(file.getInputStream())) {
             Sheet sheet = workbook.getSheetAt(0); // Assuming data is in the first sheet
-
+            validateExcel(sheet);
             Row headerRow = sheet.getRow(0);
             String[] header = new String[headerRow.getLastCellNum()];
+            Set<String> headerSet = new HashSet<>();
             for (int i = 0; i < headerRow.getLastCellNum(); i++) {
+                if(StringUtility.isEmpty(headerRow.getCell(i).getStringCellValue())) {
+                    continue;
+                }
                 header[i] = getCamelCase(headerRow.getCell(i).getStringCellValue());
+                headerSet.add(header[i]);
             }
+
+            if(headerSet.size() < headerRow.getLastCellNum()) {
+                throw new ValidationException("Excel Sheet is invalid. All column should have column name.");
+            }
+
 
             for (int i = 1; i <= sheet.getLastRowNum(); i++) {
                 Row row = sheet.getRow(i);
@@ -476,8 +487,12 @@ public class CSVParsingUtil<T> {
 
                 entityList.add(entity);
             }
+        }  catch (ValidationException e1) {
+            log.error(e1.getMessage());
+            throw new ValidationException(e1.getMessage());
         } catch (NoSuchFieldException | IllegalAccessException | InstantiationException e) {
-            throw new RuntimeException(e);
+            log.error(e.getMessage());
+            throw new ValidationException("Wxcel sheet is not valid.");
         }
         return entityList;
     }
@@ -502,6 +517,21 @@ public class CSVParsingUtil<T> {
                 return cell.getCellFormula();
             default:
                 return "";
+        }
+    }
+
+    private void validateExcel(Sheet sheet)
+    {
+
+        //check excel sheet has rows (empty excelsheet uploaded)
+        if (sheet == null || sheet.getLastRowNum() <= 0)
+        {
+            throw new ValidationException("Empty excel sheet uploaded.");
+        }
+        //check rows are more than or equal 2 (excel sheet has only header row)
+        else if (sheet.getLastRowNum() <= 1)
+        {
+            throw new ValidationException("Excel sheet does not contain any data.");
         }
     }
 

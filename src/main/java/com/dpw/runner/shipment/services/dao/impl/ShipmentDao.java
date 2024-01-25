@@ -177,6 +177,9 @@ public class ShipmentDao implements IShipmentDao {
                 && shipmentDetails.getMasterBill() != null
                 && (oldShipment == null || oldShipment.getMasterBill() == null || !oldShipment.getMasterBill().equalsIgnoreCase(shipmentDetails.getMasterBill())))
             directShipmentMAWBCheck(shipmentDetails);
+
+        validateIataCode(shipmentDetails);
+
         shipmentDetails = shipmentRepository.save(shipmentDetails);
         if (!fromV1Sync && shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && shipmentDetails.getJobType() != null && shipmentDetails.getJobType().equals(Constants.SHIPMENT_TYPE_DRT)) {
             if (shipmentDetails.getMasterBill() != null && !shipmentDetails.getDirection().equals(Constants.IMP)) {
@@ -500,6 +503,27 @@ public class ShipmentDao implements IShipmentDao {
         CommonV1ListRequest request = new CommonV1ListRequest();
         List<Object> criteria = new ArrayList<>();
         criteria.addAll(List.of(List.of("AirlineCode"), "=", mawbAirlineCode));
+        request.setCriteriaRequests(criteria);
+        CarrierListObject carrierListObject = new CarrierListObject();
+        carrierListObject.setListObject(request);
+        V1DataResponse response = v1Service.fetchCarrierMasterData(carrierListObject, true);
+        return response;
+    }
+
+    private void validateIataCode(ShipmentDetails shipmentDetails) {
+        if(shipmentDetails.getTransportMode() != null && shipmentDetails.getCarrierDetails() != null && StringUtility.isNotEmpty(shipmentDetails.getCarrierDetails().getShippingLine())
+             && shipmentDetails.getTransportMode().equalsIgnoreCase(Constants.TRANSPORT_MODE_AIR)) {
+            V1DataResponse v1DataResponse = fetchCarrier(shipmentDetails.getCarrierDetails().getShippingLine());
+            List<CarrierResponse> carrierDetails = jsonHelper.convertValueToList(v1DataResponse.entities, CarrierResponse.class);
+            if (carrierDetails == null || carrierDetails.size()==0 || StringUtility.isEmpty(carrierDetails.get(0).iATACode))
+                throw new ValidationException("Please add the IATA code in the Carrier Master for " + shipmentDetails.getCarrierDetails().getShippingLine());
+        }
+    }
+
+    private V1DataResponse fetchCarrier(String shippingLine) {
+        CommonV1ListRequest request = new CommonV1ListRequest();
+        List<Object> criteria = new ArrayList<>();
+        criteria.addAll(List.of(List.of("ItemValue"), "=", shippingLine));
         request.setCriteriaRequests(criteria);
         CarrierListObject carrierListObject = new CarrierListObject();
         carrierListObject.setListObject(request);
