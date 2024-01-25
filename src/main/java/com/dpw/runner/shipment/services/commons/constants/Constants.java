@@ -272,4 +272,7 @@ public class Constants {
 
     public static final String TRUE = "true";
     public static final String PRE_ALERT_EVENT_CODE = "PREALSNT";
+    public static final String SHIPMENT_SENT = "ShipmentSent";
+    public static final String CONSOLIDATION_SENT = "ConsolidationSent";
+
 }

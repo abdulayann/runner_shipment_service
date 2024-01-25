@@ -185,8 +185,8 @@ public class EventDao implements IEventDao {
     @Override
     public void autoGenerateEvents(CustomAutoEventRequest request) {
         try {
-            if (!checkIfEventsRowExistsForEntityTypeAndEntityId(request)) {
-                createAutomatedEventRequest(request.entityType, request.entityId, request.eventCode, request.isEstimatedRequired, request.isActualRequired);
+            if (request.createDuplicate || !checkIfEventsRowExistsForEntityTypeAndEntityId(request)) {
+                createAutomatedEventRequest(request.entityType, request.entityId, request.eventCode, request.isEstimatedRequired, request.isActualRequired, request.placeName, request.placeDesc);
             }
         } catch (Exception e) {
             log.error("Error occured while trying to auto create runner event, Request recieved is = " + request + ". Exception raised is: " + e);
@@ -228,7 +228,7 @@ public class EventDao implements IEventDao {
         return false;
     }
 
-    public void createAutomatedEventRequest(String entityType, long entityId, String eventCode, boolean isEstimatedRequired, boolean isActualRequired) {
+    public void createAutomatedEventRequest(String entityType, long entityId, String eventCode, boolean isEstimatedRequired, boolean isActualRequired, String placeName, String placeDesc) {
         try {
             Events eventsRow = new Events();
             if (isActualRequired) {
@@ -243,6 +243,8 @@ public class EventDao implements IEventDao {
             eventsRow.setEntityType(entityType);
             eventsRow.setEntityId(entityId);
             eventsRow.setEventCode(eventCode);
+            eventsRow.setPlaceName(placeName);
+            eventsRow.setPlaceDescription(placeDesc);
             eventRepository.save(eventsRow);
         } catch (Exception e) {
             log.error("Error occured while trying to create runner event, Exception raised is: " + e);
