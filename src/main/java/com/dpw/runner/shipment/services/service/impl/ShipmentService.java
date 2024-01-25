@@ -2997,6 +2997,9 @@ public class ShipmentService implements IShipmentService {
             ShipmentDetails shipmentDetails = shipmentDetailsOptional.get();
             ShipmentDetailsResponse shipmentDetailsResponse = jsonHelper.convertValue(shipmentDetails, ShipmentDetailsResponse.class);
             Map<String, Object> response = fetchAllMasterDataByKey(shipmentDetails, shipmentDetailsResponse);
+            if(shipmentDetails.getClient() != null && StringUtility.isNotEmpty(shipmentDetails.getClient().getOrgCode())) {
+                fetchCreditLimitMasterData(shipmentDetails.getClient().getOrgCode(), shipmentDetails.getClient().getAddressCode(), response);
+            }
             return ResponseHelper.buildSuccessResponse(response);
         }
         catch (Exception e) {
@@ -4088,6 +4091,55 @@ public class ShipmentService implements IShipmentService {
                     : DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
+    public ResponseEntity<?> fetchCreditLimit(String orgCode, String addressCode) {
+        if(StringUtility.isEmpty(orgCode)) {
+            throw new RunnerException("OrgCode to fetch creditLimit can't be null");
+        }
+        AddressTranslationRequest.OrgAddressCode orgAddressCode = AddressTranslationRequest.OrgAddressCode.builder().OrgCode(orgCode).AddressCode(addressCode).build();
+        try {
+            V1DataResponse v1DataResponse = v1Service.fetchCreditLimit(orgAddressCode);
+            if(v1DataResponse.entities == null) {
+                log.debug("No Data found for org code {}", orgCode);
+                return ResponseHelper.buildSuccessResponse();
+            }
+            List<CreditLimitResponse> creditLimitResponses = jsonHelper.convertValueToList(v1DataResponse.getEntities(), CreditLimitResponse.class);
+            if(creditLimitResponses == null || creditLimitResponses.size() == 0) {
+                log.debug("No Data found for org code {}", orgCode);
+                return ResponseHelper.buildSuccessResponse();
+            }
+            return ResponseHelper.buildDependentServiceResponse(creditLimitResponses.get(0), 0, 0);
+        } catch (Exception e) {
+            log.debug("No Data found for org code {} {}", orgCode, e.getMessage());
+        }
+
+        return ResponseHelper.buildSuccessResponse();
+    }
+
+    public void fetchCreditLimitMasterData(String orgCode, String addressCode, Map<String, Object> response) {
+        if(StringUtility.isEmpty(orgCode)) {
+            return;
+        }
+        AddressTranslationRequest.OrgAddressCode orgAddressCode = AddressTranslationRequest.OrgAddressCode.builder().OrgCode(orgCode).AddressCode(addressCode).build();
+        try {
+            V1DataResponse v1DataResponse = v1Service.fetchCreditLimit(orgAddressCode);
+            if(v1DataResponse.entities == null) {
+                log.debug("No Data found for org code {}", orgCode);
+                return ;
+            }
+            List<CreditLimitResponse> creditLimitResponses = jsonHelper.convertValueToList(v1DataResponse.getEntities(), CreditLimitResponse.class);
+            if(creditLimitResponses == null || creditLimitResponses.size() == 0) {
+                log.debug("No Data found for org code {}", orgCode);
+                return;
+            }
+            if(response == null) {
+                response = new HashMap<>();
+            }
+            response.put(Constants.CREDIT_LIMIT, creditLimitResponses.get(0));
+        } catch (Exception e) {
+            log.debug("No Data found for org code {} {}", orgCode, e.getMessage());
         }
     }
 

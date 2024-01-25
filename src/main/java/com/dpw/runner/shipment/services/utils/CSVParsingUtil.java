@@ -458,6 +458,10 @@ public class CSVParsingUtil<T> {
             Sheet sheet = workbook.getSheetAt(0); // Assuming data is in the first sheet
             validateExcel(sheet);
             Row headerRow = sheet.getRow(0);
+            if (headerRow.getLastCellNum() <= 1)
+            {
+                throw new ValidationException("Empty excel sheet uploaded.");
+            }
             String[] header = new String[headerRow.getLastCellNum()];
             Set<String> headerSet = new HashSet<>();
             for (int i = 0; i < headerRow.getLastCellNum(); i++) {

@@ -463,4 +463,10 @@ public class ShipmentController {
     public ResponseEntity<AssignAllDialogDto> showAssignAllContainers(@RequestBody ShipmentConsoleIdDto request) {
         return (ResponseEntity<AssignAllDialogDto>) shipmentService.showAssignAllContainers(CommonRequestModel.buildRequest(request));
     }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = "Successful Creditn Limit Retrieval")})
+    @GetMapping(value = ShipmentConstants.FETCH_CREDIT_LIMIT)
+    public ResponseEntity<?> fetchCreditLimit(@RequestParam String orgCode, @RequestParam(required = false) String addressCode) {
+        return (ResponseEntity<?>) shipmentService.fetchCreditLimit(orgCode, addressCode);
+    }
 }

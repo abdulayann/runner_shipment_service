@@ -157,4 +157,5 @@ public interface IV1Service {
     CreditLimitValidateResponse checkCreditLimit(CreditLimitValidateRequest request);
     AddressTranslationListResponse getAddressTranslation(AddressTranslationRequest request);
     CheckActiveInvoiceResponse getActiveInvoices(CheckActiveInvoiceRequest request);
+    V1DataResponse fetchCreditLimit(Object request);
 }
