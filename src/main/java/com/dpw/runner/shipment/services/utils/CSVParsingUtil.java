@@ -492,7 +492,7 @@ public class CSVParsingUtil<T> {
             throw new ValidationException(e1.getMessage());
         } catch (NoSuchFieldException | IllegalAccessException | InstantiationException e) {
             log.error(e.getMessage());
-            throw new ValidationException("Wxcel sheet is not valid.");
+            throw new ValidationException("Excel sheet is not valid.");
         }
         return entityList;
     }
