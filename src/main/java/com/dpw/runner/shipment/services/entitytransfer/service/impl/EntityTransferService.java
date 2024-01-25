@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.entitytransfer.service.impl;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.constants.CustomerBookingConstants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
@@ -19,6 +20,7 @@ import com.dpw.runner.shipment.services.dto.v1.request.*;
 import com.dpw.runner.shipment.services.dto.v1.response.SendEntityResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.TenantIdResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1TenantResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entitytransfer.common.request.IEntityTranferBaseEntity;
 import com.dpw.runner.shipment.services.entitytransfer.dto.*;
@@ -104,14 +106,15 @@ public class EntityTransferService implements IEntityTransferService {
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
         if(shipmentDetails.isPresent()) {
-            if(additionalDocs != null) {
-                var fileRepoList = shipmentDetails.get().getFileRepoList().stream().filter(fileRepo -> {
-                    return additionalDocs.indexOf(fileRepo.getId()) != -1;
-                }).collect(Collectors.toList());
-                shipmentDetails.get().setFileRepoList(fileRepoList);
-            } else {
-                shipmentDetails.get().setFileRepoList(null);
-            }
+            ShipmentDetails shipment = shipmentDetails.get();
+//            if(additionalDocs != null) {
+//                var fileRepoList = shipmentDetails.get().getFileRepoList().stream().filter(fileRepo -> {
+//                    return additionalDocs.indexOf(fileRepo.getId()) != -1;
+//                }).collect(Collectors.toList());
+//                shipmentDetails.get().setFileRepoList(fileRepoList);
+//            } else {
+//                shipmentDetails.get().setFileRepoList(null);
+//            }
             List<Integer> successTenantIds = new ArrayList<>();
             // TODO Only V1 Shipment Task is triggered for current requirement
             if(true) {
@@ -160,6 +163,10 @@ public class EntityTransferService implements IEntityTransferService {
                     }
                 }
             }
+
+            List<String> tenantName = getTenantName(successTenantIds);
+            createSendEvent(tenantName, shipment.getReceivingBranch(), shipment.getTriangulationPartner(), shipment.getDocumentationPartner(), shipId.toString(), Constants.SHIPMENT_SENT, Constants.SHIPMENT, null);
+
 
             SendShipmentResponse sendShipmentResponse = SendShipmentResponse.builder().successTenantIds(successTenantIds).build();
             return ResponseHelper.buildSuccessResponse(sendShipmentResponse);
@@ -773,8 +780,11 @@ public class EntityTransferService implements IEntityTransferService {
                 }
             }
             this.createAutoEvent(consolidationDetails.get().getId().toString(), Constants.PRE_ALERT_EVENT_CODE, Constants.CONSOLIDATION);
+            List<String> tenantName = getTenantName(successTenantIds);
+            String consolDesc = createSendEvent(tenantName, consolidationDetails.get().getReceivingBranch(), consolidationDetails.get().getTriangulationPartner(), consolidationDetails.get().getDocumentationPartner(), consolidationDetails.get().getId().toString(), Constants.CONSOLIDATION_SENT, Constants.CONSOLIDATION, null);
             for (var shipment: consolidationDetails.get().getShipmentsList()) {
                 this.createAutoEvent(shipment.getId().toString(), Constants.PRE_ALERT_EVENT_CODE, Constants.SHIPMENT);
+                createSendEvent(tenantName, shipment.getReceivingBranch(), shipment.getTriangulationPartner(), shipment.getDocumentationPartner(), shipment.getId().toString(), Constants.SHIPMENT_SENT, Constants.SHIPMENT, consolDesc);
             }
             SendConsolidationResponse sendConsolidationResponse = SendConsolidationResponse.builder().successTenantIds(successTenantIds).build();
             return ResponseHelper.buildSuccessResponse(sendConsolidationResponse);
@@ -789,7 +799,7 @@ public class EntityTransferService implements IEntityTransferService {
             }
             else{
                 SendEntityResponse response = this.sendConsoleTaskToV1(tenantId, approverRoleId, tenantIdsList, entityTransferConsolidationDetails, sendToOrganization, entityTransferConsolidationDetails.getConsolidationNumber(), houseBill, entityTransferConsolidationDetails.getMawb(), consolidationDetails.getId(), shipmentIds);
-                if(response.getIsCreated() == true){
+                if(response.getIsCreated()){
                     successTenantIds.add(tenantId);
                 }
             }
@@ -1643,5 +1653,63 @@ public class EntityTransferService implements IEntityTransferService {
             eventDao.autoGenerateEvents(eventReq);
         }
     }
+
+    private List<String> getTenantName(List<Integer> tenantIds) {
+        CommonV1ListRequest request = new CommonV1ListRequest();
+        List<Object> field = new ArrayList<>(List.of(CustomerBookingConstants.TENANT_ID));
+        String operator = Operators.IN.getValue();
+        List<Object> criteria = new ArrayList<>(List.of(field, operator, List.of(tenantIds)));
+        request.setCriteriaRequests(criteria);
+        V1DataResponse tenantName = v1Service.tenantNameByTenantId(request);
+
+        List<V1TenantResponse> v1TenantResponse = jsonHelper.convertValueToList(tenantName.entities, V1TenantResponse.class);
+        if(v1TenantResponse != null) {
+            return v1TenantResponse.stream().map(V1TenantResponse::getTenantName).collect(Collectors.toList());
+        }
+        return null;
+    }
+
+    private String createSendEvent(List<String> tenantNameList, Long receivingBranch, Long triangulationPartner, Long documentationPartner,
+                                 String entityId, String eventCode, String entityType, String consolPlaceDescription) {
+        String tenantName = null;
+        if(tenantNameList != null) {
+            tenantName = String.join(",", tenantNameList);
+        }
+        String placeDescription = "";
+        if (receivingBranch != null)
+            placeDescription = placeDescription + "Receiving Branch";
+        if (triangulationPartner != null)
+        {
+            if (!placeDescription.equals(""))
+                placeDescription = placeDescription + ',';
+            placeDescription = placeDescription + "Triangulation Partner ";
+        }
+
+        if (documentationPartner != null)
+        {
+            if (!placeDescription.equals(""))
+                placeDescription = placeDescription + ',';
+            placeDescription = placeDescription + "Documentation Partner";
+        }
+
+        CustomAutoEventRequest eventReq = new CustomAutoEventRequest();
+        eventReq.entityId = Long.parseLong(entityId);
+        eventReq.entityType = entityType;
+        eventReq.eventCode = eventCode;
+        eventReq.isActualRequired = true;
+        eventReq.placeName = tenantName;
+        if (placeDescription.equalsIgnoreCase(""))
+        {
+            eventReq.placeDesc = placeDescription;
+        }
+        else
+        {
+            eventReq.placeDesc = consolPlaceDescription;
+        }
+        eventReq.createDuplicate = true;
+        eventDao.autoGenerateEvents(eventReq);
+        return placeDescription;
+    }
+
 
 }
