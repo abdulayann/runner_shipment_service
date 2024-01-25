@@ -53,6 +53,7 @@ public class Containers extends MultiTenancy {
     private String sealNumber;
 
     @Column(name = "description_of_goods")
+    @Size(max = 2048, message = "max size is 2048 for description_of_goods")
     private String descriptionOfGoods;
 
     @Column(name = "no_of_packages")

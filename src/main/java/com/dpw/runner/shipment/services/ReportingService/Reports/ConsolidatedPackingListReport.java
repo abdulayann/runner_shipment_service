@@ -6,7 +6,9 @@ import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PackingModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PartiesModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ShipmentModel;
+import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.utils.StringUtility;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -89,31 +91,24 @@ public class ConsolidatedPackingListReport extends IReport {
         dictionary.put(EXPORTER, exporter);
         dictionary.put(CONSIGNEE, consignee);
 
-        if (cplData.getConsolidationDetails().getIsSendingAgentFreeTextAddress()) {
-            dictionary.put(EXPORT_AGENT_FREETEXT, getAddressList(cplData.getConsolidationDetails().getReceivingAgentFreeTextAddress()));
+        PartiesModel sendingAgent = cplData.getConsolidationDetails().getSendingAgent();
+        if (sendingAgent != null && sendingAgent.getAddressData() != null && sendingAgent.getAddressData().containsKey(PartiesConstants.RAW_DATA)) {
+            dictionary.put(EXPORT_AGENT_FREETEXT, getAddressList(StringUtility.convertToString(sendingAgent.getAddressData().get(PartiesConstants.RAW_DATA))));
         } else {
             dictionary.put(EXPORT_AGENT_FREETEXT, exporter);
         }
+        if (sendingAgent != null && sendingAgent.getOrgData() != null)
+            dictionary.put(EXPORTER_TAX_ID, sendingAgent.getOrgData().get(TENANT_VATREGNUMBER));
 
-        if (cplData.getConsolidationDetails().getIsReceivingAgentFreeTextAddress()) {
-            dictionary.put(IMPORT_AGENT_FREETEXT, getAddressList(cplData.getConsolidationDetails().getReceivingAgentFreeTextAddress()));
+        PartiesModel receivingAgent = cplData.getConsolidationDetails().getReceivingAgent();
+        if (receivingAgent != null && receivingAgent.getAddressData() != null && receivingAgent.getAddressData().containsKey(PartiesConstants.RAW_DATA)) {
+            dictionary.put(IMPORT_AGENT_FREETEXT, getAddressList(StringUtility.convertToString(receivingAgent.getAddressData().get(PartiesConstants.RAW_DATA))));
         } else {
             dictionary.put(IMPORT_AGENT_FREETEXT, consignee);
         }
 
-        var exportOrgData = cplData.getConsolidationDetails().getSendingAgent().getOrgData();
-        if(exportOrgData != null){
-            dictionary.put(EXPORTER_TAX_ID, exportOrgData.get(TENANT_VATREGNUMBER));
-        }else {
-            dictionary.put(EXPORTER_TAX_ID, null);
-        }
-
-        var consigneeOrgData = cplData.getConsolidationDetails().getReceivingAgent().getOrgData();
-        if(consigneeOrgData != null){
-            dictionary.put(CONSIGNEE_TAX_ID, consigneeOrgData.get(TENANT_VATREGNUMBER));
-        }else {
-            dictionary.put(CONSIGNEE_TAX_ID, null);
-        }
+        if (receivingAgent != null && receivingAgent.getOrgData() != null)
+            dictionary.put(CONSIGNEE_TAX_ID, receivingAgent.getOrgData().get(TENANT_VATREGNUMBER));
 
         var etd = cplData.getConsolidationDetails().getCarrierDetails().getEtd();
 

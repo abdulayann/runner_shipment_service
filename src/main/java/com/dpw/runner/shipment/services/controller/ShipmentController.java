@@ -457,4 +457,10 @@ public class ShipmentController {
         CommonGetRequest request = CommonGetRequest.builder().guid(shipmentGuid).build();
         return (ResponseEntity<RunnerListResponse<ShipmentListResponse>>) shipmentService.fetchActiveInvoices(CommonRequestModel.buildRequest(request));
     }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.SUCCESS)})
+    @PostMapping(value = ShipmentConstants.SHOW_ASSIGN_ALL_CONTAINERS)
+    public ResponseEntity<AssignAllDialogDto> showAssignAllContainers(@RequestBody ShipmentConsoleIdDto request) {
+        return (ResponseEntity<AssignAllDialogDto>) shipmentService.showAssignAllContainers(CommonRequestModel.buildRequest(request));
+    }
 }

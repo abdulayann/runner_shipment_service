@@ -10,6 +10,7 @@ import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.Sh
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
+import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.nimbusds.jose.util.Pair;
 import io.netty.util.internal.StringUtil;
@@ -62,6 +63,8 @@ public class ContainerManifestPrint extends IReport {
                 v.put(ReportConstants.WEIGHT, addCommas(v.get(ReportConstants.WEIGHT).toString()));
             if (v.containsKey(ReportConstants.TOTAL_PACKS))
                 v.put(ReportConstants.TOTAL_PACKS, addCommas(v.get(ReportConstants.TOTAL_PACKS).toString()));
+            if (v.containsKey(ReportConstants.DESCRIPTION))
+                v.put(ReportConstants.DESCRIPTION, StringUtility.toUpperCase(StringUtility.convertToString(v.get(ReportConstants.DESCRIPTION))));
         });
         dictionary.put(ReportConstants.SHIPMENTS, values);
 

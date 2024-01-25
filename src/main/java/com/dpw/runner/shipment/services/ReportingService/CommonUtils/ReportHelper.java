@@ -7,6 +7,8 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSetti
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.Hbl;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferDGSubstance;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferOrganizations;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
@@ -423,4 +425,18 @@ public class ReportHelper {
 //            }
     }
 
+    public static List<EntityTransferOrganizations> fetchOrganizations(Object field, Object value) {
+        List<EntityTransferOrganizations> response = null;
+        try {
+            CommonV1ListRequest orgRequest = new CommonV1ListRequest();
+            List<Object> orgField = new ArrayList<>(List.of(field));
+            String operator = "=";
+            List<Object> orgCriteria = new ArrayList<>(List.of(orgField, operator, value));
+            orgRequest.setCriteriaRequests(orgCriteria);
+            V1DataResponse orgResponse = v1Service.fetchOrganization(orgRequest);
+            response = jsonHelper.convertValueToList(orgResponse.entities, EntityTransferOrganizations.class);
+        } catch (Exception e) {
+        }
+        return response;
+    }
 }

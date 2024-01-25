@@ -81,6 +81,7 @@ import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.stringValueOf;
 
 @SuppressWarnings("ALL")
@@ -717,8 +718,7 @@ public class AwbService implements IAwbService {
 //        awbShipmentInfo.setOriginAirport(consolidationDetails.getCarrierDetails() != null ? consolidationDetails.getCarrierDetails().getOriginPort() : null);
 //        awbShipmentInfo.setDestinationAirport(consolidationDetails.getCarrierDetails() != null ? consolidationDetails.getCarrierDetails().getDestinationPort() : null);
         setAwbShipmentInfoUnLocationData(awbShipmentInfo, consolidationDetails.getCarrierDetails());
-        awbShipmentInfo.setIataCode(tenantModel.AgentIATACode);
-        awbShipmentInfo.setAgentCASSCode(tenantModel.AgentCASSCode);
+        setTenantFieldsInAwbShipmentInfo(awbShipmentInfo, tenantModel);
 
          for (var orgRow : consolidationDetails.getConsolidationAddresses()) {
             if (orgRow.getType().equals(Constants.FORWARDING_AGENT)) {
@@ -743,31 +743,9 @@ public class AwbService implements IAwbService {
             }
         }
 
-
-        if(awbShipmentInfo.getIssuingAgentName() == null || awbShipmentInfo.getIssuingAgentName().isEmpty()){
-            if(tenantModel.DefaultOrgId != null){
-                // Fetch Organization Data for defaultOrgId
-                try {
-                    CommonV1ListRequest orgRequest = new CommonV1ListRequest();
-                    List<Object> orgField = new ArrayList<>(List.of("Id"));
-                    String operator = "=";
-                    List<Object> orgCriteria = new ArrayList<>(List.of(orgField, operator, tenantModel.DefaultOrgId));
-                    orgRequest.setCriteriaRequests(orgCriteria);
-                    V1DataResponse orgResponse = v1Service.fetchOrganization(orgRequest);
-                    List<EntityTransferOrganizations> orgList = jsonHelper.convertValueToList(orgResponse.entities, EntityTransferOrganizations.class);
-                    if(orgList.size() > 0) {
-                        awbShipmentInfo.setIssuingAgentName(orgList.get(0).getFullName());
-                        awbShipmentInfo.setIataCode(awbShipmentInfo.getIataCode() == null ? orgList.get(0).getAgentIATACode() : awbShipmentInfo.getIataCode());
-                        awbShipmentInfo.setAgentCASSCode(awbShipmentInfo.getAgentCASSCode() == null ?
-                                orgList.get(0).getAgentCASSCode() : awbShipmentInfo.getAgentCASSCode());
-                        awbShipmentInfo.setIssuingAgentAddress(getFormattedAddress(orgList.get(0)));
-                    }
-
-                } catch (Exception e) {
-                    throw new RunnerException(String.format("Failed to fetch organization data for default org : %s", tenantModel.DefaultOrgId));
-                }
-            }
-        }
+    if (awbShipmentInfo.getIssuingAgentName() == null || awbShipmentInfo.getIssuingAgentName().isEmpty()) {
+        populateIssuingAgent(awbShipmentInfo, tenantModel);
+    }
 
         return awbShipmentInfo;
     }
@@ -910,7 +888,7 @@ public class AwbService implements IAwbService {
         for (var awb : awbList) {
             if(awb.getAwbPackingInfo() != null) {
                 for(AwbPackingInfo awbPackingInfo : awb.getAwbPackingInfo()) {
-                    awbPackingInfo.setMawbGoodsDescGuid(awb.getAwbGoodsDescriptionInfo() == null || awb.getAwbGoodsDescriptionInfo().size() == 0 ? null : awb.getAwbGoodsDescriptionInfo().get(0).getGuid());
+                    awbPackingInfo.setMawbGoodsDescGuid(mawb.getAwbGoodsDescriptionInfo() == null || mawb.getAwbGoodsDescriptionInfo().size() == 0 ? null : mawb.getAwbGoodsDescriptionInfo().get(0).getGuid());
                 }
             }
             awbDao.save(awb);
@@ -1016,7 +994,6 @@ public class AwbService implements IAwbService {
 
         awbShipmentInfo.setFirstCarrier(shipmentDetails.getCarrierDetails() != null ? shipmentDetails.getCarrierDetails().getShippingLine() : null);
 
-        setTenantFieldsInAwbShipmentInfo(awbShipmentInfo);
         for (var orgRow : shipmentDetails.getShipmentAddresses()) {
             if (orgRow.getType().equals(Constants.FORWARDING_AGENT)) {
                 var issuingAgentName = StringUtility.convertToString(orgRow.getOrgData().get(PartiesConstants.FULLNAME));
@@ -1059,6 +1036,16 @@ public class AwbService implements IAwbService {
                             : awbShipmentInfo.getAgentCASSCode());
                 }
             }
+        }
+
+        try {
+            TenantModel tenantModel = jsonHelper.convertValue(v1Service.retrieveTenant().getEntity(), TenantModel.class);
+            setTenantFieldsInAwbShipmentInfo(awbShipmentInfo, tenantModel);
+            if (awbShipmentInfo.getIssuingAgentName() == null || awbShipmentInfo.getIssuingAgentName().isEmpty()) {
+                populateIssuingAgent(awbShipmentInfo, tenantModel);
+            }
+        } catch (Exception e) {
+            throw new RunnerException(String.format("Error while populating tenant fields in AwbShipmentInfo %s", e.getMessage()));
         }
 
         return awbShipmentInfo;
@@ -1268,7 +1255,7 @@ public class AwbService implements IAwbService {
             List<Awb> existingAwb;
             Awb awb = jsonHelper.convertValue(request, Awb.class);
 
-            if(awbType == "MAWB" && consolidation.isPresent()){
+            if(awbType.equals("MAWB") && consolidation.isPresent()){
                 entityId = consolidation.get().getId();
                 awb.setConsolidationId(entityId);
                 existingAwb = awbDao.findByConsolidationId(consolidation.get().getId());
@@ -1293,6 +1280,21 @@ public class AwbService implements IAwbService {
                 awb.setGuid(existingAwb.get(0).getGuid());
             }
             awbDao.save(awb);
+
+            if(awbType.equals("MAWB") && consolidation.isPresent()) {
+                // Link this MAWB with it's HAWB
+                List<ShipmentDetails> shipmentList = consolidation.get().getShipmentsList();
+                List<Long> shipmentId = new ArrayList();
+                if(shipmentList != null && shipmentList.size() > 0) {
+                    for(var i : shipmentList)
+                        shipmentId.add(i.getId());
+                }
+                var listCriteria = constructListCommonRequest("shipmentId", shipmentId, "IN");
+                Pair<Specification<Awb>, Pageable> pair = fetchData(listCriteria, Awb.class);
+                var hawbListPage = awbDao.findAll(pair.getLeft(), pair.getRight());
+                LinkHawbMawb(consolidation.get(), awb, hawbListPage.getContent());
+            }
+
             return ResponseHelper.buildSuccessResponse(jsonHelper.convertValue(awb, AwbResponse.class));
 
         } catch (Exception e){
@@ -2242,8 +2244,7 @@ public class AwbService implements IAwbService {
 
     }
 
-    private void setTenantFieldsInAwbShipmentInfo(AwbShipmentInfo awbShipmentInfo) {
-        TenantModel tenantModel = jsonHelper.convertValue(v1Service.retrieveTenant().getEntity(), TenantModel.class);
+    private void setTenantFieldsInAwbShipmentInfo(AwbShipmentInfo awbShipmentInfo, TenantModel tenantModel) {
         iataCode = tenantModel.AgentIATACode;
         awbShipmentInfo.setIataCode(iataCode);
         awbShipmentInfo.setAgentCASSCode(tenantModel.AgentCASSCode);
@@ -2844,6 +2845,31 @@ public class AwbService implements IAwbService {
             return locationguid1;
         }));
         return locMap.get(name);
+    }
+
+    private void populateIssuingAgent(AwbShipmentInfo awbShipmentInfo, TenantModel tenantModel) {
+        if(tenantModel.DefaultOrgId != null){
+            // Fetch Organization Data for defaultOrgId
+            try {
+                CommonV1ListRequest orgRequest = new CommonV1ListRequest();
+                List<Object> orgField = new ArrayList<>(List.of("Id"));
+                String operator = "=";
+                List<Object> orgCriteria = new ArrayList<>(List.of(orgField, operator, tenantModel.DefaultOrgId));
+                orgRequest.setCriteriaRequests(orgCriteria);
+                V1DataResponse orgResponse = v1Service.fetchOrganization(orgRequest);
+                List<EntityTransferOrganizations> orgList = jsonHelper.convertValueToList(orgResponse.entities, EntityTransferOrganizations.class);
+                if(orgList.size() > 0) {
+                    awbShipmentInfo.setIssuingAgentName(orgList.get(0).getFullName());
+                    awbShipmentInfo.setIataCode(awbShipmentInfo.getIataCode() == null ? orgList.get(0).getAgentIATACode() : awbShipmentInfo.getIataCode());
+                    awbShipmentInfo.setAgentCASSCode(awbShipmentInfo.getAgentCASSCode() == null ?
+                            orgList.get(0).getAgentCASSCode() : awbShipmentInfo.getAgentCASSCode());
+                    awbShipmentInfo.setIssuingAgentAddress(getFormattedAddress(orgList.get(0)));
+                }
+
+            } catch (Exception e) {
+                throw new RunnerException(String.format("Failed to fetch organization data for default org : %s", tenantModel.DefaultOrgId));
+            }
+        }
     }
 
 }
