@@ -69,6 +69,7 @@ public interface IShipmentService extends ICommonService {
     ResponseEntity<?> getIdFromGuid(CommonRequestModel commonRequestModel);
     ResponseEntity<?> fetchShipmentsForConsoleId(CommonRequestModel commonRequestModel);
     ResponseEntity<?> fetchActiveInvoices(CommonRequestModel commonRequestModel);
+    ResponseEntity<?> showAssignAllContainers(CommonRequestModel commonRequestModel);
     ResponseEntity<?> fetchCreditLimit(String orgCode, String addressCode);
 
 }

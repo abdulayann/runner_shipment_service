@@ -67,8 +67,7 @@ public class ManifestConsolReport extends IReport {
         ManifestConsolModel model = (ManifestConsolModel) documentModel;
         Map<String, Object> dictionary = new HashMap<>();
 
-        populateConsolidationFields(jsonHelper.convertValue(model.getConsolidation(), ConsolidationModel.class)
-                , dictionary);
+        populateConsolidationFields(model.getConsolidation() , dictionary);
         List<PackingModel> packingList = GetAllShipmentsPacks(model.getShipmentDetailsList());
         Pair<BigDecimal, String> weightAndUnit = GetTotalWeight(packingList);
         Pair<BigDecimal, String> volumeAndUnit = GetTotalVolume(packingList);
@@ -87,7 +86,7 @@ public class ManifestConsolReport extends IReport {
         dictionary.put(CONTAINER_COUNT, model.getContainerCount());
         dictionary.put(SHIPMENT_COUNT, model.getShipmentCount());
 
-        dictionary.put(CONSOL_CARRIER, model.getCarrierMasterData().getItemDescription());
+        dictionary.put(CONSOL_CARRIER, model.getCarrierMasterData() != null ? model.getCarrierMasterData().getItemDescription() : null);
 
         if (weightAndUnit.getLeft().compareTo(BigDecimal.ZERO) > 0)
             dictionary.put(TOTAL_WEIGHT, ReportHelper.ConvertToWeightNumberFormat(weightAndUnit.getLeft()));

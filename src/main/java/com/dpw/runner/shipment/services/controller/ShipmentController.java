@@ -458,6 +458,12 @@ public class ShipmentController {
         return (ResponseEntity<RunnerListResponse<ShipmentListResponse>>) shipmentService.fetchActiveInvoices(CommonRequestModel.buildRequest(request));
     }
 
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.SUCCESS)})
+    @PostMapping(value = ShipmentConstants.SHOW_ASSIGN_ALL_CONTAINERS)
+    public ResponseEntity<AssignAllDialogDto> showAssignAllContainers(@RequestBody ShipmentConsoleIdDto request) {
+        return (ResponseEntity<AssignAllDialogDto>) shipmentService.showAssignAllContainers(CommonRequestModel.buildRequest(request));
+    }
+
     @ApiResponses(value = {@ApiResponse(code = 200, message = "Successful Creditn Limit Retrieval")})
     @GetMapping(value = ShipmentConstants.FETCH_CREDIT_LIMIT)
     public ResponseEntity<?> fetchCreditLimit(@RequestParam String orgCode, @RequestParam(required = false) String addressCode) {

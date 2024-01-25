@@ -13,6 +13,7 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerPartialListResponse;
 import com.dpw.runner.shipment.services.config.SyncConfig;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ConsolePacksListResponse;
 import com.dpw.runner.shipment.services.dto.request.AwbRequest;
 import com.dpw.runner.shipment.services.dto.request.CreateAwbRequest;
 import com.dpw.runner.shipment.services.dto.request.ResetAwbRequest;
@@ -25,6 +26,7 @@ import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.AwbReset;
 import com.dpw.runner.shipment.services.entity.enums.ChargesDue;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCommodityType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferOrganizations;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
@@ -74,10 +76,12 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.stringValueOf;
 
 @SuppressWarnings("ALL")
@@ -714,8 +718,7 @@ public class AwbService implements IAwbService {
 //        awbShipmentInfo.setOriginAirport(consolidationDetails.getCarrierDetails() != null ? consolidationDetails.getCarrierDetails().getOriginPort() : null);
 //        awbShipmentInfo.setDestinationAirport(consolidationDetails.getCarrierDetails() != null ? consolidationDetails.getCarrierDetails().getDestinationPort() : null);
         setAwbShipmentInfoUnLocationData(awbShipmentInfo, consolidationDetails.getCarrierDetails());
-        awbShipmentInfo.setIataCode(tenantModel.AgentIATACode);
-        awbShipmentInfo.setAgentCASSCode(tenantModel.AgentCASSCode);
+        setTenantFieldsInAwbShipmentInfo(awbShipmentInfo, tenantModel);
 
          for (var orgRow : consolidationDetails.getConsolidationAddresses()) {
             if (orgRow.getType().equals(Constants.FORWARDING_AGENT)) {
@@ -740,31 +743,9 @@ public class AwbService implements IAwbService {
             }
         }
 
-
-        if(awbShipmentInfo.getIssuingAgentName() == null || awbShipmentInfo.getIssuingAgentName().isEmpty()){
-            if(tenantModel.DefaultOrgId != null){
-                // Fetch Organization Data for defaultOrgId
-                try {
-                    CommonV1ListRequest orgRequest = new CommonV1ListRequest();
-                    List<Object> orgField = new ArrayList<>(List.of("Id"));
-                    String operator = "=";
-                    List<Object> orgCriteria = new ArrayList<>(List.of(orgField, operator, tenantModel.DefaultOrgId));
-                    orgRequest.setCriteriaRequests(orgCriteria);
-                    V1DataResponse orgResponse = v1Service.fetchOrganization(orgRequest);
-                    List<EntityTransferOrganizations> orgList = jsonHelper.convertValueToList(orgResponse.entities, EntityTransferOrganizations.class);
-                    if(orgList.size() > 0) {
-                        awbShipmentInfo.setIssuingAgentName(orgList.get(0).getFullName());
-                        awbShipmentInfo.setIataCode(awbShipmentInfo.getIataCode() == null ? orgList.get(0).getAgentIATACode() : awbShipmentInfo.getIataCode());
-                        awbShipmentInfo.setAgentCASSCode(awbShipmentInfo.getAgentCASSCode() == null ?
-                                orgList.get(0).getAgentCASSCode() : awbShipmentInfo.getAgentCASSCode());
-                        awbShipmentInfo.setIssuingAgentAddress(getFormattedAddress(orgList.get(0)));
-                    }
-
-                } catch (Exception e) {
-                    throw new RunnerException(String.format("Failed to fetch organization data for default org : %s", tenantModel.DefaultOrgId));
-                }
-            }
-        }
+    if (awbShipmentInfo.getIssuingAgentName() == null || awbShipmentInfo.getIssuingAgentName().isEmpty()) {
+        populateIssuingAgent(awbShipmentInfo, tenantModel);
+    }
 
         return awbShipmentInfo;
     }
@@ -907,7 +888,7 @@ public class AwbService implements IAwbService {
         for (var awb : awbList) {
             if(awb.getAwbPackingInfo() != null) {
                 for(AwbPackingInfo awbPackingInfo : awb.getAwbPackingInfo()) {
-                    awbPackingInfo.setMawbGoodsDescGuid(awb.getAwbGoodsDescriptionInfo() == null || awb.getAwbGoodsDescriptionInfo().size() == 0 ? null : awb.getAwbGoodsDescriptionInfo().get(0).getGuid());
+                    awbPackingInfo.setMawbGoodsDescGuid(mawb.getAwbGoodsDescriptionInfo() == null || mawb.getAwbGoodsDescriptionInfo().size() == 0 ? null : mawb.getAwbGoodsDescriptionInfo().get(0).getGuid());
                 }
             }
             awbDao.save(awb);
@@ -1013,7 +994,6 @@ public class AwbService implements IAwbService {
 
         awbShipmentInfo.setFirstCarrier(shipmentDetails.getCarrierDetails() != null ? shipmentDetails.getCarrierDetails().getShippingLine() : null);
 
-        setTenantFieldsInAwbShipmentInfo(awbShipmentInfo);
         for (var orgRow : shipmentDetails.getShipmentAddresses()) {
             if (orgRow.getType().equals(Constants.FORWARDING_AGENT)) {
                 var issuingAgentName = StringUtility.convertToString(orgRow.getOrgData().get(PartiesConstants.FULLNAME));
@@ -1056,6 +1036,16 @@ public class AwbService implements IAwbService {
                             : awbShipmentInfo.getAgentCASSCode());
                 }
             }
+        }
+
+        try {
+            TenantModel tenantModel = jsonHelper.convertValue(v1Service.retrieveTenant().getEntity(), TenantModel.class);
+            setTenantFieldsInAwbShipmentInfo(awbShipmentInfo, tenantModel);
+            if (awbShipmentInfo.getIssuingAgentName() == null || awbShipmentInfo.getIssuingAgentName().isEmpty()) {
+                populateIssuingAgent(awbShipmentInfo, tenantModel);
+            }
+        } catch (Exception e) {
+            throw new RunnerException(String.format("Error while populating tenant fields in AwbShipmentInfo %s", e.getMessage()));
         }
 
         return awbShipmentInfo;
@@ -1238,7 +1228,7 @@ public class AwbService implements IAwbService {
                 awbPacking.setReferenceNumber(packing.getReferenceNumber());
                 awbPacking.setDgClass(packing.getDGClass());
                 awbPacking.setHazardous(packing.getHazardous());
-                awbPacking.setCommodityId(packing.getCommodityId());
+                //awbPacking.setCommodityId(packing.getCommodityId());
                 awbPacking.setNetWeight(packing.getNetWeight());
                 awbPacking.setNetWeightUnit(packing.getNetWeightUnit());
                 awbPacking.setVolumeWeight(packing.getVolumeWeight());
@@ -1265,7 +1255,7 @@ public class AwbService implements IAwbService {
             List<Awb> existingAwb;
             Awb awb = jsonHelper.convertValue(request, Awb.class);
 
-            if(awbType == "MAWB" && consolidation.isPresent()){
+            if(awbType.equals("MAWB") && consolidation.isPresent()){
                 entityId = consolidation.get().getId();
                 awb.setConsolidationId(entityId);
                 existingAwb = awbDao.findByConsolidationId(consolidation.get().getId());
@@ -1290,6 +1280,21 @@ public class AwbService implements IAwbService {
                 awb.setGuid(existingAwb.get(0).getGuid());
             }
             awbDao.save(awb);
+
+            if(awbType.equals("MAWB") && consolidation.isPresent()) {
+                // Link this MAWB with it's HAWB
+                List<ShipmentDetails> shipmentList = consolidation.get().getShipmentsList();
+                List<Long> shipmentId = new ArrayList();
+                if(shipmentList != null && shipmentList.size() > 0) {
+                    for(var i : shipmentList)
+                        shipmentId.add(i.getId());
+                }
+                var listCriteria = constructListCommonRequest("shipmentId", shipmentId, "IN");
+                Pair<Specification<Awb>, Pageable> pair = fetchData(listCriteria, Awb.class);
+                var hawbListPage = awbDao.findAll(pair.getLeft(), pair.getRight());
+                LinkHawbMawb(consolidation.get(), awb, hawbListPage.getContent());
+            }
+
             return ResponseHelper.buildSuccessResponse(jsonHelper.convertValue(awb, AwbResponse.class));
 
         } catch (Exception e){
@@ -1610,7 +1615,7 @@ public class AwbService implements IAwbService {
                 awbPacking.setReferenceNumber(packing.getReferenceNumber());
                 awbPacking.setDgClass(packing.getDGClass());
                 awbPacking.setHazardous(packing.getHazardous());
-                awbPacking.setCommodityId(packing.getCommodityId());
+                //awbPacking.setCommodityId(packing.getCommodityId());
                 awbPacking.setNetWeight(packing.getNetWeight());
                 awbPacking.setNetWeightUnit(packing.getNetWeightUnit());
                 awbPacking.setVolumeWeight(packing.getVolumeWeight());
@@ -1714,7 +1719,7 @@ public class AwbService implements IAwbService {
             awbPackingInfo.setMaxTempUnit(packing.getMaxTempUnit());
         if((request.getAwbType().equals(Constants.HAWB) && !hawbLockSettings.getPackingCommodityLock()) ||
                 (request.getAwbType().equals(Constants.DMAWB) && !mawbLockSettings.getPackingCommodityLock()))
-            awbPackingInfo.setCommodityId(packing.getCommodityId());
+            awbPackingInfo.setCommodity(packing.getCommodity());
         if((request.getAwbType().equals(Constants.HAWB) && !hawbLockSettings.getPackingHsCodeLock()) ||
                 (request.getAwbType().equals(Constants.DMAWB) && !mawbLockSettings.getPackingHsCodeLock()))
             awbPackingInfo.setHsCode(packing.getHSCode());
@@ -2239,8 +2244,7 @@ public class AwbService implements IAwbService {
 
     }
 
-    private void setTenantFieldsInAwbShipmentInfo(AwbShipmentInfo awbShipmentInfo) {
-        TenantModel tenantModel = jsonHelper.convertValue(v1Service.retrieveTenant().getEntity(), TenantModel.class);
+    private void setTenantFieldsInAwbShipmentInfo(AwbShipmentInfo awbShipmentInfo, TenantModel tenantModel) {
         iataCode = tenantModel.AgentIATACode;
         awbShipmentInfo.setIataCode(iataCode);
         awbShipmentInfo.setAgentCASSCode(tenantModel.AgentCASSCode);
@@ -2296,23 +2300,25 @@ public class AwbService implements IAwbService {
         Map<String, Object> masterDataResponse = new HashMap<>();
         var masterListFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllMasterDataInSingleCall(awb, awbResponse, masterDataResponse)), executorService);
         var unLocationsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllUnlocationDataInSingleCall(awb, awbResponse, masterDataResponse)), executorService);
-        CompletableFuture.allOf(masterListFuture, unLocationsFuture).join();
+        var commodityTypesFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllCommodityTypesInSingleCallPacksList(awb, awbResponse, masterDataResponse)), executorService);
+        CompletableFuture.allOf(masterListFuture, unLocationsFuture, commodityTypesFuture).join();
         return masterDataResponse;
     }
 
     private CompletableFuture<ResponseEntity<?>> addAllMasterDataInSingleCall (Awb awb, AwbResponse awbResponse, Map<String, Object> masterDataResponse) {
 
         Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
+        AtomicInteger count = new AtomicInteger();
         List<MasterListRequest> listRequests = new ArrayList<>(masterDataUtils.createInBulkMasterListRequest(awbResponse, Awb.class, fieldNameKeyMap, Awb.class.getSimpleName() ));
         // Populate all the master data in inner objects
         if (!Objects.isNull(awbResponse.getAwbShipmentInfo()))
             listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(awbResponse.getAwbShipmentInfo(), AwbShipmentInfo.class, fieldNameKeyMap, AwbShipmentInfo.class.getSimpleName() ));
         if(!Objects.isNull(awbResponse.getAwbRoutingInfo()))
-            awbResponse.getAwbRoutingInfo().forEach(r -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(r, AwbRoutingInfo.class, fieldNameKeyMap, AwbRoutingInfo.class.getSimpleName() )));
+            awbResponse.getAwbRoutingInfo().forEach(r -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(r, AwbRoutingInfo.class, fieldNameKeyMap, AwbRoutingInfo.class.getSimpleName() + count.incrementAndGet())));
         if(!Objects.isNull(awbResponse.getAwbPackingInfo()))
-            awbResponse.getAwbPackingInfo().forEach(r -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(r, AwbPackingInfo.class, fieldNameKeyMap, AwbPackingInfo.class.getSimpleName() )));
+            awbResponse.getAwbPackingInfo().forEach(r -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(r, AwbPackingInfo.class, fieldNameKeyMap, AwbPackingInfo.class.getSimpleName() + count.incrementAndGet() )));
         if(!Objects.isNull(awbResponse.getAwbGoodsDescriptionInfo()))
-            awbResponse.getAwbGoodsDescriptionInfo().forEach(r -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(r, AwbGoodsDescriptionInfo.class, fieldNameKeyMap, AwbGoodsDescriptionInfo.class.getSimpleName() )));
+            awbResponse.getAwbGoodsDescriptionInfo().forEach(r -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(r, AwbGoodsDescriptionInfo.class, fieldNameKeyMap, AwbGoodsDescriptionInfo.class.getSimpleName() + count.incrementAndGet())));
 
         MasterListRequestV2 masterListRequestV2 = new MasterListRequestV2();
         masterListRequestV2.setMasterListRequests(listRequests);
@@ -2336,6 +2342,7 @@ public class AwbService implements IAwbService {
 
     private CompletableFuture<ResponseEntity<?>> addAllUnlocationDataInSingleCall (Awb awb, AwbResponse awbResponse, Map<String, Object> masterDataResponse) {
         Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
+        AtomicInteger count = new AtomicInteger();
         List<String> locationCodes = new ArrayList<>();
         // Populate all the unlocation data in inner objects
         if (!Objects.isNull(awbResponse.getAwbShipmentInfo()))
@@ -2343,11 +2350,11 @@ public class AwbService implements IAwbService {
         if (!Objects.isNull(awbResponse.getAwbOtherInfo()))
             locationCodes.addAll((masterDataUtils.createInBulkUnLocationsRequest(awbResponse.getAwbOtherInfo(), AwbOtherInfo.class, fieldNameKeyMap, AwbShipmentInfo.class.getSimpleName() )));
         if(!Objects.isNull(awbResponse.getAwbRoutingInfo()))
-            awbResponse.getAwbRoutingInfo().forEach(r -> locationCodes.addAll(masterDataUtils.createInBulkUnLocationsRequest(r, AwbRoutingInfo.class, fieldNameKeyMap, AwbRoutingInfo.class.getSimpleName() )));
+            awbResponse.getAwbRoutingInfo().forEach(r -> locationCodes.addAll(masterDataUtils.createInBulkUnLocationsRequest(r, AwbRoutingInfo.class, fieldNameKeyMap, AwbRoutingInfo.class.getSimpleName() + (count.incrementAndGet()))));
         if(!Objects.isNull(awbResponse.getAwbPackingInfo()))
-            awbResponse.getAwbPackingInfo().forEach(r -> locationCodes.addAll(masterDataUtils.createInBulkUnLocationsRequest(r, AwbPackingInfo.class, fieldNameKeyMap, AwbPackingInfo.class.getSimpleName() )));
+            awbResponse.getAwbPackingInfo().forEach(r -> locationCodes.addAll(masterDataUtils.createInBulkUnLocationsRequest(r, AwbPackingInfo.class, fieldNameKeyMap, AwbPackingInfo.class.getSimpleName() + (count.incrementAndGet()))));
         if(!Objects.isNull(awbResponse.getAwbGoodsDescriptionInfo()))
-            awbResponse.getAwbGoodsDescriptionInfo().forEach(r -> locationCodes.addAll(masterDataUtils.createInBulkUnLocationsRequest(r, AwbGoodsDescriptionInfo.class, fieldNameKeyMap, AwbGoodsDescriptionInfo.class.getSimpleName() )));
+            awbResponse.getAwbGoodsDescriptionInfo().forEach(r -> locationCodes.addAll(masterDataUtils.createInBulkUnLocationsRequest(r, AwbGoodsDescriptionInfo.class, fieldNameKeyMap, AwbGoodsDescriptionInfo.class.getSimpleName() + (count.incrementAndGet()))));
 
         Map<String, EntityTransferUnLocations> keyMasterDataMap = masterDataUtils.fetchInBulkUnlocations(locationCodes, EntityTransferConstants.LOCATION_SERVICE_GUID);
         masterDataUtils.pushToCache(keyMasterDataMap, CacheConstants.UNLOCATIONS);
@@ -2361,6 +2368,26 @@ public class AwbService implements IAwbService {
         }
 
         return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(keyMasterDataMap));
+    }
+    private CompletableFuture<ResponseEntity<?>> addAllCommodityTypesInSingleCallPacksList(Awb awb, AwbResponse awbResponse, Map<String, Object> masterDataResponse) {
+        Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
+        Set<String> commodityTypes = new HashSet<>();
+        AtomicInteger count = new AtomicInteger();
+        if(!Objects.isNull(awbResponse.getAwbPackingInfo()))
+            awbResponse.getAwbPackingInfo().forEach(r -> commodityTypes.addAll(masterDataUtils.createInBulkCommodityTypeRequest(r, AwbPackingInfo.class, fieldNameKeyMap, AwbRoutingInfo.class.getSimpleName() + count.incrementAndGet() )));
+
+        Map<String, EntityTransferCommodityType> v1Data = masterDataUtils.fetchInBulkCommodityTypes(commodityTypes.stream().toList());
+        masterDataUtils.pushToCache(v1Data, CacheConstants.COMMODITY);
+
+        if(masterDataResponse == null) {
+            if (!Objects.isNull(awbResponse.getAwbShipmentInfo()))
+                awbResponse.getAwbShipmentInfo().setCommodityMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(AwbShipmentInfo.class.getSimpleName()), CacheConstants.COMMODITY));
+        }
+        else {
+            masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.COMMODITY, masterDataResponse);
+        }
+
+        return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(v1Data));
     }
 
     @Override
@@ -2818,6 +2845,31 @@ public class AwbService implements IAwbService {
             return locationguid1;
         }));
         return locMap.get(name);
+    }
+
+    private void populateIssuingAgent(AwbShipmentInfo awbShipmentInfo, TenantModel tenantModel) {
+        if(tenantModel.DefaultOrgId != null){
+            // Fetch Organization Data for defaultOrgId
+            try {
+                CommonV1ListRequest orgRequest = new CommonV1ListRequest();
+                List<Object> orgField = new ArrayList<>(List.of("Id"));
+                String operator = "=";
+                List<Object> orgCriteria = new ArrayList<>(List.of(orgField, operator, tenantModel.DefaultOrgId));
+                orgRequest.setCriteriaRequests(orgCriteria);
+                V1DataResponse orgResponse = v1Service.fetchOrganization(orgRequest);
+                List<EntityTransferOrganizations> orgList = jsonHelper.convertValueToList(orgResponse.entities, EntityTransferOrganizations.class);
+                if(orgList.size() > 0) {
+                    awbShipmentInfo.setIssuingAgentName(orgList.get(0).getFullName());
+                    awbShipmentInfo.setIataCode(awbShipmentInfo.getIataCode() == null ? orgList.get(0).getAgentIATACode() : awbShipmentInfo.getIataCode());
+                    awbShipmentInfo.setAgentCASSCode(awbShipmentInfo.getAgentCASSCode() == null ?
+                            orgList.get(0).getAgentCASSCode() : awbShipmentInfo.getAgentCASSCode());
+                    awbShipmentInfo.setIssuingAgentAddress(getFormattedAddress(orgList.get(0)));
+                }
+
+            } catch (Exception e) {
+                throw new RunnerException(String.format("Failed to fetch organization data for default org : %s", tenantModel.DefaultOrgId));
+            }
+        }
     }
 
 }

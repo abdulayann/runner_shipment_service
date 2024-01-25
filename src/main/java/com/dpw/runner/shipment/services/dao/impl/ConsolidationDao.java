@@ -115,8 +115,8 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
             if (consolidationDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)) {
                 //for air consolidation, ETA can be less than ETD and difference should not be more than 24 hours
                 if (eta != null && etd != null && eta.isBefore(etd)) {
-                    Duration duration = Duration.between(etd, eta);
-                    if (duration.toHours() > 24) {
+                    Duration duration = Duration.between(eta, etd);
+                    if (Math.abs(duration.toHours()) > 24) {
                         throw new ValidationException("Difference between ETA and ETD should not be more than 24 hours");
                     }
                 }

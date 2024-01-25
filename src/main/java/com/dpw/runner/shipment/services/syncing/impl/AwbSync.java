@@ -107,7 +107,7 @@ public class AwbSync implements IAwbSync {
             V1DataSyncResponse response = v1Service.v1DataSync(finalAwb);
             if (!response.getIsSuccess()) {
                 sendEmail(awb, response, "");
-            } else {
+            } else if(isMawb) {
                 // Try syncing the linked HAWBs for this MAWB in a parallel batch job
                 boolean result = linkedHawb.parallelStream().map(i -> {
                     AwbRequestV2 hawbSyncRequest = generateAwbSyncRequest(i);

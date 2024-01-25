@@ -4067,6 +4067,33 @@ public class ShipmentService implements IShipmentService {
         return res;
     }
 
+    public ResponseEntity<?> showAssignAllContainers(CommonRequestModel commonRequestModel) {
+        String responseMsg;
+        try {
+            ShipmentConsoleIdDto request = (ShipmentConsoleIdDto) commonRequestModel.getData();
+            Long shipmentId = request.getShipmentId();
+            Long consolidationId = request.getConsolidationId();
+            List<ShipmentsContainersMapping> shipmentsContainersMappingList = shipmentsContainersMappingDao.findByShipmentId(shipmentId);
+            List<Containers> containers = containerDao.findByConsolidationId(consolidationId);
+            boolean showDialog = false;
+            if(shipmentsContainersMappingList != null && containers != null && containers.size() != shipmentsContainersMappingList.size())
+                showDialog = true;
+            int numberOfShipments = 0;
+            List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByConsolidationId(consolidationId);
+            if(consoleShipmentMappings != null && consoleShipmentMappings.size() > 0)
+                numberOfShipments = consoleShipmentMappings.size();
+            AssignAllDialogDto response = new AssignAllDialogDto();
+            response.setShowDialog(showDialog);
+            response.setNumberOfShipments(numberOfShipments);
+            return ResponseHelper.buildSuccessResponse(response);
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
     public ResponseEntity<?> fetchCreditLimit(String orgCode, String addressCode) {
         if(StringUtility.isEmpty(orgCode)) {
             throw new RunnerException("OrgCode to fetch creditLimit can't be null");

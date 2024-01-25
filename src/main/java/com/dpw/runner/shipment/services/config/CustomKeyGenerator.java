@@ -25,6 +25,11 @@ public class CustomKeyGenerator implements KeyGenerator {
                         .append(params[0].toString());
                 break;
 
+            case CacheConstants.GET_TENANT_SETTINGS:
+                keyBuilder.append(CacheConstants.TENANT_SETTINGS)
+                        .append(params[0].toString());
+                break;
+
             default:
                 keyBuilder.append(method.getName())
                         .append("_");

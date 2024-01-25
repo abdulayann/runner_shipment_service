@@ -213,4 +213,7 @@ public class AdditionalDetailModel {
     private PartiesModel sendingAgent;
     @JsonProperty("ReceivingAgent")
     private PartiesModel receivingAgent;
+    private String cargoTermsDescription;
+    private String bLRemarks;
+    private String bLRemarksDescription;
 }
