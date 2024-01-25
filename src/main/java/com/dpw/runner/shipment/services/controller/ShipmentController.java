@@ -460,7 +460,7 @@ public class ShipmentController {
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.SUCCESS)})
     @PostMapping(value = ShipmentConstants.SHOW_ASSIGN_ALL_CONTAINERS)
-    public ResponseEntity<RunnerListResponse<EventsResponse>> showAssignAllContainers(@RequestBody ShipmentConsoleIdDto request) {
-        return (ResponseEntity<RunnerListResponse<EventsResponse>>) shipmentService.showAssignAllContainers(CommonRequestModel.buildRequest(request));
+    public ResponseEntity<AssignAllDialogDto> showAssignAllContainers(@RequestBody ShipmentConsoleIdDto request) {
+        return (ResponseEntity<AssignAllDialogDto>) shipmentService.showAssignAllContainers(CommonRequestModel.buildRequest(request));
     }
 }
