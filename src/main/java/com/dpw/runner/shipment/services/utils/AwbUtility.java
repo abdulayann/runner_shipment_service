@@ -172,10 +172,10 @@ public class AwbUtility {
     }
 
     public static void validateShipmentInfoBeforeGeneratingAwb(ShipmentDetails shipmentDetails) {
-        if (shipmentDetails.getConsigner() == null || shipmentDetails.getConsigner().getId() == null) {
+        if (shipmentDetails.getConsigner() == null || shipmentDetails.getConsigner().getOrgCode() == null) {
             throw new ValidationException("Consigner details are required in shipment to generate the document.");
         }
-        if (shipmentDetails.getConsignee() == null || shipmentDetails.getConsignee().getId() == null) {
+        if (shipmentDetails.getConsignee() == null || shipmentDetails.getConsignee().getOrgCode() == null) {
             throw new ValidationException("Consignee details are required in shipment to generate the document.");
         }
         if (shipmentDetails.getCarrierDetails() == null || shipmentDetails.getCarrierDetails().getShippingLine() == null) {
