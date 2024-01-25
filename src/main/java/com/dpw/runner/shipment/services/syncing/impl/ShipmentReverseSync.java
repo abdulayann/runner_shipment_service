@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.config.SyncConfig;
+import com.dpw.runner.shipment.services.dto.request.NotesRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.AndesStatus;
@@ -99,8 +100,9 @@ public class ShipmentReverseSync implements IShipmentReverseSync {
             sd.setBookingCarriagesList(convertToList(cs.getBookingCarriages(), BookingCarriage.class));
             sd.setGoodsDescription(cs.getDescription());
 
+            List<NotesRequest> customerBookingNotes = convertToList(cs.getCustomerBookingNotesList(), NotesRequest.class);
             return shipmentService.completeV1ShipmentCreateAndUpdate(CommonRequestModel.
-                    buildRequest(modelMapper.map(sd, ShipmentRequest.class)), map);
+                    buildRequest(modelMapper.map(sd, ShipmentRequest.class)), map, customerBookingNotes);
         } catch (Exception e){
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;

@@ -457,6 +457,8 @@ public class CustomShipmentSyncRequest implements IRunnerRequest, IRunnerRespons
     private PickupDeliveryDetailsRequestV2 DeliveryDetails;
     @JsonProperty("NotesList")
     private List<NoteRequestV2> NotesList;
+    @JsonProperty("CustomerBookingNotesList")
+    private List<NoteRequestV2> CustomerBookingNotesList;
     @JsonProperty("ELDetails")
     private List<ElDetailsRequestV2> ELDetails;
     @JsonProperty("EventsList")
