@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
+import com.dpw.runner.shipment.services.dto.request.NotesRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataSyncResponse;
 import com.dpw.runner.shipment.services.entity.CarrierDetails;
 import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
@@ -71,7 +72,7 @@ public class ShipmentSync implements IShipmentSync {
     private String SHIPMENT_V1_SYNC_URL;
 
     @Override
-    public ResponseEntity<?> sync(ShipmentDetails sd, List<UUID> deletedContGuids) {
+    public ResponseEntity<?> sync(ShipmentDetails sd, List<UUID> deletedContGuids, List<NotesRequest> customerBookingNotes) {
         CustomShipmentSyncRequest temp = new CustomShipmentSyncRequest();
 
         CustomShipmentSyncRequest cs = modelMapper.map(sd, CustomShipmentSyncRequest.class);
@@ -121,6 +122,7 @@ public class ShipmentSync implements IShipmentSync {
         cs.setShipmentAddresses(syncEntityConversionService.addressesV2ToV1(sd.getShipmentAddresses()));
         cs.setDocs_(convertToList(sd.getFileRepoList(), FileRepoRequestV2.class));
         cs.setELDetails(convertToList(sd.getElDetailsList(), ElDetailsRequestV2.class));
+        cs.setCustomerBookingNotesList(convertToList(customerBookingNotes, NoteRequestV2.class));
         // PickupAddressJSON and DeliveryAddressJSON (could be renamed for easy mapping)
 
         cs.setBookingCarriages(convertToList(sd.getBookingCarriagesList(), BookingCarriageRequestV2.class));
@@ -190,7 +192,7 @@ public class ShipmentSync implements IShipmentSync {
     public ResponseEntity<?> syncById(Long shipmentId) {
         Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(shipmentId);
         if(shipmentDetails.isPresent()) {
-            return sync(shipmentDetails.get(), null);
+            return sync(shipmentDetails.get(), null, null);
         }
         else {
             throw new DataRetrievalFailureException("");

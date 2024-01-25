@@ -17,6 +17,7 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
+import com.dpw.runner.shipment.services.syncing.Entity.PartyRequestV2;
 import com.dpw.runner.shipment.services.utils.V1AuthHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -245,6 +246,9 @@ public class V1ServiceImpl implements IV1Service {
 
     @Value("${v1service.url.base}${v1service.url.retrieveTenant}")
     private String RETRIEVE_TENANT;
+
+    @Value("${v1service.url.base}${v1service.url.getDefaultOrg}")
+    private String GET_DEFAULT_ORG;
 
     @Value("${v1service.url.base}${v1service.url.ownType}")
     private String OWN_TYPE;
@@ -1469,6 +1473,23 @@ public class V1ServiceImpl implements IV1Service {
             masterDataResponse = this.restTemplate.postForEntity(this.RETRIEVE_TENANT, entity, V1RetrieveResponse.class, new Object[0]);
             log.info("Token time taken in retrieveTenant() function " + (System.currentTimeMillis() - time));
             return (V1RetrieveResponse) masterDataResponse.getBody();
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
+        } catch (Exception var7) {
+            throw new V1ServiceException(var7.getMessage());
+        }
+    }
+
+    @Override
+    public PartyRequestV2 getDefaultOrg() {
+        ResponseEntity masterDataResponse = null;
+
+        try {
+            long time = System.currentTimeMillis();
+            HttpEntity<V1DataResponse> entity = new HttpEntity(V1AuthHelper.getHeaders());
+            masterDataResponse = this.restTemplate.postForEntity(this.GET_DEFAULT_ORG, entity, PartyRequestV2.class, new Object[0]);
+            log.info("Token time taken in getDefaultOrg() function " + (System.currentTimeMillis() - time));
+            return (PartyRequestV2) masterDataResponse.getBody();
         } catch (HttpClientErrorException | HttpServerErrorException ex) {
             throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
         } catch (Exception var7) {

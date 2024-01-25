@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.dto.v1.request.*;
 import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.CustomerBooking;
 import com.dpw.runner.shipment.services.entitytransfer.dto.response.CheckTaskExistResponse;
+import com.dpw.runner.shipment.services.syncing.Entity.PartyRequestV2;
 import org.springframework.http.ResponseEntity;
 
 import java.util.UUID;
@@ -132,6 +133,7 @@ public interface IV1Service {
     V1RetrieveResponse retrieveTenantSettings();
     CompanySettingsResponse retrieveCompanySettings();
     V1RetrieveResponse retrieveTenant();
+    PartyRequestV2 getDefaultOrg();
 
     V1DataResponse fetchOwnType(Object request);
 
