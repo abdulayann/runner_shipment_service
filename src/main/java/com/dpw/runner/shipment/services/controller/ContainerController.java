@@ -50,13 +50,13 @@ public class ContainerController {
 
         try {
             containerService.uploadContainers(request);
-            return ResponseEntity.ok("CSV file uploaded successfully!");
+            return ResponseEntity.ok("File uploaded successfully!");
         } catch (Exception e) {
             String responseMessage = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
             log.error(responseMessage, e);
+            return ResponseEntity.status(HttpStatus.EXPECTATION_FAILED).body(e.getMessage());
         }
-        return ResponseEntity.status(HttpStatus.EXPECTATION_FAILED).body("CSV File upload failed");
     }
 
     @ApiResponses(value = {
@@ -71,13 +71,14 @@ public class ContainerController {
 
         try {
             containerService.uploadContainerEvents(request);
-            return ResponseEntity.ok("CSV file uploaded successfully!");
+            return ResponseEntity.ok("File uploaded successfully!");
         } catch (Exception e) {
             String responseMessage = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
             log.error(responseMessage, e);
+            return ResponseEntity.status(HttpStatus.EXPECTATION_FAILED).body(e.getMessage());
+
         }
-        return ResponseEntity.status(HttpStatus.EXPECTATION_FAILED).body("CSV File upload failed");
     }
 
     @GetMapping(ApiConstants.API_DOWNLOAD)
