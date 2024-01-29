@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IELDetailsDao;
 import com.dpw.runner.shipment.services.entity.ELDetails;
+import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.repository.interfaces.IELDetailsRepository;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
@@ -30,6 +31,10 @@ public class ELDetailsDao implements IELDetailsDao {
     @Override
     public ELDetails save(ELDetails elDetails) {
         return elDetailsRepository.save(elDetails);
+    }
+    @Override
+    public List<ELDetails> saveAll(List<ELDetails> elDetailsList) {
+        return elDetailsRepository.saveAll(elDetailsList);
     }
 
     @Override
@@ -62,11 +67,16 @@ public class ELDetailsDao implements IELDetailsDao {
         List<ELDetails> responseELDetails = new ArrayList<>();
         try {
             // TODO- Handle Transactions here
-            ListCommonRequest listCommonRequest = constructListCommonRequest("shipmentId", shipmentId, "=");
-            Pair<Specification<ELDetails>, Pageable> pair = fetchData(listCommonRequest, ELDetails.class);
-            Page<ELDetails> elDetails = findAll(pair.getLeft(), pair.getRight());
-            Map<Long, ELDetails> hashMap = elDetails.stream()
-                    .collect(Collectors.toMap(ELDetails::getId, Function.identity()));
+            Map<Long, ELDetails> hashMap = new HashMap<>();
+            var elDetailsIdList = elDetailsList.stream().map(ELDetails::getId).toList();
+            if(!Objects.isNull(elDetailsIdList) && !elDetailsIdList.isEmpty()) {
+                ListCommonRequest listCommonRequest = constructListCommonRequest("shipmentId", shipmentId, "=");
+                Pair<Specification<ELDetails>, Pageable> pair = fetchData(listCommonRequest, ELDetails.class);
+                Page<ELDetails> elDetails = findAll(pair.getLeft(), pair.getRight());
+                hashMap = elDetails.stream()
+                        .collect(Collectors.toMap(ELDetails::getId, Function.identity()));
+            }
+            Map<Long, ELDetails> copyHashMap = new HashMap<>(hashMap);
             List<ELDetails> elDetailsRequestList = new ArrayList<>();
             if (elDetailsList != null && elDetailsList.size() != 0) {
                 for (ELDetails request : elDetailsList) {
@@ -76,7 +86,7 @@ public class ELDetailsDao implements IELDetailsDao {
                     }
                     elDetailsRequestList.add(request);
                 }
-                responseELDetails = saveEntityFromShipment(elDetailsRequestList, shipmentId);
+                responseELDetails = saveEntityFromShipment(elDetailsRequestList, shipmentId, copyHashMap);
             }
             deleteELDetails(hashMap);
             return responseELDetails;
@@ -105,6 +115,25 @@ public class ELDetailsDao implements IELDetailsDao {
             req = save(req);
             res.add(req);
         }
+        return res;
+    }
+    @Override
+    public List<ELDetails> saveEntityFromShipment(List<ELDetails> elDetails, Long shipmentId, Map<Long, ELDetails> oldEntityMap) {
+        List<ELDetails> res = new ArrayList<>();
+        for (ELDetails req : elDetails) {
+            if (req.getId() != null) {
+                long id = req.getId();
+                if (!oldEntityMap.containsKey(id)) {
+                    log.debug("EL Detail is null for Id {}", req.getId());
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
+                req.setCreatedAt(oldEntityMap.get(id).getCreatedAt());
+                req.setCreatedBy(oldEntityMap.get(id).getCreatedBy());
+            }
+            req.setShipmentId(shipmentId);
+            res.add(req);
+        }
+        res = saveAll(res);
         return res;
     }
 

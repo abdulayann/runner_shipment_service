@@ -6,6 +6,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 public interface IPartiesDao {
@@ -16,5 +17,6 @@ public interface IPartiesDao {
     void delete(Parties parties);
     List<Parties> updateEntityFromOtherEntity(List<Parties> partiesList, Long entityId, String entityType) throws Exception;
     List<Parties> saveEntityFromOtherEntity(List<Parties> partiesRequests, Long entityId, String entityType);
+    List<Parties> saveEntityFromOtherEntity(List<Parties> partiesRequests, Long entityId, String entityType, Map<Long, Parties> oldEntityMap);
     List<Parties> updateEntityFromOtherEntity(List<Parties> partiesList, Long entityId, String entityType, List<Parties> oldEntityList) throws Exception;
 }

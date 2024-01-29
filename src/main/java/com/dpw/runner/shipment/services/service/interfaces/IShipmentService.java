@@ -39,7 +39,7 @@ public interface IShipmentService extends ICommonService {
 
     ResponseEntity<?> containerListForTI(CommonRequestModel commonRequestModel);
 
-    void afterSave(ShipmentDetails shipmentDetails, boolean isCreate);
+    void pushShipmentDataToDependentService(ShipmentDetails shipmentDetails, boolean isCreate);
 
     ResponseEntity<?> fullShipmentsList(CommonRequestModel commonRequestModel);
 

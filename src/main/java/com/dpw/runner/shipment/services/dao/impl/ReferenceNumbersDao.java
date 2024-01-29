@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.dao.impl;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IReferenceNumbersDao;
+import com.dpw.runner.shipment.services.entity.Jobs;
 import com.dpw.runner.shipment.services.entity.ReferenceNumbers;
 import com.dpw.runner.shipment.services.repository.interfaces.IReferenceNumbersRepository;
 import com.nimbusds.jose.util.Pair;
@@ -31,6 +32,10 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
     public ReferenceNumbers save(ReferenceNumbers referenceNumbers) {
         return referenceNumbersRepository.save(referenceNumbers);
     }
+    @Override
+    public List<ReferenceNumbers> saveAll(List<ReferenceNumbers> referenceNumbersList) {
+        return referenceNumbersRepository.saveAll(referenceNumbersList);
+    }
 
     @Override
     public Page<ReferenceNumbers> findAll(Specification<ReferenceNumbers> spec, Pageable pageable) {
@@ -53,11 +58,16 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
         List<ReferenceNumbers> responseReferenceNumbers = new ArrayList<>();
         try {
             // TODO- Handle Transactions here
-            ListCommonRequest listCommonRequest = constructListCommonRequest("shipmentId", shipmentId, "=");
-            Pair<Specification<ReferenceNumbers>, Pageable> pair = fetchData(listCommonRequest, ReferenceNumbers.class);
-            Page<ReferenceNumbers> routings = findAll(pair.getLeft(), pair.getRight());
-            Map<Long, ReferenceNumbers> hashMap = routings.stream()
-                    .collect(Collectors.toMap(ReferenceNumbers::getId, Function.identity()));
+            Map<Long, ReferenceNumbers> hashMap = new HashMap<>();
+            var referenceNumbersIdList = referenceNumbersList.stream().map(ReferenceNumbers::getId).toList();
+            if(!Objects.isNull(referenceNumbersIdList) && !referenceNumbersIdList.isEmpty()) {
+                ListCommonRequest listCommonRequest = constructListCommonRequest("shipmentId", shipmentId, "=");
+                Pair<Specification<ReferenceNumbers>, Pageable> pair = fetchData(listCommonRequest, ReferenceNumbers.class);
+                Page<ReferenceNumbers> routings = findAll(pair.getLeft(), pair.getRight());
+                hashMap = routings.stream()
+                        .collect(Collectors.toMap(ReferenceNumbers::getId, Function.identity()));
+            }
+            Map<Long, ReferenceNumbers> copyHashMap = new HashMap<>(hashMap);
             List<ReferenceNumbers> referenceNumbersRequests = new ArrayList<>();
             if (referenceNumbersList != null && referenceNumbersList.size() != 0) {
                 for (ReferenceNumbers request : referenceNumbersList) {
@@ -67,7 +77,7 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
                     }
                     referenceNumbersRequests.add(request);
                 }
-                responseReferenceNumbers = saveEntityFromShipment(referenceNumbersRequests, shipmentId);
+                responseReferenceNumbers = saveEntityFromShipment(referenceNumbersRequests, shipmentId, copyHashMap);
             }
             deleteReferenceNumbers(hashMap);
             return responseReferenceNumbers;
@@ -97,6 +107,25 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
             req = save(req);
             res.add(req);
         }
+        return res;
+    }
+    @Override
+    public List<ReferenceNumbers> saveEntityFromShipment(List<ReferenceNumbers> referenceNumbersRequests, Long shipmentId, Map<Long, ReferenceNumbers> hashMap) {
+        List<ReferenceNumbers> res = new ArrayList<>();
+        for(ReferenceNumbers req : referenceNumbersRequests){
+            if(req.getId() != null){
+                long id = req.getId();
+                if (!hashMap.containsKey(id)) {
+                    log.debug("Reference number is null for Id {}", req.getId());
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
+                req.setCreatedAt(hashMap.get(id).getCreatedAt());
+                req.setCreatedBy(hashMap.get(id).getCreatedBy());
+            }
+            req.setShipmentId(shipmentId);
+            res.add(req);
+        }
+        res = saveAll(res);
         return res;
     }
 

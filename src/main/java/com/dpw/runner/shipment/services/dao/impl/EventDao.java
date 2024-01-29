@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IEventDao;
 import com.dpw.runner.shipment.services.dto.request.CustomAutoEventRequest;
+import com.dpw.runner.shipment.services.entity.ELDetails;
 import com.dpw.runner.shipment.services.entity.Events;
 import com.dpw.runner.shipment.services.entity.enums.LifecycleHooks;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
@@ -50,13 +51,13 @@ public class EventDao implements IEventDao {
     }
 
     @Override
-    public List<Events> saveAll(List<Events> containers) {
-        List<Events> res = new ArrayList<>();
-        for (Events req : containers) {
-            req = save(req);
-            res.add(req);
+    public List<Events> saveAll(List<Events> eventsList) {
+        for (var events: eventsList) {
+            Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(events), Constants.EVENTS, LifecycleHooks.ON_CREATE, false);
+            if (!errors.isEmpty())
+                throw new ValidationException(errors.toString());
         }
-        return res;
+        return eventRepository.saveAll(eventsList);
     }
 
     @Override
@@ -85,11 +86,16 @@ public class EventDao implements IEventDao {
         List<Events> responseEvents = new ArrayList<>();
         try {
             // TODO- Handle Transactions here
-            ListCommonRequest listCommonRequest = constructListRequestFromEntityId(entityId, entityType);
-            Pair<Specification<Events>, Pageable> pair = fetchData(listCommonRequest, Events.class);
-            Page<Events> events = findAll(pair.getLeft(), pair.getRight());
-            Map<Long, Events> hashMap = events.stream()
-                    .collect(Collectors.toMap(Events::getId, Function.identity()));
+            Map<Long, Events> hashMap = new HashMap<>();
+            var eventsIdList = eventsList.stream().map(Events::getId).toList();
+            if(!Objects.isNull(eventsIdList) && !eventsIdList.isEmpty()) {
+                ListCommonRequest listCommonRequest = constructListRequestFromEntityId(entityId, entityType);
+                Pair<Specification<Events>, Pageable> pair = fetchData(listCommonRequest, Events.class);
+                Page<Events> events = findAll(pair.getLeft(), pair.getRight());
+                hashMap = events.stream()
+                        .collect(Collectors.toMap(Events::getId, Function.identity()));
+            }
+            Map<Long, Events> copyHashMap = new HashMap<>(hashMap);
             List<Events> eventsRequestList = new ArrayList<>();
             if (eventsList != null && eventsList.size() != 0) {
                 for (Events request : eventsList) {
@@ -99,7 +105,7 @@ public class EventDao implements IEventDao {
                     }
                     eventsRequestList.add(request);
                 }
-                responseEvents = saveEntityFromOtherEntity(eventsRequestList, entityId, entityType);
+                responseEvents = saveEntityFromOtherEntity(eventsRequestList, entityId, entityType, copyHashMap);
             }
             deleteEvents(hashMap);
             return responseEvents;
@@ -129,6 +135,26 @@ public class EventDao implements IEventDao {
             req = save(req);
             res.add(req);
         }
+        return res;
+    }
+    @Override
+    public List<Events> saveEntityFromOtherEntity(List<Events> events, Long entityId, String entityType, Map<Long, Events> oldEntityMap) {
+        List<Events> res = new ArrayList<>();
+        for (Events req : events) {
+            if (req.getId() != null) {
+                long id = req.getId();
+                if (!oldEntityMap.containsKey(id)) {
+                    log.debug("Events is null for Id {}", req.getId());
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
+                req.setCreatedAt(oldEntityMap.get(id).getCreatedAt());
+                req.setCreatedBy(oldEntityMap.get(id).getCreatedBy());
+            }
+            req.setEntityId(entityId);
+            req.setEntityType(entityType);
+            res.add(req);
+        }
+        res = saveAll(res);
         return res;
     }
 

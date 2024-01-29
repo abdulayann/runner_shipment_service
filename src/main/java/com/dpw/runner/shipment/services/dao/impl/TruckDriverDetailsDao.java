@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.dao.impl;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.ITruckDriverDetailsDao;
+import com.dpw.runner.shipment.services.entity.BookingCarriage;
 import com.dpw.runner.shipment.services.entity.TruckDriverDetails;
 import com.dpw.runner.shipment.services.repository.interfaces.ITruckDriverDetailsRepository;
 import com.nimbusds.jose.util.Pair;
@@ -30,6 +31,10 @@ public class TruckDriverDetailsDao implements ITruckDriverDetailsDao {
     @Override
     public TruckDriverDetails save(TruckDriverDetails truckDriverDetails) {
         return truckDriverDetailsRepository.save(truckDriverDetails);
+    }
+    @Override
+    public List<TruckDriverDetails> saveAll(List<TruckDriverDetails> truckDriverDetailsList) {
+        return truckDriverDetailsRepository.saveAll(truckDriverDetailsList);
     }
 
     @Override
@@ -64,11 +69,16 @@ public class TruckDriverDetailsDao implements ITruckDriverDetailsDao {
         List<TruckDriverDetails> responseTruckDriverDetails = new ArrayList<>();
         try {
             // TODO- Handle Transactions here
-            ListCommonRequest listCommonRequest = constructListCommonRequest("shipmentId", shipmentId, "=");
-            Pair<Specification<TruckDriverDetails>, Pageable> pair = fetchData(listCommonRequest, TruckDriverDetails.class);
-            Page<TruckDriverDetails> truckDriverDetails = findAll(pair.getLeft(), pair.getRight());
-            Map<Long, TruckDriverDetails> hashMap = truckDriverDetails.stream()
-                    .collect(Collectors.toMap(TruckDriverDetails::getId, Function.identity()));
+            Map<Long, TruckDriverDetails> hashMap = new HashMap<>();
+            var truckDriverDetailsIdList = truckDriverDetailsList.stream().map(TruckDriverDetails::getId).toList();
+            if(!Objects.isNull(truckDriverDetailsIdList) && !truckDriverDetailsIdList.isEmpty()) {
+                ListCommonRequest listCommonRequest = constructListCommonRequest("shipmentId", shipmentId, "=");
+                Pair<Specification<TruckDriverDetails>, Pageable> pair = fetchData(listCommonRequest, TruckDriverDetails.class);
+                Page<TruckDriverDetails> truckDriverDetails = findAll(pair.getLeft(), pair.getRight());
+                hashMap = truckDriverDetails.stream()
+                        .collect(Collectors.toMap(TruckDriverDetails::getId, Function.identity()));
+            }
+            Map<Long, TruckDriverDetails> copyHashMap = new HashMap<>(hashMap);
             List<TruckDriverDetails> truckDriverDetailsRequestList = new ArrayList<>();
             if (truckDriverDetailsList != null && truckDriverDetailsList.size() != 0) {
                 for (TruckDriverDetails request : truckDriverDetailsList) {
@@ -78,7 +88,7 @@ public class TruckDriverDetailsDao implements ITruckDriverDetailsDao {
                     }
                     truckDriverDetailsRequestList.add(request);
                 }
-                responseTruckDriverDetails = saveEntityFromShipment(truckDriverDetailsRequestList, shipmentId);
+                responseTruckDriverDetails = saveEntityFromShipment(truckDriverDetailsRequestList, shipmentId, copyHashMap);
             }
             deleteTruckDriverDetails(hashMap);
             return responseTruckDriverDetails;
@@ -108,6 +118,25 @@ public class TruckDriverDetailsDao implements ITruckDriverDetailsDao {
             req = save(req);
             res.add(req);
         }
+        return res;
+    }
+    @Override
+    public List<TruckDriverDetails> saveEntityFromShipment(List<TruckDriverDetails> truckDriverDetails, Long shipmentId, Map<Long, TruckDriverDetails> oldEntityMap) {
+        List<TruckDriverDetails> res = new ArrayList<>();
+        for(TruckDriverDetails req : truckDriverDetails){
+            if(req.getId() != null){
+                long id = req.getId();
+                if (!oldEntityMap.containsKey(id)) {
+                    log.debug("Truck driver detail is null for Id {}", req.getId());
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
+                req.setCreatedAt(oldEntityMap.get(id).getCreatedAt());
+                req.setCreatedBy(oldEntityMap.get(id).getCreatedBy());
+            }
+            req.setShipmentId(shipmentId);
+            res.add(req);
+        }
+        res = saveAll(res);
         return res;
     }
 
