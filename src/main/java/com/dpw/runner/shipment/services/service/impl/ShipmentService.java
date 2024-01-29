@@ -1874,7 +1874,7 @@ public class ShipmentService implements IShipmentService {
             if(shipmentSettings.getAutoEventCreate() != null && shipmentSettings.getAutoEventCreate()) {
                 consolidationService.autoGenerateEvents(consolidationDetails);
             }
-            consolidationService.afterSave(consolidationDetails, true);
+            consolidationService.pushShipmentDataToDependentService(consolidationDetails, true);
             return consolidationDetails;
         }
         return null;

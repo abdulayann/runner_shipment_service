@@ -21,5 +21,6 @@ public interface IJobDao {
     List<Jobs> updateEntityFromConsole(List<Jobs>jobsList, Long shipmentId) throws Exception;
     List<Jobs> updateEntityFromConsole(List<Jobs>jobsList, Long shipmentId, List<Jobs> oldEntityList) throws Exception;
     List<Jobs> saveEntityFromConsole(List<Jobs> jobRequests, Long shipmentId);
+    List<Jobs> saveEntityFromConsole(List<Jobs> jobRequests, Long consolidationId, Map<Long, Jobs> oldEntityMap);
     List<Jobs> updateEntityFromShipment(List<Jobs>jobsList, Long shipmentId, List<Jobs> oldEntityList) throws Exception;
 }

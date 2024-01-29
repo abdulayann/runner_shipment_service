@@ -153,11 +153,16 @@ public class PackingDao implements IPackingDao {
         List<Packing> responsePackings = new ArrayList<>();
         try {
             // TODO- Handle Transactions here
-            ListCommonRequest listCommonRequest = constructListCommonRequest("consolidationId", consolidationId, "=");
-            Pair<Specification<Packing>, Pageable> pair = fetchData(listCommonRequest, Packing.class);
-            Page<Packing> packings = findAll(pair.getLeft(), pair.getRight());
-            Map<Long, Packing> hashMap = packings.stream()
-                    .collect(Collectors.toMap(Packing::getId, Function.identity()));
+            Map<Long, Packing> hashMap = new HashMap<>();
+            var packIdList = packingList.stream().map(Packing::getId).toList();
+            if(!Objects.isNull(packIdList) && !packIdList.isEmpty()) {
+                ListCommonRequest listCommonRequest = constructListCommonRequest("consolidationId", consolidationId, "=");
+                Pair<Specification<Packing>, Pageable> pair = fetchData(listCommonRequest, Packing.class);
+                Page<Packing> packings = findAll(pair.getLeft(), pair.getRight());
+                hashMap = packings.stream()
+                        .collect(Collectors.toMap(Packing::getId, Function.identity()));
+            }
+            Map<Long, Packing> hashMapCopy = new HashMap<>(hashMap);
             List<Packing> packingRequestList = new ArrayList<>();
             if (packingList != null && packingList.size() != 0) {
                 for (Packing request : packingList) {
@@ -167,7 +172,7 @@ public class PackingDao implements IPackingDao {
                     }
                     packingRequestList.add(request);
                 }
-                responsePackings = saveEntityFromConsole(packingRequestList, consolidationId);
+                responsePackings = saveEntityFromConsole(packingRequestList, consolidationId, hashMapCopy);
             }
             deletePackings(hashMap, null, null);
             return responsePackings;
@@ -365,6 +370,24 @@ public class PackingDao implements IPackingDao {
             req = save(req);
             res.add(req);
         }
+        return res;
+    }
+    public List<Packing> saveEntityFromConsole(List<Packing> packings, Long consolidationId, Map<Long, Packing> oldEntityMap) {
+        List<Packing> res = new ArrayList<>();
+        for (Packing req : packings) {
+            if (req.getId() != null) {
+                long id = req.getId();
+                if (!oldEntityMap.containsKey(id)) {
+                    log.debug("Packing is null for Id {}", req.getId());
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
+                req.setCreatedAt(oldEntityMap.get(id).getCreatedAt());
+                req.setCreatedBy(oldEntityMap.get(id).getCreatedBy());
+            }
+            req.setConsolidationId(consolidationId);
+            res.add(req);
+        }
+        res = saveAll(res);
         return res;
     }
 

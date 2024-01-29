@@ -35,6 +35,7 @@ public interface IPackingDao {
     List<Packing> updateEntityFromConsole(List<Packing> packingList, Long consolidationId, List<Packing> oldEntityList) throws Exception;
 
     List<Packing> saveEntityFromConsole(List<Packing> packings, Long consolidationId);
+    List<Packing> saveEntityFromConsole(List<Packing> packings, Long consolidationId, Map<Long, Packing> oldEntityMap);
 
     List<Packing> getAllPackings();
 

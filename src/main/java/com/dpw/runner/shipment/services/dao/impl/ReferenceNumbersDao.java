@@ -135,11 +135,16 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
         List<ReferenceNumbers> responseReferenceNumbers = new ArrayList<>();
         try {
             // TODO- Handle Transactions here
-            ListCommonRequest listCommonRequest = constructListCommonRequest("consolidationId", consolidationId, "=");
-            Pair<Specification<ReferenceNumbers>, Pageable> pair = fetchData(listCommonRequest, ReferenceNumbers.class);
-            Page<ReferenceNumbers> routings = findAll(pair.getLeft(), pair.getRight());
-            Map<Long, ReferenceNumbers> hashMap = routings.stream()
-                    .collect(Collectors.toMap(ReferenceNumbers::getId, Function.identity()));
+            Map<Long, ReferenceNumbers> hashMap = new HashMap<>();
+            var referenceNumbersIdList = referenceNumbersList.stream().map(ReferenceNumbers::getId).toList();
+            if(!Objects.isNull(referenceNumbersIdList) && !referenceNumbersIdList.isEmpty()) {
+                ListCommonRequest listCommonRequest = constructListCommonRequest("consolidationId", consolidationId, "=");
+                Pair<Specification<ReferenceNumbers>, Pageable> pair = fetchData(listCommonRequest, ReferenceNumbers.class);
+                Page<ReferenceNumbers> routings = findAll(pair.getLeft(), pair.getRight());
+                hashMap = routings.stream()
+                        .collect(Collectors.toMap(ReferenceNumbers::getId, Function.identity()));
+            }
+            Map<Long, ReferenceNumbers> copyHashMap = new HashMap<>(hashMap);
             List<ReferenceNumbers> referenceNumbersRequests = new ArrayList<>();
             if (referenceNumbersList != null && referenceNumbersList.size() != 0) {
                 for (ReferenceNumbers request : referenceNumbersList) {
@@ -149,7 +154,7 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
                     }
                     referenceNumbersRequests.add(request);
                 }
-                responseReferenceNumbers = saveEntityFromConsole(referenceNumbersRequests, consolidationId);
+                responseReferenceNumbers = saveEntityFromConsole(referenceNumbersRequests, consolidationId, copyHashMap);
             }
             deleteReferenceNumbers(hashMap);
             return responseReferenceNumbers;
@@ -217,6 +222,25 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
             req = save(req);
             res.add(req);
         }
+        return res;
+    }
+    @Override
+    public List<ReferenceNumbers> saveEntityFromConsole(List<ReferenceNumbers> referenceNumbersRequests, Long consolidationId, Map<Long, ReferenceNumbers> hashMap) {
+        List<ReferenceNumbers> res = new ArrayList<>();
+        for(ReferenceNumbers req : referenceNumbersRequests){
+            if(req.getId() != null){
+                long id = req.getId();
+                if (!hashMap.containsKey(id)) {
+                    log.debug("Reference number is null for Id {}", req.getId());
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
+                req.setCreatedAt(hashMap.get(id).getCreatedAt());
+                req.setCreatedBy(hashMap.get(id).getCreatedBy());
+            }
+            req.setConsolidationId(consolidationId);
+            res.add(req);
+        }
+        res = saveAll(res);
         return res;
     }
 

@@ -185,11 +185,16 @@ public class TruckDriverDetailsDao implements ITruckDriverDetailsDao {
         List<TruckDriverDetails> responseTruckDriverDetails = new ArrayList<>();
         try {
             // TODO- Handle Transactions here
-            ListCommonRequest listCommonRequest = constructListCommonRequest("consolidationId", consolidationId, "=");
-            Pair<Specification<TruckDriverDetails>, Pageable> pair = fetchData(listCommonRequest, TruckDriverDetails.class);
-            Page<TruckDriverDetails> truckDriverDetailsPage = findAll(pair.getLeft(), pair.getRight());
-            Map<Long, TruckDriverDetails> hashMap = truckDriverDetailsPage.stream()
-                    .collect(Collectors.toMap(TruckDriverDetails::getId, Function.identity()));
+            Map<Long, TruckDriverDetails> hashMap = new HashMap<>();
+            var truckDriverDetailsIdList = truckDriverDetailsList.stream().map(TruckDriverDetails::getId).toList();
+            if(!Objects.isNull(truckDriverDetailsIdList) && !truckDriverDetailsIdList.isEmpty()) {
+                ListCommonRequest listCommonRequest = constructListCommonRequest("consolidationId", consolidationId, "=");
+                Pair<Specification<TruckDriverDetails>, Pageable> pair = fetchData(listCommonRequest, TruckDriverDetails.class);
+                Page<TruckDriverDetails> truckDriverDetailsPage = findAll(pair.getLeft(), pair.getRight());
+                hashMap = truckDriverDetailsPage.stream()
+                        .collect(Collectors.toMap(TruckDriverDetails::getId, Function.identity()));
+            }
+            Map<Long, TruckDriverDetails> copyHashMap = new HashMap<>(hashMap);
             List<TruckDriverDetails> truckDriverDetailsRequests = new ArrayList<>();
             if (truckDriverDetailsList != null && truckDriverDetailsList.size() != 0) {
                 for (TruckDriverDetails request : truckDriverDetailsList) {
@@ -199,7 +204,7 @@ public class TruckDriverDetailsDao implements ITruckDriverDetailsDao {
                     }
                     truckDriverDetailsRequests.add(request);
                 }
-                responseTruckDriverDetails = saveEntityFromConsole(truckDriverDetailsRequests, consolidationId);
+                responseTruckDriverDetails = saveEntityFromConsole(truckDriverDetailsRequests, consolidationId, copyHashMap);
             }
             deleteTruckDriverDetails(hashMap);
             return responseTruckDriverDetails;
@@ -267,6 +272,25 @@ public class TruckDriverDetailsDao implements ITruckDriverDetailsDao {
             req = save(req);
             res.add(req);
         }
+        return res;
+    }
+    @Override
+    public List<TruckDriverDetails> saveEntityFromConsole(List<TruckDriverDetails> truckDriverDetails, Long consolidationId, Map<Long, TruckDriverDetails> oldEntityMap) {
+        List<TruckDriverDetails> res = new ArrayList<>();
+        for(TruckDriverDetails req : truckDriverDetails){
+            if(req.getId() != null){
+                long id = req.getId();
+                if (!oldEntityMap.containsKey(id)) {
+                    log.debug("Truck driver detail is null for Id {}", req.getId());
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
+                req.setCreatedAt(oldEntityMap.get(id).getCreatedAt());
+                req.setCreatedBy(oldEntityMap.get(id).getCreatedBy());
+            }
+            req.setConsolidationId(consolidationId);
+            res.add(req);
+        }
+        res = saveAll(res);
         return res;
     }
 }
