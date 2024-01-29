@@ -6,11 +6,13 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
 public interface IRoutingsDao {
     Routings save(Routings routings);
+    List<Routings> saveAll(List<Routings> routingsList);
 
     Page<Routings> findAll(Specification<Routings> spec, Pageable pageable);
 
@@ -21,6 +23,7 @@ public interface IRoutingsDao {
     void delete(Routings routings);
 
     List<Routings> updateEntityFromShipment(List<Routings> routingsList, Long shipmentId) throws Exception;
+    List<Routings> saveEntityFromShipment(List<Routings> routings, Long shipmentId, Map<Long, Routings> oldEntityMap);
 
     List<Routings> saveEntityFromShipment(List<Routings> routings, Long shipmentId);
 

@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.dao.impl;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IPartiesDao;
+import com.dpw.runner.shipment.services.entity.Notes;
 import com.dpw.runner.shipment.services.entity.Parties;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.repository.interfaces.IPartiesRepository;
@@ -78,11 +79,16 @@ public class PartiesDao implements IPartiesDao {
         List<Parties> responseParties = new ArrayList<>();
         try {
             // TODO- Handle Transactions here
-            ListCommonRequest listCommonRequest = constructListRequestFromEntityId(entityId, entityType);
-            Pair<Specification<Parties>, Pageable> pair = fetchData(listCommonRequest, Parties.class);
-            Page<Parties> parties = findAll(pair.getLeft(), pair.getRight());
-            Map<Long, Parties> hashMap = parties.stream()
-                    .collect(Collectors.toMap(Parties::getId, Function.identity()));
+            Map<Long, Parties> hashMap = new HashMap<>();
+            var partiesIdList = partiesList.stream().map(Parties::getId).toList();
+            if(!Objects.isNull(partiesIdList) && !partiesIdList.isEmpty()) {
+                ListCommonRequest listCommonRequest = constructListRequestFromEntityId(entityId, entityType);
+                Pair<Specification<Parties>, Pageable> pair = fetchData(listCommonRequest, Parties.class);
+                Page<Parties> parties = findAll(pair.getLeft(), pair.getRight());
+                hashMap = parties.stream()
+                        .collect(Collectors.toMap(Parties::getId, Function.identity()));
+            }
+            Map<Long, Parties> copyHashMap = new HashMap<>(hashMap);
             List<Parties> partiesRequestList = new ArrayList<>();
             if (partiesList != null && partiesList.size() != 0) {
                 for (Parties request : partiesList) {
@@ -92,7 +98,7 @@ public class PartiesDao implements IPartiesDao {
                     }
                     partiesRequestList.add(request);
                 }
-                responseParties = saveEntityFromOtherEntity(partiesRequestList, entityId, entityType);
+                responseParties = saveEntityFromOtherEntity(partiesRequestList, entityId, entityType, copyHashMap);
             }
             deleteParties(hashMap);
             return responseParties;
@@ -122,6 +128,26 @@ public class PartiesDao implements IPartiesDao {
             req = save(req);
             res.add(req);
         }
+        return res;
+    }
+    @Override
+    public List<Parties> saveEntityFromOtherEntity(List<Parties> partiesRequests, Long entityId, String entityType, Map<Long, Parties> oldEntityMap) {
+        List<Parties> res = new ArrayList<>();
+        for(Parties req : partiesRequests){
+            if(req.getId() != null){
+                long id = req.getId();
+                if (!oldEntityMap.containsKey(id)) {
+                    log.debug("Parties is null for Id {}", req.getId());
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
+                req.setCreatedAt(oldEntityMap.get(id).getCreatedAt());
+                req.setCreatedBy(oldEntityMap.get(id).getCreatedBy());
+            }
+            req.setEntityId(entityId);
+            req.setEntityType(entityType);
+            res.add(req);
+        }
+        res = saveAll(res);
         return res;
     }
 

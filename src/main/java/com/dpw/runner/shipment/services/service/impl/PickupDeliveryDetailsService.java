@@ -300,7 +300,7 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
             }
 
             oldShipment = shipmentDao.save(oldShipment, true);
-            shipmentService.afterSave(oldShipment, false);
+            shipmentService.pushShipmentDataToDependentService(oldShipment, false);
             PickupDeliveryDetailsResponse pickupDeliveryDetailsResponse = new PickupDeliveryDetailsResponse();
             if(pickupDeliveryDetailsRequestV2.getType().equals(Constants.PICK_UP))
                 pickupDeliveryDetailsResponse = jsonHelper.convertValue(oldShipment.getPickupDetails(), PickupDeliveryDetailsResponse.class);

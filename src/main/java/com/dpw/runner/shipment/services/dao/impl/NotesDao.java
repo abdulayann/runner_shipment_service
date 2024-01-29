@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.dao.impl;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.INotesDao;
+import com.dpw.runner.shipment.services.entity.FileRepo;
 import com.dpw.runner.shipment.services.entity.Notes;
 import com.dpw.runner.shipment.services.repository.interfaces.INotesRepository;
 import com.nimbusds.jose.util.Pair;
@@ -31,6 +32,10 @@ public class NotesDao implements INotesDao {
     public Notes save(Notes notes) {
         return notesRepository.save(notes);
     }
+    @Override
+    public List<Notes> saveAll(List<Notes> notesList) {
+        return notesRepository.saveAll(notesList);
+    }
 
     @Override
     public Page<Notes> findAll(Specification<Notes> spec, Pageable pageable) {
@@ -57,11 +62,16 @@ public class NotesDao implements INotesDao {
         List<Notes> responseNotes = new ArrayList<>();
         try {
             // TODO- Handle Transactions here
-            ListCommonRequest listCommonRequest = constructListRequestFromEntityId(entityId, entityType);
-            Pair<Specification<Notes>, Pageable> pair = fetchData(listCommonRequest, Notes.class);
-            Page<Notes> notes = findAll(pair.getLeft(), pair.getRight());
-            Map<Long, Notes> hashMap = notes.stream()
-                    .collect(Collectors.toMap(Notes::getId, Function.identity()));
+            Map<Long, Notes> hashMap = new HashMap<>();
+            var notesIdList = notesList.stream().map(Notes::getId).toList();
+            if(!Objects.isNull(notesIdList) && !notesIdList.isEmpty()) {
+                ListCommonRequest listCommonRequest = constructListRequestFromEntityId(entityId, entityType);
+                Pair<Specification<Notes>, Pageable> pair = fetchData(listCommonRequest, Notes.class);
+                Page<Notes> notes = findAll(pair.getLeft(), pair.getRight());
+                hashMap = notes.stream()
+                        .collect(Collectors.toMap(Notes::getId, Function.identity()));
+            }
+            Map<Long, Notes> copyHashMap = new HashMap<>();
             List<Notes> notesRequestList = new ArrayList<>();
             if (notesList != null && notesList.size() != 0) {
                 for (Notes request : notesList) {
@@ -71,7 +81,7 @@ public class NotesDao implements INotesDao {
                     }
                     notesRequestList.add(request);
                 }
-                responseNotes = saveEntityFromOtherEntity(notesRequestList, entityId, entityType);
+                responseNotes = saveEntityFromOtherEntity(notesRequestList, entityId, entityType, copyHashMap);
             }
             deleteNotes(hashMap);
             return responseNotes;
@@ -101,6 +111,26 @@ public class NotesDao implements INotesDao {
             req = save(req);
             res.add(req);
         }
+        return res;
+    }
+    @Override
+    public List<Notes> saveEntityFromOtherEntity(List<Notes> notesRequests, Long entityId, String entityType, Map<Long, Notes> oldEntityMap) {
+        List<Notes> res = new ArrayList<>();
+        for(Notes req : notesRequests){
+            if(req.getId() != null){
+                long id = req.getId();
+                if (!oldEntityMap.containsKey(id)) {
+                    log.debug("Notes is null for Id {}", req.getId());
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
+                req.setCreatedAt(oldEntityMap.get(id).getCreatedAt());
+                req.setCreatedBy(oldEntityMap.get(id).getCreatedBy());
+            }
+            req.setEntityId(entityId);
+            req.setEntityType(entityType);
+            res.add(req);
+        }
+        res = saveAll(res);
         return res;
     }
 
