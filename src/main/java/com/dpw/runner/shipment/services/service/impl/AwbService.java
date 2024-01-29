@@ -105,6 +105,9 @@ public class AwbService implements IAwbService {
     IMawbHawbLinkDao mawbHawbLinkDao;
 
     @Autowired
+    IConsoleShipmentMappingDao consoleShipmentMappingDao;
+
+    @Autowired
     private JsonHelper jsonHelper;
 
     @Autowired
@@ -656,6 +659,8 @@ public class AwbService implements IAwbService {
                 } catch (Exception ignored) {}
             }
             generateDefaultAwbInformation(awbShipmentInfo, res);
+            if(res.getAwbShipmentInfo().getEntityType().equals("MAWB"))
+                res.setErrors(validateMawb(awbShipmentInfo));
             responseList.add(res);
         });
         return responseList;
@@ -2870,6 +2875,31 @@ public class AwbService implements IAwbService {
                 throw new RunnerException(String.format("Failed to fetch organization data for default org : %s", tenantModel.DefaultOrgId));
             }
         }
+    }
+
+    private List<String> validateMawb(Awb awb) {
+        List<String> errors = new ArrayList<>();
+        boolean allHawbsGenerated = true;
+        var id = awb.getConsolidationId();
+        if(id == null) {
+            throw new RunnerException("ID can't be null, please provide a valid input !");
+        }
+
+        List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByConsolidationId(id);
+        List<Long> shipmentIdList = consoleShipmentMappings.stream().map(ConsoleShipmentMapping::getShipmentId).collect(Collectors.toList());
+        // Check whether HAWB is generated for all the linked shipments
+        for(var shipmentId : shipmentIdList) {
+            List<Awb> response = awbDao.findByShipmentId(shipmentId);
+            if (Objects.isNull(response) || response.size() == 0) {
+              allHawbsGenerated = false;
+              break;
+            }
+        }
+
+        if(!allHawbsGenerated)
+            errors.add("Additional Shipments have been attached, please reset data as required.");
+
+        return errors;
     }
 
 }
