@@ -202,7 +202,7 @@ public class ShipmentController {
         String responseMsg;
         try {
             ShipmentRequest req = jsonHelper.convertValue(request, ShipmentRequest.class);
-            return (ResponseEntity<RunnerResponse<ShipmentDetailsResponse>>) shipmentService.completeV1ShipmentCreateAndUpdate(CommonRequestModel.buildRequest(req), new HashMap<>());
+            return (ResponseEntity<RunnerResponse<ShipmentDetailsResponse>>) shipmentService.completeV1ShipmentCreateAndUpdate(CommonRequestModel.buildRequest(req), new HashMap<>(), null);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
@@ -291,7 +291,7 @@ public class ShipmentController {
     public ResponseEntity<RunnerResponse<CustomShipmentSyncRequest>> getCustomShipment(@RequestBody @Valid ShipmentDetails request) {
         String responseMsg;
         try {
-            return (ResponseEntity<RunnerResponse<CustomShipmentSyncRequest>>) shipmentSync.sync(request, null);
+            return (ResponseEntity<RunnerResponse<CustomShipmentSyncRequest>>) shipmentSync.sync(request, null, null);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
@@ -462,5 +462,11 @@ public class ShipmentController {
     @PostMapping(value = ShipmentConstants.SHOW_ASSIGN_ALL_CONTAINERS)
     public ResponseEntity<AssignAllDialogDto> showAssignAllContainers(@RequestBody ShipmentConsoleIdDto request) {
         return (ResponseEntity<AssignAllDialogDto>) shipmentService.showAssignAllContainers(CommonRequestModel.buildRequest(request));
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = "Successful Creditn Limit Retrieval")})
+    @GetMapping(value = ShipmentConstants.FETCH_CREDIT_LIMIT)
+    public ResponseEntity<?> fetchCreditLimit(@RequestParam String orgCode, @RequestParam(required = false) String addressCode) {
+        return (ResponseEntity<?>) shipmentService.fetchCreditLimit(orgCode, addressCode);
     }
 }

@@ -46,6 +46,7 @@ import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.service_bus.AzureServiceBusTopic;
 import com.dpw.runner.shipment.services.service_bus.ISBProperties;
 import com.dpw.runner.shipment.services.service_bus.ISBUtils;
+import com.dpw.runner.shipment.services.syncing.Entity.PartyRequestV2;
 import com.dpw.runner.shipment.services.syncing.interfaces.IConsolidationSync;
 import com.dpw.runner.shipment.services.syncing.interfaces.IHblSync;
 import com.dpw.runner.shipment.services.syncing.interfaces.IPackingsSync;
@@ -620,7 +621,7 @@ public class ShipmentService implements IShipmentService {
 
             afterSave(shipmentDetails, true);
             try {
-                shipmentSync.sync(shipmentDetails, null);
+                shipmentSync.sync(shipmentDetails, null, notesRequest);
             } catch (Exception e){
                 log.error("Error performing sync on shipment entity, {}", e);
             }
@@ -706,7 +707,8 @@ public class ShipmentService implements IShipmentService {
             if(updatedContainers.size() > 0) {
                 if((tempConsolIds == null || tempConsolIds.size() == 0) && (shipmentSettingsDetails.getIsShipmentLevelContainer() == null || !shipmentSettingsDetails.getIsShipmentLevelContainer())) {
                     consolidationDetails = createConsolidation(shipmentDetails, updatedContainers);
-                    shipmentDetails.setConsolidationList(new ArrayList<>(Arrays.asList(consolidationDetails)));
+                    if(!Objects.isNull(consolidationDetails))
+                        shipmentDetails.setConsolidationList(new ArrayList<>(Arrays.asList(consolidationDetails)));
                 }
             }
             beforeSave(shipmentDetails);
@@ -801,7 +803,7 @@ public class ShipmentService implements IShipmentService {
             // Create events on basis of shipment status Confirmed/Created
             autoGenerateEvents(shipmentDetails, null);
             try {
-                shipmentSync.sync(shipmentDetails, null);
+                shipmentSync.sync(shipmentDetails, null, null);
             } catch (Exception e){
                 log.error("Error performing sync on shipment entity, {}", e);
             }
@@ -1157,7 +1159,7 @@ public class ShipmentService implements IShipmentService {
                         .insertUserDisplayName(note.getCreatedBy())
                         .isPublic(note.getIsPublic())
                         .insertDate(note.getCreatedAt())
-                        .entityType(Constants.SHIPMENT_BOOKING)
+                        .entityType(Constants.CUSTOMER_BOOKING)
                         .build()).collect(Collectors.toList());
     }
 
@@ -1501,7 +1503,7 @@ public class ShipmentService implements IShipmentService {
         entity = shipmentDao.update(entity, false);
         afterSave(entity, false);
         try {
-            shipmentSync.sync(entity, null);
+            shipmentSync.sync(entity, null, null);
         } catch (Exception e){
             log.error("Error performing sync on shipment entity, {}", e);
         }
@@ -1615,7 +1617,8 @@ public class ShipmentService implements IShipmentService {
             if(updatedContainers.size() > 0) {
                 if((tempConsolIds == null || tempConsolIds.size() == 0) && (shipmentSettingsDetails.getIsShipmentLevelContainer() == null || !shipmentSettingsDetails.getIsShipmentLevelContainer())) {
                     consolidationDetails = createConsolidation(entity, updatedContainers);
-                    entity.setConsolidationList(new ArrayList<>(Arrays.asList(consolidationDetails)));
+                    if(!Objects.isNull(consolidationDetails))
+                        entity.setConsolidationList(new ArrayList<>(Arrays.asList(consolidationDetails)));
                 }
             }
             beforeSave(entity);
@@ -1732,7 +1735,7 @@ public class ShipmentService implements IShipmentService {
             }
             afterSave(entity, false);
             try {
-                shipmentSync.sync(entity, deletedContGuids);
+                shipmentSync.sync(entity, deletedContGuids, null);
             } catch (Exception e){
                 log.error("Error performing sync on shipment entity, {}", e);
             }
@@ -1892,6 +1895,9 @@ public class ShipmentService implements IShipmentService {
             consolidationDetails.setCarrierDetails(jsonHelper.convertValue(shipmentDetails.getCarrierDetails(), CarrierDetails.class));
             consolidationDetails.getCarrierDetails().setId(null);
             consolidationDetails.getCarrierDetails().setGuid(null);
+            if(shipmentSettings.getShipmentLite() != null && shipmentSettings.getShipmentLite() && shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && shipmentDetails.getDirection().equals(Constants.DIRECTION_EXP)) {
+                consolidationDetails.setPayment(shipmentDetails.getPaymentTerms());
+            }
             consolidationDetails.getCarrierDetails().setOrigin(consolidationDetails.getCarrierDetails().getOriginPort());
             consolidationDetails.getCarrierDetails().setDestination(consolidationDetails.getCarrierDetails().getDestinationPort());
             consolidationDetails.setShipmentType(shipmentDetails.getDirection());
@@ -1902,17 +1908,41 @@ public class ShipmentService implements IShipmentService {
             consolidationDetails.setCarrierBookingRef(shipmentDetails.getBookingNumber());
             consolidationDetails.setSourceTenantId(TenantContext.getCurrentTenant().longValue());
             consolidationService.generateConsolidationNumber(consolidationDetails);
-            // TODO- default organizations Row -- setAgentOrganizationAndAddress() function in v1
-//            if(consolidationDetails.getShipmentType() != null && !consolidationDetails.getShipmentType().isEmpty()
-//            && consolidationDetails.getShipmentType().equals(Constants.IMP) || consolidationDetails.getShipmentType().equals(Constants.DIRECTION_EXP)) {
-//                Parties defaultParty = new Parties(); // TODO- fetch from tenants row
-//                if(true) { // TODO- add conditions on default Party
-//                    if(consolidationDetails.getShipmentType().equals(Constants.DIRECTION_EXP)) {
-//
-//                    }
-//                }
-//            }
+            if(consolidationDetails.getShipmentType() != null && !consolidationDetails.getShipmentType().isEmpty()
+            && consolidationDetails.getShipmentType().equals(Constants.IMP) || consolidationDetails.getShipmentType().equals(Constants.DIRECTION_EXP)) {
+                Parties defaultParty = null;
+                try {
+                    PartyRequestV2 partyRequestV2 = v1Service.getDefaultOrg();
+                    if(!Objects.isNull(partyRequestV2))
+                        defaultParty = modelMapper.map(partyRequestV2, Parties.class);
+                } catch (Exception ignored) {}
+                if(!Objects.isNull(defaultParty)) {
+                    if(consolidationDetails.getShipmentType().equals(Constants.DIRECTION_EXP)) {
+                        consolidationDetails.setSendingAgent(defaultParty);
+                        if(consolidationDetails.getReceivingAgent() != null && consolidationDetails.getReceivingAgent().getOrgCode() != null
+                            && consolidationDetails.getReceivingAgent().getOrgCode().equals(defaultParty.getOrgCode()))
+                            consolidationDetails.setReceivingAgent(null);
+                    }
+                    else {
+                        consolidationDetails.setReceivingAgent(defaultParty);
+                        if(consolidationDetails.getSendingAgent() != null && consolidationDetails.getSendingAgent().getOrgCode() != null
+                            && consolidationDetails.getSendingAgent().getOrgCode().equals(defaultParty.getOrgCode()))
+                            consolidationDetails.setSendingAgent(null);
+                    }
+                }
+            }
+            List<Routings> routings = shipmentDetails.getRoutingsList().stream().sorted(Comparator.comparingLong(Routings::getLeg)).collect(Collectors.toList());
+            var routeRequest = routings.stream().filter(x -> x.getMode().equals(shipmentDetails.getTransportMode())).findFirst();
+            List<Routings> createRoutes = new ArrayList<>();
+            if(routeRequest.isPresent()) {
+                createRoutes.add(convertToClass(routeRequest.get(), Routings.class));
+                createRoutes = createConsoleRoutePayload(createRoutes);
+                consolidationDetails.setRoutingsList(createRoutes);
+            }
             consolidationDetails = consolidationDetailsDao.save(consolidationDetails, false);
+            if(createRoutes != null && !createRoutes.isEmpty()) {
+                routingsDao.saveEntityFromConsole(createRoutes, consolidationDetails.getId());
+            }
             Long id = consolidationDetails.getId();
             if(containers != null && containers.size() > 0) {
                 containers = containers.stream().map(e -> e.setConsolidationId(id)).collect(Collectors.toList());
@@ -2414,7 +2444,7 @@ public class ShipmentService implements IShipmentService {
                 shipmentDetails.get().setJobStatus(shipmentBillingListResponse.getData().get(shipmentDetails.get().getGuid()).getJobStatus());
             }
             log.info("Shipment details fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
-            List<Notes> notes = notesDao.findByEntityIdAndEntityType(request.getId(), Constants.SHIPMENT_BOOKING);
+            List<Notes> notes = notesDao.findByEntityIdAndEntityType(request.getId(), Constants.CUSTOMER_BOOKING);
             ShipmentDetailsResponse response = modelMapper.map(shipmentDetails.get(), ShipmentDetailsResponse.class);
             response.setCustomerBookingNotesList(convertToDtoList(notes,NotesResponse.class));
             createShipmentPayload(shipmentDetails.get(), response);
@@ -2459,7 +2489,7 @@ public class ShipmentService implements IShipmentService {
             shipmentDetails.get().setNotesList(notesDao.findByEntityIdAndEntityType(id, Constants.SHIPMENT));
             log.info("Shipment details async fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
             ShipmentDetailsResponse response = jsonHelper.convertValue(shipmentDetails.get(), ShipmentDetailsResponse.class);
-            response.setCustomerBookingNotesList(convertToDtoList(notesDao.findByEntityIdAndEntityType(request.getId(), Constants.SHIPMENT_BOOKING),NotesResponse.class));
+            response.setCustomerBookingNotesList(convertToDtoList(notesDao.findByEntityIdAndEntityType(request.getId(), Constants.CUSTOMER_BOOKING),NotesResponse.class));
             //containerCountUpdate(shipmentDetails.get(), response);
             return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(response));
         } catch (Exception e) {
@@ -2643,7 +2673,7 @@ public class ShipmentService implements IShipmentService {
 
             if(fromV1 == null || !fromV1) {
                 try {
-                    shipmentSync.sync(entity, null);
+                    shipmentSync.sync(entity, null, null);
                 } catch (Exception e) {
                     log.error("Error performing sync on shipment entity, {}", e);
                 }
@@ -2795,7 +2825,7 @@ public class ShipmentService implements IShipmentService {
     }
 
     @Transactional
-    public ResponseEntity<?> completeV1ShipmentCreateAndUpdate(CommonRequestModel commonRequestModel, Map<UUID, String> map) throws Exception {
+    public ResponseEntity<?> completeV1ShipmentCreateAndUpdate(CommonRequestModel commonRequestModel, Map<UUID, String> map, List<NotesRequest> customerBookingNotes) throws Exception {
 
         ShipmentRequest shipmentRequest = (ShipmentRequest) commonRequestModel.getData();
 
@@ -2940,6 +2970,14 @@ public class ShipmentService implements IShipmentService {
                 List<Notes> updatedNotes = notesDao.updateEntityFromOtherEntity(convertToEntityList(notesRequestList, Notes.class), id, Constants.SHIPMENT, oldNoteList.stream().toList());
                 entity.setNotesList(updatedNotes);
             }
+            if (customerBookingNotes != null && customerBookingNotes.size() > 0) {
+                ListCommonRequest listCommonRequest = constructListRequestFromEntityId(entity.getId(), Constants.CUSTOMER_BOOKING);
+                Pair<Specification<Notes>, Pageable> pair = fetchData(listCommonRequest, Notes.class);
+                Page<Notes> oldNoteList = notesDao.findAll(pair.getLeft(), pair.getRight());
+                if(oldNoteList == null || oldNoteList.isEmpty()) {
+                    List<Notes> updatedNotes = notesDao.saveEntityFromOtherEntity(convertToEntityList(customerBookingNotes, Notes.class), id, Constants.CUSTOMER_BOOKING);
+                }
+            }
             afterSave(entity, isCreate);
             ShipmentDetailsResponse response = shipmentDetailsMapper.map(entity);
 
@@ -2997,6 +3035,9 @@ public class ShipmentService implements IShipmentService {
             ShipmentDetails shipmentDetails = shipmentDetailsOptional.get();
             ShipmentDetailsResponse shipmentDetailsResponse = jsonHelper.convertValue(shipmentDetails, ShipmentDetailsResponse.class);
             Map<String, Object> response = fetchAllMasterDataByKey(shipmentDetails, shipmentDetailsResponse);
+            if(shipmentDetails.getClient() != null && StringUtility.isNotEmpty(shipmentDetails.getClient().getOrgCode())) {
+                fetchCreditLimitMasterData(shipmentDetails.getClient().getOrgCode(), shipmentDetails.getClient().getAddressCode(), response);
+            }
             return ResponseHelper.buildSuccessResponse(response);
         }
         catch (Exception e) {
@@ -4088,6 +4129,55 @@ public class ShipmentService implements IShipmentService {
                     : DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
+    public ResponseEntity<?> fetchCreditLimit(String orgCode, String addressCode) {
+        if(StringUtility.isEmpty(orgCode)) {
+            throw new RunnerException("OrgCode to fetch creditLimit can't be null");
+        }
+        AddressTranslationRequest.OrgAddressCode orgAddressCode = AddressTranslationRequest.OrgAddressCode.builder().OrgCode(orgCode).AddressCode(addressCode).build();
+        try {
+            V1DataResponse v1DataResponse = v1Service.fetchCreditLimit(orgAddressCode);
+            if(v1DataResponse.entities == null) {
+                log.debug("No Data found for org code {}", orgCode);
+                return ResponseHelper.buildSuccessResponse();
+            }
+            List<CreditLimitResponse> creditLimitResponses = jsonHelper.convertValueToList(v1DataResponse.getEntities(), CreditLimitResponse.class);
+            if(creditLimitResponses == null || creditLimitResponses.size() == 0) {
+                log.debug("No Data found for org code {}", orgCode);
+                return ResponseHelper.buildSuccessResponse();
+            }
+            return ResponseHelper.buildDependentServiceResponse(creditLimitResponses.get(0), 0, 0);
+        } catch (Exception e) {
+            log.debug("No Data found for org code {} {}", orgCode, e.getMessage());
+        }
+
+        return ResponseHelper.buildSuccessResponse();
+    }
+
+    public void fetchCreditLimitMasterData(String orgCode, String addressCode, Map<String, Object> response) {
+        if(StringUtility.isEmpty(orgCode)) {
+            return;
+        }
+        AddressTranslationRequest.OrgAddressCode orgAddressCode = AddressTranslationRequest.OrgAddressCode.builder().OrgCode(orgCode).AddressCode(addressCode).build();
+        try {
+            V1DataResponse v1DataResponse = v1Service.fetchCreditLimit(orgAddressCode);
+            if(v1DataResponse.entities == null) {
+                log.debug("No Data found for org code {}", orgCode);
+                return ;
+            }
+            List<CreditLimitResponse> creditLimitResponses = jsonHelper.convertValueToList(v1DataResponse.getEntities(), CreditLimitResponse.class);
+            if(creditLimitResponses == null || creditLimitResponses.size() == 0) {
+                log.debug("No Data found for org code {}", orgCode);
+                return;
+            }
+            if(response == null) {
+                response = new HashMap<>();
+            }
+            response.put(Constants.CREDIT_LIMIT, creditLimitResponses.get(0));
+        } catch (Exception e) {
+            log.debug("No Data found for org code {} {}", orgCode, e.getMessage());
         }
     }
 

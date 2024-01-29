@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.service.interfaces;
 
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.dto.request.CustomerBookingRequest;
+import com.dpw.runner.shipment.services.dto.request.NotesRequest;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import org.springframework.http.ResponseEntity;
 
@@ -30,7 +31,7 @@ public interface IShipmentService extends ICommonService {
 
     ResponseEntity<?> toggleLock(CommonRequestModel commonRequestModel);
 
-    ResponseEntity<?> completeV1ShipmentCreateAndUpdate(CommonRequestModel commonRequestModel, Map<UUID, String> map) throws Exception;
+    ResponseEntity<?> completeV1ShipmentCreateAndUpdate(CommonRequestModel commonRequestModel, Map<UUID, String> map, List<NotesRequest> customerBookingNotes) throws Exception;
 
     ResponseEntity<?> cloneShipment(CommonRequestModel commonRequestModel);
 
@@ -70,5 +71,6 @@ public interface IShipmentService extends ICommonService {
     ResponseEntity<?> fetchShipmentsForConsoleId(CommonRequestModel commonRequestModel);
     ResponseEntity<?> fetchActiveInvoices(CommonRequestModel commonRequestModel);
     ResponseEntity<?> showAssignAllContainers(CommonRequestModel commonRequestModel);
+    ResponseEntity<?> fetchCreditLimit(String orgCode, String addressCode);
 
 }

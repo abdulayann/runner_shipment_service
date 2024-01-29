@@ -17,6 +17,7 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
+import com.dpw.runner.shipment.services.syncing.Entity.PartyRequestV2;
 import com.dpw.runner.shipment.services.utils.V1AuthHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -246,6 +247,9 @@ public class V1ServiceImpl implements IV1Service {
     @Value("${v1service.url.base}${v1service.url.retrieveTenant}")
     private String RETRIEVE_TENANT;
 
+    @Value("${v1service.url.base}${v1service.url.getDefaultOrg}")
+    private String GET_DEFAULT_ORG;
+
     @Value("${v1service.url.base}${v1service.url.ownType}")
     private String OWN_TYPE;
 
@@ -298,6 +302,8 @@ public class V1ServiceImpl implements IV1Service {
     private String GET_ADDRESS_TRANSLATION;
     @Value("${v1service.url.base}${v1service.url.fetchActiveInvoices}")
     private String GET_ACTIVE_INVOICES;
+    @Value("${v1service.url.base}${v1service.url.creditLimit}")
+    private String CREDIT_LIMIT_LIST;
 
     @Autowired
     private JsonHelper jsonHelper;
@@ -1475,6 +1481,23 @@ public class V1ServiceImpl implements IV1Service {
     }
 
     @Override
+    public PartyRequestV2 getDefaultOrg() {
+        ResponseEntity masterDataResponse = null;
+
+        try {
+            long time = System.currentTimeMillis();
+            HttpEntity<V1DataResponse> entity = new HttpEntity(V1AuthHelper.getHeaders());
+            masterDataResponse = this.restTemplate.postForEntity(this.GET_DEFAULT_ORG, entity, PartyRequestV2.class, new Object[0]);
+            log.info("Token time taken in getDefaultOrg() function " + (System.currentTimeMillis() - time));
+            return (PartyRequestV2) masterDataResponse.getBody();
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
+        } catch (Exception var7) {
+            throw new V1ServiceException(var7.getMessage());
+        }
+    }
+
+    @Override
     public V1DataResponse fetchOwnType(Object request) {
         ResponseEntity masterDataResponse = null;
 
@@ -1903,6 +1926,27 @@ public class V1ServiceImpl implements IV1Service {
             masterDataResponse = this.restTemplate.postForEntity(this.GET_ACTIVE_INVOICES, entity, CheckActiveInvoiceResponse.class, new Object[0]);
             return (CheckActiveInvoiceResponse) masterDataResponse.getBody();
 
+        } catch (HttpStatusCodeException var6) {
+            if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
+                throw new UnAuthorizedException("UnAuthorizedException");
+            } else {
+                throw new V1ServiceException(var6.getMessage());
+            }
+        } catch (Exception var7) {
+            throw new V1ServiceException(var7.getMessage());
+        }
+    }
+
+    @Override
+    public V1DataResponse fetchCreditLimit(Object request) {
+        ResponseEntity creditLimitResponse = null;
+
+        try {
+            long time = System.currentTimeMillis();
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            creditLimitResponse = this.restTemplate.postForEntity(this.CREDIT_LIMIT_LIST, entity, V1DataResponse.class);
+            log.info("Token time taken in fetchCreditLimit() function " + (System.currentTimeMillis() - time));
+            return (V1DataResponse) creditLimitResponse.getBody();
         } catch (HttpStatusCodeException var6) {
             if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
                 throw new UnAuthorizedException("UnAuthorizedException");

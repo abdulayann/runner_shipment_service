@@ -31,7 +31,7 @@ public class Constants {
     public static final String USER_SERVICE_MAVANI = "mavani";
     public static final String NO_DATA = "Not Found!";
     public static final String SHIPMENT = "SHIPMENT";
-    public static final String SHIPMENT_BOOKING = "ShipmentBooking";
+    public static final String CUSTOMER_BOOKING = "CustomerBooking";
     public static final String BOOKING = "BOOKING";
     public static final String BOOKING_CHARGES = "BOOKING_CHARGES";
     public static final String CONSOLIDATION = "CONSOLIDATION";
@@ -274,5 +274,8 @@ public class Constants {
     public static final String PRE_ALERT_EVENT_CODE = "PREALSNT";
     public static final String SHIPMENT_SENT = "ShipmentSent";
     public static final String CONSOLIDATION_SENT = "ConsolidationSent";
+
+    public static final String CREDIT_LIMIT = "CREDIT_LIMIT";
+
 
 }
