@@ -234,11 +234,16 @@ public class ContainerDao implements IContainerDao {
             if (containersList != null) {
                 List<Containers> containerList = new ArrayList<>(containersList);
                 if(fromConsolidation) {
-                    ListCommonRequest listCommonRequest = constructListCommonRequest("consolidationId", consolidationId, "=");
-                    Pair<Specification<Containers>, Pageable> pair = fetchData(listCommonRequest, Containers.class);
-                    Page<Containers> containersPage = findAll(pair.getLeft(), pair.getRight());
-                    Map<Long, Containers> hashMap = containersPage.stream()
-                            .collect(Collectors.toMap(Containers::getId, Function.identity()));
+                    Map<Long, Containers> hashMap = new HashMap<>();
+                    var containersIdList = containersList.stream().map(Containers::getId).toList();
+                    ListCommonRequest listCommonRequest;
+                    if(!Objects.isNull(containersIdList) && !containersIdList.isEmpty()) {
+                        listCommonRequest = constructListCommonRequest("consolidationId", consolidationId, "=");
+                        Pair<Specification<Containers>, Pageable> pair = fetchData(listCommonRequest, Containers.class);
+                        Page<Containers> containersPage = findAll(pair.getLeft(), pair.getRight());
+                        hashMap = containersPage.stream()
+                                .collect(Collectors.toMap(Containers::getId, Function.identity()));
+                    }
                     for (Containers containers: containerList) {
                         containers.setConsolidationId(consolidationId);
                         Long id = containers.getId();
