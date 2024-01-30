@@ -1055,7 +1055,8 @@ public class ConsolidationService implements IConsolidationService {
                 (console.getCarrierDetails() != null && oldEntity.getCarrierDetails() != null &&
                 (!Objects.equals(console.getCarrierDetails().getVoyage(),oldEntity.getCarrierDetails().getVoyage()) ||
                         !Objects.equals(console.getCarrierDetails().getVessel(),oldEntity.getCarrierDetails().getVessel()) ||
-                        !Objects.equals(console.getCarrierDetails().getShippingLine(),oldEntity.getCarrierDetails().getShippingLine()))))) {
+                        !Objects.equals(console.getCarrierDetails().getShippingLine(),oldEntity.getCarrierDetails().getShippingLine())
+                )))) {
             List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByConsolidationId(console.getId());
             List<Long> shipmentIdList = consoleShipmentMappings.stream().map(i -> i.getShipmentId()).collect(Collectors.toList());
             ListCommonRequest listReq = constructListCommonRequest("id", shipmentIdList, "IN");
@@ -1072,6 +1073,7 @@ public class ConsolidationService implements IConsolidationService {
                             i.getCarrierDetails().setVoyage(console.getCarrierDetails().getVoyage());
                             i.getCarrierDetails().setVessel(console.getCarrierDetails().getVessel());
                             i.getCarrierDetails().setShippingLine(console.getCarrierDetails().getShippingLine());
+                            i.getCarrierDetails().setAircraftType(console.getCarrierDetails().getAircraftType());
                         }
                         return i;
                     }).toList();
