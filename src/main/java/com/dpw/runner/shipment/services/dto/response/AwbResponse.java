@@ -36,5 +36,5 @@ public class AwbResponse implements IRunnerResponse {
     private AwbShipmentInfoResponse defaultAwbShipmentInfo;
     public List<AwbNotifyPartyInfo> defaultAwbNotifyPartyInfo;
     public List<AwbRoutingInfoResponse> defaultAwbRoutingInfo;
-
+    public String errors;
 }
