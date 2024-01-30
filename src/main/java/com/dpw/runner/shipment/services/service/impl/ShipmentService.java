@@ -3872,8 +3872,8 @@ public class ShipmentService implements IShipmentService {
 
     /**
      * back flows data of the current updated shipment to all its sibling shipments attached to the common console
-     * @param shipment
-     * @param oldMasterBill
+     * @param current_shipment
+     * @param old_shipment
      */
     private void updateLinkedShipmentData(ShipmentDetails shipment, ShipmentDetails oldEntity) {
         List<ConsolidationDetails> consolidationList = shipment.getConsolidationList();
@@ -3883,8 +3883,13 @@ public class ShipmentService implements IShipmentService {
                 (shipment.getCarrierDetails() != null && oldEntity.getCarrierDetails() != null &&
                 (!Objects.equals(shipment.getCarrierDetails().getVoyage(),oldEntity.getCarrierDetails().getVoyage()) ||
                         !Objects.equals(shipment.getCarrierDetails().getVessel(),oldEntity.getCarrierDetails().getVessel()) ||
-                        !Objects.equals(shipment.getCarrierDetails().getShippingLine(),oldEntity.getCarrierDetails().getShippingLine()))))) {
+                        !Objects.equals(shipment.getCarrierDetails().getShippingLine(),oldEntity.getCarrierDetails().getShippingLine()) ||
+                        !Objects.equals(shipment.getCarrierDetails().getAircraftType(),oldEntity.getCarrierDetails().getAircraftType())
+                )))) {
             linkedConsol.setBol(shipment.getMasterBill());
+            if(linkedConsol.getCarrierDetails() == null)
+                linkedConsol.setCarrierDetails(new CarrierDetails());
+            linkedConsol.getCarrierDetails().setAircraftType(shipment.getCarrierDetails().getAircraftType());
             List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByConsolidationId(linkedConsol.getId());
             List<Long> shipmentIdList = consoleShipmentMappings.stream().map(i -> i.getShipmentId()).collect(Collectors.toList());
             ListCommonRequest listReq = constructListCommonRequest("id", shipmentIdList, "IN");
@@ -3900,6 +3905,7 @@ public class ShipmentService implements IShipmentService {
                       i.getCarrierDetails().setVoyage(shipment.getCarrierDetails().getVoyage());
                       i.getCarrierDetails().setVessel(shipment.getCarrierDetails().getVessel());
                       i.getCarrierDetails().setShippingLine(shipment.getCarrierDetails().getShippingLine());
+                      i.getCarrierDetails().setAircraftType(shipment.getCarrierDetails().getAircraftType());
                   }
                   return i;
               }).toList();
