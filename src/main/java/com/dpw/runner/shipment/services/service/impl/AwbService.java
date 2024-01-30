@@ -2877,7 +2877,7 @@ public class AwbService implements IAwbService {
         }
     }
 
-    private List<String> validateMawb(Awb awb) {
+    private String validateMawb(Awb awb) {
         List<String> errors = new ArrayList<>();
         boolean allHawbsGenerated = true;
         var id = awb.getConsolidationId();
@@ -2899,7 +2899,7 @@ public class AwbService implements IAwbService {
         if(!allHawbsGenerated)
             errors.add("Additional Shipments have been attached, please reset data as required.");
 
-        return errors;
+        return errors.size() > 0 ? errors.toString() : null;
     }
 
 }
