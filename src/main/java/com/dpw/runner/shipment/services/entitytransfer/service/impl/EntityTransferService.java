@@ -705,17 +705,13 @@ public class EntityTransferService implements IEntityTransferService {
                     });
                     if(shipAdditionalDocs != null && shipAdditionalDocs.containsKey(shipment.getGuid().toString())){
                         if(shipAdditionalDocs.get(shipment.getGuid().toString()) != null) {
-                            var shipFileRepoList = shipment.getFileRepoList().stream().filter(fileRepo -> {
-                                return shipAdditionalDocs.get(shipment.getGuid().toString()).indexOf(fileRepo.getId()) != -1;
-                            }).collect(Collectors.toList());
-                            shipment.setFileRepoList(shipFileRepoList);
+//                            var shipFileRepoList = shipment.getFileRepoList().stream().filter(fileRepo -> {
+//                                return shipAdditionalDocs.get(shipment.getGuid().toString()).indexOf(fileRepo.getId()) != -1;
+//                            }).collect(Collectors.toList());
+//                            shipment.setFileRepoList(shipFileRepoList);
                             shipId.add(shipment.getShipmentId());
                             docList.add(shipAdditionalDocs.get(shipment.getGuid().toString()));
-                        } else {
-                            shipment.setFileRepoList(null);
                         }
-                    } else {
-                        shipment.setFileRepoList(null);
                     }
                 });
             }
