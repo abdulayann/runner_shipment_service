@@ -19,7 +19,6 @@ import com.dpw.runner.shipment.services.dto.request.HblResetRequest;
 import com.dpw.runner.shipment.services.dto.request.hbl.HblCargoDto;
 import com.dpw.runner.shipment.services.dto.request.hbl.HblContainerDto;
 import com.dpw.runner.shipment.services.dto.request.hbl.HblDataDto;
-import com.dpw.runner.shipment.services.dto.response.AdditionalDetailResponse;
 import com.dpw.runner.shipment.services.dto.response.HblResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.CompanySettingsResponse;
 import com.dpw.runner.shipment.services.entity.*;
@@ -37,6 +36,7 @@ import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.syncing.Entity.HblRequestV2;
 import com.dpw.runner.shipment.services.syncing.constants.SyncingConstants;
 import com.dpw.runner.shipment.services.syncing.interfaces.IHblSync;
+import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
 import com.dpw.runner.shipment.services.utils.AwbUtility;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
@@ -72,6 +72,8 @@ public class HblService implements IHblService {
     private IHblDao hblDao;
     @Autowired
     private IShipmentDao shipmentDao;
+    @Autowired
+    private IShipmentSync shipmentSync;
     @Autowired
     private JsonHelper jsonHelper;
     @Autowired
@@ -468,10 +470,12 @@ public class HblService implements IHblService {
         hblData.setCargoNetWeightUnit(shipmentDetail.getNetWeightUnit());
         hblData.setCargoGrossWeightUnit(shipmentDetail.getWeightUnit());
         hblData.setCargoGrossVolumeUnit(shipmentDetail.getVolumeUnit());
+        boolean syncShipment = false;
         // generate HouseBill
         if(StringUtility.isEmpty(shipmentDetail.getHouseBill())) {
             shipmentDetail.setHouseBill(shipmentService.generateCustomHouseBL(shipmentDetail));
             shipmentDao.save(shipmentDetail, false);
+            syncShipment = true;
         }
         hblData.setHouseBill(shipmentDetail.getHouseBill());
         hblData.setVesselName(carrierDetails.getVessel());
@@ -513,6 +517,13 @@ public class HblService implements IHblService {
                                 .map(c -> c.getReferenceNumber()).collect(Collectors.toList())));
             }
 
+        }
+        if (syncShipment) {
+            try {
+                shipmentSync.sync(shipmentDetail, null, null);
+            } catch (Exception e) {
+                log.error("Error performing sync on shipment entity, {}", e);
+            }
         }
 
         return hblData;

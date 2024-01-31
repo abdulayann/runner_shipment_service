@@ -13,7 +13,6 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerPartialListResponse;
 import com.dpw.runner.shipment.services.config.SyncConfig;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
-import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ConsolePacksListResponse;
 import com.dpw.runner.shipment.services.dto.request.AwbRequest;
 import com.dpw.runner.shipment.services.dto.request.CreateAwbRequest;
 import com.dpw.runner.shipment.services.dto.request.ResetAwbRequest;
@@ -49,8 +48,8 @@ import com.dpw.runner.shipment.services.syncing.Entity.AwbRequestV2;
 import com.dpw.runner.shipment.services.syncing.Entity.SaveStatus;
 import com.dpw.runner.shipment.services.syncing.constants.SyncingConstants;
 import com.dpw.runner.shipment.services.syncing.interfaces.IAwbSync;
+import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
 import com.dpw.runner.shipment.services.utils.*;
-import com.dpw.runner.shipment.services.validator.enums.Operators;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
@@ -65,7 +64,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-import org.springframework.ui.ModelMap;
 import org.springframework.web.client.RestTemplate;
 
 import java.math.BigDecimal;
@@ -141,6 +139,9 @@ public class AwbService implements IAwbService {
 
     @Autowired
     IShipmentService shipmentService;
+
+    @Autowired
+    IShipmentSync shipmentSync;
 
     @Autowired
     private IV1Service v1Service;
@@ -954,9 +955,11 @@ public class AwbService implements IAwbService {
 
         // fetch sehipment info
         ShipmentDetails shipmentDetails = shipmentDao.findById(request.getShipmentId()).get();
+        boolean syncShipment = false;
         if(shipmentDetails.getHouseBill() == null) {
             shipmentDetails.setHouseBill(shipmentService.generateCustomHouseBL(shipmentDetails));
             shipmentDao.save(shipmentDetails, false);
+            syncShipment = true;
         }
 
         // fetch all packings
@@ -969,6 +972,13 @@ public class AwbService implements IAwbService {
         AwbUtility.validateShipmentInfoBeforeGeneratingAwb(shipmentDetails);
 
         var awbPackingInfo = generateAwbPackingInfo(shipmentDetails, packings);
+        if(syncShipment) {
+            try {
+                shipmentSync.sync(shipmentDetails, null, null);
+            } catch (Exception e) {
+                log.error("Error performing sync on shipment entity, {}", e);
+            }
+        }
         // generate Awb Entity
         return Awb.builder()
                 .awbNumber(shipmentDetails.getHouseBill())
