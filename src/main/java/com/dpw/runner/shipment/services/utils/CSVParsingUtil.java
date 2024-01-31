@@ -458,7 +458,7 @@ public class CSVParsingUtil<T> {
             Sheet sheet = workbook.getSheetAt(0); // Assuming data is in the first sheet
             validateExcel(sheet);
             Row headerRow = sheet.getRow(0);
-            if (headerRow.getLastCellNum() <= 1)
+            if (headerRow.getLastCellNum() < 0)
             {
                 throw new ValidationException("Empty excel sheet uploaded.");
             }
@@ -495,6 +495,7 @@ public class CSVParsingUtil<T> {
             log.error(e1.getMessage());
             throw new ValidationException(e1.getMessage());
         } catch (NoSuchFieldException | IllegalAccessException | InstantiationException e) {
+            log.debug("Excel sheet is not valid. {}", e);
             log.error(e.getMessage());
             throw new ValidationException("Excel sheet is not valid.");
         }
@@ -533,7 +534,7 @@ public class CSVParsingUtil<T> {
             throw new ValidationException("Empty excel sheet uploaded.");
         }
         //check rows are more than or equal 2 (excel sheet has only header row)
-        else if (sheet.getLastRowNum() <= 1)
+        else if (sheet.getLastRowNum() < 1)
         {
             throw new ValidationException("Excel sheet does not contain any data.");
         }
@@ -585,6 +586,8 @@ public class CSVParsingUtil<T> {
             parsedValue = ContainerStatus.valueOf(attributeValue);
         } else if (fieldType == LocalDateTime.class) {
             parsedValue = LocalDateTime.parse(attributeValue);
+        } else if (fieldType == List.class) {
+            log.debug("No need to parse");
         } else {
             throw new NoSuchFieldException();
         }
