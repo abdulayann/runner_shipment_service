@@ -226,6 +226,11 @@ public class AwbService implements IAwbService {
 
         Awb awb = convertRequestToEntity(request);
         awb.setAwbNumber(awb.getAwbShipmentInfo().getAwbNumber());
+        if(awb.getAwbPackingInfo() != null && awb.getAwbPackingInfo().size() > 0) {
+            for(var i : awb.getAwbPackingInfo()) {
+                i.setAwbNumber(awb.getAwbNumber());
+            }
+        }
         try {
             String oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
             updateAwbOtherChargesInfo(awb.getAwbOtherChargesInfo());
@@ -983,7 +988,7 @@ public class AwbService implements IAwbService {
         awbShipmentInfo.setEntityId(shipmentDetails.getId());
         awbShipmentInfo.setEntityType(request.getAwbType());
         awbShipmentInfo.setAwbNumber(shipmentDetails.getHouseBill());
-        var shipperName = StringUtility.convertToString(shipmentDetails.getConsigner().getOrgData().get(PartiesConstants.FULLNAME));
+        var shipperName = StringUtility.convertToString(shipmentDetails.getConsigner() != null && shipmentDetails.getConsigner().getOrgData() != null ? shipmentDetails.getConsigner().getOrgData().get(PartiesConstants.FULLNAME): "");
         awbShipmentInfo.setShipperName(shipperName == null ? shipperName : shipperName.toUpperCase());
         var shipperAddress = AwbUtility.constructAddress(shipmentDetails.getConsigner() != null ? shipmentDetails.getConsigner().getAddressData() : null);
         awbShipmentInfo.setShipperAddress(shipperAddress == null ? shipperAddress : shipperAddress.toUpperCase());
@@ -2784,7 +2789,7 @@ public class AwbService implements IAwbService {
             awbResponse.setDefaultAwbNotifyPartyInfo(defaultNotifyPartyInfo);
             awbResponse.setDefaultAwbRoutingInfo(defaultRoutingInfo);
         } catch (Exception e) {
-            log.error("Error while creating default awbShipmentInfo object for {}", awb);
+            log.error("Error while creating default awbShipmentInfo object for awb having id {} with error \n {}", awb.getId(), e.getMessage());
         }
 
         return defaultAwbShipmentInfo;
