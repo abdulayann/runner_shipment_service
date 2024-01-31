@@ -1546,7 +1546,8 @@ public class ShipmentService implements IShipmentService {
         if(updatedContainers.size() > 0) {
             if((tempConsolIds == null || tempConsolIds.size() == 0) && (shipmentSettingsDetails.getIsShipmentLevelContainer() == null || !shipmentSettingsDetails.getIsShipmentLevelContainer())) {
                 consolidationDetails = createConsolidation(shipmentDetails, updatedContainers);
-                shipmentDetails.setConsolidationList(new ArrayList<>(Arrays.asList(consolidationDetails)));
+                if(!Objects.isNull(consolidationDetails))
+                    shipmentDetails.setConsolidationList(new ArrayList<>(Arrays.asList(consolidationDetails)));
             }
         }
         validateBeforeSave(shipmentDetails);
