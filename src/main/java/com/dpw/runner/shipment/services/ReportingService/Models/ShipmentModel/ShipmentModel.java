@@ -209,6 +209,8 @@ public class ShipmentModel {
     private List<ShipmentContainers> shipmentContainersList;
     @JsonProperty("EntryRefNo")
     private String entryRefNo;
+    @JsonProperty("Summary")
+    private String summary;
 
 }
 
