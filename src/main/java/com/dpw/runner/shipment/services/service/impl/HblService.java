@@ -278,7 +278,7 @@ public class HblService implements IHblService {
         if(!shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_SEA)
                 || !shipmentDetails.getDirection().equals(Constants.DIRECTION_EXP)
                 || (!shipmentDetails.getShipmentType().equals(Constants.CARGO_TYPE_FCL) && !shipmentDetails.getShipmentType().equals(Constants.SHIPMENT_TYPE_LCL))
-                || (shipmentDetails.getShipmentType().equals(Constants.SHIPMENT_TYPE_LCL) && shipmentDetails.getJobType().equals(Constants.JOB_TYPE_CLB))){
+                || (shipmentDetails.getShipmentType().equals(Constants.SHIPMENT_TYPE_LCL) && Objects.equals(shipmentDetails.getJobType(), Constants.JOB_TYPE_CLB))){
             return;
         }
         if(!Objects.isNull(shipmentDetails.getPackingList())) {
