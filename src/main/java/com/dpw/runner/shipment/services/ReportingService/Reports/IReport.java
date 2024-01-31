@@ -1318,7 +1318,7 @@ public abstract class IReport {
         return null;
     }
 
-    private static String GetDPWWeightVolumeFormat(BigDecimal value, int numberDecimalDigits, V1TenantSettingsResponse v1TenantSettingsResponse) {
+    public static String GetDPWWeightVolumeFormat(BigDecimal value, int numberDecimalDigits, V1TenantSettingsResponse v1TenantSettingsResponse) {
         if(value != null && v1TenantSettingsResponse != null) {
             if(v1TenantSettingsResponse.getWVDigitGrouping() != null) {
                 char customThousandsSeparator = ',';

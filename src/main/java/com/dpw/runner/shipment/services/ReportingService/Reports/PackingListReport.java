@@ -9,6 +9,7 @@ import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.Pa
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ReferenceNumbersModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
+import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.utils.GetNextNumberHelper;
@@ -57,6 +58,7 @@ public class PackingListReport extends IReport {
     @Override
     Map<String, Object> populateDictionary(IDocumentModel documentModel) {
         PackingListModel model = (PackingListModel) documentModel;
+        V1TenantSettingsResponse v1TenantSettingsResponse = getTenantSettings();
         var shipment = model.getShipmentDetails();
         Map<String, Object> dictionary = jsonHelper.convertJsonToMap(jsonHelper.convertToJson(shipment));
 
@@ -214,7 +216,7 @@ public class PackingListReport extends IReport {
         }
 
         if (totalPacks != 0) {
-            dictionary.put(ReportConstants.TOTAL_PACKS, AmountNumberFormatter.Format(BigDecimal.valueOf(totalPacks), shipment.getFreightLocalCurrency(), model.getTenant()));
+            dictionary.put(ReportConstants.TOTAL_PACKS, AmountNumberFormatter.Format(BigDecimal.valueOf(totalPacks), shipment.getFreightLocalCurrency(), v1TenantSettingsResponse));
         } else {
             dictionary.put(ReportConstants.TOTAL_PACKS, null);
         }
