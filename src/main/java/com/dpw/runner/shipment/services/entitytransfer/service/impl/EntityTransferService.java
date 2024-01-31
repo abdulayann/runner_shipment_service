@@ -667,14 +667,14 @@ public class EntityTransferService implements IEntityTransferService {
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
         if(consolidationDetails.isPresent()) {
-            if(additionalDocs != null) {
-                var fileRepoList = consolidationDetails.get().getFileRepoList().stream().filter(fileRepo -> {
-                    return additionalDocs.indexOf(fileRepo.getId()) != -1;
-                }).collect(Collectors.toList());
-                consolidationDetails.get().setFileRepoList(fileRepoList);
-            } else {
-                consolidationDetails.get().setFileRepoList(null);
-            }
+//            if(additionalDocs != null) {
+//                var fileRepoList = consolidationDetails.get().getFileRepoList().stream().filter(fileRepo -> {
+//                    return additionalDocs.indexOf(fileRepo.getId()) != -1;
+//                }).collect(Collectors.toList());
+//                consolidationDetails.get().setFileRepoList(fileRepoList);
+//            } else {
+//                consolidationDetails.get().setFileRepoList(null);
+//            }
 
             Map<Long, UUID> idVsGuidMap = new HashMap<>();
             Map<UUID, List<UUID>> containerVsShipmentGuid = new HashMap<>();
