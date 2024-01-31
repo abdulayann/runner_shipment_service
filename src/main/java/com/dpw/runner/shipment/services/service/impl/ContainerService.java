@@ -21,9 +21,11 @@ import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.JobResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerService;
 import com.dpw.runner.shipment.services.service.interfaces.ISyncQueueService;
@@ -40,6 +42,7 @@ import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
@@ -70,6 +73,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
@@ -94,10 +98,17 @@ public class ContainerService implements IContainerService {
     private ExcelUtils excelUtils;
 
     @Autowired
+    @Lazy
+    private ConsolidationService consolidationService;
 
+    @Autowired
     private ModelMapper modelMapper;
-    private final CSVParsingUtil<Containers> parser = new CSVParsingUtil<>(Containers.class);
 
+    @Autowired
+    private CSVParsingUtil<Containers> parser;
+
+    @Autowired
+    private CSVParsingUtil<Events> newParser;
     @Autowired
     IEventDao eventDao;
     @Autowired
@@ -182,10 +193,17 @@ public class ContainerService implements IContainerService {
 
     @Override
     public void uploadContainers(BulkUploadRequest request) throws Exception {
-        List<Containers> containersList = parser.parseExcelFile(request.getFile());
+        List<Containers> consolContainers = containerDao.findByConsolidationId(request.getConsolidationId());
+        var containerMap = consolContainers.stream().collect(Collectors.toMap(Containers::getGuid, Function.identity()));
+
+        Map<String, Set<String>> masterDataMap = new HashMap<>();
+        List<Containers> containersList = parser.parseExcelFile(request.getFile(), request, containerMap, masterDataMap, Containers.class);
+
         containersList = containersList.stream().map(c ->
                 c.setConsolidationId(request.getConsolidationId())
         ).collect(Collectors.toList());
+
+        applyContainerValidations(containersList, request, masterDataMap);
         containersList = containerDao.saveAll(containersList);
         if (request.getShipmentId() != null) {
             containersList.stream().forEach(container -> {
@@ -196,10 +214,188 @@ public class ContainerService implements IContainerService {
         afterSaveList(containersList, true);
     }
 
+    private void applyContainerValidations(List<Containers> containersList, BulkUploadRequest request,
+                                           Map<String, Set<String>> masterDataMap) throws Exception {
+        String transportMode = request.getTransportMode();
+        Set<String> dicCommodityType = masterDataMap.get("CommodityCodes");
+        Set<String> dicLocType = masterDataMap.get("Unlocations");
+        Set<String> hazardousClassMasterData = masterDataMap.get(MasterDataType.DG_CLASS.getDescription());
+        for (int row = 0; row < containersList.size(); row++) {
+            // Update scenario to be implemented here
+            Containers containersRow = containersList.get(row);
+            if (containersRow.getIsOwnContainer() != null && containersRow.getIsShipperOwned() != null
+                    && containersRow.getIsOwnContainer() == true && containersRow.getIsShipperOwned() == true) {
+                String errorMessagePart1 = "Multiple container ownership is selected at row ";
+                String errorMessagePart2 = " - Kindly change and try re-uploading.";
+                throw new ValidationException(errorMessagePart1 + (row + 1) + errorMessagePart2);
+            }
+            checkCalculatedVolumeAndActualVolume(request, row + 1, containersRow);
+            applyContainerNumberValidation(transportMode, row + 1, containersRow);
+            applyConatinerCountValidation(request, transportMode, row + 1, containersRow);
+            applyChargeableValidation(transportMode, row, containersRow);
+            checkForHandlingInfo(transportMode, row, containersRow);
+            applyCommodityTypeValidation(dicCommodityType, row, containersRow);
+            applyContainerStuffingValidation(dicLocType, row, containersRow);
+            applyHazardousValidation(hazardousClassMasterData, row, containersRow);
+            //TODO :: Add own type validation in future after cms integration
+            isPartValidation(request, containersRow);
+        }
+    }
+
+    private void isPartValidation(BulkUploadRequest request, Containers containersRow) {
+        Boolean isPartValue = containersRow.getIsPart() == null ? false : containersRow.getIsPart();
+        if (isPartValue) {
+            var shipmentRecordOpt = shipmentDao.findById(request.getShipmentId());
+            if (shipmentRecordOpt.isPresent() && Constants.CARGO_TYPE_FCL.equals(shipmentRecordOpt.get().getShipmentType()) && isPartValue) {
+                throw new ValidationException("Shipment cargo type is FCL, Part containers are not allowed to be attached with FCL Shipment");
+            }
+        }
+    }
+
+    private static void applyContainerStuffingValidation(Set<String> dicLocType, int row, Containers containersRow) {
+        if (containersRow.getContainerStuffingLocation() != null) {
+            var containerStuffingLocation = containersRow.getContainerStuffingLocation().trim();
+            if (!containerStuffingLocation.isEmpty()) {
+                if (dicLocType != null && dicLocType.contains(containerStuffingLocation) == false) {
+                    throw new ValidationException("Container Stuffing Location " + containerStuffingLocation + " is not valid at row " + row);
+                }
+            }
+        }
+    }
+
+    private static void applyHazardousValidation(Set<String> hazardousClassMasterData, int row, Containers containersRow) {
+        Boolean isHazardous = containersRow.getHazardous();
+        if (isHazardous != null) {
+            if (isHazardous == true) {
+                // DG CLASS(HAZARDOUS CLASS)
+                String dgClass = containersRow.getDgClass();
+                if (!StringUtils.isEmpty(dgClass)) {
+                    try {
+                        long dgClassId = Long.valueOf(dgClass);
+                        if (hazardousClassMasterData != null && !hazardousClassMasterData.contains(String.valueOf(dgClassId))) {
+                            throw new ValidationException("DG class is invalid at row: " + row);
+                        }
+                    } catch (Exception e) {
+                        throw new ValidationException("DG class is invalid at row: " + row + ". Please provide correct DG class.");
+                    }
+                } else {
+                    throw new ValidationException("DG class is empty at row: " + row + ". DG class is mandatory field for hazardous goods.");
+                }
+
+                //HAZARDOUS UN
+                String hazardousUn = containersRow.getHazardousUn();
+                if (!StringUtils.isEmpty(hazardousUn)) {
+                    containersRow.setHazardousUn(hazardousUn);
+                }
+            }
+        }
+    }
+
+    private static void applyCommodityTypeValidation(Set<String> dicCommodityType, int row, Containers containersRow) {
+        String commodityCode = containersRow.getCommodityCode();
+        commodityCode = commodityCode == null ? StringUtils.EMPTY : commodityCode.trim();
+        if (!commodityCode.isEmpty()) {
+            if (dicCommodityType != null && dicCommodityType.contains(commodityCode) == false) {
+                throw new ValidationException("Commodity Type " + commodityCode + " is not valid at row " + row);
+            }
+        }
+    }
+
+    private static void checkForHandlingInfo(String transportMode, int row, Containers containersRow) {
+        if (transportMode != null && transportMode.equals(Constants.TRANSPORT_MODE_AIR) && containersRow.getHandlingInfo() != null) {
+            String handlingInfo = containersRow.getHandlingInfo();
+            handlingInfo = handlingInfo.trim();
+            if (handlingInfo.length() > 2500) {
+                throw new ValidationException("Handling Information exceeds maximum allowed characters at row " + row + ".");
+            }
+        }
+    }
+
+    private void applyChargeableValidation(String transportMode, int row, Containers containersRow) throws Exception {
+        if (containersRow.getChargeableUnit() != null && !containersRow.getChargeableUnit().isEmpty() &&
+                transportMode != null && transportMode.equalsIgnoreCase(Constants.TRANSPORT_MODE_AIR) &&
+                containersRow.getChargeable() != null) {
+            if (!containersRow.getChargeableUnit().equals(Constants.WEIGHT_UNIT_KG)) {
+                throw new ValidationException("Chargeable unit not in KG at row: " + row);
+            }
+            var actualChargeable = containersRow.getChargeable();
+            actualChargeable = actualChargeable.setScale(2, BigDecimal.ROUND_HALF_UP);
+            BigDecimal calculatedChargeable = null;
+
+            var vwob = consolidationService.calculateVolumeWeight(Constants.TRANSPORT_MODE_AIR,
+                    containersRow.getGrossWeightUnit() == null ? Constants.WEIGHT_UNIT_KG : containersRow.getGrossWeightUnit(),
+                    containersRow.getGrossVolumeUnit() == null ? Constants.VOLUME_UNIT_M3 : containersRow.getGrossVolumeUnit(),
+                    containersRow.getGrossWeight() == null ? BigDecimal.ZERO : containersRow.getGrossWeight(),
+                    containersRow.getGrossVolume() == null ? BigDecimal.ZERO : containersRow.getGrossVolume());
+            if (vwob.getChargeable() != null) {
+                calculatedChargeable = vwob.getChargeable();
+                calculatedChargeable = calculatedChargeable.setScale(2, BigDecimal.ROUND_HALF_UP);
+                if (calculatedChargeable != actualChargeable) {
+                    throw new ValidationException("Chargeable is invalid at row: " + row);
+                }
+            }
+        }
+    }
+
+    private void checkCalculatedVolumeAndActualVolume(BulkUploadRequest request, int row, Containers containersRow) {
+        if (request.getTransportMode() != null && !StringUtility.isEmpty(request.getTransportMode()) && request.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)
+                && containersRow.getGrossVolume() != null) {
+            if (!containersRow.getGrossVolumeUnit().equals(Constants.VOLUME_UNIT_M3)) {
+                throw new ValidationException("Gross Volume unit not in M3 at row: " + (row + 1));
+            }
+            BigDecimal actualVolume = containersRow.getGrossVolume();
+            actualVolume = actualVolume.setScale(2, BigDecimal.ROUND_HALF_UP);
+            BigDecimal calculatedVolume = getCalculatedVolume(containersRow.getPackageBreadth(), containersRow.getPackageLength(), containersRow.getPackageHeight());
+            calculatedVolume = calculatedVolume.setScale(2, BigDecimal.ROUND_HALF_UP);
+            if (calculatedVolume != null && actualVolume != calculatedVolume) {
+                throw new ValidationException("Gross Volume is invalid at row: " + (row + 1));
+            }
+        } else if (request.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && containersRow.getGrossVolume() != null
+                && StringUtils.isEmpty(containersRow.getGrossVolumeUnit())) {
+            throw new ValidationException("Gross Volume unit is empty or Gross Volume unit not entered at row: " + row);
+        }
+    }
+
+    private BigDecimal getCalculatedVolume(BigDecimal packageBreadth, BigDecimal packageLength, BigDecimal packageHeight) {
+        if (packageBreadth == null || packageLength == null || packageHeight == null) {
+            return null;
+        }
+        return packageLength.multiply(packageBreadth).multiply(packageHeight);
+    }
+
+    private static void applyConatinerCountValidation(BulkUploadRequest request, String transportMode, int row, Containers containersRow) {
+        if (transportMode != null && !transportMode.equals(Constants.TRANSPORT_MODE_AIR)) {
+            try {
+                var containerCount = Integer.parseInt(String.valueOf(containersRow.getContainerCount()));
+                if (containerCount < 1) {
+                    throw new ValidationException("Container Count is not valid at row: " + row);
+                }
+            } catch (NumberFormatException e) {
+                throw new ValidationException("Container Count is not valid at row: " + row + ". Please provide an integer value within the range of integer.");
+            }
+        }
+    }
+
+    private static void applyContainerNumberValidation(String transportMode, int row, Containers containersRow) {
+        if (transportMode != null && !transportMode.equals(Constants.TRANSPORT_MODE_AIR)) {
+
+            var containerCount = containersRow.getContainerCount();
+
+            if (!StringUtils.isEmpty(containersRow.getContainerNumber()) && containerCount > 1) {
+                throw new ValidationException("Container Number cannot be assigned if container count is greater than 1 at row: " + row);
+            }
+
+            if (StringUtils.isEmpty(containersRow.getContainerNumber())) {
+                containersRow.setContainerNumber(null);
+            }
+        }
+    }
+
     @Override
     public void uploadContainerEvents(BulkUploadRequest request) throws Exception {
-        CSVParsingUtil<Events> newParser = new CSVParsingUtil<>(Events.class);
-        List<Events> eventsList = newParser.parseExcelFile(request.getFile());
+//        CSVParsingUtil<Events> newParser = new CSVParsingUtil<>(Events.class);
+        Map<String, Set<String>> masterDataMap = new HashMap<>();
+        List<Events> eventsList = newParser.parseExcelFile(request.getFile(), request, null, masterDataMap, Events.class);
         eventsList = eventsList.stream().map(c -> {
             c.setEntityId(request.getConsolidationId());
             c.setEntityType("CONSOLIDATION");

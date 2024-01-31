@@ -111,7 +111,8 @@ public class ShipmentService implements IShipmentService {
     @Autowired
     private CarrierDetailsMapper carrierDetailsMapper;
 
-    private final CSVParsingUtil<ShipmentDetails> parser = new CSVParsingUtil<>(ShipmentDetails.class);
+    @Autowired
+    private CSVParsingUtil<ShipmentDetails> parser;
 
     @Autowired
     private IShipmentDao shipmentDao;

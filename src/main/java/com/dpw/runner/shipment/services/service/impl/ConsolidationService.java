@@ -126,7 +126,8 @@ public class ConsolidationService implements IConsolidationService {
     @Autowired
     private IPartiesDao partiesDao;
 
-    private final CSVParsingUtil<ConsolidationDetails> parser = new CSVParsingUtil<>(ConsolidationDetails.class);
+    @Autowired
+    private CSVParsingUtil<ConsolidationDetails> parser;
 
     @Autowired
     private JsonHelper jsonHelper;
