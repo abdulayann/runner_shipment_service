@@ -110,7 +110,7 @@ public class PackingsSync implements IPackingsSync {
                     emailServiceUtility.sendEmailForSyncEntity(ids, guids,
                             "Packings", response_.getError().toString());
                 } catch (Exception ex) {
-                    log.error("Not able to send email for sync failure for Containers: " + ex.getMessage());
+                    log.error("Not able to send email for sync failure for Packings: " + ex.getMessage());
                 }
             }
             return ResponseHelper.buildSuccessResponse(response_);

@@ -622,6 +622,7 @@ public class ShipmentService implements IShipmentService {
 
             pushShipmentDataToDependentService(shipmentDetails, true);
             try {
+                shipmentDetails.setNotesList(null);
                 shipmentSync.sync(shipmentDetails, null, notesRequest);
             } catch (Exception e){
                 log.error("Error performing sync on shipment entity, {}", e);
@@ -1377,25 +1378,6 @@ public class ShipmentService implements IShipmentService {
             log.error("Error performing sync on shipment entity, {}", e);
         }
         return ResponseHelper.buildSuccessResponse(objectMapper.convertValue(entity, ShipmentDetailsResponse.class));
-    }
-
-    @Transactional
-    public ResponseEntity<?> attachConsolidations(Long shipmentId, List<Long> consolIds) {
-        ShipmentDetails shipmentDetails = shipmentDao.findById(shipmentId).get();
-
-        if (shipmentDetails != null) {
-            for (Long consolId : consolIds) {
-                ConsolidationDetails consolidationDetails = consolidationDetailsDao.findById(consolId).get();
-                if (consolidationDetails != null) {
-                    shipmentDetails.getConsolidationList().add(consolidationDetails);
-                }
-            }
-            // TODO- remove this save
-            ShipmentDetails entity = shipmentDao.save(shipmentDetails, false);
-            return ResponseHelper.buildSuccessResponse(jsonHelper.convertValue(entity, ShipmentDetailsResponse.class));
-        }
-
-        return null;
     }
 
     @Transactional
@@ -3924,6 +3906,13 @@ public class ShipmentService implements IShipmentService {
               }).toList();
             consolidationDetailsDao.save(linkedConsol, false);
             shipmentDao.saveAll(shipments);
+            for (ShipmentDetails shipmentDetails : shipments) {
+                try {
+                    shipmentSync.sync(shipmentDetails, null, null);
+                } catch (Exception e) {
+                    log.error("Error performing sync on shipment entity, {}", e);
+                }
+            }
         }
     }
 
@@ -4119,6 +4108,26 @@ public class ShipmentService implements IShipmentService {
             response.put(Constants.CREDIT_LIMIT, creditLimitResponses.get(0));
         } catch (Exception e) {
             log.debug("No Data found for org code {} {}", orgCode, e.getMessage());
+        }
+    }
+
+    @Override
+    public void updateDateAndStatus(long id, LocalDateTime date, Integer status){
+        Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(id);
+        if(shipmentDetails.isPresent()) {
+            ShipmentDetails shipment = shipmentDetails.get();
+            if(date != null) {
+                shipment.getAdditionalDetails().setDateOfIssue(date);
+            }
+            if(status != null) {
+                shipment.setStatus(status);
+            }
+            shipmentDao.save(shipment, false);
+            try {
+                shipmentSync.sync(shipment, null, null);
+            } catch (Exception e) {
+                log.error("Error performing sync on shipment entity, {}", e);
+            }
         }
     }
 

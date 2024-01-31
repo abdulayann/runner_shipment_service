@@ -5,12 +5,12 @@ import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IEventDao;
 import com.dpw.runner.shipment.services.dto.request.CustomAutoEventRequest;
-import com.dpw.runner.shipment.services.entity.ELDetails;
 import com.dpw.runner.shipment.services.entity.Events;
 import com.dpw.runner.shipment.services.entity.enums.LifecycleHooks;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.IEventRepository;
+import com.dpw.runner.shipment.services.syncing.interfaces.IEventsSync;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.validator.ValidatorUtility;
 import com.nimbusds.jose.util.Pair;
@@ -41,6 +41,9 @@ public class EventDao implements IEventDao {
 
     @Autowired
     private JsonHelper jsonHelper;
+
+    @Autowired
+    private IEventsSync eventsSync;
 
     @Override
     public Events save(Events events) {
@@ -272,6 +275,11 @@ public class EventDao implements IEventDao {
             eventsRow.setPlaceName(placeName);
             eventsRow.setPlaceDescription(placeDesc);
             eventRepository.save(eventsRow);
+            try {
+                eventsSync.sync(List.of(eventsRow));
+            } catch (Exception e) {
+                log.error("Error performing sync on event entity, {}", e);
+            }
         } catch (Exception e) {
             log.error("Error occured while trying to create runner event, Exception raised is: " + e);
         }

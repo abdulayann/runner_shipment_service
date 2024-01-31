@@ -61,6 +61,7 @@ import com.dpw.runner.shipment.services.service_bus.ISBProperties;
 import com.dpw.runner.shipment.services.service_bus.ISBUtils;
 import com.dpw.runner.shipment.services.syncing.interfaces.IConsolidationSync;
 import com.dpw.runner.shipment.services.syncing.interfaces.IPackingsSync;
+import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
 import com.dpw.runner.shipment.services.utils.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
@@ -172,6 +173,9 @@ public class ConsolidationService implements IConsolidationService {
 
     @Autowired
     private IShipmentDao shipmentDao;
+
+    @Autowired
+    private IShipmentSync shipmentSync;
 
     @Autowired
     private IShipmentSettingsDao shipmentSettingsDao;
@@ -1079,6 +1083,13 @@ public class ConsolidationService implements IConsolidationService {
                     }).toList();
 
             shipmentDao.saveAll(shipments);
+            for (ShipmentDetails shipmentDetails : shipments) {
+                try {
+                    shipmentSync.sync(shipmentDetails, null, null);
+                } catch (Exception e) {
+                    log.error("Error performing sync on shipment entity, {}", e);
+                }
+            }
         }
     }
 
@@ -3004,10 +3015,9 @@ public class ConsolidationService implements IConsolidationService {
             consolidationDetails.setConsolidationAddresses(updatedFileRepos);
         }
 
-        Optional<ConsolidationDetails> consol = consolidationDetailsDao.findById(consolidationDetails.getId());
-        pushShipmentDataToDependentService(consol.get(), isCreate);
+        pushShipmentDataToDependentService(consolidationDetails, isCreate);
         try {
-            consolidationSync.sync(consol.get());
+            consolidationSync.sync(consolidationDetails);
         } catch (Exception e){
             log.error("Error performing sync on consolidation entity, {}", e);
         }

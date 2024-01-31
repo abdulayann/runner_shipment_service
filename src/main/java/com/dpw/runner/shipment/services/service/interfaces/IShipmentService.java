@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -72,5 +73,6 @@ public interface IShipmentService extends ICommonService {
     ResponseEntity<?> fetchActiveInvoices(CommonRequestModel commonRequestModel);
     ResponseEntity<?> showAssignAllContainers(CommonRequestModel commonRequestModel);
     ResponseEntity<?> fetchCreditLimit(String orgCode, String addressCode);
+    void updateDateAndStatus(long id, LocalDateTime date, Integer status);
 
 }

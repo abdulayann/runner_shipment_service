@@ -238,20 +238,6 @@ public class ShipmentDao implements IShipmentDao {
     public List<ShipmentDetails> findByBookingReference(String ref){
         return shipmentRepository.findByBookingReference(ref);
     }
-    @Override
-    public void updateDateAndStatus(long id, LocalDateTime date, Integer status){
-        Optional<ShipmentDetails> shipmentDetails = shipmentRepository.findById(id);
-        if(shipmentDetails.isPresent()) {
-            ShipmentDetails shipment = shipmentDetails.get();
-            if(date != null) {
-                shipment.getAdditionalDetails().setDateOfIssue(date);
-            }
-            if(status != null) {
-                shipment.setStatus(status);
-            }
-            shipmentRepository.save(shipment);
-        }
-    }
 
     @Override
     public Long findMaxId() { return shipmentRepository.findMaxId(); }
