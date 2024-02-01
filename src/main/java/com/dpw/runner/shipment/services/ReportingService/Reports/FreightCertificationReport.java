@@ -15,6 +15,7 @@ import com.dpw.runner.shipment.services.masterdata.response.ArObjectResponse;
 import com.dpw.runner.shipment.services.masterdata.response.BillChargesResponse;
 import com.dpw.runner.shipment.services.masterdata.response.BillingResponse;
 import com.dpw.runner.shipment.services.masterdata.response.ChargeTypesResponse;
+import com.dpw.runner.shipment.services.utils.ContextUtility;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -41,6 +42,8 @@ public class FreightCertificationReport extends IReport{
 
     @Autowired
     private IShipmentSettingsDao shipmentSettingsDao;
+    @Autowired
+    private ContextUtility contextUtility;
 
     @Override
     public Map<String, Object> getData(Long id) {
@@ -61,7 +64,7 @@ public class FreightCertificationReport extends IReport{
             }
         }
         freightCertificationModel.noofpackages_word = numberToWords(freightCertificationModel.shipmentDetails.getNoOfPacks());
-        freightCertificationModel.userdisplayname = UserContext.getUser().DisplayName;
+        freightCertificationModel.userdisplayname = contextUtility.userContext.getUser().DisplayName;
         return freightCertificationModel;
     }
 

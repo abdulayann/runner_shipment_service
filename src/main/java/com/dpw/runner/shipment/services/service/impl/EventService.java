@@ -96,6 +96,8 @@ public class EventService implements IEventService {
     private ISyncQueueService syncQueueService;
     @Autowired
     private SyncConfig syncConfig;
+    @Autowired
+    private V1AuthHelper v1AuthHelper;
 
     @Value("${v1service.url.base}${v1.service.url.trackEventDetails}")
     private String TRACK_EVENT_DETAILS_URL;
@@ -388,7 +390,7 @@ public class EventService implements IEventService {
     TrackingRequest trackingRequest = TrackingRequest.builder().referenceNumber(referenceNumber).build();
     TrackingEventsResponse trackingEventsResponse = null;
 
-    HttpEntity<V1DataResponse> entity = new HttpEntity(trackingRequest, V1AuthHelper.getHeaders());
+    HttpEntity<V1DataResponse> entity = new HttpEntity(trackingRequest, v1AuthHelper.getHeaders());
     try {
       var v1Response = this.restTemplate.postForEntity(TRACK_EVENT_DETAILS_URL, entity, TrackingEventsResponse.class);
       trackingEventsResponse = v1Response.getBody();

@@ -111,8 +111,8 @@ import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.conve
 @Slf4j
 public class ConsolidationService implements IConsolidationService {
 
-    ExecutorService executorService = Executors.newFixedThreadPool(10);
-
+    @Autowired
+    private ExecutorService executorService;
     @Autowired
     private IConsolidationDetailsDao consolidationDetailsDao;
     @Autowired
@@ -234,6 +234,8 @@ public class ConsolidationService implements IConsolidationService {
 
     @Value("${consolidationsKafka.queue}")
     private String senderQueue;
+    @Autowired
+    private ContextUtility contextUtility;
 
     private List<String> TRANSPORT_MODES = Arrays.asList("SEA", "ROAD", "RAIL", "AIR");
     private List<String> SHIPMENT_TYPE = Arrays.asList("FCL", "LCL");
@@ -336,7 +338,7 @@ public class ConsolidationService implements IConsolidationService {
     }
 
     private List<IRunnerResponse> convertEntityListToDtoList(List<ConsolidationDetails> lst) {
-        List<ShipmentSettingsDetails> shipmentSettingsDetailsList = shipmentSettingsDao.getSettingsByTenantIds(List.of(TenantContext.getCurrentTenant()));
+        List<ShipmentSettingsDetails> shipmentSettingsDetailsList = shipmentSettingsDao.getSettingsByTenantIds(List.of(contextUtility.tenantContext.getCurrentTenant()));
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         if(shipmentSettingsDetailsList.size() > 0)
             shipmentSettingsDetails = shipmentSettingsDetailsList.get(0);
@@ -524,7 +526,7 @@ public class ConsolidationService implements IConsolidationService {
             beforeSave(consolidationDetails);
             getConsolidation(consolidationDetails);
 
-            List<ShipmentSettingsDetails> shipmentSettingsDetailsList = shipmentSettingsDao.getSettingsByTenantIds(List.of(TenantContext.getCurrentTenant()));
+            List<ShipmentSettingsDetails> shipmentSettingsDetailsList = shipmentSettingsDao.getSettingsByTenantIds(List.of(contextUtility.tenantContext.getCurrentTenant()));
             ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
             if(shipmentSettingsDetailsList.size() > 0)
                 shipmentSettingsDetails = shipmentSettingsDetailsList.get(0);
@@ -639,7 +641,7 @@ public class ConsolidationService implements IConsolidationService {
         }
 
         if(StringUtility.isEmpty(consolidationDetails.getBol())) {
-            if(Objects.equals(ShipmentSettingsDetailsContext.getCurrentTenantSettings().getConsolidationLite(), false)) {
+            if(Objects.equals(contextUtility.shipmentSettingsDetailsContext.getCurrentTenantSettings().getConsolidationLite(), false)) {
                 String bol = getCustomizedConsolidationProcessNumber(consolidationDetails, shipmentSettingsList.get(0), ProductProcessTypes.BOLNumber);
                 if (StringUtility.isEmpty(bol)) {
                     bol = generateCustomBolNumber();
@@ -1099,7 +1101,7 @@ public class ConsolidationService implements IConsolidationService {
                 log.error("Error writing audit service log", e);
             }
 
-            List<ShipmentSettingsDetails> shipmentSettingsDetailsList = shipmentSettingsDao.getSettingsByTenantIds(List.of(TenantContext.getCurrentTenant()));
+            List<ShipmentSettingsDetails> shipmentSettingsDetailsList = shipmentSettingsDao.getSettingsByTenantIds(List.of(contextUtility.tenantContext.getCurrentTenant()));
             ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
             if(shipmentSettingsDetailsList.size() > 0)
                 shipmentSettingsDetails = shipmentSettingsDetailsList.get(0);
@@ -1334,7 +1336,7 @@ public class ConsolidationService implements IConsolidationService {
     }
 
     private void calculateDescOfGoodsAndHandlingInfo(ConsolidationDetails consolidationDetails, ConsolidationDetailsResponse consolidationDetailsResponse, boolean isAutoUpdate) {
-        ShipmentSettingsDetails shipmentSettingsDetails = shipmentSettingsDao.getSettingsByTenantIds(List.of(TenantContext.getCurrentTenant())).get(0);
+        ShipmentSettingsDetails shipmentSettingsDetails = shipmentSettingsDao.getSettingsByTenantIds(List.of(contextUtility.tenantContext.getCurrentTenant())).get(0);
         Map<Long, String> descOfGoodsMap = new HashMap<>();
         Map<Long, String> handlingInfoMap = new HashMap<>();
         if(shipmentSettingsDetails.getMultipleShipmentEnabled() != null && shipmentSettingsDetails.getMultipleShipmentEnabled()
@@ -1469,7 +1471,7 @@ public class ConsolidationService implements IConsolidationService {
             if (consolidationDetails.getOverride() != null && consolidationDetails.getOverride()) {
                 return ResponseHelper.buildSuccessResponse(convertToClass(consolidationDetails, ConsolidationDetailsResponse.class));
             }
-            ShipmentSettingsDetails shipmentSettingsDetails = shipmentSettingsDao.getSettingsByTenantIds(List.of(TenantContext.getCurrentTenant())).get(0);
+            ShipmentSettingsDetails shipmentSettingsDetails = shipmentSettingsDao.getSettingsByTenantIds(List.of(contextUtility.tenantContext.getCurrentTenant())).get(0);
             String weightChargeableUnit = Constants.WEIGHT_UNIT_KG;
             if(!IsStringNullOrEmpty(shipmentSettingsDetails.getWeightChargeableUnit()))
                 weightChargeableUnit = shipmentSettingsDetails.getWeightChargeableUnit();
@@ -1813,7 +1815,7 @@ public class ConsolidationService implements IConsolidationService {
                     weight = container.getAllocatedWeight();
                     volume = container.getAllocatedVolume();
                 }
-                ShipmentSettingsDetails shipmentSettingsDetails = shipmentSettingsDao.getSettingsByTenantIds(List.of(TenantContext.getCurrentTenant())).get(0);
+                ShipmentSettingsDetails shipmentSettingsDetails = shipmentSettingsDao.getSettingsByTenantIds(List.of(contextUtility.tenantContext.getCurrentTenant())).get(0);
                 if(shipmentSettingsDetails.getIsConsolidator() != null && shipmentSettingsDetails.getIsConsolidator()
                 && ((weight != null && weight.compareTo(container.getAllocatedWeight()) > 0) || (volume != null && volume.compareTo(container.getAllocatedVolume()) > 0))) {
                     if(request.getIsConfirmedByUser() != null && request.getIsConfirmedByUser().booleanValue()) {
@@ -2145,7 +2147,7 @@ public class ConsolidationService implements IConsolidationService {
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
             log.info("Consolidation details fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
-            List<ShipmentSettingsDetails> shipmentSettingsDetailsList = shipmentSettingsDao.getSettingsByTenantIds(List.of(TenantContext.getCurrentTenant()));
+            List<ShipmentSettingsDetails> shipmentSettingsDetailsList = shipmentSettingsDao.getSettingsByTenantIds(List.of(contextUtility.tenantContext.getCurrentTenant()));
             ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
             if(shipmentSettingsDetailsList.size() > 0) {
                 shipmentSettingsDetails = shipmentSettingsDetailsList.get(0);
@@ -2196,7 +2198,7 @@ public class ConsolidationService implements IConsolidationService {
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
             log.info("Consolidation details async fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
-            List<ShipmentSettingsDetails> shipmentSettingsDetailsList = shipmentSettingsDao.getSettingsByTenantIds(List.of(TenantContext.getCurrentTenant()));
+            List<ShipmentSettingsDetails> shipmentSettingsDetailsList = shipmentSettingsDao.getSettingsByTenantIds(List.of(contextUtility.tenantContext.getCurrentTenant()));
             ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
             if(shipmentSettingsDetailsList.size() > 0) {
                 shipmentSettingsDetails = shipmentSettingsDetailsList.get(0);
@@ -3059,9 +3061,9 @@ public class ConsolidationService implements IConsolidationService {
     @Override
     public void afterSave(ConsolidationDetails consolidationDetails, boolean isCreate)
     {
-        try {
+        try { 
             if(consolidationDetails.getTenantId() == null)
-                consolidationDetails.setTenantId(TenantContext.getCurrentTenant());
+                consolidationDetails.setTenantId(contextUtility.tenantContext.getCurrentTenant());
             KafkaResponse kafkaResponse = producer.getKafkaResponse(consolidationDetails, isCreate);
             producer.produceToKafka(jsonHelper.convertToJson(kafkaResponse), senderQueue, UUID.randomUUID().toString());
         }
@@ -3105,9 +3107,9 @@ public class ConsolidationService implements IConsolidationService {
 
         var additionalDetails = shipment.getAdditionalDetails();
         var shipmentCarrierDetails = shipment.getCarrierDetails();
-        var tenantSettings = shipmentSettingsDao.findByTenantId(TenantContext.getCurrentTenant());
+        var tenantSettings = shipmentSettingsDao.findByTenantId(contextUtility.tenantContext.getCurrentTenant());
         if (tenantSettings.isEmpty())
-            throw new DataRetrievalFailureException("Failed to fetch the shipment settings for tenant id " + TenantContext.getCurrentTenant());
+            throw new DataRetrievalFailureException("Failed to fetch the shipment settings for tenant id " + contextUtility.tenantContext.getCurrentTenant());
 
         boolean isPayment = tenantSettings.get().getShipmentLite()
                 && shipment.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)
@@ -3385,7 +3387,7 @@ public class ConsolidationService implements IConsolidationService {
     public ResponseEntity<?> getDefaultConsolidation() {
         String responseMsg;
         try {
-            List<ShipmentSettingsDetails> shipmentSettingsDetails = shipmentSettingsDao.getSettingsByTenantIds(List.of(TenantContext.getCurrentTenant()));
+            List<ShipmentSettingsDetails> shipmentSettingsDetails = shipmentSettingsDao.getSettingsByTenantIds(List.of(contextUtility.tenantContext.getCurrentTenant()));
             if(shipmentSettingsDetails == null || shipmentSettingsDetails.size() == 0)
                 throw new RunnerException("Shipment settings empty for current tenant");
             var tenantSettings = shipmentSettingsDetails.get(0);
@@ -3463,7 +3465,7 @@ public class ConsolidationService implements IConsolidationService {
 
     public String generateCustomBolNumber() {
         String res = null;
-        List<ShipmentSettingsDetails> shipmentSettingsDetailsList = shipmentSettingsDao.getSettingsByTenantIds(List.of(TenantContext.getCurrentTenant()));
+        List<ShipmentSettingsDetails> shipmentSettingsDetailsList = shipmentSettingsDao.getSettingsByTenantIds(List.of(contextUtility.tenantContext.getCurrentTenant()));
         ShipmentSettingsDetails tenantSetting = null;
         if (shipmentSettingsDetailsList.get(0) != null)
             tenantSetting = shipmentSettingsDetailsList.get(0);
@@ -3510,7 +3512,7 @@ public class ConsolidationService implements IConsolidationService {
         events.setIsPublicTrackingEvent(true);
         events.setEntityType(Constants.CONSOLIDATION);
         events.setEntityId(consolidationDetails.getId());
-        events.setTenantId(TenantContext.getCurrentTenant());
+        events.setTenantId(contextUtility.tenantContext.getCurrentTenant());
         events.setEventCode(eventCode);
         // Persist the event
         eventDao.save(events);

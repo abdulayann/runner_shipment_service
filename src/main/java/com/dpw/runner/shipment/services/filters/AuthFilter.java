@@ -15,6 +15,7 @@ import com.dpw.runner.shipment.services.service.impl.GetUserServiceFactory;
 import com.dpw.runner.shipment.services.service.impl.TenantSettingsService;
 import com.dpw.runner.shipment.services.service.interfaces.IUserService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
+import com.dpw.runner.shipment.services.utils.ContextUtility;
 import com.dpw.runner.shipment.services.utils.TokenUtility;
 import com.nimbusds.jwt.proc.BadJWTException;
 import lombok.extern.slf4j.Slf4j;
@@ -57,6 +58,8 @@ public class AuthFilter extends OncePerRequestFilter {
     private TenantSettingsService tenantSettingsService;
 
     private static final String VALIDATION_ERROR = "Failed to Validate Auth Token";
+    @Autowired
+    private ContextUtility contextUtility;
 
     private final String[] ignoredPaths = new String[]{"/actuator/**",
             "/v2/api-docs",
@@ -115,11 +118,11 @@ public class AuthFilter extends OncePerRequestFilter {
             return;
         }
         log.debug("Auth Successful, username:-{},tenantId:-{}", user.getUsername(), user.getTenantId());
-        UserContext.setUser(user);
-        RequestAuthContext.setAuthToken(authToken);
-        TenantContext.setCurrentTenant(user.getTenantId());
-        ShipmentSettingsDetailsContext.setCurrentTenantSettings(getTenantSettings());
-        TenantSettingsDetailsContext.setCurrentTenantSettings(tenantSettingsService.getV1TenantSettings(user.getTenantId()));
+        contextUtility.userContext.setUser(user);
+        contextUtility.requestAuthContext.setAuthToken(authToken);
+        contextUtility.tenantContext.setCurrentTenant(user.getTenantId());
+        contextUtility.shipmentSettingsDetailsContext.setCurrentTenantSettings(getTenantSettings());
+        contextUtility.tenantSettingsDetailsContext.setCurrentTenantSettings(tenantSettingsService.getV1TenantSettings(user.getTenantId()));
         List<String> grantedPermissions = new ArrayList<>();
         for (Map.Entry<String,Boolean> entry : user.getPermissions().entrySet())
         {
@@ -141,11 +144,11 @@ public class AuthFilter extends OncePerRequestFilter {
             log.info(" RequestId: {} || {} for event: {} Actual time taken: {} ms for API :{}",LoggerHelper.getRequestIdFromMDC(), LoggerEvent.MORE_TIME_TAKEN, LoggerEvent.COMPLETE_API_TIME, _timeTaken, servletRequest.getRequestURI());
         }finally {
             MDC.clear();
-            TenantContext.removeTenant();
-            RequestAuthContext.removeToken();
-            UserContext.removeUser();
-            ShipmentSettingsDetailsContext.remove();
-            TenantSettingsDetailsContext.remove();
+            contextUtility.tenantContext.removeTenant();
+            contextUtility.requestAuthContext.removeToken();
+            contextUtility.userContext.removeUser();
+            contextUtility.shipmentSettingsDetailsContext.remove();
+            contextUtility.tenantSettingsDetailsContext.remove();
         }
 
     }
@@ -185,7 +188,7 @@ public class AuthFilter extends OncePerRequestFilter {
 //        return new ObjectMapper().writeValueAsString(baseResponse);
 //    }
     private ShipmentSettingsDetails getTenantSettings() {
-        Optional<ShipmentSettingsDetails> optional = shipmentSettingsDao.findByTenantId(TenantContext.getCurrentTenant());
+        Optional<ShipmentSettingsDetails> optional = shipmentSettingsDao.findByTenantId(contextUtility.tenantContext.getCurrentTenant());
         return optional.orElseGet(() -> ShipmentSettingsDetails.builder().weightDecimalPlace(2).volumeDecimalPlace(3).build());
     }
 

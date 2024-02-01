@@ -25,6 +25,7 @@ import com.dpw.runner.shipment.services.service_bus.AzureServiceBusTopic;
 import com.dpw.runner.shipment.services.service_bus.ISBProperties;
 import com.dpw.runner.shipment.services.service_bus.ISBUtils;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
+import com.dpw.runner.shipment.services.utils.ContextUtility;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.dpw.runner.shipment.services.validator.ValidatorUtility;
 import com.nimbusds.jose.util.Pair;
@@ -80,6 +81,8 @@ public class ShipmentDao implements IShipmentDao {
 
     @Autowired
     private IV1Service v1Service;
+    @Autowired
+    private ContextUtility contextUtility;
 
     @Override
     public ShipmentDetails save(ShipmentDetails shipmentDetails, boolean fromV1Sync) {
@@ -156,7 +159,7 @@ public class ShipmentDao implements IShipmentDao {
     private void onSave(ShipmentDetails shipmentDetails, Set<String> errors, ShipmentDetails oldShipment, boolean fromV1Sync) {
         if (!StringUtil.isNullOrEmpty(shipmentDetails.getHouseBill()) &&
                 Objects.equals(shipmentDetails.getStatus(), ShipmentStatus.Cancelled.getValue())) {
-            ShipmentSettingsDetails tenantSettings = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
+            ShipmentSettingsDetails tenantSettings = contextUtility.shipmentSettingsDetailsContext.getCurrentTenantSettings();
             if (tenantSettings != null) {
                 String suffix = tenantSettings.getCancelledBLSuffix();
                 if (suffix != null) {

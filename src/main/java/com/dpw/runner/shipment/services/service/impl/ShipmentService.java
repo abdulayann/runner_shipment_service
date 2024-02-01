@@ -100,7 +100,8 @@ import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.conve
 @Slf4j
 public class ShipmentService implements IShipmentService {
 
-    ExecutorService executorService = Executors.newFixedThreadPool(10);
+    @Autowired
+    private ExecutorService executorService;
     @Autowired
     private ModelMapper modelMapper;
 

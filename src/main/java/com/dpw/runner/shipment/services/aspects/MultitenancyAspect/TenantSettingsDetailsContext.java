@@ -6,18 +6,18 @@ import org.springframework.stereotype.Component;
 @Component
 public class TenantSettingsDetailsContext {
 
-    private static ThreadLocal<V1TenantSettingsResponse> tenantSettingsThreadLocal =
+    private ThreadLocal<V1TenantSettingsResponse> tenantSettingsThreadLocal =
       new InheritableThreadLocal<>();
 
-    public static V1TenantSettingsResponse getCurrentTenantSettings() {
+    public V1TenantSettingsResponse getCurrentTenantSettings() {
         return tenantSettingsThreadLocal.get();
     }
 
-    public static void setCurrentTenantSettings(V1TenantSettingsResponse tenantSettings) {
+    public void setCurrentTenantSettings(V1TenantSettingsResponse tenantSettings) {
          tenantSettingsThreadLocal.set(tenantSettings);
     }
 
-    public static void remove() {
+    public void remove() {
         tenantSettingsThreadLocal.remove();
     }
 

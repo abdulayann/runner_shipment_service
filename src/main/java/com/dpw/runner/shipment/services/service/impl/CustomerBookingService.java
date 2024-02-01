@@ -37,6 +37,7 @@ import com.dpw.runner.shipment.services.service.interfaces.ICustomerBookingServi
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.BookingIntegrationsUtility;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
+import com.dpw.runner.shipment.services.utils.ContextUtility;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
@@ -66,7 +67,9 @@ import static com.dpw.runner.shipment.services.utils.CommonUtils.convertToEntity
 @Service
 @Slf4j
 public class CustomerBookingService implements ICustomerBookingService {
-    ExecutorService executorService = Executors.newFixedThreadPool(10);
+//    ExecutorService executorService = Executors.newFixedThreadPool(10);
+    @Autowired
+    private ExecutorService executorService;
     @Autowired
     private ModelMapper modelMapper;
 
@@ -116,6 +119,8 @@ public class CustomerBookingService implements ICustomerBookingService {
     private MasterDataFactory masterDataFactory;
     @Autowired
     private IShipmentDao shipmentDao;
+    @Autowired
+    private ContextUtility contextUtility;
 
     private static final Map<String, String> loadTypeMap = Map.of("SEA", "LCL", "AIR", "LSE");
 
@@ -1119,10 +1124,10 @@ public class CustomerBookingService implements ICustomerBookingService {
     }
     public Runnable withMdc(Runnable runnable) {
         Map<String, String> mdc = MDC.getCopyOfContextMap();
-        String token = RequestAuthContext.getAuthToken();
+        String token = contextUtility.requestAuthContext.getAuthToken();
         return () -> {
             MDC.setContextMap(mdc);
-            RequestAuthContext.setAuthToken(token);
+            contextUtility.requestAuthContext.setAuthToken(token);
             runnable.run();
         };
     }

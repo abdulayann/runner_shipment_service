@@ -51,6 +51,7 @@ import com.dpw.runner.shipment.services.repository.interfaces.IAwbRepository;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
+import com.dpw.runner.shipment.services.utils.ContextUtility;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.google.common.base.Strings;
@@ -120,6 +121,8 @@ public abstract class IReport {
 
     @Autowired
     private IContainerService containerService;
+    @Autowired
+    private ContextUtility contextUtility;
 
     public abstract Map<String, Object> getData(Long id);
     abstract IDocumentModel getDocumentModel(Long id);

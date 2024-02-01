@@ -14,6 +14,7 @@ import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.repository.interfaces.IHblRepository;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
+import com.dpw.runner.shipment.services.utils.ContextUtility;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -29,9 +30,11 @@ public class ReportHelper {
     private static IV1Service v1Service;
     private static JsonHelper jsonHelper;
     private static IHblRepository hblRepository;
+    @Autowired
+    private ContextUtility contextUtility;
 
     @Autowired
-    public ReportHelper(IV1Service v1Service, JsonHelper jsonHelper, IHblRepository hblRepository){
+    public ReportHelper(IV1Service v1Service, JsonHelper jsonHelper, IHblRepository hblRepository) {
         ReportHelper.v1Service = v1Service;
         ReportHelper.jsonHelper = jsonHelper;
         ReportHelper.hblRepository = hblRepository;

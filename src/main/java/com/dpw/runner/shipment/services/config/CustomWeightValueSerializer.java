@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.config;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
+import com.dpw.runner.shipment.services.utils.ContextUtility;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
@@ -15,9 +16,12 @@ import java.math.RoundingMode;
 @Configurable
 public class CustomWeightValueSerializer extends JsonSerializer<BigDecimal> {
 
+    @Autowired
+    private ContextUtility contextUtility;
+
     @Override
     public void serialize(BigDecimal bigDecimal, JsonGenerator jsonGenerator, SerializerProvider serializerProvider) throws IOException {
-        Integer weightDecimalValue = ShipmentSettingsDetailsContext.getCurrentTenantSettings().getWeightDecimalPlace();
+        Integer weightDecimalValue = contextUtility.shipmentSettingsDetailsContext.getCurrentTenantSettings().getWeightDecimalPlace();
         // Set default value
         if(weightDecimalValue == null)
             weightDecimalValue = 2;

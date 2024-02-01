@@ -1,10 +1,12 @@
 package com.dpw.runner.shipment.services.entity.commons;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
+import com.dpw.runner.shipment.services.utils.ContextUtility;
 import lombok.*;
 import lombok.experimental.Accessors;
 import org.hibernate.annotations.*;
 import org.hibernate.annotations.Generated;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 
@@ -27,6 +29,8 @@ public class BaseEntity implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
+    @Autowired
+    private ContextUtility contextUtility;
     @Column(name = "guid", columnDefinition = "uuid", updatable = false)
     @ColumnDefault("random_uuid()")
     private UUID guid;
@@ -58,16 +62,16 @@ public class BaseEntity implements Serializable {
 
     @PreUpdate
     void preUpdate() {
-        if (UserContext.getUser() != null) {
-            String username = UserContext.getUser().getUsername();
+        if (contextUtility.userContext.getUser() != null) {
+            String username = contextUtility.userContext.getUser().getUsername();
             this.updatedBy = username;
         }
     }
 
     @PrePersist
     void prePersist() {
-        if (UserContext.getUser() != null) {
-            String username = UserContext.getUser().getUsername();
+        if (contextUtility.userContext.getUser() != null) {
+            String username = contextUtility.userContext.getUser().getUsername();
             this.createdBy = username;
             this.updatedBy = username;
         }

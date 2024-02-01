@@ -50,6 +50,8 @@ public class CommonUtils {
     private JsonHelper jsonHelper;
     @Autowired
     public ExecutorService syncExecutorService;
+    @Autowired
+    private ContextUtility contextUtility;
 
     private static final Logger LOG = LoggerFactory.getLogger(CommonUtils.class);
     private static final String resourcePath = String.format("%s%s", System.getProperty("user.dir"), "/src/main/resources/");
@@ -366,12 +368,12 @@ public class CommonUtils {
 
     public Runnable withMdc(Runnable runnable) {
         Map<String, String> mdc = MDC.getCopyOfContextMap();
-        String token = RequestAuthContext.getAuthToken();
-        UsersDto user = UserContext.getUser();
+        String token = contextUtility.requestAuthContext.getAuthToken();
+        UsersDto user = contextUtility.userContext.getUser();
         return () -> {
             MDC.setContextMap(mdc);
-            RequestAuthContext.setAuthToken(token);
-            UserContext.setUser(user);
+            contextUtility.requestAuthContext.setAuthToken(token);
+            contextUtility.userContext.setUser(user);
             runnable.run();
         };
     }

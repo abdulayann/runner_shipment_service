@@ -8,6 +8,7 @@ import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.v1.response.V1RetrieveResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
+import com.dpw.runner.shipment.services.utils.ContextUtility;
 import com.dpw.runner.shipment.services.utils.ExcludeTimeZone;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonSerializer;
@@ -30,19 +31,22 @@ import java.util.List;
 @Component
 public class LocalDateTimeWithTimeZoneSerializer extends JsonSerializer<LocalDateTime> {
 
+    @Autowired
+    private ContextUtility contextUtility;
+
     @Override
     public void serialize(LocalDateTime value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
         String timeZone = MDC.get("x-browser-time-zone");
         if(timeZone == null)
             timeZone = "UTC";
-        UsersDto userDetails = UserContext.getUser();
+        UsersDto userDetails = contextUtility.userContext.getUser();
         Boolean enableTimeZoneFlag = userDetails.getEnableTimeZone();
         String tenantTimeZone = userDetails.getTimeZoneId();
         String targetTimeZone = timeZone;
         if(enableTimeZoneFlag && tenantTimeZone != null)
             targetTimeZone = tenantTimeZone;
         ZonedDateTime zonedDateTime = value.atZone(ZoneId.of(targetTimeZone));
-        String dateFormat = TenantSettingsDetailsContext.getCurrentTenantSettings() != null ? TenantSettingsDetailsContext.getCurrentTenantSettings().getDPWDateFormat() : "dd/MM/yyyy";
+        String dateFormat = contextUtility.tenantSettingsDetailsContext.getCurrentTenantSettings() != null ? contextUtility.tenantSettingsDetailsContext.getCurrentTenantSettings().getDPWDateFormat() : "dd/MM/yyyy";
         gen.writeString(zonedDateTime.format(DateTimeFormatter.ofPattern(dateFormat)));
     }
 }

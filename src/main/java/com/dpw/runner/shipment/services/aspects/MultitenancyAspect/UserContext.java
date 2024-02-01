@@ -5,17 +5,17 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class UserContext {
-    private static ThreadLocal<UsersDto> user = new InheritableThreadLocal<>();
+    private ThreadLocal<UsersDto> user = new InheritableThreadLocal<>();
 
-    public static UsersDto getUser() {
+    public UsersDto getUser() {
         return user.get();
     }
 
-    public static void setUser(UsersDto userId) {
+    public void setUser(UsersDto userId) {
         user.set(userId);
     }
 
-    public static void removeUser(){
+    public void removeUser(){
         user.remove();
     }
 }

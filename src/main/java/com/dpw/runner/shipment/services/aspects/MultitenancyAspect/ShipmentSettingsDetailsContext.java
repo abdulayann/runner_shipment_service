@@ -11,18 +11,18 @@ import java.util.Optional;
 @Component
 public class ShipmentSettingsDetailsContext {
 
-    private static ThreadLocal<ShipmentSettingsDetails> tenantSettingsThreadLocal =
+    private ThreadLocal<ShipmentSettingsDetails> tenantSettingsThreadLocal =
       new InheritableThreadLocal<>();
 
-    public static ShipmentSettingsDetails getCurrentTenantSettings() {
+    public ShipmentSettingsDetails getCurrentTenantSettings() {
         return tenantSettingsThreadLocal.get();
     }
 
-    public static void setCurrentTenantSettings(ShipmentSettingsDetails shipmentSettingsDetails) {
+    public void setCurrentTenantSettings(ShipmentSettingsDetails shipmentSettingsDetails) {
          tenantSettingsThreadLocal.set(shipmentSettingsDetails);
     }
 
-    public static void remove() {
+    public void remove() {
         tenantSettingsThreadLocal.remove();
     }
 

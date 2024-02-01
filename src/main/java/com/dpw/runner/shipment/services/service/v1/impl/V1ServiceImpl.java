@@ -18,6 +18,7 @@ import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.syncing.Entity.PartyRequestV2;
+import com.dpw.runner.shipment.services.utils.ContextUtility;
 import com.dpw.runner.shipment.services.utils.V1AuthHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,6 +45,8 @@ public class V1ServiceImpl implements IV1Service {
     private static final Logger log = LoggerFactory.getLogger(V1ServiceImpl.class);
 
     private RestTemplate restTemplate;
+    @Autowired
+    private ContextUtility contextUtility;
 
     @Value("${v1service.url.base}${v1service.url.customerBooking}")
     private String CUSTOMER_BOOKING_URL;
@@ -323,7 +326,7 @@ public class V1ServiceImpl implements IV1Service {
         try {
             long time = System.currentTimeMillis();
             var request = v1ServiceUtil.createBookingRequestForV1(customerBooking, isShipmentEnabled, isBillingEnabled, shipmentGuid);
-            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, v1AuthHelper.getHeaders());
             log.info("Payload sent for event: {} with request payload: {}", IntegrationType.V1_SHIPMENT_CREATION, jsonHelper.convertToJson(request));
             return this.restTemplate.postForEntity(this.CUSTOMER_BOOKING_URL, entity, V1ShipmentCreationResponse.class, new Object[0]);
         } catch (HttpClientErrorException | HttpServerErrorException ex) {
@@ -336,7 +339,7 @@ public class V1ServiceImpl implements IV1Service {
     public ResponseEntity<?> updateOrgCreditLimitFromBooking(CheckCreditLimitResponse request) {
         try {
             long time = System.currentTimeMillis();
-            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, v1AuthHelper.getHeaders());
             log.info("Payload sent for event: {} with request payload: {}", IntegrationType.V1_ORG_CREDIT_LIMIT_CREATION, jsonHelper.convertToJson(request));
             return this.restTemplate.postForEntity(this.UPDATE_ORG_CREDIT_LIMIT, entity, UpdateOrgCreditLimitBookingResponse.class, new Object[0]);
         } catch (HttpStatusCodeException var6) {
@@ -356,7 +359,7 @@ public class V1ServiceImpl implements IV1Service {
 
         try {
             long time = System.currentTimeMillis();
-            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, v1AuthHelper.getHeaders());
             masterDataResponse = this.restTemplate.postForEntity(this.MASTER_DATA_URL, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in getMasterData() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) masterDataResponse.getBody();
@@ -373,7 +376,7 @@ public class V1ServiceImpl implements IV1Service {
 
         try {
             long time = System.currentTimeMillis();
-            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, v1AuthHelper.getHeaders());
             masterDataResponse = this.restTemplate.postForEntity(this.MASTER_DATA_CREATE_URL, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in createMasterData() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) masterDataResponse.getBody();
@@ -390,7 +393,7 @@ public class V1ServiceImpl implements IV1Service {
 
         try {
             long time = System.currentTimeMillis();
-            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, v1AuthHelper.getHeaders());
             masterDataResponse = this.restTemplate.postForEntity(this.MASTER_DATA_UPDATE_URL, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in updateMasterData() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) masterDataResponse.getBody();
@@ -409,7 +412,7 @@ public class V1ServiceImpl implements IV1Service {
             long time = System.currentTimeMillis();
             CarrierListObject req = jsonHelper.convertValue(request, CarrierListObject.class);
             Object requestCriteria = req.getListObject();
-            HttpEntity<V1DataResponse> entity = new HttpEntity(requestCriteria, V1AuthHelper.getHeaders());
+            HttpEntity<V1DataResponse> entity = new HttpEntity(requestCriteria, v1AuthHelper.getHeaders());
             if (isListOnly || (req.getListObject() != null && req.getType() != null && (req.getType().equals(Constants.CONSOLIDATION_TYPE_AGT) || req.getType().equals(Constants.CONSOLIDATION_TYPE_CLD)))) {
                 masterDataResponse = this.restTemplate.postForEntity(this.CARRIER_MASTER_DATA_URL, entity, V1DataResponse.class, new Object[0]);
             } else {
@@ -433,7 +436,7 @@ public class V1ServiceImpl implements IV1Service {
 
         try {
             long time = System.currentTimeMillis();
-            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, v1AuthHelper.getHeaders());
             masterDataResponse = this.restTemplate.postForEntity(this.CARRIER_MASTER_DATA_CREATE_URL, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in createCarrierMasterData() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) masterDataResponse.getBody();
@@ -450,7 +453,7 @@ public class V1ServiceImpl implements IV1Service {
 
         try {
             long time = System.currentTimeMillis();
-            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, v1AuthHelper.getHeaders());
             masterDataResponse = this.restTemplate.postForEntity(this.CARRIER_MASTER_DATA_URL, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in updateCarrierMasterData() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) masterDataResponse.getBody();
@@ -467,7 +470,7 @@ public class V1ServiceImpl implements IV1Service {
 
         try {
             long time = System.currentTimeMillis();
-            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, v1AuthHelper.getHeaders());
             masterDataResponse = this.restTemplate.postForEntity(this.CONTAINER_TYPE_DATA_URL, entity, V1DataResponse.class, new Object[0]);
             double _timeTaken = System.currentTimeMillis() - time;
             log.info("Token time taken in getContainerTypeMasterData() function {} with Request ID: {}", _timeTaken, LoggerHelper.getRequestIdFromMDC());
@@ -487,7 +490,7 @@ public class V1ServiceImpl implements IV1Service {
 
         try {
             long time = System.currentTimeMillis();
-            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, v1AuthHelper.getHeaders());
             masterDataResponse = this.restTemplate.postForEntity(this.CONTAINER_TYPE_CREATE_URL, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in createContainerTypeData() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) masterDataResponse.getBody();
@@ -504,7 +507,7 @@ public class V1ServiceImpl implements IV1Service {
 
         try {
             long time = System.currentTimeMillis();
-            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, v1AuthHelper.getHeaders());
             masterDataResponse = this.restTemplate.postForEntity(this.CONTAINER_TYPE_UPDATE_URL, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in updateContainerTypeData() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) masterDataResponse.getBody();
@@ -521,7 +524,7 @@ public class V1ServiceImpl implements IV1Service {
 
         try {
             long time = System.currentTimeMillis();
-            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, v1AuthHelper.getHeaders());
             masterDataResponse = this.restTemplate.postForEntity(this.VESSEL_DATA_URL, entity, V1DataResponse.class, new Object[0]);
             double _timeTaken = System.currentTimeMillis() - time;
             log.info("Token time taken in getVesselData() function {} with Request ID: {}", _timeTaken, LoggerHelper.getRequestIdFromMDC());
@@ -541,7 +544,7 @@ public class V1ServiceImpl implements IV1Service {
 
         try {
             long time = System.currentTimeMillis();
-            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, v1AuthHelper.getHeaders());
             masterDataResponse = this.restTemplate.postForEntity(this.VESSEL_CREATE_URL, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in createVesselData() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) masterDataResponse.getBody();
@@ -558,7 +561,7 @@ public class V1ServiceImpl implements IV1Service {
 
         try {
             long time = System.currentTimeMillis();
-            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, v1AuthHelper.getHeaders());
             masterDataResponse = this.restTemplate.postForEntity(this.VESSEL_UPDATE_URL, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in updateVesselData() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) masterDataResponse.getBody();
@@ -575,7 +578,7 @@ public class V1ServiceImpl implements IV1Service {
 
         try {
             long time = System.currentTimeMillis();
-            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, v1AuthHelper.getHeaders());
             masterDataResponse = this.restTemplate.postForEntity(this.ROUTING_MASTER_DATA_URL, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in getRoutingMasterData() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) masterDataResponse.getBody();
@@ -592,7 +595,7 @@ public class V1ServiceImpl implements IV1Service {
 
         try {
             long time = System.currentTimeMillis();
-            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, v1AuthHelper.getHeaders());
             masterDataResponse = this.restTemplate.postForEntity(this.ROUTING_MASTER_CREATE_URL, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in createRoutingMasterData() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) masterDataResponse.getBody();
@@ -609,7 +612,7 @@ public class V1ServiceImpl implements IV1Service {
 
         try {
             long time = System.currentTimeMillis();
-            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, v1AuthHelper.getHeaders());
             masterDataResponse = this.restTemplate.postForEntity(this.ROUTING_MASTER_UPDATE_URL, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in updateRoutingMasterData() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) masterDataResponse.getBody();
@@ -626,7 +629,7 @@ public class V1ServiceImpl implements IV1Service {
 
         try {
             long time = System.currentTimeMillis();
-            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, v1AuthHelper.getHeaders());
             masterDataResponse = this.restTemplate.postForEntity(this.CURRENCIES_DATA_URL, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in getCurrenciesData() function {} with Request ID: {}", (System.currentTimeMillis() - time), LoggerHelper.getRequestIdFromMDC());
             return (V1DataResponse) masterDataResponse.getBody();
@@ -643,7 +646,7 @@ public class V1ServiceImpl implements IV1Service {
 
         try {
             long time = System.currentTimeMillis();
-            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, v1AuthHelper.getHeaders());
             masterDataResponse = this.restTemplate.postForEntity(this.CURRENCIES_CREATE_URL, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in createCurrenciesData() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) masterDataResponse.getBody();
@@ -660,7 +663,7 @@ public class V1ServiceImpl implements IV1Service {
 
         try {
             long time = System.currentTimeMillis();
-            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, v1AuthHelper.getHeaders());
             masterDataResponse = this.restTemplate.postForEntity(this.CURRENCIES_UPDATE_URL, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in updateCurrenciesData() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) masterDataResponse.getBody();
@@ -677,7 +680,7 @@ public class V1ServiceImpl implements IV1Service {
 
         try {
             long time = System.currentTimeMillis();
-            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, v1AuthHelper.getHeaders());
             masterDataResponse = this.restTemplate.postForEntity(this.DANGEROUS_GOOD_DATA_URL, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in getDangerousGoodData() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) masterDataResponse.getBody();
@@ -694,7 +697,7 @@ public class V1ServiceImpl implements IV1Service {
 
         try {
             long time = System.currentTimeMillis();
-            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, v1AuthHelper.getHeaders());
             masterDataResponse = this.restTemplate.postForEntity(this.DANGEROUS_GOOD_CREATE_URL, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in createDangerousGoodData() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) masterDataResponse.getBody();
@@ -711,7 +714,7 @@ public class V1ServiceImpl implements IV1Service {
 
         try {
             long time = System.currentTimeMillis();
-            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, v1AuthHelper.getHeaders());
             masterDataResponse = this.restTemplate.postForEntity(this.DANGEROUS_GOOD_UPDATE_URL, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in updateDangerousGoodData() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) masterDataResponse.getBody();
@@ -728,7 +731,7 @@ public class V1ServiceImpl implements IV1Service {
 
         try {
             long time = System.currentTimeMillis();
-            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, v1AuthHelper.getHeaders());
             masterDataResponse = this.restTemplate.postForEntity(this.WAREHOUSE_DATA_URL, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in getWarehouseData() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) masterDataResponse.getBody();
@@ -745,7 +748,7 @@ public class V1ServiceImpl implements IV1Service {
 
         try {
             long time = System.currentTimeMillis();
-            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, v1AuthHelper.getHeaders());
             masterDataResponse = this.restTemplate.postForEntity(this.WAREHOUSE_CREATE_URL, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in createWarehouseData() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) masterDataResponse.getBody();
@@ -762,7 +765,7 @@ public class V1ServiceImpl implements IV1Service {
 
         try {
             long time = System.currentTimeMillis();
-            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, v1AuthHelper.getHeaders());
             masterDataResponse = this.restTemplate.postForEntity(this.WAREHOUSE_UPDATE_URL, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in updateWarehouseData() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) masterDataResponse.getBody();
@@ -779,7 +782,7 @@ public class V1ServiceImpl implements IV1Service {
 
         try {
             long time = System.currentTimeMillis();
-            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, v1AuthHelper.getHeaders());
             masterDataResponse = this.restTemplate.postForEntity(this.PORTS_DATA_URL, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in getPortsData() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) masterDataResponse.getBody();
@@ -796,7 +799,7 @@ public class V1ServiceImpl implements IV1Service {
 
         try {
             long time = System.currentTimeMillis();
-            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, v1AuthHelper.getHeaders());
             masterDataResponse = this.restTemplate.postForEntity(this.PORTS_CREATE_URL, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in createPortsData() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) masterDataResponse.getBody();
@@ -813,7 +816,7 @@ public class V1ServiceImpl implements IV1Service {
 
         try {
             long time = System.currentTimeMillis();
-            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, v1AuthHelper.getHeaders());
             masterDataResponse = this.restTemplate.postForEntity(this.PORTS_UPDATE_URL, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in updatePortsData() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) masterDataResponse.getBody();
@@ -830,7 +833,7 @@ public class V1ServiceImpl implements IV1Service {
 
         try {
             long time = System.currentTimeMillis();
-            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, v1AuthHelper.getHeaders());
             masterDataResponse = this.restTemplate.postForEntity(this.COMMODITY_DATA_URL, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in getCommodityData() function {} with Request ID: {}", (System.currentTimeMillis() - time), LoggerHelper.getRequestIdFromMDC());
             return (V1DataResponse) masterDataResponse.getBody();
@@ -847,7 +850,7 @@ public class V1ServiceImpl implements IV1Service {
 
         try {
             long time = System.currentTimeMillis();
-            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, v1AuthHelper.getHeaders());
             masterDataResponse = this.restTemplate.postForEntity(this.COMMODITY_CREATE_URL, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in createCommodityData() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) masterDataResponse.getBody();
@@ -864,7 +867,7 @@ public class V1ServiceImpl implements IV1Service {
 
         try {
             long time = System.currentTimeMillis();
-            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, v1AuthHelper.getHeaders());
             masterDataResponse = this.restTemplate.postForEntity(this.COMMODITY_UPDATE_URL, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in updateCommodityData() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) masterDataResponse.getBody();
@@ -881,7 +884,7 @@ public class V1ServiceImpl implements IV1Service {
 
         try {
             long time = System.currentTimeMillis();
-            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, v1AuthHelper.getHeaders());
             masterDataResponse = this.restTemplate.postForEntity(this.SALES_AGENT_DATA_URL, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in getSalesAgentData() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) masterDataResponse.getBody();
@@ -898,7 +901,7 @@ public class V1ServiceImpl implements IV1Service {
 
         try {
             long time = System.currentTimeMillis();
-            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, v1AuthHelper.getHeaders());
             masterDataResponse = this.restTemplate.postForEntity(this.SALES_AGENT_CREATE_URL, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in createSalesAgentData() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) masterDataResponse.getBody();
@@ -915,7 +918,7 @@ public class V1ServiceImpl implements IV1Service {
 
         try {
             long time = System.currentTimeMillis();
-            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, v1AuthHelper.getHeaders());
             masterDataResponse = this.restTemplate.postForEntity(this.SALES_AGENT_UPDATE_URL, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in updateSalesAgentData() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) masterDataResponse.getBody();
@@ -932,7 +935,7 @@ public class V1ServiceImpl implements IV1Service {
 
         try {
             long time = System.currentTimeMillis();
-            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, v1AuthHelper.getHeaders());
             orgResponse = this.restTemplate.postForEntity(this.ORGANIZATION_CREATE_URL, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in createOrganization() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) orgResponse.getBody();
@@ -949,7 +952,7 @@ public class V1ServiceImpl implements IV1Service {
 
         try {
             long time = System.currentTimeMillis();
-            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, v1AuthHelper.getHeaders());
             orgResponse = this.restTemplate.postForEntity(this.ORGANIZATION_API, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in getOrganization() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) orgResponse.getBody();
@@ -966,7 +969,7 @@ public class V1ServiceImpl implements IV1Service {
 
         try {
             long time = System.currentTimeMillis();
-            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, v1AuthHelper.getHeaders());
             masterDataResponse = this.restTemplate.postForEntity(this.ORGANIZATION_UPDATE_URL, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in updateOrganizationData() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) masterDataResponse.getBody();
@@ -983,7 +986,7 @@ public class V1ServiceImpl implements IV1Service {
 
         try {
             long time = System.currentTimeMillis();
-            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, v1AuthHelper.getHeaders());
             orgResponse = this.restTemplate.postForEntity(this.UNLOCATION_CREATE_URL, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in createUnlocation() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) orgResponse.getBody();
@@ -1000,7 +1003,7 @@ public class V1ServiceImpl implements IV1Service {
 
         try {
             long time = System.currentTimeMillis();
-            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, v1AuthHelper.getHeaders());
             locationResponse = this.restTemplate.postForEntity(this.UNLOCATION_URL, entity, V1DataResponse.class, new Object[0]);
             double _timeTaken = System.currentTimeMillis() - time;
             log.info("Token time taken in fetchUnlocation() function {} with Request ID: {}", _timeTaken, LoggerHelper.getRequestIdFromMDC());
@@ -1020,7 +1023,7 @@ public class V1ServiceImpl implements IV1Service {
 
         try {
             long time = System.currentTimeMillis();
-            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, v1AuthHelper.getHeaders());
             masterDataResponse = this.restTemplate.postForEntity(this.UNLOCATION_UPDATE_URL, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in updateUnlocationData() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) masterDataResponse.getBody();
@@ -1037,7 +1040,7 @@ public class V1ServiceImpl implements IV1Service {
 
         try {
             long time = System.currentTimeMillis();
-            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, v1AuthHelper.getHeaders());
             masterDataResponse = this.restTemplate.postForEntity(this.MULTIPLE_MASTER_DATA_URL, entity, V1DataResponse.class, new Object[0]);
             double _timeTaken = System.currentTimeMillis() - time;
             log.info("Token time taken in fetchMultipleMasterData() function {} with Request ID: {}", _timeTaken, LoggerHelper.getRequestIdFromMDC());
@@ -1057,7 +1060,7 @@ public class V1ServiceImpl implements IV1Service {
 
         try {
             long time = System.currentTimeMillis();
-            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, v1AuthHelper.getHeaders());
             masterDataResponse = this.restTemplate.postForEntity(this.USER_DATA_URL, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in fetchUsersData() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) masterDataResponse.getBody();
@@ -1074,7 +1077,7 @@ public class V1ServiceImpl implements IV1Service {
 
         try {
             long time = System.currentTimeMillis();
-            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, v1AuthHelper.getHeaders());
             masterDataResponse = this.restTemplate.postForEntity(this.GRID_COLOR_CODE_DATA_URL, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in fetchGridColorCodeData() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) masterDataResponse.getBody();
@@ -1091,7 +1094,7 @@ public class V1ServiceImpl implements IV1Service {
 
         try {
             long time = System.currentTimeMillis();
-            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, v1AuthHelper.getHeaders());
             masterDataResponse = this.restTemplate.postForEntity(this.GRID_COLOR_CODE_CREATE_URL, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in createGridColorCodeData() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) masterDataResponse.getBody();
@@ -1108,7 +1111,7 @@ public class V1ServiceImpl implements IV1Service {
 
         try {
             long time = System.currentTimeMillis();
-            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, v1AuthHelper.getHeaders());
             masterDataResponse = this.restTemplate.postForEntity(this.GRID_COLOR_CODE_UPDATE_URL, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in updateGridColorCodeData() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) masterDataResponse.getBody();
@@ -1125,7 +1128,7 @@ public class V1ServiceImpl implements IV1Service {
 
         try {
             long time = System.currentTimeMillis();
-            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, v1AuthHelper.getHeaders());
             masterDataResponse = this.restTemplate.postForEntity(this.LIST_COUSIN_BRANCH_URL, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in listCousinBranches() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) masterDataResponse.getBody();
@@ -1142,7 +1145,7 @@ public class V1ServiceImpl implements IV1Service {
 
         try {
             long time = System.currentTimeMillis();
-            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, v1AuthHelper.getHeaders());
             masterDataResponse = this.restTemplate.postForEntity(this.LIST_COUSIN_BRANCH_WITHOUT_CURRENT_URL, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in listCousinBranchesWithoutCurrent() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) masterDataResponse.getBody();
@@ -1159,7 +1162,7 @@ public class V1ServiceImpl implements IV1Service {
 
         try {
             long time = System.currentTimeMillis();
-            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, v1AuthHelper.getHeaders());
             masterDataResponse = this.restTemplate.postForEntity(this.TENANT_BY_GUID_URL, entity, TenantIdResponse.class, new Object[0]);
             log.info("Token time taken in tenantByGuid() function " + (System.currentTimeMillis() - time));
             return (TenantIdResponse) masterDataResponse.getBody();
@@ -1176,7 +1179,7 @@ public class V1ServiceImpl implements IV1Service {
 
         try {
             long time = System.currentTimeMillis();
-            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, v1AuthHelper.getHeaders());
             masterDataResponse = this.restTemplate.postForEntity(this.SEND_CONSOLIDATION_TASK_URL, entity, SendEntityResponse.class, new Object[0]);
             log.info("Token time taken in sendConsolidationTask() function " + (System.currentTimeMillis() - time));
             return (SendEntityResponse) masterDataResponse.getBody();
@@ -1193,7 +1196,7 @@ public class V1ServiceImpl implements IV1Service {
 
         try {
             long time = System.currentTimeMillis();
-            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, v1AuthHelper.getHeaders());
             masterDataResponse = this.restTemplate.postForEntity(this.SEND_SHIPMENT_TASK_URL, entity, SendEntityResponse.class, new Object[0]);
             log.info("Token time taken in sendShipmentTask() function " + (System.currentTimeMillis() - time));
             return (SendEntityResponse) masterDataResponse.getBody();
@@ -1210,7 +1213,7 @@ public class V1ServiceImpl implements IV1Service {
 
         try {
             long time = System.currentTimeMillis();
-            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, v1AuthHelper.getHeaders());
             masterDataResponse = this.restTemplate.postForEntity(this.SEND_V1_CONSOLIDATION_TASK_URL, entity, SendEntityResponse.class, new Object[0]);
             log.info("Token time taken in sendConsolidationTask() function " + (System.currentTimeMillis() - time));
             return (SendEntityResponse) masterDataResponse.getBody();
@@ -1227,7 +1230,7 @@ public class V1ServiceImpl implements IV1Service {
 
         try {
             long time = System.currentTimeMillis();
-            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, v1AuthHelper.getHeaders());
             masterDataResponse = this.restTemplate.postForEntity(this.SEND_V1_SHIPMENT_TASK_URL, entity, SendEntityResponse.class, new Object[0]);
             log.info("Token time taken in sendShipmentTask() function " + (System.currentTimeMillis() - time));
             return (SendEntityResponse) masterDataResponse.getBody();
@@ -1243,7 +1246,7 @@ public class V1ServiceImpl implements IV1Service {
 
         try {
             long time = System.currentTimeMillis();
-            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, v1AuthHelper.getHeaders());
             masterDataResponse = this.restTemplate.postForEntity(this.CHECK_TASK_EXIST, entity, CheckTaskExistResponse.class, new Object[0]);
             log.info("Token time taken in sendShipmentTask() function " + (System.currentTimeMillis() - time));
             return (CheckTaskExistResponse) masterDataResponse.getBody();
@@ -1261,7 +1264,7 @@ public class V1ServiceImpl implements IV1Service {
 
         try {
             long time = System.currentTimeMillis();
-            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, v1AuthHelper.getHeaders());
             masterDataResponse = this.restTemplate.postForEntity(this.IMPORT_FLIGHT_SCHEDULE, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in importFlightSchedules() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) masterDataResponse.getBody();
@@ -1278,7 +1281,7 @@ public class V1ServiceImpl implements IV1Service {
 
         try {
             long time = System.currentTimeMillis();
-            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, v1AuthHelper.getHeaders());
             masterDataResponse = this.restTemplate.postForEntity(this.FETCH_FLIGHT_STATUS, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in fetchFlightStatus() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) masterDataResponse.getBody();
@@ -1295,7 +1298,7 @@ public class V1ServiceImpl implements IV1Service {
 
         try {
             long time = System.currentTimeMillis();
-            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, v1AuthHelper.getHeaders());
             masterDataResponse = this.restTemplate.postForEntity(this.IMPORT_SAILING_SCHEDULES, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in importSailingSchedules() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) masterDataResponse.getBody();
@@ -1312,7 +1315,7 @@ public class V1ServiceImpl implements IV1Service {
 
         try {
             long time = System.currentTimeMillis();
-            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, v1AuthHelper.getHeaders());
             masterDataResponse = this.restTemplate.postForEntity(this.LIST_SAILING_SCHEDULE, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in listSailingSchedule() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) masterDataResponse.getBody();
@@ -1329,7 +1332,7 @@ public class V1ServiceImpl implements IV1Service {
 
         try {
             long time = System.currentTimeMillis();
-            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, v1AuthHelper.getHeaders());
             masterDataResponse = this.restTemplate.postForEntity(this.ADDRESS_LIST, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in addressList() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) masterDataResponse.getBody();
@@ -1346,7 +1349,7 @@ public class V1ServiceImpl implements IV1Service {
 
         try {
             long time = System.currentTimeMillis();
-            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, v1AuthHelper.getHeaders());
             masterDataResponse = this.restTemplate.postForEntity(this.TENANT_NAME_BY_ID, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in tenantNameByTenantId() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) masterDataResponse.getBody();
@@ -1364,7 +1367,7 @@ public class V1ServiceImpl implements IV1Service {
 
         try {
             long time = System.currentTimeMillis();
-            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, v1AuthHelper.getHeaders());
             masterDataResponse = this.restTemplate.postForEntity(this.CHARGE_TYPE_URL, entity, V1DataResponse.class, new Object[0]);
             double _timeTaken = System.currentTimeMillis() - time;
             log.info("Token time taken in fetchChargeCodeData() function {} with Request ID: {}", _timeTaken, LoggerHelper.getRequestIdFromMDC());
@@ -1384,7 +1387,7 @@ public class V1ServiceImpl implements IV1Service {
 
         try {
             long time = System.currentTimeMillis();
-            HttpEntity<Object> entity = new HttpEntity<>(request, V1AuthHelper.getHeaders());
+            HttpEntity<Object> entity = new HttpEntity<>(request, v1AuthHelper.getHeaders());
             masterDataResponse = this.restTemplate.postForEntity(this.UNLOCATION_ORIGIN_AND_DESTINATION_LIST_URL, entity, V1DataResponse.class);
             log.info("Token time taken in fetchUnlocationOriginAndDestinationList() function " + (System.currentTimeMillis() - time));
             return masterDataResponse.getBody();
@@ -1401,7 +1404,7 @@ public class V1ServiceImpl implements IV1Service {
 
         try {
             long time = System.currentTimeMillis();
-            HttpEntity<Object> entity = new HttpEntity<>(request, V1AuthHelper.getHeaders());
+            HttpEntity<Object> entity = new HttpEntity<>(request, v1AuthHelper.getHeaders());
             masterDataResponse = this.restTemplate.postForEntity(this.LIST_UNLOCATION_TRANSPORT_MODE_BASED_URL, entity, V1DataResponse.class);
             log.info("Token time taken in fetchListUnlocationTransportModeBased() function " + (System.currentTimeMillis() - time));
             return masterDataResponse.getBody();
@@ -1418,7 +1421,7 @@ public class V1ServiceImpl implements IV1Service {
 
         try {
             long time = System.currentTimeMillis();
-            HttpEntity<Object> entity = new HttpEntity<>(request, V1AuthHelper.getHeaders());
+            HttpEntity<Object> entity = new HttpEntity<>(request, v1AuthHelper.getHeaders());
             masterDataResponse = this.restTemplate.postForEntity(this.ACTIVITY_MASTER_URL, entity, V1DataResponse.class);
             log.info("Token time taken in fetchActivityMaster() function " + (System.currentTimeMillis() - time));
             return masterDataResponse.getBody();
@@ -1435,7 +1438,7 @@ public class V1ServiceImpl implements IV1Service {
 
         try {
             long time = System.currentTimeMillis();
-            HttpEntity<V1DataResponse> entity = new HttpEntity(V1AuthHelper.getHeaders());
+            HttpEntity<V1DataResponse> entity = new HttpEntity(v1AuthHelper.getHeaders());
             masterDataResponse = this.restTemplate.postForEntity(this.RETRIEVE_TENANT_SETTINGS, entity, V1RetrieveResponse.class, new Object[0]);
             log.info("Token time taken in tenantNameByTenantId() function " + (System.currentTimeMillis() - time));
             return (V1RetrieveResponse) masterDataResponse.getBody();
@@ -1452,7 +1455,7 @@ public class V1ServiceImpl implements IV1Service {
 
         try {
             long time = System.currentTimeMillis();
-            HttpEntity<V1DataResponse> entity = new HttpEntity(V1AuthHelper.getHeaders());
+            HttpEntity<V1DataResponse> entity = new HttpEntity(v1AuthHelper.getHeaders());
             masterDataResponse = this.restTemplate.postForEntity(this.RETRIEVE_COMPANY_SETTINGS, entity, CompanySettingsResponse.class, new Object[0]);
             log.info("Token time taken in retrieveCompanySettings() function " + (System.currentTimeMillis() - time));
             return (CompanySettingsResponse) masterDataResponse.getBody();
@@ -1469,7 +1472,7 @@ public class V1ServiceImpl implements IV1Service {
 
         try {
             long time = System.currentTimeMillis();
-            HttpEntity<V1DataResponse> entity = new HttpEntity(V1AuthHelper.getHeaders());
+            HttpEntity<V1DataResponse> entity = new HttpEntity(v1AuthHelper.getHeaders());
             masterDataResponse = this.restTemplate.postForEntity(this.RETRIEVE_TENANT, entity, V1RetrieveResponse.class, new Object[0]);
             log.info("Token time taken in retrieveTenant() function " + (System.currentTimeMillis() - time));
             return (V1RetrieveResponse) masterDataResponse.getBody();
@@ -1486,7 +1489,7 @@ public class V1ServiceImpl implements IV1Service {
 
         try {
             long time = System.currentTimeMillis();
-            HttpEntity<V1DataResponse> entity = new HttpEntity(V1AuthHelper.getHeaders());
+            HttpEntity<V1DataResponse> entity = new HttpEntity(v1AuthHelper.getHeaders());
             masterDataResponse = this.restTemplate.postForEntity(this.GET_DEFAULT_ORG, entity, PartyRequestV2.class, new Object[0]);
             log.info("Token time taken in getDefaultOrg() function " + (System.currentTimeMillis() - time));
             return (PartyRequestV2) masterDataResponse.getBody();
@@ -1503,7 +1506,7 @@ public class V1ServiceImpl implements IV1Service {
 
         try {
             long time = System.currentTimeMillis();
-            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, v1AuthHelper.getHeaders());
             masterDataResponse = this.restTemplate.postForEntity(this.OWN_TYPE, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in fetchOwnType() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) masterDataResponse.getBody();
@@ -1520,7 +1523,7 @@ public class V1ServiceImpl implements IV1Service {
 
         try {
             long time = System.currentTimeMillis();
-            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, v1AuthHelper.getHeaders());
             masterDataResponse = this.restTemplate.postForEntity(this.CARRIER_FILTER_LIST, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in fetchCarrierFilterList() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) masterDataResponse.getBody();
@@ -1537,7 +1540,7 @@ public class V1ServiceImpl implements IV1Service {
 
         try {
             long time = System.currentTimeMillis();
-            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, v1AuthHelper.getHeaders());
             tiDataResponse = this.restTemplate.postForEntity(this.TRANSPORT_INSTRUCTION_LIST, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in fetchTransportInstructionList() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) tiDataResponse.getBody();
@@ -1558,7 +1561,7 @@ public class V1ServiceImpl implements IV1Service {
 
         try {
             long time = System.currentTimeMillis();
-            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, v1AuthHelper.getHeaders());
             containerResponse = this.restTemplate.postForEntity(this.CONTAINER_TRANSPORT_INSTRUCTION_LIST, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in fetchContainersListForTI() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) containerResponse.getBody();
@@ -1579,7 +1582,7 @@ public class V1ServiceImpl implements IV1Service {
 
         try {
             long time = System.currentTimeMillis();
-            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, v1AuthHelper.getHeaders());
             consolResponse = this.restTemplate.postForEntity(this.CONSOLIDATION_BOOKING_DATA, entity, ConsoleBookingListResponse.class, new Object[0]);
             log.info("Token time taken in fetchConsolidationBookingData() function " + (System.currentTimeMillis() - time));
             return (ConsoleBookingListResponse) consolResponse.getBody();
@@ -1600,7 +1603,7 @@ public class V1ServiceImpl implements IV1Service {
 
         try {
             long time = System.currentTimeMillis();
-            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, v1AuthHelper.getHeaders());
             shipmentResponse = this.restTemplate.postForEntity(this.SHIPMENT_BILLING_DATA, entity, ShipmentBillingListResponse.class, new Object[0]);
             log.info("Token time taken in fetchShipmentBillingData() function " + (System.currentTimeMillis() - time));
             return (ShipmentBillingListResponse) shipmentResponse.getBody();
@@ -1621,7 +1624,7 @@ public class V1ServiceImpl implements IV1Service {
 
         try {
             long time = System.currentTimeMillis();
-            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, v1AuthHelper.getHeaders());
             shipmentResponse = this.restTemplate.postForEntity(this.SHIPMENT_WAY_BILL_FILTER, entity, GuidsListResponse.class, new Object[0]);
             log.info("Token time taken in fetchShipmentBillingData() function " + (System.currentTimeMillis() - time));
             return (GuidsListResponse) shipmentResponse.getBody();
@@ -1642,7 +1645,7 @@ public class V1ServiceImpl implements IV1Service {
 
         try {
             long time = System.currentTimeMillis();
-            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, v1AuthHelper.getHeaders());
             shipmentResponse = this.restTemplate.postForEntity(this.CONSOLIDATION_BOOKING_ID_FILTER, entity, GuidsListResponse.class, new Object[0]);
             log.info("Token time taken in fetchShipmentBillingData() function " + (System.currentTimeMillis() - time));
             return (GuidsListResponse) shipmentResponse.getBody();
@@ -1663,7 +1666,7 @@ public class V1ServiceImpl implements IV1Service {
 
         try {
             long time = System.currentTimeMillis();
-            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, v1AuthHelper.getHeaders());
             tiDataResponse = this.restTemplate.postForEntity(this.MAIN_PAGE_TEMPLATE_LIST, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in fetchGetTemplateMainPage() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) tiDataResponse.getBody();
@@ -1683,7 +1686,7 @@ public class V1ServiceImpl implements IV1Service {
         ResponseEntity tiDataResponse = null;
         try {
             long time = System.currentTimeMillis();
-            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, v1AuthHelper.getHeaders());
             tiDataResponse = this.restTemplate.postForEntity(this.HBL_TASK_CREATION, entity, HblTaskCreationResponse.class, new Object[0]);
             log.info("Total time taken in createTaskforHBL() function " + (System.currentTimeMillis() - time));
             return (HblTaskCreationResponse) tiDataResponse.getBody();
@@ -1704,7 +1707,7 @@ public class V1ServiceImpl implements IV1Service {
 
         try {
             long time = System.currentTimeMillis();
-            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, v1AuthHelper.getHeaders());
             tiDataResponse = this.restTemplate.postForEntity(this.ROLES_LIST, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in fetchRolesList() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) tiDataResponse.getBody();
@@ -1725,7 +1728,7 @@ public class V1ServiceImpl implements IV1Service {
 
         try {
             long time = System.currentTimeMillis();
-            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, v1AuthHelper.getHeaders());
             billingDataResponse = this.restTemplate.postForEntity(this.BILLING_LIST, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in fetchRolesList() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) billingDataResponse.getBody();
@@ -1746,7 +1749,7 @@ public class V1ServiceImpl implements IV1Service {
 
         try {
             long time = System.currentTimeMillis();
-            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, v1AuthHelper.getHeaders());
             billChargesDataResponse = this.restTemplate.postForEntity(this.BILL_CHARGES_LIST, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in fetchRolesList() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) billChargesDataResponse.getBody();
@@ -1767,7 +1770,7 @@ public class V1ServiceImpl implements IV1Service {
 
         try {
             long time = System.currentTimeMillis();
-            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, v1AuthHelper.getHeaders());
             arObjectDataResponse = this.restTemplate.postForEntity(this.AR_OBJECT_LIST, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in fetchRolesList() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) arObjectDataResponse.getBody();
@@ -1804,7 +1807,7 @@ public class V1ServiceImpl implements IV1Service {
         ResponseEntity v1Response = null;
         try {
             long time = System.currentTimeMillis();
-            HttpEntity<Object> entity = new HttpEntity<>(V1AuthHelper.getHeaders());
+            HttpEntity<Object> entity = new HttpEntity<>(v1AuthHelper.getHeaders());
             v1Response = this.restTemplate.exchange(this.GET_MAX_SHIPMENT_ID_URL, HttpMethod.GET, entity, Object.class);
             log.info("Request: {} || Total time taken to get max shipment id: {}", LoggerHelper.getRequestIdFromMDC() ,(System.currentTimeMillis() - time));
             return (String) v1Response.getBody();
@@ -1824,7 +1827,7 @@ public class V1ServiceImpl implements IV1Service {
         ResponseEntity v1Response = null;
         try {
             long time = System.currentTimeMillis();
-            HttpEntity<Object> entity = new HttpEntity<>(V1AuthHelper.getHeaders());
+            HttpEntity<Object> entity = new HttpEntity<>(v1AuthHelper.getHeaders());
             v1Response = this.restTemplate.exchange(this.GET_SHIPMENT_SEQUENCE_NUMBER_URL, HttpMethod.GET, entity, Object.class);
             log.info("Request: {} || Total time taken to get max shipment id: {}", LoggerHelper.getRequestIdFromMDC() ,(System.currentTimeMillis() - time));
             return (String) v1Response.getBody();
@@ -1844,7 +1847,7 @@ public class V1ServiceImpl implements IV1Service {
         ResponseEntity v1Response = null;
         try {
             long time = System.currentTimeMillis();
-            HttpEntity<Object> entity = new HttpEntity<>(V1AuthHelper.getHeaders());
+            HttpEntity<Object> entity = new HttpEntity<>(v1AuthHelper.getHeaders());
             v1Response = this.restTemplate.exchange(this.GET_MAX_CONSOL_ID_URL, HttpMethod.GET, entity, Object.class);
             log.info("Request: {} || Total time taken to get max shipment id: {}", LoggerHelper.getRequestIdFromMDC() ,(System.currentTimeMillis() - time));
             return (String) v1Response.getBody();
@@ -1863,7 +1866,7 @@ public class V1ServiceImpl implements IV1Service {
     public V1RetrieveResponse getShipment(V1RetrieveRequest request) {
         ResponseEntity masterDataResponse = null;
         try {
-            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, v1AuthHelper.getHeaders());
             masterDataResponse = this.restTemplate.postForEntity(this.SHIPMENT_RETRIEVE_URL, entity, V1RetrieveResponse.class, new Object[0]);
             return (V1RetrieveResponse) masterDataResponse.getBody();
 
@@ -1881,7 +1884,7 @@ public class V1ServiceImpl implements IV1Service {
     public CreditLimitValidateResponse checkCreditLimit(CreditLimitValidateRequest request) {
         ResponseEntity masterDataResponse = null;
         try {
-            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, v1AuthHelper.getHeaders());
             masterDataResponse = this.restTemplate.postForEntity(this.CREDIT_LIMIT_CHECK_URL, entity, CreditLimitValidateResponse.class, new Object[0]);
             return (CreditLimitValidateResponse) masterDataResponse.getBody();
         } catch (HttpStatusCodeException var6) {
@@ -1899,7 +1902,7 @@ public class V1ServiceImpl implements IV1Service {
     public AddressTranslationListResponse getAddressTranslation(AddressTranslationRequest request) {
         ResponseEntity masterDataResponse = null;
         try {
-            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, v1AuthHelper.getHeaders());
             masterDataResponse = this.restTemplate.postForEntity(this.GET_ADDRESS_TRANSLATION, entity, AddressTranslationListResponse.class, new Object[0]);
             return (AddressTranslationListResponse) masterDataResponse.getBody();
 
@@ -1918,11 +1921,11 @@ public class V1ServiceImpl implements IV1Service {
     public CheckActiveInvoiceResponse getActiveInvoices(CheckActiveInvoiceRequest request) {
         ResponseEntity masterDataResponse = null;
         try {
-            if(Objects.equals(ShipmentSettingsDetailsContext.getCurrentTenantSettings().getShipmentLite(), false))
+            if(Objects.equals(contextUtility.shipmentSettingsDetailsContext.getCurrentTenantSettings().getShipmentLite(), false))
             {
                 return CheckActiveInvoiceResponse.builder().IsAnyActiveInvoiceFound(false).build();
             }
-            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, v1AuthHelper.getHeaders());
             masterDataResponse = this.restTemplate.postForEntity(this.GET_ACTIVE_INVOICES, entity, CheckActiveInvoiceResponse.class, new Object[0]);
             return (CheckActiveInvoiceResponse) masterDataResponse.getBody();
 
@@ -1943,7 +1946,7 @@ public class V1ServiceImpl implements IV1Service {
 
         try {
             long time = System.currentTimeMillis();
-            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, v1AuthHelper.getHeaders());
             creditLimitResponse = this.restTemplate.postForEntity(this.CREDIT_LIMIT_LIST, entity, V1DataResponse.class);
             log.info("Token time taken in fetchCreditLimit() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) creditLimitResponse.getBody();

@@ -1,6 +1,8 @@
 package com.dpw.runner.shipment.services.adapters.config;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.RequestAuthContext;
+import com.dpw.runner.shipment.services.utils.ContextUtility;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -21,6 +23,8 @@ public class NPMConfig {
     private String xApiKey;
     @Value("${NPM.multiLang.xApiKey}")
     private String multiLangXApiKey;
+    @Autowired
+    private ContextUtility contextUtility;
 
     @Bean
     public RestTemplate restTemplateForNPM() {
@@ -54,7 +58,7 @@ public class NPMConfig {
             headers.setContentType(MediaType.APPLICATION_JSON);
             headers.set("x-api-key", xApiKey);
             headers.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
-            headers.add("Authorization", RequestAuthContext.getAuthToken());
+            headers.add("Authorization", contextUtility.requestAuthContext.getAuthToken());
             return execution.execute(request, body);
         });
         return restTemplate;

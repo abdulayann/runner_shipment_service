@@ -57,6 +57,8 @@ public class MasterDataUtils{
     private ModelMapper modelMapper;
     @Autowired
     private CommonUtils commonUtils;
+    @Autowired
+    private ContextUtility contextUtility;
 
     public Map<String, String> carrierMasterData (IRunnerResponse entityPayload, Class baseClass) {
         if (Objects.isNull(entityPayload))
@@ -1428,11 +1430,13 @@ public class MasterDataUtils{
 
     public Runnable withMdc(Runnable runnable) {
         Map<String, String> mdc = MDC.getCopyOfContextMap();
-        String token = RequestAuthContext.getAuthToken();
+        String token = contextUtility.requestAuthContext.getAuthToken();
         return () -> {
             MDC.setContextMap(mdc);
-            RequestAuthContext.setAuthToken(token);
+            contextUtility.requestAuthContext.setAuthToken(token);
             runnable.run();
+            MDC.clear();
+            contextUtility.requestAuthContext.removeToken();
         };
     }
 }
