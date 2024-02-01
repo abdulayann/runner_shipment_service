@@ -165,6 +165,12 @@ public class CommonUtils {
                 .collect(Collectors.toList());
     }
 
+    public <T,P extends MultiTenancy> List<P> convertToEntityList(final List<T> lst, Class<P> clazz, Boolean isCreate) {
+        return  lst.stream()
+                .map(item -> isCreate ? this.convertToCreateClass(item, clazz) : convertToClass(item, clazz))
+                .collect(Collectors.toList());
+    }
+
     public <T,P extends MultiTenancy> List<P> convertToCreateEntityList(final List<T> lst, Class<P> clazz) {
         return  lst.stream()
                 .map(item -> this.convertToCreateClass(item, clazz))

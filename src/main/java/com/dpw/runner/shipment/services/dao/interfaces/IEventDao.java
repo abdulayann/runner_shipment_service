@@ -7,6 +7,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -24,6 +25,7 @@ public interface IEventDao {
     void delete(Events events);
 
     List<Events> updateEntityFromOtherEntity(List<Events> eventsList, Long entityId, String entityType) throws Exception;
+    List<Events> saveEntityFromOtherEntity(List<Events> events, Long entityId, String entityType, Map<Long, Events> oldEntityMap);
 
     List<Events> saveEntityFromOtherEntity(List<Events> events, Long entityId, String entityType);
 

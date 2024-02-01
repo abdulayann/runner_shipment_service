@@ -3,7 +3,6 @@ package com.dpw.runner.shipment.services.syncing.impl;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.request.NotesRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataSyncResponse;
 import com.dpw.runner.shipment.services.entity.CarrierDetails;
@@ -22,7 +21,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.scheduling.annotation.Async;
@@ -31,7 +29,6 @@ import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -51,8 +48,6 @@ public class ShipmentSync implements IShipmentSync {
     IConsoleShipmentMappingDao consoleShipmentMappingDao;
     @Autowired
     IConsolidationDetailsDao consolidationDetailsDao;
-    @Autowired
-    IShipmentDao shipmentDao;
     @Autowired
     private IV1Service v1Service;
 
@@ -186,17 +181,6 @@ public class ShipmentSync implements IShipmentSync {
         });
 
         return ResponseHelper.buildSuccessResponse(modelMapper.map(cs, CustomShipmentSyncRequest.class));
-    }
-
-    @Override
-    public ResponseEntity<?> syncById(Long shipmentId) {
-        Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(shipmentId);
-        if(shipmentDetails.isPresent()) {
-            return sync(shipmentDetails.get(), null, null);
-        }
-        else {
-            throw new DataRetrievalFailureException("");
-        }
     }
 
     @Override

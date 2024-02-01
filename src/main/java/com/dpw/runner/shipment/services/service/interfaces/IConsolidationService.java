@@ -38,7 +38,7 @@ public interface IConsolidationService extends ICommonService{
 
     void exportExcel(HttpServletResponse response, CommonRequestModel commonRequestModel) throws IOException, IllegalAccessException;
 
-    void afterSave(ConsolidationDetails consolidationDetails, boolean isCreate);
+    void pushShipmentDataToDependentService(ConsolidationDetails consolidationDetails, boolean isCreate);
 
     void generateConsolidationNumber(ConsolidationDetails consolidationDetails);
     void autoGenerateEvents(ConsolidationDetails consolidationDetails);

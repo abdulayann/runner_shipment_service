@@ -206,11 +206,12 @@ public class ContainerService implements IContainerService {
             return c;
         }).collect(Collectors.toList());
         eventsList = eventDao.saveAll(eventsList);
-        if (request.getShipmentId() != null) {
-            eventsList.stream().forEach(container -> {
-                shipmentsContainersMappingDao.updateShipmentsMappings(container.getId(), List.of(request.getShipmentId()));
-            });
-        }
+        // TODO- revisit Abhimanyu and handle sync as well
+//        if (request.getShipmentId() != null) {
+//            eventsList.stream().forEach(container -> {
+//                shipmentsContainersMappingDao.updateShipmentsMappings(container.getId(), List.of(request.getShipmentId()));
+//            });
+//        }
     }
 
     @Override
@@ -992,6 +993,8 @@ public class ContainerService implements IContainerService {
                 response.setChargeableWeight(chargeableWeight + " " + Constants.VOLUME_UNIT_M3);
             }
             response.setTotalContainerVolume(String.format("%.2f %s", totalVolume, toVolumeUnit));
+            if(response.getSummary() == null)
+                response.setSummary("");
             try {
                 response.setSummary(calculateContainerSummary(containersList));
             }
