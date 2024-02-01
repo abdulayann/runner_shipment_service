@@ -189,12 +189,16 @@ public class ContainerService implements IContainerService {
     public void uploadContainers(BulkUploadRequest request) throws Exception {
         List<Containers> consolContainers = containerDao.findByConsolidationId(request.getConsolidationId());
         var containerMap = consolContainers.stream().collect(Collectors.toMap(Containers::getGuid, Function.identity()));
-        List<Containers> containersList = parser.parseExcelFile(request.getFile(), request, containerMap);
+
+        Map<String, Set<String>> masterDataMap = new HashMap<>();
+        List<Containers> containersList = parser.parseExcelFile(request.getFile(), request, containerMap, masterDataMap);
+
         containersList = containersList.stream().map(c ->
                 c.setConsolidationId(request.getConsolidationId())
         ).collect(Collectors.toList());
+
         boolean isUpdate = false; // TODO :: add update functionality
-        applyContainerValidations(containersList, request, isUpdate);
+        applyContainerValidations(containersList, request, isUpdate, masterDataMap);
         containersList = containerDao.saveAll(containersList);
         if (request.getShipmentId() != null) {
             containersList.stream().forEach(container -> {
@@ -205,12 +209,13 @@ public class ContainerService implements IContainerService {
         afterSaveList(containersList, true);
     }
 
-    private void applyContainerValidations(List<Containers> containersList, BulkUploadRequest request, boolean isUpdate) throws Exception {
+    private void applyContainerValidations(List<Containers> containersList, BulkUploadRequest request, boolean isUpdate,
+                                           Map<String, Set<String>> masterDataMap) throws Exception {
         Map<String, String> existingContainerNumbers = new HashMap<>();
         String transportMode = request.getTransportMode();
-        Map<String, Long> dicCommodityType = null; // TODO :: link with abhishek's code
-        Map<String, Long> dicLocType = null; // TODO :: link with abhishek's code
-        Map<String, String> hazardousClassMasterData = null; // TODO :: Link with abhishek's code;
+        Set<String> dicCommodityType = masterDataMap.get("CommodityCodes"); // TODO :: link with abhishek's code
+        Set<String> dicLocType = masterDataMap.get("Unlocations"); // TODO :: link with abhishek's code
+        Set<String> hazardousClassMasterData = masterDataMap.get("Hazardous"); // TODO :: Link with abhishek's code;
         for (int row = 0; row < containersList.size(); row++) {
             // Update scenario to be implemented here
             Containers containersRow = containersList.get(row);
@@ -228,21 +233,30 @@ public class ContainerService implements IContainerService {
             applyContainerStuffingValidation(dicLocType, row, containersRow);
             applyHazardousValidation(hazardousClassMasterData, row, containersRow);
             //TODO :: Add own type validation in future after cms integration
-
+            isPartValidation(request, containersRow);
         }
     }
 
-    private static void applyContainerStuffingValidation(Map<String, Long> dicLocType, int row, Containers containersRow) {
+    private void isPartValidation(BulkUploadRequest request, Containers containersRow) {
+        Boolean isPartValue = containersRow.getIsPart() == null ? false : containersRow.getIsPart();
+        if (isPartValue) {
+            var shipmentRecordOpt = shipmentDao.findById(request.getShipmentId());
+            if (shipmentRecordOpt.isPresent() && Constants.CARGO_TYPE_FCL.equals(shipmentRecordOpt.get().getShipmentType()) && isPartValue) {
+                throw new ValidationException("Shipment cargo type is FCL, Part containers are not allowed to be attached with FCL Shipment");
+            }
+        }
+    }
+
+    private static void applyContainerStuffingValidation(Set<String> dicLocType, int row, Containers containersRow) {
         var containerStuffingLocation = containersRow.getContainerStuffingLocation().trim();
         if (!containerStuffingLocation.isEmpty()) {
-            Long valueLocCode = dicLocType.get(containerStuffingLocation);
-            if (valueLocCode == null) {
+            if (dicLocType != null && dicLocType.contains(containerStuffingLocation) == false) {
                 throw new ValidationException("Container Stuffing Location " + containerStuffingLocation + " is not valid at row " + row);
             }
         }
     }
 
-    private static void applyHazardousValidation(Map<String, String> hazardousClassMasterData, int row, Containers containersRow) {
+    private static void applyHazardousValidation(Set<String> hazardousClassMasterData, int row, Containers containersRow) {
         Boolean isHazardous = containersRow.getHazardous();
         if (isHazardous != null) {
             if (isHazardous == true) {
@@ -251,7 +265,7 @@ public class ContainerService implements IContainerService {
                 if (!StringUtils.isEmpty(dgClass)) {
                     try {
                         long dgClassId = Long.valueOf(dgClass);
-                        if (!hazardousClassMasterData.containsKey(dgClassId)) {
+                        if (hazardousClassMasterData != null && !hazardousClassMasterData.contains(String.valueOf(dgClassId))) {
                             throw new ValidationException("DG class is invalid at row: " + row);
                         }
                     } catch (Exception e) {
@@ -270,12 +284,11 @@ public class ContainerService implements IContainerService {
         }
     }
 
-    private static void applyCommodityTypeValidation(Map<String, Long> dicCommodityType, int row, Containers containersRow) {
+    private static void applyCommodityTypeValidation(Set<String> dicCommodityType, int row, Containers containersRow) {
         String commodityCode = containersRow.getCommodityCode();
         commodityCode = commodityCode == null ? StringUtils.EMPTY : commodityCode.trim();
         if (!commodityCode.isEmpty()) {
-            Long valueCommodityCode = dicCommodityType.get(commodityCode);
-            if (valueCommodityCode == null) {
+            if (dicCommodityType != null && dicCommodityType.contains(commodityCode) == false) {
                 throw new ValidationException("Commodity Type " + commodityCode + " is not valid at row " + row);
             }
         }
@@ -389,7 +402,8 @@ public class ContainerService implements IContainerService {
     @Override
     public void uploadContainerEvents(BulkUploadRequest request) throws Exception {
         CSVParsingUtil<Events> newParser = new CSVParsingUtil<>(Events.class);
-        List<Events> eventsList = newParser.parseExcelFile(request.getFile(), request, null);
+        Map<String, Set<String>> masterDataMap = new HashMap<>();
+        List<Events> eventsList = newParser.parseExcelFile(request.getFile(), request, null, masterDataMap);
         eventsList = eventsList.stream().map(c -> {
             c.setEntityId(request.getConsolidationId());
             c.setEntityType("CONSOLIDATION");

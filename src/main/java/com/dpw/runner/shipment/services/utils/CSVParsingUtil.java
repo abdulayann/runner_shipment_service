@@ -503,7 +503,7 @@ public class CSVParsingUtil<T> {
     }
 
 
-    public List<T> parseExcelFile(MultipartFile file, BulkUploadRequest request, Map<UUID, T> mapOfEntity) throws IOException {
+    public List<T> parseExcelFile(MultipartFile file, BulkUploadRequest request, Map<UUID, T> mapOfEntity, Map<String, Set<String>> masterDataMap) throws IOException {
         List<T> entityList = new ArrayList<>();
         List<String> unlocationsList = new ArrayList<>();
         List<String> commodityCodesList = new ArrayList<>();
@@ -511,7 +511,7 @@ public class CSVParsingUtil<T> {
         int containerStuffingLocationPos = -1;
         int commodityCodePos = -1;
         int guidPos = -1;
-        
+
         try (Workbook workbook = new XSSFWorkbook(file.getInputStream())) {
             Sheet sheet = workbook.getSheetAt(0); // Assuming data is in the first sheet
             validateExcel(sheet);
@@ -538,8 +538,8 @@ public class CSVParsingUtil<T> {
                 }
             }
 
-            //fetching master data in bulk
-            Map<String, Set<String>> masterListsMap = getAllMasterData(unlocationsList, commodityCodesList);
+            //-----fetching master data in bulk
+            Map<String, Set<String>> masterListsMap = getAllMasterData(unlocationsList, commodityCodesList, masterDataMap);
 
             if (headerSet.size() < headerRow.getLastCellNum()) {
                 throw new ValidationException("Excel Sheet is invalid. All column should have column name.");
@@ -904,8 +904,7 @@ public class CSVParsingUtil<T> {
         field.set(entity, parsedValue);
     }
 
-    private Map<String, Set<String>> getAllMasterData(List<String> unlocationsList, List<String> commodityCodesList) {
-        Map<String, Set<String>> masterDataMap = new HashMap<>();
+    private Map<String, Set<String>> getAllMasterData(List<String> unlocationsList, List<String> commodityCodesList, Map<String, Set<String>> masterDataMap) {
         var weightUnitMasterData = CompletableFuture.runAsync(withMdc(() -> this.fetchMasterLists(MasterDataType.WEIGHT_UNIT, masterDataMap)), executorService);
         var volumeUnitMasterData = CompletableFuture.runAsync(withMdc(() -> this.fetchMasterLists(MasterDataType.VOLUME_UNIT, masterDataMap)), executorService);
         var temperatureUnitMasterData = CompletableFuture.runAsync(withMdc(() -> this.fetchMasterLists(MasterDataType.TEMPERATURE_UNIT, masterDataMap)), executorService);
