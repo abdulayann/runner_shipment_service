@@ -1391,6 +1391,7 @@ public class AwbService implements IAwbService {
         }
 
         Awb awb = awbOptional.get();
+        Long awbId = awb.getId();
 
         Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(awb.getShipmentId());
         Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(awb.getConsolidationId());
@@ -1454,6 +1455,7 @@ public class AwbService implements IAwbService {
                 if (resetAwbRequest.getAwbType().equals(Constants.MAWB)) {
                     //awb.setAwbPackingInfo(generateMawbPackingInfo(consolidationDetails.get()));
                     awb.setAwbGoodsDescriptionInfo(generateMawbGoodsDescriptionInfo(consolidationDetails.get(), createAwbRequest, null));
+                    updateLinkHawbMawb(consolidationDetails.get(), awbId);
                 }
                 else {
                     awb.setAwbPackingInfo(generateAwbPackingInfo(shipmentDetails.get(), shipmentDetails.get().getPackingList()));
