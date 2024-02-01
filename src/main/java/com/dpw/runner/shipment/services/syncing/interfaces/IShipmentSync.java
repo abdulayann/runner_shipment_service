@@ -9,6 +9,5 @@ import java.util.UUID;
 
 public interface IShipmentSync {
     ResponseEntity<?> sync(ShipmentDetails shipmentDetails, List<UUID> deletedContGuids, List<NotesRequest> customerBookingNotes, String transactionId);
-    ResponseEntity<?> syncById(Long shipmentId);
     void syncLockStatus(ShipmentDetails shipmentDetails);
 }

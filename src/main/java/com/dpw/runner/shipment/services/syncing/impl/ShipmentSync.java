@@ -166,22 +166,9 @@ public class ShipmentSync implements IShipmentSync {
         cs.setDeletedContGuids(deletedContGuids);
 
         String finalCs = jsonHelper.convertToJson(V1DataSyncRequest.builder().entity(cs).module(SyncingConstants.SHIPMENT).build());
-//        CompletableFuture.runAsync(commonUtils.withMdc(() -> callSync(finalCs, cs, sd.getId(), sd.getGuid())), commonUtils.syncExecutorService);
         syncService.pushToKafka(finalCs, StringUtility.convertToString(sd.getId()), StringUtility.convertToString(sd.getGuid()), "Shipments", transactionId);
         return ResponseHelper.buildSuccessResponse(modelMapper.map(cs, CustomShipmentSyncRequest.class));
     }
-
-    @Override
-    public ResponseEntity<?> syncById(Long shipmentId) {
-        Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(shipmentId);
-        if(shipmentDetails.isPresent()) {
-            return sync(shipmentDetails.get(), null, null, UUID.randomUUID().toString());
-        }
-        else {
-            throw new DataRetrievalFailureException("");
-        }
-    }
-
     @Override
     @Async
     public void syncLockStatus(ShipmentDetails shipmentDetails) {
