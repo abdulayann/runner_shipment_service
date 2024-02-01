@@ -126,17 +126,6 @@ public class AuditLogService implements IAuditLogService {
 
     public void addAuditLog(AuditLogMetaData auditLogMetaData) throws IllegalAccessException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, NoSuchMethodException {
         validateRequest(auditLogMetaData);
-        this.addToAuditLog(auditLogMetaData);
-//        CompletableFuture.runAsync(commonUtils.withMdc(() -> {
-//            try {
-//                this.addToAuditLog(auditLogMetaData);
-//            } catch (Exception e) {
-//                log.error("Error occurred during audit logs with exception: {}", e.getMessage());
-//            }
-//        }), executorService);
-    }
-
-    private void addToAuditLog(AuditLogMetaData auditLogMetaData) throws IllegalAccessException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, NoSuchMethodException {
         AuditLog auditLog = new AuditLog();
         auditLog.setOperation(auditLogMetaData.getOperation());
         auditLog.setParentType(auditLogMetaData.getParent());
