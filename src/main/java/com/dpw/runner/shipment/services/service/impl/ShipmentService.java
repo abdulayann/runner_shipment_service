@@ -1837,7 +1837,9 @@ public class ShipmentService implements IShipmentService {
                     }
                 }
             }
-            List<Routings> routings = shipmentDetails.getRoutingsList().stream().sorted(Comparator.comparingLong(Routings::getLeg)).collect(Collectors.toList());
+            List<Routings> routings = new ArrayList<>();
+            if(shipmentDetails.getRoutingsList() != null && shipmentDetails.getRoutingsList().size() > 0)
+                routings = shipmentDetails.getRoutingsList().stream().sorted(Comparator.comparingLong(Routings::getLeg)).collect(Collectors.toList());
             var routeRequest = routings.stream().filter(x -> x.getMode().equals(shipmentDetails.getTransportMode())).findFirst();
             List<Routings> createRoutes = new ArrayList<>();
             if(routeRequest.isPresent()) {
