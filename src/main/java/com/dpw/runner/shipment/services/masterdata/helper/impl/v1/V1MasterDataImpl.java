@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.masterdata.helper.impl.v1;
 
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
+import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.CreateConsolidationTaskRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.CreateShipmentTaskRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.FlightScheduleRequest;
@@ -10,6 +11,7 @@ import com.dpw.runner.shipment.services.masterdata.dto.MasterData;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.masterdata.helper.IMasterDataService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
+import com.dpw.runner.shipment.services.syncing.Entity.PartyRequestV2;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -494,6 +496,13 @@ public class V1MasterDataImpl implements IMasterDataService {
         V1DataResponse v1DataResponse = v1Service.fetchChargeCodeData(request);
         return DependentServiceResponse.builder().success(true)
                 .data(v1DataResponse.entities).pageSize(v1DataResponse.take).numberOfRecords(v1DataResponse.totalCount).pageNo(v1DataResponse.skip).build();
+    }
+
+    @Override
+    public DependentServiceResponse getDefaultOrg(Object request) {
+        PartyRequestV2 partyRequestV2 = v1Service.getDefaultOrg();
+        return DependentServiceResponse.builder().success(true)
+                .data(partyRequestV2).build();
     }
 
 }
