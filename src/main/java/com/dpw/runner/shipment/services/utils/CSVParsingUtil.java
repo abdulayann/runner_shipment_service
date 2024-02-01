@@ -1,11 +1,21 @@
 package com.dpw.runner.shipment.services.utils;
 
+import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.commons.requests.BulkUploadRequest;
+import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
 import com.dpw.runner.shipment.services.dto.response.*;
+import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.Events;
 import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.entity.enums.ContainerStatus;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.masterdata.dto.MasterData;
+import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequestV2;
+import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
+import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.opencsv.CSVReader;
 import com.opencsv.exceptions.CsvException;
 import lombok.extern.slf4j.Slf4j;
@@ -14,21 +24,34 @@ import org.apache.commons.text.WordUtils;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
+
 @Slf4j
+@Component
 public class CSVParsingUtil<T> {
 
     private Class<T> entityClass;
+
+    @Autowired
+    private IV1Service v1Service;
+
+
+    @Autowired
+    private JsonHelper jsonHelper;
     private final Set<String> hiddenFields = Set.of("pickupAddress",
             "deliveryAddress", "eventsList", "packsList", "shipmentsList", "bookingCharges");
 
@@ -452,24 +475,44 @@ public class CSVParsingUtil<T> {
         return entityList;
     }
 
-    public List<T> parseExcelFile(MultipartFile file) throws IOException {
+    public Map<Integer, Map<String, MasterData>> fetchInBulkMasterList(MasterListRequestV2 requests) {
+        Map<String, MasterData> keyMasterDataMap = new HashMap<>();
+        Map<Integer, Map<String, MasterData>> dataMap = new HashMap<>();
+        if (requests.getMasterListRequests() != null && requests.getMasterListRequests().size() > 0) {
+            V1DataResponse response = v1Service.fetchMultipleMasterData(requests);
+            List<MasterData> masterLists = jsonHelper.convertValueToList(response.entities, MasterData.class);
+            masterLists.forEach(masterData -> {
+                dataMap.putIfAbsent(masterData.getItemType(), new HashMap<>());
+                dataMap.get(masterData.getItemType()).put(masterData.getItemValue(), masterData);
+            });
+        }
+        return dataMap;
+    }
+
+
+    public List<T> parseExcelFile(MultipartFile file, BulkUploadRequest request, Map<UUID, T> mapOfEntity) throws IOException {
         List<T> entityList = new ArrayList<>();
+        // TODO : fetch bulk master data async manner
+        Map<Integer, Map<String, MasterData>> masterListsMap = null;
         try (Workbook workbook = new XSSFWorkbook(file.getInputStream())) {
             Sheet sheet = workbook.getSheetAt(0); // Assuming data is in the first sheet
             validateExcel(sheet);
             Row headerRow = sheet.getRow(0);
-            if (headerRow.getLastCellNum() <= 1)
-            {
+            if (headerRow.getLastCellNum() <= 1) {
                 throw new ValidationException("Empty excel sheet uploaded.");
             }
             String[] header = new String[headerRow.getLastCellNum()];
             Set<String> headerSet = new HashSet<>();
+            int guidPos = -1;
             for (int i = 0; i < headerRow.getLastCellNum(); i++) {
-                if(StringUtility.isEmpty(headerRow.getCell(i).getStringCellValue())) {
+                if (StringUtility.isEmpty(headerRow.getCell(i).getStringCellValue())) {
                     continue;
                 }
                 header[i] = getCamelCase(headerRow.getCell(i).getStringCellValue());
                 headerSet.add(header[i]);
+                if (header[i].equalsIgnoreCase("guid")) {
+                    guidPos = i;
+                }
             }
 
             if(headerSet.size() < headerRow.getLastCellNum()) {
@@ -479,19 +522,32 @@ public class CSVParsingUtil<T> {
 
             for (int i = 1; i <= sheet.getLastRowNum(); i++) {
                 Row row = sheet.getRow(i);
-                T entity = createEntityInstance();
+                if (guidPos != -1) {
+                    String guidVal = getCellValueAsString(row.getCell(guidPos));
+                    try {
+                        var containerGuid = UUID.fromString(guidVal);
+                        if (mapOfEntity != null && !mapOfEntity.containsKey(containerGuid)) {
+                            throw new ValidationException("GUID at row: " + row + " doesn't exist for this consolidation.");
+                        }
+                    } catch (Exception ex) {
+                        throw new ValidationException("GUID not valid at row: " + row);
+                    }
+                }
+                T entity = guidPos != -1 && mapOfEntity != null ? mapOfEntity.get(row.getCell(guidPos)) : createEntityInstance();
 
                 for (int j = 0; j < header.length; j++) {
                     Cell cell = row.getCell(j);
                     if (cell != null) {
                         String cellValue = getCellValueAsString(cell);
+                        checkForUnitValidations(masterListsMap, header[j], cellValue, i, request.getTransportMode());
+                        checkForValueValidations(header[j], cellValue, i, request.getTransportMode());
                         setField(entity, header[j], cellValue);
                     }
                 }
 
                 entityList.add(entity);
             }
-        }  catch (ValidationException e1) {
+        } catch (ValidationException e1) {
             log.error(e1.getMessage());
             throw new ValidationException(e1.getMessage());
         } catch (NoSuchFieldException | IllegalAccessException | InstantiationException e) {
@@ -499,6 +555,188 @@ public class CSVParsingUtil<T> {
             throw new ValidationException("Excel sheet is not valid.");
         }
         return entityList;
+    }
+
+    public VolumeWeightChargeable calculateVolumeWeight(String transportMode, String weightUnit, String volumeUnit, BigDecimal weight, BigDecimal volume) throws Exception {
+        String responseMsg;
+        try {
+            VolumeWeightChargeable vwOb = new VolumeWeightChargeable();
+            if (!weightUnit.isEmpty() && !volumeUnit.isEmpty() && !transportMode.isEmpty()) {
+                switch (transportMode) {
+                    case Constants.TRANSPORT_MODE_SEA:
+                    case Constants.TRANSPORT_MODE_RAI:
+                    case Constants.TRANSPORT_MODE_FSA:
+                        BigDecimal volInM3 = new BigDecimal(convertUnit(Constants.VOLUME, volume, volumeUnit, Constants.VOLUME_UNIT_M3).toString());
+                        vwOb.setChargeable(volInM3.multiply(BigDecimal.valueOf(10)).setScale(0, BigDecimal.ROUND_CEILING).divide(BigDecimal.valueOf(10)));
+                        vwOb.setChargeableUnit(Constants.VOLUME_UNIT_M3);
+
+                        BigDecimal wtInTn = new BigDecimal(convertUnit(Constants.MASS, weight, weightUnit, Constants.WEIGHT_UNIT_KG).toString());
+                        wtInTn = wtInTn.divide(BigDecimal.valueOf(1000));
+                        BigDecimal wv = new BigDecimal(convertUnit(Constants.VOLUME, wtInTn, Constants.VOLUME_UNIT_M3, volumeUnit).toString());
+                        vwOb.setVolumeWeight(wv.multiply(BigDecimal.TEN).setScale(0, RoundingMode.CEILING).divide(BigDecimal.TEN));
+                        vwOb.setVolumeWeightUnit(volumeUnit);
+                        break;
+                    case Constants.TRANSPORT_MODE_AIR:
+                    case Constants.TRANSPORT_MODE_FAS:
+                    case Constants.TRANSPORT_MODE_ROA:
+                        BigDecimal wtInKG = new BigDecimal(convertUnit(Constants.MASS, weight, weightUnit, Constants.WEIGHT_UNIT_KG).toString());
+                        BigDecimal vlInM3 = new BigDecimal(convertUnit(Constants.VOLUME, volume, volumeUnit, Constants.VOLUME_UNIT_M3).toString());
+                        BigDecimal factor = new BigDecimal(166.667);
+                        if (transportMode.equals(Constants.TRANSPORT_MODE_ROA)) {
+                            factor = BigDecimal.valueOf(333.0);
+                        }
+                        BigDecimal wvInKG = vlInM3.multiply(factor);
+                        if (wtInKG.compareTo(wvInKG) < 0) {
+                            wtInKG = wvInKG;
+                        }
+                        vwOb.setChargeable(wtInKG.multiply(BigDecimal.valueOf(100)).setScale(0, BigDecimal.ROUND_CEILING).divide(BigDecimal.valueOf(100)));
+                        vwOb.setChargeableUnit(Constants.WEIGHT_UNIT_KG);
+                        BigDecimal WV = new BigDecimal(convertUnit(Constants.MASS, wvInKG, Constants.WEIGHT_UNIT_KG, weightUnit).toString());
+                        vwOb.setVolumeWeight(WV);
+                        vwOb.setVolumeWeightUnit(weightUnit);
+                        break;
+                }
+            }
+            return vwOb;
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_CALCULATION_ERROR;
+            log.error(responseMsg, e);
+            throw new Exception(e);
+        }
+    }
+
+    private void checkForValueValidations(String column, String cellValue, int rowNum, String transportMode) throws ValidationException {
+        if (column.equalsIgnoreCase("grossWeight") && cellValue.contains("-")) {
+            throw new ValidationException("Gross Weight cannot be negative at row: " + rowNum);
+        }
+        if (column.equalsIgnoreCase("netWeight") && cellValue.contains("-")) {
+            throw new ValidationException("Net Weight cannot be negative at row: " + rowNum);
+        }
+        if (column.equalsIgnoreCase("tareWeight") && cellValue.contains("-")) {
+            throw new ValidationException("Tare Weight cannot be negative at row: " + rowNum);
+        }
+        if (column.equalsIgnoreCase("measurement") && cellValue.contains("-")) {
+            throw new ValidationException("Measurement cannot be negative at row: " + rowNum);
+        }
+        if (column.equalsIgnoreCase("packs")) {
+            try {
+                if (transportMode != null &&
+                        transportMode.equals(Constants.TRANSPORT_MODE_AIR) &&
+                        (cellValue == null || Integer.parseInt(cellValue) < 1)) {
+                    throw new ValidationException("Packs is not valid at row: " + rowNum);
+                }
+                int t = Integer.parseInt(cellValue);
+                if (t < 1)
+                    throw new ValidationException("Packs is not valid at row: " + rowNum);
+            } catch (Exception e) {
+                throw new ValidationException("Packs is not valid at row: " + rowNum + ". Please provide integer value and within the range of integer.");
+            }
+        }
+    }
+
+    private void checkForUnitValidations(Map<Integer, Map<String, MasterData>> masterListsMap, String column, String cellValue, int rowNum, String transportMode)
+            throws ValidationException {
+        //MasterData validations : weight unit , volume unit
+        if (column.toLowerCase().contains("weightunit")) {
+            switch (column.toLowerCase()) {
+                case "netweightunit": {
+                    if (!cellValue.isEmpty() && masterListsMap.containsKey(MasterDataType.WEIGHT_UNIT) &&
+                            !masterListsMap.get(MasterDataType.WEIGHT_UNIT).containsKey(cellValue)) {
+                        throw new ValidationException("Net weight unit is invalid at row: " + rowNum);
+                    }
+                    break;
+                }
+                case "grossweightunit": {
+                    if (!cellValue.isEmpty() && masterListsMap.containsKey(MasterDataType.WEIGHT_UNIT) &&
+                            !masterListsMap.get(MasterDataType.WEIGHT_UNIT).containsKey(cellValue)) {
+                        throw new ValidationException("Gross weight unit is null or invalid at row: " + rowNum);
+                    }
+                    break;
+                }
+                case "tareweightunit": {
+                    if (!cellValue.isEmpty() && masterListsMap.containsKey(MasterDataType.WEIGHT_UNIT) &&
+                            !masterListsMap.get(MasterDataType.WEIGHT_UNIT).containsKey(cellValue)) {
+                        throw new ValidationException("Tare weight unit is null or invalid at row: " + rowNum);
+                    }
+                    break;
+                }
+            }
+        }
+        if (column.toLowerCase().contains("tempunit")) {
+            if (!cellValue.isEmpty() && masterListsMap.containsKey(MasterDataType.TEMPERATURE_UNIT) &&
+                    !masterListsMap.get(MasterDataType.TEMPERATURE_UNIT).containsKey(cellValue)) {
+                throw new ValidationException("Temp Unit is invalid at row: " + rowNum);
+            }
+        }
+        if (column.toLowerCase().contains("packstype")) {
+            if (!cellValue.isEmpty() && masterListsMap.containsKey(MasterDataType.PACKS_UNIT)
+                    && !masterListsMap.get(MasterDataType.PACKS_UNIT).containsKey(cellValue)) {
+                throw new ValidationException("Packs Type is invalid at row: " + rowNum);
+            }
+        }
+        if (column.equalsIgnoreCase("innerPackageType")) {
+            if (!cellValue.isEmpty() && masterListsMap.containsKey(MasterDataType.PACKS_UNIT) && !masterListsMap.get(MasterDataType.PACKS_UNIT).containsKey(cellValue)) {
+                throw new ValidationException("Inner package type is invalid at row: " + rowNum);
+            }
+        }
+        if (column.toLowerCase().contains("measurementunit")) {
+            if (!cellValue.isEmpty() && masterListsMap.containsKey(MasterDataType.DIMENSION_UNIT) &&
+                    !masterListsMap.get(MasterDataType.DIMENSION_UNIT).containsKey(cellValue)) {
+                throw new ValidationException("Measurement unit is invalid at row: " + rowNum);
+            }
+        }
+        if (column.toLowerCase().contains("volumeunit")) {
+            switch (column.toLowerCase()) {
+                case "grossvolumeunit": {
+                    if (!cellValue.isEmpty() && masterListsMap.containsKey(MasterDataType.VOLUME_UNIT) &&
+                            !masterListsMap.get(MasterDataType.VOLUME_UNIT).containsKey(cellValue)) {
+                        throw new ValidationException("Gross Volume unit is null or invalid at row: " + rowNum);
+                    }
+                }
+                case "allocatedvolumeunit": {
+                    if (!cellValue.isEmpty() && masterListsMap.containsKey(MasterDataType.VOLUME_UNIT) &&
+                            !masterListsMap.get(MasterDataType.VOLUME_UNIT).containsKey(cellValue)) {
+                        throw new ValidationException("Allocated Volume unit is null or invalid at row: " + rowNum);
+                    }
+                    break;
+                }
+                case "achievedvolumeunit": {
+                    if (!cellValue.isEmpty() && masterListsMap.containsKey(MasterDataType.VOLUME_UNIT) &&
+                            !masterListsMap.get(MasterDataType.VOLUME_UNIT).containsKey(cellValue)) {
+                        throw new ValidationException("Achieved Volume unit is null or invalid at row: " + rowNum);
+                    }
+                    break;
+                }
+            }
+        }
+        if (column.toLowerCase().contains("containermode")) {
+            if (!cellValue.isEmpty() && masterListsMap.containsKey(MasterDataType.CONTAINER_MODE) &&
+                    !masterListsMap.get(MasterDataType.CONTAINER_MODE).containsKey(cellValue)) {
+                throw new ValidationException("Container Mode is invalid at row: " + rowNum);
+            }
+        }
+        if (column.toLowerCase().contains("containercode")) {
+            if (cellValue.isEmpty() && transportMode.equals(Constants.TRANSPORT_MODE_AIR)) {
+                throw new ValidationException("Container Type Code cannot be null at row " + rowNum);
+            }
+        }
+        if (column.toLowerCase().contains("innerpackagemeasurementunit")) {
+            if (!cellValue.isEmpty() && masterListsMap.containsKey(MasterDataType.DIMENSION_UNIT) &&
+                    !masterListsMap.get(MasterDataType.DIMENSION_UNIT).containsKey(cellValue)) {
+                throw new ValidationException("Inner package meaurement unit is invalid at row: " + rowNum);
+            }
+        }
+        if (column.toLowerCase().contains("chargeableunit")) {
+            if (!cellValue.isEmpty() && masterListsMap.containsKey(MasterDataType.WEIGHT_UNIT) && !masterListsMap.get(MasterDataType.WEIGHT_UNIT).containsKey(cellValue)) {
+                throw new ValidationException("Chargeable unit is invalid at row: " + rowNum);
+            }
+        }
+        if (column.toLowerCase().contains("containerCode")) {
+            if (!cellValue.isEmpty() && !containerTypeMasterData.containsKey(cellValue)) {
+                throw new ValidationException("Container Type " + cellValue + "is not valid at row " + rowNum);
+            }
+        }
     }
 
     private String getCellValueAsString(Cell cell) {

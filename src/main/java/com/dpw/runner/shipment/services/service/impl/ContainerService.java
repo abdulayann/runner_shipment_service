@@ -21,6 +21,7 @@ import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.JobResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
@@ -40,6 +41,7 @@ import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
@@ -70,6 +72,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
@@ -94,7 +97,9 @@ public class ContainerService implements IContainerService {
     private ExcelUtils excelUtils;
 
     @Autowired
+    private ConsolidationService consolidationService;
 
+    @Autowired
     private ModelMapper modelMapper;
     private final CSVParsingUtil<Containers> parser = new CSVParsingUtil<>(Containers.class);
 
@@ -182,10 +187,14 @@ public class ContainerService implements IContainerService {
 
     @Override
     public void uploadContainers(BulkUploadRequest request) throws Exception {
-        List<Containers> containersList = parser.parseExcelFile(request.getFile());
+        List<Containers> consolContainers = containerDao.findByConsolidationId(request.getConsolidationId());
+        var containerMap = consolContainers.stream().collect(Collectors.toMap(Containers::getGuid, Function.identity()));
+        List<Containers> containersList = parser.parseExcelFile(request.getFile(), request, containerMap);
         containersList = containersList.stream().map(c ->
                 c.setConsolidationId(request.getConsolidationId())
         ).collect(Collectors.toList());
+        boolean isUpdate = false; // TODO :: add update functionality
+        applyContainerValidations(containersList, request, isUpdate);
         containersList = containerDao.saveAll(containersList);
         if (request.getShipmentId() != null) {
             containersList.stream().forEach(container -> {
@@ -196,10 +205,191 @@ public class ContainerService implements IContainerService {
         afterSaveList(containersList, true);
     }
 
+    private void applyContainerValidations(List<Containers> containersList, BulkUploadRequest request, boolean isUpdate) throws Exception {
+        Map<String, String> existingContainerNumbers = new HashMap<>();
+        String transportMode = request.getTransportMode();
+        Map<String, Long> dicCommodityType = null; // TODO :: link with abhishek's code
+        Map<String, Long> dicLocType = null; // TODO :: link with abhishek's code
+        Map<String, String> hazardousClassMasterData = null; // TODO :: Link with abhishek's code;
+        for (int row = 0; row < containersList.size(); row++) {
+            // Update scenario to be implemented here
+            Containers containersRow = containersList.get(row);
+            if (containersRow.getIsOwnContainer() == true && containersRow.getIsShipperOwned() == true) {
+                String errorMessagePart1 = "Multiple container ownership is selected at row ";
+                String errorMessagePart2 = " - Kindly change and try re-uploading.";
+                throw new ValidationException(errorMessagePart1 + (row + 1) + errorMessagePart2);
+            }
+            checkCalculatedVolumeAndActualVolume(request, row + 1, containersRow);
+            applyContainerNumberValidation(containersList, existingContainerNumbers, transportMode, row + 1, containersRow, isUpdate);
+            applyConatinerCountValidation(request, transportMode, row + 1, containersRow);
+            applyChargeableValidation(transportMode, row, containersRow);
+            checkForHandlingInfo(transportMode, row, containersRow);
+            applyCommodityTypeValidation(dicCommodityType, row, containersRow);
+            applyContainerStuffingValidation(dicLocType, row, containersRow);
+            applyHazardousValidation(hazardousClassMasterData, row, containersRow);
+            //TODO :: Add own type validation in future after cms integration
+
+        }
+    }
+
+    private static void applyContainerStuffingValidation(Map<String, Long> dicLocType, int row, Containers containersRow) {
+        var containerStuffingLocation = containersRow.getContainerStuffingLocation().trim();
+        if (!containerStuffingLocation.isEmpty()) {
+            Long valueLocCode = dicLocType.get(containerStuffingLocation);
+            if (valueLocCode == null) {
+                throw new ValidationException("Container Stuffing Location " + containerStuffingLocation + " is not valid at row " + row);
+            }
+        }
+    }
+
+    private static void applyHazardousValidation(Map<String, String> hazardousClassMasterData, int row, Containers containersRow) {
+        Boolean isHazardous = containersRow.getHazardous();
+        if (isHazardous != null) {
+            if (isHazardous == true) {
+                // DG CLASS(HAZARDOUS CLASS)
+                String dgClass = containersRow.getDgClass();
+                if (!StringUtils.isEmpty(dgClass)) {
+                    try {
+                        long dgClassId = Long.valueOf(dgClass);
+                        if (!hazardousClassMasterData.containsKey(dgClassId)) {
+                            throw new ValidationException("DG class is invalid at row: " + row);
+                        }
+                    } catch (Exception e) {
+                        throw new ValidationException("DG class is invalid at row: " + row + ". Please provide correct DG class.");
+                    }
+                } else {
+                    throw new ValidationException("DG class is empty at row: " + row + ". DG class is mandatory field for hazardous goods.");
+                }
+
+                //HAZARDOUS UN
+                String hazardousUn = containersRow.getHazardousUn();
+                if (!StringUtils.isEmpty(hazardousUn)) {
+                    containersRow.setHazardousUn(hazardousUn);
+                }
+            }
+        }
+    }
+
+    private static void applyCommodityTypeValidation(Map<String, Long> dicCommodityType, int row, Containers containersRow) {
+        String commodityCode = containersRow.getCommodityCode();
+        commodityCode = commodityCode == null ? StringUtils.EMPTY : commodityCode.trim();
+        if (!commodityCode.isEmpty()) {
+            Long valueCommodityCode = dicCommodityType.get(commodityCode);
+            if (valueCommodityCode == null) {
+                throw new ValidationException("Commodity Type " + commodityCode + " is not valid at row " + row);
+            }
+        }
+    }
+
+    private static void checkForHandlingInfo(String transportMode, int row, Containers containersRow) {
+        if (transportMode != null && transportMode.equals(Constants.TRANSPORT_MODE_AIR)) {
+            String handlingInfo = containersRow.getHandlingInfo();
+            handlingInfo = handlingInfo.trim();
+            if (handlingInfo.length() > 2500) {
+                throw new ValidationException("Handling Information exceeds maximum allowed characters at row " + row + ".");
+            }
+        }
+    }
+
+    private void applyChargeableValidation(String transportMode, int row, Containers containersRow) throws Exception {
+        if (!containersRow.getChargeableUnit().isEmpty() &&
+                transportMode.equalsIgnoreCase(Constants.TRANSPORT_MODE_AIR) &&
+                containersRow.getChargeable() != null) {
+            if (!containersRow.getChargeableUnit().equals(Constants.WEIGHT_UNIT_KG)) {
+                throw new ValidationException("Chargeable unit not in KG at row: " + row);
+            }
+            var actualChargeable = containersRow.getChargeable();
+            actualChargeable = actualChargeable.setScale(2, BigDecimal.ROUND_HALF_UP);
+            BigDecimal calculatedChargeable = null;
+
+            var vwob = consolidationService.calculateVolumeWeight(Constants.TRANSPORT_MODE_AIR,
+                    containersRow.getGrossWeightUnit() == null ? Constants.WEIGHT_UNIT_KG : containersRow.getGrossWeightUnit(),
+                    containersRow.getGrossVolumeUnit() == null ? Constants.VOLUME_UNIT_M3 : containersRow.getGrossVolumeUnit(),
+                    containersRow.getGrossWeight() == null ? BigDecimal.ZERO : containersRow.getGrossWeight(),
+                    containersRow.getGrossVolume() == null ? BigDecimal.ZERO : containersRow.getGrossVolume());
+            if (vwob.getChargeable() != null) {
+                calculatedChargeable = vwob.getChargeable();
+                calculatedChargeable = calculatedChargeable.setScale(2, BigDecimal.ROUND_HALF_UP);
+                if (calculatedChargeable != actualChargeable) {
+                    throw new ValidationException("Chargeable is invalid at row: " + row);
+                }
+            }
+        }
+    }
+
+    private void checkCalculatedVolumeAndActualVolume(BulkUploadRequest request, int row, Containers containersRow) {
+        if (!request.getTransportMode().isEmpty() && request.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)
+                && containersRow.getGrossVolume() != null) {
+            if (!containersRow.getGrossVolumeUnit().equals(Constants.VOLUME_UNIT_M3)) {
+                throw new ValidationException("Gross Volume unit not in M3 at row: " + (row + 1));
+            }
+            BigDecimal actualVolume = containersRow.getGrossVolume();
+            actualVolume = actualVolume.setScale(2, BigDecimal.ROUND_HALF_UP);
+            BigDecimal calculatedVolume = getCalculatedVolume(containersRow.getPackageBreadth(), containersRow.getPackageLength(), containersRow.getPackageHeight());
+            calculatedVolume = calculatedVolume.setScale(2, BigDecimal.ROUND_HALF_UP);
+            if (calculatedVolume != null && actualVolume != calculatedVolume) {
+                throw new ValidationException("Gross Volume is invalid at row: " + (row + 1));
+            }
+        } else if (request.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && containersRow.getGrossVolume() != null
+                && StringUtils.isEmpty(containersRow.getGrossVolumeUnit())) {
+            throw new ValidationException("Gross Volume unit is empty or Gross Volume unit not entered at row: " + row);
+        }
+    }
+
+    private BigDecimal getCalculatedVolume(BigDecimal packageBreadth, BigDecimal packageLength, BigDecimal packageHeight) {
+        if (packageBreadth == null || packageLength == null || packageHeight == null) {
+            return null;
+        }
+        return packageLength.multiply(packageBreadth).multiply(packageHeight);
+    }
+
+    private static void applyConatinerCountValidation(BulkUploadRequest request, String transportMode, int row, Containers containersRow) {
+        if (!transportMode.equals(Constants.TRANSPORT_MODE_AIR)) {
+            try {
+                var containerCount = Integer.parseInt(String.valueOf(containersRow.getContainerCount()));
+                if (containerCount < 1) {
+                    throw new ValidationException("Container Count is not valid at row: " + row);
+                }
+            } catch (NumberFormatException e) {
+                throw new ValidationException("Container Count is not valid at row: " + row + ". Please provide an integer value within the range of integer.");
+            }
+        }
+    }
+
+    private static void applyContainerNumberValidation(List<Containers> containersList, Map<String, String> existingContainerNumbers, String transportMode, int row, Containers containersRow, boolean isUpdate) {
+        if (!transportMode.equals(Constants.TRANSPORT_MODE_AIR)) {
+
+            var containerCount = containersRow.getContainerCount();
+
+            if (!containersRow.getContainerNumber().isEmpty() && containerCount > 1) {
+                throw new ValidationException("Container Number cannot be assigned if container count is greater than 1 at row: " + row);
+            }
+
+            if (isUpdate && !containersRow.getContainerNumber().isEmpty()) {
+                if (existingContainerNumbers.containsKey(containersRow.getContainerNumber())
+                        && !existingContainerNumbers.get(containersRow.getContainerNumber()).equals(containersRow.getGuid())) {
+                    throw new ValidationException("Duplicate container number " + containersRow.getContainerNumber() + " found at row: " + row + ". In a booking all container numbers must be Unique.");
+                }
+            }
+
+            if (existingContainerNumbers.containsKey(containersRow.getContainerNumber()) && !isUpdate) {
+                throw new ValidationException("Duplicate container number " + containersRow.getContainerNumber() + " found at row: " + row + ". In a booking all container numbers must be Unique.");
+            }
+
+            if (!containersRow.getContainerNumber().isEmpty() && !existingContainerNumbers.containsKey(containersRow.getContainerNumber())) {
+                existingContainerNumbers.put(containersRow.getContainerNumber(), containersRow.getGuid().toString());
+            }
+
+            if (containersRow.getContainerNumber().isEmpty()) {
+                containersRow.setContainerNumber(null);
+            }
+        }
+    }
+
     @Override
     public void uploadContainerEvents(BulkUploadRequest request) throws Exception {
         CSVParsingUtil<Events> newParser = new CSVParsingUtil<>(Events.class);
-        List<Events> eventsList = newParser.parseExcelFile(request.getFile());
+        List<Events> eventsList = newParser.parseExcelFile(request.getFile(), request, null);
         eventsList = eventsList.stream().map(c -> {
             c.setEntityId(request.getConsolidationId());
             c.setEntityType("CONSOLIDATION");

@@ -145,7 +145,7 @@ public class PackingService implements IPackingService {
 
     @Override
     public void uploadPacking(BulkUploadRequest request) throws Exception {
-        List<Packing> packingList = parser.parseExcelFile(request.getFile());
+        List<Packing> packingList = parser.parseExcelFile(request.getFile(), request, null);
         packingList.stream().forEach(packing -> {
             packing.setConsolidationId(request.getConsolidationId());
             packing.setShipmentId(request.getShipmentId());
