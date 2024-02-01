@@ -24,10 +24,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpServerErrorException;
@@ -1783,13 +1780,13 @@ public class V1ServiceImpl implements IV1Service {
     }
 
     @Override
-    public V1DataSyncResponse v1DataSync(Object request) {
+    public V1DataSyncResponse v1DataSync(Object request, HttpHeaders headers) {
         ResponseEntity tiDataResponse = null;
 
         try {
             long time = System.currentTimeMillis();
             log.info("Request: {} || Payload sent for event: {} with request payload: {}", LoggerHelper.getRequestIdFromMDC(), IntegrationType.V1_DATA_SYNC, jsonHelper.convertToJson(request));
-            HttpEntity<V1DataResponse> entity = new HttpEntity(request, v1AuthHelper.getHeadersForDataSync());
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, headers != null ? headers : v1AuthHelper.getHeadersForDataSync());
             tiDataResponse = this.restTemplate.postForEntity(this.DATA_SYNC_URL, entity, V1DataSyncResponse.class, new Object[0]);
             log.info("Request: {} || Response for event: {} with response{}", LoggerHelper.getRequestIdFromMDC(), IntegrationType.V1_DATA_SYNC, jsonHelper.convertToJson(tiDataResponse.getBody()));
             log.info("Request: {} || Total time taken in v1DataSync() function: {}", LoggerHelper.getRequestIdFromMDC() ,(System.currentTimeMillis() - time));

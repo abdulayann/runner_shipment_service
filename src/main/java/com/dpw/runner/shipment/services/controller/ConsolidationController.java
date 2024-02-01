@@ -35,6 +35,7 @@ import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 
 @RestController
@@ -299,7 +300,7 @@ public class ConsolidationController {
         String responseMsg;
         try {
             return (ResponseEntity<RunnerResponse<CustomConsolidationRequest>>) consolidationSync.sync(
-                    jsonHelper.convertValue(request, ConsolidationDetails.class));
+                    jsonHelper.convertValue(request, ConsolidationDetails.class), UUID.randomUUID().toString());
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;

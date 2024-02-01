@@ -26,8 +26,8 @@ public class AsyncConfig implements AsyncConfigurer {
     @Bean(name = "asyncExecutor")
     public ThreadPoolTaskExecutor taskExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-        executor.setCorePoolSize(30);
-        executor.setMaxPoolSize(30);
+        executor.setCorePoolSize(20);
+        executor.setMaxPoolSize(20);
         executor.setThreadNamePrefix("MyAsyncThread-");
         executor.setRejectedExecutionHandler((r, executor1) -> log.warn("Task rejected, thread pool is full and queue is also full"));
         executor.initialize();
@@ -37,6 +37,6 @@ public class AsyncConfig implements AsyncConfigurer {
     // Used for Completable future
     @Bean
     public ExecutorService executorService() {
-        return Executors.newFixedThreadPool(10);
+        return Executors.newFixedThreadPool(20);
     }
 }

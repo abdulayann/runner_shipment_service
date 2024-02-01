@@ -178,7 +178,7 @@ public class ValidatorUtility {
 
             if (fieldValue != null && fieldValue.getValueType() == JsonValue.ValueType.STRING) {
                 String fieldValueString = jsonObject.getString(at);
-                if (!Pattern.matches(pattern, fieldValueString)) {
+                if (StringUtility.isNotEmpty(fieldValueString) && !Pattern.matches(pattern, fieldValueString)) {
                     errors.add(String.format(ErrorConstants.INVALID_PATTERN_VALIDATION, at));
                 }
             }

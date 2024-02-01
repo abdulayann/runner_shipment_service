@@ -20,6 +20,7 @@ import com.dpw.runner.shipment.services.syncing.constants.SyncingConstants;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.EmailServiceUtility;
+import com.dpw.runner.shipment.services.utils.StringUtility;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,10 +32,8 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.utils.CommonUtils.stringValueOf;
@@ -77,7 +76,7 @@ public class ShipmentSync implements IShipmentSync {
     private ISyncService syncService;
 
     @Override
-    public ResponseEntity<?> sync(ShipmentDetails sd, List<UUID> deletedContGuids, List<NotesRequest> customerBookingNotes) {
+    public ResponseEntity<?> sync(ShipmentDetails sd, List<UUID> deletedContGuids, List<NotesRequest> customerBookingNotes, String transactionId) {
         CustomShipmentSyncRequest temp = new CustomShipmentSyncRequest();
 
         CustomShipmentSyncRequest cs = modelMapper.map(sd, CustomShipmentSyncRequest.class);
@@ -168,37 +167,15 @@ public class ShipmentSync implements IShipmentSync {
 
         String finalCs = jsonHelper.convertToJson(V1DataSyncRequest.builder().entity(cs).module(SyncingConstants.SHIPMENT).build());
 //        CompletableFuture.runAsync(commonUtils.withMdc(() -> callSync(finalCs, cs, sd.getId(), sd.getGuid())), commonUtils.syncExecutorService);
-        syncService.callSync(finalCs, sd.getId(), sd.getGuid(), "Shipments");
+        syncService.pushToKafka(finalCs, StringUtility.convertToString(sd.getId()), StringUtility.convertToString(sd.getGuid()), "Shipments", transactionId);
         return ResponseHelper.buildSuccessResponse(modelMapper.map(cs, CustomShipmentSyncRequest.class));
     }
-
-
-//    public void callSync(String finalCs, CustomShipmentSyncRequest cs, Long id, UUID guid) {
-//
-//        retryTemplate.execute(ctx -> {
-//            log.info("Current retry : {}", ctx.getRetryCount());
-//            if (ctx.getLastThrowable() != null) {
-//                log.error("V1 error -> {}", ctx.getLastThrowable().getMessage());
-//            }
-//            V1DataSyncResponse response_ = v1Service.v1DataSync(finalCs);
-//            if (!response_.getIsSuccess()) {
-//                try {
-//                    emailServiceUtility.sendEmailForSyncEntity(String.valueOf(id), String.valueOf(guid),
-//                            "Shipment Sync", response_.getError().toString());
-//                } catch (Exception ex) {
-//                    log.error("Not able to send email for sync failure for Shipment Sync " + ex.getMessage());
-//                }
-//            }
-//            return ResponseHelper.buildSuccessResponse(response_);
-//        });
-//
-//    }
 
     @Override
     public ResponseEntity<?> syncById(Long shipmentId) {
         Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(shipmentId);
         if(shipmentDetails.isPresent()) {
-            return sync(shipmentDetails.get(), null, null);
+            return sync(shipmentDetails.get(), null, null, UUID.randomUUID().toString());
         }
         else {
             throw new DataRetrievalFailureException("");
@@ -215,7 +192,7 @@ public class ShipmentSync implements IShipmentSync {
             if (ctx.getLastThrowable() != null) {
                 log.error("V1 error -> {}", ctx.getLastThrowable().getMessage());
             }
-            V1DataSyncResponse response_ = v1Service.v1DataSync(finalCs);
+            V1DataSyncResponse response_ = v1Service.v1DataSync(finalCs, null);
             if (!response_.getIsSuccess()) {
                 try {
                     emailServiceUtility.sendEmailForSyncEntity(String.valueOf(shipmentDetails.getId()), String.valueOf(shipmentDetails.getGuid()),

@@ -114,7 +114,7 @@ public abstract class IReport {
     @Autowired
     CacheManager cacheManager;
     @Autowired
-    private MasterDataUtils masterDataUtils;
+    public MasterDataUtils masterDataUtils;
     @Autowired
     CustomKeyGenerator keyGenerator;
 
@@ -258,7 +258,7 @@ public abstract class IReport {
         }
         // UnLocations Master-data
         List<String> unlocoRequests = this.createUnLocoRequestFromShipmentModel(shipment);
-        Map<String, UnlocationsResponse> unlocationsMap = getLocationData(new HashSet<>(unlocoRequests));
+        Map<String, UnlocationsResponse> unlocationsMap = masterDataUtils.getLocationData(new HashSet<>(unlocoRequests));
         // Master lists Master-data
         List<MasterListRequest> masterListRequest = createMasterListsRequestFromShipment(shipment);
         masterListRequest.addAll(createMasterListsRequestFromUnLocoMap(unlocationsMap));
@@ -931,7 +931,7 @@ public abstract class IReport {
                     dictionary.put(CARRIER_NAME, StringUtility.toUpperCase(carriersData.getItemDescription()));
                     dictionary.put(CARRIER_CONTACT_PERSON, StringUtility.toUpperCase(carriersData.getCarrierContactPerson()));
                     if (carriersData.getDefaultOrgId() != 0) {
-                        List<EntityTransferOrganizations> orgs = ReportHelper.fetchOrganizations("Id", carriersData.getDefaultOrgId());
+                        List<EntityTransferOrganizations> orgs = masterDataUtils.fetchOrganizations("Id", carriersData.getDefaultOrgId());
                         if (orgs != null && !orgs.isEmpty()) {
                             dictionary.put(ReportConstants.CARRIER_ORG_NAME, StringUtility.toUpperCase(orgs.get(0).getFullName()));
                             dictionary.put(ReportConstants.CARRIER_ORG_PHONE, orgs.get(0).getPhone());
@@ -941,7 +941,7 @@ public abstract class IReport {
                 }
             }
             List<String> unlocoRequests = createUnLocoRequestFromConsolidation(consolidation);
-            Map<String, UnlocationsResponse> unlocationsMap = getLocationData(new HashSet<>(unlocoRequests));
+            Map<String, UnlocationsResponse> unlocationsMap = masterDataUtils.getLocationData(new HashSet<>(unlocoRequests));
             UnlocationsResponse pol = unlocationsMap.get(consolidation.getCarrierDetails().getOriginPort());
             UnlocationsResponse pod = unlocationsMap.get(consolidation.getCarrierDetails().getDestinationPort());
             if(pol != null) {
@@ -1400,6 +1400,10 @@ public abstract class IReport {
         return "";
     }
 
+    public UnlocationsResponse getUNLocRow(String UNLocCode) {
+        return masterDataUtils.getUNLocRow(UNLocCode);
+    }
+
     public CommodityResponse getCommodity(String commodityCode) {
         if(commodityCode == null || commodityCode.isEmpty())
             return null;
@@ -1413,22 +1417,6 @@ public abstract class IReport {
         List<CommodityResponse> commodityResponses = jsonHelper.convertValueToList(commodity, CommodityResponse.class);
         if(commodityResponses.size() > 0)
             return commodityResponses.get(0);
-        return null;
-    }
-
-    public UnlocationsResponse getUNLocRow(String UNLocCode) {
-        if(UNLocCode == null || UNLocCode.isEmpty())
-            return null;
-        List <Object> criteria = Arrays.asList(
-                Arrays.asList(EntityTransferConstants.LOCATION_SERVICE_GUID),
-                "=",
-                UNLocCode
-        );
-        CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(criteria).build();
-        Object unlocations = masterDataFactory.getMasterDataService().fetchUnlocationData(commonV1ListRequest).getData();
-        List<UnlocationsResponse> unlocationsResponse = jsonHelper.convertValueToList(unlocations, UnlocationsResponse.class);
-        if(unlocationsResponse.size() > 0)
-            return unlocationsResponse.get(0);
         return null;
     }
 
@@ -1813,7 +1801,7 @@ public abstract class IReport {
             dict.put(ChargeableUnit, pack.getChargeableUnit());
 
             if(pack.getHazardous() != null && pack.getHazardous().equals(true)){
-                var dgSubstanceRow = ReportHelper.fetchDgSubstanceRow(pack.getDGSubstanceId());
+                var dgSubstanceRow = masterDataUtils.fetchDgSubstanceRow(pack.getDGSubstanceId());
                 dict.put(DG_SUBSTANCE, dgSubstanceRow.ProperShippingName);
                 dict.put(DG_CLASS, pack.getDGClass());
                 dict.put(CLASS_DIVISION, dgSubstanceRow.ClassDivision);

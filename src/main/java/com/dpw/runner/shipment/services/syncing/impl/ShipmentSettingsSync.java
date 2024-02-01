@@ -78,7 +78,7 @@ public class ShipmentSettingsSync implements IShipmentSettingsSync {
             if (ctx.getLastThrowable() != null) {
                 log.error("V1 error -> {}", ctx.getLastThrowable().getMessage());
             }
-            V1DataSyncResponse response_ = v1Service.v1DataSync(payload);
+            V1DataSyncResponse response_ = v1Service.v1DataSync(payload, null);
             if (!response_.getIsSuccess()) {
                 try {
                     emailServiceUtility.sendEmailForSyncEntity(String.valueOf(req.getId()), String.valueOf(req.getGuid()),
@@ -101,7 +101,7 @@ public class ShipmentSettingsSync implements IShipmentSettingsSync {
             if (ctx.getLastThrowable() != null) {
                 log.error("V1 error -> {}", ctx.getLastThrowable().getMessage());
             }
-            V1DataSyncResponse response_ = v1Service.v1DataSync(payload);
+            V1DataSyncResponse response_ = v1Service.v1DataSync(payload, null);
             if (!response_.getIsSuccess()) {
                 try {
                     emailServiceUtility.sendEmailForSyncEntity(String.valueOf(productSequenceConfig.getId()), String.valueOf(productSequenceConfig.getGuid()),

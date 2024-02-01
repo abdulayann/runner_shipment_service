@@ -54,10 +54,7 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestTemplate;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
@@ -424,7 +421,7 @@ public class EventService implements IEventService {
 
           shipmentDao.save(shipment, false);
           try {
-              shipmentSync.sync(shipment, null, null);
+              shipmentSync.sync(shipment, null, null, UUID.randomUUID().toString());
           } catch (Exception e) {
               log.error("Error performing sync on shipment entity, {}", e);
           }

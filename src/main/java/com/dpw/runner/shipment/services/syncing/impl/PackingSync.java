@@ -72,7 +72,7 @@ public class PackingSync implements IPackingSync {
         String finalCs = jsonHelper.convertToJson(V1DataSyncRequest.builder().entity(packingRequestV2).module(SyncingConstants.BULK_PACKAGES).build());
         var resp = retryTemplate.execute(ctx -> {
             log.info("Current retry : {}", ctx.getRetryCount());
-            V1DataSyncResponse response_ = v1Service.v1DataSync(finalCs);
+            V1DataSyncResponse response_ = v1Service.v1DataSync(finalCs, null);
             if (!response_.getIsSuccess()) {
                 try {
                     emailServiceUtility.sendEmailForSyncEntity(packings.stream().map(x -> x.getId()).toList().toString(),

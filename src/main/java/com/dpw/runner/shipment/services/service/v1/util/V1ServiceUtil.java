@@ -284,16 +284,16 @@ public class V1ServiceUtil {
                 clientId = (Integer) client.getOrgData().get("Id");
             if(client.getAddressData().containsKey("Id"))
                 clientAddressId = (Integer)client.getAddressData().get("Id");
-            CreditLimitValidateResponse response = v1Service.checkCreditLimit(CreditLimitValidateRequest.builder()
-                    .restrictedItem(restrictedItem)
-                    .clientId(clientId)
-                    .clientAddressId(clientAddressId)
-                    .shipmentGuid(shipmentGuid != null ? shipmentGuid.toString(): null)
-                    .build());
-            if (!response.getIsValid()){
-                log.error(response.getMessage() + " " + response.getError());
-                throw new ValidationException(response.getMessage());
-            }
+//            CreditLimitValidateResponse response = v1Service.checkCreditLimit(CreditLimitValidateRequest.builder()
+//                    .restrictedItem(restrictedItem)
+//                    .clientId(clientId)
+//                    .clientAddressId(clientAddressId)
+//                    .shipmentGuid(shipmentGuid != null ? shipmentGuid.toString(): null)
+//                    .build());
+//            if (!response.getIsValid()){
+//                log.error(response.getMessage() + " " + response.getError());
+//                throw new ValidationException(response.getMessage());
+//            }
         } catch (Exception ex) {
             log.error("Check Credit Limit failed due to : " + ex.getMessage());
             throw new ValidationException(ex.getMessage());

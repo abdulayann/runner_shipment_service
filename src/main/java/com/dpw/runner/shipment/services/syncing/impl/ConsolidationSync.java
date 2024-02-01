@@ -14,6 +14,7 @@ import com.dpw.runner.shipment.services.syncing.constants.SyncingConstants;
 import com.dpw.runner.shipment.services.syncing.interfaces.IConsolidationSync;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.EmailServiceUtility;
+import com.dpw.runner.shipment.services.utils.StringUtility;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -71,7 +72,7 @@ public class ConsolidationSync implements IConsolidationSync {
     private String CONSOLIDATION_V1_SYNC_URL;
 
     @Override
-    public ResponseEntity<?> sync(ConsolidationDetails request) {
+    public ResponseEntity<?> sync(ConsolidationDetails request, String transactionId) {
         CustomConsolidationRequest response = new CustomConsolidationRequest();
 
         response = modelMapper.map(request, CustomConsolidationRequest.class);
@@ -131,7 +132,7 @@ public class ConsolidationSync implements IConsolidationSync {
         response.setGuid(request.getGuid());
         String consolidationRequest = jsonHelper.convertToJson(V1DataSyncRequest.builder().entity(response).module(SyncingConstants.CONSOLIDATION).build());
 //        CompletableFuture.runAsync(commonUtils.withMdc(() -> callSync(consolidationRequest, request.getId(), request.getGuid())), commonUtils.syncExecutorService);
-        syncService.callSync(consolidationRequest, request.getId(), request.getGuid(), "Consolidation");
+        syncService.pushToKafka(consolidationRequest, StringUtility.convertToString(request.getId()), StringUtility.convertToString(request.getGuid()), "Consolidation", transactionId);
         return ResponseHelper.buildSuccessResponse(response);
     }
 
@@ -145,7 +146,7 @@ public class ConsolidationSync implements IConsolidationSync {
             if (ctx.getLastThrowable() != null) {
                 log.error("V1 error -> {}", ctx.getLastThrowable().getMessage());
             }
-            V1DataSyncResponse response_ = v1Service.v1DataSync(finalCs);
+            V1DataSyncResponse response_ = v1Service.v1DataSync(finalCs, null);
             if (!response_.getIsSuccess()) {
                 try {
                     emailServiceUtility.sendEmailForSyncEntity(String.valueOf(consolidationDetails.getId()), String.valueOf(consolidationDetails.getGuid()),
