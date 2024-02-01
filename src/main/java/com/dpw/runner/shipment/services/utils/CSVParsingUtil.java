@@ -56,8 +56,6 @@ import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.conve
 @Component
 public class CSVParsingUtil<T> {
 
-    private Class<T> entityClass;
-
     @Autowired
     private IV1Service v1Service;
 
@@ -66,11 +64,6 @@ public class CSVParsingUtil<T> {
     private final Set<String> hiddenFields = Set.of("pickupAddress",
             "deliveryAddress", "eventsList", "packsList", "shipmentsList", "bookingCharges");
     ExecutorService executorService = Executors.newFixedThreadPool(10);
-
-
-    public CSVParsingUtil(Class<T> entityClass) {
-        this.entityClass = entityClass;
-    }
 
     public Set<String> generateContainerHeaders() {
         Set<String> hs = new LinkedHashSet<>();
@@ -462,30 +455,8 @@ public class CSVParsingUtil<T> {
         return WordUtils.uncapitalize(name);
     }
 
-    private T createEntityInstance() throws InstantiationException, IllegalAccessException {
-        return entityClass.newInstance();
-    }
-
-    public List<T> parseCSVFile(MultipartFile file) throws IOException, CsvException {
-        List<T> entityList = new ArrayList<>();
-        try (CSVReader csvReader = new CSVReader(new InputStreamReader(new BOMInputStream(file.getInputStream()), StandardCharsets.UTF_8))) {
-            String[] header = csvReader.readNext();
-            for (int i = 0; i < header.length; i++) {
-                header[i] = getCamelCase(header[i]);
-            }
-
-            List<String[]> records = csvReader.readAll();
-            for (String[] record : records) {
-                T entity = createEntityInstance();
-                for (int i = 0; i < record.length; i++) {
-                    setField(entity, header[i], record[i]);
-                }
-                entityList.add(entity);
-            }
-        } catch (NoSuchFieldException | IllegalAccessException | InstantiationException e) {
-            throw new RuntimeException(e);
-        }
-        return entityList;
+    private T createEntityInstance(Class<T> entityType) throws InstantiationException, IllegalAccessException {
+        return entityType.newInstance();
     }
 
     public Map<Integer, Map<String, MasterData>> fetchInBulkMasterList(MasterListRequestV2 requests) {
@@ -503,7 +474,8 @@ public class CSVParsingUtil<T> {
     }
 
 
-    public List<T> parseExcelFile(MultipartFile file, BulkUploadRequest request, Map<UUID, T> mapOfEntity, Map<String, Set<String>> masterDataMap) throws IOException {
+    public List<T> parseExcelFile(MultipartFile file, BulkUploadRequest request, Map<UUID, T> mapOfEntity, Map<String, Set<String>> masterDataMap,
+                                  Class<T> entityType) throws IOException {
         List<T> entityList = new ArrayList<>();
         List<String> unlocationsList = new ArrayList<>();
         List<String> commodityCodesList = new ArrayList<>();
@@ -516,7 +488,7 @@ public class CSVParsingUtil<T> {
             Sheet sheet = workbook.getSheetAt(0); // Assuming data is in the first sheet
             validateExcel(sheet);
             Row headerRow = sheet.getRow(0);
-            if (headerRow.getLastCellNum() <= 1) {
+            if (headerRow.getLastCellNum() < 1) {
                 throw new ValidationException("Empty excel sheet uploaded.");
             }
             String[] header = new String[headerRow.getLastCellNum()];
@@ -572,13 +544,13 @@ public class CSVParsingUtil<T> {
                     try {
                         var containerGuid = UUID.fromString(guidVal);
                         if (mapOfEntity != null && !mapOfEntity.containsKey(containerGuid)) {
-                            throw new ValidationException("GUID at row: " + row + " doesn't exist for this consolidation.");
+                            throw new ValidationException("GUID at row: " + i + " doesn't exist for this consolidation.");
                         }
                     } catch (Exception ex) {
-                        throw new ValidationException("GUID not valid at row: " + row);
+                        throw new ValidationException("GUID not valid at row: " + i);
                     }
                 }
-                T entity = guidPos != -1 && mapOfEntity != null ? mapOfEntity.get(row.getCell(guidPos)) : createEntityInstance();
+                T entity = guidPos != -1 && mapOfEntity != null ? mapOfEntity.get(row.getCell(guidPos)) : createEntityInstance(entityType);
 
                 for (int j = 0; j < header.length; j++) {
                     Cell cell = row.getCell(j);
@@ -811,13 +783,11 @@ public class CSVParsingUtil<T> {
     {
 
         //check excel sheet has rows (empty excelsheet uploaded)
-        if (sheet == null || sheet.getLastRowNum() <= 0)
-        {
+        if (sheet == null || sheet.getLastRowNum() <= 0) {
             throw new ValidationException("Empty excel sheet uploaded.");
         }
         //check rows are more than or equal 2 (excel sheet has only header row)
-        else if (sheet.getLastRowNum() <= 1)
-        {
+        else if (sheet.getLastRowNum() < 1) {
             throw new ValidationException("Excel sheet does not contain any data.");
         }
     }
@@ -938,7 +908,8 @@ public class CSVParsingUtil<T> {
     }
 
     public void fetchContainerType(Map<String, Set<String>> masterDataMap) {
-        V1DataResponse v1DataResponse = v1Service.fetchContainerTypeData(null);
+        CommonV1ListRequest request = new CommonV1ListRequest();
+        V1DataResponse v1DataResponse = v1Service.fetchContainerTypeData(request);
         if (v1DataResponse != null) {
             if (v1DataResponse.entities instanceof List<?>) {
                 List<V1ContainerTypeResponse> containerTypeList = jsonHelper.convertValueToList(v1DataResponse.entities, V1ContainerTypeResponse.class);
@@ -952,6 +923,9 @@ public class CSVParsingUtil<T> {
 
     public void fetchUnlocationData(List<String> unlocationsList, Map<String, Set<String>> masterDataMap) {
         CommonV1ListRequest request = new CommonV1ListRequest();
+        if (unlocationsList.isEmpty()) {
+            return;
+        }
         List<Object> field = new ArrayList<>(List.of("LocCode"));
         String operator = Operators.IN.getValue();
         List<Object> criteria = new ArrayList<>(List.of(field, operator, List.of(unlocationsList)));
@@ -970,6 +944,8 @@ public class CSVParsingUtil<T> {
 
     public void fetchCommodityData(List<String> commodityCodesList, Map<String, Set<String>> masterDataMap) {
         CommonV1ListRequest request = new CommonV1ListRequest();
+        if (commodityCodesList.isEmpty())
+            return;
         List<Object> criteria = new ArrayList<>();
         List<Object> field = new ArrayList<>(List.of("Code"));
         String operator = Operators.IN.getValue();

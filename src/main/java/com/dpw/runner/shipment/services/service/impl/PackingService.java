@@ -109,7 +109,8 @@ public class PackingService implements IPackingService {
     @Autowired
     private IContainerService containerService;
 
-    private final CSVParsingUtil<Packing> parser = new CSVParsingUtil<>(Packing.class);
+    @Autowired
+    private CSVParsingUtil<Packing> parser;
 
     @Transactional
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
@@ -146,7 +147,7 @@ public class PackingService implements IPackingService {
     @Override
     public void uploadPacking(BulkUploadRequest request) throws Exception {
         Map<String, Set<String>> masterDataMap = new HashMap<>();
-        List<Packing> packingList = parser.parseExcelFile(request.getFile(), request, null, masterDataMap);
+        List<Packing> packingList = parser.parseExcelFile(request.getFile(), request, null, masterDataMap, Packing.class);
         packingList.stream().forEach(packing -> {
             packing.setConsolidationId(request.getConsolidationId());
             packing.setShipmentId(request.getShipmentId());

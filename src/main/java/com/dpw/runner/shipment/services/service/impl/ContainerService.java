@@ -97,12 +97,17 @@ public class ContainerService implements IContainerService {
     private ExcelUtils excelUtils;
 
     @Autowired
+    @Lazy
     private ConsolidationService consolidationService;
 
     @Autowired
     private ModelMapper modelMapper;
-    private final CSVParsingUtil<Containers> parser = new CSVParsingUtil<>(Containers.class);
 
+    @Autowired
+    private CSVParsingUtil<Containers> parser;
+
+    @Autowired
+    private CSVParsingUtil<Events> newParser;
     @Autowired
     IEventDao eventDao;
     @Autowired
@@ -191,7 +196,7 @@ public class ContainerService implements IContainerService {
         var containerMap = consolContainers.stream().collect(Collectors.toMap(Containers::getGuid, Function.identity()));
 
         Map<String, Set<String>> masterDataMap = new HashMap<>();
-        List<Containers> containersList = parser.parseExcelFile(request.getFile(), request, containerMap, masterDataMap);
+        List<Containers> containersList = parser.parseExcelFile(request.getFile(), request, containerMap, masterDataMap, Containers.class);
 
         containersList = containersList.stream().map(c ->
                 c.setConsolidationId(request.getConsolidationId())
@@ -401,9 +406,9 @@ public class ContainerService implements IContainerService {
 
     @Override
     public void uploadContainerEvents(BulkUploadRequest request) throws Exception {
-        CSVParsingUtil<Events> newParser = new CSVParsingUtil<>(Events.class);
+//        CSVParsingUtil<Events> newParser = new CSVParsingUtil<>(Events.class);
         Map<String, Set<String>> masterDataMap = new HashMap<>();
-        List<Events> eventsList = newParser.parseExcelFile(request.getFile(), request, null, masterDataMap);
+        List<Events> eventsList = newParser.parseExcelFile(request.getFile(), request, null, masterDataMap, Events.class);
         eventsList = eventsList.stream().map(c -> {
             c.setEntityId(request.getConsolidationId());
             c.setEntityType("CONSOLIDATION");
