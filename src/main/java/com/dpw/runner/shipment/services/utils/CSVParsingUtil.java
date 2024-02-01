@@ -1,10 +1,13 @@
 package com.dpw.runner.shipment.services.utils;
 
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.RequestAuthContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.BulkUploadRequest;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
 import com.dpw.runner.shipment.services.dto.response.*;
+import com.dpw.runner.shipment.services.dto.v1.response.V1ContainerTypeResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.Events;
@@ -16,6 +19,16 @@ import com.dpw.runner.shipment.services.masterdata.dto.MasterData;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequestV2;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.masterdata.dto.MasterData;
+import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest;
+import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequestV2;
+import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
+import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
+import com.dpw.runner.shipment.services.masterdata.response.CommodityResponse;
+import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
+import com.dpw.runner.shipment.services.service.v1.IV1Service;
+import com.dpw.runner.shipment.services.validator.enums.Operators;
 import com.opencsv.CSVReader;
 import com.opencsv.exceptions.CsvException;
 import lombok.extern.slf4j.Slf4j;
@@ -26,6 +39,8 @@ import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.slf4j.MDC;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -36,6 +51,9 @@ import java.math.RoundingMode;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
@@ -49,11 +67,12 @@ public class CSVParsingUtil<T> {
     @Autowired
     private IV1Service v1Service;
 
-
     @Autowired
     private JsonHelper jsonHelper;
     private final Set<String> hiddenFields = Set.of("pickupAddress",
             "deliveryAddress", "eventsList", "packsList", "shipmentsList", "bookingCharges");
+    ExecutorService executorService = Executors.newFixedThreadPool(10);
+
 
     public CSVParsingUtil(Class<T> entityClass) {
         this.entityClass = entityClass;
@@ -857,6 +876,116 @@ public class CSVParsingUtil<T> {
         }
 
         field.set(entity, parsedValue);
+    }
+
+    private Map<String, Set<String>> getAllMasterData(List<String> unlocationsList, List<String> commodityCodesList)
+    {
+        Map<String, Set<String>> masterDataMap = new HashMap<>();
+        var weightUnitMasterData = CompletableFuture.runAsync(withMdc(() -> this.fetchMasterLists(MasterDataType.WEIGHT_UNIT, masterDataMap)), executorService);
+        var volumeUnitMasterData = CompletableFuture.runAsync(withMdc(() -> this.fetchMasterLists(MasterDataType.VOLUME_UNIT, masterDataMap)), executorService);
+        var temperatureUnitMasterData = CompletableFuture.runAsync(withMdc(() -> this.fetchMasterLists(MasterDataType.TEMPERATURE_UNIT, masterDataMap)), executorService);
+        var hblModeMasterData = CompletableFuture.runAsync(withMdc(() -> this.fetchMasterLists(MasterDataType.HBL_DELIVERY_MODE, masterDataMap)), executorService);
+        var dimensionUnitMasterData = CompletableFuture.runAsync(withMdc(() -> this.fetchMasterLists(MasterDataType.DIMENSION_UNIT, masterDataMap)), executorService);
+        var dgClassMasterData = CompletableFuture.runAsync(withMdc(() -> this.fetchMasterLists(MasterDataType.DG_CLASS, masterDataMap)), executorService);
+        var packUnitMasterData = CompletableFuture.runAsync(withMdc(() -> this.fetchMasterLists(MasterDataType.PACKS_UNIT, masterDataMap)), executorService);
+        var containerTypeMasterData = CompletableFuture.runAsync(withMdc(() -> this.fetchContainerType(masterDataMap)), executorService);
+        var unlocationMasterData = CompletableFuture.runAsync(withMdc(() -> this.fetchUnlocationData(unlocationsList, masterDataMap)), executorService);
+        var commodityMasterData = CompletableFuture.runAsync(withMdc(() -> this.fetchCommodityData(commodityCodesList, masterDataMap)), executorService);
+
+        CompletableFuture.allOf(weightUnitMasterData, volumeUnitMasterData, temperatureUnitMasterData, hblModeMasterData, dimensionUnitMasterData, dgClassMasterData, packUnitMasterData, containerTypeMasterData, unlocationMasterData, commodityMasterData).join();
+
+        return masterDataMap;
+    }
+
+    public void fetchMasterLists(MasterDataType masterDataType, Map<String, Set<String>> masterDataMap)
+    {
+        MasterListRequest masterListRequest = MasterListRequest.builder().ItemType(masterDataType.getDescription()).build();
+        MasterListRequestV2 masterListRequests = new MasterListRequestV2();
+        masterListRequests.getMasterListRequests().add(masterListRequest);
+        V1DataResponse v1DataResponse = v1Service.fetchMultipleMasterData(masterListRequests);
+        if(v1DataResponse != null)
+        {
+            if(v1DataResponse.entities instanceof List<?>)
+            {
+                List<MasterData> masterDataList = jsonHelper.convertValueToList(v1DataResponse.entities, MasterData.class);
+                if(masterDataList != null && !masterDataList.isEmpty()) {
+                    Set<String> masterDataSet = masterDataList.stream().filter(Objects::nonNull).map(MasterData::getItemValue).collect(Collectors.toSet());
+                    masterDataMap.put(masterDataType.getDescription(), masterDataSet);
+                }
+            }
+        }
+    }
+
+    public void fetchContainerType(Map<String, Set<String>> masterDataMap)
+    {
+        V1DataResponse v1DataResponse = v1Service.fetchContainerTypeData(null);
+        if(v1DataResponse != null)
+        {
+            if(v1DataResponse.entities instanceof List<?>)
+            {
+                List<V1ContainerTypeResponse> containerTypeList = jsonHelper.convertValueToList(v1DataResponse.entities, V1ContainerTypeResponse.class);
+                if(containerTypeList != null && !containerTypeList.isEmpty())
+                {
+                    Set<String> containerTypeSet = containerTypeList.stream().filter(Objects::nonNull).map(V1ContainerTypeResponse::getCode).collect(Collectors.toSet());
+                    masterDataMap.put("ContainerTypes", containerTypeSet);
+                }
+            }
+        }
+    }
+
+    public void fetchUnlocationData(List<String> unlocationsList, Map<String, Set<String>> masterDataMap)
+    {
+        CommonV1ListRequest request = new CommonV1ListRequest();
+        List<Object> field = new ArrayList<>(List.of("LocCode"));
+        String operator = Operators.IN.getValue();
+        List<Object> criteria = new ArrayList<>(List.of(field, operator, List.of(unlocationsList)));
+        request.setCriteriaRequests(criteria);
+        V1DataResponse v1DataResponse = v1Service.fetchUnlocation(request);
+        if(v1DataResponse != null)
+        {
+            if(v1DataResponse.entities instanceof List<?>)
+            {
+                List<UnlocationsResponse> unlocationList = jsonHelper.convertValueToList(v1DataResponse.entities, UnlocationsResponse.class);
+                if(unlocationList != null && !unlocationList.isEmpty())
+                {
+                    Set<String> unlocationSet = unlocationList.stream().filter(Objects::nonNull).map(UnlocationsResponse::getLocCode).collect(Collectors.toSet());
+                    masterDataMap.put("Unlocations", unlocationSet);
+                }
+            }
+        }
+    }
+
+    public void fetchCommodityData(List<String> commodityCodesList, Map<String, Set<String>> masterDataMap)
+    {
+        CommonV1ListRequest request = new CommonV1ListRequest();
+        List<Object> criteria = new ArrayList<>();
+        List<Object> field = new ArrayList<>(List.of("Code"));
+        String operator = Operators.IN.getValue();
+        criteria.addAll(List.of(field, operator, List.of(commodityCodesList)));
+        request.setCriteriaRequests(criteria);
+        V1DataResponse response = v1Service.fetchCommodityData(request);
+        if(response != null)
+        {
+            if(response.entities instanceof List<?>)
+            {
+                List<CommodityResponse> commodityList = jsonHelper.convertValueToList(response.entities, CommodityResponse.class);
+                if(commodityList != null && !commodityList.isEmpty())
+                {
+                    Set<String> commoditySet = commodityList.stream().filter(Objects::nonNull).map(CommodityResponse::getCode).collect(Collectors.toSet());
+                    masterDataMap.put("CommodityCodes", commoditySet);
+                }
+            }
+        }
+    }
+
+    public Runnable withMdc(Runnable runnable) {
+        Map<String, String> mdc = MDC.getCopyOfContextMap();
+        String token = RequestAuthContext.getAuthToken();
+        return () -> {
+            MDC.setContextMap(mdc);
+            RequestAuthContext.setAuthToken(token);
+            runnable.run();
+        };
     }
 
 }
