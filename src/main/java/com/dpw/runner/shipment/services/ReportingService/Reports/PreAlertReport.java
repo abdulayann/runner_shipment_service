@@ -168,13 +168,13 @@ public class PreAlertReport extends IReport {
         if(preAlertModel.shipmentDetails.getVolumetricWeight() != null)
             dictionary.put(ReportConstants.V_WEIGHT_AND_UNIT, String.format("%s %s", twoDecimalPlacesFormatDecimal(preAlertModel.shipmentDetails.getVolumetricWeight()), preAlertModel.shipmentDetails.getVolumetricWeightUnit()));
         if(preAlertModel.shipmentDetails.getWeight() != null)
-            dictionary.put(ReportConstants.WEIGHT_AND_UNIT, String.format("%s %s", twoDecimalPlacesFormatDecimal(preAlertModel.shipmentDetails.getWeight()), preAlertModel.shipmentDetails.getWeightUnit()));
+            dictionary.put(ReportConstants.WEIGHT_AND_UNIT, String.format("%s %s", ConvertToWeightNumberFormat(preAlertModel.shipmentDetails.getWeight(), v1TenantSettingsResponse), preAlertModel.shipmentDetails.getWeightUnit()));
         if(preAlertModel.shipmentDetails.getVolume() != null)
-            dictionary.put(ReportConstants.VOLUME_AND_UNIT, String.format("%s %s", twoDecimalPlacesFormatDecimal(preAlertModel.shipmentDetails.getVolume()), preAlertModel.shipmentDetails.getVolumeUnit()));
+            dictionary.put(ReportConstants.VOLUME_AND_UNIT, String.format("%s %s", ConvertToVolumeNumberFormat(preAlertModel.shipmentDetails.getVolume(), v1TenantSettingsResponse), preAlertModel.shipmentDetails.getVolumeUnit()));
         if(preAlertModel.shipmentDetails.getVolume() != null)
-            dictionary.put(ReportConstants.TOTAL_VOLUME_, String.format("%s %s", twoDecimalPlacesFormatDecimal(preAlertModel.shipmentDetails.getVolume()), preAlertModel.shipmentDetails.getVolumeUnit()));
+            dictionary.put(ReportConstants.TOTAL_VOLUME_, String.format("%s %s", ConvertToVolumeNumberFormat(preAlertModel.shipmentDetails.getVolume(), v1TenantSettingsResponse), preAlertModel.shipmentDetails.getVolumeUnit()));
         if(preAlertModel.shipmentDetails.getWeight() != null)
-            dictionary.put(ReportConstants.TOTAL_WEIGHT_, String.format("%s %s", twoDecimalPlacesFormatDecimal(preAlertModel.shipmentDetails.getWeight()), preAlertModel.shipmentDetails.getWeightUnit()));
+            dictionary.put(ReportConstants.TOTAL_WEIGHT_, String.format("%s %s", ConvertToWeightNumberFormat(preAlertModel.shipmentDetails.getWeight(), v1TenantSettingsResponse), preAlertModel.shipmentDetails.getWeightUnit()));
         dictionary.put(ReportConstants.TOTAL_PCS, preAlertModel.noofpackages_word);
         if (preAlertModel.shipmentDetails.getCarrierDetails() != null) {
             UnlocationsResponse pol = getUNLocRow(preAlertModel.shipmentDetails.getCarrierDetails().getOriginPort());

@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ManifestShipmentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ContainerModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PackingModel;
+import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.nimbusds.jose.util.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -52,6 +53,7 @@ public class ManifestShipmentReport extends IReport{
         Map<String, Object> dictionary = new HashMap<>();
         populateShipmentFields(manifestShipmentModel.shipmentDetails, false, dictionary);
         populateConsolidationFields(manifestShipmentModel.consolidationDetails, dictionary);
+        V1TenantSettingsResponse v1TenantSettingsResponse = getTenantSettings();
 
         List<PackingModel> packings = GetAllShipmentsPacks(List.of(manifestShipmentModel.shipmentDetails));
         Pair<BigDecimal, String> weightAndUnit = GetTotalWeight(packings);
@@ -72,7 +74,7 @@ public class ManifestShipmentReport extends IReport{
                     .toList();
             values.forEach(v -> {
                 if (v.containsKey(ReportConstants.WEIGHT))
-                    v.put(ReportConstants.WEIGHT, addCommas(v.get(ReportConstants.WEIGHT).toString()));
+                    v.put(ReportConstants.WEIGHT, ConvertToWeightNumberFormat(v.get(ReportConstants.WEIGHT), v1TenantSettingsResponse));
                 if (v.containsKey(ReportConstants.TOTAL_PACKS))
                     v.put(ReportConstants.TOTAL_PACKS, addCommas(v.get(ReportConstants.TOTAL_PACKS).toString()));
             });

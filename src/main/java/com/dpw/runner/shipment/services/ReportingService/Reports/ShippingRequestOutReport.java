@@ -10,6 +10,7 @@ import com.dpw.runner.shipment.services.ReportingService.Models.ShippingRequestO
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.MasterData;
@@ -232,11 +233,12 @@ public class ShippingRequestOutReport extends IReport {
 
         List<Map<String, Object>> valuesContainer = jsonHelper.readFromJson(jsonContainer, List.class);
 
+        V1TenantSettingsResponse v1TenantSettingsResponse = getTenantSettings();
         valuesContainer.forEach(v -> {
             if (v.containsKey(ReportConstants.WEIGHT))
-                v.put(ReportConstants.WEIGHT, addCommas(v.get(ReportConstants.WEIGHT).toString()));
+                v.put(ReportConstants.WEIGHT, ConvertToWeightNumberFormat(v.get(ReportConstants.WEIGHT), v1TenantSettingsResponse));
             if (v.containsKey(ReportConstants.VOLUME))
-                v.put(ReportConstants.VOLUME, addCommas(v.get(ReportConstants.VOLUME).toString()));
+                v.put(ReportConstants.VOLUME, ConvertToVolumeNumberFormat(v.get(ReportConstants.VOLUME), v1TenantSettingsResponse));
             if (v.containsKey(ReportConstants.PACKS))
                 v.put(ReportConstants.PACKS, addCommas(v.get(ReportConstants.PACKS).toString()));
             if (model.getShipment() != null && model.getShipment().getPacksUnit() != null)

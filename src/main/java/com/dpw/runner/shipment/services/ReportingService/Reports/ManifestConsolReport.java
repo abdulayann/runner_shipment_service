@@ -1,15 +1,12 @@
 package com.dpw.runner.shipment.services.ReportingService.Reports;
 
-import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper;
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentContainers;
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ManifestConsolModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ConsolidationModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ContainerModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PackingModel;
-import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
-import com.dpw.runner.shipment.services.entity.Containers;
-import com.dpw.runner.shipment.services.entity.Packing;
+import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.helper.ICarrierMasterData;
 import com.nimbusds.jose.util.Pair;
@@ -66,6 +63,7 @@ public class ManifestConsolReport extends IReport {
     Map<String, Object> populateDictionary(IDocumentModel documentModel) {
         ManifestConsolModel model = (ManifestConsolModel) documentModel;
         Map<String, Object> dictionary = new HashMap<>();
+        V1TenantSettingsResponse v1TenantSettingsResponse = getTenantSettings();
 
         populateConsolidationFields(model.getConsolidation() , dictionary);
         List<PackingModel> packingList = GetAllShipmentsPacks(model.getShipmentDetailsList());
@@ -89,7 +87,7 @@ public class ManifestConsolReport extends IReport {
         dictionary.put(CONSOL_CARRIER, model.getCarrierMasterData() != null ? model.getCarrierMasterData().getItemDescription() : null);
 
         if (weightAndUnit.getLeft().compareTo(BigDecimal.ZERO) > 0)
-            dictionary.put(TOTAL_WEIGHT, ReportHelper.ConvertToWeightNumberFormat(weightAndUnit.getLeft()));
+            dictionary.put(TOTAL_WEIGHT, ConvertToWeightNumberFormat(weightAndUnit.getLeft(), v1TenantSettingsResponse));
         else
             dictionary.put(TOTAL_WEIGHT, "-");
 
@@ -112,7 +110,7 @@ public class ManifestConsolReport extends IReport {
         dictionary.put(TOTAL_PACKS_TYPE, allPacksTypes.size() > 0 ? String.join(",", allPacksTypes) : "");
 
         if (volumeAndUnit.getLeft().compareTo(BigDecimal.ZERO) > 0)
-            dictionary.put(TOTAL_VOLUME, ReportHelper.ConvertToVolumeNumberFormat(volumeAndUnit.getLeft()));
+            dictionary.put(TOTAL_VOLUME, ConvertToVolumeNumberFormat(volumeAndUnit.getLeft(), v1TenantSettingsResponse));
         else
             dictionary.put(TOTAL_VOLUME, "-");
 
