@@ -8,17 +8,11 @@ import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightCharg
 import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.v1.response.V1ContainerTypeResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.Events;
 import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.entity.enums.ContainerStatus;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
-import com.dpw.runner.shipment.services.helpers.JsonHelper;
-import com.dpw.runner.shipment.services.masterdata.dto.MasterData;
-import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequestV2;
-import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
-import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.MasterData;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest;
@@ -33,14 +27,14 @@ import com.opencsv.CSVReader;
 import com.opencsv.exceptions.CsvException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.input.BOMInputStream;
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.text.WordUtils;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -511,8 +505,13 @@ public class CSVParsingUtil<T> {
 
     public List<T> parseExcelFile(MultipartFile file, BulkUploadRequest request, Map<UUID, T> mapOfEntity) throws IOException {
         List<T> entityList = new ArrayList<>();
-        // TODO : fetch bulk master data async manner
-        Map<Integer, Map<String, MasterData>> masterListsMap = null;
+        List<String> unlocationsList = new ArrayList<>();
+        List<String> commodityCodesList = new ArrayList<>();
+
+        int containerStuffingLocationPos = -1;
+        int commodityCodePos = -1;
+        int guidPos = -1;
+        
         try (Workbook workbook = new XSSFWorkbook(file.getInputStream())) {
             Sheet sheet = workbook.getSheetAt(0); // Assuming data is in the first sheet
             validateExcel(sheet);
@@ -522,7 +521,6 @@ public class CSVParsingUtil<T> {
             }
             String[] header = new String[headerRow.getLastCellNum()];
             Set<String> headerSet = new HashSet<>();
-            int guidPos = -1;
             for (int i = 0; i < headerRow.getLastCellNum(); i++) {
                 if (StringUtility.isEmpty(headerRow.getCell(i).getStringCellValue())) {
                     continue;
@@ -532,12 +530,40 @@ public class CSVParsingUtil<T> {
                 if (header[i].equalsIgnoreCase("guid")) {
                     guidPos = i;
                 }
+                if (header[i].equalsIgnoreCase("containerStuffingLocation")) {
+                    containerStuffingLocationPos = i;
+                }
+                if (header[i].equalsIgnoreCase("commodityCode")) {
+                    commodityCodePos = i;
+                }
             }
 
-            if(headerSet.size() < headerRow.getLastCellNum()) {
+            //fetching master data in bulk
+            Map<String, Set<String>> masterListsMap = getAllMasterData(unlocationsList, commodityCodesList);
+
+            if (headerSet.size() < headerRow.getLastCellNum()) {
                 throw new ValidationException("Excel Sheet is invalid. All column should have column name.");
             }
-
+            Set<String> guidSet = new HashSet<>();
+            for (int i = 1; i <= sheet.getLastRowNum(); i++) {
+                Row row = sheet.getRow(i);
+                if (commodityCodePos != -1) {
+                    String commodityCode = getCellValueAsString(row.getCell(commodityCodePos));
+                    if (!StringUtils.isEmpty(commodityCode))
+                        commodityCodesList.add(commodityCode);
+                }
+                if (containerStuffingLocationPos != -1) {
+                    String unloc = getCellValueAsString(row.getCell(containerStuffingLocationPos));
+                    if (!StringUtils.isEmpty(unloc))
+                        unlocationsList.add(unloc);
+                }
+                if (guidPos != -1) {
+                    if (guidSet.contains(getCellValueAsString(row.getCell(guidPos)))) {
+                        throw new ValidationException("GUID is duplicate at row: " + row);
+                    }
+                    guidSet.add(getCellValueAsString(row.getCell(guidPos)));
+                }
+            }
 
             for (int i = 1; i <= sheet.getLastRowNum(); i++) {
                 Row row = sheet.getRow(i);
@@ -654,28 +680,28 @@ public class CSVParsingUtil<T> {
         }
     }
 
-    private void checkForUnitValidations(Map<Integer, Map<String, MasterData>> masterListsMap, String column, String cellValue, int rowNum, String transportMode)
+    private void checkForUnitValidations(Map<String, Set<String>> masterListsMap, String column, String cellValue, int rowNum, String transportMode)
             throws ValidationException {
         //MasterData validations : weight unit , volume unit
         if (column.toLowerCase().contains("weightunit")) {
             switch (column.toLowerCase()) {
                 case "netweightunit": {
                     if (!cellValue.isEmpty() && masterListsMap.containsKey(MasterDataType.WEIGHT_UNIT) &&
-                            !masterListsMap.get(MasterDataType.WEIGHT_UNIT).containsKey(cellValue)) {
+                            !masterListsMap.get(MasterDataType.WEIGHT_UNIT.getDescription()).contains(cellValue)) {
                         throw new ValidationException("Net weight unit is invalid at row: " + rowNum);
                     }
                     break;
                 }
                 case "grossweightunit": {
                     if (!cellValue.isEmpty() && masterListsMap.containsKey(MasterDataType.WEIGHT_UNIT) &&
-                            !masterListsMap.get(MasterDataType.WEIGHT_UNIT).containsKey(cellValue)) {
+                            !masterListsMap.get(MasterDataType.WEIGHT_UNIT).contains(cellValue)) {
                         throw new ValidationException("Gross weight unit is null or invalid at row: " + rowNum);
                     }
                     break;
                 }
                 case "tareweightunit": {
                     if (!cellValue.isEmpty() && masterListsMap.containsKey(MasterDataType.WEIGHT_UNIT) &&
-                            !masterListsMap.get(MasterDataType.WEIGHT_UNIT).containsKey(cellValue)) {
+                            !masterListsMap.get(MasterDataType.WEIGHT_UNIT).contains(cellValue)) {
                         throw new ValidationException("Tare weight unit is null or invalid at row: " + rowNum);
                     }
                     break;
@@ -684,24 +710,24 @@ public class CSVParsingUtil<T> {
         }
         if (column.toLowerCase().contains("tempunit")) {
             if (!cellValue.isEmpty() && masterListsMap.containsKey(MasterDataType.TEMPERATURE_UNIT) &&
-                    !masterListsMap.get(MasterDataType.TEMPERATURE_UNIT).containsKey(cellValue)) {
+                    !masterListsMap.get(MasterDataType.TEMPERATURE_UNIT).contains(cellValue)) {
                 throw new ValidationException("Temp Unit is invalid at row: " + rowNum);
             }
         }
         if (column.toLowerCase().contains("packstype")) {
             if (!cellValue.isEmpty() && masterListsMap.containsKey(MasterDataType.PACKS_UNIT)
-                    && !masterListsMap.get(MasterDataType.PACKS_UNIT).containsKey(cellValue)) {
+                    && !masterListsMap.get(MasterDataType.PACKS_UNIT).contains(cellValue)) {
                 throw new ValidationException("Packs Type is invalid at row: " + rowNum);
             }
         }
         if (column.equalsIgnoreCase("innerPackageType")) {
-            if (!cellValue.isEmpty() && masterListsMap.containsKey(MasterDataType.PACKS_UNIT) && !masterListsMap.get(MasterDataType.PACKS_UNIT).containsKey(cellValue)) {
+            if (!cellValue.isEmpty() && masterListsMap.containsKey(MasterDataType.PACKS_UNIT) && !masterListsMap.get(MasterDataType.PACKS_UNIT).contains(cellValue)) {
                 throw new ValidationException("Inner package type is invalid at row: " + rowNum);
             }
         }
         if (column.toLowerCase().contains("measurementunit")) {
             if (!cellValue.isEmpty() && masterListsMap.containsKey(MasterDataType.DIMENSION_UNIT) &&
-                    !masterListsMap.get(MasterDataType.DIMENSION_UNIT).containsKey(cellValue)) {
+                    !masterListsMap.get(MasterDataType.DIMENSION_UNIT).contains(cellValue)) {
                 throw new ValidationException("Measurement unit is invalid at row: " + rowNum);
             }
         }
@@ -709,20 +735,20 @@ public class CSVParsingUtil<T> {
             switch (column.toLowerCase()) {
                 case "grossvolumeunit": {
                     if (!cellValue.isEmpty() && masterListsMap.containsKey(MasterDataType.VOLUME_UNIT) &&
-                            !masterListsMap.get(MasterDataType.VOLUME_UNIT).containsKey(cellValue)) {
+                            !masterListsMap.get(MasterDataType.VOLUME_UNIT).contains(cellValue)) {
                         throw new ValidationException("Gross Volume unit is null or invalid at row: " + rowNum);
                     }
                 }
                 case "allocatedvolumeunit": {
                     if (!cellValue.isEmpty() && masterListsMap.containsKey(MasterDataType.VOLUME_UNIT) &&
-                            !masterListsMap.get(MasterDataType.VOLUME_UNIT).containsKey(cellValue)) {
+                            !masterListsMap.get(MasterDataType.VOLUME_UNIT).contains(cellValue)) {
                         throw new ValidationException("Allocated Volume unit is null or invalid at row: " + rowNum);
                     }
                     break;
                 }
                 case "achievedvolumeunit": {
                     if (!cellValue.isEmpty() && masterListsMap.containsKey(MasterDataType.VOLUME_UNIT) &&
-                            !masterListsMap.get(MasterDataType.VOLUME_UNIT).containsKey(cellValue)) {
+                            !masterListsMap.get(MasterDataType.VOLUME_UNIT).contains(cellValue)) {
                         throw new ValidationException("Achieved Volume unit is null or invalid at row: " + rowNum);
                     }
                     break;
@@ -731,7 +757,7 @@ public class CSVParsingUtil<T> {
         }
         if (column.toLowerCase().contains("containermode")) {
             if (!cellValue.isEmpty() && masterListsMap.containsKey(MasterDataType.CONTAINER_MODE) &&
-                    !masterListsMap.get(MasterDataType.CONTAINER_MODE).containsKey(cellValue)) {
+                    !masterListsMap.get(MasterDataType.CONTAINER_MODE).contains(cellValue)) {
                 throw new ValidationException("Container Mode is invalid at row: " + rowNum);
             }
         }
@@ -742,17 +768,17 @@ public class CSVParsingUtil<T> {
         }
         if (column.toLowerCase().contains("innerpackagemeasurementunit")) {
             if (!cellValue.isEmpty() && masterListsMap.containsKey(MasterDataType.DIMENSION_UNIT) &&
-                    !masterListsMap.get(MasterDataType.DIMENSION_UNIT).containsKey(cellValue)) {
+                    !masterListsMap.get(MasterDataType.DIMENSION_UNIT).contains(cellValue)) {
                 throw new ValidationException("Inner package meaurement unit is invalid at row: " + rowNum);
             }
         }
         if (column.toLowerCase().contains("chargeableunit")) {
-            if (!cellValue.isEmpty() && masterListsMap.containsKey(MasterDataType.WEIGHT_UNIT) && !masterListsMap.get(MasterDataType.WEIGHT_UNIT).containsKey(cellValue)) {
+            if (!cellValue.isEmpty() && masterListsMap.containsKey(MasterDataType.WEIGHT_UNIT) && !masterListsMap.get(MasterDataType.WEIGHT_UNIT).contains(cellValue)) {
                 throw new ValidationException("Chargeable unit is invalid at row: " + rowNum);
             }
         }
         if (column.toLowerCase().contains("containerCode")) {
-            if (!cellValue.isEmpty() && !containerTypeMasterData.containsKey(cellValue)) {
+            if (!cellValue.isEmpty() && !masterListsMap.containsKey("ContainerTypes") && !masterListsMap.get("ContainerTypes").contains(cellValue)) {
                 throw new ValidationException("Container Type " + cellValue + "is not valid at row " + rowNum);
             }
         }
@@ -878,8 +904,7 @@ public class CSVParsingUtil<T> {
         field.set(entity, parsedValue);
     }
 
-    private Map<String, Set<String>> getAllMasterData(List<String> unlocationsList, List<String> commodityCodesList)
-    {
+    private Map<String, Set<String>> getAllMasterData(List<String> unlocationsList, List<String> commodityCodesList) {
         Map<String, Set<String>> masterDataMap = new HashMap<>();
         var weightUnitMasterData = CompletableFuture.runAsync(withMdc(() -> this.fetchMasterLists(MasterDataType.WEIGHT_UNIT, masterDataMap)), executorService);
         var volumeUnitMasterData = CompletableFuture.runAsync(withMdc(() -> this.fetchMasterLists(MasterDataType.VOLUME_UNIT, masterDataMap)), executorService);
@@ -897,18 +922,15 @@ public class CSVParsingUtil<T> {
         return masterDataMap;
     }
 
-    public void fetchMasterLists(MasterDataType masterDataType, Map<String, Set<String>> masterDataMap)
-    {
+    public void fetchMasterLists(MasterDataType masterDataType, Map<String, Set<String>> masterDataMap) {
         MasterListRequest masterListRequest = MasterListRequest.builder().ItemType(masterDataType.getDescription()).build();
         MasterListRequestV2 masterListRequests = new MasterListRequestV2();
         masterListRequests.getMasterListRequests().add(masterListRequest);
         V1DataResponse v1DataResponse = v1Service.fetchMultipleMasterData(masterListRequests);
-        if(v1DataResponse != null)
-        {
-            if(v1DataResponse.entities instanceof List<?>)
-            {
+        if (v1DataResponse != null) {
+            if (v1DataResponse.entities instanceof List<?>) {
                 List<MasterData> masterDataList = jsonHelper.convertValueToList(v1DataResponse.entities, MasterData.class);
-                if(masterDataList != null && !masterDataList.isEmpty()) {
+                if (masterDataList != null && !masterDataList.isEmpty()) {
                     Set<String> masterDataSet = masterDataList.stream().filter(Objects::nonNull).map(MasterData::getItemValue).collect(Collectors.toSet());
                     masterDataMap.put(masterDataType.getDescription(), masterDataSet);
                 }
@@ -916,16 +938,12 @@ public class CSVParsingUtil<T> {
         }
     }
 
-    public void fetchContainerType(Map<String, Set<String>> masterDataMap)
-    {
+    public void fetchContainerType(Map<String, Set<String>> masterDataMap) {
         V1DataResponse v1DataResponse = v1Service.fetchContainerTypeData(null);
-        if(v1DataResponse != null)
-        {
-            if(v1DataResponse.entities instanceof List<?>)
-            {
+        if (v1DataResponse != null) {
+            if (v1DataResponse.entities instanceof List<?>) {
                 List<V1ContainerTypeResponse> containerTypeList = jsonHelper.convertValueToList(v1DataResponse.entities, V1ContainerTypeResponse.class);
-                if(containerTypeList != null && !containerTypeList.isEmpty())
-                {
+                if (containerTypeList != null && !containerTypeList.isEmpty()) {
                     Set<String> containerTypeSet = containerTypeList.stream().filter(Objects::nonNull).map(V1ContainerTypeResponse::getCode).collect(Collectors.toSet());
                     masterDataMap.put("ContainerTypes", containerTypeSet);
                 }
@@ -933,21 +951,17 @@ public class CSVParsingUtil<T> {
         }
     }
 
-    public void fetchUnlocationData(List<String> unlocationsList, Map<String, Set<String>> masterDataMap)
-    {
+    public void fetchUnlocationData(List<String> unlocationsList, Map<String, Set<String>> masterDataMap) {
         CommonV1ListRequest request = new CommonV1ListRequest();
         List<Object> field = new ArrayList<>(List.of("LocCode"));
         String operator = Operators.IN.getValue();
         List<Object> criteria = new ArrayList<>(List.of(field, operator, List.of(unlocationsList)));
         request.setCriteriaRequests(criteria);
         V1DataResponse v1DataResponse = v1Service.fetchUnlocation(request);
-        if(v1DataResponse != null)
-        {
-            if(v1DataResponse.entities instanceof List<?>)
-            {
+        if (v1DataResponse != null) {
+            if (v1DataResponse.entities instanceof List<?>) {
                 List<UnlocationsResponse> unlocationList = jsonHelper.convertValueToList(v1DataResponse.entities, UnlocationsResponse.class);
-                if(unlocationList != null && !unlocationList.isEmpty())
-                {
+                if (unlocationList != null && !unlocationList.isEmpty()) {
                     Set<String> unlocationSet = unlocationList.stream().filter(Objects::nonNull).map(UnlocationsResponse::getLocCode).collect(Collectors.toSet());
                     masterDataMap.put("Unlocations", unlocationSet);
                 }
@@ -955,8 +969,7 @@ public class CSVParsingUtil<T> {
         }
     }
 
-    public void fetchCommodityData(List<String> commodityCodesList, Map<String, Set<String>> masterDataMap)
-    {
+    public void fetchCommodityData(List<String> commodityCodesList, Map<String, Set<String>> masterDataMap) {
         CommonV1ListRequest request = new CommonV1ListRequest();
         List<Object> criteria = new ArrayList<>();
         List<Object> field = new ArrayList<>(List.of("Code"));
@@ -964,13 +977,10 @@ public class CSVParsingUtil<T> {
         criteria.addAll(List.of(field, operator, List.of(commodityCodesList)));
         request.setCriteriaRequests(criteria);
         V1DataResponse response = v1Service.fetchCommodityData(request);
-        if(response != null)
-        {
-            if(response.entities instanceof List<?>)
-            {
+        if (response != null) {
+            if (response.entities instanceof List<?>) {
                 List<CommodityResponse> commodityList = jsonHelper.convertValueToList(response.entities, CommodityResponse.class);
-                if(commodityList != null && !commodityList.isEmpty())
-                {
+                if (commodityList != null && !commodityList.isEmpty()) {
                     Set<String> commoditySet = commodityList.stream().filter(Objects::nonNull).map(CommodityResponse::getCode).collect(Collectors.toSet());
                     masterDataMap.put("CommodityCodes", commoditySet);
                 }
