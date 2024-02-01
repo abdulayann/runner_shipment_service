@@ -1688,7 +1688,7 @@ public class ShipmentService implements IShipmentService {
         pushShipmentDataToDependentService(shipmentDetails, isCreate);
 
         ConsolidationDetails consolidationDetails = null;
-        if(Objects.isNull(shipmentDetails.getConsolidationList()) && !shipmentDetails.getConsolidationList().isEmpty()){
+        if(!Objects.isNull(shipmentDetails.getConsolidationList()) && !shipmentDetails.getConsolidationList().isEmpty()){
             consolidationDetails = shipmentDetails.getConsolidationList().get(0);
         }
         // Syncing shipment to V1
