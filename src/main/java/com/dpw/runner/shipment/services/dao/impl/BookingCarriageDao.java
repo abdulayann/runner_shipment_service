@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IBookingCarriageDao;
 import com.dpw.runner.shipment.services.entity.BookingCarriage;
+import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.repository.interfaces.IBookingCarriageRepository;
 import com.nimbusds.jose.util.Pair;
@@ -45,6 +46,15 @@ public class BookingCarriageDao implements IBookingCarriageDao {
             throw new ValidationException(errors.toString());
         return bookingCarriageRepository.save(bookingCarriage);
     }
+    @Override
+    public List<BookingCarriage> saveAll(List<BookingCarriage> bookingCarriageList) {
+        for(var bookingCarriage: bookingCarriageList) {
+            Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(bookingCarriage), Constants.CARRIAGE, LifecycleHooks.ON_CREATE, false);
+            if (!errors.isEmpty())
+                throw new ValidationException(errors.toString());
+        }
+        return bookingCarriageRepository.saveAll(bookingCarriageList);
+    }
 
     @Override
     public Page<BookingCarriage> findAll(Specification<BookingCarriage> spec, Pageable pageable) {
@@ -66,11 +76,16 @@ public class BookingCarriageDao implements IBookingCarriageDao {
         List<BookingCarriage> responseBookingCarriage = new ArrayList<>();
         try {
             // TODO- Handle Transactions here
-            ListCommonRequest listCommonRequest = constructListCommonRequest("shipmentId", shipmentId, "=");
-            Pair<Specification<BookingCarriage>, Pageable> pair = fetchData(listCommonRequest, BookingCarriage.class);
-            Page<BookingCarriage> bookingCarriages = findAll(pair.getLeft(), pair.getRight());
-            Map<Long, BookingCarriage> hashMap = bookingCarriages.stream()
-                    .collect(Collectors.toMap(BookingCarriage::getId, Function.identity()));
+            Map<Long, BookingCarriage> hashMap = new HashMap<>();
+            var bookingCarriageIdList = bookingCarriageList.stream().map(BookingCarriage::getId).toList();
+            if(!Objects.isNull(bookingCarriageIdList) && !bookingCarriageIdList.isEmpty()) {
+                ListCommonRequest listCommonRequest = constructListCommonRequest("shipmentId", shipmentId, "=");
+                Pair<Specification<BookingCarriage>, Pageable> pair = fetchData(listCommonRequest, BookingCarriage.class);
+                Page<BookingCarriage> bookingCarriages = findAll(pair.getLeft(), pair.getRight());
+                hashMap = bookingCarriages.stream()
+                        .collect(Collectors.toMap(BookingCarriage::getId, Function.identity()));
+            }
+            Map<Long, BookingCarriage> copyHashMap = new HashMap<>(hashMap);
             List<BookingCarriage> bookingCarriagesRequestList = new ArrayList<>();
             if (bookingCarriageList != null && bookingCarriageList.size() != 0) {
                 for (BookingCarriage request : bookingCarriageList) {
@@ -80,7 +95,7 @@ public class BookingCarriageDao implements IBookingCarriageDao {
                     }
                     bookingCarriagesRequestList.add(request);
                 }
-                responseBookingCarriage = saveEntityFromShipment(bookingCarriagesRequestList, shipmentId);
+                responseBookingCarriage = saveEntityFromShipment(bookingCarriagesRequestList, shipmentId, copyHashMap);
             }
             deleteBookingCarriage(hashMap);
             return responseBookingCarriage;
@@ -109,6 +124,25 @@ public class BookingCarriageDao implements IBookingCarriageDao {
             req = save(req);
             res.add(req);
         }
+        return res;
+    }
+    @Override
+    public List<BookingCarriage> saveEntityFromShipment(List<BookingCarriage> bookingCarriages, Long shipmentId, Map<Long, BookingCarriage> oldEntityMap) {
+        List<BookingCarriage> res = new ArrayList<>();
+        for(BookingCarriage req : bookingCarriages){
+            if(req.getId() != null){
+                long id = req.getId();
+                if (!oldEntityMap.containsKey(id)) {
+                    log.debug("Booking Carriage is null for Id {}", req.getId());
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
+                req.setCreatedAt(oldEntityMap.get(id).getCreatedAt());
+                req.setCreatedBy(oldEntityMap.get(id).getCreatedBy());
+            }
+            req.setShipmentId(shipmentId);
+            res.add(req);
+        }
+        res = saveAll(res);
         return res;
     }
 

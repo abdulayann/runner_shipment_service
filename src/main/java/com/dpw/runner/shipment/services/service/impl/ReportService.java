@@ -30,6 +30,7 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IFileRepoService;
 import com.dpw.runner.shipment.services.service.interfaces.IReportService;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
+import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.google.common.base.Strings;
@@ -94,6 +95,8 @@ public class ReportService implements IReportService {
 
     @Autowired
     private IShipmentService shipmentService;
+    @Autowired
+    private IShipmentSync shipmentSync;
     @Autowired
     private IHblReleaseTypeMappingDao hblReleaseTypeMappingDao;
 
@@ -248,7 +251,7 @@ public class ReportService implements IReportService {
             //Update shipment issue date
             if ((isOriginalPrint || isSurrenderPrint) && reportRequest.getReportKey() != null && reportRequest.getReportKey().equalsIgnoreCase(ReportConstants.SHIPMENT_ID))
             {
-                shipmentDao.updateDateAndStatus(Long.parseLong(reportRequest.getReportId()), LocalDate.now().atStartOfDay(), null);
+                shipmentService.updateDateAndStatus(Long.parseLong(reportRequest.getReportId()), LocalDate.now().atStartOfDay(), null);
             }
             return pdfByte_Content;
         }
@@ -305,7 +308,7 @@ public class ReportService implements IReportService {
                     status = ShipmentStatus.GenerateHBL;
 
                 }
-                shipmentDao.updateDateAndStatus(Long.parseLong(reportRequest.getReportId()), issueDate, status.getValue());
+                shipmentService.updateDateAndStatus(Long.parseLong(reportRequest.getReportId()), issueDate, status.getValue());
             }
 
             List<byte[]> pdf_Bytes = new ArrayList<>();
@@ -466,7 +469,12 @@ public class ReportService implements IReportService {
                 shipmentDetails.getAdditionalDetails().setDateOfIssue(LocalDate.now().atStartOfDay());
             }
             shipmentDetails = shipmentDao.update(shipmentDetails, false);
-            shipmentService.afterSave(shipmentDetails, false);
+            shipmentService.pushShipmentDataToDependentService(shipmentDetails, false);
+            try {
+                shipmentSync.sync(shipmentDetails, null, null);
+            } catch (Exception e) {
+                log.error("Error performing sync on shipment entity, {}", e);
+            }
             if (pdfByteContent != null)
             {
                 DocUploadRequest docUploadRequest = new DocUploadRequest();

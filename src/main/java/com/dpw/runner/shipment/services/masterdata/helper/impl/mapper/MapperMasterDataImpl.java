@@ -369,4 +369,9 @@ public class MapperMasterDataImpl implements IMasterDataService {
     public DependentServiceResponse fetchChargeType(Object request) {
         return null;
     }
+
+    @Override
+    public DependentServiceResponse getDefaultOrg(Object request) {
+        return null;
+    }
 }

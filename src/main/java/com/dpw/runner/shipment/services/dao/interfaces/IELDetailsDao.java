@@ -6,11 +6,13 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
 public interface IELDetailsDao {
     ELDetails save(ELDetails elDetails);
+    List<ELDetails> saveAll(List<ELDetails> elDetailsList);
 
     Optional<ELDetails> findByGuid(UUID guid);
 
@@ -25,6 +27,7 @@ public interface IELDetailsDao {
     List<ELDetails> updateEntityFromShipment(List<ELDetails> elDetailsList, Long shipmentId) throws Exception;
 
     List<ELDetails> saveEntityFromShipment(List<ELDetails> elDetails, Long shipmentId);
+    List<ELDetails> saveEntityFromShipment(List<ELDetails> elDetails, Long shipmentId, Map<Long, ELDetails> oldEntityMap);
 
     List<ELDetails> updateEntityFromShipment(List<ELDetails> elDetailsList, Long shipmentId, List<ELDetails> oldEntityList) throws Exception;
 }

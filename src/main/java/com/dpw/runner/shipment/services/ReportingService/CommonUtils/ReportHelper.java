@@ -19,6 +19,7 @@ import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
+import java.text.NumberFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -439,4 +440,26 @@ public class ReportHelper {
         }
         return response;
     }
+
+    public static String addCommasWithPrecision(BigDecimal number, Integer decimalPlaces) {
+
+        if (number != null) {
+            if(decimalPlaces == null)
+                decimalPlaces = 2;
+            try {
+                BigDecimal roundedNumber = number.setScale(decimalPlaces, BigDecimal.ROUND_HALF_UP);
+                Locale customLocale = Locale.US;
+                NumberFormat numberInstance = NumberFormat.getNumberInstance(customLocale);
+                numberInstance.setMinimumFractionDigits(decimalPlaces);
+                numberInstance.setMaximumFractionDigits(decimalPlaces);
+
+                return numberInstance.format(roundedNumber);
+            } catch (Exception e) {
+                e.printStackTrace();  // Handle the exception appropriately
+            }
+        }
+
+        return number != null ? number.toString() : null;
+    }
+
 }

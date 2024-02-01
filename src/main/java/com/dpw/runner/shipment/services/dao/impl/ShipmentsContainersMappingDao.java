@@ -5,7 +5,6 @@ import com.dpw.runner.shipment.services.dao.interfaces.IShipmentsContainersMappi
 import com.dpw.runner.shipment.services.entity.ShipmentsContainersMapping;
 import com.dpw.runner.shipment.services.repository.interfaces.IShipmentsContainersMappingRepository;
 import com.dpw.runner.shipment.services.syncing.interfaces.IContainersSync;
-import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,9 +27,6 @@ public class ShipmentsContainersMappingDao implements IShipmentsContainersMappin
 
     @Autowired
     IContainersSync containersSync;
-
-    @Autowired
-    IShipmentSync shipmentSync;
 
     @Override
     public List<ShipmentsContainersMapping> findByContainerId(Long containerId) {
