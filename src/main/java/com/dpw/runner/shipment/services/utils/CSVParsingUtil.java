@@ -562,7 +562,8 @@ public class CSVParsingUtil<T> {
                     if (cell != null) {
                         String cellValue = getCellValueAsString(cell);
                         checkForUnitValidations(masterListsMap, header[j], cellValue, i, request.getTransportMode());
-                        checkForContainerCodeValidation(masterListsMap, cellValue, i, request.getTransportMode());
+                        if (header[j].equalsIgnoreCase("containerCode"))
+                            checkForContainerCodeValidation(masterListsMap, cellValue, i);
                         checkForValueValidations(header[j], cellValue, i, request.getTransportMode());
                         if (header[j].equalsIgnoreCase("containerNumber"))
                             checkForDuplicateContainerNumberValidation(guidPos, row, cellValue, i, isUpdate, existingContainerNumbers);
@@ -583,7 +584,7 @@ public class CSVParsingUtil<T> {
     }
 
     private void checkForContainerCodeValidation(Map<String, Set<String>> masterListsMap,
-                                                 String cellValue, int i, String transportMode) throws ValidationException {
+                                                 String cellValue, int i) throws ValidationException {
         if (masterListsMap.containsKey("ContainerTypes") && !masterListsMap.get("ContainerTypes").contains(cellValue)) {
             throw new ValidationException("Container Type is not valid at row: " + i);
         }
@@ -761,13 +762,13 @@ public class CSVParsingUtil<T> {
             }
         }
         if (column.toLowerCase().contains("hbldeliverymode")) {
-            if (!cellValue.isEmpty() && masterListsMap.containsKey(MasterDataType.CONTAINER_MODE.getDescription()) &&
-                    !masterListsMap.get(MasterDataType.CONTAINER_MODE.getDescription()).contains(cellValue)) {
+            if (!cellValue.isEmpty() && masterListsMap.containsKey(MasterDataType.HBL_DELIVERY_MODE.getDescription()) &&
+                    !masterListsMap.get(MasterDataType.HBL_DELIVERY_MODE.getDescription()).contains(cellValue)) {
                 throw new ValidationException("Container Mode is invalid at row: " + rowNum);
             }
         }
         if (column.toLowerCase().contains("containercode")) {
-            if (cellValue.isEmpty() && transportMode.equals(Constants.TRANSPORT_MODE_AIR)) {
+            if (cellValue.isEmpty() && !transportMode.equals(Constants.TRANSPORT_MODE_AIR)) {
                 throw new ValidationException("Container Type Code cannot be null at row " + rowNum);
             }
         }
