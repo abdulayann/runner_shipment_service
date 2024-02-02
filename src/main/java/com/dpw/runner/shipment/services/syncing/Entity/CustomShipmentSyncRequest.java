@@ -504,4 +504,6 @@ public class CustomShipmentSyncRequest implements IRunnerRequest, IRunnerRespons
     private String Summary;
     @JsonProperty("IsSummaryUpdated")
     private Boolean IsSummaryUpdated;
+    @JsonProperty("JobStatus")
+    private String JobStatus;
 }
