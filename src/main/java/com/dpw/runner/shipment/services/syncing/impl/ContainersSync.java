@@ -80,6 +80,9 @@ public class ContainersSync implements IContainersSync {
     @Override
     public ResponseEntity<?> sync(List<Long> containerIds, Page<ShipmentsContainersMapping> shipmentsContainersMappingPageable) {
         List<Containers> containers = getContainersFromIds(containerIds);
+        if(containers == null || containers.size() == 0) {
+            log.error("Error in syncing containers: Not able to get containers for ids: " + containerIds.toString());
+        }
         List<ContainerRequestV2> containerRequestV2 = convertEntityToSyncDto(containers, shipmentsContainersMappingPageable);
         String json = jsonHelper.convertToJson(V1DataSyncRequest.builder().entity(containerRequestV2).module(SyncingConstants.CONTAINERS).build());
         callSync(json, containerIds, containerRequestV2.stream().map(ContainerRequestV2::getGuid).toList());
