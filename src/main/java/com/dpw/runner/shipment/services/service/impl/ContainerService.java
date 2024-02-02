@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.Kafka.Producer.KafkaProducer;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
@@ -15,11 +16,13 @@ import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerNumberCh
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerPackADInShipmentRequest;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerSummaryResponse;
 import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
+import com.dpw.runner.shipment.services.dto.request.ContainersExcelModel;
 import com.dpw.runner.shipment.services.dto.request.EventsRequest;
 import com.dpw.runner.shipment.services.dto.request.PackingRequest;
 import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.JobResponse;
 import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -36,9 +39,7 @@ import com.dpw.runner.shipment.services.syncing.impl.SyncEntityConversionService
 import com.dpw.runner.shipment.services.syncing.interfaces.IContainerSync;
 import com.dpw.runner.shipment.services.syncing.interfaces.IContainersSync;
 import com.dpw.runner.shipment.services.syncing.interfaces.IPackingsSync;
-import com.dpw.runner.shipment.services.utils.CSVParsingUtil;
-import com.dpw.runner.shipment.services.utils.ExcelUtils;
-import com.dpw.runner.shipment.services.utils.StringUtility;
+import com.dpw.runner.shipment.services.utils.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
@@ -68,6 +69,7 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.OutputStream;
+import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -112,6 +114,10 @@ public class ContainerService implements IContainerService {
     @Autowired
     IEventDao eventDao;
     @Autowired
+    private CommonUtils commonUtils;
+    @Autowired
+    private MasterDataUtils masterDataUtils;
+    @Autowired
     private IPackingDao packingDao;
     @Autowired
     private IConsolidationDetailsDao consolidationDetailsDao;
@@ -148,6 +154,23 @@ public class ContainerService implements IContainerService {
 
     @Autowired
     IPackingsSync packingsADSync;
+    private List<String> columnsSequenceForExcelDownload = List.of(
+            "guid", "isOwnContainer", "isShipperOwned", "ownType", "isEmpty", "isReefer", "containerCode",
+            "hblDeliveryMode", "containerNumber", "containerCount", "descriptionOfGoods", "handlingInfo", "noOfPackages",
+            "hazardous", "dgClass", "hazardousUn", "packs", "packsType", "marksNums", "minTemp", "minTempUnit",
+            "netWeight", "netWeightUnit", "grossWeight", "grossWeightUnit", "tareWeight", "tareWeightUnit", "grossVolume",
+            "grossVolumeUnit", "measurement", "measurementUnit", "commodityCode", "hsCode", "customsReleaseCode",
+            "containerStuffingLocation", "pacrNumber", "containerComments", "sealNumber", "carrierSealNumber",
+            "shipperSealNumber", "terminalOperatorSealNumber", "veterinarySealNumber", "customsSealNumber"
+    );
+    private List<String> columnsSequenceForExcelDownloadForAir = List.of(
+            "guid", "hblDeliveryMode", "descriptionOfGoods", "hazardous", "hazardousUn", "packs", "packsType",
+            "marksNums", "serialNumber", "innerPackageNumber", "innerPackageType", "packageLength", "packageBreadth",
+            "packageHeight", "innerPackageMeasurementUnit", "isTemperatureMaintained", "minTemp", "minTempUnit",
+            "netWeight", "netWeightUnit", "grossWeight", "grossWeightUnit", "tareWeight", "tareWeightUnit", "chargeable",
+            "chargeableUnit", "grossVolume", "grossVolumeUnit", "commodityCode", "hsCode", "customsReleaseCode", "pacrNumber",
+            "containerComments"
+    );
 
     @Transactional
     public ResponseEntity<?> create(CommonRequestModel commonRequestModel) {
@@ -197,7 +220,7 @@ public class ContainerService implements IContainerService {
         var containerMap = consolContainers.stream().collect(Collectors.toMap(Containers::getGuid, Function.identity()));
 
         Map<String, Set<String>> masterDataMap = new HashMap<>();
-        List<Containers> containersList = parser.parseExcelFile(request.getFile(), request, containerMap, masterDataMap, Containers.class);
+        List<Containers> containersList = parser.parseExcelFile(request.getFile(), request, containerMap, masterDataMap, Containers.class, ContainersExcelModel.class);
 
         containersList = containersList.stream().map(c ->
                 c.setConsolidationId(request.getConsolidationId())
@@ -271,8 +294,7 @@ public class ContainerService implements IContainerService {
                 String dgClass = containersRow.getDgClass();
                 if (!StringUtils.isEmpty(dgClass)) {
                     try {
-                        long dgClassId = Long.valueOf(dgClass);
-                        if (hazardousClassMasterData != null && !hazardousClassMasterData.contains(String.valueOf(dgClassId))) {
+                        if (hazardousClassMasterData != null && !hazardousClassMasterData.contains(dgClass)) {
                             throw new ValidationException("DG class is invalid at row: " + row);
                         }
                     } catch (Exception e) {
@@ -395,7 +417,7 @@ public class ContainerService implements IContainerService {
     public void uploadContainerEvents(BulkUploadRequest request) throws Exception {
 //        CSVParsingUtil<Events> newParser = new CSVParsingUtil<>(Events.class);
         Map<String, Set<String>> masterDataMap = new HashMap<>();
-        List<Events> eventsList = newParser.parseExcelFile(request.getFile(), request, null, masterDataMap, Events.class);
+        List<Events> eventsList = newParser.parseExcelFile(request.getFile(), request, null, masterDataMap, Events.class, Events.class);
         eventsList = eventsList.stream().map(c -> {
             c.setEntityId(request.getConsolidationId());
             c.setEntityType("CONSOLIDATION");
@@ -445,13 +467,9 @@ public class ContainerService implements IContainerService {
 
             XSSFWorkbook workbook = new XSSFWorkbook();
             XSSFSheet sheet = workbook.createSheet("Containers");
-            ExcelUtils utils = new ExcelUtils();
-            utils.writeSimpleHeader(workbook, parser.generateContainerHeaders(), sheet);
 
-            int rowNum = 1;
-            for (Containers container : result) {
-                parser.addContainerToSheet(container, workbook, sheet, rowNum++);
-            }
+            List<ContainersExcelModel> model = convertToList(result, ContainersExcelModel.class);
+            convertModelToExcel(model, sheet, request);
 
             response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
             response.setHeader("Content-Disposition", "attachment; filename=" + filenameWithTimestamp);
@@ -464,6 +482,109 @@ public class ContainerService implements IContainerService {
             throw new RunnerException(ex.getMessage());
         }
 
+    }
+    public void convertModelToExcel(List<ContainersExcelModel> modelList, XSSFSheet sheet, BulkDownloadRequest request) throws IllegalAccessException {
+
+        // Create header row using annotations for order
+        Row headerRow = sheet.createRow(0);
+        Field[] fields = ContainersExcelModel.class.getDeclaredFields();
+//        Arrays.sort(fields, Comparator.comparingInt(f -> f.getAnnotation(ExcelCell.class).order()));
+
+        Map<String, Field> fieldNameMap = Arrays.stream(fields).filter(f->f.isAnnotationPresent(ExcelCell.class)).collect(Collectors.toMap(Field::getName, c-> c));
+        ColumnsToIgnore(fieldNameMap, request);
+
+        if(!Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_AIR) && fieldNameMap.containsKey("containerStuffingLocation")) {
+            List<String> unlocationsRefGuids = new ArrayList<>();
+            for (ContainersExcelModel model : modelList){
+                unlocationsRefGuids.add(model.getContainerStuffingLocation());
+            }
+            if(!unlocationsRefGuids.isEmpty()) {
+                Map<String, EntityTransferUnLocations> keyMasterDataMap = masterDataUtils.fetchInBulkUnlocations(unlocationsRefGuids, EntityTransferConstants.LOCATION_SERVICE_GUID);
+                for (ContainersExcelModel model : modelList){
+                    if(keyMasterDataMap.containsKey(model.getContainerStuffingLocation())){
+                        var locCode = keyMasterDataMap.get(model.getContainerStuffingLocation()).LocCode;
+                        model.setContainerStuffingLocation(locCode);
+                    }
+                }
+            }
+        }
+        List<Field> fieldsList = new ArrayList<>();
+        if(Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_SEA) || Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_ROA)
+                || Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_RF) || Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_RAI))
+            fieldsList = reorderFields(fieldNameMap, columnsSequenceForExcelDownload);
+        else if(Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_AIR))
+            fieldsList = reorderFields(fieldNameMap, columnsSequenceForExcelDownloadForAir);
+        int i = 0;
+        for (var field : fieldsList){
+            Cell cell = headerRow.createCell(i++);
+            cell.setCellValue(!field.getAnnotation(ExcelCell.class).displayName().isEmpty() ? field.getAnnotation(ExcelCell.class).displayName() : field.getName());
+        }
+
+        // Populate data
+        int rowIndex = 1;
+        for (ContainersExcelModel model : modelList) {
+            Row row = sheet.createRow(rowIndex++);
+            int cellIndex = 0;
+            for (Field field : fieldsList) {
+                field.setAccessible(true);
+                Object value = field.get(model);
+                Cell cell = row.createCell(cellIndex++);
+                cell.setCellValue(value != null ? value.toString() : "");
+            }
+        }
+    }
+
+    private void ColumnsToIgnore(Map<String, Field> fieldNameMap, BulkDownloadRequest request) {
+        if(request.getIsExport()){
+            for(var field : Constants.ColumnsToBeDeletedForExport) {
+                if (fieldNameMap.containsKey(field)) {
+                    fieldNameMap.remove(field);
+                }
+            }
+        } else {
+            for (var field : Constants.ColumnsToBeDeleted) {
+                if (fieldNameMap.containsKey(field)) {
+                    fieldNameMap.remove(field);
+                }
+            }
+
+            if(Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_AIR)){
+                for (var field : Constants.ColumnsToBeDeletedForCargo) {
+                    if (fieldNameMap.containsKey(field)) {
+                        fieldNameMap.remove(field);
+                    }
+                }
+            } else if(Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_SEA) || Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_ROA)
+            || Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_RF) || Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_RAI)) {
+                for (var field : Constants.ColumnsToBeDeletedForContainer) {
+                    if (fieldNameMap.containsKey(field)) {
+                        fieldNameMap.remove(field);
+                    }
+                }
+            }
+        }
+    }
+    private <T,P> List<P> convertToList(final List<T> lst, Class<P> clazz) {
+        if(lst == null)
+            return null;
+        return  lst.stream()
+                .map(item -> convertToClass(item, clazz))
+                .collect(Collectors.toList());
+    }
+
+    private  <T,P> P convertToClass(T obj, Class<P> clazz) {
+        return modelMapper.map(obj, clazz);
+    }
+    private List<Field> reorderFields(Map<String, Field> fieldNameMap, List<String> columnsName) {
+        List<Field> fields = new ArrayList<>();
+        for(var field: columnsName){
+            if(fieldNameMap.containsKey(field)) {
+                fields.add(fieldNameMap.get(field));
+                fieldNameMap.remove(field);
+            }
+        }
+        fields.addAll(fieldNameMap.values());
+        return fields;
     }
 
     @Override
