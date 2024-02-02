@@ -68,15 +68,14 @@ public class TruckDriverDetailsDao implements ITruckDriverDetailsDao {
         List<TruckDriverDetails> responseTruckDriverDetails = new ArrayList<>();
         try {
             // TODO- Handle Transactions here
-            Map<Long, TruckDriverDetails> hashMap = new HashMap<>();
-            var truckDriverDetailsIdList = truckDriverDetailsList.stream().map(TruckDriverDetails::getId).toList();
-            if(!Objects.isNull(truckDriverDetailsIdList) && !truckDriverDetailsIdList.isEmpty()) {
+            Map<Long, TruckDriverDetails> hashMap;
+//            if(!Objects.isNull(truckDriverDetailsIdList) && !truckDriverDetailsIdList.isEmpty()) {
                 ListCommonRequest listCommonRequest = constructListCommonRequest("shipmentId", shipmentId, "=");
                 Pair<Specification<TruckDriverDetails>, Pageable> pair = fetchData(listCommonRequest, TruckDriverDetails.class);
                 Page<TruckDriverDetails> truckDriverDetails = findAll(pair.getLeft(), pair.getRight());
                 hashMap = truckDriverDetails.stream()
                         .collect(Collectors.toMap(TruckDriverDetails::getId, Function.identity()));
-            }
+//            }
             Map<Long, TruckDriverDetails> copyHashMap = new HashMap<>(hashMap);
             List<TruckDriverDetails> truckDriverDetailsRequestList = new ArrayList<>();
             if (truckDriverDetailsList != null && truckDriverDetailsList.size() != 0) {

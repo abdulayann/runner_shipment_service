@@ -91,15 +91,14 @@ public class RoutingsDao implements IRoutingsDao {
         List<Routings> responseRoutings = new ArrayList<>();
         try {
             // TODO- Handle Transactions here
-            Map<Long, Routings> hashMap = new HashMap<>();
-            var routingsIdList = routingsList.stream().map(Routings::getId).toList();
-            if(!Objects.isNull(routingsIdList) && !routingsIdList.isEmpty()) {
+            Map<Long, Routings> hashMap;
+//            if(!Objects.isNull(routingsIdList) && !routingsIdList.isEmpty()) {
                 ListCommonRequest listCommonRequest = constructListCommonRequest("shipmentId", shipmentId, "=");
                 Pair<Specification<Routings>, Pageable> pair = fetchData(listCommonRequest, Routings.class);
                 Page<Routings> routings = findAll(pair.getLeft(), pair.getRight());
                 hashMap = routings.stream()
                         .collect(Collectors.toMap(Routings::getId, Function.identity()));
-            }
+//            }
             Map<Long, Routings> copyHashMap = new HashMap<>(hashMap);
             List<Routings> routingsRequestList = new ArrayList<>();
             if (routingsList != null && routingsList.size() != 0) {

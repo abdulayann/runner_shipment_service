@@ -57,15 +57,14 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
         List<ReferenceNumbers> responseReferenceNumbers = new ArrayList<>();
         try {
             // TODO- Handle Transactions here
-            Map<Long, ReferenceNumbers> hashMap = new HashMap<>();
-            var referenceNumbersIdList = referenceNumbersList.stream().map(ReferenceNumbers::getId).toList();
-            if(!Objects.isNull(referenceNumbersIdList) && !referenceNumbersIdList.isEmpty()) {
+            Map<Long, ReferenceNumbers> hashMap;
+//            if(!Objects.isNull(referenceNumbersIdList) && !referenceNumbersIdList.isEmpty()) {
                 ListCommonRequest listCommonRequest = constructListCommonRequest("shipmentId", shipmentId, "=");
                 Pair<Specification<ReferenceNumbers>, Pageable> pair = fetchData(listCommonRequest, ReferenceNumbers.class);
                 Page<ReferenceNumbers> routings = findAll(pair.getLeft(), pair.getRight());
                 hashMap = routings.stream()
                         .collect(Collectors.toMap(ReferenceNumbers::getId, Function.identity()));
-            }
+//            }
             Map<Long, ReferenceNumbers> copyHashMap = new HashMap<>(hashMap);
             List<ReferenceNumbers> referenceNumbersRequests = new ArrayList<>();
             if (referenceNumbersList != null && referenceNumbersList.size() != 0) {

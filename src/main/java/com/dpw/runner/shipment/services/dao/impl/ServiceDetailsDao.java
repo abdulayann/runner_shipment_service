@@ -3,7 +3,6 @@ package com.dpw.runner.shipment.services.dao.impl;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IServiceDetailsDao;
-import com.dpw.runner.shipment.services.entity.Routings;
 import com.dpw.runner.shipment.services.entity.ServiceDetails;
 import com.dpw.runner.shipment.services.repository.interfaces.IServiceDetailsRepository;
 import com.nimbusds.jose.util.Pair;
@@ -57,15 +56,14 @@ public class ServiceDetailsDao implements IServiceDetailsDao {
         List<ServiceDetails> responseServiceDetails = new ArrayList<>();
         try {
             // TODO- Handle Transactions here
-            Map<Long, ServiceDetails> hashMap = new HashMap<>();
-            var serviceDetailsIdList = serviceDetailsList.stream().map(ServiceDetails::getId).toList();
-            if(!Objects.isNull(serviceDetailsIdList) && !serviceDetailsIdList.isEmpty()) {
+            Map<Long, ServiceDetails> hashMap;
+//            if(!Objects.isNull(serviceDetailsIdList) && !serviceDetailsIdList.isEmpty()) {
                 ListCommonRequest listCommonRequest = constructListCommonRequest("shipmentId", shipmentId, "=");
                 Pair<Specification<ServiceDetails>, Pageable> pair = fetchData(listCommonRequest, ServiceDetails.class);
                 Page<ServiceDetails> serviceDetailsPage = findAll(pair.getLeft(), pair.getRight());
                 hashMap = serviceDetailsPage.stream()
                         .collect(Collectors.toMap(ServiceDetails::getId, Function.identity()));
-            }
+//            }
             Map<Long, ServiceDetails> copyHashMap = new HashMap<>();
             List<ServiceDetails> serviceDetailsRequests = new ArrayList<>();
             if (serviceDetailsList != null && serviceDetailsList.size() != 0) {
