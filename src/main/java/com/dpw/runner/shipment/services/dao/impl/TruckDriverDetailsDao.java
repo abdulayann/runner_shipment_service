@@ -3,7 +3,6 @@ package com.dpw.runner.shipment.services.dao.impl;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.ITruckDriverDetailsDao;
-import com.dpw.runner.shipment.services.entity.BookingCarriage;
 import com.dpw.runner.shipment.services.entity.TruckDriverDetails;
 import com.dpw.runner.shipment.services.repository.interfaces.ITruckDriverDetailsRepository;
 import com.nimbusds.jose.util.Pair;
@@ -185,15 +184,14 @@ public class TruckDriverDetailsDao implements ITruckDriverDetailsDao {
         List<TruckDriverDetails> responseTruckDriverDetails = new ArrayList<>();
         try {
             // TODO- Handle Transactions here
-            Map<Long, TruckDriverDetails> hashMap = new HashMap<>();
-            var truckDriverDetailsIdList = truckDriverDetailsList.stream().map(TruckDriverDetails::getId).toList();
-            if(!Objects.isNull(truckDriverDetailsIdList) && !truckDriverDetailsIdList.isEmpty()) {
+            Map<Long, TruckDriverDetails> hashMap;
+//            if(!Objects.isNull(truckDriverDetailsIdList) && !truckDriverDetailsIdList.isEmpty()) {
                 ListCommonRequest listCommonRequest = constructListCommonRequest("consolidationId", consolidationId, "=");
                 Pair<Specification<TruckDriverDetails>, Pageable> pair = fetchData(listCommonRequest, TruckDriverDetails.class);
                 Page<TruckDriverDetails> truckDriverDetailsPage = findAll(pair.getLeft(), pair.getRight());
                 hashMap = truckDriverDetailsPage.stream()
                         .collect(Collectors.toMap(TruckDriverDetails::getId, Function.identity()));
-            }
+//            }
             Map<Long, TruckDriverDetails> copyHashMap = new HashMap<>(hashMap);
             List<TruckDriverDetails> truckDriverDetailsRequests = new ArrayList<>();
             if (truckDriverDetailsList != null && truckDriverDetailsList.size() != 0) {
