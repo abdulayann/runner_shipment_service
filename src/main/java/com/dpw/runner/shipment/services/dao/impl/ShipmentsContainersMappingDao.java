@@ -79,6 +79,7 @@ public class ShipmentsContainersMappingDao implements IShipmentsContainersMappin
             }
         }
         try {
+            log.info("Call sync containers from assignContainers with ids: " + containerIds);
             containersSync.sync(containerIds, findAllByContainerIds(containerIds));
         }
         catch (Exception e) {
@@ -105,6 +106,7 @@ public class ShipmentsContainersMappingDao implements IShipmentsContainersMappin
         }
         if(!fromV1) {
             try {
+                log.info("Call sync containers from assignShipments with ids: " + containerId.toString());
                 containersSync.sync(List.of(containerId), findAllByContainerIds(List.of(containerId)));
             }
             catch (Exception e) {
@@ -132,6 +134,7 @@ public class ShipmentsContainersMappingDao implements IShipmentsContainersMappin
         }
         if(!fromV1) {
             try {
+                log.info("Call sync containers from detachShipments with ids: " + containerId.toString());
                 containersSync.sync(List.of(containerId), findAllByContainerIds(List.of(containerId)));
             }
             catch (Exception e) {

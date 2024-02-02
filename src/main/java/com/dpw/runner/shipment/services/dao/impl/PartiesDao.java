@@ -3,9 +3,7 @@ package com.dpw.runner.shipment.services.dao.impl;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IPartiesDao;
-import com.dpw.runner.shipment.services.entity.Notes;
 import com.dpw.runner.shipment.services.entity.Parties;
-import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.repository.interfaces.IPartiesRepository;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
@@ -79,15 +77,14 @@ public class PartiesDao implements IPartiesDao {
         List<Parties> responseParties = new ArrayList<>();
         try {
             // TODO- Handle Transactions here
-            Map<Long, Parties> hashMap = new HashMap<>();
-            var partiesIdList = partiesList.stream().map(Parties::getId).toList();
-            if(!Objects.isNull(partiesIdList) && !partiesIdList.isEmpty()) {
+            Map<Long, Parties> hashMap;
+//            if(!Objects.isNull(partiesIdList) && !partiesIdList.isEmpty()) {
                 ListCommonRequest listCommonRequest = constructListRequestFromEntityId(entityId, entityType);
                 Pair<Specification<Parties>, Pageable> pair = fetchData(listCommonRequest, Parties.class);
                 Page<Parties> parties = findAll(pair.getLeft(), pair.getRight());
                 hashMap = parties.stream()
                         .collect(Collectors.toMap(Parties::getId, Function.identity()));
-            }
+//            }
             Map<Long, Parties> copyHashMap = new HashMap<>(hashMap);
             List<Parties> partiesRequestList = new ArrayList<>();
             if (partiesList != null && partiesList.size() != 0) {

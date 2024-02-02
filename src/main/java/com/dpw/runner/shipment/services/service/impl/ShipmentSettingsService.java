@@ -365,19 +365,15 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
             if(shipmentSettingsDetails.getProductSequenceConfig() != null) {
                 if(shipmentSettingsDetails.getProductSequenceConfig().size() > 0) {
                     for (ProductSequenceConfig productSequenceConfig: shipmentSettingsDetails.getProductSequenceConfig()) {
-                        ListCommonRequest listCommonRequest = constructListCommonRequest("productType", String.valueOf(productSequenceConfig.getTenantProducts().getProductType()), "=");
-                        Pair<Specification<TenantProducts>, Pageable> pair = fetchData(listCommonRequest, TenantProducts.class);
-                        Page<TenantProducts> tenantProducts = tenantProductsDao.findAll(pair.getLeft(), pair.getRight());
-                        productSequenceConfig.setTenantProducts(tenantProducts.getContent().get(0));
+                        if(productSequenceConfig.getTenantProducts() != null && productSequenceConfig.getTenantProducts().getProductType() != null) {
+                            ListCommonRequest listCommonRequest = constructListCommonRequest("productType", String.valueOf(productSequenceConfig.getTenantProducts().getProductType()), "=");
+                            Pair<Specification<TenantProducts>, Pageable> pair = fetchData(listCommonRequest, TenantProducts.class);
+                            Page<TenantProducts> tenantProducts = tenantProductsDao.findAll(pair.getLeft(), pair.getRight());
+                            productSequenceConfig.setTenantProducts(tenantProducts.getContent().get(0));
+                        }
                     }
                 }
                 shipmentSettingsDetails.setProductSequenceConfig(productSequenceConfigDao.saveEntityFromSettings(shipmentSettingsDetails.getProductSequenceConfig(), shipmentSettingsDetails.getId()));
-            }
-
-            try{
-                shipmentSettingsSync.sync(shipmentSettingsDetails);
-            } catch (Exception e) {
-                log.error("Error Syncing Tenant Settings");
             }
 
             log.info("Shipment Setting Details created successfully for Id {} with Request Id {}", shipmentSettingsDetails.getId(), LoggerHelper.getRequestIdFromMDC());

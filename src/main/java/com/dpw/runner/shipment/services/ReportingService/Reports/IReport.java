@@ -399,16 +399,15 @@ public abstract class IReport {
             dictionary.put(ReportConstants.SERVICE_MODE_DESCRIPTION, StringUtility.isNotEmpty(masterData.getItemDescription()) ? StringUtility.toUpperCase(masterData.getItemDescription()) : shipment.getServiceType());
         }
 
-
-        dictionary.put(ReportConstants.GROSS_WEIGHT, ReportHelper.addCommaWithoutDecimal(shipment.getWeight()));
+        dictionary.put(ReportConstants.GROSS_WEIGHT, ConvertToWeightNumberFormat(shipment.getWeight(), v1TenantSettingsResponse));
         dictionary.put(ReportConstants.GROSS_WEIGHT_UNIT,shipment.getWeightUnit());
-        dictionary.put(ReportConstants.GROSS_VOLUME, ReportHelper.addCommaWithoutDecimal(shipment.getVolume()));
+        dictionary.put(ReportConstants.GROSS_VOLUME, ConvertToVolumeNumberFormat(shipment.getVolume(), v1TenantSettingsResponse));
         dictionary.put(ReportConstants.GROSS_VOLUME_UNIT,shipment.getVolumeUnit());
-        dictionary.put(ReportConstants.GROSS_WEIGHT_WITH_COMMA, addCommas(shipment.getWeight()));
-        dictionary.put(ReportConstants.GROSS_VOLUME_WITH_COMMA, addCommas(shipment.getVolume()));
+        dictionary.put(ReportConstants.GROSS_WEIGHT_WITH_COMMA, ConvertToWeightNumberFormat(shipment.getWeight(), v1TenantSettingsResponse));
+        dictionary.put(ReportConstants.GROSS_VOLUME_WITH_COMMA, ConvertToVolumeNumberFormat(shipment.getVolume(), v1TenantSettingsResponse));
         dictionary.put(ReportConstants.VOLUME_WEIGHT_WITH_COMMA, addCommas(shipment.getVolumetricWeight()));
         dictionary.put(ReportConstants.WEIGHT_UNIT_DESCRIPTION,  shipment.getNetWeightUnit());
-        dictionary.put(ReportConstants.WEIGHTS, addCommas(shipment.getNetWeight()));
+        dictionary.put(ReportConstants.WEIGHTS, ConvertToWeightNumberFormat(shipment.getNetWeight(), v1TenantSettingsResponse));
         if (shipment.getVolumeUnit() != null && masterListsMap.containsKey(MasterDataType.VOLUME_UNIT.getId())) {
             masterData =  masterListsMap.get(MasterDataType.VOLUME_UNIT.getId()).get(shipment.getVolumeUnit());
             dictionary.put(VolumeUnitDescription, masterData != null && masterData.getItemDescription() != null ? StringUtility.toUpperCase(masterData.getItemDescription()) : shipment.getVolumeUnit());
@@ -1033,14 +1032,14 @@ public abstract class IReport {
         dictionary.put(ReportConstants.DESCRIPTION, hblDataDto.getCargoDescription());
         dictionary.put(ReportConstants.DESCRIPTION_CAPS, hblDataDto.getCargoDescription() != null ? hblDataDto.getCargoDescription().toUpperCase() : null);
         dictionary.put(ReportConstants.PLACE_OF_DELIVERY, hblDataDto.getPlaceOfDelivery());
-        dictionary.put(ReportConstants.CARGO_NET_WEIGHT, ReportHelper.ConvertToWeightNumberFormat(hblDataDto.getCargoNetWeight()));
+        dictionary.put(ReportConstants.CARGO_NET_WEIGHT, ConvertToWeightNumberFormat(hblDataDto.getCargoNetWeight(), v1TenantSettingsResponse));
         dictionary.put(ReportConstants.CARGO_NET_WEIGHT_UNIT, hblDataDto.getCargoNetWeightUnit());
         dictionary.put(ReportConstants.FINAL_DESTINATION, hblDataDto.getFinalDestination());
-        dictionary.put(ReportConstants.CARGO_GROSS_VOLUME, ReportHelper.ConvertToVolumeNumberFormat(hblDataDto.getCargoGrossVolume()));
+        dictionary.put(ReportConstants.CARGO_GROSS_VOLUME, ConvertToVolumeNumberFormat(hblDataDto.getCargoGrossVolume(), v1TenantSettingsResponse));
         dictionary.put(ReportConstants.CARGO_GROSS_VOLUME_UNIT, hblDataDto.getCargoGrossVolumeUnit());
         if (masterListsMap.containsKey(MasterDataType.VOLUME_UNIT.getId()) && masterListsMap.get(MasterDataType.VOLUME_UNIT.getId()).containsKey(hblDataDto.getCargoGrossVolumeUnit()))
             dictionary.put(CARGO_GROSS_VOLUME_UNIT_DESCRIPTION, StringUtility.toUpperCase(StringUtility.convertToString(masterListsMap.get(MasterDataType.VOLUME_UNIT.getId()).get(hblDataDto.getCargoGrossVolumeUnit()))));
-        dictionary.put(ReportConstants.CARGO_GROSS_WEIGHT, ReportHelper.ConvertToWeightNumberFormat(hblDataDto.getCargoGrossWeight()));
+        dictionary.put(ReportConstants.CARGO_GROSS_WEIGHT, ConvertToWeightNumberFormat(hblDataDto.getCargoGrossWeight(), v1TenantSettingsResponse));
         dictionary.put(ReportConstants.CARGO_GROSS_WEIGHT_UNIT, hblDataDto.getCargoGrossWeightUnit());
         if (masterListsMap.containsKey(MasterDataType.WEIGHT_UNIT.getId()) && masterListsMap.get(MasterDataType.WEIGHT_UNIT.getId()).containsKey(hblDataDto.getCargoGrossVolumeUnit()))
             dictionary.put(CARGO_GROSS_WEIGHT_UNIT_DESCRIPTION, StringUtility.toUpperCase(StringUtility.convertToString(masterListsMap.get(MasterDataType.WEIGHT_UNIT.getId()).get(hblDataDto.getCargoGrossWeightUnit()))));
@@ -1058,7 +1057,7 @@ public abstract class IReport {
         dictionary.put(ReportConstants.BL_DELIVERY_AGENT_ADDRESS, hblDataDto.getDeliveryAgentAddress());
         dictionary.put(ReportConstants.BL_CARGO_TERMS_DESCRIPTION, StringUtility.toUpperCase(hblDataDto.getCargoTermsDescription()));
         dictionary.put(ReportConstants.BL_REMARKS_DESCRIPTION, StringUtility.toUpperCase(hblDataDto.getBlRemarksDescription()));
-        dictionary.put(ReportConstants.CARGO_GROSS_VOLUME_WITH_COMMA, addCommas(hblDataDto.getCargoGrossVolume()));
+        dictionary.put(ReportConstants.CARGO_GROSS_VOLUME_WITH_COMMA, ConvertToVolumeNumberFormat(hblDataDto.getCargoGrossVolume(), v1TenantSettingsResponse));
     }
 
     public void populateUserFields(UsersDto user, Map<String, Object> dictionary) {
@@ -1312,6 +1311,13 @@ public abstract class IReport {
         V1TenantSettingsResponse v1TenantSettingsResponse = getTenantSettings();
         return ConvertToWeightNumberFormat(weight, v1TenantSettingsResponse);
     }
+
+    public static String ConvertToWeightNumberFormat(Object weight, V1TenantSettingsResponse v1TenantSettingsResponse) {
+        if(weight != null && !CommonUtils.IsStringNullOrEmpty(weight.toString())) {
+            return ConvertToWeightNumberFormat(new BigDecimal(weight.toString()), v1TenantSettingsResponse);
+        }
+        return null;
+    }
     public static String ConvertToWeightNumberFormat(BigDecimal weight, V1TenantSettingsResponse v1TenantSettingsResponse) {
         if(weight != null) {
             int numberDecimalDigits = 0;
@@ -1325,6 +1331,12 @@ public abstract class IReport {
     public String ConvertToVolumeNumberFormat(BigDecimal volume) {
         V1TenantSettingsResponse v1TenantSettingsResponse = getTenantSettings();
         return ConvertToVolumeNumberFormat(volume, v1TenantSettingsResponse);
+    }
+    public static String ConvertToVolumeNumberFormat(Object volume, V1TenantSettingsResponse v1TenantSettingsResponse) {
+        if(volume != null && !CommonUtils.IsStringNullOrEmpty(volume.toString())) {
+            return ConvertToVolumeNumberFormat(new BigDecimal(volume.toString()), v1TenantSettingsResponse);
+        }
+        return null;
     }
     public static String ConvertToVolumeNumberFormat(BigDecimal volume, V1TenantSettingsResponse v1TenantSettingsResponse) {
         if(volume != null) {
@@ -1348,6 +1360,8 @@ public abstract class IReport {
                 return formatValue(value, customDecimalSeparator, customThousandsSeparator, numberDecimalDigits, v1TenantSettingsResponse);
             }
         }
+        if(value != null)
+            return value.toString();
         return null;
     }
 
@@ -1759,20 +1773,21 @@ public abstract class IReport {
 
         List<Map<String, Object>> packsDictionary = new ArrayList<>();
 
+        V1TenantSettingsResponse v1TenantSettingsResponse = getTenantSettings();
         for(var pack : shipment.getPackingList()) {
             Map<String, Object> dict = new HashMap<>();
             if(pack.getCommodity() != null)
                 dict.put(COMMODITY_DESC, pack.getCommodity());
             if(pack.getWeight() != null){
-                dict.put(WEIGHT_AND_UNIT_PACKS, String.format("%s %s", twoDecimalPlacesFormat(pack.getWeight().toString()),
+                dict.put(WEIGHT_AND_UNIT_PACKS, String.format("%s %s", ConvertToWeightNumberFormat(pack.getWeight(), v1TenantSettingsResponse),
                         pack.getWeightUnit()));
             }
             if(pack.getVolume() != null){
-                dict.put(VOLUME_AND_UNIT_PACKS, String.format("%s %s", twoDecimalPlacesFormat(pack.getVolume().toString()),
+                dict.put(VOLUME_AND_UNIT_PACKS, String.format("%s %s", ConvertToVolumeNumberFormat(pack.getVolume(), v1TenantSettingsResponse),
                         pack.getVolumeUnit()));
             }
             if (pack.getVolumeWeight() != null) {
-                dict.put(V_WEIGHT_AND_UNIT_PACKS, String.format("%s %s", twoDecimalPlacesFormat(pack.getVolumeWeight().toString()),
+                dict.put(V_WEIGHT_AND_UNIT_PACKS, String.format("%s %s", ConvertToWeightNumberFormat(pack.getVolumeWeight(), v1TenantSettingsResponse),
                         pack.getVolumeWeightUnit()));
             }
             if (shipment.getPickupDetails() != null && shipment.getPickupDetails().getActualPickupOrDelivery() != null) {

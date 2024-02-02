@@ -3,7 +3,6 @@ package com.dpw.runner.shipment.services.dao.impl;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.INotesDao;
-import com.dpw.runner.shipment.services.entity.FileRepo;
 import com.dpw.runner.shipment.services.entity.Notes;
 import com.dpw.runner.shipment.services.repository.interfaces.INotesRepository;
 import com.nimbusds.jose.util.Pair;
@@ -62,15 +61,14 @@ public class NotesDao implements INotesDao {
         List<Notes> responseNotes = new ArrayList<>();
         try {
             // TODO- Handle Transactions here
-            Map<Long, Notes> hashMap = new HashMap<>();
-            var notesIdList = notesList.stream().map(Notes::getId).toList();
-            if(!Objects.isNull(notesIdList) && !notesIdList.isEmpty()) {
+            Map<Long, Notes> hashMap;
+//            if(!Objects.isNull(notesIdList) && !notesIdList.isEmpty()) {
                 ListCommonRequest listCommonRequest = constructListRequestFromEntityId(entityId, entityType);
                 Pair<Specification<Notes>, Pageable> pair = fetchData(listCommonRequest, Notes.class);
                 Page<Notes> notes = findAll(pair.getLeft(), pair.getRight());
                 hashMap = notes.stream()
                         .collect(Collectors.toMap(Notes::getId, Function.identity()));
-            }
+//            }
             Map<Long, Notes> copyHashMap = new HashMap<>();
             List<Notes> notesRequestList = new ArrayList<>();
             if (notesList != null && notesList.size() != 0) {

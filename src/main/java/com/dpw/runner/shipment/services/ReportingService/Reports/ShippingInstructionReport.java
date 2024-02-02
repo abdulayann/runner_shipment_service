@@ -132,6 +132,7 @@ public class ShippingInstructionReport extends IReport{
         BigDecimal totalWeight = BigDecimal.ZERO;
         String unitOfTotalWeight = null;
         boolean breakFlagForWeight = false;
+        V1TenantSettingsResponse v1TenantSettingsResponse = getTenantSettings();
 
         if (model.getShipment().getPackingList() != null) {
 //            String packingJson = jsonHelper.convertToJson(model.getShipment().getPackingList());
@@ -169,11 +170,11 @@ public class ShippingInstructionReport extends IReport{
                 }
 
                 if(v.get(VOLUME) != null)
-                    v.put(VOLUME, twoDecimalPlacesFormat(v.get(VOLUME).toString()));
+                    v.put(VOLUME, ConvertToVolumeNumberFormat(v.get(VOLUME), v1TenantSettingsResponse));
                 if(v.get(WEIGHT) != null)
-                    v.put(WEIGHT, twoDecimalPlacesFormat(v.get(WEIGHT).toString()));
+                    v.put(WEIGHT, ConvertToWeightNumberFormat(v.get(WEIGHT), v1TenantSettingsResponse));
                 if(v.get(NET_WEIGHT) != null)
-                    v.put(NET_WEIGHT, twoDecimalPlacesFormat(v.get(NET_WEIGHT).toString()));
+                    v.put(NET_WEIGHT, ConvertToWeightNumberFormat(v.get(NET_WEIGHT), v1TenantSettingsResponse));
                 if(v.get(VOLUME_WEIGHT) != null)
                     v.put(VOLUME_WEIGHT, twoDecimalPlacesFormat(v.get(VOLUME_WEIGHT).toString()));
             }
@@ -190,7 +191,7 @@ public class ShippingInstructionReport extends IReport{
             dictionary.put(TOTAL_VOLUME, null);
             dictionary.put(UOTV, null);
         } else {
-            dictionary.put(TOTAL_VOLUME, twoDecimalPlacesFormat(totalVolume.toString()));
+            dictionary.put(TOTAL_VOLUME, ConvertToVolumeNumberFormat(totalVolume, v1TenantSettingsResponse));
             dictionary.put(UOTV, unitOfTotalVolume);
         }
 
@@ -198,7 +199,7 @@ public class ShippingInstructionReport extends IReport{
             dictionary.put(TOTAL_WEIGHT, null);
             dictionary.put(UOTW, null);
         } else {
-            dictionary.put(TOTAL_WEIGHT, twoDecimalPlacesFormat(totalWeight.toString()));
+            dictionary.put(TOTAL_WEIGHT, ConvertToWeightNumberFormat(totalWeight, v1TenantSettingsResponse));
             dictionary.put(UOTW, unitOfTotalWeight);
         }
 
