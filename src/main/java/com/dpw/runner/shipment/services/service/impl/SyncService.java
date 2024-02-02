@@ -16,10 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.retry.support.RetryTemplate;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-
-import java.util.UUID;
 
 @Service
 @Slf4j
@@ -62,7 +59,6 @@ public class SyncService implements ISyncService {
     }
 
     @Override
-    @Async
     public void pushToKafka(String json, String id, String guid, String entity, String transactionId) {
         try {
             SyncKafkaDto request = SyncKafkaDto.builder()
