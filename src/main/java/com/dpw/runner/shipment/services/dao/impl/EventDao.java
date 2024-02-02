@@ -89,15 +89,14 @@ public class EventDao implements IEventDao {
         List<Events> responseEvents = new ArrayList<>();
         try {
             // TODO- Handle Transactions here
-            Map<Long, Events> hashMap = new HashMap<>();
-            var eventsIdList = eventsList.stream().map(Events::getId).toList();
-            if(!Objects.isNull(eventsIdList) && !eventsIdList.isEmpty()) {
+            Map<Long, Events> hashMap;
+//            if(!Objects.isNull(eventsIdList) && !eventsIdList.isEmpty()) {
                 ListCommonRequest listCommonRequest = constructListRequestFromEntityId(entityId, entityType);
                 Pair<Specification<Events>, Pageable> pair = fetchData(listCommonRequest, Events.class);
                 Page<Events> events = findAll(pair.getLeft(), pair.getRight());
                 hashMap = events.stream()
                         .collect(Collectors.toMap(Events::getId, Function.identity()));
-            }
+//            }
             Map<Long, Events> copyHashMap = new HashMap<>(hashMap);
             List<Events> eventsRequestList = new ArrayList<>();
             if (eventsList != null && eventsList.size() != 0) {

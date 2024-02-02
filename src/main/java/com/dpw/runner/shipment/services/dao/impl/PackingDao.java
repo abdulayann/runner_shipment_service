@@ -83,15 +83,14 @@ public class PackingDao implements IPackingDao {
         List<Packing> responsePackings = new ArrayList<>();
         try {
             // TODO- Handle Transactions here
-            Map<Long, Packing> hashMap = new HashMap<>();
-            var packIdList = packingList.stream().map(Packing::getId).toList();
-            if(!Objects.isNull(packIdList) && !packIdList.isEmpty()) {
+            Map<Long, Packing> hashMap;
+//            if(!Objects.isNull(packIdList) && !packIdList.isEmpty()) {
                 ListCommonRequest listCommonRequest = constructListCommonRequest("shipmentId", shipmentId, "=");
                 Pair<Specification<Packing>, Pageable> pair = fetchData(listCommonRequest, Packing.class);
                 Page<Packing> packings = findAll(pair.getLeft(), pair.getRight());
                 hashMap = packings.stream()
                         .collect(Collectors.toMap(Packing::getId, Function.identity()));
-            }
+//            }
             Map<Long, Packing> hashMapCopy = new HashMap<>(hashMap);
             List<Packing> packingRequestList = new ArrayList<>();
             if (packingList != null && packingList.size() != 0) {

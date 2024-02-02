@@ -5,9 +5,11 @@ import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IBookingCarriageDao;
 import com.dpw.runner.shipment.services.entity.BookingCarriage;
-import com.dpw.runner.shipment.services.entity.Packing;
+import com.dpw.runner.shipment.services.entity.enums.LifecycleHooks;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.IBookingCarriageRepository;
+import com.dpw.runner.shipment.services.validator.ValidatorUtility;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,9 +18,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
-import com.dpw.runner.shipment.services.helpers.JsonHelper;
-import com.dpw.runner.shipment.services.validator.ValidatorUtility;
-import com.dpw.runner.shipment.services.entity.enums.LifecycleHooks;
 
 import java.util.*;
 import java.util.function.Function;
@@ -76,15 +75,14 @@ public class BookingCarriageDao implements IBookingCarriageDao {
         List<BookingCarriage> responseBookingCarriage = new ArrayList<>();
         try {
             // TODO- Handle Transactions here
-            Map<Long, BookingCarriage> hashMap = new HashMap<>();
-            var bookingCarriageIdList = bookingCarriageList.stream().map(BookingCarriage::getId).toList();
-            if(!Objects.isNull(bookingCarriageIdList) && !bookingCarriageIdList.isEmpty()) {
+            Map<Long, BookingCarriage> hashMap;
+//            if(!Objects.isNull(bookingCarriageIdList) && !bookingCarriageIdList.isEmpty()) {
                 ListCommonRequest listCommonRequest = constructListCommonRequest("shipmentId", shipmentId, "=");
                 Pair<Specification<BookingCarriage>, Pageable> pair = fetchData(listCommonRequest, BookingCarriage.class);
                 Page<BookingCarriage> bookingCarriages = findAll(pair.getLeft(), pair.getRight());
                 hashMap = bookingCarriages.stream()
                         .collect(Collectors.toMap(BookingCarriage::getId, Function.identity()));
-            }
+//            }
             Map<Long, BookingCarriage> copyHashMap = new HashMap<>(hashMap);
             List<BookingCarriage> bookingCarriagesRequestList = new ArrayList<>();
             if (bookingCarriageList != null && bookingCarriageList.size() != 0) {

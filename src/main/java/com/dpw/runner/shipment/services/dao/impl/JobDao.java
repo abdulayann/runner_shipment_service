@@ -76,15 +76,14 @@ public class JobDao implements IJobDao {
         List<Jobs> responseJobs = new ArrayList<>();
         try {
             // TODO- Handle Transactions here
-            Map<Long, Jobs> hashMap = new HashMap<>();
-            var jobsIdList = jobsList.stream().map(Jobs::getId).toList();
-            if(!Objects.isNull(jobsIdList) && !jobsIdList.isEmpty()) {
+            Map<Long, Jobs> hashMap;
+//            if(!Objects.isNull(jobsIdList) && !jobsIdList.isEmpty()) {
                 ListCommonRequest listCommonRequest = constructListCommonRequest("shipmentId", shipmentId, "=");
                 Pair<Specification<Jobs>, Pageable> pair = fetchData(listCommonRequest, Jobs.class);
                 Page<Jobs> routings = findAll(pair.getLeft(), pair.getRight());
                 hashMap = routings.stream()
                         .collect(Collectors.toMap(Jobs::getId, Function.identity()));
-            }
+//            }
             Map<Long, Jobs> copyHashMap = new HashMap<>(hashMap);
             List<Jobs> jobRequestList = new ArrayList<>();
             if (jobsList != null && jobsList.size() != 0) {
