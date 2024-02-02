@@ -500,4 +500,8 @@ public class CustomShipmentSyncRequest implements IRunnerRequest, IRunnerRespons
     private String BLRemarks;
     @JsonProperty("BLRemarksDescription")
     private String BLRemarksDescription;
+    @JsonProperty("Summary")
+    private String Summary;
+    @JsonProperty("IsSummaryUpdated")
+    private Boolean IsSummaryUpdated;
 }
