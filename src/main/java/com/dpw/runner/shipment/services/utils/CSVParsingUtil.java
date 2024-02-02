@@ -553,7 +553,7 @@ public class CSVParsingUtil<T> {
                         throw new ValidationException("GUID not valid at row: " + i);
                     }
                 }
-                T entity = guidPos != -1 && mapOfEntity != null ? mapOfEntity.get(getCellValueAsString(row.getCell(guidPos))) : createEntityInstance(entityType);
+                T entity = guidPos != -1 && mapOfEntity != null ? mapOfEntity.get(UUID.fromString(getCellValueAsString(row.getCell(guidPos)))) : createEntityInstance(entityType);
                 if (mapOfEntity != null && guidPos != -1 && mapOfEntity.containsKey(UUID.fromString(getCellValueAsString(row.getCell(guidPos))))) {
                     isUpdate = true;
                 }
@@ -853,7 +853,25 @@ public class CSVParsingUtil<T> {
 
     private void setField(T entity, String attributeName, String attributeValue, int rowNum) throws NoSuchFieldException, IllegalAccessException {
 
-        Field field = entity.getClass().getDeclaredField(attributeName);
+        Map<String, Field> fieldMap = new HashMap<>();
+        for (Field v : entity.getClass().getDeclaredFields()) {
+            fieldMap.put(v.getName(), v);
+        }
+        if (entity.getClass().getSuperclass() != null) {
+            for (Field v : entity.getClass().getSuperclass().getDeclaredFields()) { // multenancy
+                fieldMap.put(v.getName(), v);
+            }
+            if (entity.getClass().getSuperclass().getSuperclass() != null) {
+                for (Field v : entity.getClass().getSuperclass().getSuperclass().getDeclaredFields()) { //bas entity
+                    fieldMap.put(v.getName(), v);
+                }
+            }
+        }
+
+        Field field = fieldMap.get(attributeName);
+        if (field == null) {
+            return;
+        }
         field.setAccessible(true);
 
         Class<?> fieldType = field.getType();
@@ -875,6 +893,8 @@ public class CSVParsingUtil<T> {
                 parsedValue = ContainerStatus.valueOf(attributeValue);
             } else if (fieldType == LocalDateTime.class) {
                 parsedValue = LocalDateTime.parse(attributeValue);
+            } else if (fieldType == UUID.class) {
+                parsedValue = UUID.fromString(attributeValue);
             } else {
                 throw new NoSuchFieldException();
             }
