@@ -4,7 +4,6 @@ import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IFileRepoDao;
 import com.dpw.runner.shipment.services.entity.FileRepo;
-import com.dpw.runner.shipment.services.entity.ServiceDetails;
 import com.dpw.runner.shipment.services.repository.interfaces.IFileRepoRepository;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
@@ -62,15 +61,14 @@ public class FileRepoDao implements IFileRepoDao {
         List<FileRepo> responseFileRepo = new ArrayList<>();
         try {
             // TODO- Handle Transactions here
-            Map<Long, FileRepo> hashMap = new HashMap<>();
-            var fileRepoIdList = fileRepoList.stream().map(FileRepo::getId).toList();
-            if(!Objects.isNull(fileRepoIdList) && !fileRepoIdList.isEmpty()) {
+            Map<Long, FileRepo> hashMap;
+//            if(!Objects.isNull(fileRepoIdList) && !fileRepoIdList.isEmpty()) {
                 ListCommonRequest listCommonRequest = constructListRequestFromEntityId(entityId, entityType);
                 Pair<Specification<FileRepo>, Pageable> pair = fetchData(listCommonRequest, FileRepo.class);
                 Page<FileRepo> fileRepos = findAll(pair.getLeft(), pair.getRight());
                 hashMap = fileRepos.stream()
                         .collect(Collectors.toMap(FileRepo::getId, Function.identity()));
-            }
+//            }
             Map<Long, FileRepo> copyHashMap = new HashMap<>();
             List<FileRepo> fileReposRequestList = new ArrayList<>();
             if (fileRepoList != null && fileRepoList.size() != 0) {

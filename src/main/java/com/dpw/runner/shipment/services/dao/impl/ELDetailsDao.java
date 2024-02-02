@@ -4,7 +4,6 @@ import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IELDetailsDao;
 import com.dpw.runner.shipment.services.entity.ELDetails;
-import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.repository.interfaces.IELDetailsRepository;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
@@ -67,15 +66,14 @@ public class ELDetailsDao implements IELDetailsDao {
         List<ELDetails> responseELDetails = new ArrayList<>();
         try {
             // TODO- Handle Transactions here
-            Map<Long, ELDetails> hashMap = new HashMap<>();
-            var elDetailsIdList = elDetailsList.stream().map(ELDetails::getId).toList();
-            if(!Objects.isNull(elDetailsIdList) && !elDetailsIdList.isEmpty()) {
+            Map<Long, ELDetails> hashMap;
+//            if(!Objects.isNull(elDetailsIdList) && !elDetailsIdList.isEmpty()) {
                 ListCommonRequest listCommonRequest = constructListCommonRequest("shipmentId", shipmentId, "=");
                 Pair<Specification<ELDetails>, Pageable> pair = fetchData(listCommonRequest, ELDetails.class);
                 Page<ELDetails> elDetails = findAll(pair.getLeft(), pair.getRight());
                 hashMap = elDetails.stream()
                         .collect(Collectors.toMap(ELDetails::getId, Function.identity()));
-            }
+//            }
             Map<Long, ELDetails> copyHashMap = new HashMap<>(hashMap);
             List<ELDetails> elDetailsRequestList = new ArrayList<>();
             if (elDetailsList != null && elDetailsList.size() != 0) {
