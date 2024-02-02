@@ -26,7 +26,7 @@ public class DataSyncConsumer {
     public void consume(String message)
     {
         try {
-            log.info("message :" + message);
+            log.info("DataSyncConsumer message :" + message);
             SyncKafkaDto obj = objectMapper.readValue(message, SyncKafkaDto.class);
             syncService.callSync(obj.getData(), obj.getId(), obj.getGuid(), obj.getEntity(), v1AuthHelper.getHeadersForDataSyncFromKafka(obj.getUserName(), obj.getTenantId()));
             log.info("Passed");
