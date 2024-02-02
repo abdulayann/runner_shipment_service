@@ -174,22 +174,7 @@ public class ShipmentSync implements IShipmentSync {
     public void syncLockStatus(ShipmentDetails shipmentDetails) {
         LockSyncRequest lockSyncRequest = LockSyncRequest.builder().guid(shipmentDetails.getGuid()).lockStatus(shipmentDetails.getIsLocked()).build();
         String finalCs = jsonHelper.convertToJson(V1DataSyncRequest.builder().entity(lockSyncRequest).module(SyncingConstants.SHIPMENT_LOCK).build());
-        retryTemplate.execute(ctx -> {
-            log.info("Current retry : {}", ctx.getRetryCount());
-            if (ctx.getLastThrowable() != null) {
-                log.error("V1 error -> {}", ctx.getLastThrowable().getMessage());
-            }
-            V1DataSyncResponse response_ = v1Service.v1DataSync(finalCs, null);
-            if (!response_.getIsSuccess()) {
-                try {
-                    emailServiceUtility.sendEmailForSyncEntity(String.valueOf(shipmentDetails.getId()), String.valueOf(shipmentDetails.getGuid()),
-                            "Shipment Lock Sync", response_.getError().toString());
-                } catch (Exception ex) {
-                    log.error("Not able to send email for sync failure for Shipment Sync " + ex.getMessage());
-                }
-            }
-            return ResponseHelper.buildSuccessResponse(response_);
-        });
+        syncService.pushToKafka(finalCs, StringUtility.convertToString(shipmentDetails.getId()), StringUtility.convertToString(shipmentDetails.getGuid()), "Shipment Lock Sync", UUID.randomUUID().toString());
     }
 
     private void mapConsolidationGuids(CustomShipmentSyncRequest response, ShipmentDetails request) {

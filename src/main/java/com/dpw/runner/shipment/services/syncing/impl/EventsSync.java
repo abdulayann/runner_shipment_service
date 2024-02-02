@@ -4,12 +4,14 @@ import com.dpw.runner.shipment.services.dto.v1.response.V1DataSyncResponse;
 import com.dpw.runner.shipment.services.entity.Events;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import com.dpw.runner.shipment.services.service.interfaces.ISyncService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.syncing.Entity.EventsRequestV2;
 import com.dpw.runner.shipment.services.syncing.Entity.V1DataSyncRequest;
 import com.dpw.runner.shipment.services.syncing.constants.SyncingConstants;
 import com.dpw.runner.shipment.services.syncing.interfaces.IEventsSync;
 import com.dpw.runner.shipment.services.utils.EmailServiceUtility;
+import com.dpw.runner.shipment.services.utils.StringUtility;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -43,6 +45,8 @@ public class EventsSync implements IEventsSync {
 
     @Autowired
     private EmailServiceUtility emailServiceUtility;
+    @Autowired
+    private ISyncService syncService;
 
     @Override
     public ResponseEntity<?> sync(List<Events> eventsList) {
@@ -61,31 +65,11 @@ public class EventsSync implements IEventsSync {
                     .map(UUID::toString)
                     .collect(Collectors.joining(","));
 
-            callSync(json, idsString, guidsString);
+            syncService.pushToKafka(json, idsString, guidsString, "Events", UUID.randomUUID().toString());
             return ResponseHelper.buildSuccessResponse(eventsList);
         }
         return null;
     }
 
-    @Async
-    private void callSync(String json, String ids, String guids) {
-        retryTemplate.execute(ctx -> {
-            log.info("Current retry : {}", ctx.getRetryCount());
-            if (ctx.getLastThrowable() != null) {
-                log.error("V1 error -> {}", ctx.getLastThrowable().getMessage());
-            }
-
-            V1DataSyncResponse response_ = v1Service.v1DataSync(json, null);
-            if (!response_.getIsSuccess()) {
-                try {
-                    emailServiceUtility.sendEmailForSyncEntity(ids, guids,
-                            "Events", response_.getError().toString());
-                } catch (Exception ex) {
-                    log.error("Not able to send email for sync failure for Events: " + ex.getMessage());
-                }
-            }
-            return ResponseHelper.buildSuccessResponse(response_);
-        });
-    }
 
 }
