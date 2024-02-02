@@ -18,6 +18,8 @@ public class ConsumerConfiguration {
     private String bootstrapServerConfig;
     @Value("${data.sync.kafka.subs}")
     private String dataSyncConsumer;
+    @Value("${kafka.max.poll.interval.ms}")
+    private Integer maxPollInterval;
 
     @Bean
     public ConsumerFactory<String, String> consumerFactory() {
@@ -26,6 +28,7 @@ public class ConsumerConfiguration {
         props.put(ConsumerConfig.GROUP_ID_CONFIG, dataSyncConsumer);
         props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
         props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
+        props.put(ConsumerConfig.MAX_POLL_INTERVAL_MS_CONFIG, maxPollInterval);
         return new DefaultKafkaConsumerFactory<>(props);
     }
 
