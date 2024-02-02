@@ -2,17 +2,6 @@ package com.dpw.runner.shipment.services.ReportingService.CommonUtils;
 
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PartiesModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
-import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
-import com.dpw.runner.shipment.services.entity.Hbl;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferDGSubstance;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferOrganizations;
-import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
-import com.dpw.runner.shipment.services.helpers.JsonHelper;
-import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
-import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
-import com.dpw.runner.shipment.services.repository.interfaces.IHblRepository;
-import com.dpw.runner.shipment.services.service.v1.IV1Service;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -287,23 +276,6 @@ public class ReportHelper {
         if (amount == null) return null;
         DecimalFormat decimalFormat = new DecimalFormat("#,###");
         return decimalFormat.format(amount);
-    }
-
-
-
-    public static List<EntityTransferOrganizations> fetchOrganizations(Object field, Object value) {
-        List<EntityTransferOrganizations> response = null;
-        try {
-            CommonV1ListRequest orgRequest = new CommonV1ListRequest();
-            List<Object> orgField = new ArrayList<>(List.of(field));
-            String operator = "=";
-            List<Object> orgCriteria = new ArrayList<>(List.of(orgField, operator, value));
-            orgRequest.setCriteriaRequests(orgCriteria);
-            V1DataResponse orgResponse = v1Service.fetchOrganization(orgRequest);
-            response = jsonHelper.convertValueToList(orgResponse.entities, EntityTransferOrganizations.class);
-        } catch (Exception e) {
-        }
-        return response;
     }
 
     public static String addCommasWithPrecision(BigDecimal number, Integer decimalPlaces) {
