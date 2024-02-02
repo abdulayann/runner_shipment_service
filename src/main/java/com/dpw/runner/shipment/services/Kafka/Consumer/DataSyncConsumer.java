@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.Kafka.Consumer;
 import com.dpw.runner.shipment.services.Kafka.Dto.SyncKafkaDto;
 import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
 import com.dpw.runner.shipment.services.service.impl.SyncService;
+import com.dpw.runner.shipment.services.service.interfaces.ISyncService;
 import com.dpw.runner.shipment.services.utils.V1AuthHelper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
@@ -15,7 +16,7 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class DataSyncConsumer {
     @Autowired
-    private SyncService syncService;
+    private ISyncService syncService;
     @Autowired
     private V1AuthHelper v1AuthHelper;
     @Autowired
