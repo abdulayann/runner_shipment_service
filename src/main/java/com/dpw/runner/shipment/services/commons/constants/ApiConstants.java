@@ -81,4 +81,8 @@ public class ApiConstants {
     public static final String RETIEVE_BY_MAWB_ID = "/get/mawbId";
     public static final String VALIDATE_MAWB = "/validate-mawb";
     public static final String AUTO_ATTACH_CONSOLIDATION = "/auto-attach-Consolidation";
+    public static final String API_UPLOAD_CONTAINER_DETAILS_SUCCESS_MESSAGE = "Container Details uploaded successfully.";
+    public static final String API_UPLOAD_CONTAINER_EVENTS_SUCCESS_MESSAGE = "Container Events uploaded successfully.";
+
+    public static final String API_UPLOAD_PACKING_DETAILS_SUCCESS_MESSAGE = "Packing Details uploaded successfully.";
 }

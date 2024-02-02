@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.utils;
 
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ShipmentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.RequestAuthContext;
 import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
@@ -1408,9 +1409,30 @@ public class MasterDataUtils{
         return requests;
     }
 
+    public MasterListRequest createMasterListRequest(MasterDataType itemType, String itemValue) {
+        if (StringUtility.isEmpty(itemValue)) return null;
+        return MasterListRequest.builder().ItemType(itemType.getDescription()).ItemValue(itemValue).build();
+    }
+
+    public List<MasterListRequest> createMasterListsRequestFromShipment(ShipmentModel shipmentModel) {
+        List<MasterListRequest> request = new ArrayList<>();
+        if (Objects.isNull(shipmentModel)) return request;
+        request.add(createMasterListRequest(MasterDataType.PAYMENT, shipmentModel.getPaymentTerms()));
+        request.add(createMasterListRequest(MasterDataType.SERVICE_MODE, shipmentModel.getServiceType()));
+        request.add(createMasterListRequest(MasterDataType.TRANSPORT_MODE, shipmentModel.getTransportMode()));
+        request.add(createMasterListRequest(MasterDataType.CUSTOM_SHIPMENT_TYPE, shipmentModel.getDirection()));
+        request.add(createMasterListRequest(MasterDataType.PACKS_UNIT, shipmentModel.getPacksUnit()));
+        request.add(createMasterListRequest(MasterDataType.VOLUME_UNIT, shipmentModel.getVolumeUnit()));
+        request.add(createMasterListRequest(MasterDataType.WEIGHT_UNIT, shipmentModel.getNetWeightUnit()));
+        if (!Objects.isNull(shipmentModel.getAdditionalDetails())) {
+            request.add(createMasterListRequest(MasterDataType.RELEASE_TYPE, shipmentModel.getAdditionalDetails().getReleaseType()));
+        }
+        return request;
+    }
+
     public Map<String, SalesAgentResponse> fetchInSalesAgentList(List<String> requests) {
         Map<String, SalesAgentResponse> keyMasterDataMap = new HashMap<>();
-        if(requests.size() > 0) {
+        if (requests.size() > 0) {
             log.info("Request: {} || SalesAgentList: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(requests));
             CommonV1ListRequest request = new CommonV1ListRequest();
             List<Object> field = new ArrayList<>(List.of(EntityTransferConstants.ID));
