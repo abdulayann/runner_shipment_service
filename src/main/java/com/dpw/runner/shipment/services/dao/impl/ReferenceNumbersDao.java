@@ -3,7 +3,6 @@ package com.dpw.runner.shipment.services.dao.impl;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IReferenceNumbersDao;
-import com.dpw.runner.shipment.services.entity.Jobs;
 import com.dpw.runner.shipment.services.entity.ReferenceNumbers;
 import com.dpw.runner.shipment.services.repository.interfaces.IReferenceNumbersRepository;
 import com.nimbusds.jose.util.Pair;
@@ -137,13 +136,13 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
             // TODO- Handle Transactions here
             Map<Long, ReferenceNumbers> hashMap = new HashMap<>();
             var referenceNumbersIdList = referenceNumbersList.stream().map(ReferenceNumbers::getId).toList();
-            if(!Objects.isNull(referenceNumbersIdList) && !referenceNumbersIdList.isEmpty()) {
+//            if(!Objects.isNull(referenceNumbersIdList) && !referenceNumbersIdList.isEmpty()) {
                 ListCommonRequest listCommonRequest = constructListCommonRequest("consolidationId", consolidationId, "=");
                 Pair<Specification<ReferenceNumbers>, Pageable> pair = fetchData(listCommonRequest, ReferenceNumbers.class);
                 Page<ReferenceNumbers> routings = findAll(pair.getLeft(), pair.getRight());
                 hashMap = routings.stream()
                         .collect(Collectors.toMap(ReferenceNumbers::getId, Function.identity()));
-            }
+//            }
             Map<Long, ReferenceNumbers> copyHashMap = new HashMap<>(hashMap);
             List<ReferenceNumbers> referenceNumbersRequests = new ArrayList<>();
             if (referenceNumbersList != null && referenceNumbersList.size() != 0) {
