@@ -50,7 +50,7 @@ public class ContainerController {
 
         try {
             containerService.uploadContainers(request);
-            return ResponseEntity.ok("CSV file uploaded successfully!");
+            return ResponseEntity.ok(ApiConstants.API_UPLOAD_CONTAINER_DETAILS_SUCCESS_MESSAGE);
         } catch (Exception e) {
             String responseMessage = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
@@ -71,7 +71,7 @@ public class ContainerController {
 
         try {
             containerService.uploadContainerEvents(request);
-            return ResponseEntity.ok("CSV file uploaded successfully!");
+            return ResponseHelper.buildSuccessResponse(ApiConstants.API_UPLOAD_CONTAINER_EVENTS_SUCCESS_MESSAGE);
         } catch (Exception e) {
             String responseMessage = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;

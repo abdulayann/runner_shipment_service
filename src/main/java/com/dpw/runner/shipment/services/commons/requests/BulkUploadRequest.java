@@ -14,4 +14,5 @@ public class BulkUploadRequest {
     private MultipartFile file;
     private Long shipmentId;
     private Long consolidationId;
+    private String transportMode;
 }
