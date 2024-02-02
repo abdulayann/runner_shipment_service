@@ -474,7 +474,7 @@ public class CSVParsingUtil<T> {
 
 
     public List<T> parseExcelFile(MultipartFile file, BulkUploadRequest request, Map<UUID, T> mapOfEntity, Map<String, Set<String>> masterDataMap,
-                                  Class<T> entityType) throws IOException {
+                                  Class<T> entityType, Class modelClass) throws IOException {
         List<T> entityList = new ArrayList<>();
         List<String> unlocationsList = new ArrayList<>();
         List<String> commodityCodesList = new ArrayList<>();
@@ -491,12 +491,19 @@ public class CSVParsingUtil<T> {
                 throw new ValidationException("Empty excel sheet uploaded.");
             }
             String[] header = new String[headerRow.getLastCellNum()];
+            Field[] fields = modelClass.getDeclaredFields();
+            Map<String, String> renameFieldMap = Arrays.stream(fields).filter(x->x.isAnnotationPresent(ExcelCell.class))
+                    .collect(Collectors.toMap(x->x.getAnnotation(ExcelCell.class).displayName(), Field::getName));
             Set<String> headerSet = new HashSet<>();
             for (int i = 0; i < headerRow.getLastCellNum(); i++) {
                 if (StringUtility.isEmpty(headerRow.getCell(i).getStringCellValue())) {
                     continue;
                 }
-                header[i] = getCamelCase(headerRow.getCell(i).getStringCellValue());
+
+                if(renameFieldMap.containsKey(headerRow.getCell(i).getStringCellValue()))
+                    header[i] = renameFieldMap.get(headerRow.getCell(i).getStringCellValue());
+                else
+                    header[i] = getCamelCase(headerRow.getCell(i).getStringCellValue());
                 headerSet.add(header[i]);
                 if (header[i].equalsIgnoreCase("guid")) {
                     guidPos = i;
