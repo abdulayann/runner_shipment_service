@@ -554,18 +554,19 @@ public class CSVParsingUtil<T> {
                     }
                 }
                 T entity = guidPos != -1 && mapOfEntity != null ? mapOfEntity.get(getCellValueAsString(row.getCell(guidPos))) : createEntityInstance(entityType);
-                if (mapOfEntity != null && guidPos != -1 && mapOfEntity.containsKey(getCellValueAsString(row.getCell(guidPos)))) {
+                if (mapOfEntity != null && guidPos != -1 && mapOfEntity.containsKey(UUID.fromString(getCellValueAsString(row.getCell(guidPos))))) {
                     isUpdate = true;
                 }
                 for (int j = 0; j < header.length; j++) {
                     Cell cell = row.getCell(j);
                     if (cell != null) {
                         String cellValue = getCellValueAsString(cell);
-                        checkForUnitValidations(masterListsMap, header[j], cellValue, i + 1, request.getTransportMode());
-                        checkForValueValidations(header[j], cellValue, i + 1, request.getTransportMode());
+                        checkForUnitValidations(masterListsMap, header[j], cellValue, i, request.getTransportMode());
+                        checkForContainerCodeValidation(masterListsMap, cellValue, i, request.getTransportMode());
+                        checkForValueValidations(header[j], cellValue, i, request.getTransportMode());
                         if (header[j].equalsIgnoreCase("containerNumber"))
-                            checkForDuplicateContainerNumberValidation(guidPos, row, cellValue, i + 1, isUpdate, existingContainerNumbers);
-                        setField(entity, header[j], cellValue);
+                            checkForDuplicateContainerNumberValidation(guidPos, row, cellValue, i, isUpdate, existingContainerNumbers);
+                        setField(entity, header[j], cellValue, i);
                     }
                 }
 
@@ -579,6 +580,13 @@ public class CSVParsingUtil<T> {
             throw new ValidationException("Excel sheet is not valid.");
         }
         return entityList;
+    }
+
+    private void checkForContainerCodeValidation(Map<String, Set<String>> masterListsMap,
+                                                 String cellValue, int i, String transportMode) throws ValidationException {
+        if (masterListsMap.containsKey("ContainerTypes") && !masterListsMap.get("ContainerTypes").contains(cellValue)) {
+            throw new ValidationException("Container Type is not valid at row: " + i);
+        }
     }
 
     private void checkForDuplicateContainerNumberValidation(int guidPos, Row row, String containerNumber,
@@ -650,16 +658,16 @@ public class CSVParsingUtil<T> {
 
     private void checkForValueValidations(String column, String cellValue, int rowNum, String transportMode) throws ValidationException {
         if (column.equalsIgnoreCase("grossWeight") && cellValue.contains("-")) {
-            throw new ValidationException("Gross Weight is not invalid at row: " + rowNum);
+            throw new ValidationException("Gross Weight is not valid at row: " + rowNum);
         }
         if (column.equalsIgnoreCase("measurement") && cellValue.contains("-")) {
-            throw new ValidationException("Measurement is not invalid at row: " + rowNum);
+            throw new ValidationException("Measurement is not valid at row: " + rowNum);
         }
         if (column.equalsIgnoreCase("netWeight") && cellValue.contains("-")) {
-            throw new ValidationException("Net Weight is not invalid at row: " + rowNum);
+            throw new ValidationException("Net Weight is not valid at row: " + rowNum);
         }
         if (column.equalsIgnoreCase("tareWeight") && cellValue.contains("-")) {
-            throw new ValidationException("Tare Weight is not invalid at row: " + rowNum);
+            throw new ValidationException("Tare Weight is not valid at row: " + rowNum);
         }
         if (column.equalsIgnoreCase("packs")) {
             try {
@@ -752,7 +760,7 @@ public class CSVParsingUtil<T> {
                 }
             }
         }
-        if (column.toLowerCase().contains("containermode")) {
+        if (column.toLowerCase().contains("hbldeliverymode")) {
             if (!cellValue.isEmpty() && masterListsMap.containsKey(MasterDataType.CONTAINER_MODE.getDescription()) &&
                     !masterListsMap.get(MasterDataType.CONTAINER_MODE.getDescription()).contains(cellValue)) {
                 throw new ValidationException("Container Mode is invalid at row: " + rowNum);
@@ -842,33 +850,38 @@ public class CSVParsingUtil<T> {
     }
 
 
-    private void setField(T entity, String attributeName, String attributeValue) throws NoSuchFieldException, IllegalAccessException {
+    private void setField(T entity, String attributeName, String attributeValue, int rowNum) throws NoSuchFieldException, IllegalAccessException {
+
         Field field = entity.getClass().getDeclaredField(attributeName);
         field.setAccessible(true);
 
         Class<?> fieldType = field.getType();
         Object parsedValue = null;
-        if (attributeValue.isEmpty())
-            return;
-        if (fieldType == int.class || fieldType == Integer.class) {
-            parsedValue = Integer.parseInt(attributeValue);
-        } else if (fieldType == String.class) {
-            parsedValue = attributeValue;
-        } else if (fieldType == Long.class || fieldType == long.class) {
-            parsedValue = Long.parseLong(attributeValue);
-        } else if (fieldType == boolean.class || fieldType == Boolean.class) {
-            parsedValue = Boolean.parseBoolean(attributeValue);
-        } else if (fieldType == BigDecimal.class) {
-            parsedValue = BigDecimal.valueOf(Double.valueOf(attributeValue));
-        } else if (fieldType == ContainerStatus.class) {
-            parsedValue = ContainerStatus.valueOf(attributeValue);
-        } else if (fieldType == LocalDateTime.class) {
-            parsedValue = LocalDateTime.parse(attributeValue);
-        } else {
-            throw new NoSuchFieldException();
-        }
+        try {
+            if (attributeValue.isEmpty())
+                return;
+            if (fieldType == int.class || fieldType == Integer.class) {
+                parsedValue = Integer.parseInt(attributeValue);
+            } else if (fieldType == String.class) {
+                parsedValue = attributeValue;
+            } else if (fieldType == Long.class || fieldType == long.class) {
+                parsedValue = Long.parseLong(attributeValue);
+            } else if (fieldType == boolean.class || fieldType == Boolean.class) {
+                parsedValue = Boolean.parseBoolean(attributeValue);
+            } else if (fieldType == BigDecimal.class) {
+                parsedValue = BigDecimal.valueOf(Double.valueOf(attributeValue));
+            } else if (fieldType == ContainerStatus.class) {
+                parsedValue = ContainerStatus.valueOf(attributeValue);
+            } else if (fieldType == LocalDateTime.class) {
+                parsedValue = LocalDateTime.parse(attributeValue);
+            } else {
+                throw new NoSuchFieldException();
+            }
 
-        field.set(entity, parsedValue);
+            field.set(entity, parsedValue);
+        } catch (Exception ex) {
+            throw new ValidationException(attributeName + "is invalid at row: " + rowNum + ". Please provide correct datatype " + fieldType.getName());
+        }
     }
 
     public void setFieldForEvents(Events entity, String attributeName, String attributeValue) throws NoSuchFieldException, IllegalAccessException {
