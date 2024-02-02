@@ -25,6 +25,7 @@ import com.dpw.runner.shipment.services.exception.exceptions.ValidationException
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerService;
 import com.dpw.runner.shipment.services.service.interfaces.ISyncQueueService;
@@ -202,8 +203,7 @@ public class ContainerService implements IContainerService {
                 c.setConsolidationId(request.getConsolidationId())
         ).collect(Collectors.toList());
 
-        boolean isUpdate = false; // TODO :: add update functionality
-        applyContainerValidations(containersList, request, isUpdate, masterDataMap);
+        applyContainerValidations(containersList, request, masterDataMap);
         containersList = containerDao.saveAll(containersList);
         if (request.getShipmentId() != null) {
             containersList.stream().forEach(container -> {
@@ -214,23 +214,23 @@ public class ContainerService implements IContainerService {
         afterSaveList(containersList, true);
     }
 
-    private void applyContainerValidations(List<Containers> containersList, BulkUploadRequest request, boolean isUpdate,
+    private void applyContainerValidations(List<Containers> containersList, BulkUploadRequest request,
                                            Map<String, Set<String>> masterDataMap) throws Exception {
-        Map<String, String> existingContainerNumbers = new HashMap<>();
         String transportMode = request.getTransportMode();
-        Set<String> dicCommodityType = masterDataMap.get("CommodityCodes"); // TODO :: link with abhishek's code
-        Set<String> dicLocType = masterDataMap.get("Unlocations"); // TODO :: link with abhishek's code
-        Set<String> hazardousClassMasterData = masterDataMap.get("Hazardous"); // TODO :: Link with abhishek's code;
+        Set<String> dicCommodityType = masterDataMap.get("CommodityCodes");
+        Set<String> dicLocType = masterDataMap.get("Unlocations");
+        Set<String> hazardousClassMasterData = masterDataMap.get(MasterDataType.DG_CLASS.getDescription());
         for (int row = 0; row < containersList.size(); row++) {
             // Update scenario to be implemented here
             Containers containersRow = containersList.get(row);
-            if (containersRow.getIsOwnContainer() == true && containersRow.getIsShipperOwned() == true) {
+            if (containersRow.getIsOwnContainer() != null && containersRow.getIsShipperOwned() != null
+                    && containersRow.getIsOwnContainer() == true && containersRow.getIsShipperOwned() == true) {
                 String errorMessagePart1 = "Multiple container ownership is selected at row ";
                 String errorMessagePart2 = " - Kindly change and try re-uploading.";
                 throw new ValidationException(errorMessagePart1 + (row + 1) + errorMessagePart2);
             }
             checkCalculatedVolumeAndActualVolume(request, row + 1, containersRow);
-            applyContainerNumberValidation(containersList, existingContainerNumbers, transportMode, row + 1, containersRow, isUpdate);
+            applyContainerNumberValidation(transportMode, row + 1, containersRow);
             applyConatinerCountValidation(request, transportMode, row + 1, containersRow);
             applyChargeableValidation(transportMode, row, containersRow);
             checkForHandlingInfo(transportMode, row, containersRow);
@@ -253,10 +253,12 @@ public class ContainerService implements IContainerService {
     }
 
     private static void applyContainerStuffingValidation(Set<String> dicLocType, int row, Containers containersRow) {
-        var containerStuffingLocation = containersRow.getContainerStuffingLocation().trim();
-        if (!containerStuffingLocation.isEmpty()) {
-            if (dicLocType != null && dicLocType.contains(containerStuffingLocation) == false) {
-                throw new ValidationException("Container Stuffing Location " + containerStuffingLocation + " is not valid at row " + row);
+        if (containersRow.getContainerStuffingLocation() != null) {
+            var containerStuffingLocation = containersRow.getContainerStuffingLocation().trim();
+            if (!containerStuffingLocation.isEmpty()) {
+                if (dicLocType != null && dicLocType.contains(containerStuffingLocation) == false) {
+                    throw new ValidationException("Container Stuffing Location " + containerStuffingLocation + " is not valid at row " + row);
+                }
             }
         }
     }
@@ -300,7 +302,7 @@ public class ContainerService implements IContainerService {
     }
 
     private static void checkForHandlingInfo(String transportMode, int row, Containers containersRow) {
-        if (transportMode != null && transportMode.equals(Constants.TRANSPORT_MODE_AIR)) {
+        if (transportMode != null && transportMode.equals(Constants.TRANSPORT_MODE_AIR) && containersRow.getHandlingInfo() != null) {
             String handlingInfo = containersRow.getHandlingInfo();
             handlingInfo = handlingInfo.trim();
             if (handlingInfo.length() > 2500) {
@@ -310,8 +312,8 @@ public class ContainerService implements IContainerService {
     }
 
     private void applyChargeableValidation(String transportMode, int row, Containers containersRow) throws Exception {
-        if (!containersRow.getChargeableUnit().isEmpty() &&
-                transportMode.equalsIgnoreCase(Constants.TRANSPORT_MODE_AIR) &&
+        if (containersRow.getChargeableUnit() != null && !containersRow.getChargeableUnit().isEmpty() &&
+                transportMode != null && transportMode.equalsIgnoreCase(Constants.TRANSPORT_MODE_AIR) &&
                 containersRow.getChargeable() != null) {
             if (!containersRow.getChargeableUnit().equals(Constants.WEIGHT_UNIT_KG)) {
                 throw new ValidationException("Chargeable unit not in KG at row: " + row);
@@ -336,7 +338,7 @@ public class ContainerService implements IContainerService {
     }
 
     private void checkCalculatedVolumeAndActualVolume(BulkUploadRequest request, int row, Containers containersRow) {
-        if (!request.getTransportMode().isEmpty() && request.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)
+        if (request.getTransportMode() != null && !StringUtility.isEmpty(request.getTransportMode()) && request.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)
                 && containersRow.getGrossVolume() != null) {
             if (!containersRow.getGrossVolumeUnit().equals(Constants.VOLUME_UNIT_M3)) {
                 throw new ValidationException("Gross Volume unit not in M3 at row: " + (row + 1));
@@ -362,7 +364,7 @@ public class ContainerService implements IContainerService {
     }
 
     private static void applyConatinerCountValidation(BulkUploadRequest request, String transportMode, int row, Containers containersRow) {
-        if (!transportMode.equals(Constants.TRANSPORT_MODE_AIR)) {
+        if (transportMode != null && !transportMode.equals(Constants.TRANSPORT_MODE_AIR)) {
             try {
                 var containerCount = Integer.parseInt(String.valueOf(containersRow.getContainerCount()));
                 if (containerCount < 1) {
@@ -374,31 +376,16 @@ public class ContainerService implements IContainerService {
         }
     }
 
-    private static void applyContainerNumberValidation(List<Containers> containersList, Map<String, String> existingContainerNumbers, String transportMode, int row, Containers containersRow, boolean isUpdate) {
-        if (!transportMode.equals(Constants.TRANSPORT_MODE_AIR)) {
+    private static void applyContainerNumberValidation(String transportMode, int row, Containers containersRow) {
+        if (transportMode != null && !transportMode.equals(Constants.TRANSPORT_MODE_AIR)) {
 
             var containerCount = containersRow.getContainerCount();
 
-            if (!containersRow.getContainerNumber().isEmpty() && containerCount > 1) {
+            if (!StringUtils.isEmpty(containersRow.getContainerNumber()) && containerCount > 1) {
                 throw new ValidationException("Container Number cannot be assigned if container count is greater than 1 at row: " + row);
             }
 
-            if (isUpdate && !containersRow.getContainerNumber().isEmpty()) {
-                if (existingContainerNumbers.containsKey(containersRow.getContainerNumber())
-                        && !existingContainerNumbers.get(containersRow.getContainerNumber()).equals(containersRow.getGuid())) {
-                    throw new ValidationException("Duplicate container number " + containersRow.getContainerNumber() + " found at row: " + row + ". In a booking all container numbers must be Unique.");
-                }
-            }
-
-            if (existingContainerNumbers.containsKey(containersRow.getContainerNumber()) && !isUpdate) {
-                throw new ValidationException("Duplicate container number " + containersRow.getContainerNumber() + " found at row: " + row + ". In a booking all container numbers must be Unique.");
-            }
-
-            if (!containersRow.getContainerNumber().isEmpty() && !existingContainerNumbers.containsKey(containersRow.getContainerNumber())) {
-                existingContainerNumbers.put(containersRow.getContainerNumber(), containersRow.getGuid().toString());
-            }
-
-            if (containersRow.getContainerNumber().isEmpty()) {
+            if (StringUtils.isEmpty(containersRow.getContainerNumber())) {
                 containersRow.setContainerNumber(null);
             }
         }
