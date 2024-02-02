@@ -63,18 +63,21 @@ public class Containers extends MultiTenancy {
     private BigDecimal netWeight;
 
     @Column(name = "net_weight_unit")
+    @MasterData(type = MasterDataType.WEIGHT_UNIT)
     private String netWeightUnit;
 
     @Column(name = "gross_weight")
     private BigDecimal grossWeight;
 
     @Column(name = "gross_weight_unit")
+    @MasterData(type = MasterDataType.WEIGHT_UNIT)
     private String grossWeightUnit;
 
     @Column(name = "measurement")
     private BigDecimal measurement;
 
     @Column(name = "measurement_unit")
+    @MasterData(type = MasterDataType.DIMENSION_UNIT)
     private String measurementUnit;
 
     @Column(name = "commodity_code")
@@ -122,6 +125,7 @@ public class Containers extends MultiTenancy {
     private BigDecimal grossVolume;
 
     @Column(name = "gross_volume_unit")
+    @MasterData(type = MasterDataType.VOLUME_UNIT)
     private String grossVolumeUnit;
 
     @Column(name = "is_reefer")
@@ -131,12 +135,14 @@ public class Containers extends MultiTenancy {
     private BigDecimal minTemp;
 
     @Column(name = "min_temp_unit_id")
+    @MasterData(type = MasterDataType.TEMPERATURE_UNIT)
     private String minTempUnit;
 
     @Column(name = "max_temp")
     private BigDecimal maxTemp;
 
     @Column(name = "max_temp_unit")
+    @MasterData(type = MasterDataType.TEMPERATURE_UNIT)
     private String maxTempUnit;
 
     @Column(name = "hbl_delivery_mode")
@@ -161,6 +167,7 @@ public class Containers extends MultiTenancy {
     private BigDecimal tareWeight;
 
     @Column(name = "tare_weight_unit")
+    @MasterData(type = MasterDataType.WEIGHT_UNIT)
     private String tareWeightUnit;
 
     @Column(name = "serial_number")
@@ -201,6 +208,7 @@ public class Containers extends MultiTenancy {
 
     @Column(name = "inner_package_measurement_unit")
     @Size(max=50, message = "max size is 50 for inner_package_measurement_unit")
+    @MasterData(type = MasterDataType.DIMENSION_UNIT)
     private String innerPackageMeasurementUnit;
 
     @Column(name = "pacr_number")
@@ -210,6 +218,7 @@ public class Containers extends MultiTenancy {
     private BigDecimal chargeable;
 
     @Column(name = "chargeable_unit")
+    @MasterData(type = MasterDataType.WEIGHT_UNIT)
     @Size(max=3, message = "max size is 3 for chargeable_unit")
     private String chargeableUnit;
 
@@ -235,6 +244,7 @@ public class Containers extends MultiTenancy {
     private BigDecimal allocatedWeight;
 
     @Column(name = "allocated_weight_unit")
+    @MasterData(type = MasterDataType.WEIGHT_UNIT)
     @Size(max=4, message = "max size is 4 for allocated_weight_unit")
     private String allocatedWeightUnit;
 
@@ -242,12 +252,14 @@ public class Containers extends MultiTenancy {
     private BigDecimal allocatedVolume;
 
     @Column(name = "allocated_volume_unit_id")
+    @MasterData(type = MasterDataType.VOLUME_UNIT)
     private String allocatedVolumeUnit;
 
     @Column(name = "achieved_weight")
     private BigDecimal achievedWeight;
 
     @Column(name = "achieved_weight_unit")
+    @MasterData(type = MasterDataType.WEIGHT_UNIT)
     @Size(max=4, message = "max size is 4 for achieved_weight_unit")
     private String achievedWeightUnit;
 
@@ -255,6 +267,7 @@ public class Containers extends MultiTenancy {
     private BigDecimal achievedVolume;
 
     @Column(name = "achieved_volume_unit")
+    @MasterData(type = MasterDataType.VOLUME_UNIT)
     @Size(max=4, message = "max size is 4 achieved_volume_unit")
     private String achievedVolumeUnit;
 
