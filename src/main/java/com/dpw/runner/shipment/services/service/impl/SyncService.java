@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.Kafka.Producer.KafkaProducer;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataSyncResponse;
+import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.ISyncService;
@@ -63,9 +64,13 @@ public class SyncService implements ISyncService {
     @Override
     @Async
     public void pushToKafka(String json, String id, String guid, String entity, String transactionId) {
-        SyncKafkaDto request = SyncKafkaDto.builder()
-                .data(json).id(id).guid(guid).entity(entity).tenantId(TenantContext.getCurrentTenant())
-                .userName(UserContext.getUser().getUsername()).transactionId(transactionId).build();
-        producer.produceToKafka(jsonHelper.convertToJson(request), senderQueue, transactionId);
+        try {
+            SyncKafkaDto request = SyncKafkaDto.builder()
+                    .data(json).id(id).guid(guid).entity(entity).tenantId(TenantContext.getCurrentTenant())
+                    .userName(UserContext.getUser().getUsername()).transactionId(transactionId).build();
+            producer.produceToKafka(jsonHelper.convertToJson(request), senderQueue, transactionId);
+        } catch (Exception ex) {
+            log.error("Exception occurred during event: {} for entity: {} with exception: {} with data: {}", LoggerEvent.KAFKA_PUSH_FOR_V1_SYNC, entity, ex.getLocalizedMessage(), json);
+        }
     }
 }

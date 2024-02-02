@@ -16,12 +16,14 @@ public class ConsumerConfiguration {
 
     @Value("${shipmentsKafka.bootstrapServer}")
     private String bootstrapServerConfig;
+    @Value("${data.sync.kafka.subs}")
+    private String dataSyncConsumer;
 
     @Bean
     public ConsumerFactory<String, String> consumerFactory() {
         Map<String, Object> props = new HashMap<>();
         props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServerConfig);
-        props.put(ConsumerConfig.GROUP_ID_CONFIG, "shipment-subs");
+        props.put(ConsumerConfig.GROUP_ID_CONFIG, dataSyncConsumer);
         props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
         props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
         return new DefaultKafkaConsumerFactory<>(props);

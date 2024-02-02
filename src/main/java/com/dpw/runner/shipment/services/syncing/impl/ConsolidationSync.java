@@ -137,48 +137,11 @@ public class ConsolidationSync implements IConsolidationSync {
     }
 
     @Override
-    @Async
     public void syncLockStatus(ConsolidationDetails consolidationDetails) {
         LockSyncRequest lockSyncRequest = LockSyncRequest.builder().guid(consolidationDetails.getGuid()).lockStatus(consolidationDetails.getIsLocked()).build();
         String finalCs = jsonHelper.convertToJson(V1DataSyncRequest.builder().entity(lockSyncRequest).module(SyncingConstants.CONSOLIDATION_LOCK).build());
-        retryTemplate.execute(ctx -> {
-            log.info("Current retry : {}", ctx.getRetryCount());
-            if (ctx.getLastThrowable() != null) {
-                log.error("V1 error -> {}", ctx.getLastThrowable().getMessage());
-            }
-            V1DataSyncResponse response_ = v1Service.v1DataSync(finalCs, null);
-            if (!response_.getIsSuccess()) {
-                try {
-                    emailServiceUtility.sendEmailForSyncEntity(String.valueOf(consolidationDetails.getId()), String.valueOf(consolidationDetails.getGuid()),
-                            "Consolidation Lock Sync", response_.getError().toString());
-                } catch (Exception ex) {
-                    log.error("Not able to send email for sync failure for Shipment Sync " + ex.getMessage());
-                }
-            }
-            return ResponseHelper.buildSuccessResponse(response_);
-        });
+        syncService.pushToKafka(finalCs, String.valueOf(consolidationDetails.getId()), String.valueOf(consolidationDetails.getGuid()), "Consolidation Lock Sync", UUID.randomUUID().toString());
     }
-
-//    private void callSync(String consolidationRequest, Long id, UUID guid) {
-//        retryTemplate.execute(ctx -> {
-//            log.info("Current retry : {}", ctx.getRetryCount());
-//            if (ctx.getLastThrowable() != null) {
-//                log.error("V1 error -> {}", ctx.getLastThrowable().getMessage());
-//            }
-//
-//            V1DataSyncResponse response_ = v1Service.v1DataSync(consolidationRequest);
-//            if (!response_.getIsSuccess()) {
-//                try {
-//                    emailServiceUtility.sendEmailForSyncEntity(String.valueOf(id), String.valueOf(guid),
-//                            "Consolidation", response_.getError().toString());
-//                } catch (Exception ex) {
-//                    log.error("Not able to send email for sync failure for Consolidation: " + ex.getMessage());
-//                }
-//            }
-//            return ResponseHelper.buildSuccessResponse(response_);
-//        });
-//
-//    }
 
     private void mapShipmentGuids(CustomConsolidationRequest response, ConsolidationDetails request) {
         List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByConsolidationId(request.getId());
