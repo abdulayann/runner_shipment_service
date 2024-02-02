@@ -400,4 +400,11 @@ public class AdditionalDetails extends MultiTenancy {
     @Column(name = "bl_remarks_description")
     @Size(max=2500, message = "max size is 2500 for bl_remarks_description")
     private String bLRemarksDescription;
+
+    @Column(name = "summary")
+    @Size(max = 2048, message = "max size is 2048 for summary")
+    private String summary;
+
+    @Column(name = "is_summary_updated")
+    private Boolean isSummaryUpdated;
 }

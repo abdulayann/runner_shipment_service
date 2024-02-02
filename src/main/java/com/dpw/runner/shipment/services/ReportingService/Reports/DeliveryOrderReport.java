@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.ReportingService.Reports;
 
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
+import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentContainers;
 import com.dpw.runner.shipment.services.ReportingService.Models.DeliveryOrderModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ContainerModel;
@@ -9,6 +10,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.Parties;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.MasterData;
@@ -101,6 +103,29 @@ public class DeliveryOrderReport extends IReport{
         populateShipmentOrganizationsLL(deliveryOrderModel.shipmentDetails, dictionary);
         dictionary.put(ReportConstants.MASTER_BILL_ISSUE_PLACE, deliveryOrderModel.placeOfIssueName);
         dictionary.put(ReportConstants.PPCC, deliveryOrderModel.paymentTerms);
+
+        V1TenantSettingsResponse v1TenantSettingsResponse = getTenantSettings();
+        dictionary.put(ReportConstants.WEIGHT, ConvertToWeightNumberFormat(deliveryOrderModel.shipmentDetails.getWeight(), v1TenantSettingsResponse));
+        dictionary.put(ReportConstants.VOLUME, ConvertToVolumeNumberFormat(deliveryOrderModel.shipmentDetails.getVolume(), v1TenantSettingsResponse));
+        dictionary.put(ReportConstants.CHARGEABLE, ConvertToWeightNumberFormat(deliveryOrderModel.shipmentDetails.getChargable(), v1TenantSettingsResponse));
+        dictionary.put(ReportConstants.NetWeight, ConvertToWeightNumberFormat(deliveryOrderModel.shipmentDetails.getNetWeight(), v1TenantSettingsResponse));
+        if(deliveryOrderModel.containers != null && deliveryOrderModel.containers.size() > 0) {
+            List<Map<String, Object>> valuesContainer = new ArrayList<>();
+            for (ShipmentContainers shipmentContainers : deliveryOrderModel.containers) {
+                String shipContJson = jsonHelper.convertToJson(shipmentContainers);
+                valuesContainer.add(jsonHelper.convertJsonToMap(shipContJson));
+            }
+            for (Map<String, Object> v : valuesContainer) {
+                if(v.containsKey(ReportConstants.GROSS_VOLUME) && v.get(ReportConstants.GROSS_VOLUME) != null)
+                    v.put(ReportConstants.GROSS_VOLUME, ConvertToVolumeNumberFormat(v.get(ReportConstants.GROSS_VOLUME), v1TenantSettingsResponse));
+                if (v.containsKey(ReportConstants.GROSS_WEIGHT) && v.get(ReportConstants.GROSS_WEIGHT) != null)
+                    v.put(ReportConstants.GROSS_WEIGHT, ConvertToWeightNumberFormat(v.get(ReportConstants.GROSS_WEIGHT), v1TenantSettingsResponse));
+                if (v.containsKey(ReportConstants.NetWeight) && v.get(ReportConstants.NetWeight) != null)
+                    v.put(ReportConstants.NetWeight, ConvertToWeightNumberFormat(v.get(ReportConstants.NetWeight), v1TenantSettingsResponse));
+            }
+            dictionary.put(ReportConstants.SHIPMENT_CONTAINERS, valuesContainer);
+        }
+
         dictionary.put(ReportConstants.CONTAINER_COUNT_BY_CODE, getCountByContainerTypeCode(deliveryOrderModel.containers));
         dictionary.put(ReportConstants.SHIPMENT_CONTAINERS, deliveryOrderModel.containers);
 

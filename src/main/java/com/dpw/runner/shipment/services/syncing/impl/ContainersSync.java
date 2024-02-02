@@ -82,12 +82,12 @@ public class ContainersSync implements IContainersSync {
         List<Containers> containers = getContainersFromIds(containerIds);
         List<ContainerRequestV2> containerRequestV2 = convertEntityToSyncDto(containers, shipmentsContainersMappingPageable);
         String json = jsonHelper.convertToJson(V1DataSyncRequest.builder().entity(containerRequestV2).module(SyncingConstants.CONTAINERS).build());
-        callSync(json, containerIds);
+        callSync(json, containerIds, containerRequestV2.stream().map(ContainerRequestV2::getGuid).toList());
         return ResponseHelper.buildSuccessResponse(containerRequestV2);
     }
 
     @Async
-    private void callSync(String json, List<Long> containerIds) {
+    private void callSync(String json, List<Long> containerIds, List<UUID> guids) {
         retryTemplate.execute(ctx -> {
             log.info("Current retry : {}", ctx.getRetryCount());
             if (ctx.getLastThrowable() != null) {
@@ -97,7 +97,7 @@ public class ContainersSync implements IContainersSync {
             V1DataSyncResponse response_ = v1Service.v1DataSync(json);
             if (!response_.getIsSuccess()) {
                 try {
-                    emailServiceUtility.sendEmailForSyncEntity(String.valueOf(containerIds.toString()), null,
+                    emailServiceUtility.sendEmailForSyncEntity(String.valueOf(containerIds.toString()), String.valueOf(guids.toString()),
                             "Containers", response_.getError().toString());
                 } catch (Exception ex) {
                     log.error("Not able to send email for sync failure for Containers: " + ex.getMessage());
