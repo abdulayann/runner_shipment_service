@@ -6,5 +6,5 @@ import org.springframework.http.ResponseEntity;
 import java.util.List;
 
 public interface IPackingsSync {
-    ResponseEntity<?> sync(List<Packing> packingList);
+    ResponseEntity<?> sync(List<Packing> packingList, String transactionId);
 }

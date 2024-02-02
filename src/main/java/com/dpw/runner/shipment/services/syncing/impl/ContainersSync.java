@@ -94,7 +94,7 @@ public class ContainersSync implements IContainersSync {
                 log.error("V1 error -> {}", ctx.getLastThrowable().getMessage());
             }
 
-            V1DataSyncResponse response_ = v1Service.v1DataSync(json);
+            V1DataSyncResponse response_ = v1Service.v1DataSync(json, null);
             if (!response_.getIsSuccess()) {
                 try {
                     emailServiceUtility.sendEmailForSyncEntity(String.valueOf(containerIds.toString()), null,

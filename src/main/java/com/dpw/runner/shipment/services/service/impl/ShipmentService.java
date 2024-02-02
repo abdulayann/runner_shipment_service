@@ -619,17 +619,17 @@ public class ShipmentService implements IShipmentService {
                     notesDao.save(jsonHelper.convertValue(req, Notes.class));
                 }
             }
-
+            String transactionId = UUID.randomUUID().toString();
             pushShipmentDataToDependentService(shipmentDetails, true);
             try {
                 shipmentDetails.setNotesList(null);
-                shipmentSync.sync(shipmentDetails, null, notesRequest);
+                shipmentSync.sync(shipmentDetails, null, notesRequest, transactionId);
             } catch (Exception e){
                 log.error("Error performing sync on shipment entity, {}", e);
             }
             if(hbl != null) {
                 try {
-                    hblSync.sync(hbl);
+                    hblSync.sync(hbl, transactionId);
                 }
                 catch (Exception e) {
                     log.error("Error performing sync on hbl entity, {}", e);
@@ -645,7 +645,7 @@ public class ShipmentService implements IShipmentService {
             );
         } catch (Exception e) {
             log.error(e.getMessage());
-            throw new RuntimeException(e);
+            throw new ValidationException(e.getMessage());
         }
         return ResponseHelper.buildSuccessResponse(jsonHelper.convertValue(shipmentDetails, ShipmentDetailsResponse.class));
     }
@@ -705,8 +705,7 @@ public class ShipmentService implements IShipmentService {
 
         } catch (Exception e) {
             log.error(e.getMessage());
-            //TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
-            throw new RuntimeException(e);
+            throw new ValidationException(e.getMessage());
         }
 
 
@@ -719,7 +718,7 @@ public class ShipmentService implements IShipmentService {
         if(shipmentDetails.getShipmentId() == null){
             this.currentShipment = shipmentDetails;
             shipmentDetails.setShipmentId(generateShipmentId());
-    }
+        }
         shipmentDetails = shipmentDao.save(shipmentDetails, false);
         return shipmentDetails;
         //shipmentDetails = shipmentDao.findById(shipmentDetails.getId()).get();
@@ -1373,7 +1372,7 @@ public class ShipmentService implements IShipmentService {
         entity = shipmentDao.update(entity, false);
         pushShipmentDataToDependentService(entity, false);
         try {
-            shipmentSync.sync(entity, null, null);
+            shipmentSync.sync(entity, null, null, UUID.randomUUID().toString());
         } catch (Exception e){
             log.error("Error performing sync on shipment entity, {}", e);
         }
@@ -1430,20 +1429,21 @@ public class ShipmentService implements IShipmentService {
             String responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
-            throw new RuntimeException(e.getMessage());
+            throw new ValidationException(e.getMessage());
         }
     }
 
 
     private void syncShipment(ShipmentDetails shipmentDetails, Hbl hbl, List<UUID> deletedContGuids, List<Packing> packsForSync, ConsolidationDetails consolidationDetails) {
+        String transactionId = UUID.randomUUID().toString();
         try {
-            shipmentSync.sync(shipmentDetails, deletedContGuids, null);
+            shipmentSync.sync(shipmentDetails, deletedContGuids, null, transactionId);
         } catch (Exception e){
             log.error("Error performing sync on shipment entity, {}", e);
         }
         if(hbl != null) {
             try {
-                hblSync.sync(hbl);
+                hblSync.sync(hbl, transactionId);
             }
             catch (Exception e) {
                 log.error("Error performing sync on hbl entity, {}", e);
@@ -1451,14 +1451,14 @@ public class ShipmentService implements IShipmentService {
         }
         if(consolidationDetails != null) {
             try {
-                consolidationSync.sync(consolidationDetails);
+                consolidationSync.sync(consolidationDetails, transactionId);
             } catch (Exception e) {
                 log.error("Error performing sync on consol entity, {}", e);
             }
         }
         if(packsForSync != null) {
             try {
-                packingsSync.sync(packsForSync);
+                packingsSync.sync(packsForSync, transactionId);
             } catch (Exception e) {
                 log.error("Error performing sync on packings list, {}", e);
             }
@@ -2581,7 +2581,7 @@ public class ShipmentService implements IShipmentService {
 
             if(fromV1 == null || !fromV1) {
                 try {
-                    shipmentSync.sync(entity, null, null);
+                    shipmentSync.sync(entity, null, null, UUID.randomUUID().toString());
                 } catch (Exception e) {
                     log.error("Error performing sync on shipment entity, {}", e);
                 }
@@ -3675,6 +3675,7 @@ public class ShipmentService implements IShipmentService {
 
             if(Constants.TRANSPORT_MODE_SEA.equals(response.getTransportMode()) && Constants.DIRECTION_EXP.equals(response.getDirection()))
                 response.setHouseBill(generateCustomHouseBL(null));
+            response.setShipmentId(generateShipmentId());
 
             this.addAllMasterDataInSingleCall(null, response, null);
             this.addAllTenantDataInSingleCall(null, response, null);
@@ -3910,7 +3911,7 @@ public class ShipmentService implements IShipmentService {
             shipmentDao.saveAll(shipments);
             for (ShipmentDetails shipmentDetails : shipments) {
                 try {
-                    shipmentSync.sync(shipmentDetails, null, null);
+                    shipmentSync.sync(shipmentDetails, null, null, UUID.randomUUID().toString());
                 } catch (Exception e) {
                     log.error("Error performing sync on shipment entity, {}", e);
                 }
@@ -4126,7 +4127,7 @@ public class ShipmentService implements IShipmentService {
             }
             shipmentDao.save(shipment, false);
             try {
-                shipmentSync.sync(shipment, null, null);
+                shipmentSync.sync(shipment, null, null, UUID.randomUUID().toString());
             } catch (Exception e) {
                 log.error("Error performing sync on shipment entity, {}", e);
             }

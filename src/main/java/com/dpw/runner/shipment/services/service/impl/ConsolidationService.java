@@ -528,35 +528,25 @@ public class ConsolidationService implements IConsolidationService {
             afterSave(consolidationDetails, null, request, true, shipmentSettingsDetails);
         } catch (Exception e) {
             log.error(e.getMessage());
-            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
-            throw new RuntimeException(e);
+            throw new ValidationException(e.getMessage());
         }
         return ResponseHelper.buildSuccessResponse(jsonHelper.convertValue(consolidationDetails, ConsolidationDetailsResponse.class));
     }
 
     void getConsolidation(ConsolidationDetails consolidationDetails) throws Exception{
-        String responseMsg;
-        try {
-            generateConsolidationNumber(consolidationDetails);
-            consolidationDetails = consolidationDetailsDao.save(consolidationDetails, false);
+        generateConsolidationNumber(consolidationDetails);
+        consolidationDetails = consolidationDetailsDao.save(consolidationDetails, false);
 
-            // audit logs
-            auditLogService.addAuditLog(
-                    AuditLogMetaData.builder()
-                            .newData(consolidationDetails)
-                            .prevData(null)
-                            .parent(ConsolidationDetails.class.getSimpleName())
-                            .parentId(consolidationDetails.getId())
-                            .operation(DBOperationType.CREATE.name()).build()
-            );
-        }
+        // audit logs
+        auditLogService.addAuditLog(
+                AuditLogMetaData.builder()
+                        .newData(consolidationDetails)
+                        .prevData(null)
+                        .parent(ConsolidationDetails.class.getSimpleName())
+                        .parentId(consolidationDetails.getId())
+                        .operation(DBOperationType.CREATE.name()).build()
+        );
 
-        catch (Exception e) {
-            responseMsg = e.getMessage() != null ? e.getMessage()
-                    : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
-            log.error(responseMsg, e);
-            throw new Exception(e);
-        }
     }
 
     /**
@@ -823,7 +813,7 @@ public class ConsolidationService implements IConsolidationService {
         beforeSave(entity, oldEntity.get(), false);
         entity = consolidationDetailsDao.update(entity, false);
         try {
-            consolidationSync.sync(entity);
+            consolidationSync.sync(entity, UUID.randomUUID().toString());
         } catch (Exception e) {
             log.error("Error performing sync on consol entity, {}", e);
         }
@@ -852,7 +842,7 @@ public class ConsolidationService implements IConsolidationService {
         Optional<ConsolidationDetails> consol = consolidationDetailsDao.findById(consolidationId);
         updateLinkedShipmentData(consol.get(), null);
         try {
-            consolidationSync.sync(consol.get());
+            consolidationSync.sync(consol.get(), UUID.randomUUID().toString());
         }
         catch (Exception e) {
             log.error("Error Syncing Consol");
@@ -878,7 +868,7 @@ public class ConsolidationService implements IConsolidationService {
         }
         Optional<ConsolidationDetails> consol = consolidationDetailsDao.findById(consolidationId);
         try {
-            consolidationSync.sync(consol.get());
+            consolidationSync.sync(consol.get(), UUID.randomUUID().toString());
         }
         catch (Exception e) {
             log.error("Error Syncing Consol");
@@ -979,7 +969,7 @@ public class ConsolidationService implements IConsolidationService {
             }
             if(fromV1 == null || !fromV1) {
                 try {
-                    consolidationSync.sync(entity);
+                    consolidationSync.sync(entity, UUID.randomUUID().toString());
                 } catch (Exception e){
                     log.error("Error performing sync on consolidation entity, {}", e);
                 }
@@ -1085,7 +1075,7 @@ public class ConsolidationService implements IConsolidationService {
             shipmentDao.saveAll(shipments);
             for (ShipmentDetails shipmentDetails : shipments) {
                 try {
-                    shipmentSync.sync(shipmentDetails, null, null);
+                    shipmentSync.sync(shipmentDetails, null, null, UUID.randomUUID().toString());
                 } catch (Exception e) {
                     log.error("Error performing sync on shipment entity, {}", e);
                 }
@@ -1759,7 +1749,7 @@ public class ConsolidationService implements IConsolidationService {
         containerDao.save(container);
         shipmentsContainersMappingDao.assignShipments(container.getId(), newShipmentsIncluded.stream().toList(), false);
         try {
-            packingsADSync.sync(packingList);
+            packingsADSync.sync(packingList, UUID.randomUUID().toString());
         }
         catch (Exception e) {
             log.error("Error syncing packings");
@@ -1833,7 +1823,7 @@ public class ConsolidationService implements IConsolidationService {
                 shipmentsContainersMappingDao.detachShipments(container.getId(), removeShipmentIds.stream().toList(), false);
                 containerService.afterSave(container, false);
                 try {
-                    packingsADSync.sync(packingList);
+                    packingsADSync.sync(packingList, UUID.randomUUID().toString());
                 }
                 catch (Exception e) {
                     log.error("Error syncing packings");
@@ -3017,7 +3007,7 @@ public class ConsolidationService implements IConsolidationService {
 
         pushShipmentDataToDependentService(consolidationDetails, isCreate);
         try {
-            consolidationSync.sync(consolidationDetails);
+            consolidationSync.sync(consolidationDetails, UUID.randomUUID().toString());
         } catch (Exception e){
             log.error("Error performing sync on consolidation entity, {}", e);
         }

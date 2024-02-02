@@ -65,7 +65,7 @@ public class ContainerSync implements IContainerSync {
         String finalCs = jsonHelper.convertToJson(V1DataSyncRequest.builder().entity(containerRequestV2).module(SyncingConstants.BULK_CONTAINERS).build());
         var resp = retryTemplate.execute(ctx -> {
             log.info("Current retry : {}", ctx.getRetryCount());
-            V1DataSyncResponse response_ = v1Service.v1DataSync(finalCs);
+            V1DataSyncResponse response_ = v1Service.v1DataSync(finalCs, null);
             if (!response_.getIsSuccess()) {
                 try {
                     emailServiceUtility.sendEmailForSyncEntity(String.valueOf(containers.stream().map(x -> x.getId()).toList().toString()),

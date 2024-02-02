@@ -104,7 +104,7 @@ public class AwbSync implements IAwbSync {
             if (ctx.getLastThrowable() != null) {
                 log.error("V1 error -> {}", ctx.getLastThrowable().getMessage());
             }
-            V1DataSyncResponse response = v1Service.v1DataSync(finalAwb);
+            V1DataSyncResponse response = v1Service.v1DataSync(finalAwb, null);
             if (!response.getIsSuccess()) {
                 sendEmail(awb, response, "");
             } else if(isMawb) {
@@ -112,7 +112,7 @@ public class AwbSync implements IAwbSync {
                 boolean result = linkedHawb.parallelStream().map(i -> {
                     AwbRequestV2 hawbSyncRequest = generateAwbSyncRequest(i);
                     String finalHawb = jsonHelper.convertToJson(V1DataSyncRequest.builder().entity(hawbSyncRequest).module(SyncingConstants.AWB).build());
-                    V1DataSyncResponse parallelResponse = v1Service.v1DataSync(finalHawb);
+                    V1DataSyncResponse parallelResponse = v1Service.v1DataSync(finalHawb, null);
                     return parallelResponse.getIsSuccess();
                 }).reduce(false, Boolean::logicalAnd);
 

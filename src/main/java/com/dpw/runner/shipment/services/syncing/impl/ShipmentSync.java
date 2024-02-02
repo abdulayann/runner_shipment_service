@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.syncing.impl;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.request.NotesRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataSyncResponse;
 import com.dpw.runner.shipment.services.entity.CarrierDetails;
@@ -12,24 +13,27 @@ import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.enums.Ownership;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import com.dpw.runner.shipment.services.service.interfaces.ISyncService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.syncing.Entity.*;
 import com.dpw.runner.shipment.services.syncing.constants.SyncingConstants;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.EmailServiceUtility;
+import com.dpw.runner.shipment.services.utils.StringUtility;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
-import java.util.List;
-import java.util.Objects;
-import java.util.UUID;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.utils.CommonUtils.stringValueOf;
@@ -49,6 +53,8 @@ public class ShipmentSync implements IShipmentSync {
     @Autowired
     IConsolidationDetailsDao consolidationDetailsDao;
     @Autowired
+    IShipmentDao shipmentDao;
+    @Autowired
     private IV1Service v1Service;
 
     @Autowired
@@ -56,7 +62,8 @@ public class ShipmentSync implements IShipmentSync {
 
     @Autowired
     private SyncEntityConversionService syncEntityConversionService;
-
+    @Autowired
+    private CommonUtils commonUtils;
     private RetryTemplate retryTemplate = RetryTemplate.builder()
             .maxAttempts(3)
             .fixedBackoff(1000)
@@ -65,9 +72,11 @@ public class ShipmentSync implements IShipmentSync {
 
     @Value("${v1service.url.base}${v1service.url.shipmentSync}")
     private String SHIPMENT_V1_SYNC_URL;
+    @Autowired
+    private ISyncService syncService;
 
     @Override
-    public ResponseEntity<?> sync(ShipmentDetails sd, List<UUID> deletedContGuids, List<NotesRequest> customerBookingNotes) {
+    public ResponseEntity<?> sync(ShipmentDetails sd, List<UUID> deletedContGuids, List<NotesRequest> customerBookingNotes, String transactionId) {
         CustomShipmentSyncRequest temp = new CustomShipmentSyncRequest();
 
         CustomShipmentSyncRequest cs = modelMapper.map(sd, CustomShipmentSyncRequest.class);
@@ -157,32 +166,9 @@ public class ShipmentSync implements IShipmentSync {
         cs.setDeletedContGuids(deletedContGuids);
 
         String finalCs = jsonHelper.convertToJson(V1DataSyncRequest.builder().entity(cs).module(SyncingConstants.SHIPMENT).build());
-        return callSync(finalCs, cs, sd.getId(), sd.getGuid());
-    }
-
-    @Async
-    public ResponseEntity<?> callSync(String finalCs, CustomShipmentSyncRequest cs, Long id, UUID guid) {
-
-        retryTemplate.execute(ctx -> {
-            log.info("Current retry : {}", ctx.getRetryCount());
-            if (ctx.getLastThrowable() != null) {
-                log.error("V1 error -> {}", ctx.getLastThrowable().getMessage());
-            }
-            V1DataSyncResponse response_ = v1Service.v1DataSync(finalCs);
-            if (!response_.getIsSuccess()) {
-                try {
-                    emailServiceUtility.sendEmailForSyncEntity(String.valueOf(id), String.valueOf(guid),
-                            "Shipment Sync", response_.getError().toString());
-                } catch (Exception ex) {
-                    log.error("Not able to send email for sync failure for Shipment Sync " + ex.getMessage());
-                }
-            }
-            return ResponseHelper.buildSuccessResponse(response_);
-        });
-
+        syncService.pushToKafka(finalCs, StringUtility.convertToString(sd.getId()), StringUtility.convertToString(sd.getGuid()), "Shipments", transactionId);
         return ResponseHelper.buildSuccessResponse(modelMapper.map(cs, CustomShipmentSyncRequest.class));
     }
-
     @Override
     @Async
     public void syncLockStatus(ShipmentDetails shipmentDetails) {
@@ -193,7 +179,7 @@ public class ShipmentSync implements IShipmentSync {
             if (ctx.getLastThrowable() != null) {
                 log.error("V1 error -> {}", ctx.getLastThrowable().getMessage());
             }
-            V1DataSyncResponse response_ = v1Service.v1DataSync(finalCs);
+            V1DataSyncResponse response_ = v1Service.v1DataSync(finalCs, null);
             if (!response_.getIsSuccess()) {
                 try {
                     emailServiceUtility.sendEmailForSyncEntity(String.valueOf(shipmentDetails.getId()), String.valueOf(shipmentDetails.getGuid()),

@@ -8,6 +8,7 @@ import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.helpers.DbAccessHelper;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import com.dpw.runner.shipment.services.service.interfaces.ISyncService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.syncing.Entity.PackingRequestV2;
 import com.dpw.runner.shipment.services.syncing.Entity.V1DataSyncRequest;
@@ -52,6 +53,8 @@ public class PackingsSync implements IPackingsSync {
 
     @Autowired
     private IV1Service v1Service;
+    @Autowired
+    private ISyncService syncService;
 
     private RetryTemplate retryTemplate = RetryTemplate.builder()
             .maxAttempts(3)
@@ -60,7 +63,7 @@ public class PackingsSync implements IPackingsSync {
             .build();
 
     @Override
-    public ResponseEntity<?> sync(List<Packing> packingList) {
+    public ResponseEntity<?> sync(List<Packing> packingList, String transactionId) {
         List<PackingRequestV2> packingRequestV2List = new ArrayList<>();
         List<Containers> containers = new ArrayList<>();
         if(packingList != null && packingList.size() > 0) {
@@ -88,7 +91,7 @@ public class PackingsSync implements IPackingsSync {
                     .map(UUID::toString)
                     .collect(Collectors.joining(","));
 
-            callSync(json, idsString, guidsString);
+            syncService.pushToKafka(json, idsString, guidsString, "Packings", transactionId);
             return ResponseHelper.buildSuccessResponse(packingRequestV2List);
         }
         else {
@@ -96,25 +99,5 @@ public class PackingsSync implements IPackingsSync {
         }
     }
 
-    @Async
-    private void callSync(String json, String ids, String guids) {
-        retryTemplate.execute(ctx -> {
-            log.info("Current retry : {}", ctx.getRetryCount());
-            if (ctx.getLastThrowable() != null) {
-                log.error("V1 error -> {}", ctx.getLastThrowable().getMessage());
-            }
-
-            V1DataSyncResponse response_ = v1Service.v1DataSync(json);
-            if (!response_.getIsSuccess()) {
-                try {
-                    emailServiceUtility.sendEmailForSyncEntity(ids, guids,
-                            "Packings", response_.getError().toString());
-                } catch (Exception ex) {
-                    log.error("Not able to send email for sync failure for Packings: " + ex.getMessage());
-                }
-            }
-            return ResponseHelper.buildSuccessResponse(response_);
-        });
-    }
 
 }
