@@ -13,9 +13,11 @@ import com.dpw.runner.shipment.services.entity.Awb;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.MawbHawbLink;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.impl.AwbService;
+import com.dpw.runner.shipment.services.service.interfaces.ISyncService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.syncing.Entity.*;
 import com.dpw.runner.shipment.services.syncing.constants.SyncingConstants;
@@ -39,6 +41,7 @@ import org.springframework.web.client.RestTemplate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
@@ -83,6 +86,8 @@ public class AwbSync implements IAwbSync {
 
     @Value("${v1service.url.base}${v1service.url.awbSync}")
     private String AWB_V1_SYNC_URL;
+    @Autowired
+    private ISyncService syncService;
 
     @Override
     @Async
@@ -90,38 +95,19 @@ public class AwbSync implements IAwbSync {
         boolean isMawb = awb.getAwbShipmentInfo().getEntityType().equalsIgnoreCase("mawb");
         AwbRequestV2 awbRequest = generateAwbSyncRequest(awb);
         awbRequest.setSaveStatus(saveStatus);
-
         List<Awb> linkedHawb;
         if(isMawb) {
             linkedHawb = getLinkedAwbFromMawb(awb.getId());
         } else {
             linkedHawb = new ArrayList<>();
         }
-
+        String transactionId = UUID.randomUUID().toString();
         String finalAwb = jsonHelper.convertToJson(V1DataSyncRequest.builder().entity(awbRequest).module(SyncingConstants.AWB).build());
-        retryTemplate.execute(ctx -> {
-            log.info("Current retry : {}", ctx.getRetryCount());
-            if (ctx.getLastThrowable() != null) {
-                log.error("V1 error -> {}", ctx.getLastThrowable().getMessage());
-            }
-            V1DataSyncResponse response = v1Service.v1DataSync(finalAwb);
-            if (!response.getIsSuccess()) {
-                sendEmail(awb, response, "");
-            } else if(isMawb) {
-                // Try syncing the linked HAWBs for this MAWB in a parallel batch job
-                boolean result = linkedHawb.parallelStream().map(i -> {
-                    AwbRequestV2 hawbSyncRequest = generateAwbSyncRequest(i);
-                    String finalHawb = jsonHelper.convertToJson(V1DataSyncRequest.builder().entity(hawbSyncRequest).module(SyncingConstants.AWB).build());
-                    V1DataSyncResponse parallelResponse = v1Service.v1DataSync(finalHawb);
-                    return parallelResponse.getIsSuccess();
-                }).reduce(false, Boolean::logicalAnd);
-
-                if(result == false) {
-                    log.error("Error syncing linked HAWB of MAWB {}", awb);
-                    sendEmail(awb, response, "Failed syncing one of the linked HAWB for this MAWB");
-                }
-            }
-            return ResponseHelper.buildSuccessResponse(response);
+        syncService.pushToKafka(finalAwb, String.valueOf(awb.getId()), String.valueOf(awb.getGuid()), SyncingConstants.AWB, transactionId);
+        linkedHawb.forEach(i -> {
+            AwbRequestV2 hawbSyncRequest = generateAwbSyncRequest(i);
+            String finalHawb = jsonHelper.convertToJson(V1DataSyncRequest.builder().entity(hawbSyncRequest).module(SyncingConstants.AWB).build());
+            syncService.pushToKafka(finalHawb, String.valueOf(i.getId()), String.valueOf(i.getGuid()), SyncingConstants.AWB, transactionId);
         });
         return ResponseHelper.buildSuccessResponse(modelMapper.map(finalAwb, HblDataRequestV2.class));
     }

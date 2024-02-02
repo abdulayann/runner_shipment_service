@@ -5,8 +5,10 @@ import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataSyncResponse;
 import com.dpw.runner.shipment.services.entity.ProductSequenceConfig;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import com.dpw.runner.shipment.services.service.interfaces.ISyncService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.syncing.Entity.*;
 import com.dpw.runner.shipment.services.syncing.constants.SyncingConstants;
@@ -22,6 +24,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -41,7 +44,8 @@ public class ShipmentSettingsSync implements IShipmentSettingsSync {
 
     @Autowired
     private EmailServiceUtility emailServiceUtility;
-
+    @Autowired
+    private ISyncService syncService;
 
     private RetryTemplate retryTemplate = RetryTemplate.builder()
             .maxAttempts(3)
@@ -73,23 +77,7 @@ public class ShipmentSettingsSync implements IShipmentSettingsSync {
         syncRequest.setISFFileMainPage(req.getIsfFileMainPage());
 
         String payload = jsonHelper.convertToJson(V1DataSyncRequest.builder().entity(syncRequest).module(SyncingConstants.TENANT_SETTINGS).build());
-        retryTemplate.execute(ctx -> {
-            log.info("Current retry : {}", ctx.getRetryCount());
-            if (ctx.getLastThrowable() != null) {
-                log.error("V1 error -> {}", ctx.getLastThrowable().getMessage());
-            }
-            V1DataSyncResponse response_ = v1Service.v1DataSync(payload);
-            if (!response_.getIsSuccess()) {
-                try {
-                    emailServiceUtility.sendEmailForSyncEntity(String.valueOf(req.getId()), String.valueOf(req.getGuid()),
-                            "Shipment Settings Details", response_.getError().toString());
-                } catch (Exception ex) {
-                    log.error("Not able to send email for sync failure for Shipment Settings Details: " + ex.getMessage());
-                }
-            }
-            return ResponseHelper.buildSuccessResponse(response_);
-        });
-
+        syncService.pushToKafka(payload,String.valueOf(req.getId()), String.valueOf(req.getGuid()), SyncingConstants.TENANT_SETTINGS, UUID.randomUUID().toString());
         return ResponseHelper.buildSuccessResponse(modelMapper.map(syncRequest, ShipmentSettingsSyncRequest.class));
     }
 
@@ -101,7 +89,7 @@ public class ShipmentSettingsSync implements IShipmentSettingsSync {
             if (ctx.getLastThrowable() != null) {
                 log.error("V1 error -> {}", ctx.getLastThrowable().getMessage());
             }
-            V1DataSyncResponse response_ = v1Service.v1DataSync(payload);
+            V1DataSyncResponse response_ = v1Service.v1DataSync(payload, null);
             if (!response_.getIsSuccess()) {
                 try {
                     emailServiceUtility.sendEmailForSyncEntity(String.valueOf(productSequenceConfig.getId()), String.valueOf(productSequenceConfig.getGuid()),

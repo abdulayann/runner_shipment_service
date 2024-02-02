@@ -5,6 +5,6 @@ import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import org.springframework.http.ResponseEntity;
 
 public interface IConsolidationSync {
-    ResponseEntity<?> sync(ConsolidationDetails request);
+    ResponseEntity<?> sync(ConsolidationDetails request, String transactionId);
     void syncLockStatus(ConsolidationDetails consolidationDetails);
 }

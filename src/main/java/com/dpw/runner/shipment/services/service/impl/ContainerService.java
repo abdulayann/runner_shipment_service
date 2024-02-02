@@ -932,7 +932,7 @@ public class ContainerService implements IContainerService {
                 }
                 packingDao.saveAll(packingList);
                 try {
-                    packingsADSync.sync(packingList);
+                    packingsADSync.sync(packingList, UUID.randomUUID().toString());
                 }
                 catch (Exception e) {
                     log.error("Error syncing packings");
