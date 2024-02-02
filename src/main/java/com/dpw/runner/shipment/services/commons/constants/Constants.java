@@ -307,4 +307,8 @@ public class Constants {
             "isTemperatureMaintained","chargeable", "chargeableUnit", "transportMode",
             "hazardousCheckBox");
 
+    public static final List<String> ColumnsToBeDeletedForConsolidationCargo = List.of( "id", "consolidationId", "DGGoodsId",
+            "shipmentId", "commodityId", "tenantId", "containerId", "transportMode",
+            "createdBy", "createdAt", "updatedBy", "updatedAt", "isDeleted", "vinNumber");
+
 }

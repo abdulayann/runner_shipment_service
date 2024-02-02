@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.Kafka.Dto.KafkaResponse;
 import com.dpw.runner.shipment.services.Kafka.Producer.KafkaProducer;
+import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
@@ -15,10 +16,7 @@ import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerAssignLi
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerNumberCheckResponse;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerPackADInShipmentRequest;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerSummaryResponse;
-import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
-import com.dpw.runner.shipment.services.dto.request.ContainersExcelModel;
-import com.dpw.runner.shipment.services.dto.request.EventsRequest;
-import com.dpw.runner.shipment.services.dto.request.PackingRequest;
+import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.JobResponse;
 import com.dpw.runner.shipment.services.entity.*;
@@ -417,7 +415,7 @@ public class ContainerService implements IContainerService {
     public void uploadContainerEvents(BulkUploadRequest request) throws Exception {
 //        CSVParsingUtil<Events> newParser = new CSVParsingUtil<>(Events.class);
         Map<String, Set<String>> masterDataMap = new HashMap<>();
-        List<Events> eventsList = newParser.parseExcelFile(request.getFile(), request, null, masterDataMap, Events.class, Events.class);
+        List<Events> eventsList = newParser.parseExcelFile(request.getFile(), request, null, masterDataMap, Events.class, ContainerEventExcelModel.class);
         eventsList = eventsList.stream().map(c -> {
             c.setEntityId(request.getConsolidationId());
             c.setEntityType("CONSOLIDATION");
@@ -468,7 +466,7 @@ public class ContainerService implements IContainerService {
             XSSFWorkbook workbook = new XSSFWorkbook();
             XSSFSheet sheet = workbook.createSheet("Containers");
 
-            List<ContainersExcelModel> model = convertToList(result, ContainersExcelModel.class);
+            List<ContainersExcelModel> model = commonUtils.convertToList(result, ContainersExcelModel.class);
             convertModelToExcel(model, sheet, request);
 
             response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
@@ -483,7 +481,7 @@ public class ContainerService implements IContainerService {
         }
 
     }
-    public void convertModelToExcel(List<ContainersExcelModel> modelList, XSSFSheet sheet, BulkDownloadRequest request) throws IllegalAccessException {
+    private void convertModelToExcel(List<ContainersExcelModel> modelList, XSSFSheet sheet, BulkDownloadRequest request) throws IllegalAccessException {
 
         // Create header row using annotations for order
         Row headerRow = sheet.createRow(0);
@@ -564,17 +562,6 @@ public class ContainerService implements IContainerService {
             }
         }
     }
-    private <T,P> List<P> convertToList(final List<T> lst, Class<P> clazz) {
-        if(lst == null)
-            return null;
-        return  lst.stream()
-                .map(item -> convertToClass(item, clazz))
-                .collect(Collectors.toList());
-    }
-
-    private  <T,P> P convertToClass(T obj, Class<P> clazz) {
-        return modelMapper.map(obj, clazz);
-    }
     private List<Field> reorderFields(Map<String, Field> fieldNameMap, List<String> columnsName) {
         List<Field> fields = new ArrayList<>();
         for(var field: columnsName){
@@ -589,38 +576,79 @@ public class ContainerService implements IContainerService {
 
     @Override
     public void downloadContainerEvents(HttpServletResponse response, BulkDownloadRequest request) throws Exception {
-        List<Events> result = new ArrayList<>();
+        List<ContainerEventExcelModel> eventsModelList = new ArrayList<>();
         if (request.getConsolidationId() != null) {
-            ListCommonRequest req2 = constructListRequestFromEntityId(Long.valueOf(request.getConsolidationId()), "CONSOLIDATION");
-            Pair<Specification<Events>, Pageable> pair = fetchData(req2, Events.class);
-            Page<Events> containerEventsPage = eventDao.findAll(pair.getLeft(), pair.getRight());
-            List<Events> containerEvents = containerEventsPage.getContent();
-            if (result.isEmpty()) {
-                result.addAll(containerEvents);
-            } else {
-                result = result.stream().filter(result::contains).collect(Collectors.toList());
+
+            ListCommonRequest req = constructListCommonRequest("consolidationId", Long.valueOf(request.getConsolidationId()), "=");
+            Pair<Specification<Containers>, Pageable> pair = fetchData(req, Containers.class);
+            Page<Containers> containers = containerDao.findAll(pair.getLeft(), pair.getRight());
+            List<Containers> containersList = containers.getContent();
+
+            if(!containersList.isEmpty()) {
+                for (var container : containersList) {
+                    List<Events> events = container.getEventsList();
+                    List<ContainerEventExcelModel> modelList = commonUtils.convertToList(events, ContainerEventExcelModel.class);
+                    modelList.forEach(x -> x.setContainerNumber(!Objects.isNull(container.getContainerNumber()) ? container.getContainerNumber() : ""));
+                    eventsModelList.addAll(modelList);
+                }
             }
         }
         LocalDateTime currentTime = LocalDateTime.now();
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
         String timestamp = currentTime.format(formatter);
-        String filenameWithTimestamp = "ContainerEvents_" + timestamp + ".xlsx";
+        String filenameWithTimestamp = "Containers_Events_" + timestamp + ".xlsx";
 
         XSSFWorkbook workbook = new XSSFWorkbook();
-        XSSFSheet sheet = workbook.createSheet("ContainerEvents");
-        ExcelUtils utils = new ExcelUtils();
-        utils.writeSimpleHeader(workbook, parser.generateCSVHeaderForEvent(), sheet);
-
-        int rowNum = 1;
-        for (Events event : result) {
-            parser.addEventToSheet(event, workbook, sheet, rowNum++);
-        }
+        XSSFSheet sheet = workbook.createSheet("Containers_Events");
+        convertModelToExcelForContainersEvent(eventsModelList, sheet, request);
 
         response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
         response.setHeader("Content-Disposition", "attachment; filename=" + filenameWithTimestamp);
 
         try (OutputStream outputStream = response.getOutputStream()) {
             workbook.write(outputStream);
+        }
+    }
+    private void convertModelToExcelForContainersEvent(List<ContainerEventExcelModel> modelList, XSSFSheet sheet, BulkDownloadRequest request) throws IllegalAccessException {
+
+        // Create header row using annotations for order
+        Row headerRow = sheet.createRow(0);
+        Field[] fields = ContainerEventExcelModel.class.getDeclaredFields();
+
+        Map<String, Field> fieldNameMap = Arrays.stream(fields).filter(f->f.isAnnotationPresent(ExcelCell.class)).collect(Collectors.toMap(Field::getName, c-> c));
+        List<Field> fieldsList = new ArrayList<>(fieldNameMap.values().stream().toList());
+        fieldsList.sort(Comparator.comparingInt(f -> f.getAnnotation(ExcelCell.class).order()));
+        int actualFieldIdx = -1;
+        int estimatedFieldIdx = -1;
+        int i = 0;
+        for (var field : fieldsList){
+            if(Objects.equals(field.getName(), "actual"))
+                actualFieldIdx = i;
+            if(Objects.equals(field.getName(), "estimated"))
+                estimatedFieldIdx = i;
+            Cell cell = headerRow.createCell(i++);
+            cell.setCellValue(!field.getAnnotation(ExcelCell.class).displayName().isEmpty() ? field.getAnnotation(ExcelCell.class).displayName() : field.getName());
+        }
+        String format = "MM/dd/yyyy hh:mm:ss a";
+        // Populate data
+        int rowIndex = 1;
+        for (ContainerEventExcelModel model : modelList) {
+            Row row = sheet.createRow(rowIndex++);
+            int cellIndex = 0;
+            for (Field field : fieldsList) {
+                field.setAccessible(true);
+                Object value = field.get(model);
+                if(actualFieldIdx != -1 && cellIndex == actualFieldIdx){
+                    assert value instanceof LocalDateTime;
+                    value = ReportHelper.GenerateFormattedDate((LocalDateTime) value, format);
+                }
+                if(estimatedFieldIdx != -1 && cellIndex == estimatedFieldIdx){
+                    assert value instanceof LocalDateTime;
+                    value = ReportHelper.GenerateFormattedDate((LocalDateTime) value, format);
+                }
+                Cell cell = row.createCell(cellIndex++);
+                cell.setCellValue(value != null ? value.toString() : "");
+            }
         }
     }
 
