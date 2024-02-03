@@ -974,7 +974,7 @@ public class AwbService implements IAwbService {
         var awbPackingInfo = generateAwbPackingInfo(shipmentDetails, packings);
         if(syncShipment) {
             try {
-                shipmentSync.sync(shipmentDetails, null, null);
+                shipmentSync.sync(shipmentDetails, null, null, UUID.randomUUID().toString());
             } catch (Exception e) {
                 log.error("Error performing sync on shipment entity, {}", e);
             }

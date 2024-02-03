@@ -43,10 +43,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.interceptor.TransactionAspectSupport;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
@@ -306,7 +303,7 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
             oldShipment = shipmentDao.save(oldShipment, true);
             shipmentService.pushShipmentDataToDependentService(oldShipment, false);
             try {
-                shipmentSync.sync(oldShipment, null, null);
+                shipmentSync.sync(oldShipment, null, null, UUID.randomUUID().toString());
             } catch (Exception e) {
                 log.error("Error performing sync on shipment entity, {}", e);
             }

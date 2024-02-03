@@ -6,6 +6,7 @@ import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.CustomerBooking;
 import com.dpw.runner.shipment.services.entitytransfer.dto.response.CheckTaskExistResponse;
 import com.dpw.runner.shipment.services.syncing.Entity.PartyRequestV2;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 
 import java.util.UUID;
@@ -150,7 +151,7 @@ public interface IV1Service {
     V1DataResponse fetchBillingList(Object request);
     V1DataResponse fetchBillChargesList(Object request);
     V1DataResponse fetchArObjectList(Object request);
-    V1DataSyncResponse v1DataSync(Object request);
+    V1DataSyncResponse v1DataSync(Object request, HttpHeaders headers);
 
     String getMaxShipmentId();
     String getShipmentSerialNumber();

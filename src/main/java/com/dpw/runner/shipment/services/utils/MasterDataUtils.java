@@ -23,6 +23,7 @@ import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequestV2;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
+import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.validator.enums.Operators;
 import lombok.extern.slf4j.Slf4j;
@@ -1456,5 +1457,73 @@ public class MasterDataUtils{
             RequestAuthContext.setAuthToken(token);
             runnable.run();
         };
+    }
+
+    public UnlocationsResponse getUNLocRow(String UNLocCode) {
+        if(UNLocCode == null || UNLocCode.isEmpty())
+            return null;
+        List <Object> criteria = Arrays.asList(
+                Arrays.asList(EntityTransferConstants.LOCATION_SERVICE_GUID),
+                "=",
+                UNLocCode
+        );
+        CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(criteria).build();
+        V1DataResponse response = v1Service.fetchUnlocation(commonV1ListRequest);
+
+        List<UnlocationsResponse> unLocationsList = jsonHelper.convertValueToList(response.entities, UnlocationsResponse.class);
+        if(unLocationsList.size() > 0)
+            return unLocationsList.get(0);
+        return null;
+    }
+
+    public Map<String, UnlocationsResponse> getLocationData(Set<String> locCodes) {
+        Map<String, UnlocationsResponse> locationMap = new HashMap<>();
+        if (Objects.isNull(locCodes))
+            return locationMap;
+        if (locCodes.size() > 0) {
+            List<Object> criteria = Arrays.asList(
+                    List.of("LocationsReferenceGUID"),
+                    "In",
+                    List.of(locCodes)
+            );
+            CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(criteria).build();
+            V1DataResponse v1DataResponse = v1Service.fetchUnlocation(commonV1ListRequest);
+            List<UnlocationsResponse> unlocationsResponse = jsonHelper.convertValueToList(v1DataResponse.entities, UnlocationsResponse.class);
+            if (unlocationsResponse != null && unlocationsResponse.size() > 0) {
+                for (UnlocationsResponse unlocation : unlocationsResponse) {
+                    locationMap.put(unlocation.getLocationsReferenceGUID(), unlocation);
+                }
+            }
+        }
+        return locationMap;
+    }
+
+    public EntityTransferDGSubstance fetchDgSubstanceRow(Integer dgSubstanceId) {
+        var dgSubstanceRow = new EntityTransferDGSubstance();
+        if(dgSubstanceId == null)
+            return dgSubstanceRow;
+        List<Object> criteria = Arrays.asList(List.of("Id"), "=", dgSubstanceId);
+        CommonV1ListRequest listRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(criteria).build();
+        V1DataResponse v1DataResponse = v1Service.fetchDangerousGoodData(listRequest);
+
+        if(v1DataResponse.entities != null) {
+            dgSubstanceRow = jsonHelper.convertValueToList(v1DataResponse.entities, EntityTransferDGSubstance.class).get(0);
+        }
+
+        return dgSubstanceRow;
+    }
+
+    public List<EntityTransferOrganizations> fetchOrganizations(Object field, Object value) {
+        List<EntityTransferOrganizations> response = null;
+        try {
+            CommonV1ListRequest orgRequest = new CommonV1ListRequest();
+            List<Object> orgField = new ArrayList<>(List.of(field));
+            String operator = "=";
+            List<Object> orgCriteria = new ArrayList<>(List.of(orgField, operator, value));
+            orgRequest.setCriteriaRequests(orgCriteria);
+            V1DataResponse orgResponse = v1Service.fetchOrganization(orgRequest);
+            response = jsonHelper.convertValueToList(orgResponse.entities, EntityTransferOrganizations.class);
+        } catch (Exception e) { }
+        return response;
     }
 }

@@ -584,6 +584,7 @@ public class CSVParsingUtil<T> {
             log.error(e1.getMessage());
             throw new ValidationException(e1.getMessage());
         } catch (NoSuchFieldException | IllegalAccessException | InstantiationException e) {
+            log.debug("Excel sheet is not valid. {}", e);
             log.error(e.getMessage());
             throw new ValidationException("Excel sheet is not valid.");
         }

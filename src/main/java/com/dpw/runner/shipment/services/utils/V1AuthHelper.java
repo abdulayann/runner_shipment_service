@@ -31,4 +31,13 @@ public class V1AuthHelper {
         headers.add("X-TENANT-ID", StringUtility.convertToString(UserContext.getUser().getTenantId()));
         return headers;
     }
+    
+    public HttpHeaders getHeadersForDataSyncFromKafka(String userName, Integer tenantId) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.add("x-api-key", X_API_KEY);
+        headers.add("X-USER-NAME", userName);
+        headers.add("X-TENANT-ID", StringUtility.convertToString(tenantId));
+        return headers;
+    }
 }

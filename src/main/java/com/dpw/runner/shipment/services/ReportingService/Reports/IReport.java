@@ -19,6 +19,7 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerSummaryResponse;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
 import com.dpw.runner.shipment.services.dto.request.HblPartyDto;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
@@ -47,12 +48,14 @@ import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.masterdata.request.ShipmentGuidRequest;
 import com.dpw.runner.shipment.services.masterdata.response.*;
 import com.dpw.runner.shipment.services.repository.interfaces.IAwbRepository;
+import com.dpw.runner.shipment.services.service.interfaces.IContainerService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.google.common.base.Strings;
 import com.nimbusds.jose.util.Pair;
+import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.Cache;
@@ -72,6 +75,7 @@ import java.util.stream.Collectors;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.*;
 
+@Slf4j
 public abstract class IReport {
 
     @Autowired
@@ -110,9 +114,12 @@ public abstract class IReport {
     @Autowired
     CacheManager cacheManager;
     @Autowired
-    private MasterDataUtils masterDataUtils;
+    public MasterDataUtils masterDataUtils;
     @Autowired
     CustomKeyGenerator keyGenerator;
+
+    @Autowired
+    private IContainerService containerService;
 
     public abstract Map<String, Object> getData(Long id);
     abstract IDocumentModel getDocumentModel(Long id);
@@ -251,7 +258,7 @@ public abstract class IReport {
         }
         // UnLocations Master-data
         List<String> unlocoRequests = this.createUnLocoRequestFromShipmentModel(shipment);
-        Map<String, UnlocationsResponse> unlocationsMap = getLocationData(new HashSet<>(unlocoRequests));
+        Map<String, UnlocationsResponse> unlocationsMap = masterDataUtils.getLocationData(new HashSet<>(unlocoRequests));
         // Master lists Master-data
         List<MasterListRequest> masterListRequest = createMasterListsRequestFromShipment(shipment);
         masterListRequest.addAll(createMasterListsRequestFromUnLocoMap(unlocationsMap));
@@ -407,7 +414,7 @@ public abstract class IReport {
         }
         dictionary.put(NET_WEIGHT, addCommas(shipment.getNetWeight()));
         dictionary.put(NetWeight_Unit_Description, shipment.getNetWeightUnit());
-        if (shipment.getNetWeightUnit() != null && masterListsMap.containsKey(MasterDataType.WEIGHT_UNIT.getId()) && masterListsMap.get(MasterDataType.WEIGHT_UNIT).containsKey(shipment.getNetWeightUnit())) {
+        if (shipment.getNetWeightUnit() != null && masterListsMap.containsKey(MasterDataType.WEIGHT_UNIT.getId()) && masterListsMap.get(MasterDataType.WEIGHT_UNIT.getId()).containsKey(shipment.getNetWeightUnit())) {
             masterData = masterListsMap.get(MasterDataType.WEIGHT_UNIT.getId()).get(shipment.getNetWeightUnit());
             dictionary.put(NetWeight_Unit_Description, (masterData != null && masterData.getItemDescription() != null) ? StringUtility.toUpperCase(masterData.getItemDescription()) : shipment.getVolumeUnit());
         }
@@ -668,7 +675,18 @@ public abstract class IReport {
     public ShipmentModel getShipment(Long Id)
     {
         ShipmentDetails shipmentDetails = shipmentDao.findById(Id).get();
-        return modelMapper.map(shipmentDetails, ShipmentModel.class);
+        ShipmentModel shipmentModel = modelMapper.map(shipmentDetails, ShipmentModel.class);
+        try {
+            if(shipmentDetails.getContainersList() != null) {
+                ContainerSummaryResponse containerSummaryResponse = containerService.calculateContainerSummary(shipmentDetails.getContainersList(), shipmentDetails.getTransportMode(), shipmentDetails.getShipmentType());
+                if(containerSummaryResponse != null) {
+                    shipmentModel.setSummary(containerSummaryResponse.getSummary());
+                }
+            }
+        } catch (Exception e) {
+            log.error(e.getMessage());
+        }
+        return shipmentModel;
     }
 
     public ConsolidationModel getFirstConsolidationFromShipmentId(Long shipmentId)
@@ -912,7 +930,7 @@ public abstract class IReport {
                     dictionary.put(CARRIER_NAME, StringUtility.toUpperCase(carriersData.getItemDescription()));
                     dictionary.put(CARRIER_CONTACT_PERSON, StringUtility.toUpperCase(carriersData.getCarrierContactPerson()));
                     if (carriersData.getDefaultOrgId() != 0) {
-                        List<EntityTransferOrganizations> orgs = ReportHelper.fetchOrganizations("Id", carriersData.getDefaultOrgId());
+                        List<EntityTransferOrganizations> orgs = masterDataUtils.fetchOrganizations("Id", carriersData.getDefaultOrgId());
                         if (orgs != null && !orgs.isEmpty()) {
                             dictionary.put(ReportConstants.CARRIER_ORG_NAME, StringUtility.toUpperCase(orgs.get(0).getFullName()));
                             dictionary.put(ReportConstants.CARRIER_ORG_PHONE, orgs.get(0).getPhone());
@@ -922,7 +940,7 @@ public abstract class IReport {
                 }
             }
             List<String> unlocoRequests = createUnLocoRequestFromConsolidation(consolidation);
-            Map<String, UnlocationsResponse> unlocationsMap = getLocationData(new HashSet<>(unlocoRequests));
+            Map<String, UnlocationsResponse> unlocationsMap = masterDataUtils.getLocationData(new HashSet<>(unlocoRequests));
             UnlocationsResponse pol = unlocationsMap.get(consolidation.getCarrierDetails().getOriginPort());
             UnlocationsResponse pod = unlocationsMap.get(consolidation.getCarrierDetails().getDestinationPort());
             if(pol != null) {
@@ -1396,6 +1414,10 @@ public abstract class IReport {
         return "";
     }
 
+    public UnlocationsResponse getUNLocRow(String UNLocCode) {
+        return masterDataUtils.getUNLocRow(UNLocCode);
+    }
+
     public CommodityResponse getCommodity(String commodityCode) {
         if(commodityCode == null || commodityCode.isEmpty())
             return null;
@@ -1409,22 +1431,6 @@ public abstract class IReport {
         List<CommodityResponse> commodityResponses = jsonHelper.convertValueToList(commodity, CommodityResponse.class);
         if(commodityResponses.size() > 0)
             return commodityResponses.get(0);
-        return null;
-    }
-
-    public UnlocationsResponse getUNLocRow(String UNLocCode) {
-        if(UNLocCode == null || UNLocCode.isEmpty())
-            return null;
-        List <Object> criteria = Arrays.asList(
-                Arrays.asList(EntityTransferConstants.LOCATION_SERVICE_GUID),
-                "=",
-                UNLocCode
-        );
-        CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(criteria).build();
-        Object unlocations = masterDataFactory.getMasterDataService().fetchUnlocationData(commonV1ListRequest).getData();
-        List<UnlocationsResponse> unlocationsResponse = jsonHelper.convertValueToList(unlocations, UnlocationsResponse.class);
-        if(unlocationsResponse.size() > 0)
-            return unlocationsResponse.get(0);
         return null;
     }
 
@@ -1810,7 +1816,7 @@ public abstract class IReport {
             dict.put(ChargeableUnit, pack.getChargeableUnit());
 
             if(pack.getHazardous() != null && pack.getHazardous().equals(true)){
-                var dgSubstanceRow = ReportHelper.fetchDgSubstanceRow(pack.getDGSubstanceId());
+                var dgSubstanceRow = masterDataUtils.fetchDgSubstanceRow(pack.getDGSubstanceId());
                 dict.put(DG_SUBSTANCE, dgSubstanceRow.ProperShippingName);
                 dict.put(DG_CLASS, pack.getDGClass());
                 dict.put(CLASS_DIVISION, dgSubstanceRow.ClassDivision);

@@ -471,7 +471,7 @@ public class ReportService implements IReportService {
             shipmentDetails = shipmentDao.update(shipmentDetails, false);
             shipmentService.pushShipmentDataToDependentService(shipmentDetails, false);
             try {
-                shipmentSync.sync(shipmentDetails, null, null);
+                shipmentSync.sync(shipmentDetails, null, null, UUID.randomUUID().toString());
             } catch (Exception e) {
                 log.error("Error performing sync on shipment entity, {}", e);
             }
