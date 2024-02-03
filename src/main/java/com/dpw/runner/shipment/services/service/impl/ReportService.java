@@ -156,10 +156,10 @@ public class ReportService implements IReportService {
                 objectType = dataRetrived.get(ReportConstants.OBJECT_TYPE).toString();
             }
         }
-        if (reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.AWB_LABLE)){
+        if (reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.AWB_LABEL)){
             List<byte[]> pdf_Bytes = new ArrayList<>();
             DocPages Pages = GetFromTenantSettings(reportRequest.getReportInfo(), null, null, reportRequest.getPrintType(), reportRequest.getFrontTemplateCode(), reportRequest.getBackTemplateCode(), false, null, null);
-            int copies = reportRequest.getCopyCountForAWB();
+            int copies = reportRequest.getCopyCountForAWB() != null ? reportRequest.getCopyCountForAWB() : 0;
             if(copies < 1) throw new ValidationException("Copy count is less than 1");
             for(int i = 1; i <= copies; i++){
                 String copyCount = getSerialCount(i, copies);
@@ -732,7 +732,7 @@ public class ReportService implements IReportService {
                         row.getCostalDocument() == null ? adminRow.getCostalDocument() : row.getCostalDocument(), null, row.getCostalDocument() != null, null, null, null);
             case ReportConstants.SHIPPING_INSTRUCTION:
                 return getShippingInstructionDocument(row, adminRow);
-            case ReportConstants.AWB_LABLE:
+            case ReportConstants.AWB_LABEL:
                 return setDocPages(null,
                         row.getAwbLable() == null ? adminRow.getAwbLable() : row.getAwbLable(), null, row.getAwbLable() != null, null, null, null);
             case ReportConstants.CARGO_MANIFEST:

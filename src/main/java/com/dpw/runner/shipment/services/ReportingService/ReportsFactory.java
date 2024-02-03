@@ -90,7 +90,7 @@ public class ReportsFactory {
             case ReportConstants.EXPORT_SHIPMENT_MANIFEST:
             case ReportConstants.GENERATE_ISF_FILE:
                 return manifestShipmentReport;
-            case ReportConstants.AWB_LABLE:
+            case ReportConstants.AWB_LABEL:
                 return awbLabelReport;
             case ReportConstants.SHIPPING_REQUEST_AIR:
                 return shippingRequestAirReport;
