@@ -190,10 +190,10 @@ public class AwbUtility {
         if (shipmentDetails.getCarrierDetails().getId() == null) {
             throw new ValidationException("Carrier is required in shipment to generate the document.");
         }
-        if (Objects.equals(shipmentDetails.getShipmentType(), ShipmentConstants.SHIPMENT_TYPE_DRT) && shipmentDetails.getMasterBill() == null) {
+        if (Objects.equals(shipmentDetails.getShipmentType(), ShipmentConstants.SHIPMENT_TYPE_DRT) && (shipmentDetails.getMasterBill() == null || shipmentDetails.getMasterBill().isBlank())) {
             throw new ValidationException("MAWB Number is required in shipment to generate the document.");
         }
-        if (shipmentDetails.getHouseBill() == null) {
+        if (shipmentDetails.getHouseBill() == null || shipmentDetails.getHouseBill().isBlank()) {
             throw new ValidationException("HAWB Number is required in shipment to generate the document.");
         }
     }
@@ -220,7 +220,7 @@ public class AwbUtility {
         {
             throw new ValidationException("Discharge Port is required in Consolidation to generate the document.");
         }
-        if (consolidationDetails.getMawb() == null) {
+        if (consolidationDetails.getMawb() == null || consolidationDetails.getMawb().isBlank()) {
             throw new ValidationException("MAWB number can't be null for generating MAWB !");
         }
     }

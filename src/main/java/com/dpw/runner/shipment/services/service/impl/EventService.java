@@ -29,15 +29,13 @@ import com.dpw.runner.shipment.services.service.interfaces.IEventService;
 import com.dpw.runner.shipment.services.service.interfaces.ISyncQueueService;
 import com.dpw.runner.shipment.services.syncing.Entity.EventsRequestV2;
 import com.dpw.runner.shipment.services.syncing.constants.SyncingConstants;
+import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
 import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.dpw.runner.shipment.services.utils.V1AuthHelper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.poi.sl.draw.geom.GuideIf;
-import org.apache.tomcat.util.bcel.Const;
-import org.junit.runner.Runner;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -56,10 +54,7 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestTemplate;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
@@ -85,6 +80,9 @@ public class EventService implements IEventService {
 
     @Autowired
     private IShipmentDao shipmentDao;
+
+    @Autowired
+    private IShipmentSync shipmentSync;
 
     @Autowired
     private IConsolidationDetailsDao consolidationDao;
@@ -422,6 +420,11 @@ public class EventService implements IEventService {
               carrierDetails.setAtd(trackingEventsResponse.getShipmentAtd());
 
           shipmentDao.save(shipment, false);
+          try {
+              shipmentSync.sync(shipment, null, null, UUID.randomUUID().toString());
+          } catch (Exception e) {
+              log.error("Error performing sync on shipment entity, {}", e);
+          }
       }
     }
 

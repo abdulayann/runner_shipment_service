@@ -45,6 +45,15 @@ public class JobDao implements IJobDao {
             throw new ValidationException(errors.toString());
         return jobRepository.save(jobs);
     }
+    @Override
+    public List<Jobs> saveAll(List<Jobs> jobsList) {
+        for (var jobs: jobsList) {
+            Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(jobs), Constants.JOBS, LifecycleHooks.ON_CREATE, false);
+            if (!errors.isEmpty())
+                throw new ValidationException(errors.toString());
+        }
+        return jobRepository.saveAll(jobsList);
+    }
 
     @Override
     public Page<Jobs> findAll(Specification<Jobs> spec, Pageable pageable) {
@@ -67,11 +76,15 @@ public class JobDao implements IJobDao {
         List<Jobs> responseJobs = new ArrayList<>();
         try {
             // TODO- Handle Transactions here
-            ListCommonRequest listCommonRequest = constructListCommonRequest("shipmentId", shipmentId, "=");
-            Pair<Specification<Jobs>, Pageable> pair = fetchData(listCommonRequest, Jobs.class);
-            Page<Jobs> routings = findAll(pair.getLeft(), pair.getRight());
-            Map<Long, Jobs> hashMap = routings.stream()
-                    .collect(Collectors.toMap(Jobs::getId, Function.identity()));
+            Map<Long, Jobs> hashMap;
+//            if(!Objects.isNull(jobsIdList) && !jobsIdList.isEmpty()) {
+                ListCommonRequest listCommonRequest = constructListCommonRequest("shipmentId", shipmentId, "=");
+                Pair<Specification<Jobs>, Pageable> pair = fetchData(listCommonRequest, Jobs.class);
+                Page<Jobs> routings = findAll(pair.getLeft(), pair.getRight());
+                hashMap = routings.stream()
+                        .collect(Collectors.toMap(Jobs::getId, Function.identity()));
+//            }
+            Map<Long, Jobs> copyHashMap = new HashMap<>(hashMap);
             List<Jobs> jobRequestList = new ArrayList<>();
             if (jobsList != null && jobsList.size() != 0) {
                 for (Jobs request : jobsList) {
@@ -81,7 +94,7 @@ public class JobDao implements IJobDao {
                     }
                     jobRequestList.add(request);
                 }
-                responseJobs = saveEntityFromShipment(jobRequestList, shipmentId);
+                responseJobs = saveEntityFromShipment(jobRequestList, shipmentId, copyHashMap);
             }
             deleteJobs(hashMap);
             return responseJobs;
@@ -113,6 +126,25 @@ public class JobDao implements IJobDao {
         }
         return res;
     }
+    @Override
+    public List<Jobs> saveEntityFromShipment(List<Jobs> jobRequests, Long shipmentId, Map<Long, Jobs> oldEntityMap) {
+        List<Jobs> res = new ArrayList<>();
+        for(Jobs req : jobRequests){
+            if(req.getId() != null){
+                long id = req.getId();
+                if (!oldEntityMap.containsKey(id)) {
+                    log.debug("Job is null for Id {}", req.getId());
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
+                req.setCreatedAt(oldEntityMap.get(id).getCreatedAt());
+                req.setCreatedBy(oldEntityMap.get(id).getCreatedBy());
+            }
+            req.setShipmentId(shipmentId);
+            res.add(req);
+        }
+        res = saveAll(res);
+        return res;
+    }
 
     @Override
     public List<Jobs> updateEntityFromConsole(List<Jobs>jobsList, Long consolidationId) throws Exception {
@@ -120,11 +152,15 @@ public class JobDao implements IJobDao {
         List<Jobs> responseJobs = new ArrayList<>();
         try {
             // TODO- Handle Transactions here
-            ListCommonRequest listCommonRequest = constructListCommonRequest("consolidationId", consolidationId, "=");
-            Pair<Specification<Jobs>, Pageable> pair = fetchData(listCommonRequest, Jobs.class);
-            Page<Jobs> routings = findAll(pair.getLeft(), pair.getRight());
-            Map<Long, Jobs> hashMap = routings.stream()
-                    .collect(Collectors.toMap(Jobs::getId, Function.identity()));
+            Map<Long, Jobs> hashMap;
+//            if(!Objects.isNull(jobsIdList) && !jobsIdList.isEmpty()) {
+                ListCommonRequest listCommonRequest = constructListCommonRequest("consolidationId", consolidationId, "=");
+                Pair<Specification<Jobs>, Pageable> pair = fetchData(listCommonRequest, Jobs.class);
+                Page<Jobs> routings = findAll(pair.getLeft(), pair.getRight());
+                hashMap = routings.stream()
+                        .collect(Collectors.toMap(Jobs::getId, Function.identity()));
+//            }
+            Map<Long, Jobs> copyHashMap = new HashMap<>(hashMap);
             List<Jobs> jobRequestList = new ArrayList<>();
             if (jobsList != null && jobsList.size() != 0) {
                 for (Jobs request : jobsList) {
@@ -134,7 +170,7 @@ public class JobDao implements IJobDao {
                     }
                     jobRequestList.add(request);
                 }
-                responseJobs = saveEntityFromConsole(jobRequestList, consolidationId);
+                responseJobs = saveEntityFromConsole(jobRequestList, consolidationId, copyHashMap);
             }
             deleteJobs(hashMap);
             return responseJobs;
@@ -202,6 +238,25 @@ public class JobDao implements IJobDao {
             req = save(req);
             res.add(req);
         }
+        return res;
+    }
+    @Override
+    public List<Jobs> saveEntityFromConsole(List<Jobs> jobRequests, Long consolidationId, Map<Long, Jobs> oldEntityMap) {
+        List<Jobs> res = new ArrayList<>();
+        for(Jobs req : jobRequests){
+            if(req.getId() != null){
+                long id = req.getId();
+                if (!oldEntityMap.containsKey(id)) {
+                    log.debug("Job is null for Id {}", req.getId());
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
+                req.setCreatedAt(oldEntityMap.get(id).getCreatedAt());
+                req.setCreatedBy(oldEntityMap.get(id).getCreatedBy());
+            }
+            req.setConsolidationId(consolidationId);
+            res.add(req);
+        }
+        res = saveAll(res);
         return res;
     }
 

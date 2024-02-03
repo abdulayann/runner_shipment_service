@@ -394,7 +394,7 @@ public class HawbReport extends IReport{
                     SumOfChargeableWt[0] = SumOfChargeableWt[0].add(row.getChargeableWt() != null ? row.getChargeableWt() : BigDecimal.ZERO);
                     });
                 dictionary.put(ReportConstants.TOtAl_PIECES, TotalPieces);
-                dictionary.put(ReportConstants.TOTAL_GROSS_WEIGHT, IReport.addCommas(TotalGrossWeight[0]));
+                dictionary.put(ReportConstants.TOTAL_GROSS_WEIGHT, ConvertToWeightNumberFormat(TotalGrossWeight[0]));
                 dictionary.put(ReportConstants.TGW, IReport.addCommas(TotalGrossWeight[0]));
                 dictionary.put(ReportConstants.SUM_OF_TOTAL_AMOUNT, IReport.addCommas(SumOfTotalAmount[0]));
                 dictionary.put(ReportConstants.SUM_OF_TOTAL_AMOUNT_FAT, FreightAmountText);

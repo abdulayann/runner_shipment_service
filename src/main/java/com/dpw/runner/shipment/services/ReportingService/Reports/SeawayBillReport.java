@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelpe
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.SeawayBillModel;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
+import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -73,6 +74,7 @@ public class SeawayBillReport extends IReport {
 
 
         if (model.shipment.getShipmentContainersList() != null) {
+            V1TenantSettingsResponse v1TenantSettingsResponse = getTenantSettings();
 //            String json = jsonHelper.convertToJson(model.shipment.getShipmentContainersList());
             var values = model.shipment.getShipmentContainersList().stream()
                     .map(i -> jsonHelper.convertJsonToMap(jsonHelper.convertToJson(i)))
@@ -80,9 +82,9 @@ public class SeawayBillReport extends IReport {
 //            var values = jsonHelper.convertValue(json, new TypeReference<List<Map<String, Object>>>() {});
             values.forEach(v -> {
                 if (v.get("GrossWeight") != null && v.get("GrossWeight").toString() != null)
-                    v.put("GrossWeight", addCommas(v.get("GrossWeight").toString()));
+                    v.put("GrossWeight", ConvertToWeightNumberFormat(v.get("GrossWeight"), v1TenantSettingsResponse));
                 if (v.get("NetWeight") != null && v.get("NetWeight").toString() != null)
-                    v.put("NetWeight", addCommas(v.get("NetWeight").toString()));
+                    v.put("NetWeight", ConvertToWeightNumberFormat(v.get("NetWeight"), v1TenantSettingsResponse));
                 if (v.get("NoofPackages") != null && v.get("NoofPackages").toString() != null)
                     v.put("NoofPackages", addCommaWithoutDecimal((BigDecimal) v.get("NoofPackages")));
                 if (v.get("GrossVolume") != null && v.get("GrossVolume").toString() != null)
@@ -90,7 +92,7 @@ public class SeawayBillReport extends IReport {
                 if (v.get("BL_GrossVolume") != null && v.get("BL_GrossVolume").toString() != null)
                     v.put("BL_GrossVolume", addCommas(v.get("BL_GrossVolume").toString()));
                 if (v.get("BL_GrossWeight") != null && v.get("BL_GrossWeight").toString() != null)
-                    v.put("BL_GrossWeight", addCommas(v.get("BL_GrossWeight").toString()));
+                    v.put("BL_GrossWeight", ConvertToWeightNumberFormat(v.get("BL_GrossWeight"), v1TenantSettingsResponse));
             });
             dict.put("ShipmentContainers", values);
         }

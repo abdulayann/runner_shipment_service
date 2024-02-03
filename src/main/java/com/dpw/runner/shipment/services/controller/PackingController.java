@@ -52,7 +52,7 @@ public class PackingController {
 
         try {
             packingService.uploadPacking(request);
-            return ResponseEntity.ok("CSV file uploaded successfully!");
+            return ResponseEntity.ok(ApiConstants.API_UPLOAD_PACKING_DETAILS_SUCCESS_MESSAGE);
         } catch (Exception e) {
             String responseMessage = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;

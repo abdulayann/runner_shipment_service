@@ -13,7 +13,6 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerPartialListResponse;
 import com.dpw.runner.shipment.services.config.SyncConfig;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
-import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ConsolePacksListResponse;
 import com.dpw.runner.shipment.services.dto.request.AwbRequest;
 import com.dpw.runner.shipment.services.dto.request.CreateAwbRequest;
 import com.dpw.runner.shipment.services.dto.request.ResetAwbRequest;
@@ -49,8 +48,8 @@ import com.dpw.runner.shipment.services.syncing.Entity.AwbRequestV2;
 import com.dpw.runner.shipment.services.syncing.Entity.SaveStatus;
 import com.dpw.runner.shipment.services.syncing.constants.SyncingConstants;
 import com.dpw.runner.shipment.services.syncing.interfaces.IAwbSync;
+import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
 import com.dpw.runner.shipment.services.utils.*;
-import com.dpw.runner.shipment.services.validator.enums.Operators;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
@@ -65,7 +64,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-import org.springframework.ui.ModelMap;
 import org.springframework.web.client.RestTemplate;
 
 import java.math.BigDecimal;
@@ -141,6 +139,9 @@ public class AwbService implements IAwbService {
 
     @Autowired
     IShipmentService shipmentService;
+
+    @Autowired
+    IShipmentSync shipmentSync;
 
     @Autowired
     private IV1Service v1Service;
@@ -226,6 +227,11 @@ public class AwbService implements IAwbService {
 
         Awb awb = convertRequestToEntity(request);
         awb.setAwbNumber(awb.getAwbShipmentInfo().getAwbNumber());
+        if(awb.getAwbPackingInfo() != null && awb.getAwbPackingInfo().size() > 0) {
+            for(var i : awb.getAwbPackingInfo()) {
+                i.setAwbNumber(awb.getAwbNumber());
+            }
+        }
         try {
             String oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
             updateAwbOtherChargesInfo(awb.getAwbOtherChargesInfo());
@@ -949,9 +955,11 @@ public class AwbService implements IAwbService {
 
         // fetch sehipment info
         ShipmentDetails shipmentDetails = shipmentDao.findById(request.getShipmentId()).get();
+        boolean syncShipment = false;
         if(shipmentDetails.getHouseBill() == null) {
             shipmentDetails.setHouseBill(shipmentService.generateCustomHouseBL(shipmentDetails));
             shipmentDao.save(shipmentDetails, false);
+            syncShipment = true;
         }
 
         // fetch all packings
@@ -964,6 +972,13 @@ public class AwbService implements IAwbService {
         AwbUtility.validateShipmentInfoBeforeGeneratingAwb(shipmentDetails);
 
         var awbPackingInfo = generateAwbPackingInfo(shipmentDetails, packings);
+        if(syncShipment) {
+            try {
+                shipmentSync.sync(shipmentDetails, null, null, UUID.randomUUID().toString());
+            } catch (Exception e) {
+                log.error("Error performing sync on shipment entity, {}", e);
+            }
+        }
         // generate Awb Entity
         return Awb.builder()
                 .awbNumber(shipmentDetails.getHouseBill())
@@ -983,7 +998,7 @@ public class AwbService implements IAwbService {
         awbShipmentInfo.setEntityId(shipmentDetails.getId());
         awbShipmentInfo.setEntityType(request.getAwbType());
         awbShipmentInfo.setAwbNumber(shipmentDetails.getHouseBill());
-        var shipperName = StringUtility.convertToString(shipmentDetails.getConsigner().getOrgData().get(PartiesConstants.FULLNAME));
+        var shipperName = StringUtility.convertToString(shipmentDetails.getConsigner() != null && shipmentDetails.getConsigner().getOrgData() != null ? shipmentDetails.getConsigner().getOrgData().get(PartiesConstants.FULLNAME): "");
         awbShipmentInfo.setShipperName(shipperName == null ? shipperName : shipperName.toUpperCase());
         var shipperAddress = AwbUtility.constructAddress(shipmentDetails.getConsigner() != null ? shipmentDetails.getConsigner().getAddressData() : null);
         awbShipmentInfo.setShipperAddress(shipperAddress == null ? shipperAddress : shipperAddress.toUpperCase());
@@ -1396,6 +1411,7 @@ public class AwbService implements IAwbService {
         }
 
         Awb awb = awbOptional.get();
+        Long awbId = awb.getId();
 
         Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(awb.getShipmentId());
         Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(awb.getConsolidationId());
@@ -1459,6 +1475,7 @@ public class AwbService implements IAwbService {
                 if (resetAwbRequest.getAwbType().equals(Constants.MAWB)) {
                     //awb.setAwbPackingInfo(generateMawbPackingInfo(consolidationDetails.get()));
                     awb.setAwbGoodsDescriptionInfo(generateMawbGoodsDescriptionInfo(consolidationDetails.get(), createAwbRequest, null));
+                    updateLinkHawbMawb(consolidationDetails.get(), awbId);
                 }
                 else {
                     awb.setAwbPackingInfo(generateAwbPackingInfo(shipmentDetails.get(), shipmentDetails.get().getPackingList()));
@@ -2784,7 +2801,7 @@ public class AwbService implements IAwbService {
             awbResponse.setDefaultAwbNotifyPartyInfo(defaultNotifyPartyInfo);
             awbResponse.setDefaultAwbRoutingInfo(defaultRoutingInfo);
         } catch (Exception e) {
-            log.error("Error while creating default awbShipmentInfo object for {}", awb);
+            log.error("Error while creating default awbShipmentInfo object for awb having id {} with error \n {}", awb.getId(), e.getMessage());
         }
 
         return defaultAwbShipmentInfo;

@@ -9,8 +9,10 @@ import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentsContainersMapping;
+import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import com.dpw.runner.shipment.services.service.interfaces.ISyncService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.syncing.Entity.ContainerRequestV2;
 import com.dpw.runner.shipment.services.syncing.Entity.V1DataSyncRequest;
@@ -70,7 +72,8 @@ public class ContainersSync implements IContainersSync {
 
     @Autowired
     private SyncEntityConversionService syncEntityConversionService;
-
+    @Autowired
+    private ISyncService syncService;
     private RetryTemplate retryTemplate = RetryTemplate.builder()
             .maxAttempts(3)
             .fixedBackoff(1000)
@@ -80,32 +83,15 @@ public class ContainersSync implements IContainersSync {
     @Override
     public ResponseEntity<?> sync(List<Long> containerIds, Page<ShipmentsContainersMapping> shipmentsContainersMappingPageable) {
         List<Containers> containers = getContainersFromIds(containerIds);
+        if(containers == null || containers.size() == 0) {
+            log.error("Error in syncing containers: Not able to get containers for ids: " + containerIds.toString());
+        }
         List<ContainerRequestV2> containerRequestV2 = convertEntityToSyncDto(containers, shipmentsContainersMappingPageable);
         String json = jsonHelper.convertToJson(V1DataSyncRequest.builder().entity(containerRequestV2).module(SyncingConstants.CONTAINERS).build());
-        callSync(json, containerIds);
+        syncService.pushToKafka(json, containers.stream().map(BaseEntity::getId).toList().toString(), containers.stream().map(BaseEntity::getGuid).toList().toString(), "Containers", UUID.randomUUID().toString());
         return ResponseHelper.buildSuccessResponse(containerRequestV2);
     }
 
-    @Async
-    private void callSync(String json, List<Long> containerIds) {
-        retryTemplate.execute(ctx -> {
-            log.info("Current retry : {}", ctx.getRetryCount());
-            if (ctx.getLastThrowable() != null) {
-                log.error("V1 error -> {}", ctx.getLastThrowable().getMessage());
-            }
-
-            V1DataSyncResponse response_ = v1Service.v1DataSync(json);
-            if (!response_.getIsSuccess()) {
-                try {
-                    emailServiceUtility.sendEmailForSyncEntity(String.valueOf(containerIds.toString()), null,
-                            "Containers", response_.getError().toString());
-                } catch (Exception ex) {
-                    log.error("Not able to send email for sync failure for Containers: " + ex.getMessage());
-                }
-            }
-            return ResponseHelper.buildSuccessResponse(response_);
-        });
-    }
 
     public List<Containers> getContainersFromIds(List<Long> containerIds) {
         ListCommonRequest listCommonRequest = constructListCommonRequest("id", containerIds, "IN");

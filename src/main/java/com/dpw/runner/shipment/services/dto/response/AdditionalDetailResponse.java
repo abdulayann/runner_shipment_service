@@ -138,6 +138,8 @@ public class AdditionalDetailResponse implements IRunnerResponse {
     private String cargoTermsDescription;
     private String bLRemarks;
     private String bLRemarksDescription;
+    private String summary;
+    private Boolean isSummaryUpdated;
     public Map<String, String> textData;
 
     public void addTextData(Map<String, String> dataMap) {

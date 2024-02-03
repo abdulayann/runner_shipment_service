@@ -83,11 +83,15 @@ public class PackingDao implements IPackingDao {
         List<Packing> responsePackings = new ArrayList<>();
         try {
             // TODO- Handle Transactions here
-            ListCommonRequest listCommonRequest = constructListCommonRequest("shipmentId", shipmentId, "=");
-            Pair<Specification<Packing>, Pageable> pair = fetchData(listCommonRequest, Packing.class);
-            Page<Packing> packings = findAll(pair.getLeft(), pair.getRight());
-            Map<Long, Packing> hashMap = packings.stream()
-                    .collect(Collectors.toMap(Packing::getId, Function.identity()));
+            Map<Long, Packing> hashMap;
+//            if(!Objects.isNull(packIdList) && !packIdList.isEmpty()) {
+                ListCommonRequest listCommonRequest = constructListCommonRequest("shipmentId", shipmentId, "=");
+                Pair<Specification<Packing>, Pageable> pair = fetchData(listCommonRequest, Packing.class);
+                Page<Packing> packings = findAll(pair.getLeft(), pair.getRight());
+                hashMap = packings.stream()
+                        .collect(Collectors.toMap(Packing::getId, Function.identity()));
+//            }
+            Map<Long, Packing> hashMapCopy = new HashMap<>(hashMap);
             List<Packing> packingRequestList = new ArrayList<>();
             if (packingList != null && packingList.size() != 0) {
                 for (Packing request : packingList) {
@@ -99,7 +103,7 @@ public class PackingDao implements IPackingDao {
                         request.setContainerId(null);
                     packingRequestList.add(request);
                 }
-                responsePackings = saveEntityFromShipment(packingRequestList, shipmentId);
+                responsePackings = saveEntityFromShipment(packingRequestList, shipmentId, hashMapCopy);
             }
             deletePackings(hashMap, ShipmentDetails.class.getSimpleName(), shipmentId);
             return responsePackings;
@@ -147,11 +151,15 @@ public class PackingDao implements IPackingDao {
         List<Packing> responsePackings = new ArrayList<>();
         try {
             // TODO- Handle Transactions here
-            ListCommonRequest listCommonRequest = constructListCommonRequest("consolidationId", consolidationId, "=");
-            Pair<Specification<Packing>, Pageable> pair = fetchData(listCommonRequest, Packing.class);
-            Page<Packing> packings = findAll(pair.getLeft(), pair.getRight());
-            Map<Long, Packing> hashMap = packings.stream()
-                    .collect(Collectors.toMap(Packing::getId, Function.identity()));
+            Map<Long, Packing> hashMap;
+//            if(!Objects.isNull(packIdList) && !packIdList.isEmpty()) {
+                ListCommonRequest listCommonRequest = constructListCommonRequest("consolidationId", consolidationId, "=");
+                Pair<Specification<Packing>, Pageable> pair = fetchData(listCommonRequest, Packing.class);
+                Page<Packing> packings = findAll(pair.getLeft(), pair.getRight());
+                hashMap = packings.stream()
+                        .collect(Collectors.toMap(Packing::getId, Function.identity()));
+//            }
+            Map<Long, Packing> hashMapCopy = new HashMap<>(hashMap);
             List<Packing> packingRequestList = new ArrayList<>();
             if (packingList != null && packingList.size() != 0) {
                 for (Packing request : packingList) {
@@ -161,7 +169,7 @@ public class PackingDao implements IPackingDao {
                     }
                     packingRequestList.add(request);
                 }
-                responsePackings = saveEntityFromConsole(packingRequestList, consolidationId);
+                responsePackings = saveEntityFromConsole(packingRequestList, consolidationId, hashMapCopy);
             }
             deletePackings(hashMap, null, null);
             return responsePackings;
@@ -217,6 +225,11 @@ public class PackingDao implements IPackingDao {
 
     @Override
     public List<Packing> saveAll(List<Packing> packingList) {
+        for(var packing : packingList){
+            Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(packing), Constants.PACKING, LifecycleHooks.ON_CREATE, false);
+            if (!errors.isEmpty())
+                throw new ValidationException(errors.toString());
+        }
         return packingRepository.saveAll(packingList);
     }
 
@@ -252,6 +265,48 @@ public class PackingDao implements IPackingDao {
                 log.error(e.getMessage());
             }
             res.add(req);
+        }
+        return res;
+    }
+    @Override
+    public List<Packing> saveEntityFromShipment(List<Packing> packings, Long shipmentId, Map<Long, Packing> oldEntityMap) {
+        List<Packing> res = new ArrayList<>();
+        Map<Long, String> oldEntityJsonStringMap = new HashMap<>();
+        for (Packing req : packings) {
+            if (req.getId() != null) {
+                long id = req.getId();
+                if (!oldEntityMap.containsKey(id)) {
+                    log.debug("Packing is null for Id {}", req.getId());
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
+                req.setCreatedAt(oldEntityMap.get(id).getCreatedAt());
+                req.setCreatedBy(oldEntityMap.get(id).getCreatedBy());
+                String oldEntityJsonString = jsonHelper.convertToJson(oldEntityMap.get(id));
+                oldEntityJsonStringMap.put(id, oldEntityJsonString);
+            }
+            req.setShipmentId(shipmentId);
+            res.add(req);
+        }
+        res = saveAll(res);
+        for (var req : res) {
+            String oldEntityJsonString = null;
+            String operation = DBOperationType.CREATE.name();
+            if(oldEntityJsonStringMap.containsKey(req.getId())){
+                oldEntityJsonString = oldEntityJsonStringMap.get(req.getId());
+                operation = DBOperationType.UPDATE.name();
+            }
+            try {
+                auditLogService.addAuditLog(
+                        AuditLogMetaData.builder()
+                                .newData(req)
+                                .prevData(oldEntityJsonString != null ? jsonHelper.readFromJson(oldEntityJsonString, Packing.class) : null)
+                                .parent(ShipmentDetails.class.getSimpleName())
+                                .parentId(shipmentId)
+                                .operation(operation).build()
+                );
+            } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException | InvocationTargetException | NoSuchMethodException e) {
+                log.error(e.getMessage());
+            }
         }
         return res;
     }
@@ -312,6 +367,24 @@ public class PackingDao implements IPackingDao {
             req = save(req);
             res.add(req);
         }
+        return res;
+    }
+    public List<Packing> saveEntityFromConsole(List<Packing> packings, Long consolidationId, Map<Long, Packing> oldEntityMap) {
+        List<Packing> res = new ArrayList<>();
+        for (Packing req : packings) {
+            if (req.getId() != null) {
+                long id = req.getId();
+                if (!oldEntityMap.containsKey(id)) {
+                    log.debug("Packing is null for Id {}", req.getId());
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
+                req.setCreatedAt(oldEntityMap.get(id).getCreatedAt());
+                req.setCreatedBy(oldEntityMap.get(id).getCreatedBy());
+            }
+            req.setConsolidationId(consolidationId);
+            res.add(req);
+        }
+        res = saveAll(res);
         return res;
     }
 

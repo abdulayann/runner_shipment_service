@@ -4,13 +4,12 @@ import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConst
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PackingModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShippingRequestAirModel;
-import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCommodityType;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
-import com.dpw.runner.shipment.services.validator.enums.Operators;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -42,6 +41,7 @@ public class ShippingRequestAirReport extends IReport{
         ShippingRequestAirModel shippingRequestAirModel = (ShippingRequestAirModel) documentModel;
         Map<String, Object> dictionary = new HashMap<>();
         populateShipmentFields(shippingRequestAirModel.shipment, false, dictionary);
+        V1TenantSettingsResponse v1TenantSettingsResponse = getTenantSettings();
 
         List<Map<String, Object>> packDictionary = new ArrayList<>();
         List<PackingModel> listOfPacks = shippingRequestAirModel.shipmentPacking;
@@ -53,8 +53,8 @@ public class ShippingRequestAirReport extends IReport{
             dict.put(ReportConstants.WIDTH, pack.getWidth());
             dict.put(ReportConstants.HEIGHT, pack.getHeight());
             dict.put(ReportConstants.PACK_COUNT, pack.getPacks());
-            dict.put(ReportConstants.GROSS_WEIGHT, pack.getWeight());
-            dict.put(ReportConstants.VOLUME, pack.getVolume());
+            dict.put(ReportConstants.GROSS_WEIGHT, ConvertToWeightNumberFormat(pack.getWeight(), v1TenantSettingsResponse));
+            dict.put(ReportConstants.VOLUME, ConvertToVolumeNumberFormat(pack.getVolume(), v1TenantSettingsResponse));
 
             packDictionary.add(dict);
 

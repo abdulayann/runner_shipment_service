@@ -55,6 +55,15 @@ public class RoutingsDao implements IRoutingsDao {
             throw new ValidationException(errors.toString());
         return routingsRepository.save(routings);
     }
+    @Override
+    public List<Routings> saveAll(List<Routings> routingsList) {
+        for(var routings: routingsList) {
+            Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(routings), Constants.ROUTING, LifecycleHooks.ON_CREATE, false);
+            if (!errors.isEmpty())
+                throw new ValidationException(errors.toString());
+        }
+        return routingsRepository.saveAll(routingsList);
+    }
 
     @Override
     public Page<Routings> findAll(Specification<Routings> spec, Pageable pageable) {
@@ -82,11 +91,15 @@ public class RoutingsDao implements IRoutingsDao {
         List<Routings> responseRoutings = new ArrayList<>();
         try {
             // TODO- Handle Transactions here
-            ListCommonRequest listCommonRequest = constructListCommonRequest("shipmentId", shipmentId, "=");
-            Pair<Specification<Routings>, Pageable> pair = fetchData(listCommonRequest, Routings.class);
-            Page<Routings> routings = findAll(pair.getLeft(), pair.getRight());
-            Map<Long, Routings> hashMap = routings.stream()
-                    .collect(Collectors.toMap(Routings::getId, Function.identity()));
+            Map<Long, Routings> hashMap;
+//            if(!Objects.isNull(routingsIdList) && !routingsIdList.isEmpty()) {
+                ListCommonRequest listCommonRequest = constructListCommonRequest("shipmentId", shipmentId, "=");
+                Pair<Specification<Routings>, Pageable> pair = fetchData(listCommonRequest, Routings.class);
+                Page<Routings> routings = findAll(pair.getLeft(), pair.getRight());
+                hashMap = routings.stream()
+                        .collect(Collectors.toMap(Routings::getId, Function.identity()));
+//            }
+            Map<Long, Routings> copyHashMap = new HashMap<>(hashMap);
             List<Routings> routingsRequestList = new ArrayList<>();
             if (routingsList != null && routingsList.size() != 0) {
                 for (Routings request : routingsList) {
@@ -96,7 +109,7 @@ public class RoutingsDao implements IRoutingsDao {
                     }
                     routingsRequestList.add(request);
                 }
-                responseRoutings = saveEntityFromShipment(routingsRequestList, shipmentId);
+                responseRoutings = saveEntityFromShipment(routingsRequestList, shipmentId, copyHashMap);
             }
             deleteRoutings(hashMap, ShipmentDetails.class.getSimpleName(), shipmentId);
             return responseRoutings;
@@ -141,6 +154,48 @@ public class RoutingsDao implements IRoutingsDao {
                 log.error(e.getMessage());
             }
             res.add(req);
+        }
+        return res;
+    }
+    @Override
+    public List<Routings> saveEntityFromShipment(List<Routings> routings, Long shipmentId, Map<Long, Routings> oldEntityMap) {
+        List<Routings> res = new ArrayList<>();
+        Map<Long, String> oldEntityJsonStringMap = new HashMap<>();
+        for (Routings req : routings) {
+            if (req.getId() != null) {
+                long id = req.getId();
+                if (!oldEntityMap.containsKey(id)) {
+                    log.debug("Routing is null for Id {}", req.getId());
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
+                req.setCreatedAt(oldEntityMap.get(id).getCreatedAt());
+                req.setCreatedBy(oldEntityMap.get(id).getCreatedBy());
+                String oldEntityJsonString = jsonHelper.convertToJson(oldEntityMap.get(id));
+                oldEntityJsonStringMap.put(id, oldEntityJsonString);
+            }
+            req.setShipmentId(shipmentId);
+            res.add(req);
+        }
+        res = saveAll(res);
+        for (Routings req : res) {
+            String oldEntityJsonString = null;
+            String operation = DBOperationType.CREATE.name();
+            if(oldEntityJsonStringMap.containsKey(req.getId())){
+                oldEntityJsonString = oldEntityJsonStringMap.get(req.getId());
+                operation = DBOperationType.UPDATE.name();
+            }
+            try {
+                auditLogService.addAuditLog(
+                        AuditLogMetaData.builder()
+                                .newData(req)
+                                .prevData(oldEntityJsonString != null ? jsonHelper.readFromJson(oldEntityJsonString, Routings.class) : null)
+                                .parent(ShipmentDetails.class.getSimpleName())
+                                .parentId(shipmentId)
+                                .operation(operation).build()
+                );
+            } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException | InvocationTargetException | NoSuchMethodException e) {
+                log.error(e.getMessage());
+            }
         }
         return res;
     }
@@ -220,11 +275,15 @@ public class RoutingsDao implements IRoutingsDao {
         List<Routings> responseRoutings = new ArrayList<>();
         try {
             // TODO- Handle Transactions here
-            ListCommonRequest listCommonRequest = constructListCommonRequest("consolidationId", consolidationId, "=");
-            Pair<Specification<Routings>, Pageable> pair = fetchData(listCommonRequest, Routings.class);
-            Page<Routings> routings = findAll(pair.getLeft(), pair.getRight());
-            Map<Long, Routings> hashMap = routings.stream()
-                    .collect(Collectors.toMap(Routings::getId, Function.identity()));
+            Map<Long, Routings> hashMap;
+//            if(!Objects.isNull(routingsIdList) && !routingsIdList.isEmpty()) {
+                ListCommonRequest listCommonRequest = constructListCommonRequest("consolidationId", consolidationId, "=");
+                Pair<Specification<Routings>, Pageable> pair = fetchData(listCommonRequest, Routings.class);
+                Page<Routings> routings = findAll(pair.getLeft(), pair.getRight());
+                hashMap = routings.stream()
+                        .collect(Collectors.toMap(Routings::getId, Function.identity()));
+//            }
+            Map<Long, Routings> copyHashMap = new HashMap<>(hashMap);
             List<Routings> routingsRequestList = new ArrayList<>();
             if (routingsList != null && routingsList.size() != 0) {
                 for (Routings request : routingsList) {
@@ -234,7 +293,7 @@ public class RoutingsDao implements IRoutingsDao {
                     }
                     routingsRequestList.add(request);
                 }
-                responseRoutings = saveEntityFromConsole(routingsRequestList, consolidationId);
+                responseRoutings = saveEntityFromConsole(routingsRequestList, consolidationId, copyHashMap);
             }
             deleteRoutings(hashMap, null, null);
             return responseRoutings;
@@ -302,6 +361,25 @@ public class RoutingsDao implements IRoutingsDao {
             req = save(req);
             res.add(req);
         }
+        return res;
+    }
+    @Override
+    public List<Routings> saveEntityFromConsole(List<Routings> routings, Long consolidationId, Map<Long, Routings> oldEntityMap) {
+        List<Routings> res = new ArrayList<>();
+        for (Routings req : routings) {
+            if (req.getId() != null) {
+                long id = req.getId();
+                if (!oldEntityMap.containsKey(id)) {
+                    log.debug("Routing is null for Id {}", req.getId());
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
+                req.setCreatedAt(oldEntityMap.get(id).getCreatedAt());
+                req.setCreatedBy(oldEntityMap.get(id).getCreatedBy());
+            }
+            req.setConsolidationId(consolidationId);
+            res.add(req);
+        }
+        res = saveAll(res);
         return res;
     }
 

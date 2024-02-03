@@ -1,11 +1,14 @@
 package com.dpw.runner.shipment.services.ReportingService.Reports;
 
+import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper;
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PartiesModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShippingInstructionModel;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
+import com.dpw.runner.shipment.services.entity.Hbl;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.repository.interfaces.IHblRepository;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -25,6 +28,8 @@ public class ShippingInstructionReport extends IReport{
 
     @Autowired
     JsonHelper jsonHelper;
+    @Autowired
+    private IHblRepository hblRepository;
     @Override
     public Map<String, Object> getData(Long id) {
         ShippingInstructionModel shippingInstructionModel = (ShippingInstructionModel) getDocumentModel(id);
@@ -90,15 +95,15 @@ public class ShippingInstructionReport extends IReport{
         dictionary.put(MBL_NUMBER, model.getShipment().getMasterBill());
         dictionary.put(HBL_NUMBER, model.getShipment().getHouseBill());
         if (model.getShipment() != null && model.getShipment().getCarrierDetails() != null && model.getShipment().getCarrierDetails().getOrigin() != null) {
-            var unlocRow = ReportHelper.getUNLocRow(model.getShipment().getCarrierDetails().getOrigin());
+            var unlocRow = getUNLocRow(model.getShipment().getCarrierDetails().getOrigin());
             dictionary.put(POR, unlocRow != null ? unlocRow
                     .getNameWoDiacritics() : null);
         }
         if (model.getShipment() != null && model.getShipment().getCarrierDetails() != null) {
-            dictionary.put(POL, ReportHelper.getPortDetails(model.getShipment().getCarrierDetails().getOriginPort()));
-            dictionary.put(POD, ReportHelper.getPortDetails(model.getShipment().getCarrierDetails().getDestinationPort()));
-            dictionary.put(POFD, ReportHelper.getPortDetails(model.getShipment().getCarrierDetails().getDestination()));
-            dictionary.put(PO_DELIVERY, ReportHelper.getPortDetails(model.getShipment().getCarrierDetails().getDestinationPort()));
+            dictionary.put(POL, getPortDetails(model.getShipment().getCarrierDetails().getOriginPort()));
+            dictionary.put(POD, getPortDetails(model.getShipment().getCarrierDetails().getDestinationPort()));
+            dictionary.put(POFD, getPortDetails(model.getShipment().getCarrierDetails().getDestination()));
+            dictionary.put(PO_DELIVERY, getPortDetails(model.getShipment().getCarrierDetails().getDestinationPort()));
             String formatPattern = "dd/MMM/y";
             V1TenantSettingsResponse v1TenantSettingsResponse = getTenantSettings();
             if(!CommonUtils.IsStringNullOrEmpty(v1TenantSettingsResponse.getDPWDateFormat()))
@@ -127,6 +132,7 @@ public class ShippingInstructionReport extends IReport{
         BigDecimal totalWeight = BigDecimal.ZERO;
         String unitOfTotalWeight = null;
         boolean breakFlagForWeight = false;
+        V1TenantSettingsResponse v1TenantSettingsResponse = getTenantSettings();
 
         if (model.getShipment().getPackingList() != null) {
 //            String packingJson = jsonHelper.convertToJson(model.getShipment().getPackingList());
@@ -164,11 +170,11 @@ public class ShippingInstructionReport extends IReport{
                 }
 
                 if(v.get(VOLUME) != null)
-                    v.put(VOLUME, twoDecimalPlacesFormat(v.get(VOLUME).toString()));
+                    v.put(VOLUME, ConvertToVolumeNumberFormat(v.get(VOLUME), v1TenantSettingsResponse));
                 if(v.get(WEIGHT) != null)
-                    v.put(WEIGHT, twoDecimalPlacesFormat(v.get(WEIGHT).toString()));
+                    v.put(WEIGHT, ConvertToWeightNumberFormat(v.get(WEIGHT), v1TenantSettingsResponse));
                 if(v.get(NET_WEIGHT) != null)
-                    v.put(NET_WEIGHT, twoDecimalPlacesFormat(v.get(NET_WEIGHT).toString()));
+                    v.put(NET_WEIGHT, ConvertToWeightNumberFormat(v.get(NET_WEIGHT), v1TenantSettingsResponse));
                 if(v.get(VOLUME_WEIGHT) != null)
                     v.put(VOLUME_WEIGHT, twoDecimalPlacesFormat(v.get(VOLUME_WEIGHT).toString()));
             }
@@ -185,7 +191,7 @@ public class ShippingInstructionReport extends IReport{
             dictionary.put(TOTAL_VOLUME, null);
             dictionary.put(UOTV, null);
         } else {
-            dictionary.put(TOTAL_VOLUME, twoDecimalPlacesFormat(totalVolume.toString()));
+            dictionary.put(TOTAL_VOLUME, ConvertToVolumeNumberFormat(totalVolume, v1TenantSettingsResponse));
             dictionary.put(UOTV, unitOfTotalVolume);
         }
 
@@ -193,7 +199,7 @@ public class ShippingInstructionReport extends IReport{
             dictionary.put(TOTAL_WEIGHT, null);
             dictionary.put(UOTW, null);
         } else {
-            dictionary.put(TOTAL_WEIGHT, twoDecimalPlacesFormat(totalWeight.toString()));
+            dictionary.put(TOTAL_WEIGHT, ConvertToWeightNumberFormat(totalWeight, v1TenantSettingsResponse));
             dictionary.put(UOTW, unitOfTotalWeight);
         }
 
@@ -210,5 +216,15 @@ public class ShippingInstructionReport extends IReport{
         AddBlDetails(dictionary, model.getShipment().getId());
 
         return dictionary;
+    }
+
+    public void AddBlDetails(Map<String, Object> dictionary, Long shipmentId) {
+        List<Hbl> hbl = hblRepository.findByShipmentId(shipmentId);
+        if(hbl != null && hbl.size() > 0){
+            dictionary.put(ReportConstants.BL_CARGO_TERMS_DESCRIPTION,
+                    hbl.get(0).getHblData().getCargoTermsDescription());
+            dictionary.put(ReportConstants.BL_REMARKS_DESCRIPTION,
+                    hbl.get(0).getHblData().getBlRemarksDescription());
+        }
     }
 }

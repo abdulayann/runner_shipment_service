@@ -25,6 +25,7 @@ import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
 import com.dpw.runner.shipment.services.service.interfaces.ISyncQueueService;
 import com.dpw.runner.shipment.services.syncing.Entity.PickupDeliveryDetailsRequestV2;
 import com.dpw.runner.shipment.services.syncing.constants.SyncingConstants;
+import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
 import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.nimbusds.jose.util.Pair;
@@ -42,10 +43,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.interceptor.TransactionAspectSupport;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
@@ -65,6 +63,9 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
 
     @Autowired
     private IShipmentDao shipmentDao;
+
+    @Autowired
+    private IShipmentSync shipmentSync;
 
     @Autowired
     private ModelMapper modelMapper;
@@ -300,7 +301,12 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
             }
 
             oldShipment = shipmentDao.save(oldShipment, true);
-            shipmentService.afterSave(oldShipment, false);
+            shipmentService.pushShipmentDataToDependentService(oldShipment, false);
+            try {
+                shipmentSync.sync(oldShipment, null, null, UUID.randomUUID().toString());
+            } catch (Exception e) {
+                log.error("Error performing sync on shipment entity, {}", e);
+            }
             PickupDeliveryDetailsResponse pickupDeliveryDetailsResponse = new PickupDeliveryDetailsResponse();
             if(pickupDeliveryDetailsRequestV2.getType().equals(Constants.PICK_UP))
                 pickupDeliveryDetailsResponse = jsonHelper.convertValue(oldShipment.getPickupDetails(), PickupDeliveryDetailsResponse.class);

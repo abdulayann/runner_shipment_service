@@ -31,6 +31,10 @@ public class ServiceDetailsDao implements IServiceDetailsDao {
     public ServiceDetails save(ServiceDetails serviceDetails) {
         return serviceDetailsRepository.save(serviceDetails);
     }
+    @Override
+    public List<ServiceDetails> saveAll(List<ServiceDetails> serviceDetailsList) {
+        return serviceDetailsRepository.saveAll(serviceDetailsList);
+    }
 
     @Override
     public Page<ServiceDetails> findAll(Specification<ServiceDetails> spec, Pageable pageable) {
@@ -52,11 +56,15 @@ public class ServiceDetailsDao implements IServiceDetailsDao {
         List<ServiceDetails> responseServiceDetails = new ArrayList<>();
         try {
             // TODO- Handle Transactions here
-            ListCommonRequest listCommonRequest = constructListCommonRequest("shipmentId", shipmentId, "=");
-            Pair<Specification<ServiceDetails>, Pageable> pair = fetchData(listCommonRequest, ServiceDetails.class);
-            Page<ServiceDetails> serviceDetailsPage = findAll(pair.getLeft(), pair.getRight());
-            Map<Long, ServiceDetails> hashMap = serviceDetailsPage.stream()
-                    .collect(Collectors.toMap(ServiceDetails::getId, Function.identity()));
+            Map<Long, ServiceDetails> hashMap;
+//            if(!Objects.isNull(serviceDetailsIdList) && !serviceDetailsIdList.isEmpty()) {
+                ListCommonRequest listCommonRequest = constructListCommonRequest("shipmentId", shipmentId, "=");
+                Pair<Specification<ServiceDetails>, Pageable> pair = fetchData(listCommonRequest, ServiceDetails.class);
+                Page<ServiceDetails> serviceDetailsPage = findAll(pair.getLeft(), pair.getRight());
+                hashMap = serviceDetailsPage.stream()
+                        .collect(Collectors.toMap(ServiceDetails::getId, Function.identity()));
+//            }
+            Map<Long, ServiceDetails> copyHashMap = new HashMap<>();
             List<ServiceDetails> serviceDetailsRequests = new ArrayList<>();
             if (serviceDetailsList != null && serviceDetailsList.size() != 0) {
                 for (ServiceDetails request : serviceDetailsList) {
@@ -66,7 +74,7 @@ public class ServiceDetailsDao implements IServiceDetailsDao {
                     }
                     serviceDetailsRequests.add(request);
                 }
-                responseServiceDetails = saveEntityFromShipment(serviceDetailsRequests, shipmentId);
+                responseServiceDetails = saveEntityFromShipment(serviceDetailsRequests, shipmentId, copyHashMap);
             }
             deleteServiceDetails(hashMap);
             return responseServiceDetails;
@@ -95,6 +103,25 @@ public class ServiceDetailsDao implements IServiceDetailsDao {
             req = save(req);
             res.add(req);
         }
+        return res;
+    }
+    @Override
+    public List<ServiceDetails> saveEntityFromShipment(List<ServiceDetails> serviceDetailsRequests, Long shipmentId, Map<Long, ServiceDetails> oldEntityMap) {
+        List<ServiceDetails> res = new ArrayList<>();
+        for(ServiceDetails req : serviceDetailsRequests){
+            if(req.getId() != null){
+                long id = req.getId();
+                if (!oldEntityMap.containsKey(id)) {
+                    log.debug("ServiceDetails is null for Id {}", req.getId());
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
+                req.setCreatedAt(oldEntityMap.get(id).getCreatedAt());
+                req.setCreatedBy(oldEntityMap.get(id).getCreatedBy());
+            }
+            req.setShipmentId(shipmentId);
+            res.add(req);
+        }
+        res = saveAll(res);
         return res;
     }
 

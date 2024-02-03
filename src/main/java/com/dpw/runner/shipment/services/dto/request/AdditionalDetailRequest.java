@@ -118,4 +118,6 @@ public class AdditionalDetailRequest extends CommonRequest implements IRunnerReq
     private String cargoTermsDescription;
     private String bLRemarks;
     private String bLRemarksDescription;
+    private String summary;
+    private Boolean isSummaryUpdated;
 }

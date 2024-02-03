@@ -19,7 +19,6 @@ import com.dpw.runner.shipment.services.dto.request.HblResetRequest;
 import com.dpw.runner.shipment.services.dto.request.hbl.HblCargoDto;
 import com.dpw.runner.shipment.services.dto.request.hbl.HblContainerDto;
 import com.dpw.runner.shipment.services.dto.request.hbl.HblDataDto;
-import com.dpw.runner.shipment.services.dto.response.AdditionalDetailResponse;
 import com.dpw.runner.shipment.services.dto.response.HblResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.CompanySettingsResponse;
 import com.dpw.runner.shipment.services.entity.*;
@@ -37,6 +36,7 @@ import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.syncing.Entity.HblRequestV2;
 import com.dpw.runner.shipment.services.syncing.constants.SyncingConstants;
 import com.dpw.runner.shipment.services.syncing.interfaces.IHblSync;
+import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
 import com.dpw.runner.shipment.services.utils.AwbUtility;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
@@ -72,6 +72,8 @@ public class HblService implements IHblService {
     private IHblDao hblDao;
     @Autowired
     private IShipmentDao shipmentDao;
+    @Autowired
+    private IShipmentSync shipmentSync;
     @Autowired
     private JsonHelper jsonHelper;
     @Autowired
@@ -116,7 +118,7 @@ public class HblService implements IHblService {
         try {
             hbl = hblDao.save(hbl);
             try {
-                hblSync.sync(hbl);
+                hblSync.sync(hbl, UUID.randomUUID().toString());
             }
             catch (Exception e) {
                 log.error("Error performing sync on hbl entity, {}", e);
@@ -150,7 +152,7 @@ public class HblService implements IHblService {
         try {
             hbl = hblDao.save(old);
             try {
-                hblSync.sync(hbl);
+                hblSync.sync(hbl, UUID.randomUUID().toString());
             }
             catch (Exception e) {
                 log.error("Error performing sync on hbl entity, {}", e);
@@ -278,7 +280,7 @@ public class HblService implements IHblService {
         if(!shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_SEA)
                 || !shipmentDetails.getDirection().equals(Constants.DIRECTION_EXP)
                 || (!shipmentDetails.getShipmentType().equals(Constants.CARGO_TYPE_FCL) && !shipmentDetails.getShipmentType().equals(Constants.SHIPMENT_TYPE_LCL))
-                || (shipmentDetails.getShipmentType().equals(Constants.SHIPMENT_TYPE_LCL) && shipmentDetails.getJobType().equals(Constants.JOB_TYPE_CLB))){
+                || (shipmentDetails.getShipmentType().equals(Constants.SHIPMENT_TYPE_LCL) && Objects.equals(shipmentDetails.getJobType(), Constants.JOB_TYPE_CLB))){
             return;
         }
         if(!Objects.isNull(shipmentDetails.getPackingList())) {
@@ -295,7 +297,7 @@ public class HblService implements IHblService {
         Hbl hbl = getHblFromShipmentId(request.getShipmentId());
 
         try {
-            hblSync.sync(hbl);
+            hblSync.sync(hbl, UUID.randomUUID().toString());
         }
         catch (Exception e) {
             log.error("Error performing sync on hbl entity, {}", e);
@@ -330,7 +332,7 @@ public class HblService implements IHblService {
         }
 
         try {
-            hblSync.sync(hbl);
+            hblSync.sync(hbl, UUID.randomUUID().toString());
         }
         catch (Exception e) {
             log.error("Error performing sync on hbl entity, {}", e);
@@ -468,10 +470,12 @@ public class HblService implements IHblService {
         hblData.setCargoNetWeightUnit(shipmentDetail.getNetWeightUnit());
         hblData.setCargoGrossWeightUnit(shipmentDetail.getWeightUnit());
         hblData.setCargoGrossVolumeUnit(shipmentDetail.getVolumeUnit());
+        boolean syncShipment = false;
         // generate HouseBill
         if(StringUtility.isEmpty(shipmentDetail.getHouseBill())) {
             shipmentDetail.setHouseBill(shipmentService.generateCustomHouseBL(shipmentDetail));
             shipmentDao.save(shipmentDetail, false);
+            syncShipment = true;
         }
         hblData.setHouseBill(shipmentDetail.getHouseBill());
         hblData.setVesselName(carrierDetails.getVessel());
@@ -486,7 +490,7 @@ public class HblService implements IHblService {
             if (!Objects.isNull(exportBroker.getAddressData()) )
                 hblData.setDeliveryAgentAddress(AwbUtility.constructAddress(exportBroker.getAddressData()));
         }
-        UnlocationsResponse destination = ReportHelper.getUNLocRow(carrierDetails.getDestination());
+        UnlocationsResponse destination = masterDataUtil.getUNLocRow(carrierDetails.getDestination());
         // TODO: This needs to re-visit after incorporating this setting in service
         if (/*Unico HBL*/true) {
             hblData.setTransportType(shipmentDetail.getTransportMode());
@@ -513,6 +517,13 @@ public class HblService implements IHblService {
                                 .map(c -> c.getReferenceNumber()).collect(Collectors.toList())));
             }
 
+        }
+        if (syncShipment) {
+            try {
+                shipmentSync.sync(shipmentDetail, null, null, UUID.randomUUID().toString());
+            } catch (Exception e) {
+                log.error("Error performing sync on shipment entity, {}", e);
+            }
         }
 
         return hblData;

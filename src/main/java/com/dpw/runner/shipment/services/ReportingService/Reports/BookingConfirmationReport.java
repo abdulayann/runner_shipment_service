@@ -23,7 +23,6 @@ import org.springframework.stereotype.Component;
 import java.util.*;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.getLocationData;
 
 @Component
 public class BookingConfirmationReport extends IReport{
@@ -80,7 +79,7 @@ public class BookingConfirmationReport extends IReport{
             locCodes.add(bookingConfirmationModel.shipment.getAdditionalDetails().getPaidPlace());
         }
 
-        Map<String, UnlocationsResponse> unlocationMap = getLocationData(locCodes);
+        Map<String, UnlocationsResponse> unlocationMap = masterDataUtils.getLocationData(locCodes);
 
         UnlocationsResponse paidPlace = null;
         UnlocationsResponse location = null;

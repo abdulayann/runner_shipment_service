@@ -5,10 +5,7 @@ import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.entity.*;
-import com.dpw.runner.shipment.services.syncing.Entity.ContainerRequestV2;
-import com.dpw.runner.shipment.services.syncing.Entity.PackingRequestV2;
-import com.dpw.runner.shipment.services.syncing.Entity.PartyRequestV2;
-import com.dpw.runner.shipment.services.syncing.Entity.RoutingsRequestV2;
+import com.dpw.runner.shipment.services.syncing.Entity.*;
 import com.nimbusds.jose.util.Pair;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -234,6 +231,31 @@ public class SyncEntityConversionService {
         var parties = modelMapper.map(partyRequestV2, Parties.class);
         parties.setIsAddressFreeText(partyRequestV2.getIsFreeTextAddress());
         return parties;
+    }
+
+    public List<EventsRequestV2> eventsV2ToV1(List<Events> eventsList) {
+        if(eventsList != null) {
+            List<EventsRequestV2> res = eventsList.stream().map(
+                    this::eventV2ToV1
+            ).toList();
+            return res;
+        }
+        return new ArrayList<>();
+    }
+
+    public EventsRequestV2 eventV2ToV1(Events events) {
+        EventsRequestV2 eventsRequestV2 = modelMapper.map(events, EventsRequestV2.class);
+        try {
+            if(Objects.equals(events.getEntityType(), Constants.SHIPMENT)) {
+                ShipmentDetails shipmentDetails = shipmentDao.findById(events.getEntityId()).get();
+                eventsRequestV2.setShipmentGuid(shipmentDetails.getGuid());
+            }
+            if(Objects.equals(events.getEntityType(), Constants.CONSOLIDATION)) {
+                ConsolidationDetails consolidationDetails = consolidationDetailsDao.findById(events.getEntityId()).get();
+                eventsRequestV2.setConsolidationGuid(consolidationDetails.getGuid());
+            }
+        } catch (Exception ignored) {}
+        return eventsRequestV2;
     }
 
 }

@@ -31,6 +31,10 @@ public class FileRepoDao implements IFileRepoDao {
     public FileRepo save(FileRepo fileRepo) {
         return fileRepoRepository.save(fileRepo);
     }
+    @Override
+    public List<FileRepo> saveAll(List<FileRepo> fileRepoList) {
+        return fileRepoRepository.saveAll(fileRepoList);
+    }
 
     @Override
     public Page<FileRepo> findAll(Specification<FileRepo> spec, Pageable pageable) {
@@ -57,11 +61,15 @@ public class FileRepoDao implements IFileRepoDao {
         List<FileRepo> responseFileRepo = new ArrayList<>();
         try {
             // TODO- Handle Transactions here
-            ListCommonRequest listCommonRequest = constructListRequestFromEntityId(entityId, entityType);
-            Pair<Specification<FileRepo>, Pageable> pair = fetchData(listCommonRequest, FileRepo.class);
-            Page<FileRepo> fileRepos = findAll(pair.getLeft(), pair.getRight());
-            Map<Long, FileRepo> hashMap = fileRepos.stream()
-                    .collect(Collectors.toMap(FileRepo::getId, Function.identity()));
+            Map<Long, FileRepo> hashMap;
+//            if(!Objects.isNull(fileRepoIdList) && !fileRepoIdList.isEmpty()) {
+                ListCommonRequest listCommonRequest = constructListRequestFromEntityId(entityId, entityType);
+                Pair<Specification<FileRepo>, Pageable> pair = fetchData(listCommonRequest, FileRepo.class);
+                Page<FileRepo> fileRepos = findAll(pair.getLeft(), pair.getRight());
+                hashMap = fileRepos.stream()
+                        .collect(Collectors.toMap(FileRepo::getId, Function.identity()));
+//            }
+            Map<Long, FileRepo> copyHashMap = new HashMap<>();
             List<FileRepo> fileReposRequestList = new ArrayList<>();
             if (fileRepoList != null && fileRepoList.size() != 0) {
                 for (FileRepo request : fileRepoList) {
@@ -71,7 +79,7 @@ public class FileRepoDao implements IFileRepoDao {
                     }
                     fileReposRequestList.add(request);
                 }
-                responseFileRepo = saveEntityFromOtherEntity(fileReposRequestList, entityId, entityType);
+                responseFileRepo = saveEntityFromOtherEntity(fileReposRequestList, entityId, entityType, copyHashMap);
             }
             deleteFileRepo(hashMap);
             return responseFileRepo;
@@ -101,6 +109,26 @@ public class FileRepoDao implements IFileRepoDao {
             req = save(req);
             res.add(req);
         }
+        return res;
+    }
+    @Override
+    public List<FileRepo> saveEntityFromOtherEntity(List<FileRepo> fileRepos, Long entityId, String entityType, Map<Long, FileRepo> oldEntityMap) {
+        List<FileRepo> res = new ArrayList<>();
+        for(FileRepo req : fileRepos){
+            if(req.getId() != null){
+                long id = req.getId();
+                if (!oldEntityMap.containsKey(id)) {
+                    log.debug("File Repo is null for Id {}", req.getId());
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
+                req.setCreatedAt(oldEntityMap.get(id).getCreatedAt());
+                req.setCreatedBy(oldEntityMap.get(id).getCreatedBy());
+            }
+            req.setEntityId(entityId);
+            req.setEntityType(entityType);
+            res.add(req);
+        }
+        res = saveAll(res);
         return res;
     }
 

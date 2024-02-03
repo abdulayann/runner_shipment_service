@@ -5,7 +5,6 @@ import com.dpw.runner.shipment.services.dao.interfaces.IShipmentsContainersMappi
 import com.dpw.runner.shipment.services.entity.ShipmentsContainersMapping;
 import com.dpw.runner.shipment.services.repository.interfaces.IShipmentsContainersMappingRepository;
 import com.dpw.runner.shipment.services.syncing.interfaces.IContainersSync;
-import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,9 +27,6 @@ public class ShipmentsContainersMappingDao implements IShipmentsContainersMappin
 
     @Autowired
     IContainersSync containersSync;
-
-    @Autowired
-    IShipmentSync shipmentSync;
 
     @Override
     public List<ShipmentsContainersMapping> findByContainerId(Long containerId) {
@@ -83,6 +79,7 @@ public class ShipmentsContainersMappingDao implements IShipmentsContainersMappin
             }
         }
         try {
+            log.info("Call sync containers from assignContainers with ids: " + containerIds);
             containersSync.sync(containerIds, findAllByContainerIds(containerIds));
         }
         catch (Exception e) {
@@ -109,6 +106,7 @@ public class ShipmentsContainersMappingDao implements IShipmentsContainersMappin
         }
         if(!fromV1) {
             try {
+                log.info("Call sync containers from assignShipments with ids: " + containerId.toString());
                 containersSync.sync(List.of(containerId), findAllByContainerIds(List.of(containerId)));
             }
             catch (Exception e) {
@@ -136,6 +134,7 @@ public class ShipmentsContainersMappingDao implements IShipmentsContainersMappin
         }
         if(!fromV1) {
             try {
+                log.info("Call sync containers from detachShipments with ids: " + containerId.toString());
                 containersSync.sync(List.of(containerId), findAllByContainerIds(List.of(containerId)));
             }
             catch (Exception e) {

@@ -234,11 +234,15 @@ public class ContainerDao implements IContainerDao {
             if (containersList != null) {
                 List<Containers> containerList = new ArrayList<>(containersList);
                 if(fromConsolidation) {
-                    ListCommonRequest listCommonRequest = constructListCommonRequest("consolidationId", consolidationId, "=");
-                    Pair<Specification<Containers>, Pageable> pair = fetchData(listCommonRequest, Containers.class);
-                    Page<Containers> containersPage = findAll(pair.getLeft(), pair.getRight());
-                    Map<Long, Containers> hashMap = containersPage.stream()
-                            .collect(Collectors.toMap(Containers::getId, Function.identity()));
+                    Map<Long, Containers> hashMap;
+                    ListCommonRequest listCommonRequest;
+//                    if(!Objects.isNull(containersIdList) && !containersIdList.isEmpty()) {
+                        listCommonRequest = constructListCommonRequest("consolidationId", consolidationId, "=");
+                        Pair<Specification<Containers>, Pageable> pair = fetchData(listCommonRequest, Containers.class);
+                        Page<Containers> containersPage = findAll(pair.getLeft(), pair.getRight());
+                        hashMap = containersPage.stream()
+                                .collect(Collectors.toMap(Containers::getId, Function.identity()));
+//                    }
                     for (Containers containers: containerList) {
                         containers.setConsolidationId(consolidationId);
                         Long id = containers.getId();
@@ -258,7 +262,11 @@ public class ContainerDao implements IContainerDao {
                                     packing.setContainerId(null);
                                 }
                                 packingDao.saveAll(packingPage.getContent());
-                                try { packingsSync.sync(packingPage.getContent()); } catch (Exception e) { log.error("Error performing sync on packings list, {}", e); }
+                                try {
+                                    packingsSync.sync(packingPage.getContent(), UUID.randomUUID().toString());
+                                } catch (Exception e) {
+                                    log.error("Error performing sync on packings list, {}", e.getMessage());
+                                }
                             }
                         }
                     }
