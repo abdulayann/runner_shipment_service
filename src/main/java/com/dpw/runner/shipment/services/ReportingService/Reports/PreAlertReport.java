@@ -68,10 +68,16 @@ public class PreAlertReport extends IReport {
         List<String> consigner = new ArrayList<>();
         if(preAlertModel.shipmentDetails.getConsigner() != null) {
             consigner = getOrgAddressWithPhoneEmail(preAlertModel.shipmentDetails.getConsigner());
+            if(preAlertModel.shipmentDetails.getConsigner().getAddressData() != null) {
+                dictionary.put(ReportConstants.ConsignerPhone, preAlertModel.shipmentDetails.getConsigner().getAddressData().get("ContactPhone"));
+            }
         }
         List<String> consignee = new ArrayList<>();
         if(preAlertModel.shipmentDetails.getConsignee() != null) {
             consignee = getOrgAddressWithPhoneEmail(preAlertModel.shipmentDetails.getConsignee());
+            if(preAlertModel.shipmentDetails.getConsigner().getAddressData() != null) {
+                dictionary.put(ReportConstants.CONSIGNEE_PHONE, preAlertModel.shipmentDetails.getConsignee().getAddressData().get("ContactPhone"));
+            }
         }
         List<String> notify = new ArrayList<>();
         if (preAlertModel.shipmentDetails.getAdditionalDetails().getNotifyParty() != null) {
@@ -86,6 +92,9 @@ public class PreAlertReport extends IReport {
             String consignerFullName = getValueFromMap(preAlertModel.shipmentDetails.getConsigner().getOrgData(), ReportConstants.FULL_NAME);
             dictionary.put(ReportConstants.CONSIGNER, consignerFullName);
             dictionary.put(ReportConstants.CONSIGNER_AIR, getCompleteNameAndAddress(consignerFullName, consigner));
+            try {
+                dictionary.put(ReportConstants.ConsignerFullName, consignerFullName);
+            } catch (Exception ignored) { }
         }
         if (preAlertModel.shipmentDetails.getConsignee() != null &&
                 preAlertModel.shipmentDetails.getConsignee().getOrgData() != null &&
@@ -93,6 +102,9 @@ public class PreAlertReport extends IReport {
             String consigneeFullName = getValueFromMap(preAlertModel.shipmentDetails.getConsignee().getOrgData(), ReportConstants.FULL_NAME);
             dictionary.put(ReportConstants.CONSIGNEE, consigneeFullName);
             dictionary.put(ReportConstants.CONSIGNEE_AIR, getCompleteNameAndAddress(consigneeFullName, consignee));
+            try {
+                dictionary.put(ReportConstants.CONSIGNEE_FULL_NAME, consigneeFullName);
+            } catch (Exception ignored) { }
         }
         if (preAlertModel.shipmentDetails.getAdditionalDetails() != null &&
                 preAlertModel.shipmentDetails.getAdditionalDetails().getNotifyParty() != null &&
