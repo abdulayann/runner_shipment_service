@@ -51,6 +51,7 @@ public class CustomsInstructionsReport extends IReport{
         CustomsInstructionsModel customsInstructionsModel = (CustomsInstructionsModel) documentModel;
         String json = jsonHelper.convertToJsonWithDateTimeFormatter(customsInstructionsModel.shipmentDetails, GetDPWDateFormatOrDefault());
         Map<String, Object> dictionary = jsonHelper.convertJsonToMap(json);
+        populateShipmentFields(((CustomsInstructionsModel) documentModel).shipmentDetails, true,dictionary);
         JsonDateFormat(dictionary);
         List<String> consigner = getOrgAddress(customsInstructionsModel.shipmentDetails.getConsigner());
         List<String> consignee = getOrgAddress(customsInstructionsModel.shipmentDetails.getConsignee());
