@@ -49,8 +49,8 @@ public class ShipmentCANReport extends IReport {
     public IDocumentModel getDocumentModel(Long id) {
         ShipmentCANModel shipmentCANModel = new ShipmentCANModel();
             List<Hbl> hblList = hblDao.findByShipmentId(id);
-            if(hblList == null || hblList.size() == 0)
-                throw new ValidationException("Bl Object not found!");
+//            if(hblList == null || hblList.size() == 0)
+//                throw new ValidationException("Bl Object not found!");
             shipmentCANModel.shipmentDetails = getShipment(id);
             shipmentCANModel.tenantDetails = getTenant();
             shipmentCANModel.consolidationModel = getFirstConsolidationFromShipmentId(id);
@@ -215,7 +215,7 @@ public class ShipmentCANReport extends IReport {
         if(shipmentCANModel.shipmentDetails.getVolume() != null)
             dictionary.put(ReportConstants.VOLUME_AND_UNIT, String.format("%s %s", ConvertToVolumeNumberFormat(shipmentCANModel.shipmentDetails.getVolume(), v1TenantSettingsResponse), shipmentCANModel.shipmentDetails.getVolumeUnit()));
         dictionary.put(ReportConstants.MARKS_AND_NUMBER, shipmentCANModel.shipmentDetails.getMarksNum());
-        dictionary.put(ReportConstants.NO_OF_PACKAGES, ReportHelper.addCommaWithoutDecimal(BigDecimal.valueOf(shipmentCANModel.shipmentDetails.getNoOfPacks())));
+        dictionary.put(ReportConstants.NO_OF_PACKAGES, ReportHelper.addCommaWithoutDecimal(shipmentCANModel.shipmentDetails.getNoOfPacks() == null ? BigDecimal.ZERO : BigDecimal.valueOf(shipmentCANModel.shipmentDetails.getNoOfPacks())));
         if(shipmentCANModel.consolidationModel != null && shipmentCANModel.consolidationModel.getPayment() != null) {
             dictionary.put(FREIGHT, shipmentCANModel.consolidationModel.getPayment());
         }

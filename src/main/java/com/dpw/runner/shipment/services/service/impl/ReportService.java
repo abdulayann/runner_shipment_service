@@ -99,10 +99,31 @@ public class ReportService implements IReportService {
     private IShipmentSync shipmentSync;
     @Autowired
     private IHblReleaseTypeMappingDao hblReleaseTypeMappingDao;
+    @Autowired
+    private IConsolidationDetailsDao consolidationDetailsDao;
 
     @Override
     public byte[] getDocumentData(CommonRequestModel request) throws DocumentException, IOException {
         ReportRequest reportRequest = (ReportRequest) request.getData();
+
+        // Generate combined shipment report via consolidation
+        if((reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.CARGO_MANIFEST) || reportRequest.getReportInfo().equalsIgnoreCase( ReportConstants.SHIPMENT_CAN_DOCUMENT) || reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.SHIPPING_INSTRUCTION)) && reportRequest.isFromConsolidation()) {
+            Optional<ConsolidationDetails> optionalConsolidationDetails = consolidationDetailsDao.findById(Long.valueOf(reportRequest.getReportId()));
+            if(optionalConsolidationDetails.isPresent()) {
+                ConsolidationDetails consolidationDetails = optionalConsolidationDetails.get();
+                byte[] dataByte;
+                List<byte[]> dataByteList = new ArrayList<>();
+                for(ShipmentDetails shipmentDetails : consolidationDetails.getShipmentsList()) {
+                    reportRequest.setFromConsolidation(false);
+                    reportRequest.setReportId(shipmentDetails.getId().toString());
+                    dataByte = getDocumentData(CommonRequestModel.buildRequest(reportRequest));
+                    if(dataByte != null) {
+                        dataByteList.add(dataByte);
+                    }
+                }
+                return CommonUtils.concatAndAddContent(dataByteList);
+            }
+        }
 
         ShipmentSettingsDetails tenantSettingsRow = new ShipmentSettingsDetails();
 
