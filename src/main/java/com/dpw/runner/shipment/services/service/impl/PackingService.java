@@ -29,6 +29,7 @@ import com.dpw.runner.shipment.services.exception.exceptions.ValidationException
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.service.interfaces.*;
 import com.dpw.runner.shipment.services.syncing.Entity.BulkPackingRequestV2;
 import com.dpw.runner.shipment.services.syncing.Entity.PackingRequestV2;
@@ -63,6 +64,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
@@ -163,14 +165,161 @@ public class PackingService implements IPackingService {
 
     @Override
     public void uploadPacking(BulkUploadRequest request) throws Exception {
+        if (request.getConsolidationId() == null) {
+            throw new ValidationException("Please save the consolidation and then try again.");
+        }
+
+        List<Packing> packings = packingDao.findByConsolidationId(request.getConsolidationId());
+        var packingsMap = packings.stream().collect(Collectors.toMap(Packing::getGuid, Function.identity()));
+
         Map<String, Set<String>> masterDataMap = new HashMap<>();
         List<Packing> packingList = parser.parseExcelFile(request.getFile(), request, null, masterDataMap, Packing.class, PackingExcelModel.class);
         packingList.stream().forEach(packing -> {
             packing.setConsolidationId(request.getConsolidationId());
             packing.setShipmentId(request.getShipmentId());
         });
-        packingDao.saveAll(packingList);
+
+        applyPackingValidations(packingList, request, masterDataMap);
+
+        packingList = packingDao.saveAll(packingList);
         packingSync.sync(packingList, request.getConsolidationId(), request.getShipmentId());
+//        afterSaveList(Packing)
+    }
+
+    private void applyPackingValidations(List<Packing> packingList, BulkUploadRequest request, Map<String, Set<String>> masterDataMap) throws Exception {
+        String transportMode = request.getTransportMode();
+        Set<String> dicCommodityType = masterDataMap.get("CommodityCodes");
+        Set<String> dicLocType = masterDataMap.get("Unlocations");
+//        Set<String> hazardousClassMasterData = masterDataMap.get(MasterDataType.DG_CLASS.getDescription());
+        for (int row = 0; row < packingList.size(); row++) {
+            Packing packingRow = packingList.get(row);
+//            if (packingRow.getIsOwnContainer() != null && containersRow.getIsShipperOwned() != null
+//                    && containersRow.getIsOwnContainer() == true && containersRow.getIsShipperOwned() == true) {
+//                String errorMessagePart1 = "Multiple container ownership is selected at row ";
+//                String errorMessagePart2 = " - Kindly change and try re-uploading.";
+//                throw new ValidationException(errorMessagePart1 + (row + 1) + errorMessagePart2);
+//            }
+            checkCalculatedVolumeAndActualVolume(row + 1, packingRow);
+//            applyContainerNumberValidation(transportMode, row + 1, containersRow);
+//            applyConatinerCountValidation(request, transportMode, row + 1, containersRow);
+            applyChargeableValidation(transportMode, row, packingRow, masterDataMap);
+//            checkForHandlingInfo(transportMode, row, containersRow);
+            applyCommodityTypeValidation(dicCommodityType, row, packingRow);
+//            applyContainerStuffingValidation(dicLocType, row, containersRow);
+//            applyHazardousValidation(hazardousClassMasterData, row, containersRow);
+//            isPartValidation(request, containersRow);
+        }
+    }
+
+    private static void applyHazardousValidation(Set<String> hazardousClassMasterData, int row, Containers containersRow) {
+        Boolean isHazardous = containersRow.getHazardous();
+        if (isHazardous != null) {
+            if (isHazardous == true) {
+                // DG CLASS(HAZARDOUS CLASS)
+                String dgClass = containersRow.getDgClass();
+                if (!StringUtils.isEmpty(dgClass)) {
+                    try {
+                        long dgClassId = Long.valueOf(dgClass);
+                        if (hazardousClassMasterData != null && !hazardousClassMasterData.contains(String.valueOf(dgClassId))) {
+                            throw new ValidationException("DG class is invalid at row: " + row);
+                        }
+                    } catch (Exception e) {
+                        throw new ValidationException("DG class is invalid at row: " + row + ". Please provide correct DG class.");
+                    }
+                } else {
+                    throw new ValidationException("DG class is empty at row: " + row + ". DG class is mandatory field for hazardous goods.");
+                }
+
+                //HAZARDOUS UN
+                String hazardousUn = containersRow.getHazardousUn();
+                if (!StringUtils.isEmpty(hazardousUn)) {
+                    containersRow.setHazardousUn(hazardousUn);
+                }
+            }
+        }
+    }
+
+    private static void applyCommodityTypeValidation(Set<String> dicCommodityType, int row, Packing packingRow) {
+        String commodityType = packingRow.getCommodity();
+        commodityType = commodityType == null ? StringUtils.EMPTY : commodityType.trim();
+        if (!StringUtils.isEmpty(commodityType)) {
+            if (dicCommodityType != null && dicCommodityType.contains(commodityType) == false) {
+                throw new ValidationException("Commodity Type " + commodityType + " is not valid at row " + row);
+            }
+        }
+    }
+
+    private void checkCalculatedVolumeAndActualVolume(int row, Packing packingRow) throws Exception {
+        if (!StringUtils.isEmpty(packingRow.getVolumeUnit())) {
+            if (packingRow.getVolume() != null) {
+                if (packingRow.getVolumeUnit() != VOLUME_UNIT_M3) {
+                    throw new ValidationException("Volume unit not in M3 at row: " + row);
+                }
+                BigDecimal actualVolume = packingRow.getVolume();
+                actualVolume = actualVolume.setScale(2, BigDecimal.ROUND_HALF_UP);
+                var calculatedVolume = getCalculatedVolume(packingRow);
+                calculatedVolume = calculatedVolume.setScale(2, BigDecimal.ROUND_HALF_UP);
+                if (actualVolume.compareTo(calculatedVolume) != 0) { // not equal
+                    throw new ValidationException("Volume is invalid at row: " + row);
+                }
+            }
+        } else if (packingRow.getVolume() != null && StringUtils.isEmpty(packingRow.getVolumeUnit())) {
+            throw new ValidationException("Volume unit is empty or Volume unit not entered at row: " + row);
+        }
+    }
+
+    private BigDecimal getCalculatedVolume(Packing packingRow) throws Exception {
+        if (!StringUtils.isEmpty(packingRow.getPacks()) && packingRow.getLength() != null
+                && packingRow.getHeight() != null && packingRow.getWidth() != null
+                && !StringUtils.isEmpty(packingRow.getWidthUnit()) && !StringUtils.isEmpty(packingRow.getHeightUnit())
+                && !StringUtils.isEmpty(packingRow.getHeightUnit())) {
+            String lengthUnit = packingRow.getLengthUnit().equals(FT) ? FOOT_FT : packingRow.getLengthUnit();
+            String widthUnit = packingRow.getWidthUnit().equals(FT) ? FOOT_FT : packingRow.getWidthUnit();
+            String heightUnit = packingRow.getHeightUnit().equals(FT) ? FOOT_FT : packingRow.getHeightUnit();
+            var length = new BigDecimal(convertUnit(LENGTH, packingRow.getLength(), lengthUnit, M).doubleValue());
+            var height = new BigDecimal(convertUnit(LENGTH, packingRow.getHeight(), heightUnit, M).doubleValue());
+            var width = new BigDecimal(convertUnit(LENGTH, packingRow.getWidth(), widthUnit, M).doubleValue());
+            int packs = Integer.parseInt(packingRow.getPacks());
+            return length.multiply(width).multiply(height).multiply(BigDecimal.valueOf(packs));
+        }
+        return null;
+    }
+
+    private void applyChargeableValidation(String transportMode, int row, Packing packingRow, Map<String, Set<String>> masterDataMap) throws Exception {
+        if (!StringUtils.isEmpty(packingRow.getChargeableUnit())) {
+            if (masterDataMap.containsKey(MasterDataType.WEIGHT_UNIT.getDescription()) &&
+                    !masterDataMap.get(MasterDataType.WEIGHT_UNIT.getDescription()).contains(packingRow.getChargeableUnit()))
+                throw new ValidationException("Chargeable unit is invalid at row: " + row);
+        }
+        if (packingRow.getChargeableUnit() != null && !packingRow.getChargeableUnit().isEmpty() &&
+                transportMode != null && transportMode.equalsIgnoreCase(Constants.TRANSPORT_MODE_AIR) &&
+                packingRow.getChargeable() != null) {
+            if (!packingRow.getChargeableUnit().equals(Constants.WEIGHT_UNIT_KG)) {
+                throw new ValidationException("Chargeable unit not in KG at row: " + row);
+            }
+            var actualChargeable = packingRow.getChargeable();
+            actualChargeable = actualChargeable.setScale(2, BigDecimal.ROUND_HALF_UP);
+            BigDecimal calculatedChargeable = null;
+
+            var vwob = consolidationService.calculateVolumeWeight(Constants.TRANSPORT_MODE_AIR,
+                    packingRow.getWeightUnit() == null ? Constants.WEIGHT_UNIT_KG : packingRow.getWeightUnit(),
+                    packingRow.getVolumeUnit() == null ? Constants.VOLUME_UNIT_M3 : packingRow.getVolumeUnit(),
+                    packingRow.getWeight() == null ? BigDecimal.ZERO : packingRow.getWeight(),
+                    packingRow.getVolume() == null ? BigDecimal.ZERO : packingRow.getVolume());
+            if (vwob.getChargeable() != null) {
+                calculatedChargeable = vwob.getChargeable();
+                calculatedChargeable = calculatedChargeable.setScale(2, BigDecimal.ROUND_HALF_UP);
+                if (calculatedChargeable != actualChargeable) {
+                    BigDecimal difference = calculatedChargeable.subtract(actualChargeable).abs();
+                    BigDecimal threshold = new BigDecimal("0.01");
+                    if (difference.compareTo(threshold) > 0) {
+                        throw new ValidationException("Chargeable is invalid at row: " + row);
+                    }
+                }
+            }
+        } else if (packingRow.getChargeable() != null && StringUtils.isEmpty(packingRow.getChargeableUnit())) {
+            throw new ValidationException("Chargeable unit is empty or Chargeable unit not entered at row: " + row);
+        }
     }
 
     @Override

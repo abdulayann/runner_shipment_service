@@ -242,7 +242,6 @@ public class ContainerService implements IContainerService {
         Set<String> dicLocType = masterDataMap.get("Unlocations");
         Set<String> hazardousClassMasterData = masterDataMap.get(MasterDataType.DG_CLASS.getDescription());
         for (int row = 0; row < containersList.size(); row++) {
-            // Update scenario to be implemented here
             Containers containersRow = containersList.get(row);
             if (containersRow.getIsOwnContainer() != null && containersRow.getIsShipperOwned() != null
                     && containersRow.getIsOwnContainer() == true && containersRow.getIsShipperOwned() == true) {

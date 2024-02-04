@@ -54,4 +54,6 @@ public interface IPackingDao {
     void deleteEntityFromContainer(Long id);
 
     List<Packing> updateEntityFromShipment(List<Packing> packingList, Long shipmentId, List<Packing> oldEntityList, List<Containers> containers, Map<UUID, String> map) throws Exception;
+
+    List<Packing> findByConsolidationId(Long consolidationId);
 }
