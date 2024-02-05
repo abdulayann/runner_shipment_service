@@ -419,4 +419,16 @@ public class ShipmentDetails extends MultiTenancy {
 
     @Column(name = "source_guid")
     private UUID sourceGuid;
+
+    @Column(name = "consignee_dps_address_id")
+    private Long consigneeDpsAddressId;
+
+    @Column(name = "client_dps_address_id")
+    private Long clientDpsAddressId;
+
+    @Column(name = "consignor_dps_address_id")
+    private Long consignorDpsAddressId;
+
+    @Column(name = "notify_party_dps_address_id")
+    private Long notifyPartyDpsAddressId;
 }
