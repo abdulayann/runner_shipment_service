@@ -357,7 +357,7 @@ public class ShipmentService implements IShipmentService {
             Map.entry("orderManagementId", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).fieldName("orderManagementId").isContainsText(true).build()),
             Map.entry("flightNumber", RunnerEntityMapping.builder().tableName("carrierDetails").dataType(String.class).fieldName("flightNumber").build()),
             Map.entry("consolidationId", RunnerEntityMapping.builder().tableName("consolidationList").dataType(Long.class).fieldName("id").build()),
-            Map.entry("voyageOrFlightNumber", RunnerEntityMapping.builder().tableName("carrierDetails").dataType(String.class).fieldName("voyageOrFlightNumber").isContainsText(true).build())
+            Map.entry("voyageOrFlightNumber", RunnerEntityMapping.builder().tableName("carrierDetails").dataType(String.class).fieldName("voyageOrFlightNumber").build())
     );
 
     @Override
