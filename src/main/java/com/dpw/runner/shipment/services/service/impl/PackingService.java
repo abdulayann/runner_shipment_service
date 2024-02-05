@@ -193,21 +193,40 @@ public class PackingService implements IPackingService {
 //        Set<String> hazardousClassMasterData = masterDataMap.get(MasterDataType.DG_CLASS.getDescription());
         for (int row = 0; row < packingList.size(); row++) {
             Packing packingRow = packingList.get(row);
-//            if (packingRow.getIsOwnContainer() != null && containersRow.getIsShipperOwned() != null
-//                    && containersRow.getIsOwnContainer() == true && containersRow.getIsShipperOwned() == true) {
-//                String errorMessagePart1 = "Multiple container ownership is selected at row ";
-//                String errorMessagePart2 = " - Kindly change and try re-uploading.";
-//                throw new ValidationException(errorMessagePart1 + (row + 1) + errorMessagePart2);
-//            }
             checkCalculatedVolumeAndActualVolume(row + 1, packingRow);
-//            applyContainerNumberValidation(transportMode, row + 1, containersRow);
-//            applyConatinerCountValidation(request, transportMode, row + 1, containersRow);
-            applyChargeableValidation(transportMode, row, packingRow, masterDataMap);
-//            checkForHandlingInfo(transportMode, row, containersRow);
-            applyCommodityTypeValidation(dicCommodityType, row, packingRow);
-//            applyContainerStuffingValidation(dicLocType, row, containersRow);
-//            applyHazardousValidation(hazardousClassMasterData, row, containersRow);
-//            isPartValidation(request, containersRow);
+            applyChargeableValidation(transportMode, row + 1, packingRow, masterDataMap);
+            applyCommodityTypeValidation(dicCommodityType, row + 1, packingRow);
+            applyVolumetricWeightValidation(row + 1, packingRow);
+            if (!StringUtils.isEmpty(packingRow.getFlashPoint()) && packingRow.getDGSubstanceId() == null) {
+                throw new ValidationException("FlashPoint is invalid at row: " + row + 1);
+            }
+        }
+    }
+
+    private void applyVolumetricWeightValidation(int i, Packing packingRow) throws Exception {
+        if (!StringUtils.isEmpty(packingRow.getVolumeWeightUnit())) {
+            if (packingRow.getVolumeWeight() != null) {
+                String wtunit = packingRow.getWeightUnit() != null ? packingRow.getWeightUnit() : WEIGHT_UNIT_KG;
+                var vwob = consolidationService.calculateVolumeWeight(Constants.TRANSPORT_MODE_AIR,
+                        packingRow.getWeightUnit() == null ? Constants.WEIGHT_UNIT_KG : packingRow.getWeightUnit(),
+                        packingRow.getVolumeUnit() == null ? Constants.VOLUME_UNIT_M3 : packingRow.getVolumeUnit(),
+                        packingRow.getWeight() == null ? BigDecimal.ZERO : packingRow.getWeight(),
+                        packingRow.getVolume() == null ? BigDecimal.ZERO : packingRow.getVolume());
+                if (vwob.getVolumeWeight() != null) {
+                    var calculatedVolumeWeight = vwob.getVolumeWeight();
+                    calculatedVolumeWeight = calculatedVolumeWeight.setScale(2, BigDecimal.ROUND_HALF_UP);
+                    var actualVolumeWeight = packingRow.getVolumeWeight();
+                    actualVolumeWeight = actualVolumeWeight.setScale(2, BigDecimal.ROUND_HALF_UP);
+                    if (!wtunit.equals(vwob.getVolumeWeightUnit())) {
+                        throw new ValidationException("Volumetric weight unit not in " + wtunit + " at row: " + i);
+                    }
+                    if (calculatedVolumeWeight.compareTo(actualVolumeWeight) != 0) { // not equal
+                        throw new ValidationException("Volumetric weight is invalid at row: " + i);
+                    }
+                }
+            }
+        } else if (packingRow.getVolumeWeight() != null && StringUtils.isEmpty(packingRow.getVolumeWeightUnit())) {
+            throw new ValidationException("Volumetric weight unit is empty or Volumetric weight unit not entered at row: " + i);
         }
     }
 
