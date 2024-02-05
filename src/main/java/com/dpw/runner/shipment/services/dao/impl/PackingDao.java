@@ -572,4 +572,9 @@ public class PackingDao implements IPackingDao {
             throw new Exception(e);
         }
     }
+
+    @Override
+    public List<Packing> findByConsolidationId(Long consolidationId) {
+        return packingRepository.findByConsolidationId(consolidationId);
+    }
 }

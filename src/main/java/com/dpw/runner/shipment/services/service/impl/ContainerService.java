@@ -214,11 +214,14 @@ public class ContainerService implements IContainerService {
 
     @Override
     public void uploadContainers(BulkUploadRequest request) throws Exception {
+        if (request == null || request.getConsolidationId() == null) {
+            throw new ValidationException("Please save the consolidation and then try again.");
+        }
         List<Containers> consolContainers = containerDao.findByConsolidationId(request.getConsolidationId());
         var containerMap = consolContainers.stream().collect(Collectors.toMap(Containers::getGuid, Function.identity()));
 
         Map<String, Set<String>> masterDataMap = new HashMap<>();
-        List<Containers> containersList = parser.parseExcelFile(request.getFile(), request, containerMap, masterDataMap, Containers.class, ContainersExcelModel.class);
+        List<Containers> containersList = parser.parseExcelFile(request.getFile(), request, containerMap, masterDataMap, Containers.class, ContainersExcelModel.class, null, null);
 
         containersList = containersList.stream().map(c ->
                 c.setConsolidationId(request.getConsolidationId())
@@ -242,7 +245,6 @@ public class ContainerService implements IContainerService {
         Set<String> dicLocType = masterDataMap.get("Unlocations");
         Set<String> hazardousClassMasterData = masterDataMap.get(MasterDataType.DG_CLASS.getDescription());
         for (int row = 0; row < containersList.size(); row++) {
-            // Update scenario to be implemented here
             Containers containersRow = containersList.get(row);
             if (containersRow.getIsOwnContainer() != null && containersRow.getIsShipperOwned() != null
                     && containersRow.getIsOwnContainer() == true && containersRow.getIsShipperOwned() == true) {
@@ -253,11 +255,11 @@ public class ContainerService implements IContainerService {
             checkCalculatedVolumeAndActualVolume(request, row + 1, containersRow);
             applyContainerNumberValidation(transportMode, row + 1, containersRow);
             applyConatinerCountValidation(request, transportMode, row + 1, containersRow);
-            applyChargeableValidation(transportMode, row, containersRow);
-            checkForHandlingInfo(transportMode, row, containersRow);
-            applyCommodityTypeValidation(dicCommodityType, row, containersRow);
-            applyContainerStuffingValidation(dicLocType, row, containersRow);
-            applyHazardousValidation(hazardousClassMasterData, row, containersRow);
+            applyChargeableValidation(transportMode, row + 1, containersRow);
+            checkForHandlingInfo(transportMode, row + 1, containersRow);
+            applyCommodityTypeValidation(dicCommodityType, row + 1, containersRow);
+            applyContainerStuffingValidation(dicLocType, row + 1, containersRow);
+            applyHazardousValidation(hazardousClassMasterData, row + 1, containersRow);
             //TODO :: Add own type validation in future after cms integration
             isPartValidation(request, containersRow);
         }
@@ -414,8 +416,11 @@ public class ContainerService implements IContainerService {
     @Override
     public void uploadContainerEvents(BulkUploadRequest request) throws Exception {
 //        CSVParsingUtil<Events> newParser = new CSVParsingUtil<>(Events.class);
+        if (request == null || request.getConsolidationId() == null) {
+            throw new ValidationException("Please save the consolidation and then try again.");
+        }
         Map<String, Set<String>> masterDataMap = new HashMap<>();
-        List<Events> eventsList = newParser.parseExcelFile(request.getFile(), request, null, masterDataMap, Events.class, ContainerEventExcelModel.class);
+        List<Events> eventsList = newParser.parseExcelFile(request.getFile(), request, null, masterDataMap, Events.class, ContainerEventExcelModel.class, null, null);
         eventsList = eventsList.stream().map(c -> {
             c.setEntityId(request.getConsolidationId());
             c.setEntityType("CONSOLIDATION");
