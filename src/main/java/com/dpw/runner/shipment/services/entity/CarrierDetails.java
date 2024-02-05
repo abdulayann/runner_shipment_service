@@ -9,6 +9,7 @@ import com.dpw.runner.shipment.services.utils.UnlocationData;
 import lombok.*;
 import lombok.experimental.Accessors;
 import org.hibernate.annotations.BatchSize;
+import org.hibernate.annotations.Formula;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Where;
 
@@ -100,4 +101,7 @@ public class CarrierDetails extends MultiTenancy {
 
     @Column(name = "vessel_berthing_date")
     private LocalDateTime vesselBerthingDate;
+
+    @Formula( "CONCAT_WS( ' ', voyage, flight_number ) " )
+    private String voyageOrFlightNumber;
 }

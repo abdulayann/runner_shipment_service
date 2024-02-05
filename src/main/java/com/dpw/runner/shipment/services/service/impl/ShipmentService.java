@@ -356,8 +356,9 @@ public class ShipmentService implements IShipmentService {
             Map.entry("isCmsHBLSent", RunnerEntityMapping.builder().tableName("additionalDetails").dataType(Boolean.class).fieldName("isCmsHBLSent").build()),
             Map.entry("orderManagementId", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).fieldName("orderManagementId").isContainsText(true).build()),
             Map.entry("flightNumber", RunnerEntityMapping.builder().tableName("carrierDetails").dataType(String.class).fieldName("flightNumber").build()),
-            Map.entry("consolidationId", RunnerEntityMapping.builder().tableName("consolidationList").dataType(Long.class).fieldName("id").build())
-            );
+            Map.entry("consolidationId", RunnerEntityMapping.builder().tableName("consolidationList").dataType(Long.class).fieldName("id").build()),
+            Map.entry("voyageOrFlightNumber", RunnerEntityMapping.builder().tableName("carrierDetails").dataType(String.class).fieldName("voyageOrFlightNumber").build())
+    );
 
     @Override
     @Transactional
@@ -1469,6 +1470,14 @@ public class ShipmentService implements IShipmentService {
         List<Long> tempConsolIds = new ArrayList<>();
         List<Long> removedConsolIds = new ArrayList<>();
         Long id = !Objects.isNull(oldEntity) ? oldEntity.getId() : null;
+
+        if(shipmentDetails.getCarrierDetails() != null) {
+            if (shipmentDetails.getTransportMode() != null && shipmentDetails.getTransportMode().equalsIgnoreCase(Constants.TRANSPORT_MODE_AIR)) {
+                shipmentDetails.getCarrierDetails().setVoyage(null);
+            } else {
+                shipmentDetails.getCarrierDetails().setFlightNumber(null);
+            }
+        }
 
         if (Objects.isNull(shipmentDetails.getSourceTenantId()))
             shipmentDetails.setSourceTenantId(Long.valueOf(UserContext.getUser().TenantId));

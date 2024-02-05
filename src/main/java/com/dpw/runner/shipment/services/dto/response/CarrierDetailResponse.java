@@ -53,4 +53,5 @@ public class CarrierDetailResponse implements IRunnerResponse {
     public Map<String, String> carrierMasterData;
     public Map<String, String> vesselsMasterData;
     private LocalDateTime vesselBerthingDate;
+    private String voyageOrFlightNumber;
 }
