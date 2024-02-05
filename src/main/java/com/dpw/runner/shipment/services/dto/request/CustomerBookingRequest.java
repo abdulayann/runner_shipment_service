@@ -70,5 +70,6 @@ public class CustomerBookingRequest extends CommonRequest implements IRunnerRequ
     private String notifyPartyCountry;
     private String parentContractId;
     private String salesBranch;
-    private String salesAgentEmail;
+    private String primarySalesAgentEmail;
+    private String secondarySalesAgentEmail;
 }

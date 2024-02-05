@@ -411,8 +411,11 @@ public class ShipmentDetails extends MultiTenancy {
     @Column(name = "notify_party_country")
     private String notifyPartyCountry;
 
-    @Column(name = "sales_agent_email")
-    private String salesAgentEmail;
+    @Column(name = "primary_sales_agent_email")
+    private String primarySalesAgentEmail;
+
+    @Column(name = "secondary_sales_agent_email")
+    private String secondarySalesAgentEmail;
 
     @Column(name = "sales_branch")
     private String salesBranch;
