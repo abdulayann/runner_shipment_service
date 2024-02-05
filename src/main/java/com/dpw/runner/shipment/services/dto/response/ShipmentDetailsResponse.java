@@ -174,4 +174,5 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     private Long clientDpsAddressId;
     private Long consignorDpsAddressId;
     private Long notifyPartyDpsAddressId;
+    private Long shipmentCount;
 }
