@@ -24,9 +24,11 @@ import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
+import com.dpw.runner.shipment.services.masterdata.response.VesselsResponse;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.validator.enums.Operators;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.modelmapper.ModelMapper;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -1523,7 +1525,24 @@ public class MasterDataUtils{
             orgRequest.setCriteriaRequests(orgCriteria);
             V1DataResponse orgResponse = v1Service.fetchOrganization(orgRequest);
             response = jsonHelper.convertValueToList(orgResponse.entities, EntityTransferOrganizations.class);
-        } catch (Exception e) { }
+        } catch (Exception e) {
+        }
         return response;
+    }
+
+    public String GetTheVesselNameForMMSINUmber(String vessel) {
+        if (!StringUtils.isEmpty(vessel))
+            return "";
+        List<Object> vesselCriteria = Arrays.asList(
+                Arrays.asList("Mmsi"),
+                "=",
+                vessel
+        );
+        CommonV1ListRequest vesselRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(vesselCriteria).build();
+        V1DataResponse vesselResponse = v1Service.fetchVesselData(vesselRequest);
+        List<VesselsResponse> vesselsResponse = jsonHelper.convertValueToList(vesselResponse.entities, VesselsResponse.class);
+        if (vesselsResponse != null && vesselsResponse.size() > 0)
+            return vesselsResponse.get(0).getName();
+        return StringUtils.EMPTY;
     }
 }
