@@ -233,4 +233,21 @@ public class PackingController {
         }
         return ResponseHelper.buildFailedResponse(responseMsg);
     }
+
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = ShipmentConstants.CALCULATION_SUCCESSFUL),
+            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
+    })
+    @PostMapping(ApiConstants.CALCULATE_VOLUMETRIC_WEIGHT)
+    public ResponseEntity<?> calculateVolumetricWeight(@RequestBody PackContainerNumberChangeRequest request) throws Exception {
+        String responseMsg;
+        try {
+            return (ResponseEntity<?>) packingService.calculateVolumetricWeightForAirAndChargeable(CommonRequestModel.buildRequest(request));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : "Error in calculations";
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
 }
