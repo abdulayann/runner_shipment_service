@@ -214,11 +214,14 @@ public class ContainerService implements IContainerService {
 
     @Override
     public void uploadContainers(BulkUploadRequest request) throws Exception {
+        if (request == null || request.getConsolidationId() == null) {
+            throw new ValidationException("Please save the consolidation and then try again.");
+        }
         List<Containers> consolContainers = containerDao.findByConsolidationId(request.getConsolidationId());
         var containerMap = consolContainers.stream().collect(Collectors.toMap(Containers::getGuid, Function.identity()));
 
         Map<String, Set<String>> masterDataMap = new HashMap<>();
-        List<Containers> containersList = parser.parseExcelFile(request.getFile(), request, containerMap, masterDataMap, Containers.class, ContainersExcelModel.class);
+        List<Containers> containersList = parser.parseExcelFile(request.getFile(), request, containerMap, masterDataMap, Containers.class, ContainersExcelModel.class, null, null);
 
         containersList = containersList.stream().map(c ->
                 c.setConsolidationId(request.getConsolidationId())
@@ -413,8 +416,11 @@ public class ContainerService implements IContainerService {
     @Override
     public void uploadContainerEvents(BulkUploadRequest request) throws Exception {
 //        CSVParsingUtil<Events> newParser = new CSVParsingUtil<>(Events.class);
+        if (request == null || request.getConsolidationId() == null) {
+            throw new ValidationException("Please save the consolidation and then try again.");
+        }
         Map<String, Set<String>> masterDataMap = new HashMap<>();
-        List<Events> eventsList = newParser.parseExcelFile(request.getFile(), request, null, masterDataMap, Events.class, ContainerEventExcelModel.class);
+        List<Events> eventsList = newParser.parseExcelFile(request.getFile(), request, null, masterDataMap, Events.class, ContainerEventExcelModel.class, null, null);
         eventsList = eventsList.stream().map(c -> {
             c.setEntityId(request.getConsolidationId());
             c.setEntityType("CONSOLIDATION");

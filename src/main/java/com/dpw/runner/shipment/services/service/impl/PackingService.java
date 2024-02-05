@@ -172,31 +172,34 @@ public class PackingService implements IPackingService {
         List<Packing> packings = packingDao.findByConsolidationId(request.getConsolidationId());
         var packingsMap = packings.stream().collect(Collectors.toMap(Packing::getGuid, Function.identity()));
 
+        Map<Long, Long> dicDGSubstanceUNDGContact = new HashMap<>();
+        Map<Long, String> dicDGSubstanceFlashPoint = new HashMap<>();
         Map<String, Set<String>> masterDataMap = new HashMap<>();
-        List<Packing> packingList = parser.parseExcelFile(request.getFile(), request, null, masterDataMap, Packing.class, PackingExcelModel.class);
+        List<Packing> packingList = parser.parseExcelFile(request.getFile(), request, null, masterDataMap, Packing.class, PackingExcelModel.class, dicDGSubstanceUNDGContact, dicDGSubstanceFlashPoint);
         packingList.stream().forEach(packing -> {
             packing.setConsolidationId(request.getConsolidationId());
             packing.setShipmentId(request.getShipmentId());
         });
 
-        applyPackingValidations(packingList, request, masterDataMap);
+        applyPackingValidations(packingList, request, masterDataMap, dicDGSubstanceUNDGContact, dicDGSubstanceFlashPoint);
 
         packingList = packingDao.saveAll(packingList);
         packingSync.sync(packingList, request.getConsolidationId(), request.getShipmentId());
-//        afterSaveList(Packing)
     }
 
-    private void applyPackingValidations(List<Packing> packingList, BulkUploadRequest request, Map<String, Set<String>> masterDataMap) throws Exception {
+    private void applyPackingValidations(List<Packing> packingList, BulkUploadRequest request, Map<String, Set<String>> masterDataMap,
+                                         Map<Long, Long> dicDGSubstanceUNDGContact, Map<Long, String> dicDGSubstanceFlashPoint
+    ) throws Exception {
         String transportMode = request.getTransportMode();
         Set<String> dicCommodityType = masterDataMap.get("CommodityCodes");
-        Set<String> dicLocType = masterDataMap.get("Unlocations");
-//        Set<String> hazardousClassMasterData = masterDataMap.get(MasterDataType.DG_CLASS.getDescription());
+        Set<String> hazardousClassMasterData = masterDataMap.get(MasterDataType.DG_CLASS.getDescription());
         for (int row = 0; row < packingList.size(); row++) {
             Packing packingRow = packingList.get(row);
             checkCalculatedVolumeAndActualVolume(row + 1, packingRow);
             applyChargeableValidation(transportMode, row + 1, packingRow, masterDataMap);
             applyCommodityTypeValidation(dicCommodityType, row + 1, packingRow);
             applyVolumetricWeightValidation(row + 1, packingRow);
+            applyHazardousValidation(hazardousClassMasterData, dicDGSubstanceUNDGContact, dicDGSubstanceFlashPoint, row + 1, packingRow);
             if (!StringUtils.isEmpty(packingRow.getFlashPoint()) && packingRow.getDGSubstanceId() == null) {
                 throw new ValidationException("FlashPoint is invalid at row: " + row + 1);
             }
@@ -230,29 +233,50 @@ public class PackingService implements IPackingService {
         }
     }
 
-    private static void applyHazardousValidation(Set<String> hazardousClassMasterData, int row, Containers containersRow) {
-        Boolean isHazardous = containersRow.getHazardous();
+
+    private static void applyHazardousValidation(Set<String> hazardousClassMasterData,
+                                                 Map<Long, Long> dicDGSubstanceUNDGContact, Map<Long, String> dicDGSubstanceFlashPoint
+            , int row, Packing packingRow) {
+        Boolean isHazardous = packingRow.getHazardous();
         if (isHazardous != null) {
             if (isHazardous == true) {
                 // DG CLASS(HAZARDOUS CLASS)
-                String dgClass = containersRow.getDgClass();
-                if (!StringUtils.isEmpty(dgClass)) {
-                    try {
-                        long dgClassId = Long.valueOf(dgClass);
-                        if (hazardousClassMasterData != null && !hazardousClassMasterData.contains(String.valueOf(dgClassId))) {
+                if (!StringUtils.isEmpty(packingRow.getDGClass())) {
+                    String dgClass = packingRow.getDGClass();
+                    if (!StringUtils.isEmpty(dgClass)) {
+                        if (hazardousClassMasterData != null && !hazardousClassMasterData.contains(dgClass)) {
                             throw new ValidationException("DG class is invalid at row: " + row);
                         }
-                    } catch (Exception e) {
-                        throw new ValidationException("DG class is invalid at row: " + row + ". Please provide correct DG class.");
                     }
-                } else {
-                    throw new ValidationException("DG class is empty at row: " + row + ". DG class is mandatory field for hazardous goods.");
                 }
 
-                //HAZARDOUS UN
-                String hazardousUn = containersRow.getHazardousUn();
-                if (!StringUtils.isEmpty(hazardousUn)) {
-                    containersRow.setHazardousUn(hazardousUn);
+                if (packingRow.getDGSubstanceId() != null) {
+                    if (!dicDGSubstanceUNDGContact.containsKey(packingRow.getDGSubstanceId())) {
+                        throw new ValidationException("DG Substance Id is invalid at row: " + row);
+                    }
+                }
+
+                if (!StringUtils.isEmpty(packingRow.getFlashPoint())) {
+                    if (packingRow.getDGSubstanceId() != null) {
+                        if (!dicDGSubstanceFlashPoint.containsKey(packingRow.getDGSubstanceId()) ||
+                                dicDGSubstanceFlashPoint.get(packingRow.getDGSubstanceId()) != packingRow.getFlashPoint()) {
+                            throw new ValidationException("FlashPoint is invalid at row: " + row);
+                        }
+                    } else if (packingRow.getDGSubstanceId() == null && !StringUtils.isEmpty(packingRow.getFlashPoint())) {
+                        throw new ValidationException("FlashPoint is invalid at row: " + row);
+                    }
+                }
+
+                if (!StringUtils.isEmpty(packingRow.getUNDGContact())) {
+                    if (packingRow.getDGSubstanceId() != null) {
+                        long substanceId = packingRow.getDGSubstanceId();
+                        if (!dicDGSubstanceUNDGContact.containsKey(substanceId) ||
+                                dicDGSubstanceUNDGContact.get(packingRow.getDGSubstanceId()) != Long.valueOf(packingRow.getUNDGContact())) {
+                            throw new ValidationException("UNDGContact is invalid at row: " + row);
+                        }
+                    } else if (packingRow.getDGSubstanceId() == null && !StringUtils.isEmpty(packingRow.getUNDGContact())) {
+                        throw new ValidationException("UNDGContact is invalid at row: " + row);
+                    }
                 }
             }
         }

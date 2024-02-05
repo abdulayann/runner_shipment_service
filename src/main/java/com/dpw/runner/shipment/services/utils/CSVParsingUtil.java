@@ -14,6 +14,7 @@ import com.dpw.runner.shipment.services.entity.Events;
 import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.enums.ContainerStatus;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferDGSubstance;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.MasterData;
@@ -484,13 +485,13 @@ public class CSVParsingUtil<T> {
     }
 
     public List<T> parseExcelFilePacking(MultipartFile file, BulkUploadRequest request, Map<UUID, T> mapOfEntity, Map<String, Set<String>> masterDataMap,
-                                         Class<T> entityType) throws IOException {
+                                         Class<T> entityType, Map<Long, Long> undg, Map<Long, String> flashpoint) throws IOException {
 
         Set<String> mandatoryColumns = Set.of("shipmentNumber", "packs");
         List<T> entityList = new ArrayList<>();
         List<String> unlocationsList = new ArrayList<>();
         List<String> commodityCodesList = new ArrayList<>();
-        List<Integer> dgSubstanceIdList = new ArrayList<>();
+        List<Long> dgSubstanceIdList = new ArrayList<>();
         Map<String, Long> dicShipmentId = getShipmentIds(request.getConsolidationId());
 
         int originPos = -1;
@@ -538,9 +539,6 @@ public class CSVParsingUtil<T> {
                 throw new ValidationException(mandatoryColumns.toString() + "column(s) is missing");
             }
 
-            //-----fetching master data in bulk
-            Map<String, Set<String>> masterListsMap = getAllMasterDataPacking(unlocationsList, commodityCodesList, masterDataMap);
-
             if (headerSet.size() < headerRow.getLastCellNum()) {
                 throw new ValidationException("Excel Sheet is invalid. All column should have column name.");
             }
@@ -566,7 +564,7 @@ public class CSVParsingUtil<T> {
                 }
                 if (dgSubstanceIdPos == -1) {
                     try {
-                        Integer dgSubstanceIdVal = Integer.parseInt(getCellValueAsString(row.getCell(dgSubstanceIdPos)));
+                        Long dgSubstanceIdVal = Long.parseLong(getCellValueAsString(row.getCell(dgSubstanceIdPos)));
                         dgSubstanceIdList.add(dgSubstanceIdVal);
                     } catch (Exception ex) {
                         throw new ValidationException("DGSubstanceId is invalid at row: " + i);
@@ -574,6 +572,12 @@ public class CSVParsingUtil<T> {
                 }
 
             }
+
+            //-----fetching master data in bulk
+            Map<String, Set<String>> masterListsMap = getAllMasterDataPacking(unlocationsList, commodityCodesList, masterDataMap);
+
+            setUNDGContactMasterDataAndFlashPointMasterData(dgSubstanceIdList, undg, flashpoint);
+
             Map<String, String> existingContainerNumbers = new HashMap<>();
             for (int i = 1; i <= sheet.getLastRowNum(); i++) {
                 Row row = sheet.getRow(i);
@@ -616,6 +620,11 @@ public class CSVParsingUtil<T> {
                         String cellValue = getCellValueAsString(cell);
                         checkForUnitValidations(masterListsMap, header[j], cellValue, i, request.getTransportMode());
                         checkForValueValidations(header[j], cellValue, i, request.getTransportMode());
+                        if (header[j].equalsIgnoreCase("origin")) {
+                            if (masterListsMap.containsKey("Unlocations") && !masterListsMap.get("Unlocations").contains(cellValue)) {
+                                throw new ValidationException("Origin " + cellValue + "is not valid at row " + i);
+                            }
+                        }
                         setField(entity, header[j], cellValue, i);
                     }
                 }
@@ -651,9 +660,9 @@ public class CSVParsingUtil<T> {
     }
 
     public List<T> parseExcelFile(MultipartFile file, BulkUploadRequest request, Map<UUID, T> mapOfEntity, Map<String, Set<String>> masterDataMap,
-                                  Class<T> entityType, Class modelClass) throws IOException {
+                                  Class<T> entityType, Class modelClass, Map<Long, Long> undg, Map<Long, String> flashpoint) throws IOException {
         if (entityType.getClass().getName().equals("Packing")) {
-            return parseExcelFilePacking(file, request, mapOfEntity, masterDataMap, entityType);
+            return parseExcelFilePacking(file, request, mapOfEntity, masterDataMap, entityType, undg, flashpoint);
         }
         if (entityType.getClass().getName().equals("Events")) {
             return parseExcelFileEvents(file, request, mapOfEntity, masterDataMap, entityType);
@@ -664,6 +673,7 @@ public class CSVParsingUtil<T> {
 
         int containerStuffingLocationPos = -1;
         int commodityCodePos = -1;
+        //Add
         int guidPos = -1;
 
         try (Workbook workbook = new XSSFWorkbook(file.getInputStream())) {
@@ -699,9 +709,6 @@ public class CSVParsingUtil<T> {
                 }
             }
 
-            //-----fetching master data in bulk
-            Map<String, Set<String>> masterListsMap = getAllMasterDataContainer(unlocationsList, commodityCodesList, masterDataMap);
-
             if (headerSet.size() < headerRow.getLastCellNum()) {
                 throw new ValidationException("Excel Sheet is invalid. All column should have column name.");
             }
@@ -726,6 +733,10 @@ public class CSVParsingUtil<T> {
                     guidSet.add(getCellValueAsString(row.getCell(guidPos)));
                 }
             }
+
+            //-----fetching master data in bulk
+            Map<String, Set<String>> masterListsMap = getAllMasterDataContainer(unlocationsList, commodityCodesList, masterDataMap);
+
             Map<String, String> existingContainerNumbers = new HashMap<>();
             for (int i = 1; i <= sheet.getLastRowNum(); i++) {
                 Row row = sheet.getRow(i);
@@ -1240,10 +1251,10 @@ public class CSVParsingUtil<T> {
         var countryCodeMasterData = CompletableFuture.runAsync(withMdc(() -> this.fetchMasterLists(MasterDataType.COUNTRIES, masterDataMap)), executorService);
         var packUnitMasterData = CompletableFuture.runAsync(withMdc(() -> this.fetchMasterLists(MasterDataType.PACKS_UNIT, masterDataMap)), executorService);
 //        var containerTypeMasterData = CompletableFuture.runAsync(withMdc(() -> this.fetchContainerType(masterDataMap)), executorService);
-//        var unlocationMasterData = CompletableFuture.runAsync(withMdc(() -> this.fetchUnlocationData(unlocationsList, masterDataMap)), executorService);
+        var unlocationMasterData = CompletableFuture.runAsync(withMdc(() -> this.fetchUnlocationData(unlocationsList, masterDataMap)), executorService);
         var commodityMasterData = CompletableFuture.runAsync(withMdc(() -> this.fetchCommodityData(commodityCodesList, masterDataMap)), executorService);
 
-        CompletableFuture.allOf(weightUnitMasterData, volumeUnitMasterData, temperatureUnitMasterData, countryCodeMasterData, dimensionUnitMasterData, dgClassMasterData, packUnitMasterData, commodityMasterData).join();
+        CompletableFuture.allOf(unlocationMasterData, weightUnitMasterData, volumeUnitMasterData, temperatureUnitMasterData, countryCodeMasterData, dimensionUnitMasterData, dgClassMasterData, packUnitMasterData, commodityMasterData).join();
 
         return masterDataMap;
     }
@@ -1267,8 +1278,7 @@ public class CSVParsingUtil<T> {
     }
 
     private Map<String, Set<String>> getAllMasterDataEvents(Map<String, Set<String>> masterDataMap) {
-        var orderEventsMasterData = CompletableFuture.runAsync(withMdc(() -> this.fetchMasterLists(MasterDataType.ORDER_EVENTS, masterDataMap)), executorService);
-        CompletableFuture.allOf(orderEventsMasterData).join();
+        this.fetchMasterLists(MasterDataType.ORDER_EVENTS, masterDataMap);
         return masterDataMap;
     }
 
@@ -1345,6 +1355,29 @@ public class CSVParsingUtil<T> {
             }
         }
     }
+
+    public void setUNDGContactMasterDataAndFlashPointMasterData(List<Long> dgSubstanceIdList,
+                                                                Map<Long, Long> undg, Map<Long, String> flashpoint) {
+        CommonV1ListRequest request = new CommonV1ListRequest();
+        if (dgSubstanceIdList.isEmpty())
+            return;
+        List<Object> criteria = new ArrayList<>();
+        List<Object> field = new ArrayList<>(List.of("Id"));
+        String operator = Operators.IN.getValue();
+        criteria.addAll(List.of(field, operator, List.of(dgSubstanceIdList)));
+        request.setCriteriaRequests(criteria);
+        V1DataResponse response = v1Service.fetchDangerousGoodData(request);
+        if (response != null) {
+            if (response.entities instanceof List<?>) {
+                List<EntityTransferDGSubstance> list = jsonHelper.convertValueToList(response.entities, EntityTransferDGSubstance.class);
+                if (list != null && !list.isEmpty()) {
+                    undg.putAll(list.stream().filter(Objects::nonNull).collect(Collectors.toMap(EntityTransferDGSubstance::getId, EntityTransferDGSubstance::getUNIDNo)));
+                    flashpoint.putAll(list.stream().filter(Objects::nonNull).collect(Collectors.toMap(EntityTransferDGSubstance::getId, EntityTransferDGSubstance::getFlashPoint)));
+                }
+            }
+        }
+    }
+
 
     public Runnable withMdc(Runnable runnable) {
         Map<String, String> mdc = MDC.getCopyOfContextMap();
