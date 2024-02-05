@@ -482,6 +482,8 @@ public abstract class IReport {
                             getValueFromMap(consignerAddress,ZIP_POST_CODE));
                     dictionary.put(ReportConstants.CONSIGNER_NAME, consignerAddress.get(COMPANY_NAME));
                     dictionary.put(ReportConstants.CONSIGNER_CONTACT_PERSON, consignerAddress.get("ContactPerson"));
+                    dictionary.put(ReportConstants.CONSIGNER_ADDRESS, ReportHelper.getOrgAddress(shipmentConsigner));
+
                     try {
                         dictionary.put(ReportConstants.ConsignerPhone, consignerAddress.get("ContactPhone"));
                         dictionary.put(ReportConstants.ConsignerFullName, shipmentConsigner.getOrgData().get("FullName"));
@@ -511,6 +513,12 @@ public abstract class IReport {
                     dictionary.put(ReportConstants.CONSIGNEE_CONTACT_PERSON,getValueFromMap(consigneeAddress,"ContactPerson"));
                     String contactPerson = getValueFromMap(consigneeAddress,"ContactPerson");
                     dictionary.put(ReportConstants.CONSIGNEE_PIC, contactPerson == null ? "" : contactPerson.toUpperCase());
+                    dictionary.put(ReportConstants.CONSIGNEE_ADDRESS, ReportHelper.getOrgAddress(shipmentConsignee));
+
+                    try {
+                        dictionary.put(ReportConstants.CONSIGNEE_PHONE, consigneeAddress.get("ContactPhone"));
+                        dictionary.put(ReportConstants.CONSIGNEE_FULL_NAME, shipmentConsignee.getOrgData().get("FullName"));
+                    } catch (Exception ignored) { }
                 }
                 String consigneeFullName = null;
                 if(shipmentConsignee.getOrgData() != null) {
@@ -1005,13 +1013,18 @@ public abstract class IReport {
         HblDataDto hblDataDto = hbl.getHblData();
         List<String> consignor = ReportHelper.getOrgAddress(hblDataDto != null ? hblDataDto.getConsignorName() : null, hblDataDto != null ? hblDataDto.getConsignorAddress() : null, null, null, null, null);
         List<String> consignee = ReportHelper.getOrgAddress(hblDataDto != null ? hblDataDto.getConsigneeName() : null, hblDataDto != null ? hblDataDto.getConsigneeAddress() : null, null, null, null, null);
-        dictionary.put(ReportConstants.CONSIGNER, consignor);
-        dictionary.put(ReportConstants.CONSIGNEE, consignee);
-        dictionary.put(ReportConstants.CONSIGNEE_PIC, consignee);
-
-        dictionary.put(ReportConstants.CONSIGNEE_NAME_FREE_TEXT, consignee.stream().map(StringUtility::toUpperCase).collect(Collectors.toList()));
-        dictionary.put(ReportConstants.CONSIGNER_NAME_FREETEXT_INCAPS, consignor.stream().map(StringUtility::toUpperCase).collect(Collectors.toList()));
-        dictionary.put(ReportConstants.NOTIFY_PARTY_NAME_FREETEXT_INCAPS, notify.stream().map(StringUtility::toUpperCase).collect(Collectors.toList()));
+        if(consignor != null && consignor.size() > 0) {
+            dictionary.put(ReportConstants.CONSIGNER, consignor);
+            dictionary.put(ReportConstants.CONSIGNER_NAME_FREETEXT_INCAPS, consignor.stream().map(StringUtility::toUpperCase).collect(Collectors.toList()));
+        }
+        if(consignee != null && consignee.size() > 0) {
+            dictionary.put(ReportConstants.CONSIGNEE, consignee);
+            dictionary.put(ReportConstants.CONSIGNEE_PIC, consignee);
+            dictionary.put(ReportConstants.CONSIGNEE_NAME_FREE_TEXT, consignee.stream().map(StringUtility::toUpperCase).collect(Collectors.toList()));
+        }
+        if(notify != null && notify.size() > 0) {
+            dictionary.put(ReportConstants.NOTIFY_PARTY_NAME_FREETEXT_INCAPS, notify.stream().map(StringUtility::toUpperCase).collect(Collectors.toList()));
+        }
 
         V1TenantSettingsResponse v1TenantSettingsResponse = getTenantSettings();
         String tsDateTimeFormat = v1TenantSettingsResponse.getDPWDateFormat();

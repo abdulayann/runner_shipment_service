@@ -2,8 +2,10 @@ package com.dpw.runner.shipment.services.dto.request;
 
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import lombok.Getter;
+import lombok.Setter;
 
 @Getter
+@Setter
 public class ReportRequest implements IRunnerRequest {
     String reportInfo;
     String reportKey;
@@ -25,4 +27,5 @@ public class ReportRequest implements IRunnerRequest {
     String requestSource = null;
     String noOfCopies = null;
     boolean fromShipment;
+    boolean fromConsolidation;
 }

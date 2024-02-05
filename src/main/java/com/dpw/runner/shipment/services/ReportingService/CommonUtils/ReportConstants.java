@@ -165,10 +165,12 @@ public class ReportConstants {
     public static final String CONTAINER_COUNT_BY_CODE = "ContainerCountByCode";
     public static final String VESSEL_NAME_AND_VOYAGE = "VesselNameAndVoyage";
     public static final String CONSIGNER = "Consigner";
-    public static final String CONSIGNOR = "Consigner";
+    public static final String CONSIGNOR = "Consignor";
     public static final String CONSIGNER_AIR = "ConsignerAir";
     public static final String CONSIGNEE = "Consignee";
     public static final String CONSIGNEE_AIR = "ConsigneeAir";
+    public static final String CONSIGNEE_PHONE = "ConsigneePhone";
+    public static final String CONSIGNEE_FULL_NAME = "ConsigneeFullName";
     public static final String EXPORTER = "Exporter";
     public static final String CONSIGNER_ADDRESS = "ConsignerAddress";
     public static final String ConsignerPhone = "ConsignerPhone";
@@ -961,4 +963,5 @@ public class ReportConstants {
     public static String SHIPMENT_PACKING_PACKS_PCKGSUMMARY = "pckgsummary";
     public static String SHIPMENT_PACKING_PACKS_COMMERCIALINVOICENUMBER = "CommercialInvoiceNumber";
 
+    public static final String SHIPMENT_DETAILS_CARGOCONTROLNO = "CargoControlNo";
 }
