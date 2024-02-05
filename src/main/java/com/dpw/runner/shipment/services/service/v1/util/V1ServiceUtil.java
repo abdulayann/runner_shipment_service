@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.service.v1.util;
 
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.commons.constants.CustomerBookingConstants;
 import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.commons.constants.ShipmentConstants;
@@ -278,6 +279,10 @@ public class V1ServiceUtil {
 
     public void validateCreditLimit(Parties client, String restrictedItem, UUID shipmentGuid) {
         try {
+            Boolean enableCreditLimitManagement = TenantSettingsDetailsContext.getCurrentTenantSettings() != null? TenantSettingsDetailsContext.getCurrentTenantSettings().getEnableCreditLimitManagement() : false;
+            if(!enableCreditLimitManagement){
+                return;
+            }
             Integer clientId = null;
             Integer clientAddressId = null;
             if(client.getOrgData().containsKey("Id"))

@@ -55,7 +55,6 @@ public class DeliveryOrderReport extends IReport{
     public IDocumentModel getDocumentModel(Long id) {
         DeliveryOrderModel deliveryOrderModel = new DeliveryOrderModel();
         deliveryOrderModel.shipmentDetails = getShipment(id);
-        v1ServiceUtil.validateCreditLimit(modelMapper.map(deliveryOrderModel.shipmentDetails.getClient(), Parties.class), Constants.DO_PRINT, deliveryOrderModel.shipmentDetails.getGuid());
         deliveryOrderModel.usersDto = UserContext.getUser();
         if(deliveryOrderModel.shipmentDetails.getConsolidationList() != null && deliveryOrderModel.shipmentDetails.getConsolidationList().size() > 0)
         {
