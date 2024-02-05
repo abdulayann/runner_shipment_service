@@ -1471,6 +1471,14 @@ public class ShipmentService implements IShipmentService {
         List<Long> removedConsolIds = new ArrayList<>();
         Long id = !Objects.isNull(oldEntity) ? oldEntity.getId() : null;
 
+        if(shipmentDetails.getCarrierDetails() != null) {
+            if (shipmentDetails.getTransportMode() != null && shipmentDetails.getTransportMode().equalsIgnoreCase(Constants.TRANSPORT_MODE_AIR)) {
+                shipmentDetails.getCarrierDetails().setVoyage(null);
+            } else {
+                shipmentDetails.getCarrierDetails().setFlightNumber(null);
+            }
+        }
+
         if (Objects.isNull(shipmentDetails.getSourceTenantId()))
             shipmentDetails.setSourceTenantId(Long.valueOf(UserContext.getUser().TenantId));
 
