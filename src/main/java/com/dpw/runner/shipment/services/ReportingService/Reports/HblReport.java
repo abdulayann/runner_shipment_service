@@ -69,7 +69,6 @@ public class HblReport extends IReport{
     public IDocumentModel getDocumentModel(Long id) {
         HblModel hblModel = new HblModel();
         hblModel.shipment = getShipment(id);
-        v1ServiceUtil.validateCreditLimit(modelMapper.map(hblModel.shipment.getClient(), Parties.class), Constants.HBL_PRINT, hblModel.shipment.getGuid());
         hblModel.shipmentSettingsDetails = getShipmentSettings(TenantContext.getCurrentTenant());
         hblModel.tenantSettingsResponse = getTenantSettings();
         hblModel.user = UserContext.getUser();

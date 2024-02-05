@@ -72,7 +72,6 @@ public class HawbReport extends IReport{
         HawbModel hawbModel = new HawbModel();
         hawbModel.usersDto = UserContext.getUser();
         hawbModel.shipmentDetails = getShipment(id);
-        v1ServiceUtil.validateCreditLimit(modelMapper.map(hawbModel.shipmentDetails.getClient(), Parties.class), Constants.HAWB_PRINT, hawbModel.shipmentDetails.getGuid());
         if(hawbModel.shipmentDetails != null && hawbModel.shipmentDetails.getConsolidationList() != null && !hawbModel.shipmentDetails.getConsolidationList().isEmpty())
         {
             hawbModel.setConsolidationDetails(hawbModel.shipmentDetails.getConsolidationList().get(0));
