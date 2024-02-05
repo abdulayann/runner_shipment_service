@@ -13,6 +13,7 @@ import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
 import com.dpw.runner.shipment.services.dto.request.platform.*;
 import com.dpw.runner.shipment.services.dto.response.CheckCreditLimitResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.ListContractResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
 import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
@@ -178,8 +179,21 @@ public class BookingIntegrationsUtility {
                 .business_code(customerBooking.getBusinessCode())
                 .bill_to_party(Arrays.asList(createOrgRequest(customerBooking.getCustomer())))
                 .parent_contract_id(customerBooking.getParentContractId())
+                .branch_info(ListContractResponse.BranchInfo.builder().
+                        id(customerBooking.getSalesBranch()).
+                        opportunity_owner_email_ids(createEmailIds(customerBooking.getPrimarySalesAgentEmail(), customerBooking.getSecondarySalesAgentEmail())).
+                        build())
                 .build();
         return CommonRequestModel.builder().data(platformCreateRequest).build();
+    }
+
+    private List<String> createEmailIds(String primaryEmail, String secondaryEmail)
+    {
+        if(primaryEmail == null)
+            return null;
+        if(secondaryEmail == null)
+            return Arrays.asList(primaryEmail);
+        return Arrays.asList(primaryEmail, secondaryEmail);
     }
 
     private List<LoadRequest> createLoad(final CustomerBooking customerBooking) {
