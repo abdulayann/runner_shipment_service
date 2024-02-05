@@ -8,6 +8,6 @@ import java.util.List;
 import java.util.UUID;
 
 public interface IShipmentSync {
-    ResponseEntity<?> sync(ShipmentDetails shipmentDetails, List<UUID> deletedContGuids, List<NotesRequest> customerBookingNotes, String transactionId);
+    ResponseEntity<?> sync(ShipmentDetails shipmentDetails, List<UUID> deletedContGuids, List<NotesRequest> customerBookingNotes, String transactionId, boolean isDirectSync);
     void syncLockStatus(ShipmentDetails shipmentDetails);
 }
