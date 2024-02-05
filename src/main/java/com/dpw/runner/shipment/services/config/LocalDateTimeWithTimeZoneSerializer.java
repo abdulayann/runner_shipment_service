@@ -32,17 +32,8 @@ public class LocalDateTimeWithTimeZoneSerializer extends JsonSerializer<LocalDat
 
     @Override
     public void serialize(LocalDateTime value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
-        String timeZone = MDC.get("x-browser-time-zone");
-        if(timeZone == null)
-            timeZone = "UTC";
-        UsersDto userDetails = UserContext.getUser();
-        Boolean enableTimeZoneFlag = userDetails.getEnableTimeZone();
-        String tenantTimeZone = userDetails.getTimeZoneId();
-        String targetTimeZone = timeZone;
-        if(enableTimeZoneFlag && tenantTimeZone != null)
-            targetTimeZone = tenantTimeZone;
-        ZonedDateTime zonedDateTime = value.atZone(ZoneId.of(targetTimeZone));
+        LocalDateTime localDateTime = LocalTimeZoneHelper.getDateTime(value);
         String dateFormat = TenantSettingsDetailsContext.getCurrentTenantSettings() != null ? TenantSettingsDetailsContext.getCurrentTenantSettings().getDPWDateFormat() : "dd/MM/yyyy";
-        gen.writeString(zonedDateTime.format(DateTimeFormatter.ofPattern(dateFormat)));
+        gen.writeString(localDateTime.format(DateTimeFormatter.ofPattern(dateFormat)));
     }
 }

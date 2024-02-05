@@ -18,6 +18,7 @@ import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
+import com.dpw.runner.shipment.services.config.LocalTimeZoneHelper;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerSummaryResponse;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
@@ -129,7 +130,7 @@ public abstract class IReport {
     {
         ShipmentContainers ship = new ShipmentContainers();
         ship.ContainerNumber = row.getContainerNumber();
-        ship.SealNumber = row.getSealNumber();
+        ship.SealNumber = StringUtility.isEmpty(row.getCarrierSealNumber()) ? row.getShipperSealNumber() : row.getCarrierSealNumber();
         ship.NoofPackages = row.getNoOfPackages();
         if(row.getPacks() != null && !row.getPacks().isEmpty())
             ship.ShipmentPacks = Long.valueOf(row.getPacks());
@@ -614,6 +615,19 @@ public abstract class IReport {
                     dictionary.put(ReportConstants.PICKUP_FROM_ADDRESS,pickupAddressList);
                     dictionary.put(ReportConstants.PICKUP_FROM_ADDRESS_IN_CAPS, pickupAddressList.stream().map(String::toUpperCase).collect(Collectors.toList()));
 
+                }
+            }
+            if(shipment.getPickupDetails() != null) {
+                if (shipment.getPickupDetails().getActualPickupOrDelivery() != null) {
+                    dictionary.put(ReportConstants.PICKUP_TIME, ConvertToDPWDateFormatWithTime(shipment.getPickupDetails().getActualPickupOrDelivery(), tsDateTimeFormat, true));
+                    dictionary.put(ReportConstants.PICKUPTIME_TYPE,  "Actual Pickup");
+                } else {
+                    if (shipment.getPickupDetails().getEstimatedPickupOrDelivery() != null) {
+                        dictionary.put(ReportConstants.PICKUP_TIME, ConvertToDPWDateFormatWithTime(shipment.getPickupDetails().getEstimatedPickupOrDelivery(), tsDateTimeFormat, true));
+                    } else {
+                        dictionary.put(ReportConstants.PICKUP_TIME, "");
+                    }
+                    dictionary.put(ReportConstants.PICKUPTIME_TYPE, "Estimated Pickup");
                 }
             }
             if(shipment.getReferenceNumbersList() != null)
@@ -1284,8 +1298,11 @@ public abstract class IReport {
         return DateTimeFormatter.ofPattern("MM/dd/yyyy");
     }
 
-    public static DateTimeFormatter GetDPWDateFormatWithTime()
+    public static DateTimeFormatter GetDPWDateFormatWithTime(String tsDatetimeFormat)
     {
+        if(StringUtility.isNotEmpty(tsDatetimeFormat)) {
+            return DateTimeFormatter.ofPattern(tsDatetimeFormat+" HH:mm:ss");
+        }
         return DateTimeFormatter.ofPattern("MM/dd/yyyy HH:mm:ss");
     }
 
@@ -1310,12 +1327,16 @@ public abstract class IReport {
         return strDate;
     }
 
-    public static String ConvertToDPWDateFormatWithTime(LocalDateTime date)
+    public static String ConvertToDPWDateFormatWithTime(LocalDateTime date, String tsDatetimeFormat, boolean isTimeZone)
     {
         String strDate = "";
         if (date != null)
         {
-            strDate = date.format(GetDPWDateFormatWithTime());
+            if(isTimeZone) {
+                strDate = LocalTimeZoneHelper.getDateTime(date).format(GetDPWDateFormatWithTime(tsDatetimeFormat));
+            } else {
+                strDate = date.format(GetDPWDateFormatWithTime(tsDatetimeFormat));
+            }
         }
         return strDate;
     }

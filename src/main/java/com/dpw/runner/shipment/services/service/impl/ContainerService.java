@@ -217,8 +217,11 @@ public class ContainerService implements IContainerService {
         if (request == null || request.getConsolidationId() == null) {
             throw new ValidationException("Please save the consolidation and then try again.");
         }
-        List<Containers> consolContainers = containerDao.findByConsolidationId(request.getConsolidationId());
-        var containerMap = consolContainers.stream().collect(Collectors.toMap(Containers::getGuid, Function.identity()));
+        Map<UUID, Containers> containerMap = new HashMap<>();
+        if(request.getConsolidationId() != null) {
+            List<Containers> consolContainers = containerDao.findByConsolidationId(request.getConsolidationId());
+            containerMap = consolContainers.stream().collect(Collectors.toMap(Containers::getGuid, Function.identity()));
+        }
 
         Map<String, Set<String>> masterDataMap = new HashMap<>();
         List<Containers> containersList = parser.parseExcelFile(request.getFile(), request, containerMap, masterDataMap, Containers.class, ContainersExcelModel.class, null, null);
@@ -372,7 +375,7 @@ public class ContainerService implements IContainerService {
             if (calculatedVolume != null && actualVolume != calculatedVolume) {
                 throw new ValidationException("Gross Volume is invalid at row: " + (row + 1));
             }
-        } else if (request.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && containersRow.getGrossVolume() != null
+        } else if (request.getTransportMode() != null && request.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && containersRow.getGrossVolume() != null
                 && StringUtils.isEmpty(containersRow.getGrossVolumeUnit())) {
             throw new ValidationException("Gross Volume unit is empty or Gross Volume unit not entered at row: " + row);
         }
