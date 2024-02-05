@@ -613,7 +613,7 @@ public class ReportConstants {
     public static final Set OBJECT_TYPE_REPORTS = new HashSet(Arrays.asList("ImportConsolManifest", "ExportConsolManifest", "ImportShipmentManifest", "ExportShipmentManifest"));
 
     public static final String OBJECT_TYPE = "OBJECT_TYPE";
-    public static final String AWB_LABLE = "AWBLable";
+    public static final String AWB_LABEL = "AwbLabel";
     public static final String COMMERCIAL_INVOICE = "CommercialInvoice";
     public static final String CUSTOMS_INSTRUCTION = "CustomsInstructions";
     public static final String SEAWAY_BILL = "SeawayBill";

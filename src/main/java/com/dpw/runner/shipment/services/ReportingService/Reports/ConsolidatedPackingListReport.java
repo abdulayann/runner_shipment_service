@@ -14,11 +14,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.*;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.stringValueOf;
 import static java.lang.Long.sum;
 
 @Component
@@ -131,7 +131,9 @@ public class ConsolidatedPackingListReport extends IReport {
         dictionary.put(PURCHASE_ORDER_NUMBER, cplData.getConsolidationDetails().getReferenceNumber());
         dictionary.put(PAYMENT_TERMS, cplData.getConsolidationDetails().getPayment());
 
-        List<PackingModel> packingList = cplData.getConsolidationDetails().getPackingList();
+        List<PackingModel> packingList = new ArrayList<>();
+        if(cplData.getConsolidationDetails().getPackingList() != null)
+            packingList.addAll(cplData.getConsolidationDetails().getPackingList());
         long totalPacks = 0L;
         BigDecimal totalWeight = BigDecimal.ZERO;
         String unitOfTotalWeight = null;
@@ -139,13 +141,15 @@ public class ConsolidatedPackingListReport extends IReport {
         List<ShipmentModel> shipments = cplData.getConsolidationDetails().getShipmentsList();
 
         for (var shipment : shipments){
-            packingList.addAll(shipment.getPackingList());
+            if(shipment.getPackingList() != null)
+                packingList.addAll(shipment.getPackingList());
         }
 
-        if(packingList != null) {
+        if(packingList.size() > 0) {
 //            String packingJson = jsonHelper.convertToJson(packingList);
 //            var values = jsonHelper.convertValue(packingJson, new TypeReference<List<Map<String, Object>>>() {});
-            var values = packingList.stream()
+            Set<PackingModel> packingSet = new HashSet<>(packingList);
+            var values = packingSet.stream()
                     .map(i -> jsonHelper.convertJsonToMap(jsonHelper.convertToJson(i)))
                     .toList();
 
@@ -154,13 +158,13 @@ public class ConsolidatedPackingListReport extends IReport {
                 if (!breakFlagForWeight && v.get(WEIGHT) != null && v.get(WEIGHT_UNIT) != null) {
                     if (unitOfTotalWeight == null) {
                         unitOfTotalWeight = v.get(WEIGHT_UNIT).toString();
-                        totalWeight = totalWeight.add(BigDecimal.valueOf((double) v.get(WEIGHT)));
+                        totalWeight = totalWeight.add(v.get(WEIGHT) != null ? new BigDecimal(stringValueOf(v.get(WEIGHT))) : BigDecimal.ZERO);
                     } else if (!unitOfTotalWeight.equals(v.get(WEIGHT_UNIT).toString())) {
                         totalWeight = BigDecimal.ZERO;
                         breakFlagForWeight = true;
                     }
                     else
-                        totalWeight = totalWeight.add(BigDecimal.valueOf((double) v.get(WEIGHT)));
+                        totalWeight = totalWeight.add(v.get(WEIGHT) != null ? new BigDecimal(stringValueOf(v.get(WEIGHT))) : BigDecimal.ZERO);
                 }
                 if(v.get(WEIGHT) != null)
                     v.put(WEIGHT, ConvertToWeightNumberFormat(v.get(WEIGHT), v1TenantSettingsResponse));

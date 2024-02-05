@@ -1539,7 +1539,7 @@ public abstract class IReport {
             shipmentContainer.description = StringUtility.toUpperCase(shipment.getGoodsDescription());
             shipmentContainer.weight = addCommas(StringUtility.convertToString(shipment.getWeight()));
             shipmentContainer.volume = addCommas(StringUtility.convertToString(shipment.getVolume()));
-            shipmentContainer.packs = addCommaWithoutDecimal(BigDecimal.valueOf(shipment.getNoOfPacks()));
+            shipmentContainer.packs = addCommaWithoutDecimal(BigDecimal.valueOf(shipment.getNoOfPacks() != null ? shipment.getNoOfPacks() : 0));
             shipmentContainer.packsUnit = StringUtility.convertToString(shipment.getPacksUnit());
             shipmentContainer.weightUnit = StringUtility.convertToString(shipment.getWeightUnit());
             shipmentContainer.volumeUnit = StringUtility.convertToString(shipment.getVolumeUnit());
