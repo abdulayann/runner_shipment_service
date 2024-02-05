@@ -116,7 +116,7 @@ public class ResponseHelper {
         return ResponseEntity.ok()
                 .contentType(contentType)
                 .contentLength(resource.contentLength())
-                .header(HttpHeaders.CONTENT_DISPOSITION,"attachment; filename=\"" + fileName + "\"")
+                .header(HttpHeaders.CONTENT_DISPOSITION,"attachment; filename=" + fileName)
                 .body(resource);
     }
 }
