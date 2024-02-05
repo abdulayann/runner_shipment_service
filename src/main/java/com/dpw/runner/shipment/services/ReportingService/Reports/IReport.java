@@ -1995,6 +1995,20 @@ public abstract class IReport {
         }
 
     }
+
+    public static String checkCreditLimitDocs(String key){
+        switch (key) {
+            case ReportConstants.HOUSE_BILL:
+                return Constants.HBL_PRINT;
+            case ReportConstants.DELIVERY_ORDER:
+                return Constants.DO_PRINT;
+            case ReportConstants.HAWB:
+                return Constants.HAWB_PRINT;
+            case ReportConstants.MAWB:
+                return Constants.MAWB_PRINT;
+        }
+        return null;
+    }
     public Long countAllContainers(List<ContainerModel> containerModels) {
         Long count = 0l;
         for(ContainerModel model : containerModels) {

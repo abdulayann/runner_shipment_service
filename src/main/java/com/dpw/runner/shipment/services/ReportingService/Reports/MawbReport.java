@@ -44,7 +44,6 @@ public class MawbReport extends IReport{
         } else {
             hawbModel.usersDto = UserContext.getUser();
             hawbModel.shipmentDetails = getShipment(id);
-            v1ServiceUtil.validateCreditLimit(modelMapper.map(hawbModel.shipmentDetails.getClient(), Parties.class), Constants.MAWB_PRINT, hawbModel.shipmentDetails.getGuid());
             String entityType = "MAWB";
             if(hawbModel.shipmentDetails != null && hawbModel.shipmentDetails.getConsolidationList() != null && !hawbModel.shipmentDetails.getConsolidationList().isEmpty())
             {
