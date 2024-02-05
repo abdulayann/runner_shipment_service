@@ -520,7 +520,7 @@ public class HblService implements IHblService {
         }
         if (syncShipment) {
             try {
-                shipmentSync.sync(shipmentDetail, null, null, UUID.randomUUID().toString());
+                shipmentSync.sync(shipmentDetail, null, null, UUID.randomUUID().toString(), false);
             } catch (Exception e) {
                 log.error("Error performing sync on shipment entity, {}", e);
             }

@@ -17,6 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.retry.support.RetryTemplate;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -60,6 +61,11 @@ public class SyncService implements ISyncService {
             }
             return ResponseHelper.buildSuccessResponse(response_);
         });
+    }
+    @Override
+    @Async
+    public void callSyncAsync(String json, String id, String guid, String entity, HttpHeaders headers) {
+        callSync(json, id, guid, entity, headers);
     }
 
     @Override

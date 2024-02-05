@@ -2,16 +2,19 @@ package com.dpw.runner.shipment.services.utils;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.RequestAuthContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
-import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.BulkUploadRequest;
-import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
+import com.dpw.runner.shipment.services.dao.impl.ConsoleShipmentMappingDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.v1.response.V1ContainerTypeResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.Events;
 import com.dpw.runner.shipment.services.entity.Packing;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.enums.ContainerStatus;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferDGSubstance;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.MasterData;
@@ -22,10 +25,8 @@ import com.dpw.runner.shipment.services.masterdata.response.CommodityResponse;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.validator.enums.Operators;
-import com.opencsv.CSVReader;
-import com.opencsv.exceptions.CsvException;
+import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.io.input.BOMInputStream;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.text.WordUtils;
 import org.apache.poi.ss.usermodel.*;
@@ -33,15 +34,15 @@ import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -49,17 +50,28 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
-import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
+import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 
 @Slf4j
 @Component
 public class CSVParsingUtil<T> {
 
     @Autowired
+    private ConsoleShipmentMappingDao consoleShipmentMappingDao;
+
+    @Autowired
+    private IShipmentDao shipmentDao;
+
+    @Autowired
     private IV1Service v1Service;
 
     @Autowired
     private JsonHelper jsonHelper;
+
+    @Autowired
+    private IConsolidationDetailsDao consolidationDetailsDao;
+
     private final Set<String> hiddenFields = Set.of("pickupAddress",
             "deliveryAddress", "eventsList", "packsList", "shipmentsList", "bookingCharges");
     ExecutorService executorService = Executors.newFixedThreadPool(10);
@@ -472,16 +484,21 @@ public class CSVParsingUtil<T> {
         return dataMap;
     }
 
+    public List<T> parseExcelFilePacking(MultipartFile file, BulkUploadRequest request, Map<UUID, T> mapOfEntity, Map<String, Set<String>> masterDataMap,
+                                         Class<T> entityType, Map<Long, Long> undg, Map<Long, String> flashpoint) throws IOException {
 
-    public List<T> parseExcelFile(MultipartFile file, BulkUploadRequest request, Map<UUID, T> mapOfEntity, Map<String, Set<String>> masterDataMap,
-                                  Class<T> entityType) throws IOException {
+        Set<String> mandatoryColumns = Set.of("shipmentNumber", "packs");
         List<T> entityList = new ArrayList<>();
         List<String> unlocationsList = new ArrayList<>();
         List<String> commodityCodesList = new ArrayList<>();
+        List<Long> dgSubstanceIdList = new ArrayList<>();
+        Map<String, Long> dicShipmentId = getShipmentIds(request.getConsolidationId());
 
-        int containerStuffingLocationPos = -1;
+        int originPos = -1;
         int commodityCodePos = -1;
         int guidPos = -1;
+        int dgSubstanceIdPos = -1;
+        int shipmentNumberPos = -1;
 
         try (Workbook workbook = new XSSFWorkbook(file.getInputStream())) {
             Sheet sheet = workbook.getSheetAt(0); // Assuming data is in the first sheet
@@ -497,6 +514,189 @@ public class CSVParsingUtil<T> {
                     continue;
                 }
                 header[i] = getCamelCase(headerRow.getCell(i).getStringCellValue());
+                if (mandatoryColumns.contains(header[i])) {
+                    mandatoryColumns.remove(header[i]);
+                }
+                headerSet.add(header[i]);
+                if (header[i].equalsIgnoreCase("guid")) {
+                    guidPos = i;
+                }
+                if (header[i].equalsIgnoreCase("DGSubstanceId")) {
+                    dgSubstanceIdPos = i;
+                }
+                if (header[i].equalsIgnoreCase("commodityCode")) {
+                    commodityCodePos = i;
+                }
+                if (header[i].equalsIgnoreCase("origin")) {
+                    originPos = i;
+                }
+                if (header[i].equalsIgnoreCase("shipmentNumber")) {
+                    shipmentNumberPos = i;
+                }
+            }
+
+            if (!mandatoryColumns.isEmpty()) {
+                throw new ValidationException(mandatoryColumns.toString() + "column(s) is missing");
+            }
+
+            if (headerSet.size() < headerRow.getLastCellNum()) {
+                throw new ValidationException("Excel Sheet is invalid. All column should have column name.");
+            }
+            Set<String> guidSet = new HashSet<>();
+            for (int i = 1; i <= sheet.getLastRowNum(); i++) {
+                Row row = sheet.getRow(i);
+                if (commodityCodePos != -1) {
+                    String commodityCode = getCellValueAsString(row.getCell(commodityCodePos));
+                    if (!StringUtils.isEmpty(commodityCode))
+                        commodityCodesList.add(commodityCode);
+                }
+                if (originPos != -1) {
+                    String origin = getCellValueAsString(row.getCell(originPos));
+                    if (!StringUtils.isEmpty(origin))
+                        unlocationsList.add(origin);
+                }
+                if (guidPos != -1) {
+                    String guidCell = getCellValueAsString(row.getCell(guidPos));
+                    if (!StringUtils.isEmpty(guidCell) && guidSet.contains(guidCell)) {
+                        throw new ValidationException("GUID is duplicate at row: " + row);
+                    }
+                    guidSet.add(getCellValueAsString(row.getCell(guidPos)));
+                }
+                if (dgSubstanceIdPos == -1) {
+                    try {
+                        Long dgSubstanceIdVal = Long.parseLong(getCellValueAsString(row.getCell(dgSubstanceIdPos)));
+                        dgSubstanceIdList.add(dgSubstanceIdVal);
+                    } catch (Exception ex) {
+                        throw new ValidationException("DGSubstanceId is invalid at row: " + i);
+                    }
+                }
+
+            }
+
+            //-----fetching master data in bulk
+            Map<String, Set<String>> masterListsMap = getAllMasterDataPacking(unlocationsList, commodityCodesList, masterDataMap);
+
+            setUNDGContactMasterDataAndFlashPointMasterData(dgSubstanceIdList, undg, flashpoint);
+
+            Map<String, String> existingContainerNumbers = new HashMap<>();
+            for (int i = 1; i <= sheet.getLastRowNum(); i++) {
+                Row row = sheet.getRow(i);
+                boolean isUpdate = false;
+                if (guidPos != -1) {
+                    String guidVal = getCellValueAsString(row.getCell(guidPos));
+                    try {
+                        if (!StringUtils.isEmpty(guidVal)) {
+                            var packingGuid = UUID.fromString(guidVal);
+                            if (mapOfEntity != null && !mapOfEntity.containsKey(packingGuid)) {
+                                throw new ValidationException("GUID at row: " + i + " doesn't exist for this consolidation.");
+                            }
+                        }
+                    } catch (Exception ex) {
+                        throw new ValidationException("GUID not valid at row: " + i);
+                    }
+                }
+                T entity = guidPos != -1 && mapOfEntity != null ? mapOfEntity.get(UUID.fromString(getCellValueAsString(row.getCell(guidPos)))) : createEntityInstance(entityType);
+                if (mapOfEntity != null && guidPos != -1 && mapOfEntity.containsKey(UUID.fromString(getCellValueAsString(row.getCell(guidPos))))) {
+                    isUpdate = true;
+                }
+
+                if (shipmentNumberPos != -1) {
+                    var shipmentNumber = getCellValueAsString(row.getCell(shipmentNumberPos));
+                    if (!StringUtils.isEmpty(shipmentNumber)) {
+                        if (dicShipmentId.containsKey(shipmentNumber)) {
+                            ((Packing) entity).setShipmentId(dicShipmentId.get(shipmentNumber));
+                            ((Packing) entity).setShipmentNumber(shipmentNumber);
+                        } else {
+                            throw new ValidationException("Shipment Number " + shipmentNumber + " is not valid at row: " + i);
+                        }
+                    } else {
+                        throw new ValidationException("Shipment Number is null or empty at row: " + i);
+                    }
+                }
+
+                for (int j = 0; j < header.length; j++) {
+                    Cell cell = row.getCell(j);
+                    if (cell != null) {
+                        String cellValue = getCellValueAsString(cell);
+                        checkForUnitValidations(masterListsMap, header[j], cellValue, i, request.getTransportMode());
+                        checkForValueValidations(header[j], cellValue, i, request.getTransportMode());
+                        if (header[j].equalsIgnoreCase("origin")) {
+                            if (masterListsMap.containsKey("Unlocations") && !masterListsMap.get("Unlocations").contains(cellValue)) {
+                                throw new ValidationException("Origin " + cellValue + "is not valid at row " + i);
+                            }
+                        }
+                        setField(entity, header[j], cellValue, i);
+                    }
+                }
+
+                entityList.add(entity);
+            }
+        } catch (ValidationException e1) {
+            log.error(e1.getMessage());
+            throw new ValidationException(e1.getMessage());
+        } catch (NoSuchFieldException | IllegalAccessException | InstantiationException e) {
+            log.debug("Excel sheet is not valid. {}", e);
+            log.error(e.getMessage());
+            throw new ValidationException("Excel sheet is not valid.");
+        }
+        return entityList;
+    }
+
+    private Map<String, Long> getShipmentIds(Long consolidationId) {
+        var consoleShipmentMap = consoleShipmentMappingDao.findByConsolidationId(consolidationId);
+        List<Long> lstShipmentId = new ArrayList<>();
+        for (var temp : consoleShipmentMap) {
+            lstShipmentId.add(temp.getShipmentId());
+        }
+        var lstRequest = constructListCommonRequest("id", lstShipmentId, "IN");
+        Pair<Specification<ShipmentDetails>, Pageable> pair2 = fetchData(lstRequest, ShipmentDetails.class);
+        Page<ShipmentDetails> shipmentPage = shipmentDao.findAll(pair2.getLeft(), pair2.getRight());
+        List<ShipmentDetails> lstShipments = shipmentPage.getContent();
+        Map<String, Long> dictionary = new HashMap<>();
+        for (var shipment : lstShipments) {
+            dictionary.put(shipment.getShipmentId(), shipment.getId());
+        }
+        return dictionary;
+    }
+
+    public List<T> parseExcelFile(MultipartFile file, BulkUploadRequest request, Map<UUID, T> mapOfEntity, Map<String, Set<String>> masterDataMap,
+                                  Class<T> entityType, Class modelClass, Map<Long, Long> undg, Map<Long, String> flashpoint) throws IOException {
+        if (entityType.getClass().getName().equals("Packing")) {
+            return parseExcelFilePacking(file, request, mapOfEntity, masterDataMap, entityType, undg, flashpoint);
+        }
+        if (entityType.getClass().getName().equals("Events")) {
+            return parseExcelFileEvents(file, request, mapOfEntity, masterDataMap, entityType);
+        }
+        List<T> entityList = new ArrayList<>();
+        List<String> unlocationsList = new ArrayList<>();
+        List<String> commodityCodesList = new ArrayList<>();
+
+        int containerStuffingLocationPos = -1;
+        int commodityCodePos = -1;
+        //Add
+        int guidPos = -1;
+
+        try (Workbook workbook = new XSSFWorkbook(file.getInputStream())) {
+            Sheet sheet = workbook.getSheetAt(0); // Assuming data is in the first sheet
+            validateExcel(sheet);
+            Row headerRow = sheet.getRow(0);
+            if (headerRow.getLastCellNum() < 1) {
+                throw new ValidationException("Empty excel sheet uploaded.");
+            }
+            String[] header = new String[headerRow.getLastCellNum()];
+            Field[] fields = modelClass.getDeclaredFields();
+            Map<String, String> renameFieldMap = Arrays.stream(fields).filter(x->x.isAnnotationPresent(ExcelCell.class))
+                    .collect(Collectors.toMap(x->x.getAnnotation(ExcelCell.class).displayName(), Field::getName));
+            Set<String> headerSet = new HashSet<>();
+            for (int i = 0; i < headerRow.getLastCellNum(); i++) {
+                if (StringUtility.isEmpty(headerRow.getCell(i).getStringCellValue())) {
+                    continue;
+                }
+
+                if(renameFieldMap.containsKey(headerRow.getCell(i).getStringCellValue()))
+                    header[i] = renameFieldMap.get(headerRow.getCell(i).getStringCellValue());
+                else
+                    header[i] = getCamelCase(headerRow.getCell(i).getStringCellValue());
                 headerSet.add(header[i]);
                 if (header[i].equalsIgnoreCase("guid")) {
                     guidPos = i;
@@ -508,9 +708,6 @@ public class CSVParsingUtil<T> {
                     commodityCodePos = i;
                 }
             }
-
-            //-----fetching master data in bulk
-            Map<String, Set<String>> masterListsMap = getAllMasterData(unlocationsList, commodityCodesList, masterDataMap);
 
             if (headerSet.size() < headerRow.getLastCellNum()) {
                 throw new ValidationException("Excel Sheet is invalid. All column should have column name.");
@@ -536,6 +733,10 @@ public class CSVParsingUtil<T> {
                     guidSet.add(getCellValueAsString(row.getCell(guidPos)));
                 }
             }
+
+            //-----fetching master data in bulk
+            Map<String, Set<String>> masterListsMap = getAllMasterDataContainer(unlocationsList, commodityCodesList, masterDataMap);
+
             Map<String, String> existingContainerNumbers = new HashMap<>();
             for (int i = 1; i <= sheet.getLastRowNum(); i++) {
                 Row row = sheet.getRow(i);
@@ -584,6 +785,137 @@ public class CSVParsingUtil<T> {
         return entityList;
     }
 
+    private List<T> parseExcelFileEvents(MultipartFile file, BulkUploadRequest request, Map<UUID, T> mapOfEntity,
+                                         Map<String, Set<String>> masterDataMap, Class<T> entityType) throws IOException {
+        if (request.getConsolidationId() == null) {
+            throw new ValidationException("Please save the consolidation and then try again.");
+        }
+        var consolOpt = consolidationDetailsDao.findById(request.getConsolidationId());
+        if (consolOpt.isEmpty()) {
+            throw new ValidationException("Consolidation id is invalid " + request.getConsolidationId());
+        }
+        var consol = consolOpt.get();
+
+        List<T> entityList = new ArrayList<>();
+        List<String> containerNumberList = new ArrayList<>();
+        Set<String> mandatoryColumns = Set.of("eventCode", "containerNumber");
+
+        int guidPos = -1;
+        int containerNumberPos = -1;
+
+        try (Workbook workbook = new XSSFWorkbook(file.getInputStream())) {
+            Sheet sheet = workbook.getSheetAt(0); // Assuming data is in the first sheet
+            validateExcel(sheet);
+            Row headerRow = sheet.getRow(0);
+            if (headerRow.getLastCellNum() < 1) {
+                throw new ValidationException("Empty excel sheet uploaded.");
+            }
+            String[] header = new String[headerRow.getLastCellNum()];
+            Set<String> headerSet = new HashSet<>();
+            for (int i = 0; i < headerRow.getLastCellNum(); i++) {
+                if (StringUtility.isEmpty(headerRow.getCell(i).getStringCellValue())) {
+                    continue;
+                }
+                header[i] = getCamelCase(headerRow.getCell(i).getStringCellValue());
+                headerSet.add(header[i]);
+                if (header[i].equalsIgnoreCase("guid")) {
+                    guidPos = i;
+                }
+                if (header[i].equalsIgnoreCase("containerNumber")) {
+                    containerNumberPos = i;
+                }
+
+                if (mandatoryColumns.contains(header[i])) {
+                    mandatoryColumns.remove(header[i]);
+                }
+            }
+
+            //checking for mandatory column
+            if (!mandatoryColumns.isEmpty()) {
+                throw new ValidationException(mandatoryColumns.toString() + "column(s) is missing");
+            }
+
+
+            //-----fetching master data in bulk
+            Map<String, Set<String>> masterListsMap = getAllMasterDataEvents(masterDataMap);
+
+            if (headerSet.size() < headerRow.getLastCellNum()) {
+                throw new ValidationException("Excel Sheet is invalid. All column should have column name.");
+            }
+            Set<String> guidSet = new HashSet<>();
+            for (int i = 1; i <= sheet.getLastRowNum(); i++) {
+                Row row = sheet.getRow(i);
+                if (guidPos != -1) {
+                    String guidCell = getCellValueAsString(row.getCell(guidPos));
+                    if (!StringUtils.isEmpty(guidCell) && guidSet.contains(guidCell)) {
+                        throw new ValidationException("GUID is duplicate at row: " + row);
+                    }
+                    guidSet.add(getCellValueAsString(row.getCell(guidPos)));
+                }
+            }
+            Set<String> orderEventsDictionary = masterListsMap.get(MasterDataType.ORDER_EVENTS.getDescription());
+            Set<String> existingContainerNumberSet = consol.getContainersList()
+                    .stream().map(containers -> containers.getContainerNumber())
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toSet());
+            for (int i = 1; i <= sheet.getLastRowNum(); i++) {
+                Row row = sheet.getRow(i);
+                boolean isUpdate = false;
+                if (guidPos != -1) {
+                    String guidVal = getCellValueAsString(row.getCell(guidPos));
+                    try {
+                        if (!StringUtils.isEmpty(guidVal)) {
+                            var containerGuid = UUID.fromString(guidVal);
+                            if (mapOfEntity != null && !mapOfEntity.containsKey(containerGuid)) {
+                                throw new ValidationException("GUID at row: " + i + " doesn't exist for this consolidation.");
+                            }
+                        }
+                    } catch (Exception ex) {
+                        throw new ValidationException("GUID not valid at row: " + i);
+                    }
+                }
+                T entity = guidPos != -1 && mapOfEntity != null ? mapOfEntity.get(UUID.fromString(getCellValueAsString(row.getCell(guidPos)))) : createEntityInstance(entityType);
+                if (mapOfEntity != null && guidPos != -1 && mapOfEntity.containsKey(UUID.fromString(getCellValueAsString(row.getCell(guidPos))))) {
+                    isUpdate = true;
+                }
+                for (int j = 0; j < header.length; j++) {
+                    Cell cell = row.getCell(j);
+                    if (cell != null) {
+                        String cellValue = getCellValueAsString(cell);
+                        if (header[j].equalsIgnoreCase("containerNumber")) {
+                            if (StringUtils.isEmpty(cellValue)) {
+                                throw new ValidationException("Container Number is missing in Line: " + i + ", Please enter and re-upload.");
+                            }
+                            if (!existingContainerNumberSet.contains(cellValue)) {
+                                throw new ValidationException("Container number " + cellValue + " is not present in consolidation at row: " + i);
+                            }
+                            containerNumberList.add(cellValue);
+                        }
+                        if (header[j].equalsIgnoreCase("eventCode")) {
+                            if (StringUtils.isEmpty(cellValue)) {
+                                throw new ValidationException("EventCode is mandatory at row: " + i);
+                            }
+                            if (orderEventsDictionary != null && !orderEventsDictionary.contains(cellValue)) {
+                                throw new ValidationException("EventCode is not present in masterData at row: " + i);
+                            }
+                        }
+                        setFieldForEvents(entity, header[j], cellValue);
+                    }
+                }
+
+                entityList.add(entity);
+            }
+        } catch (ValidationException e1) {
+            log.error(e1.getMessage());
+            throw new ValidationException(e1.getMessage());
+        } catch (NoSuchFieldException | IllegalAccessException | InstantiationException e) {
+            log.debug("Excel sheet is not valid. {}", e);
+            log.error(e.getMessage());
+            throw new ValidationException("Excel sheet is not valid.");
+        }
+        return entityList;
+    }
+
     private void checkForContainerCodeValidation(Map<String, Set<String>> masterListsMap,
                                                  String cellValue, int i) throws ValidationException {
         if (masterListsMap.containsKey("ContainerTypes") && !masterListsMap.get("ContainerTypes").contains(cellValue)) {
@@ -606,55 +938,6 @@ public class CSVParsingUtil<T> {
         }
         if (!StringUtils.isEmpty(containerNumber) && !existingContainerNumbers.containsKey(containerNumber)) {
             existingContainerNumbers.put(containerNumber, guid);
-        }
-    }
-
-    public VolumeWeightChargeable calculateVolumeWeight(String transportMode, String weightUnit, String volumeUnit, BigDecimal weight, BigDecimal volume) throws Exception {
-        String responseMsg;
-        try {
-            VolumeWeightChargeable vwOb = new VolumeWeightChargeable();
-            if (!weightUnit.isEmpty() && !volumeUnit.isEmpty() && !transportMode.isEmpty()) {
-                switch (transportMode) {
-                    case Constants.TRANSPORT_MODE_SEA:
-                    case Constants.TRANSPORT_MODE_RAI:
-                    case Constants.TRANSPORT_MODE_FSA:
-                        BigDecimal volInM3 = new BigDecimal(convertUnit(Constants.VOLUME, volume, volumeUnit, Constants.VOLUME_UNIT_M3).toString());
-                        vwOb.setChargeable(volInM3.multiply(BigDecimal.valueOf(10)).setScale(0, BigDecimal.ROUND_CEILING).divide(BigDecimal.valueOf(10)));
-                        vwOb.setChargeableUnit(Constants.VOLUME_UNIT_M3);
-
-                        BigDecimal wtInTn = new BigDecimal(convertUnit(Constants.MASS, weight, weightUnit, Constants.WEIGHT_UNIT_KG).toString());
-                        wtInTn = wtInTn.divide(BigDecimal.valueOf(1000));
-                        BigDecimal wv = new BigDecimal(convertUnit(Constants.VOLUME, wtInTn, Constants.VOLUME_UNIT_M3, volumeUnit).toString());
-                        vwOb.setVolumeWeight(wv.multiply(BigDecimal.TEN).setScale(0, RoundingMode.CEILING).divide(BigDecimal.TEN));
-                        vwOb.setVolumeWeightUnit(volumeUnit);
-                        break;
-                    case Constants.TRANSPORT_MODE_AIR:
-                    case Constants.TRANSPORT_MODE_FAS:
-                    case Constants.TRANSPORT_MODE_ROA:
-                        BigDecimal wtInKG = new BigDecimal(convertUnit(Constants.MASS, weight, weightUnit, Constants.WEIGHT_UNIT_KG).toString());
-                        BigDecimal vlInM3 = new BigDecimal(convertUnit(Constants.VOLUME, volume, volumeUnit, Constants.VOLUME_UNIT_M3).toString());
-                        BigDecimal factor = new BigDecimal(166.667);
-                        if (transportMode.equals(Constants.TRANSPORT_MODE_ROA)) {
-                            factor = BigDecimal.valueOf(333.0);
-                        }
-                        BigDecimal wvInKG = vlInM3.multiply(factor);
-                        if (wtInKG.compareTo(wvInKG) < 0) {
-                            wtInKG = wvInKG;
-                        }
-                        vwOb.setChargeable(wtInKG.multiply(BigDecimal.valueOf(100)).setScale(0, BigDecimal.ROUND_CEILING).divide(BigDecimal.valueOf(100)));
-                        vwOb.setChargeableUnit(Constants.WEIGHT_UNIT_KG);
-                        BigDecimal WV = new BigDecimal(convertUnit(Constants.MASS, wvInKG, Constants.WEIGHT_UNIT_KG, weightUnit).toString());
-                        vwOb.setVolumeWeight(WV);
-                        vwOb.setVolumeWeightUnit(weightUnit);
-                        break;
-                }
-            }
-            return vwOb;
-        } catch (Exception e) {
-            responseMsg = e.getMessage() != null ? e.getMessage()
-                    : DaoConstants.DAO_CALCULATION_ERROR;
-            log.error(responseMsg, e);
-            throw new Exception(e);
         }
     }
 
@@ -685,11 +968,30 @@ public class CSVParsingUtil<T> {
                 throw new ValidationException("Packs is not valid at row: " + rowNum + ". Please provide integer value and within the range of integer.");
             }
         }
+
+    }
+
+    private void checkForUnitValidationEvents(Map<String, Set<String>> masterListsMap, String column, String cellValue, int rowNum, String transportMode) {
+//        if (column.toLowerCase().contains()) {
+//TODO
+//        }
     }
 
     private void checkForUnitValidations(Map<String, Set<String>> masterListsMap, String column, String cellValue, int rowNum, String transportMode)
             throws ValidationException {
         //MasterData validations : weight unit , volume unit
+        if (column.toLowerCase().contains("dgsubstanceid")) {
+            if (!StringUtils.isEmpty(cellValue) && masterListsMap.containsKey("DGSubstanceUNDGContact") &&
+                    !masterListsMap.get("DGSubstanceUNDGContact").contains(cellValue)) {
+                throw new ValidationException("DG Substance Id is invalid at row: " + rowNum);
+            }
+        }
+        if (column.toLowerCase().contains("flashpoint")) {
+            if (!StringUtils.isEmpty(cellValue) && masterListsMap.containsKey("flashpoint") &&
+                    !masterListsMap.get("flashpoint").contains(cellValue)) {
+                throw new ValidationException("FlashPoint is invalid at row: " + rowNum);
+            }
+        }
         if (column.toLowerCase().contains("weightunit")) {
             switch (column.toLowerCase()) {
                 case "grossweightunit": {
@@ -789,6 +1091,35 @@ public class CSVParsingUtil<T> {
                 throw new ValidationException("Container Type " + cellValue + "is not valid at row " + rowNum);
             }
         }
+        if (column.toLowerCase().contains("volumeweight")) {
+            if (!cellValue.isEmpty() && !masterListsMap.containsKey(MasterDataType.WEIGHT_UNIT.getDescription()) && !masterListsMap.get(MasterDataType.WEIGHT_UNIT.getDescription()).contains(cellValue)) {
+                throw new ValidationException("Volumetric weight unit is invalid at row: " + rowNum);
+            }
+        }
+        if (column.toLowerCase().contains("lengthunit")) {
+            if (!cellValue.isEmpty() && masterListsMap.containsKey(MasterDataType.DIMENSION_UNIT.getDescription()) &&
+                    !masterListsMap.get(MasterDataType.DIMENSION_UNIT.getDescription()).contains(cellValue)) {
+                throw new ValidationException("Length unit is invalid at row: " + rowNum);
+            }
+        }
+        if (column.toLowerCase().contains("widthunit")) {
+            if (!cellValue.isEmpty() && masterListsMap.containsKey(MasterDataType.DIMENSION_UNIT.getDescription()) &&
+                    !masterListsMap.get(MasterDataType.DIMENSION_UNIT.getDescription()).contains(cellValue)) {
+                throw new ValidationException("Width unit is invalid at row: " + rowNum);
+            }
+        }
+        if (column.toLowerCase().contains("heightunit")) {
+            if (!cellValue.isEmpty() && masterListsMap.containsKey(MasterDataType.DIMENSION_UNIT.getDescription()) &&
+                    !masterListsMap.get(MasterDataType.DIMENSION_UNIT.getDescription()).contains(cellValue)) {
+                throw new ValidationException("Height unit is invalid at row: " + rowNum);
+            }
+        }
+        if (column.toLowerCase().contains("countrycode")) {
+            if (!cellValue.isEmpty() && masterListsMap.containsKey(MasterDataType.COUNTRIES.getDescription()) &&
+                    !masterListsMap.get(MasterDataType.COUNTRIES.getDescription()).contains(cellValue)) {
+                throw new ValidationException("Country Code " + cellValue + " is invalid at row: " + rowNum);
+            }
+        }
     }
 
     private String getCellValueAsString(Cell cell) {
@@ -827,30 +1158,6 @@ public class CSVParsingUtil<T> {
             throw new ValidationException("Excel sheet does not contain any data.");
         }
     }
-
-
-    public List<Events> parseCSVFileEvents(MultipartFile file) throws IOException, CsvException {
-        List<Events> entityList = new ArrayList<>();
-        try (CSVReader csvReader = new CSVReader(new InputStreamReader(new BOMInputStream(file.getInputStream()), StandardCharsets.UTF_8))) {
-            String[] header = csvReader.readNext();
-            for (int i = 0; i < header.length; i++) {
-                header[i] = getCamelCase(header[i]);
-            }
-
-            List<String[]> records = csvReader.readAll();
-            for (String[] record : records) {
-                Events entity = new Events();
-                for (int i = 0; i < record.length; i++) {
-                    setFieldForEvents(entity, header[i], record[i]);
-                }
-                entityList.add(entity);
-            }
-        } catch (NoSuchFieldException | IllegalAccessException e) {
-            throw new RuntimeException(e);
-        }
-        return entityList;
-    }
-
 
     private void setField(T entity, String attributeName, String attributeValue, int rowNum) throws NoSuchFieldException, IllegalAccessException {
 
@@ -906,7 +1213,7 @@ public class CSVParsingUtil<T> {
         }
     }
 
-    public void setFieldForEvents(Events entity, String attributeName, String attributeValue) throws NoSuchFieldException, IllegalAccessException {
+    public void setFieldForEvents(T entity, String attributeName, String attributeValue) throws NoSuchFieldException, IllegalAccessException {
         Field field = entity.getClass().getDeclaredField(attributeName);
         field.setAccessible(true);
 
@@ -935,13 +1242,31 @@ public class CSVParsingUtil<T> {
         field.set(entity, parsedValue);
     }
 
-    private Map<String, Set<String>> getAllMasterData(List<String> unlocationsList, List<String> commodityCodesList, Map<String, Set<String>> masterDataMap) {
+    private Map<String, Set<String>> getAllMasterDataPacking(List<String> unlocationsList, List<String> commodityCodesList, Map<String, Set<String>> masterDataMap) {
+        var weightUnitMasterData = CompletableFuture.runAsync(withMdc(() -> this.fetchMasterLists(MasterDataType.WEIGHT_UNIT, masterDataMap)), executorService);
+        var volumeUnitMasterData = CompletableFuture.runAsync(withMdc(() -> this.fetchMasterLists(MasterDataType.VOLUME_UNIT, masterDataMap)), executorService);
+        var temperatureUnitMasterData = CompletableFuture.runAsync(withMdc(() -> this.fetchMasterLists(MasterDataType.TEMPERATURE_UNIT, masterDataMap)), executorService);
+        var dimensionUnitMasterData = CompletableFuture.runAsync(withMdc(() -> this.fetchMasterLists(MasterDataType.DIMENSION_UNIT, masterDataMap)), executorService);
+        var dgClassMasterData = CompletableFuture.runAsync(withMdc(() -> this.fetchMasterLists(MasterDataType.DG_CLASS, masterDataMap)), executorService);
+        var countryCodeMasterData = CompletableFuture.runAsync(withMdc(() -> this.fetchMasterLists(MasterDataType.COUNTRIES, masterDataMap)), executorService);
+        var packUnitMasterData = CompletableFuture.runAsync(withMdc(() -> this.fetchMasterLists(MasterDataType.PACKS_UNIT, masterDataMap)), executorService);
+//        var containerTypeMasterData = CompletableFuture.runAsync(withMdc(() -> this.fetchContainerType(masterDataMap)), executorService);
+        var unlocationMasterData = CompletableFuture.runAsync(withMdc(() -> this.fetchUnlocationData(unlocationsList, masterDataMap)), executorService);
+        var commodityMasterData = CompletableFuture.runAsync(withMdc(() -> this.fetchCommodityData(commodityCodesList, masterDataMap)), executorService);
+
+        CompletableFuture.allOf(unlocationMasterData, weightUnitMasterData, volumeUnitMasterData, temperatureUnitMasterData, countryCodeMasterData, dimensionUnitMasterData, dgClassMasterData, packUnitMasterData, commodityMasterData).join();
+
+        return masterDataMap;
+    }
+
+    private Map<String, Set<String>> getAllMasterDataContainer(List<String> unlocationsList, List<String> commodityCodesList, Map<String, Set<String>> masterDataMap) {
         var weightUnitMasterData = CompletableFuture.runAsync(withMdc(() -> this.fetchMasterLists(MasterDataType.WEIGHT_UNIT, masterDataMap)), executorService);
         var volumeUnitMasterData = CompletableFuture.runAsync(withMdc(() -> this.fetchMasterLists(MasterDataType.VOLUME_UNIT, masterDataMap)), executorService);
         var temperatureUnitMasterData = CompletableFuture.runAsync(withMdc(() -> this.fetchMasterLists(MasterDataType.TEMPERATURE_UNIT, masterDataMap)), executorService);
         var hblModeMasterData = CompletableFuture.runAsync(withMdc(() -> this.fetchMasterLists(MasterDataType.HBL_DELIVERY_MODE, masterDataMap)), executorService);
         var dimensionUnitMasterData = CompletableFuture.runAsync(withMdc(() -> this.fetchMasterLists(MasterDataType.DIMENSION_UNIT, masterDataMap)), executorService);
         var dgClassMasterData = CompletableFuture.runAsync(withMdc(() -> this.fetchMasterLists(MasterDataType.DG_CLASS, masterDataMap)), executorService);
+        var countryCodeMasterData = CompletableFuture.runAsync(withMdc(() -> this.fetchMasterLists(MasterDataType.COUNTRIES, masterDataMap)), executorService);
         var packUnitMasterData = CompletableFuture.runAsync(withMdc(() -> this.fetchMasterLists(MasterDataType.PACKS_UNIT, masterDataMap)), executorService);
         var containerTypeMasterData = CompletableFuture.runAsync(withMdc(() -> this.fetchContainerType(masterDataMap)), executorService);
         var unlocationMasterData = CompletableFuture.runAsync(withMdc(() -> this.fetchUnlocationData(unlocationsList, masterDataMap)), executorService);
@@ -949,6 +1274,11 @@ public class CSVParsingUtil<T> {
 
         CompletableFuture.allOf(weightUnitMasterData, volumeUnitMasterData, temperatureUnitMasterData, hblModeMasterData, dimensionUnitMasterData, dgClassMasterData, packUnitMasterData, containerTypeMasterData, unlocationMasterData, commodityMasterData).join();
 
+        return masterDataMap;
+    }
+
+    private Map<String, Set<String>> getAllMasterDataEvents(Map<String, Set<String>> masterDataMap) {
+        this.fetchMasterLists(MasterDataType.ORDER_EVENTS, masterDataMap);
         return masterDataMap;
     }
 
@@ -1025,6 +1355,29 @@ public class CSVParsingUtil<T> {
             }
         }
     }
+
+    public void setUNDGContactMasterDataAndFlashPointMasterData(List<Long> dgSubstanceIdList,
+                                                                Map<Long, Long> undg, Map<Long, String> flashpoint) {
+        CommonV1ListRequest request = new CommonV1ListRequest();
+        if (dgSubstanceIdList.isEmpty())
+            return;
+        List<Object> criteria = new ArrayList<>();
+        List<Object> field = new ArrayList<>(List.of("Id"));
+        String operator = Operators.IN.getValue();
+        criteria.addAll(List.of(field, operator, List.of(dgSubstanceIdList)));
+        request.setCriteriaRequests(criteria);
+        V1DataResponse response = v1Service.fetchDangerousGoodData(request);
+        if (response != null) {
+            if (response.entities instanceof List<?>) {
+                List<EntityTransferDGSubstance> list = jsonHelper.convertValueToList(response.entities, EntityTransferDGSubstance.class);
+                if (list != null && !list.isEmpty()) {
+                    undg.putAll(list.stream().filter(Objects::nonNull).collect(Collectors.toMap(EntityTransferDGSubstance::getId, EntityTransferDGSubstance::getUNIDNo)));
+                    flashpoint.putAll(list.stream().filter(Objects::nonNull).collect(Collectors.toMap(EntityTransferDGSubstance::getId, EntityTransferDGSubstance::getFlashPoint)));
+                }
+            }
+        }
+    }
+
 
     public Runnable withMdc(Runnable runnable) {
         Map<String, String> mdc = MDC.getCopyOfContextMap();
