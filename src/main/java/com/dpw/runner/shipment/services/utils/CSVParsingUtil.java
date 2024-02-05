@@ -842,8 +842,8 @@ public class CSVParsingUtil<T> {
                     guidSet.add(getCellValueAsString(row.getCell(guidPos)));
                 }
             }
-            Map<String, String> existingContainerNumbers = new HashMap<>();
-            Set<String> containerNumberSet = consol.getContainersList()
+            Set<String> orderEventsDictionary = masterListsMap.get(MasterDataType.ORDER_EVENTS.getDescription());
+            Set<String> existingContainerNumberSet = consol.getContainersList()
                     .stream().map(containers -> containers.getContainerNumber())
                     .filter(Objects::nonNull)
                     .collect(Collectors.toSet());
@@ -871,16 +871,22 @@ public class CSVParsingUtil<T> {
                     Cell cell = row.getCell(j);
                     if (cell != null) {
                         String cellValue = getCellValueAsString(cell);
-                        checkForUnitValidationsEvents(masterListsMap, header[j], cellValue, i, request.getTransportMode());
-                        checkForValueValidationsEvents(header[j], cellValue, i, request.getTransportMode());
                         if (header[j].equalsIgnoreCase("containerNumber")) {
                             if (StringUtils.isEmpty(cellValue)) {
                                 throw new ValidationException("Container Number is missing in Line: " + i + ", Please enter and re-upload.");
                             }
-                            if (!containerNumberSet.contains(cellValue)) {
+                            if (!existingContainerNumberSet.contains(cellValue)) {
                                 throw new ValidationException("Container number " + cellValue + " is not present in consolidation at row: " + i);
                             }
                             containerNumberList.add(cellValue);
+                        }
+                        if (header[j].equalsIgnoreCase("eventCode")) {
+                            if (StringUtils.isEmpty(cellValue)) {
+                                throw new ValidationException("EventCode is mandatory at row: " + i);
+                            }
+                            if (orderEventsDictionary != null && !orderEventsDictionary.contains(cellValue)) {
+                                throw new ValidationException("EventCode is not present in masterData at row: " + i);
+                            }
                         }
                         setFieldForEvents(entity, header[j], cellValue);
                     }
@@ -897,12 +903,6 @@ public class CSVParsingUtil<T> {
             throw new ValidationException("Excel sheet is not valid.");
         }
         return entityList;
-    }
-
-    private void checkForUnitValidationsEvents(Map<String, Set<String>> masterListsMap, String s, String cellValue, int i, String transportMode) {
-    }
-
-    private void checkForValueValidationsEvents(String s, String cellValue, int i, String transportMode) {
     }
 
     private void checkForContainerCodeValidation(Map<String, Set<String>> masterListsMap,

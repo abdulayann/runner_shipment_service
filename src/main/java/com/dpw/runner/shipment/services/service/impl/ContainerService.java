@@ -252,11 +252,11 @@ public class ContainerService implements IContainerService {
             checkCalculatedVolumeAndActualVolume(request, row + 1, containersRow);
             applyContainerNumberValidation(transportMode, row + 1, containersRow);
             applyConatinerCountValidation(request, transportMode, row + 1, containersRow);
-            applyChargeableValidation(transportMode, row, containersRow);
-            checkForHandlingInfo(transportMode, row, containersRow);
-            applyCommodityTypeValidation(dicCommodityType, row, containersRow);
-            applyContainerStuffingValidation(dicLocType, row, containersRow);
-            applyHazardousValidation(hazardousClassMasterData, row, containersRow);
+            applyChargeableValidation(transportMode, row + 1, containersRow);
+            checkForHandlingInfo(transportMode, row + 1, containersRow);
+            applyCommodityTypeValidation(dicCommodityType, row + 1, containersRow);
+            applyContainerStuffingValidation(dicLocType, row + 1, containersRow);
+            applyHazardousValidation(hazardousClassMasterData, row + 1, containersRow);
             //TODO :: Add own type validation in future after cms integration
             isPartValidation(request, containersRow);
         }
