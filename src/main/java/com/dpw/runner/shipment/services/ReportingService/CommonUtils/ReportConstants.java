@@ -961,4 +961,8 @@ public class ReportConstants {
     public static String SHIPMENT_PACKING_PACKS_PCKGSUMMARY = "pckgsummary";
     public static String SHIPMENT_PACKING_PACKS_COMMERCIALINVOICENUMBER = "CommercialInvoiceNumber";
 
+    public static final String SHIPMENT_BILLCHARGES_FREVENUEBILLCHARGES = "FRevenueBillCharges";
+    public static final String SHIPMENT_BILLCHARGES_BILLCHARGESLOCALTAXSUMCOMMA = "BillChargesLocalTaxSumComma";
+    public static final String SHIPMENT_BILLCHARGES_BILLCHARGESSUM = "BillChargesSum";
+    public static final String SHIPMENT_BILLCHARGES_OVERSEASCURRENCY = OVERSEAS_CURRENCY;
 }
