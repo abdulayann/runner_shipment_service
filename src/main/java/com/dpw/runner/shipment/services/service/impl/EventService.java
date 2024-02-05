@@ -421,7 +421,7 @@ public class EventService implements IEventService {
 
           shipmentDao.save(shipment, false);
           try {
-              shipmentSync.sync(shipment, null, null, UUID.randomUUID().toString());
+              shipmentSync.sync(shipment, null, null, UUID.randomUUID().toString(), false);
           } catch (Exception e) {
               log.error("Error performing sync on shipment entity, {}", e);
           }
