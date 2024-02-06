@@ -103,6 +103,8 @@ public class ReportService implements IReportService {
     @Autowired
     private IHblReleaseTypeMappingDao hblReleaseTypeMappingDao;
     @Autowired
+    private IConsolidationDetailsDao consolidationDetailsDao;
+    @Autowired
     private V1ServiceUtil v1ServiceUtil;
     @Autowired
     private ModelMapper modelMapper;
@@ -110,6 +112,25 @@ public class ReportService implements IReportService {
     @Override
     public byte[] getDocumentData(CommonRequestModel request) throws DocumentException, IOException {
         ReportRequest reportRequest = (ReportRequest) request.getData();
+
+        // Generate combined shipment report via consolidation
+        if((reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.CARGO_MANIFEST) || reportRequest.getReportInfo().equalsIgnoreCase( ReportConstants.SHIPMENT_CAN_DOCUMENT) || reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.SHIPPING_INSTRUCTION)) && reportRequest.isFromConsolidation()) {
+            Optional<ConsolidationDetails> optionalConsolidationDetails = consolidationDetailsDao.findById(Long.valueOf(reportRequest.getReportId()));
+            if(optionalConsolidationDetails.isPresent()) {
+                ConsolidationDetails consolidationDetails = optionalConsolidationDetails.get();
+                byte[] dataByte;
+                List<byte[]> dataByteList = new ArrayList<>();
+                for(ShipmentDetails shipmentDetails : consolidationDetails.getShipmentsList()) {
+                    reportRequest.setFromConsolidation(false);
+                    reportRequest.setReportId(shipmentDetails.getId().toString());
+                    dataByte = getDocumentData(CommonRequestModel.buildRequest(reportRequest));
+                    if(dataByte != null) {
+                        dataByteList.add(dataByte);
+                    }
+                }
+                return CommonUtils.concatAndAddContent(dataByteList);
+            }
+        }
 
         ShipmentSettingsDetails tenantSettingsRow = shipmentSettingsDao.findByTenantId(TenantContext.getCurrentTenant()).orElseGet(null);
 
@@ -482,7 +503,7 @@ public class ReportService implements IReportService {
             shipmentDetails = shipmentDao.update(shipmentDetails, false);
             shipmentService.pushShipmentDataToDependentService(shipmentDetails, false);
             try {
-                shipmentSync.sync(shipmentDetails, null, null, UUID.randomUUID().toString());
+                shipmentSync.sync(shipmentDetails, null, null, UUID.randomUUID().toString(), false);
             } catch (Exception e) {
                 log.error("Error performing sync on shipment entity, {}", e);
             }

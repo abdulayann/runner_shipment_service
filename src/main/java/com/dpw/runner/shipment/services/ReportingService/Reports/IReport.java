@@ -18,6 +18,7 @@ import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
+import com.dpw.runner.shipment.services.config.LocalTimeZoneHelper;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerSummaryResponse;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
@@ -129,7 +130,7 @@ public abstract class IReport {
     {
         ShipmentContainers ship = new ShipmentContainers();
         ship.ContainerNumber = row.getContainerNumber();
-        ship.SealNumber = row.getSealNumber();
+        ship.SealNumber = StringUtility.isEmpty(row.getCarrierSealNumber()) ? row.getShipperSealNumber() : row.getCarrierSealNumber();
         ship.NoofPackages = row.getNoOfPackages();
         if(row.getPacks() != null && !row.getPacks().isEmpty())
             ship.ShipmentPacks = Long.valueOf(row.getPacks());
@@ -482,6 +483,8 @@ public abstract class IReport {
                             getValueFromMap(consignerAddress,ZIP_POST_CODE));
                     dictionary.put(ReportConstants.CONSIGNER_NAME, consignerAddress.get(COMPANY_NAME));
                     dictionary.put(ReportConstants.CONSIGNER_CONTACT_PERSON, consignerAddress.get("ContactPerson"));
+                    dictionary.put(ReportConstants.CONSIGNER_ADDRESS, ReportHelper.getOrgAddress(shipmentConsigner));
+
                     try {
                         dictionary.put(ReportConstants.ConsignerPhone, consignerAddress.get("ContactPhone"));
                         dictionary.put(ReportConstants.ConsignerFullName, shipmentConsigner.getOrgData().get("FullName"));
@@ -511,6 +514,12 @@ public abstract class IReport {
                     dictionary.put(ReportConstants.CONSIGNEE_CONTACT_PERSON,getValueFromMap(consigneeAddress,"ContactPerson"));
                     String contactPerson = getValueFromMap(consigneeAddress,"ContactPerson");
                     dictionary.put(ReportConstants.CONSIGNEE_PIC, contactPerson == null ? "" : contactPerson.toUpperCase());
+                    dictionary.put(ReportConstants.CONSIGNEE_ADDRESS, ReportHelper.getOrgAddress(shipmentConsignee));
+
+                    try {
+                        dictionary.put(ReportConstants.CONSIGNEE_PHONE, consigneeAddress.get("ContactPhone"));
+                        dictionary.put(ReportConstants.CONSIGNEE_FULL_NAME, shipmentConsignee.getOrgData().get("FullName"));
+                    } catch (Exception ignored) { }
                 }
                 String consigneeFullName = null;
                 if(shipmentConsignee.getOrgData() != null) {
@@ -606,6 +615,19 @@ public abstract class IReport {
                     dictionary.put(ReportConstants.PICKUP_FROM_ADDRESS,pickupAddressList);
                     dictionary.put(ReportConstants.PICKUP_FROM_ADDRESS_IN_CAPS, pickupAddressList.stream().map(String::toUpperCase).collect(Collectors.toList()));
 
+                }
+            }
+            if(shipment.getPickupDetails() != null) {
+                if (shipment.getPickupDetails().getActualPickupOrDelivery() != null) {
+                    dictionary.put(ReportConstants.PICKUP_TIME, ConvertToDPWDateFormatWithTime(shipment.getPickupDetails().getActualPickupOrDelivery(), tsDateTimeFormat, true));
+                    dictionary.put(ReportConstants.PICKUPTIME_TYPE,  "Actual Pickup");
+                } else {
+                    if (shipment.getPickupDetails().getEstimatedPickupOrDelivery() != null) {
+                        dictionary.put(ReportConstants.PICKUP_TIME, ConvertToDPWDateFormatWithTime(shipment.getPickupDetails().getEstimatedPickupOrDelivery(), tsDateTimeFormat, true));
+                    } else {
+                        dictionary.put(ReportConstants.PICKUP_TIME, "");
+                    }
+                    dictionary.put(ReportConstants.PICKUPTIME_TYPE, "Estimated Pickup");
                 }
             }
             if(shipment.getReferenceNumbersList() != null)
@@ -1005,13 +1027,18 @@ public abstract class IReport {
         HblDataDto hblDataDto = hbl.getHblData();
         List<String> consignor = ReportHelper.getOrgAddress(hblDataDto != null ? hblDataDto.getConsignorName() : null, hblDataDto != null ? hblDataDto.getConsignorAddress() : null, null, null, null, null);
         List<String> consignee = ReportHelper.getOrgAddress(hblDataDto != null ? hblDataDto.getConsigneeName() : null, hblDataDto != null ? hblDataDto.getConsigneeAddress() : null, null, null, null, null);
-        dictionary.put(ReportConstants.CONSIGNER, consignor);
-        dictionary.put(ReportConstants.CONSIGNEE, consignee);
-        dictionary.put(ReportConstants.CONSIGNEE_PIC, consignee);
-
-        dictionary.put(ReportConstants.CONSIGNEE_NAME_FREE_TEXT, consignee.stream().map(StringUtility::toUpperCase).collect(Collectors.toList()));
-        dictionary.put(ReportConstants.CONSIGNER_NAME_FREETEXT_INCAPS, consignor.stream().map(StringUtility::toUpperCase).collect(Collectors.toList()));
-        dictionary.put(ReportConstants.NOTIFY_PARTY_NAME_FREETEXT_INCAPS, notify.stream().map(StringUtility::toUpperCase).collect(Collectors.toList()));
+        if(consignor != null && consignor.size() > 0) {
+            dictionary.put(ReportConstants.CONSIGNER, consignor);
+            dictionary.put(ReportConstants.CONSIGNER_NAME_FREETEXT_INCAPS, consignor.stream().map(StringUtility::toUpperCase).collect(Collectors.toList()));
+        }
+        if(consignee != null && consignee.size() > 0) {
+            dictionary.put(ReportConstants.CONSIGNEE, consignee);
+            dictionary.put(ReportConstants.CONSIGNEE_PIC, consignee);
+            dictionary.put(ReportConstants.CONSIGNEE_NAME_FREE_TEXT, consignee.stream().map(StringUtility::toUpperCase).collect(Collectors.toList()));
+        }
+        if(notify != null && notify.size() > 0) {
+            dictionary.put(ReportConstants.NOTIFY_PARTY_NAME_FREETEXT_INCAPS, notify.stream().map(StringUtility::toUpperCase).collect(Collectors.toList()));
+        }
 
         V1TenantSettingsResponse v1TenantSettingsResponse = getTenantSettings();
         String tsDateTimeFormat = v1TenantSettingsResponse.getDPWDateFormat();
@@ -1271,8 +1298,11 @@ public abstract class IReport {
         return DateTimeFormatter.ofPattern("MM/dd/yyyy");
     }
 
-    public static DateTimeFormatter GetDPWDateFormatWithTime()
+    public static DateTimeFormatter GetDPWDateFormatWithTime(String tsDatetimeFormat)
     {
+        if(StringUtility.isNotEmpty(tsDatetimeFormat)) {
+            return DateTimeFormatter.ofPattern(tsDatetimeFormat+" HH:mm:ss");
+        }
         return DateTimeFormatter.ofPattern("MM/dd/yyyy HH:mm:ss");
     }
 
@@ -1297,12 +1327,16 @@ public abstract class IReport {
         return strDate;
     }
 
-    public static String ConvertToDPWDateFormatWithTime(LocalDateTime date)
+    public static String ConvertToDPWDateFormatWithTime(LocalDateTime date, String tsDatetimeFormat, boolean isTimeZone)
     {
         String strDate = "";
         if (date != null)
         {
-            strDate = date.format(GetDPWDateFormatWithTime());
+            if(isTimeZone) {
+                strDate = LocalTimeZoneHelper.getDateTime(date).format(GetDPWDateFormatWithTime(tsDatetimeFormat));
+            } else {
+                strDate = date.format(GetDPWDateFormatWithTime(tsDatetimeFormat));
+            }
         }
         return strDate;
     }

@@ -38,7 +38,7 @@ public class ReportController {
     public ResponseEntity<?> createReport(@RequestBody @Valid ReportRequest request) {
         String responseMsg;
         try {
-            return ResponseHelper.buildFileResponse(reportService.getDocumentData(CommonRequestModel.buildRequest(request)), MediaType.APPLICATION_OCTET_STREAM, "DownloadDocument");
+            return ResponseHelper.buildFileResponse(reportService.getDocumentData(CommonRequestModel.buildRequest(request)), MediaType.APPLICATION_OCTET_STREAM, "DownloadDocument.pdf");
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;

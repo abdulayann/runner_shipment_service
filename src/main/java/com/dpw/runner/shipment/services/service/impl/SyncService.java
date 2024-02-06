@@ -6,6 +6,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataSyncResponse;
 import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.ISyncService;
@@ -16,6 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.retry.support.RetryTemplate;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -32,8 +34,9 @@ public class SyncService implements ISyncService {
     private String senderQueue;
     @Autowired
     private JsonHelper jsonHelper;
+    static Integer maxAttempts = 3;
     private RetryTemplate retryTemplate = RetryTemplate.builder()
-            .maxAttempts(3)
+            .maxAttempts(maxAttempts)
             .fixedBackoff(1000)
             .retryOn(Exception.class)
             .build();
@@ -48,14 +51,21 @@ public class SyncService implements ISyncService {
             V1DataSyncResponse response_ = v1Service.v1DataSync(json, headers);
             if (!response_.getIsSuccess()) {
                 try {
-                    emailServiceUtility.sendEmailForSyncEntity(id, guid,
-                            entity, response_.getError().toString());
+                    if (ctx.getRetryCount() == maxAttempts - 1)
+                        emailServiceUtility.sendEmailForSyncEntity(id, guid,
+                                entity, response_.getError().toString());
                 } catch (Exception ex) {
                     log.error("Not able to send email for sync: {} failure for: {}", entity, ex.getMessage());
                 }
+                throw new RunnerException((String) response_.error);
             }
             return ResponseHelper.buildSuccessResponse(response_);
         });
+    }
+    @Override
+    @Async
+    public void callSyncAsync(String json, String id, String guid, String entity, HttpHeaders headers) {
+        callSync(json, id, guid, entity, headers);
     }
 
     @Override

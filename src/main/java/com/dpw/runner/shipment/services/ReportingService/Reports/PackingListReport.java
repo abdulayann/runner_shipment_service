@@ -64,6 +64,7 @@ public class PackingListReport extends IReport {
 
         JsonDateFormat(dictionary);
         populateTenantFields(dictionary, model.getTenant());
+        populateShipmentFields(shipment, true, dictionary);
 
         List<String> consigner = null;
         List<String> consignee = null;

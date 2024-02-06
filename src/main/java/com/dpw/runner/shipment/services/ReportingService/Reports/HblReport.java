@@ -628,8 +628,21 @@ public class HblReport extends IReport{
             dictionary.put(SHIPPER_REF_NO, hblModel.shipment.getPickupDetails().getShipperRef());
             dictionary.put(PICKUP_SHIPPERS_REF, hblModel.shipment.getPickupDetails().getShipperRef());
             dictionary.put(PICKUP_INSTRUCTION, hblModel.shipment.getPickupDetails().getPickupDeliveryInstruction());
-            dictionary.put(ESTIMATED_READY_FOR_PICKUP, ConvertToDPWDateFormatWithTime(hblModel.shipment.getPickupDetails().getEstimatedPickupOrDelivery()));
+            dictionary.put(ESTIMATED_READY_FOR_PICKUP, ConvertToDPWDateFormatWithTime(hblModel.shipment.getPickupDetails().getEstimatedPickupOrDelivery(), tsDateTimeFormat, true));
             dictionary.put(PICKUP_TIME, dictionary.get(ESTIMATED_READY_FOR_PICKUP));
+            if (hblModel.shipment.getPickupDetails().getActualPickupOrDelivery() != null) {
+                dictionary.put(ReportConstants.STATUS, "Confirmed");
+                dictionary.put(ReportConstants.PICKUP_TIME, ConvertToDPWDateFormatWithTime(hblModel.shipment.getPickupDetails().getActualPickupOrDelivery(), tsDateTimeFormat, true));
+                dictionary.put(ReportConstants.PICKUPTIME_TYPE,  "Actual Pickup");
+            } else {
+                dictionary.put(ReportConstants.STATUS, "Planned");
+                if (hblModel.shipment.getPickupDetails().getEstimatedPickupOrDelivery() != null) {
+                    dictionary.put(ReportConstants.PICKUP_TIME, ConvertToDPWDateFormatWithTime(hblModel.shipment.getPickupDetails().getEstimatedPickupOrDelivery(), tsDateTimeFormat, true));
+                } else {
+                    dictionary.put(ReportConstants.PICKUP_TIME, "");
+                }
+                dictionary.put(ReportConstants.PICKUPTIME_TYPE, "Estimated Pickup");
+            }
         }
         MathContext precision = new MathContext(decimalPlaces);
         if (!Objects.isNull(hblModel.shipment.getWeight())) {

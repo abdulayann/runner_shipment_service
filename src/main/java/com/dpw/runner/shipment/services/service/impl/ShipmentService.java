@@ -356,8 +356,9 @@ public class ShipmentService implements IShipmentService {
             Map.entry("isCmsHBLSent", RunnerEntityMapping.builder().tableName("additionalDetails").dataType(Boolean.class).fieldName("isCmsHBLSent").build()),
             Map.entry("orderManagementId", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).fieldName("orderManagementId").isContainsText(true).build()),
             Map.entry("flightNumber", RunnerEntityMapping.builder().tableName("carrierDetails").dataType(String.class).fieldName("flightNumber").build()),
-            Map.entry("consolidationId", RunnerEntityMapping.builder().tableName("consolidationList").dataType(Long.class).fieldName("id").build())
-            );
+            Map.entry("consolidationId", RunnerEntityMapping.builder().tableName("consolidationList").dataType(Long.class).fieldName("id").build()),
+            Map.entry("voyageOrFlightNumber", RunnerEntityMapping.builder().tableName("carrierDetails").dataType(String.class).fieldName("voyageOrFlightNumber").build())
+    );
 
     @Override
     @Transactional
@@ -624,7 +625,7 @@ public class ShipmentService implements IShipmentService {
             pushShipmentDataToDependentService(shipmentDetails, true);
             try {
                 shipmentDetails.setNotesList(null);
-                shipmentSync.sync(shipmentDetails, null, notesRequest, transactionId);
+                shipmentSync.sync(shipmentDetails, null, notesRequest, transactionId, true);
             } catch (Exception e){
                 log.error("Error performing sync on shipment entity, {}", e);
             }
@@ -1373,7 +1374,7 @@ public class ShipmentService implements IShipmentService {
         entity = shipmentDao.update(entity, false);
         pushShipmentDataToDependentService(entity, false);
         try {
-            shipmentSync.sync(entity, null, null, UUID.randomUUID().toString());
+            shipmentSync.sync(entity, null, null, UUID.randomUUID().toString(), false);
         } catch (Exception e){
             log.error("Error performing sync on shipment entity, {}", e);
         }
@@ -1438,7 +1439,7 @@ public class ShipmentService implements IShipmentService {
     private void syncShipment(ShipmentDetails shipmentDetails, Hbl hbl, List<UUID> deletedContGuids, List<Packing> packsForSync, ConsolidationDetails consolidationDetails) {
         String transactionId = UUID.randomUUID().toString();
         try {
-            shipmentSync.sync(shipmentDetails, deletedContGuids, null, transactionId);
+            shipmentSync.sync(shipmentDetails, deletedContGuids, null, transactionId, false);
         } catch (Exception e){
             log.error("Error performing sync on shipment entity, {}", e);
         }
@@ -1469,6 +1470,14 @@ public class ShipmentService implements IShipmentService {
         List<Long> tempConsolIds = new ArrayList<>();
         List<Long> removedConsolIds = new ArrayList<>();
         Long id = !Objects.isNull(oldEntity) ? oldEntity.getId() : null;
+
+        if(shipmentDetails.getCarrierDetails() != null) {
+            if (shipmentDetails.getTransportMode() != null && shipmentDetails.getTransportMode().equalsIgnoreCase(Constants.TRANSPORT_MODE_AIR)) {
+                shipmentDetails.getCarrierDetails().setVoyage(null);
+            } else {
+                shipmentDetails.getCarrierDetails().setFlightNumber(null);
+            }
+        }
 
         if (Objects.isNull(shipmentDetails.getSourceTenantId()))
             shipmentDetails.setSourceTenantId(Long.valueOf(UserContext.getUser().TenantId));
@@ -2582,7 +2591,7 @@ public class ShipmentService implements IShipmentService {
 
             if(fromV1 == null || !fromV1) {
                 try {
-                    shipmentSync.sync(entity, null, null, UUID.randomUUID().toString());
+                    shipmentSync.sync(entity, null, null, UUID.randomUUID().toString(), false);
                 } catch (Exception e) {
                     log.error("Error performing sync on shipment entity, {}", e);
                 }
@@ -3926,7 +3935,7 @@ public class ShipmentService implements IShipmentService {
             shipmentDao.saveAll(shipments);
             for (ShipmentDetails shipmentDetails : shipments) {
                 try {
-                    shipmentSync.sync(shipmentDetails, null, null, UUID.randomUUID().toString());
+                    shipmentSync.sync(shipmentDetails, null, null, UUID.randomUUID().toString(), false);
                 } catch (Exception e) {
                     log.error("Error performing sync on shipment entity, {}", e);
                 }
@@ -4142,7 +4151,7 @@ public class ShipmentService implements IShipmentService {
             }
             shipmentDao.save(shipment, false);
             try {
-                shipmentSync.sync(shipment, null, null, UUID.randomUUID().toString());
+                shipmentSync.sync(shipment, null, null, UUID.randomUUID().toString(), false);
             } catch (Exception e) {
                 log.error("Error performing sync on shipment entity, {}", e);
             }

@@ -302,7 +302,8 @@ public class ConsolidationService implements IConsolidationService {
             Map.entry("verifiedGrossMassCutoff", RunnerEntityMapping.builder().tableName("ConsolidationDetails").dataType(LocalDateTime.class).build()),
             Map.entry("guid", RunnerEntityMapping.builder().tableName("ConsolidationDetails").dataType(UUID.class).fieldName("guid").build()),
             Map.entry("bol", RunnerEntityMapping.builder().tableName("ConsolidationDetails").dataType(String.class).isContainsText(true).fieldName("bol").build()),
-            Map.entry("houseBill", RunnerEntityMapping.builder().tableName("shipmentsList").dataType(String.class).fieldName("houseBill").build())
+            Map.entry("houseBill", RunnerEntityMapping.builder().tableName("shipmentsList").dataType(String.class).fieldName("houseBill").build()),
+            Map.entry("voyageOrFlightNumber", RunnerEntityMapping.builder().tableName("carrierDetails").dataType(String.class).fieldName("voyageOrFlightNumber").build())
     );
 
     @Override
@@ -1076,7 +1077,7 @@ public class ConsolidationService implements IConsolidationService {
             shipmentDao.saveAll(shipments);
             for (ShipmentDetails shipmentDetails : shipments) {
                 try {
-                    shipmentSync.sync(shipmentDetails, null, null, UUID.randomUUID().toString());
+                    shipmentSync.sync(shipmentDetails, null, null, UUID.randomUUID().toString(), false);
                 } catch (Exception e) {
                     log.error("Error performing sync on shipment entity, {}", e);
                 }
@@ -2947,6 +2948,13 @@ public class ConsolidationService implements IConsolidationService {
         }
         if(!isCreate){
             updateLinkedShipmentData(consolidationDetails, oldEntity);
+        }
+        if(consolidationDetails.getCarrierDetails() != null) {
+            if (consolidationDetails.getTransportMode() != null && consolidationDetails.getTransportMode().equalsIgnoreCase(Constants.TRANSPORT_MODE_AIR)) {
+                consolidationDetails.getCarrierDetails().setVoyage(null);
+            } else {
+                consolidationDetails.getCarrierDetails().setFlightNumber(null);
+            }
         }
     }
 

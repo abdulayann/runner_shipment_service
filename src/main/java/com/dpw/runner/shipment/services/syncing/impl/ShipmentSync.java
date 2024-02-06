@@ -76,7 +76,7 @@ public class ShipmentSync implements IShipmentSync {
     private ISyncService syncService;
 
     @Override
-    public ResponseEntity<?> sync(ShipmentDetails sd, List<UUID> deletedContGuids, List<NotesRequest> customerBookingNotes, String transactionId) {
+    public ResponseEntity<?> sync(ShipmentDetails sd, List<UUID> deletedContGuids, List<NotesRequest> customerBookingNotes, String transactionId, boolean isDirectSync) {
         CustomShipmentSyncRequest temp = new CustomShipmentSyncRequest();
 
         CustomShipmentSyncRequest cs = modelMapper.map(sd, CustomShipmentSyncRequest.class);
@@ -166,7 +166,10 @@ public class ShipmentSync implements IShipmentSync {
         cs.setDeletedContGuids(deletedContGuids);
 
         String finalCs = jsonHelper.convertToJson(V1DataSyncRequest.builder().entity(cs).module(SyncingConstants.SHIPMENT).build());
-        syncService.pushToKafka(finalCs, StringUtility.convertToString(sd.getId()), StringUtility.convertToString(sd.getGuid()), "Shipments", transactionId);
+        if (isDirectSync)
+            syncService.callSyncAsync(finalCs, StringUtility.convertToString(sd.getId()), StringUtility.convertToString(sd.getGuid()), "Shipments", null);
+        else
+            syncService.pushToKafka(finalCs, StringUtility.convertToString(sd.getId()), StringUtility.convertToString(sd.getGuid()), "Shipments", transactionId);
         return ResponseHelper.buildSuccessResponse(modelMapper.map(cs, CustomShipmentSyncRequest.class));
     }
     @Override

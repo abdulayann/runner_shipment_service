@@ -157,6 +157,7 @@ public class ReportConstants {
     public static final String HSN_NUMBER = "HsnNumber";
     public static final String ESTIMATED_READY_FOR_PICKUP = "EstimatedReadyForPickup";
     public static final String PICKUP_TIME = "PickUpTime";
+    public static final String PICKUPTIME_TYPE = "PickupTimeType";
     public static final String DATE_OF_RECEIPT = "DateofReceipt";
     public static final String DATE_OF_RECEIPT_MDY = "DateofReceiptMDY";
     public static final String DESTINATION_NAME_ = "DestinationName";
@@ -165,10 +166,12 @@ public class ReportConstants {
     public static final String CONTAINER_COUNT_BY_CODE = "ContainerCountByCode";
     public static final String VESSEL_NAME_AND_VOYAGE = "VesselNameAndVoyage";
     public static final String CONSIGNER = "Consigner";
-    public static final String CONSIGNOR = "Consigner";
+    public static final String CONSIGNOR = "Consignor";
     public static final String CONSIGNER_AIR = "ConsignerAir";
     public static final String CONSIGNEE = "Consignee";
     public static final String CONSIGNEE_AIR = "ConsigneeAir";
+    public static final String CONSIGNEE_PHONE = "ConsigneePhone";
+    public static final String CONSIGNEE_FULL_NAME = "ConsigneeFullName";
     public static final String EXPORTER = "Exporter";
     public static final String CONSIGNER_ADDRESS = "ConsignerAddress";
     public static final String ConsignerPhone = "ConsignerPhone";
@@ -723,13 +726,13 @@ public class ReportConstants {
     public static final String EMPTY_TRUCK_IN_DATE = "EmptyTruckInDate";
     public static final String LOADED_TRUCK_GATE_OUT_DATE = "LoadedTruckGateOutDate";
     public static final String PICKUP_PORT_TRANSPORT_ADVISED = "PickupPortTransportAdvised";
-    public static final String PICKUP_INSTRUCTION = "PickUpInstruction";
+    public static final String PICKUP_INSTRUCTION = "PickUpInstructions";
     public static final String PICKUP_COMPANY = "PickUpCompany";
     public static final String LOADED_DATE = "LoadedDate";
     public static final String ACTUAL_DELIVERY = "ActualDelivery";
 
-    public static final String DELIVERY_INSTRUCTIONS = "DeliveryInstruction";
-    public static final String SHIPMENT_DELIVERY_DELIVERYINSTRUCTION = "DeliveryInstruction";
+    public static final String DELIVERY_INSTRUCTIONS = "DeliveryInstructions";
+    public static final String SHIPMENT_DELIVERY_DELIVERYINSTRUCTION = "DeliveryInstructions";
     public static final String SHIPMENT_PICKUP_PICKUPINSTRUCTION = "PickUpInstruction";
 
     public static final String ORG_FULL_NAME = "OrgFullName";
@@ -960,6 +963,8 @@ public class ReportConstants {
     public static String SHIPMENT_PACKING_PACKS_UOTNW = "UOTNW";
     public static String SHIPMENT_PACKING_PACKS_PCKGSUMMARY = "pckgsummary";
     public static String SHIPMENT_PACKING_PACKS_COMMERCIALINVOICENUMBER = "CommercialInvoiceNumber";
+
+    public static final String SHIPMENT_DETAILS_CARGOCONTROLNO = "CargoControlNo";
 
     public static final String SHIPMENT_BILLCHARGES_FREVENUEBILLCHARGES = "FRevenueBillCharges";
     public static final String SHIPMENT_BILLCHARGES_BILLCHARGESLOCALTAXSUMCOMMA = "BillChargesLocalTaxSumComma";

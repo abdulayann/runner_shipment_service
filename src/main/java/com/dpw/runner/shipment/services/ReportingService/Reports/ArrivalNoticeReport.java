@@ -11,6 +11,7 @@ import com.dpw.runner.shipment.services.entity.enums.MeasurementBasis;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.response.BillChargesResponse;
 import com.dpw.runner.shipment.services.masterdata.response.BillingResponse;
+import com.dpw.runner.shipment.services.utils.StringUtility;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -62,6 +63,9 @@ public class ArrivalNoticeReport extends IReport {
         populateShipmentOrganizationsLL(arrivalNoticeModel.shipmentDetails, dictionary);
         dictionary.put(ReportConstants.CONTAINER_COUNT_BY_CODE, getCountByContainerTypeCode(arrivalNoticeModel.containers));
         dictionary.put(ReportConstants.SHIPMENT_CONTAINERS, arrivalNoticeModel.containers);
+        if(StringUtility.isNotEmpty(arrivalNoticeModel.shipmentDetails.getHouseBill())) {
+            dictionary.put(ReportConstants.SHIPMENT_DETAILS_CARGOCONTROLNO, "80C2" + arrivalNoticeModel.shipmentDetails.getHouseBill());
+        }
         getBillChargesDetails(arrivalNoticeModel);
         if(!Objects.isNull(arrivalNoticeModel.arrivalNoticeBillCharges) && !arrivalNoticeModel.arrivalNoticeBillCharges.isEmpty()){
             var currency = arrivalNoticeModel.arrivalNoticeBillCharges.stream().map(ArrivalNoticeModel.ArrivalNoticeBillCharges::getOverseasCurrency).filter(overseasCurrency ->!Objects.isNull(overseasCurrency)).findFirst().orElse("");
