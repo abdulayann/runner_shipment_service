@@ -239,7 +239,7 @@ public class PackingController {
             @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
     })
     @PostMapping(ApiConstants.CALCULATE_VOLUMETRIC_WEIGHT)
-    public ResponseEntity<?> calculateVolumetricWeight(@RequestBody PackContainerNumberChangeRequest request) throws Exception {
+    public ResponseEntity<?> calculateVolumetricWeight(@RequestBody AutoCalculatePackingRequest request) throws Exception {
         String responseMsg;
         try {
             return (ResponseEntity<?>) packingService.calculateVolumetricWeightForAirAndChargeable(CommonRequestModel.buildRequest(request));
