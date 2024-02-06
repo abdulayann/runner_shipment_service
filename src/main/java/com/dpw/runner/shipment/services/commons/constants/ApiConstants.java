@@ -85,4 +85,5 @@ public class ApiConstants {
     public static final String API_UPLOAD_CONTAINER_EVENTS_SUCCESS_MESSAGE = "Container Events uploaded successfully.";
 
     public static final String API_UPLOAD_PACKING_DETAILS_SUCCESS_MESSAGE = "Packing Details uploaded successfully.";
+    public static final String CALCULATE_VOLUMETRIC_WEIGHT = "/calculate-volumetric-weight";
 }
