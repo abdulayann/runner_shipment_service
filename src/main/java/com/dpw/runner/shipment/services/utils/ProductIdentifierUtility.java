@@ -753,12 +753,22 @@ public class ProductIdentifierUtility {
         if (StringUtility.isNotEmpty(sequenceNumber)) {
           return sequenceNumber;
         }
+      } else {
+        String hawbSequenceNumber = GetChildCommonSequenceNumber(shipmentDetails.getTransportMode(), shipmentDetails.getShipmentId(), ProductProcessTypes.HAWB);
+        if (StringUtility.isNotEmpty(hawbSequenceNumber)) {
+          return hawbSequenceNumber;
+        }
       }
       return "";
     }
     ProductProcessTypes processType;
-    if(shipmentDetails.getTransportMode().equalsIgnoreCase("Air"))
-      processType =  ProductProcessTypes.HAWB;
+    if(shipmentDetails.getTransportMode().equalsIgnoreCase("Air")) {
+      processType = ProductProcessTypes.HAWB;
+      String sequenceNumber = GetChildCommonSequenceNumber(shipmentDetails.getTransportMode(), shipmentDetails.getShipmentId(), processType);
+      if (StringUtility.isNotEmpty(sequenceNumber)) {
+        return sequenceNumber;
+      }
+    }
     else
     {
       processType = ProductProcessTypes.HBLNumber;
@@ -785,7 +795,7 @@ public class ProductIdentifierUtility {
     ProductSequenceConfig productSequence = GetCommonProductSequence(transportMode, productProcessTypes);
     if (productSequence != null) {
       sequenceNumber = parentNumber;
-      if (productProcessTypes == ProductProcessTypes.HBLNumber) {
+      if (productProcessTypes == ProductProcessTypes.HBLNumber || productProcessTypes == ProductProcessTypes.HAWB) {
         return sequenceNumber;
       }
     }

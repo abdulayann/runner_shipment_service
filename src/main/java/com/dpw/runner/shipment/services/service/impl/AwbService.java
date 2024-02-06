@@ -956,7 +956,7 @@ public class AwbService implements IAwbService {
         // fetch sehipment info
         ShipmentDetails shipmentDetails = shipmentDao.findById(request.getShipmentId()).get();
         boolean syncShipment = false;
-        if(shipmentDetails.getHouseBill() == null) {
+        if(StringUtility.isEmpty(shipmentDetails.getHouseBill())) {
             shipmentDetails.setHouseBill(shipmentService.generateCustomHouseBL(shipmentDetails));
             shipmentDao.save(shipmentDetails, false);
             syncShipment = true;
