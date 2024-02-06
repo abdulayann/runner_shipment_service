@@ -8,6 +8,7 @@ import com.dpw.runner.shipment.services.ReportingService.Models.ShippingInstruct
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.Hbl;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.masterdata.response.VesselsResponse;
 import com.dpw.runner.shipment.services.repository.interfaces.IHblRepository;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -110,7 +111,9 @@ public class ShippingInstructionReport extends IReport{
                 formatPattern = v1TenantSettingsResponse.getDPWDateFormat();
             dictionary.put(ETD, GenerateFormattedDate(model.getShipment().getCarrierDetails().getEtd(), formatPattern));
             dictionary.put(ETA, GenerateFormattedDate(model.getShipment().getCarrierDetails().getEta(), formatPattern));
-            dictionary.put(VESSEL_NAME, model.getShipment().getCarrierDetails().getVessel());
+            VesselsResponse vesselsResponse = getVesselsData(model.getShipment().getCarrierDetails().getVessel());
+            if(vesselsResponse != null)
+                dictionary.put(ReportConstants.VESSEL_NAME, vesselsResponse.getName());
             dictionary.put(VOYAGE, model.getShipment().getCarrierDetails().getVoyage());
             dictionary.put(FLIGHT_NUMBER, model.getShipment().getCarrierDetails().getFlightNumber());
         }

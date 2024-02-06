@@ -1,7 +1,5 @@
 package com.dpw.runner.shipment.services.dto.v1.response;
 
-import com.dpw.runner.shipment.services.ReportingService.Enums.DigitGrouping;
-import com.dpw.runner.shipment.services.ReportingService.Enums.GroupingNumber;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -34,6 +32,6 @@ public class V1TenantSettingsResponse implements Serializable {
     private Integer WVGroupingNumber;
     private Boolean RoundoffLocalCurrencyAmount;
     private Boolean IsGroupingOverseas;
-    private DigitGrouping CurrencyDigitGrouping;
-    private GroupingNumber CurrencyGroupingNumber;
+    private Integer CurrencyDigitGrouping;
+    private Integer CurrencyGroupingNumber;
 }
