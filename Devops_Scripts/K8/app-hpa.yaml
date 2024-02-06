@@ -13,10 +13,10 @@ spec:
   metrics:
     - type: Resource
       resource:
-        name: cpu
+        name: memory
         target:
           type: Utilization
-          averageUtilization: $AVG_CPU_UTIL
+          averageUtilization: $AVG_MEMORY_UTIL
   behavior:
     scaleUp:
       stabilizationWindowSeconds: $STABLE_SEC
