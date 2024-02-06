@@ -17,6 +17,7 @@ import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
@@ -188,26 +189,28 @@ public class PreAlertReport extends IReport {
         if(preAlertModel.shipmentDetails.getWeight() != null)
             dictionary.put(ReportConstants.TOTAL_WEIGHT_, String.format("%s %s", ConvertToWeightNumberFormat(preAlertModel.shipmentDetails.getWeight(), v1TenantSettingsResponse), preAlertModel.shipmentDetails.getWeightUnit()));
         dictionary.put(ReportConstants.TOTAL_PCS, preAlertModel.noofpackages_word);
-        if (preAlertModel.shipmentDetails.getCarrierDetails() != null) {
-            UnlocationsResponse pol = getUNLocRow(preAlertModel.shipmentDetails.getCarrierDetails().getOriginPort());
+        List<String> unlocoRequests = this.createUnLocoRequestFromShipmentModel(preAlertModel.shipmentDetails);
+        Map<String, UnlocationsResponse> unlocationsMap = masterDataUtils.getLocationData(new HashSet<>(unlocoRequests));
+        UnlocationsResponse pol = unlocationsMap.get(preAlertModel.shipmentDetails.getCarrierDetails().getOriginPort());
+        UnlocationsResponse pod = unlocationsMap.get(preAlertModel.shipmentDetails.getCarrierDetails().getDestinationPort());
+        UnlocationsResponse origin = unlocationsMap.get(preAlertModel.shipmentDetails.getCarrierDetails().getOrigin());
+        UnlocationsResponse destination = unlocationsMap.get(preAlertModel.shipmentDetails.getCarrierDetails().getDestination());
+        if (pol != null) {
             dictionary.put(ReportConstants.PORT_OF_DEPARTURE, pol.getPortName());
             dictionary.put(ReportConstants.PORT_OF_DEPARTURE_COUNTRY, pol.getCountry());
+            dictionary.put(ReportConstants.POL_PORTNAME, pol.getPortName());
+            dictionary.put(ReportConstants.POL_COUNTRY, pol.getCountry());
         }
-        if (preAlertModel.shipmentDetails.getCarrierDetails() != null) {
-            UnlocationsResponse pod = getUNLocRow(preAlertModel.shipmentDetails.getCarrierDetails().getDestinationPort());
+        if (pod != null) {
             dictionary.put(ReportConstants.PORT_OF_ARRIVAL, pod.getPortName());
             dictionary.put(ReportConstants.PORT_OF_ARRIVAL_COUNTRY, pod.getCountry());
+            dictionary.put(ReportConstants.POD_PORTNAME, pod.getPortName());
+            dictionary.put(ReportConstants.POD_COUNTRY, pod.getCountry());
         }
-        if (preAlertModel.shipmentDetails.getCarrierDetails() != null) {
-            UnlocationsResponse origin = getUNLocRow(preAlertModel.shipmentDetails.getCarrierDetails().getOrigin());
-            if (origin != null)
-                dictionary.put(ReportConstants.PLACE_oF_RECEIPT, origin.getName());
-        }
-        if (preAlertModel.shipmentDetails.getCarrierDetails() != null) {
-            UnlocationsResponse destination = getUNLocRow(preAlertModel.shipmentDetails.getCarrierDetails().getDestination());
-            if (destination != null)
-                dictionary.put(ReportConstants.PLACE_oF_DELIVERY, destination.getName());
-        }
+        if (origin != null)
+            dictionary.put(ReportConstants.PLACE_oF_RECEIPT, origin.getName());
+        if (destination != null)
+            dictionary.put(ReportConstants.PLACE_oF_DELIVERY, destination.getName());
         if (preAlertModel.consolidationDetails != null && preAlertModel.consolidationDetails.getPayment() != null)
             dictionary.put(ReportConstants.PPCC, preAlertModel.consolidationDetails.getPayment());
         else
@@ -230,7 +233,7 @@ public class PreAlertReport extends IReport {
             }
             dictionary.put(ReportConstants.PACKS_DETAILS, packDictionary);
         }
-        populateHasContainerFields(preAlertModel.shipmentDetails, dictionary);
+        populateHasContainerFields(preAlertModel.shipmentDetails, dictionary, v1TenantSettingsResponse);
         return dictionary;
     }
 }

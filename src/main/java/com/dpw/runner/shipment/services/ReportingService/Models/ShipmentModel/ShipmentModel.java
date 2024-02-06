@@ -92,9 +92,9 @@ public class ShipmentModel {
     private Long id;
     @JsonProperty("Incoterms")
     private String incoterms;
-    @JsonProperty("InnerPackUnit")
+    @JsonProperty("InnersUnit")
     private String innerPackUnit;
-    @JsonProperty("InnerPacks")
+    @JsonProperty("Inners")
     private Integer innerPacks;
     @JsonProperty("IntraBranch")
     private Boolean intraBranch;
@@ -211,6 +211,8 @@ public class ShipmentModel {
     private String entryRefNo;
     @JsonProperty("Summary")
     private String summary;
+    @JsonProperty("Voyage")
+    private String voyage;
 
 }
 

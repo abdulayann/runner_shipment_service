@@ -7,11 +7,9 @@ import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ContainerModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PickupDeliveryDetailsModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
-import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
-import com.dpw.runner.shipment.services.entity.Parties;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.MasterData;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
@@ -31,7 +29,6 @@ import java.util.List;
 import java.util.Map;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CHARGE_TYPE_CODE;
 
 @Component
 public class DeliveryOrderReport extends IReport{
@@ -135,7 +132,7 @@ public class DeliveryOrderReport extends IReport{
         if(deliveryDetails != null) {
             LocalDateTime deliveryTime = deliveryDetails.getActualPickupOrDelivery() != null ? deliveryDetails.getActualPickupOrDelivery() :
                     deliveryDetails.getEstimatedPickupOrDelivery();
-            dictionary.put(DELIVERY_TIME,  ConvertToDPWDateFormat(deliveryTime));
+            dictionary.put(DELIVERY_TIME,  ConvertToDPWDateFormatWithTime(deliveryTime, v1TenantSettingsResponse.getDPWDateFormat(), true));
         }
 
         getPackingDetails(deliveryOrderModel.shipmentDetails, dictionary);
