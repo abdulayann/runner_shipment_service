@@ -3007,6 +3007,16 @@ public class ShipmentService implements IShipmentService {
                 if(!shipmentDetailsResponse.getAdditionalDetails().getIsSummaryUpdated())
                     shipmentDetailsResponse.getAdditionalDetails().setSummary(shipmentDetailsResponse.getContainerSummary().getSummary());
             } catch (Exception e) {}
+            List<ConsolidationDetails> consolidationList = shipmentDetails.getConsolidationList();
+            if(!Objects.isNull(consolidationList) && !consolidationList.isEmpty()){
+                List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByConsolidationId(consolidationList.get(0).getId());
+                if(!Objects.isNull(consoleShipmentMappings) && !consoleShipmentMappings.isEmpty())
+                    shipmentDetailsResponse.setShipmentCount((long) consoleShipmentMappings.size());
+                else
+                    shipmentDetailsResponse.setShipmentCount(0L);
+            } else {
+                shipmentDetailsResponse.setShipmentCount(0L);
+            }
         }
         catch (Exception ex) {
             log.error("Request: {} || Error occured for event: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), IntegrationType.MASTER_DATA_FETCH_FOR_SHIPMENT_RETRIEVE, ex.getLocalizedMessage());
