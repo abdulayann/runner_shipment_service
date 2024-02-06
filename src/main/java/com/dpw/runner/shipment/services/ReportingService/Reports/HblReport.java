@@ -868,22 +868,8 @@ public class HblReport extends IReport{
             }
         }
 
-        dictionary.put(CONTAINER_SUMMARY, EMPTY_STRING);
-        if(hblModel.shipment.getContainersList() != null) {
-            Map<String, Long> containerSummary =  new HashMap<>();
-            for(var container : hblModel.shipment.getContainersList()) {
-                String code = container.getContainerCode();
-                Long count = container.getContainerCount();
-                Long previousCount = 0L;
-                if(containerSummary.get(code)  != null)
-                    previousCount = containerSummary.get(code);
-
-                containerSummary.put(code,  previousCount + count);
-            }
-            var containerCounts = String.join(",", containerSummary.entrySet().stream()
-                    .map(i -> String.format("%s * %s", i.getValue(), i.getKey())).toList());
-            dictionary.put(CONTAINER_SUMMARY, containerCounts);
-        }
+        dictionary.put(CONTAINER_SUMMARY, hblModel.shipment.getSummary());
+        dictionary.put(SUMMARY, hblModel.shipment.getSummary());
 
         dictionary.put(BOOKING_NUMBER, hblModel.shipment.getBookingNumber());
         dictionary.put(ADDITIONAL_TERMS, hblModel.shipment.getAdditionalTerms());
