@@ -30,7 +30,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.DELIVERY_TIME;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CHARGE_TYPE_CODE;
 
 @Component
 public class DeliveryOrderReport extends IReport{
@@ -55,7 +56,6 @@ public class DeliveryOrderReport extends IReport{
     public IDocumentModel getDocumentModel(Long id) {
         DeliveryOrderModel deliveryOrderModel = new DeliveryOrderModel();
         deliveryOrderModel.shipmentDetails = getShipment(id);
-        v1ServiceUtil.validateCreditLimit(modelMapper.map(deliveryOrderModel.shipmentDetails.getClient(), Parties.class), Constants.DO_PRINT, deliveryOrderModel.shipmentDetails.getGuid());
         deliveryOrderModel.usersDto = UserContext.getUser();
         if(deliveryOrderModel.shipmentDetails.getConsolidationList() != null && deliveryOrderModel.shipmentDetails.getConsolidationList().size() > 0)
         {
@@ -100,6 +100,7 @@ public class DeliveryOrderReport extends IReport{
         populateConsolidationFields(deliveryOrderModel.consolidationDetails, dictionary);
         populateUserFields(deliveryOrderModel.usersDto, dictionary);
         populateBlFields(deliveryOrderModel.hbl, dictionary);
+        populateBillChargesFields(deliveryOrderModel.shipmentDetails, dictionary);
         populateShipmentOrganizationsLL(deliveryOrderModel.shipmentDetails, dictionary);
         dictionary.put(ReportConstants.MASTER_BILL_ISSUE_PLACE, deliveryOrderModel.placeOfIssueName);
         dictionary.put(ReportConstants.PPCC, deliveryOrderModel.paymentTerms);
@@ -139,6 +140,14 @@ public class DeliveryOrderReport extends IReport{
 
         getPackingDetails(deliveryOrderModel.shipmentDetails, dictionary);
 
+        if(dictionary.containsKey(CHARGES_SMALL) && dictionary.get(CHARGES_SMALL) instanceof List){
+            List<Map<String, Object>> values = (List<Map<String, Object>>)dictionary.get(CHARGES_SMALL);
+            for (Map<String, Object> v: values) {
+                if(v.containsKey(CHARGE_TYPE_CODE) && v.get(CHARGE_TYPE_CODE) != null) {
+                    v.put(CHARGE_TYPE_DESCRIPTION_LL, GetChargeTypeDescriptionLL((String)v.get(CHARGE_TYPE_CODE)));
+                }
+            }
+        }
 
         return dictionary;
     }

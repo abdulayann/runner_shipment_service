@@ -69,8 +69,6 @@ public class HblReport extends IReport{
     public IDocumentModel getDocumentModel(Long id) {
         HblModel hblModel = new HblModel();
         hblModel.shipment = getShipment(id);
-        //TODO - for other report it may break
-        v1ServiceUtil.validateCreditLimit(modelMapper.map(hblModel.shipment.getClient(), Parties.class), Constants.HBL_PRINT, hblModel.shipment.getGuid());
         hblModel.shipmentSettingsDetails = getShipmentSettings(TenantContext.getCurrentTenant());
         hblModel.tenantSettingsResponse = getTenantSettings();
         hblModel.user = UserContext.getUser();
@@ -235,25 +233,6 @@ public class HblReport extends IReport{
                 dictionary.put(key, value);
             }
         }
-        List<BillingResponse> billingsList = null;
-        try {
-            billingsList = getBillingData(hblModel.shipment.getGuid());
-        }
-        catch (Exception e) { }
-        List<BillChargesResponse> charges = new ArrayList<>();
-        BillingResponse billRow = null;
-        if(billingsList != null && billingsList.size() > 0) {
-            billRow = billingsList.get(0);
-            for(BillingResponse billingResponse : billingsList) {
-                List<BillChargesResponse> billChargesResponses = getBillChargesData(billingResponse.getGuid());
-                if(billChargesResponses != null) {
-                    for (BillChargesResponse charge : billChargesResponses) {
-                        charges.add(charge);
-                    }
-                }
-            }
-        }
-
 
         dictionary.put(ReportConstants.NoOfPackages, hblModel.noofPackages);
         dictionary.put(ReportConstants.CONTAINER_COUNT_GROUPED, concatGroupedContainerCount(hblModel.containerCountGrouped));
@@ -411,44 +390,8 @@ public class HblReport extends IReport{
                     .filter(i -> i.getType().equals(SHIPMENT_CAN_DOCUMENT));
         }
         referenceNumber.ifPresent(i -> dictionary.put(CAN_NUMBER, i.getReferenceNumber()));
-        dictionary.put(ReportConstants.BILL_REMARKS, billRow != null ? billRow.getRemarks() : "");
-        List<BillChargesResponse> originalChargesRows = new ArrayList<>();
-        List<BillChargesResponse> copyChargesRows = new ArrayList<>();
-        dictionary.put(AS_AGREED, false);
-        dictionary.put(COPY_AS_AGREED, false);
 
-        String chargesApply = hblModel.shipment.getAdditionalDetails() != null ? hblModel.shipment.getAdditionalDetails().getBLChargesDisplay() : null;
-
-        if (!Objects.isNull(chargesApply) && chargesApply.equals("AGR")) {
-            dictionary.put(AS_AGREED, true);
-            dictionary.put(COPY_AS_AGREED, true);
-        } else if (!Objects.isNull(chargesApply) && (chargesApply.equals("CPP") || chargesApply.equals("CAL") || chargesApply.equals("CCL"))) {
-            dictionary.put(AS_AGREED, true);
-        }
-
-        if (Objects.isNull(chargesApply) || chargesApply.equals("NON")) {
-            dictionary.put(HAS_CHARGES, false);
-        } else {
-            dictionary.put(HAS_CHARGES, true);
-            getChargeRows(originalChargesRows, copyChargesRows, charges, chargesApply);
-        }
-        dictionary.put(CHARGES_SMALL, originalChargesRows);
-
-        if(originalChargesRows != null && originalChargesRows.size() > 0)
-        {
-            List<Map<String, Object>> values = new ArrayList<>();
-            for (BillChargesResponse billChargesResponse : originalChargesRows) {
-                String billChargeJson = jsonHelper.convertToJson(billChargesResponse);
-                values.add(jsonHelper.convertJsonToMap(billChargeJson));
-            }
-            for (Map<String, Object> v: values) {
-                if(v.containsKey(OVERSEAS_SELL_AMOUNT) && v.get(OVERSEAS_SELL_AMOUNT) != null) {
-                    v.put(OVERSEAS_SELL_AMOUNT, addCommas(v.get(OVERSEAS_SELL_AMOUNT).toString()));
-                };
-            }
-            dictionary.put(CHARGES_SMALL, values);
-        }
-        dictionary.put(COPY_CHARGES, copyChargesRows);
+        populateBillChargesFields(hblModel.shipment, dictionary);
 
         if (!Objects.isNull(hblModel.shipment) && !Objects.isNull(hblModel.shipment.getAdditionalDetails()) && !Objects.isNull(hblModel.shipment.getAdditionalDetails().getNotifyParty())) {
             PartiesModel notifyParty = hblModel.shipment.getAdditionalDetails().getNotifyParty();
@@ -881,22 +824,8 @@ public class HblReport extends IReport{
             }
         }
 
-        dictionary.put(CONTAINER_SUMMARY, EMPTY_STRING);
-        if(hblModel.shipment.getShipmentContainersList() != null) {
-            Map<String, Long> containerSummary =  new HashMap<>();
-            for(var container : hblModel.shipment.getShipmentContainersList()) {
-                String code = container.getContainerTypeCode();
-                Long count = container.getContainerCount();
-                Long previousCount = 0L;
-                if(containerSummary.get(code)  != null)
-                    previousCount = containerSummary.get(code);
-
-                containerSummary.put(code,  previousCount + count);
-            }
-            var containerCounts = String.join(",", containerSummary.entrySet().stream()
-                    .map(i -> String.format("%s * %s", i.getValue(), i.getKey())).toList());
-            dictionary.put(CONTAINER_SUMMARY, containerCounts);
-        }
+        dictionary.put(CONTAINER_SUMMARY, hblModel.shipment.getSummary());
+        dictionary.put(SUMMARY, hblModel.shipment.getSummary());
 
         dictionary.put(BOOKING_NUMBER, hblModel.shipment.getBookingNumber());
         dictionary.put(ADDITIONAL_TERMS, hblModel.shipment.getAdditionalTerms());
@@ -964,43 +893,6 @@ public class HblReport extends IReport{
         dictionary.put(MARKS_N_NUMS, hblModel.shipment.getMarksNum());
         return dictionary;
     }
-
-    private void getChargeRows(List<BillChargesResponse> originalChargesRows, List<BillChargesResponse> copyChargesRows, List<BillChargesResponse> charges, String type) {
-        List<BillChargesResponse> prepaid = charges.stream().filter(x -> !Strings.isNullOrEmpty(x.getPaymentType()) && x.getPaymentType().equals("PPD")).collect(Collectors.toList());
-        List<BillChargesResponse> collect = charges.stream().filter(x -> !Strings.isNullOrEmpty(x.getPaymentType()) && x.getPaymentType().equals("CCX")).collect(Collectors.toList());
-
-        switch (type)
-        {
-            case "CPP":
-                copyChargesRows = prepaid;
-                break;
-            case "CAL":
-                copyChargesRows = charges;
-                break;
-
-            case "PPD":
-                originalChargesRows = prepaid;
-                copyChargesRows = prepaid;
-                break;
-
-            case "SHW":
-                originalChargesRows = collect;
-                copyChargesRows = collect;
-                break;
-            case "ALL":
-                originalChargesRows = charges;
-                copyChargesRows = charges;
-                break;
-
-            case "CCL":
-                copyChargesRows = collect;
-                break;
-            default:
-                break;
-
-        }
-    }
-
     // isActive Criteria not clear from v1 impl
     private String masterListDescriptionPacksUnit(String packageType) {
         if (packageType == null || packageType.isEmpty())

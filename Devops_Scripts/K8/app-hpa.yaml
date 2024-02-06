@@ -17,6 +17,12 @@ spec:
         target:
           type: Utilization
           averageUtilization: $AVG_CPU_UTIL
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: $AVG_MEMORY_UTIL
   behavior:
     scaleUp:
       stabilizationWindowSeconds: $STABLE_SEC

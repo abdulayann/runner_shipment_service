@@ -84,4 +84,5 @@ public class CustomerBookingResponse implements IRunnerResponse {
     private String parentContractId;
     private String salesBranch;
     private String salesAgentEmail;
+    private Boolean isNotifyConsigneeEqual;
 }

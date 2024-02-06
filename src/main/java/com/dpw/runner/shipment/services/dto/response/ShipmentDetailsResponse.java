@@ -15,6 +15,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import javax.persistence.Column;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -168,4 +169,10 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     private String salesBranch;
     private String salesAgentEmail;
     private UUID sourceGuid;
+
+    private Long consigneeDpsAddressId;
+    private Long clientDpsAddressId;
+    private Long consignorDpsAddressId;
+    private Long notifyPartyDpsAddressId;
+    private Long shipmentCount;
 }

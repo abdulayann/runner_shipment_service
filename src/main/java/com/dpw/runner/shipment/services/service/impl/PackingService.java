@@ -16,7 +16,6 @@ import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryRespon
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentMeasurementDetailsDto;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
 import com.dpw.runner.shipment.services.dto.request.AutoCalculatePackingRequest;
-import com.dpw.runner.shipment.services.dto.request.ContainersExcelModel;
 import com.dpw.runner.shipment.services.dto.request.PackingExcelModel;
 import com.dpw.runner.shipment.services.dto.request.PackingRequest;
 import com.dpw.runner.shipment.services.dto.response.AutoCalculatePackingResponse;
@@ -811,10 +810,31 @@ public class PackingService implements IPackingService {
         return vwOb;
     }
 
+    public ResponseEntity<?> calculateVolumetricWeightForAirAndChargeable(CommonRequestModel model) throws Exception {
+        AutoCalculatePackingRequest request = (AutoCalculatePackingRequest) model.getData();
+        AutoCalculatePackingResponse response = new AutoCalculatePackingResponse();
+        if (!StringUtils.isEmpty(request.getTransportMode()) && !request.getTransportMode().equals(TRANSPORT_MODE_AIR)) {
+            return ResponseHelper.buildSuccessResponse(response);
+        }
+        BigDecimal volume = request.getVolume();
+        BigDecimal weight = request.getWeight();
+        String transportMode = request.getTransportMode();
+        String weightUnit = request.getWeightUnit();
+        String volumeUnit = request.getVolumeUnit();
+        if (volume == null || weight == null) {
+            return ResponseHelper.buildFailedResponse("Volume or weight is 0");
+        }
+        var obj = calculateVolumetricWeightForAir(volume, weight, transportMode, weightUnit, volumeUnit);
+        calculateChargeableForAir(response, request);
+        response.setVolumeWeight(obj.getVolumeWeight());
+        response.setVolumeWeightUnit(obj.getVolumeWeightUnit());
+        return ResponseHelper.buildSuccessResponse(response);
+    }
+
     public void calculateVolume(String widthUnit, String heightUnit, String lengthUnit, AutoCalculatePackingResponse pack, AutoCalculatePackingRequest request) throws Exception {
 
         if (request.getWidthUnit() == null || request.getLengthUnit() == null || request.getHeightUnit() == null) {
-            return ;
+            return;
         }
         if (!lengthUnit.equals(heightUnit) || !heightUnit.equals(widthUnit))
             return;

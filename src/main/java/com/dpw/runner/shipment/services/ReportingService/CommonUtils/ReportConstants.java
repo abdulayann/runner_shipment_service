@@ -613,7 +613,7 @@ public class ReportConstants {
     public static final Set OBJECT_TYPE_REPORTS = new HashSet(Arrays.asList("ImportConsolManifest", "ExportConsolManifest", "ImportShipmentManifest", "ExportShipmentManifest"));
 
     public static final String OBJECT_TYPE = "OBJECT_TYPE";
-    public static final String AWB_LABLE = "AWBLable";
+    public static final String AWB_LABEL = "AwbLabel";
     public static final String COMMERCIAL_INVOICE = "CommercialInvoice";
     public static final String CUSTOMS_INSTRUCTION = "CustomsInstructions";
     public static final String SEAWAY_BILL = "SeawayBill";
@@ -956,6 +956,8 @@ public class ReportConstants {
     public static final String SHIPMENT_DETAILS_SUPPLIEREMAIL = "SupplierEmail";
     public static final String SHIPMENT_DETAILS_SUPPLIERFAX = "SupplierFax";
     public static final String SHIPMENT_DETAILS_SUMMARY = "Summary";
+    public static final String SHIPMENT_TRUCKDRIVERDETAILS = "TruckDriverDetails";
+    public static final String SHIPMENT_DETAILS_TOTALWEIGHT = "TotalWeight";
 
     public static String SHIPMENT_PACKING_PACKS_LISTOFPACKINGS = "ListOfPackings";
     public static String SHIPMENT_PACKING_PACKS_COMMODITIES = "Commodities";
@@ -965,4 +967,9 @@ public class ReportConstants {
     public static String SHIPMENT_PACKING_PACKS_COMMERCIALINVOICENUMBER = "CommercialInvoiceNumber";
 
     public static final String SHIPMENT_DETAILS_CARGOCONTROLNO = "CargoControlNo";
+
+    public static final String SHIPMENT_BILLCHARGES_FREVENUEBILLCHARGES = "FRevenueBillCharges";
+    public static final String SHIPMENT_BILLCHARGES_BILLCHARGESLOCALTAXSUMCOMMA = "BillChargesLocalTaxSumComma";
+    public static final String SHIPMENT_BILLCHARGES_BILLCHARGESSUM = "BillChargesSum";
+    public static final String SHIPMENT_BILLCHARGES_OVERSEASCURRENCY = OVERSEAS_CURRENCY;
 }

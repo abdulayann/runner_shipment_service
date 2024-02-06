@@ -161,4 +161,5 @@ public interface IV1Service {
     AddressTranslationListResponse getAddressTranslation(AddressTranslationRequest request);
     CheckActiveInvoiceResponse getActiveInvoices(CheckActiveInvoiceRequest request);
     V1DataResponse fetchCreditLimit(Object request);
+    OrgAddressResponse fetchOrgAddresses(Object request);
 }

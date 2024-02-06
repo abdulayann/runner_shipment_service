@@ -56,6 +56,7 @@ sed -i "s/\$HPA_MAX/${HPA_MAX}/g" $app_hpa_yaml_path
 sed -i "s/\$NAMESPACE_NAME/$namespace/g" $app_hpa_yaml_path
 sed -i "s/\$DEPLOYMENT_NAME/${deployment_name}/g" $app_hpa_yaml_path
 sed -i "s/\$AVG_CPU_UTIL/${AVG_CPU_UTIL}/g" $app_hpa_yaml_path
+sed -i "s/\$AVG_MEMORY_UTIL/${AVG_MEMORY_UTIL}/g" $app_hpa_yaml_path
 sed -i "s/\$STABLE_SEC/${STABLE_SEC}/g" $app_hpa_yaml_path
 sed -i "s/\$SCALE_UP_COUNT/${SCALE_UP_COUNT}/g" $app_hpa_yaml_path
 sed -i "s/\$SCALE_UP_SEC/${SCALE_UP_SEC}/g" $app_hpa_yaml_path

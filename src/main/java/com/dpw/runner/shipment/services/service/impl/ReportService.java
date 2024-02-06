@@ -9,6 +9,7 @@ import com.dpw.runner.shipment.services.ReportingService.Reports.HblReport;
 import com.dpw.runner.shipment.services.ReportingService.Reports.IReport;
 import com.dpw.runner.shipment.services.ReportingService.Reports.MawbReport;
 import com.dpw.runner.shipment.services.ReportingService.ReportsFactory;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.EventConstants;
@@ -30,6 +31,7 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IFileRepoService;
 import com.dpw.runner.shipment.services.service.interfaces.IReportService;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
+import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
@@ -39,6 +41,7 @@ import com.itextpdf.text.Image;
 import com.itextpdf.text.Rectangle;
 import com.itextpdf.text.pdf.*;
 import lombok.extern.slf4j.Slf4j;
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -101,6 +104,10 @@ public class ReportService implements IReportService {
     private IHblReleaseTypeMappingDao hblReleaseTypeMappingDao;
     @Autowired
     private IConsolidationDetailsDao consolidationDetailsDao;
+    @Autowired
+    private V1ServiceUtil v1ServiceUtil;
+    @Autowired
+    private ModelMapper modelMapper;
 
     @Override
     public byte[] getDocumentData(CommonRequestModel request) throws DocumentException, IOException {
@@ -125,12 +132,7 @@ public class ReportService implements IReportService {
             }
         }
 
-        ShipmentSettingsDetails tenantSettingsRow = new ShipmentSettingsDetails();
-
-        List<ShipmentSettingsDetails> shipmentSettingsDetailsList = shipmentSettingsDao.getSettingsByTenantIds(Arrays.asList(UserContext.getUser().TenantId));
-        if (shipmentSettingsDetailsList != null && shipmentSettingsDetailsList.size() >= 1) {
-            tenantSettingsRow = shipmentSettingsDetailsList.get(0);
-        }
+        ShipmentSettingsDetails tenantSettingsRow = shipmentSettingsDao.findByTenantId(TenantContext.getCurrentTenant()).orElseGet(null);
 
         Boolean isOriginalPrint = false;
         Boolean isSurrenderPrint = false;
@@ -143,6 +145,27 @@ public class ReportService implements IReportService {
         boolean reportingNewFlow = false;
         Map<String, Object> dataRetrived = new HashMap<>();
         boolean newFlowSuccess = false;
+
+        IReport report =  reportsFactory.getReport(reportRequest.getReportInfo());
+        if(report instanceof MawbReport) {
+            if(reportRequest.isFromShipment()) {
+                ((MawbReport)report).isDMawb = true;
+            } else {
+                ((MawbReport)report).isDMawb = false;
+            }
+        }
+
+        String checkCreditLimitDocs = IReport.checkCreditLimitDocs(reportRequest.getReportInfo());
+        if(!Objects.isNull(checkCreditLimitDocs)){
+            if (!(report instanceof MawbReport && !((MawbReport)report).isDMawb)) {
+                Optional<ShipmentDetails> shipmentsRow = shipmentDao.findById(Long.parseLong(reportRequest.getReportId()));
+                ShipmentDetails shipmentDetails = null;
+                if(shipmentsRow.isPresent()) {
+                    shipmentDetails = shipmentsRow.get();
+                    v1ServiceUtil.validateCreditLimit(modelMapper.map(shipmentDetails.getClient(), Parties.class), checkCreditLimitDocs, shipmentDetails.getGuid());
+                }
+            }
+        }
         if (reportingNewFlow || ReportConstants.NEW_TEMPLATE_FLOW.contains(reportRequest.getReportInfo())) {
             try {
                 //dataRetrived = new ReportRepository().getReportDataNewFlow(ReportInfo, ReportId);
@@ -153,20 +176,8 @@ public class ReportService implements IReportService {
         }
 
         //TODO - Need to handle for new flow
-        if (reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.HOUSE_BILL)) {
-            dataRetrived = hblReport.getData(Long.parseLong(reportRequest.getReportId()));
-        }
-        else {
-            IReport report =  reportsFactory.getReport(reportRequest.getReportInfo());
-            if(report instanceof MawbReport) {
-                if(reportRequest.isFromShipment()) {
-                    ((MawbReport)report).isDMawb = true;
-                } else {
-                    ((MawbReport)report).isDMawb = false;
-                }
-            }
-            dataRetrived = reportsFactory.getReport(reportRequest.getReportInfo()).getData(Long.parseLong(reportRequest.getReportId()));
-        }
+        dataRetrived = report.getData(Long.parseLong(reportRequest.getReportId()));
+
         boolean isOriginalPrinted = (boolean) dataRetrived.getOrDefault(ReportConstants.PRINTED_ORIGINAL, false);
         String hbltype = (String)dataRetrived.getOrDefault(ReportConstants.HOUSE_BILL_TYPE, null);
         String objectType = "";
@@ -177,10 +188,10 @@ public class ReportService implements IReportService {
                 objectType = dataRetrived.get(ReportConstants.OBJECT_TYPE).toString();
             }
         }
-        if (reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.AWB_LABLE)){
+        if (reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.AWB_LABEL)){
             List<byte[]> pdf_Bytes = new ArrayList<>();
             DocPages Pages = GetFromTenantSettings(reportRequest.getReportInfo(), null, null, reportRequest.getPrintType(), reportRequest.getFrontTemplateCode(), reportRequest.getBackTemplateCode(), false, null, null);
-            int copies = reportRequest.getCopyCountForAWB();
+            int copies = reportRequest.getCopyCountForAWB() != null ? reportRequest.getCopyCountForAWB() : 0;
             if(copies < 1) throw new ValidationException("Copy count is less than 1");
             for(int i = 1; i <= copies; i++){
                 String copyCount = getSerialCount(i, copies);
@@ -753,7 +764,7 @@ public class ReportService implements IReportService {
                         row.getCostalDocument() == null ? adminRow.getCostalDocument() : row.getCostalDocument(), null, row.getCostalDocument() != null, null, null, null);
             case ReportConstants.SHIPPING_INSTRUCTION:
                 return getShippingInstructionDocument(row, adminRow);
-            case ReportConstants.AWB_LABLE:
+            case ReportConstants.AWB_LABEL:
                 return setDocPages(null,
                         row.getAwbLable() == null ? adminRow.getAwbLable() : row.getAwbLable(), null, row.getAwbLable() != null, null, null, null);
             case ReportConstants.CARGO_MANIFEST:

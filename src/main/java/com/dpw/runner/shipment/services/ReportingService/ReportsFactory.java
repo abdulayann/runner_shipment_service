@@ -62,6 +62,18 @@ public class ReportsFactory {
     @Autowired
     private SeawayBillReport seawayBillReport;
 
+    @Autowired
+    private ShipTruckDriverProof shipTruckDriverProof;
+
+    @Autowired
+    private ShipTruckwayBillReport shipTruckwayBillReport;
+
+    @Autowired
+    private ConsTruckDriverProof consTruckDriverProof;
+
+    @Autowired
+    private ConsTruckwayBillReport consTruckwayBillReport;
+
     public IReport getReport(String key) {
         switch (key) {
             case ReportConstants.ARRIVAL_NOTICE:
@@ -90,7 +102,7 @@ public class ReportsFactory {
             case ReportConstants.EXPORT_SHIPMENT_MANIFEST:
             case ReportConstants.GENERATE_ISF_FILE:
                 return manifestShipmentReport;
-            case ReportConstants.AWB_LABLE:
+            case ReportConstants.AWB_LABEL:
                 return awbLabelReport;
             case ReportConstants.SHIPPING_REQUEST_AIR:
                 return shippingRequestAirReport;
@@ -118,6 +130,14 @@ public class ReportsFactory {
                 return seawayBillReport;
             case ReportConstants.IMPORT_CONSOL_MANIFEST:
                 return manifestConsolReport;
+            case ReportConstants.SHIP_TRUCKWAY_BILL:
+                return shipTruckwayBillReport;
+            case ReportConstants.CONS_TRUCKWAY_BIll:
+                return consTruckwayBillReport;
+            case ReportConstants.SHIP_TRUCK_DRIVER_PROOF:
+                return shipTruckDriverProof;
+            case ReportConstants.CONS_TRUCK_DRIVER_PROOF:
+                return consTruckDriverProof;
         }
         return null;
     }

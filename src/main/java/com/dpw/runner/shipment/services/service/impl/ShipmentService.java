@@ -3008,6 +3008,16 @@ public class ShipmentService implements IShipmentService {
                 if(!shipmentDetailsResponse.getAdditionalDetails().getIsSummaryUpdated())
                     shipmentDetailsResponse.getAdditionalDetails().setSummary(shipmentDetailsResponse.getContainerSummary().getSummary());
             } catch (Exception e) {}
+            List<ConsolidationDetails> consolidationList = shipmentDetails.getConsolidationList();
+            if(!Objects.isNull(consolidationList) && !consolidationList.isEmpty()){
+                List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByConsolidationId(consolidationList.get(0).getId());
+                if(!Objects.isNull(consoleShipmentMappings) && !consoleShipmentMappings.isEmpty())
+                    shipmentDetailsResponse.setShipmentCount((long) consoleShipmentMappings.size());
+                else
+                    shipmentDetailsResponse.setShipmentCount(0L);
+            } else {
+                shipmentDetailsResponse.setShipmentCount(0L);
+            }
         }
         catch (Exception ex) {
             log.error("Request: {} || Error occured for event: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), IntegrationType.MASTER_DATA_FETCH_FOR_SHIPMENT_RETRIEVE, ex.getLocalizedMessage());
@@ -3684,6 +3694,9 @@ public class ShipmentService implements IShipmentService {
                 TenantModel tenantModel = modelMapper.map(v1Service.retrieveTenant().getEntity(), TenantModel.class);
                 String currencyCode = tenantModel.currencyCode;
                 response.setFreightLocalCurrency(currencyCode);
+                response.getAdditionalDetails().setPlaceOfIssue(tenantModel.getUnlocoLocationGuid());
+                response.getAdditionalDetails().setPaidPlace(tenantModel.getUnlocoLocationGuid());
+                response.getAdditionalDetails().setPlaceOfSupply(tenantModel.getUnlocoLocationGuid());
             } catch (Exception e){
                 log.error("Failed in fetching tenant data from V1 with error : {}", e);
             }
@@ -4149,4 +4162,24 @@ public class ShipmentService implements IShipmentService {
         }
     }
 
+    @Override
+    public ResponseEntity<?> fetchEmails(Long shipmentId, Long consolidationId) {
+        if(Objects.isNull(shipmentId) && Objects.isNull(consolidationId)) {
+            log.error("Invalid request for fetchEmails");
+            throw new DataRetrievalFailureException(DaoConstants.DAO_INVALID_REQUEST_MSG);
+        }
+        if (!Objects.isNull(shipmentId)) {
+            Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(shipmentId);
+            if (shipmentDetails.isEmpty())
+                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+            return v1ServiceUtil.fetchEmailIdsForShipment(shipmentDetails.get());
+        }
+        else if (!Objects.isNull(consolidationId)) {
+            Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(consolidationId);
+            if (consolidationDetails.isEmpty())
+                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+            return v1ServiceUtil.fetchEmailIdsForConsolidation(consolidationDetails.get());
+        }
+        return ResponseHelper.buildFailedResponse(DaoConstants.DAO_INVALID_REQUEST_MSG);
+    }
 }

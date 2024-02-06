@@ -301,7 +301,8 @@ public class V1ServiceImpl implements IV1Service {
     private String GET_ACTIVE_INVOICES;
     @Value("${v1service.url.base}${v1service.url.creditLimit}")
     private String CREDIT_LIMIT_LIST;
-
+    @Value("${v1service.url.base}${v1service.url.org-address-list}")
+    private String ORG_ADDRESS_LIST;
     @Autowired
     private JsonHelper jsonHelper;
     @Autowired
@@ -1954,4 +1955,24 @@ public class V1ServiceImpl implements IV1Service {
             throw new V1ServiceException(var7.getMessage());
         }
     }
+    @Override
+    public OrgAddressResponse fetchOrgAddresses(Object request) {
+        ResponseEntity response = null;
+        try {
+            long time = System.currentTimeMillis();
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            response = this.restTemplate.postForEntity(this.ORG_ADDRESS_LIST, entity, OrgAddressResponse.class);
+            log.info("Token time taken in fetchOrgAddresses() function " + (System.currentTimeMillis() - time));
+            return (OrgAddressResponse) response.getBody();
+        } catch (HttpStatusCodeException var6) {
+            if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
+                throw new UnAuthorizedException("UnAuthorizedException");
+            } else {
+                throw new V1ServiceException(var6.getMessage());
+            }
+        } catch (Exception var7) {
+            throw new V1ServiceException(var7.getMessage());
+        }
+    }
+
 }

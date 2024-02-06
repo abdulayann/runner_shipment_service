@@ -31,4 +31,6 @@ public interface IPackingService extends ICommonService {
     ResponseEntity<?> autoCalculateChargable(CommonRequestModel commonRequestModel) throws Exception;
 
     ResponseEntity<?> autoCalculateVolume(CommonRequestModel commonRequestModel) throws Exception;
+
+    ResponseEntity<?> calculateVolumetricWeightForAirAndChargeable(CommonRequestModel commonRequestModel) throws Exception;
 }

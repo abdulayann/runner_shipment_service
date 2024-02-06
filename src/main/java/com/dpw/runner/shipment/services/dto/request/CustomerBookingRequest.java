@@ -71,4 +71,5 @@ public class CustomerBookingRequest extends CommonRequest implements IRunnerRequ
     private String parentContractId;
     private String salesBranch;
     private String salesAgentEmail;
+    private Boolean isNotifyConsigneeEqual;
 }
