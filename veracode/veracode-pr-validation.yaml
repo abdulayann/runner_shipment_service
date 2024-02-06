@@ -1,7 +1,7 @@
 trigger: none
 
 pool:
-  name: 'Runner-self-hosted-agent'
+  name: Runner-self-hosted-agent
 
 variables:
 - template: pipelines/veracode/veracode-variables.yaml@devops_template
@@ -11,7 +11,7 @@ resources:
   - repository: devops_template
     name: DevOps/_git/devops-common-utils
     type: git
-    ref: feature/veracode-templating-1
+    ref: main
   - repository: baseline_project_repo
     name: veracode/_git/veracode
     endpoint: Connection-to-veracode-org
