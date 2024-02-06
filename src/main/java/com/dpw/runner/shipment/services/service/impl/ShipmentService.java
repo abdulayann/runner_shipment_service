@@ -1015,6 +1015,7 @@ public class ShipmentService implements IShipmentService {
                 sourceTenantId(Long.valueOf(UserContext.getUser().TenantId)).
                 source("API").
                 bookingType("ONLINE").
+                consolRef(consolidationDetails != null && consolidationDetails.size() > 0 ? consolidationDetails.get(0).getReferenceNumber() : "").
                 build();
 
         return this.createFromBooking(CommonRequestModel.buildRequest(shipmentRequest));
