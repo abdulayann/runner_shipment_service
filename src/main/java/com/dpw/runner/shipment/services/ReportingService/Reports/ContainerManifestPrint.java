@@ -60,8 +60,14 @@ public class ContainerManifestPrint extends IReport {
         populateConsolidationFields(consol, dictionary);
         //set the mmis in the routings
         if (consol.getRoutingsList() != null) {
+            List<String> vesselNames = new ArrayList<>();
+            consol.getRoutingsList().stream().forEach(routingsModel -> {
+                vesselNames.add(routingsModel.getVesselName());
+            });
+            List<String> vesselNamesFromV1 = masterDataUtils.GetTheVesselNameForMMSINUmber(vesselNames);
+            int index = 0;
             consol.getRoutingsList().forEach(routingsModel -> {
-                routingsModel.setVesselName(masterDataUtils.GetTheVesselNameForMMSINUmber(routingsModel.getVesselName()));
+                routingsModel.setVesselName(index < vesselNamesFromV1.size() ? vesselNamesFromV1.get(index) : StringUtils.EMPTY);
                 var unlocPod = getUNLocRow(routingsModel.getPod());
                 var unlocPol = getUNLocRow(routingsModel.getPol());
                 routingsModel.setPod(unlocPod.getNameWoDiacritics() + " " + unlocPod.getCountry());
