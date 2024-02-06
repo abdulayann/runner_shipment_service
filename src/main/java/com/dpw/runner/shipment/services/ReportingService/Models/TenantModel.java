@@ -35,4 +35,5 @@ public class TenantModel implements Serializable {
     public Boolean IsGroupingOverseas;
     public DigitGrouping CurrencyDigitGrouping;
     public GroupingNumber CurrencyGroupingNumber;
+    public String UnlocoLocationGuid;
 }

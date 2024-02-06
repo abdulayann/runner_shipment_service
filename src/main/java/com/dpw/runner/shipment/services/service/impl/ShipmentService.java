@@ -3674,6 +3674,9 @@ public class ShipmentService implements IShipmentService {
                 TenantModel tenantModel = modelMapper.map(v1Service.retrieveTenant().getEntity(), TenantModel.class);
                 String currencyCode = tenantModel.currencyCode;
                 response.setFreightLocalCurrency(currencyCode);
+                response.getAdditionalDetails().setPlaceOfIssue(tenantModel.getUnlocoLocationGuid());
+                response.getAdditionalDetails().setPaidPlace(tenantModel.getUnlocoLocationGuid());
+                response.getAdditionalDetails().setPlaceOfSupply(tenantModel.getUnlocoLocationGuid());
             } catch (Exception e){
                 log.error("Failed in fetching tenant data from V1 with error : {}", e);
             }

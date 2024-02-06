@@ -869,10 +869,10 @@ public class HblReport extends IReport{
         }
 
         dictionary.put(CONTAINER_SUMMARY, EMPTY_STRING);
-        if(hblModel.shipment.getShipmentContainersList() != null) {
+        if(hblModel.shipment.getContainersList() != null) {
             Map<String, Long> containerSummary =  new HashMap<>();
-            for(var container : hblModel.shipment.getShipmentContainersList()) {
-                String code = container.getContainerTypeCode();
+            for(var container : hblModel.shipment.getContainersList()) {
+                String code = container.getContainerCode();
                 Long count = container.getContainerCount();
                 Long previousCount = 0L;
                 if(containerSummary.get(code)  != null)

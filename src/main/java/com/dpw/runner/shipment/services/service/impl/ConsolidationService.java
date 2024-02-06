@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.Kafka.Dto.KafkaResponse;
 import com.dpw.runner.shipment.services.Kafka.Producer.KafkaProducer;
+import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.adapters.interfaces.ITrackingServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
@@ -1050,7 +1051,8 @@ public class ConsolidationService implements IConsolidationService {
                 (console.getCarrierDetails() != null && oldEntity.getCarrierDetails() != null &&
                 (!Objects.equals(console.getCarrierDetails().getVoyage(),oldEntity.getCarrierDetails().getVoyage()) ||
                         !Objects.equals(console.getCarrierDetails().getVessel(),oldEntity.getCarrierDetails().getVessel()) ||
-                        !Objects.equals(console.getCarrierDetails().getShippingLine(),oldEntity.getCarrierDetails().getShippingLine())
+                        !Objects.equals(console.getCarrierDetails().getShippingLine(),oldEntity.getCarrierDetails().getShippingLine()) ||
+                        !Objects.equals(console.getCarrierDetails().getAircraftType(),oldEntity.getCarrierDetails().getAircraftType())
                 )))) {
             List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByConsolidationId(console.getId());
             List<Long> shipmentIdList = consoleShipmentMappings.stream().map(i -> i.getShipmentId()).collect(Collectors.toList());
@@ -3358,15 +3360,13 @@ public class ConsolidationService implements IConsolidationService {
             response.setCreatedBy(UserContext.getUser().getUsername());
             response.setCreatedAt(LocalDateTime.now());
             response.setSourceTenantId(Long.valueOf(UserContext.getUser().TenantId));
-
-//            try {
-//                log.info("Fetching Tenant Model");
-//                TenantModel tenantModel = modelMapper.map(v1Service.retrieveTenant().getEntity(), TenantModel.class);
-//                String currencyCode = tenantModel.currencyCode;
-//                response.setFreightLocalCurrency(currencyCode);
-//            } catch (Exception e){
-//                log.error("Failed in fetching tenant data from V1 with error : {}", e);
-//            }
+            try {
+                log.info("Fetching Tenant Model");
+                TenantModel tenantModel = modelMapper.map(v1Service.retrieveTenant().getEntity(), TenantModel.class);
+                response.setPlaceOfIssue(tenantModel.getUnlocoLocationGuid());
+            } catch (Exception e){
+                log.error("Failed in fetching tenant data from V1 with error : {}", e);
+            }
 //
 //            if(Constants.TRANSPORT_MODE_SEA.equals(response.getTransportMode()) && Constants.DIRECTION_EXP.equals(response.getDirection()))
 //                response.setHouseBill(generateCustomHouseBL());
