@@ -487,7 +487,9 @@ public class CSVParsingUtil<T> {
     public List<T> parseExcelFilePacking(MultipartFile file, BulkUploadRequest request, Map<UUID, T> mapOfEntity, Map<String, Set<String>> masterDataMap,
                                          Class<T> entityType, Map<Long, Long> undg, Map<Long, String> flashpoint) throws IOException {
 
-        Set<String> mandatoryColumns = Set.of("shipmentNumber", "packs");
+        Set<String> mandatoryColumns = new HashSet<>();
+        mandatoryColumns.add("shipmentNumber");
+        mandatoryColumns.add("packs");
         List<T> entityList = new ArrayList<>();
         List<String> unlocationsList = new ArrayList<>();
         List<String> commodityCodesList = new ArrayList<>();
@@ -661,10 +663,10 @@ public class CSVParsingUtil<T> {
 
     public List<T> parseExcelFile(MultipartFile file, BulkUploadRequest request, Map<UUID, T> mapOfEntity, Map<String, Set<String>> masterDataMap,
                                   Class<T> entityType, Class modelClass, Map<Long, Long> undg, Map<Long, String> flashpoint) throws IOException {
-        if (entityType.getClass().getName().equals("Packing")) {
+        if (entityType.equals(Packing.class)) {
             return parseExcelFilePacking(file, request, mapOfEntity, masterDataMap, entityType, undg, flashpoint);
         }
-        if (entityType.getClass().getName().equals("Events")) {
+        if (entityType.equals(Events.class)) {
             return parseExcelFileEvents(file, request, mapOfEntity, masterDataMap, entityType);
         }
         List<T> entityList = new ArrayList<>();
@@ -798,7 +800,9 @@ public class CSVParsingUtil<T> {
 
         List<T> entityList = new ArrayList<>();
         List<String> containerNumberList = new ArrayList<>();
-        Set<String> mandatoryColumns = Set.of("eventCode", "containerNumber");
+        Set<String> mandatoryColumns = new HashSet<>();
+        mandatoryColumns.add("eventCode");
+        mandatoryColumns.add("containerNumber");
 
         int guidPos = -1;
         int containerNumberPos = -1;
