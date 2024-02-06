@@ -1882,6 +1882,100 @@ public abstract class IReport {
         dictionary.put(PACKS_DETAILS, packsDictionary);
 
     }
+    public void populateBillChargesFields(ShipmentModel shipment, Map<String, Object> dictionary) {
+        List<BillingResponse> billingsList = null;
+        try {
+            billingsList = getBillingData(shipment.getGuid());
+        }
+        catch (Exception e) { }
+        List<BillChargesResponse> charges = new ArrayList<>();
+        BillingResponse billRow = null;
+        if(billingsList != null && billingsList.size() > 0) {
+            billRow = billingsList.get(0);
+            for(BillingResponse billingResponse : billingsList) {
+                List<BillChargesResponse> billChargesResponses = getBillChargesData(billingResponse.getGuid());
+                if(billChargesResponses != null) {
+                    for (BillChargesResponse charge : billChargesResponses) {
+                        charges.add(charge);
+                    }
+                }
+            }
+        }
+
+        dictionary.put(ReportConstants.BILL_REMARKS, billRow != null ? billRow.getRemarks() : "");
+        List<BillChargesResponse> originalChargesRows = new ArrayList<>();
+        List<BillChargesResponse> copyChargesRows = new ArrayList<>();
+        dictionary.put(AS_AGREED, false);
+        dictionary.put(COPY_AS_AGREED, false);
+
+        String chargesApply = shipment.getAdditionalDetails() != null ? shipment.getAdditionalDetails().getBLChargesDisplay() : null;
+
+        if (!Objects.isNull(chargesApply) && chargesApply.equals("AGR")) {
+            dictionary.put(AS_AGREED, true);
+            dictionary.put(COPY_AS_AGREED, true);
+        } else if (!Objects.isNull(chargesApply) && (chargesApply.equals("CPP") || chargesApply.equals("CAL") || chargesApply.equals("CCL"))) {
+            dictionary.put(AS_AGREED, true);
+        }
+
+        if (Objects.isNull(chargesApply) || chargesApply.equals("NON")) {
+            dictionary.put(HAS_CHARGES, false);
+        } else {
+            dictionary.put(HAS_CHARGES, true);
+            getChargeRows(originalChargesRows, copyChargesRows, charges, chargesApply);
+        }
+        dictionary.put(CHARGES_SMALL, originalChargesRows);
+
+        if(originalChargesRows != null && originalChargesRows.size() > 0)
+        {
+            List<Map<String, Object>> values = new ArrayList<>();
+            for (BillChargesResponse billChargesResponse : originalChargesRows) {
+                String billChargeJson = jsonHelper.convertToJson(billChargesResponse);
+                values.add(jsonHelper.convertJsonToMap(billChargeJson));
+            }
+            for (Map<String, Object> v: values) {
+                if(v.containsKey(OVERSEAS_SELL_AMOUNT) && v.get(OVERSEAS_SELL_AMOUNT) != null) {
+                    v.put(OVERSEAS_SELL_AMOUNT, addCommas(v.get(OVERSEAS_SELL_AMOUNT).toString()));
+                };
+            }
+            dictionary.put(CHARGES_SMALL, values);
+        }
+        dictionary.put(COPY_CHARGES, copyChargesRows);
+    }
+    private void getChargeRows(List<BillChargesResponse> originalChargesRows, List<BillChargesResponse> copyChargesRows, List<BillChargesResponse> charges, String type) {
+        List<BillChargesResponse> prepaid = charges.stream().filter(x -> !Strings.isNullOrEmpty(x.getPaymentType()) && x.getPaymentType().equals("PPD")).collect(Collectors.toList());
+        List<BillChargesResponse> collect = charges.stream().filter(x -> !Strings.isNullOrEmpty(x.getPaymentType()) && x.getPaymentType().equals("CCX")).collect(Collectors.toList());
+
+        switch (type)
+        {
+            case "CPP":
+                copyChargesRows.addAll(prepaid);
+                break;
+            case "CAL":
+                copyChargesRows.addAll(charges);
+                break;
+
+            case "PPD":
+                originalChargesRows.addAll(prepaid);
+                copyChargesRows.addAll(prepaid);
+                break;
+
+            case "SHW":
+                originalChargesRows.addAll(collect);
+                copyChargesRows.addAll(collect);
+                break;
+            case "ALL":
+                originalChargesRows.addAll(charges);
+                copyChargesRows.addAll(charges);
+                break;
+
+            case "CCL":
+                copyChargesRows.addAll(collect);
+                break;
+            default:
+                break;
+
+        }
+    }
     public void populateShipmentOrganizationsLL(ShipmentModel shipmentDetails, Map<String, Object> dictionary) {
         var languageCode = UserContext.getUser().getLanguageCode();
         List<AddressTranslationRequest.OrgAddressCode> orgAddressCodeList = new ArrayList<>();
