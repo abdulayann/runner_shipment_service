@@ -229,4 +229,7 @@ public class CustomerBooking extends MultiTenancy {
 
     @Column(name = "sales_branch")
     private String salesBranch;
+
+    @Column(name = "is_notify_consignee_equal")
+    private Boolean isNotifyConsigneeEqual;
 }
