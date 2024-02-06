@@ -470,4 +470,10 @@ public class ShipmentController {
     public ResponseEntity<?> fetchCreditLimit(@RequestParam String orgCode, @RequestParam(required = false) String addressCode) {
         return (ResponseEntity<?>) shipmentService.fetchCreditLimit(orgCode, addressCode);
     }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.MASTER_DATA_RETRIEVE_SUCCESS)})
+    @GetMapping(value = ShipmentConstants.FETCH_EMAILS)
+    public ResponseEntity<?> fetchEmails(@RequestParam(required = false) Long shipmentId, @RequestParam(required = false) Long consolidationId) {
+        return (ResponseEntity<?>) shipmentService.fetchEmails(shipmentId, consolidationId);
+    }
 }
