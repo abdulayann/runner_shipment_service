@@ -956,6 +956,8 @@ public class ReportConstants {
     public static final String SHIPMENT_DETAILS_SUPPLIEREMAIL = "SupplierEmail";
     public static final String SHIPMENT_DETAILS_SUPPLIERFAX = "SupplierFax";
     public static final String SHIPMENT_DETAILS_SUMMARY = "Summary";
+    public static final String SHIPMENT_TRUCKDRIVERDETAILS = "TruckDriverDetails";
+    public static final String SHIPMENT_DETAILS_TOTALWEIGHT = "TotalWeight";
 
     public static String SHIPMENT_PACKING_PACKS_LISTOFPACKINGS = "ListOfPackings";
     public static String SHIPMENT_PACKING_PACKS_COMMODITIES = "Commodities";
