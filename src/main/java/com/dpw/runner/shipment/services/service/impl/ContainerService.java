@@ -444,6 +444,9 @@ public class ContainerService implements IContainerService {
             List<ShipmentsContainersMapping> mappings;
             List<Containers> result = new ArrayList<>();
             if (request.getShipmentId() != null) {
+                ShipmentDetails shipmentDetails = shipmentDao.findById(Long.valueOf(request.getShipmentId())).get();
+                request.setTransportMode(shipmentDetails.getTransportMode());
+                request.setExport(shipmentDetails.getDirection() != null && shipmentDetails.getDirection().equalsIgnoreCase(Constants.DIRECTION_EXP));
                 List<Long> containerId = new ArrayList<>();
                 mappings = shipmentsContainersMappingDao.findByShipmentId(Long.valueOf(request.getShipmentId()));
                 containerId.addAll(mappings.stream().map(mapping -> mapping.getContainerId()).collect(Collectors.toList()));
@@ -456,6 +459,9 @@ public class ContainerService implements IContainerService {
             }
 
             if (request.getConsolidationId() != null) {
+                ConsolidationDetails consolidationDetails = consolidationDetailsDao.findById(Long.valueOf(request.getConsolidationId())).get();
+                request.setTransportMode(consolidationDetails.getTransportMode());
+                request.setExport(consolidationDetails.getShipmentType() != null && consolidationDetails.getShipmentType().equalsIgnoreCase(Constants.DIRECTION_EXP));
                 ListCommonRequest req2 = constructListCommonRequest("consolidationId", Long.valueOf(request.getConsolidationId()), "=");
                 Pair<Specification<Containers>, Pageable> pair = fetchData(req2, Containers.class);
                 Page<Containers> containers = containerDao.findAll(pair.getLeft(), pair.getRight());
@@ -541,7 +547,7 @@ public class ContainerService implements IContainerService {
     }
 
     private void ColumnsToIgnore(Map<String, Field> fieldNameMap, BulkDownloadRequest request) {
-        if(request.getIsExport()){
+        if(request.isExport()){
             for(var field : Constants.ColumnsToBeDeletedForExport) {
                 if (fieldNameMap.containsKey(field)) {
                     fieldNameMap.remove(field);
