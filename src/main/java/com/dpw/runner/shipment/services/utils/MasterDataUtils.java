@@ -28,7 +28,6 @@ import com.dpw.runner.shipment.services.masterdata.response.VesselsResponse;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.validator.enums.Operators;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 import org.modelmapper.ModelMapper;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -1530,19 +1529,15 @@ public class MasterDataUtils{
         return response;
     }
 
-    public String GetTheVesselNameForMMSINUmber(String vessel) {
-        if (!StringUtils.isEmpty(vessel))
-            return "";
-        List<Object> vesselCriteria = Arrays.asList(
-                Arrays.asList("Mmsi"),
-                "=",
-                vessel
-        );
+    public List<String> GetTheVesselNameForMMSINUmber(List<String> vessels) {
+        if (vessels == null || vessels.isEmpty())
+            return new ArrayList<>();
+        List<Object> vesselCriteria = new ArrayList<>(List.of(Arrays.asList("Mmsi"), Operators.IN.getValue(), List.of(vessels)));
         CommonV1ListRequest vesselRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(vesselCriteria).build();
         V1DataResponse vesselResponse = v1Service.fetchVesselData(vesselRequest);
         List<VesselsResponse> vesselsResponse = jsonHelper.convertValueToList(vesselResponse.entities, VesselsResponse.class);
         if (vesselsResponse != null && vesselsResponse.size() > 0)
-            return vesselsResponse.get(0).getName();
-        return StringUtils.EMPTY;
+            return vesselsResponse.stream().map(v -> v.getName()).collect(Collectors.toList());
+        return new ArrayList<>();
     }
 }
