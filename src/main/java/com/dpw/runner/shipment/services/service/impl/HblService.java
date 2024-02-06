@@ -483,12 +483,12 @@ public class HblService implements IHblService {
         hblData.setVersion(1);
         hblData.setOriginOfGoods(additionalDetails.getGoodsCO());
         hblData.setVoyage(carrierDetails.getVoyage());
-        if (!Objects.isNull(additionalDetails.getExportBroker())) {
-            Parties exportBroker = additionalDetails.getExportBroker();
-            if (!Objects.isNull(exportBroker.getOrgData()) && exportBroker.getOrgData().containsKey(PartiesConstants.FULLNAME))
-                hblData.setDeliveryAgent(String.valueOf(exportBroker.getOrgData().get(PartiesConstants.FULLNAME)));
-            if (!Objects.isNull(exportBroker.getAddressData()) )
-                hblData.setDeliveryAgentAddress(AwbUtility.constructAddress(exportBroker.getAddressData()));
+        if (!Objects.isNull(additionalDetails.getImportBroker())) {
+            Parties broker = additionalDetails.getImportBroker();
+            if (!Objects.isNull(broker.getOrgData()) && broker.getOrgData().containsKey(PartiesConstants.FULLNAME))
+                hblData.setDeliveryAgent(String.valueOf(broker.getOrgData().get(PartiesConstants.FULLNAME)));
+            if (!Objects.isNull(broker.getAddressData()) )
+                hblData.setDeliveryAgentAddress(AwbUtility.constructAddress(broker.getAddressData()));
         }
         UnlocationsResponse destination = masterDataUtil.getUNLocRow(carrierDetails.getDestination());
         // TODO: This needs to re-visit after incorporating this setting in service
