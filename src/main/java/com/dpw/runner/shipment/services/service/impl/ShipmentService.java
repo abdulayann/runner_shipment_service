@@ -4162,4 +4162,24 @@ public class ShipmentService implements IShipmentService {
         }
     }
 
+    @Override
+    public ResponseEntity<?> fetchEmails(Long shipmentId, Long consolidationId) {
+        if(Objects.isNull(shipmentId) && Objects.isNull(consolidationId)) {
+            log.error("Invalid request for fetchEmails");
+            throw new DataRetrievalFailureException(DaoConstants.DAO_INVALID_REQUEST_MSG);
+        }
+        if (!Objects.isNull(shipmentId)) {
+            Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(shipmentId);
+            if (shipmentDetails.isEmpty())
+                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+            return v1ServiceUtil.fetchEmailIdsForShipment(shipmentDetails.get());
+        }
+        else if (!Objects.isNull(consolidationId)) {
+            Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(consolidationId);
+            if (consolidationDetails.isEmpty())
+                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+            return v1ServiceUtil.fetchEmailIdsForConsolidation(consolidationDetails.get());
+        }
+        return ResponseHelper.buildFailedResponse(DaoConstants.DAO_INVALID_REQUEST_MSG);
+    }
 }

@@ -47,6 +47,7 @@ public class ShipmentConstants {
     public static final String GET_ACTIVE_INVOICES = "/get-active-invoices";
     public static final String SHOW_ASSIGN_ALL_CONTAINERS = "/show/assign/allContainers";
     public static final String FETCH_CREDIT_LIMIT = "/creditLimit";
+    public static final String FETCH_EMAILS = "/email";
 
     public static final String SHIPMENT_CREATION = "SHPCR";
 }
