@@ -2822,10 +2822,9 @@ public class AwbService implements IAwbService {
         V1DataResponse v1DataResponse = v1Service.fetchUnlocation(commonV1ListRequest);
 
         List<EntityTransferUnLocations> locationDataList = jsonHelper.convertValueToList(v1DataResponse.entities, EntityTransferUnLocations.class);
-        var locMap = locationDataList.stream().collect(Collectors.toMap(EntityTransferUnLocations::getLocationsReferenceGUID, EntityTransferUnLocations::getName));
 
-        awbShipmentInfo.setOriginAirport(locMap.get(carrierDetails.getOriginPort()));
-        awbShipmentInfo.setDestinationAirport(locMap.get(carrierDetails.getDestinationPort()));
+        awbShipmentInfo.setOriginAirport(carrierDetails.getOriginPort());
+        awbShipmentInfo.setDestinationAirport(carrierDetails.getDestinationPort());
     }
 
     private void getAwbOtherInfoMasterData(AwbOtherInfo awbOtherInfo, String awbType) {
