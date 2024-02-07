@@ -851,7 +851,7 @@ public class HawbReport extends IReport{
             V1DataResponse response = v1Service.fetchMultipleMasterData(requests);
             List<EntityTransferMasterLists> masterLists = jsonHelper.convertValueToList(response.entities, EntityTransferMasterLists.class);
             masterLists.forEach(masterData -> {
-                String key =  MasterDataType.masterData(masterData.ItemType).name()  + '#' + masterData.ItemValue;
+                String key =  MasterDataType.masterData(masterData.ItemType).getDescription()  + '#' + masterData.ItemValue;
                 keyMasterDataMap.put(key, masterData);
             });
             return keyMasterDataMap;
