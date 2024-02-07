@@ -1650,6 +1650,7 @@ public abstract class IReport {
             shipmentContainer.weightUnitDescription = StringUtility.toUpperCase(shipment.getWeightUnit());
             shipmentContainer.packsUnitDescription = StringUtility.toUpperCase(shipment.getPacksUnit());
             shipmentContainer.marksnNumbers = StringUtility.toUpperCase(shipment.getMarksNum());
+            shipmentContainer.freightOverseasCurrency = shipment.getFreightOverseasCurrency();
 
             PartiesModel consigner = shipment.getConsigner();
             if(consigner != null && consigner.getAddressData() != null) {
@@ -1729,6 +1730,7 @@ public abstract class IReport {
                 response.ConsigneeLocalName = consignee.getAddressData().get(LOCAL_NAME) != null ? consignee.getAddressData().get(LOCAL_NAME).toString() : null;
             }
 //            response.Weight = addCommas(StringUtility.convertToString(shipment.getWeight()));
+            response.Weight = shipment.getWeight();
             response.WeightUnit = shipment.getWeightUnit();
             response.Consigner = getPartyAddress(shipment.getConsigner());
             response.Consignee =getPartyAddress(shipment.getConsignee());
@@ -1740,6 +1742,7 @@ public abstract class IReport {
 
             response.HsnNumber = shipment.getAdditionalDetails().getHsnNumber() != null ? shipment.getAdditionalDetails().getHsnNumber().toString() : null;
             response.TotalPacks = getTotalPacks(shipment);
+            response.FreightOverseasCurrency = shipment.getFreightOverseasCurrency();
 
             shipmentResponses.add(response);
         }
@@ -2273,5 +2276,73 @@ public abstract class IReport {
         dictionary.put(ReportConstants.BRANCH_BASIC_INFO_TENANTMOBILE, tenantModel.getMobile());
         dictionary.put(ReportConstants.BRANCH_BASIC_INFO_TENANTZIPPOSTCODE, tenantModel.getZipPostCode());
         dictionary.put(ReportConstants.BRANCH_BASIC_INFO_TENANTURL, tenantModel.getWebsiteUrl());
+    }
+    public Pair<BigDecimal, String> getTotalWeightManifest(List<ShipmentModel> shipments)
+    {
+        if (Objects.isNull(shipments) || shipments.isEmpty())
+            return Pair.of(BigDecimal.ZERO, null);
+        String weightUnit = null;
+        BigDecimal totalWeight = BigDecimal.ZERO;
+
+        for(var shipment: shipments)
+        {
+            if (!Strings.isNullOrEmpty(shipment.getWeightUnit()) && !Objects.isNull(shipment.getWeight()))
+            {
+                if (weightUnit == null)
+                {
+                    weightUnit = shipment.getWeightUnit();
+                }
+
+                if (!shipment.getWeightUnit().equals(weightUnit)) return Pair.of(BigDecimal.ZERO, null);
+                totalWeight = totalWeight.add(shipment.getWeight());
+            }
+        }
+        return Pair.of(totalWeight, weightUnit);
+    }
+    public Pair<BigDecimal, String> getTotalVolumeManifest(List<ShipmentModel> shipments)
+    {
+        if (Objects.isNull(shipments) || shipments.isEmpty())
+            return Pair.of(BigDecimal.ZERO, null);
+        String volumeUnit = null;
+        BigDecimal totalVolume = BigDecimal.ZERO;
+
+        for(var shipment: shipments)
+        {
+            if (!Strings.isNullOrEmpty(shipment.getVolumeUnit()) && !Objects.isNull(shipment.getVolume()))
+            {
+                if (volumeUnit == null)
+                {
+                    volumeUnit = shipment.getVolumeUnit();
+                }
+
+                if (!shipment.getVolumeUnit().equals(volumeUnit))
+                    return Pair.of(BigDecimal.ZERO, null);
+                totalVolume = totalVolume.add(shipment.getVolume());
+            }
+        }
+        return Pair.of(totalVolume, volumeUnit);
+    }
+    public Pair<BigDecimal, String> getTotalPacksManifest(List<ShipmentModel> shipments)
+    {
+        if (Objects.isNull(shipments) || shipments.isEmpty())
+            return Pair.of(BigDecimal.ZERO, null);
+        String packsUnit = null;
+        BigDecimal totalPacks = BigDecimal.ZERO;
+
+        for(var shipment: shipments)
+        {
+            if (!Strings.isNullOrEmpty(shipment.getPacksUnit()) && shipment.getNoOfPacks() != null)
+            {
+                if (packsUnit == null)
+                {
+                    packsUnit = shipment.getPacksUnit();
+                }
+
+                if (!shipment.getPacksUnit().equals(packsUnit))
+                    return Pair.of(BigDecimal.ZERO, null);
+                totalPacks = totalPacks.add(BigDecimal.valueOf(shipment.getNoOfPacks()));
+            }
+        }
+        return Pair.of(totalPacks, packsUnit);
     }
 }

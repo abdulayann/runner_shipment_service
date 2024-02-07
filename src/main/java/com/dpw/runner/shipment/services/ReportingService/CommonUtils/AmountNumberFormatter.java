@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 
 import java.math.BigDecimal;
+import java.util.Objects;
 
 import static com.dpw.runner.shipment.services.ReportingService.Reports.IReport.DisplayFormat;
 
@@ -39,5 +40,43 @@ public class AmountNumberFormatter {
             return DisplayFormat(amount, numberDecimalDigits, tenantSettings);
         }
         return null;
+    }
+    public static String formatWithoutDecimal(Object amount, String localCurrency, V1TenantSettingsResponse tenantSettings)
+    {
+        if (amount == null)
+        {
+            return null;
+        }
+
+        if (amount instanceof BigDecimal)
+        {
+            return formatWithoutDecimal((BigDecimal) amount, localCurrency, tenantSettings);
+        }
+        amount = amount.toString();
+        if (amount != null)
+        {
+            try {
+                BigDecimal parsedDecimal = new BigDecimal((String) amount);
+                return formatWithoutDecimal(parsedDecimal, localCurrency, tenantSettings);
+            } catch (NumberFormatException e) {
+                return String.format("%,.0f", amount);
+            }
+        }
+
+        return String.format("%,.0f", amount);
+    }
+    private static String formatWithoutDecimal(BigDecimal amount, String localCurrency, V1TenantSettingsResponse tenantSettings)
+    {
+
+        var user = UserContext.getUser();
+        if (tenantSettings.getIsGroupingOverseas() != null && !tenantSettings.getIsGroupingOverseas() &&
+                !Objects.equals(localCurrency, user.CompanyCurrency))
+        {
+            return ReportHelper.addCommasWithPrecision(amount, 0);
+        }
+        else
+        {
+            return displayFormat(amount, 0, tenantSettings);
+        }
     }
 }
