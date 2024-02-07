@@ -973,4 +973,15 @@ public class ReportConstants {
     public static final String SHIPMENT_BILLCHARGES_BILLCHARGESLOCALTAXSUMCOMMA = "BillChargesLocalTaxSumComma";
     public static final String SHIPMENT_BILLCHARGES_BILLCHARGESSUM = "BillChargesSum";
     public static final String SHIPMENT_BILLCHARGES_OVERSEASCURRENCY = OVERSEAS_CURRENCY;
+
+    public static final String SHIPMENT_BILLCHARGES_FREIGHTOVERSEAS = FREIGHT_OVERSEAS;
+    public static final String SHIPMENT_BILLCHARGES_FREIGHTOVERSEASCURRENCY = "FreightOverseasCurrency";
+    public static final String TOTAL_VOLUME_MANIFEST = "TotalVolumeManifest";
+    public static final String TOTAL_VOLUME_UNIT_MANIFEST = "TotalVolumeUnitManifest";
+    public static final String TOTAL_WEIGHT_MANIFEST = "TotalWeightManifest";
+    public static final String TOTAL_WEIGHT_UNIT_MANIFEST = "TotalWeightUnitManifest";
+    public static final String TOTAL_PACKS_MANIFEST = "TotalPacksManifest";
+    public static final String TOTAL_PACKS_TYPE_MANIFEST = "TotalPacksTypeManifest";
+    public static final String TOTAL_MBL = "TotalMBL";
+    public static final String TOTAL_MAWB = "TotalMAWB";
 }

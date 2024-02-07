@@ -1,6 +1,9 @@
 package com.dpw.runner.shipment.services.ReportingService.Reports;
 
+import com.dpw.runner.shipment.services.ReportingService.CommonUtils.AmountNumberFormatter;
+import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentAndContainerResponse;
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentContainers;
+import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentResponse;
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ManifestConsolModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ConsolidationModel;
@@ -14,10 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
 
@@ -73,8 +73,40 @@ public class ManifestConsolReport extends IReport {
         int totalPacks = 0;
         List<String> allPacksTypes = new ArrayList<>();
 
-        dictionary.put(SHIPMENT_AND_CONTAINER, getShipmentAndContainerResponse(model.getShipmentDetailsList()));
-        dictionary.put(SHIPMENTS, getShipmentResponse(model.getShipmentDetailsList()));
+        Pair<BigDecimal, String> totalWeightManifest = getTotalWeightManifest(model.getShipmentDetailsList());
+        Pair<BigDecimal, String> totalVolumeManifest = getTotalVolumeManifest(model.getShipmentDetailsList());
+        Pair<BigDecimal, String> totalPacksManifest = getTotalPacksManifest(model.getShipmentDetailsList());
+
+        List<ShipmentAndContainerResponse> shipmentContainers = getShipmentAndContainerResponse(model.getShipmentDetailsList());
+        if(shipmentContainers != null) {
+            var values = shipmentContainers.stream()
+                    .map(i -> jsonHelper.convertJsonToMap(jsonHelper.convertToJson(i)))
+                    .toList();
+            if (Objects.isNull(values)) values = new ArrayList<>();
+            values.forEach(v -> {
+                v.put(GROSS_WEIGHT, ConvertToWeightNumberFormat(v.get(WEIGHT), v1TenantSettingsResponse));
+                v.put(GROSS_VOLUME, ConvertToVolumeNumberFormat(v.get(VOLUME), v1TenantSettingsResponse));
+//                v.put(PACKS, AmountNumberFormatter.formatWithoutDecimal(v.get(PACKS), v.get(SHIPMENT_BILLCHARGES_FREIGHTOVERSEASCURRENCY) != null ? v.get(SHIPMENT_BILLCHARGES_FREIGHTOVERSEASCURRENCY).toString() : null, v1TenantSettingsResponse));
+                v.put(HSN_NUMBER, AmountNumberFormatter.formatWithoutDecimal(v.get(HSN_NUMBER), v.get(SHIPMENT_BILLCHARGES_FREIGHTOVERSEASCURRENCY) != null ? v.get(SHIPMENT_BILLCHARGES_FREIGHTOVERSEASCURRENCY).toString() : null, v1TenantSettingsResponse));
+            });
+            dictionary.put(SHIPMENT_AND_CONTAINER, values);
+        }
+
+
+        List<ShipmentResponse> shipments = getShipmentResponse(model.getShipmentDetailsList());
+        if(shipments != null) {
+            var values = shipments.stream()
+                    .map(i -> jsonHelper.convertJsonToMap(jsonHelper.convertToJson(i)))
+                    .toList();
+            if (Objects.isNull(values)) values = new ArrayList<>();
+            values.forEach(v -> {
+                v.put(WEIGHT, ConvertToWeightNumberFormat(v.get(WEIGHT), v1TenantSettingsResponse));
+                v.put(TOTAL_PACKS, AmountNumberFormatter.formatWithoutDecimal(v.get(TOTAL_PACKS), v.get(SHIPMENT_BILLCHARGES_FREIGHTOVERSEASCURRENCY) != null ? v.get(SHIPMENT_BILLCHARGES_FREIGHTOVERSEASCURRENCY).toString() : null, v1TenantSettingsResponse));
+                v.put(HSN_NUMBER, AmountNumberFormatter.formatWithoutDecimal(v.get(HSN_NUMBER), v.get(SHIPMENT_BILLCHARGES_FREIGHTOVERSEASCURRENCY) != null ? v.get(SHIPMENT_BILLCHARGES_FREIGHTOVERSEASCURRENCY).toString() : null, v1TenantSettingsResponse));
+            });
+            dictionary.put(SHIPMENTS, values);
+        }
+
         dictionary.put(CONTAINER_COUNT_BY_CODE, getCountByContainerTypeCode(model.getContainersList()));
 
         if (model.getShipmentDetailsList() != null && model.getShipmentDetailsList().size() > 0) {
@@ -115,6 +147,27 @@ public class ManifestConsolReport extends IReport {
             dictionary.put(TOTAL_VOLUME, "-");
 
         dictionary.put(TOTAL_VOLUME_UNIT, volumeAndUnit.getRight());
+
+        if(totalWeightManifest.getLeft().compareTo(BigDecimal.ZERO) > 0)
+            dictionary.put(TOTAL_WEIGHT_MANIFEST, ConvertToWeightNumberFormat(totalWeightManifest.getLeft(), v1TenantSettingsResponse));
+        else
+            dictionary.put(TOTAL_WEIGHT_MANIFEST, "-");
+        dictionary.put(TOTAL_WEIGHT_UNIT_MANIFEST, totalWeightManifest.getRight());
+
+        if(totalVolumeManifest.getLeft().compareTo(BigDecimal.ZERO) > 0)
+            dictionary.put(TOTAL_VOLUME_MANIFEST, ConvertToVolumeNumberFormat(totalVolumeManifest.getLeft(), v1TenantSettingsResponse));
+        else
+            dictionary.put(TOTAL_VOLUME_MANIFEST, "-");
+        dictionary.put(TOTAL_VOLUME_UNIT_MANIFEST, totalVolumeManifest.getRight());
+
+        if(totalPacksManifest.getLeft().compareTo(BigDecimal.ZERO) > 0)
+            dictionary.put(TOTAL_PACKS_MANIFEST, AmountNumberFormatter.formatWithoutDecimal(totalPacksManifest.getLeft(), model.getShipmentDetailsList().get(0).getFreightOverseasCurrency(), v1TenantSettingsResponse));
+        else
+            dictionary.put(TOTAL_PACKS_MANIFEST, "-");
+        dictionary.put(TOTAL_PACKS_TYPE_MANIFEST, totalPacksManifest.getRight());
+
+        dictionary.put(TOTAL_MBL, 1);
+        dictionary.put(TOTAL_MAWB, 1);
 
         return dictionary;
     }
