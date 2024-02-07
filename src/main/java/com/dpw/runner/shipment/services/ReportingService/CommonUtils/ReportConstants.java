@@ -484,6 +484,7 @@ public class ReportConstants {
     public static final String AGENT_REFERENCE = "AgentReference";
     public static final String SHIPPER_ADDRESS = "ShipperAddress";
     public static final String CONSIGNEE_ADDRESS = "ConsigneeAddress";
+    public static final String CONSIGNOR_ADDRESS = "ConsignorAddress";
     public static final String NOTIFY_ADDRESS = "NotifyAddress";
     public static final String ISSUING_CARRIER_AGENT_NAME = "IssuingCarrierAgentName";
     public static final String ISSUiNG_CARRIER_CITY = "IssuingCarrierCity";
