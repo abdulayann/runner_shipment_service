@@ -43,6 +43,7 @@ public class SyncService implements ISyncService {
 
     @Override
     public void callSync(String json, String id, String guid, String entity, HttpHeaders headers) {
+        log.info("Shipment Service v1 Data Syncing with following request: " + json + "\nHeaders provided: " + headers.toString());
         retryTemplate.execute(ctx -> {
             log.info("Current retry : {}", ctx.getRetryCount());
             if (ctx.getLastThrowable() != null) {
