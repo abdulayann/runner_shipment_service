@@ -5,7 +5,6 @@ import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataSyncResponse;
 import com.dpw.runner.shipment.services.entity.ProductSequenceConfig;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
-import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.ISyncService;
@@ -75,6 +74,8 @@ public class ShipmentSettingsSync implements IShipmentSettingsSync {
         syncRequest.setIsLowMarginApprovalRequired(req.getLowMarginApproval());
         syncRequest.setShipmentInstruction(req.getShippingInstruction());
         syncRequest.setISFFileMainPage(req.getIsfFileMainPage());
+        syncRequest.setAirExportConsolManifest(req.getAirExportConsoleManifest());
+        syncRequest.setAirImportConsolManifest(req.getAirImportConsoleManifest());
 
         String payload = jsonHelper.convertToJson(V1DataSyncRequest.builder().entity(syncRequest).module(SyncingConstants.TENANT_SETTINGS).build());
         syncService.pushToKafka(payload,String.valueOf(req.getId()), String.valueOf(req.getGuid()), SyncingConstants.TENANT_SETTINGS, UUID.randomUUID().toString());

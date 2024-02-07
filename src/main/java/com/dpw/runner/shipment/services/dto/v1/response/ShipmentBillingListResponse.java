@@ -22,8 +22,8 @@ public class ShipmentBillingListResponse {
     public static class BillingData {
         @JsonProperty("BillStatus")
         private String BillStatus;
-        @JsonProperty("JobStatus")
-        private String JobStatus;
+//        @JsonProperty("JobStatus")
+//        private String JobStatus;
         @JsonProperty("TotalEstimatedCost")
         private BigDecimal TotalEstimatedCost;
         @JsonProperty("TotalEstimatedRevenue")

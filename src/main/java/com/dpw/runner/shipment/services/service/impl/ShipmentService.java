@@ -511,7 +511,6 @@ public class ShipmentService implements IShipmentService {
                             ShipmentListResponse shipmentListResponse = dataMap.get(details.getId());
 
                             shipmentListResponse.setBillStatus(billingData.getBillStatus());
-                            shipmentListResponse.setJobStatus(billingData.getJobStatus());
                             shipmentListResponse.setTotalEstimatedCost(billingData.getTotalEstimatedCost());
                             shipmentListResponse.setTotalEstimatedRevenue(billingData.getTotalEstimatedRevenue());
                             shipmentListResponse.setTotalEstimatedProfit(billingData.getTotalEstimatedProfit());
@@ -2359,7 +2358,7 @@ public class ShipmentService implements IShipmentService {
             shipmentBillingListRequest.setGuidsList(List.of(shipmentDetails.get().getGuid()));
             ShipmentBillingListResponse shipmentBillingListResponse = v1Service.fetchShipmentBillingData(shipmentBillingListRequest);
             if(shipmentBillingListResponse != null && shipmentBillingListResponse.getData() != null && shipmentBillingListResponse.getData().containsKey(shipmentDetails.get().getGuid())) {
-                shipmentDetails.get().setJobStatus(shipmentBillingListResponse.getData().get(shipmentDetails.get().getGuid()).getJobStatus());
+                shipmentDetails.get().setJobStatus(shipmentBillingListResponse.getData().get(shipmentDetails.get().getGuid()).getBillStatus());
             }
             log.info("Shipment details fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
             List<Notes> notes = notesDao.findByEntityIdAndEntityType(request.getId(), Constants.CUSTOMER_BOOKING);
