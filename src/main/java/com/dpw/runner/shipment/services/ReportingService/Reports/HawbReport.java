@@ -109,7 +109,7 @@ public class HawbReport extends IReport{
             List<String> consignee = getFormattedDetails(shipmentInfo.getConsigneeName(), shipmentInfo.getConsigneeAddress());
             dictionary.put(ReportConstants.SHIPPER_ADDRESS, shipper);
             dictionary.put(ReportConstants.CONSIGNEE_ADDRESS,  consignee);
-            dictionary.put(ReportConstants.ISSUING_CARRIER_AGENT_NAME, shipmentInfo.getIssuingAgentName());
+            dictionary.put(ReportConstants.ISSUING_CARRIER_AGENT_NAME, shipmentInfo.getIssuingAgentName() != null ? shipmentInfo.getIssuingAgentName().toUpperCase() : null);
             dictionary.put(ReportConstants.ISSUiNG_CARRIER_CITY, cityFromOrganizations(shipmentInfo.getIssuingAgentName()).toUpperCase());
             dictionary.put(ReportConstants.AGENT_IATA_CODE , upperCase(shipmentInfo.getIataCode()));
             dictionary.put(ReportConstants.CASSCODE , upperCase(shipmentInfo.getAgentCASSCode()));
