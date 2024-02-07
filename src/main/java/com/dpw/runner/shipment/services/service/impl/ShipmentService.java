@@ -357,7 +357,8 @@ public class ShipmentService implements IShipmentService {
             Map.entry("orderManagementId", RunnerEntityMapping.builder().tableName("ShipmentDetails").dataType(String.class).fieldName("orderManagementId").isContainsText(true).build()),
             Map.entry("flightNumber", RunnerEntityMapping.builder().tableName("carrierDetails").dataType(String.class).fieldName("flightNumber").build()),
             Map.entry("consolidationId", RunnerEntityMapping.builder().tableName("consolidationList").dataType(Long.class).fieldName("id").build()),
-            Map.entry("voyageOrFlightNumber", RunnerEntityMapping.builder().tableName("carrierDetails").dataType(String.class).fieldName("voyageOrFlightNumber").build())
+            Map.entry("voyageOrFlightNumber", RunnerEntityMapping.builder().tableName("carrierDetails").dataType(String.class).fieldName("voyageOrFlightNumber").build()),
+            Map.entry("shipperRef", RunnerEntityMapping.builder().tableName("pickupDetails").dataType(String.class).fieldName("shipperRef").build())
     );
 
     @Override
@@ -2676,23 +2677,23 @@ public class ShipmentService implements IShipmentService {
     }
 
     private String getCustomizedShipmentProcessNumber(ShipmentSettingsDetails shipmentSettingsDetails, ProductProcessTypes productProcessType) {
-        productEngine.populateEnabledTenantProducts(shipmentSettingsDetails);
+        List<TenantProducts> tenantProducts = productEngine.populateEnabledTenantProducts(shipmentSettingsDetails);
         // to check the commmon sequence
         var sequenceNumber = productEngine.GetCommonSequenceNumber(currentShipment.getTransportMode(), ProductProcessTypes.Consol_Shipment_TI);
         if (sequenceNumber != null && !sequenceNumber.isEmpty()) {
             return sequenceNumber;
         }
-        var identifiedProduct = productEngine.IdentifyProduct(currentShipment);
+        var identifiedProduct = productEngine.IdentifyProduct(currentShipment, tenantProducts);
         if (identifiedProduct == null){
             return "";
         }
         var sequenceSettings = getNextNumberHelper.getProductSequence(identifiedProduct.getId(), productProcessType);
         if(sequenceSettings == null){
-            sequenceSettings = productEngine.getShipmentProductWithOutContainerType(currentShipment, productProcessType);
+            sequenceSettings = productEngine.getShipmentProductWithOutContainerType(currentShipment, productProcessType, tenantProducts);
             if (sequenceSettings == null)
             {
                 // get default product type for shipment
-                var defaultProduct = productEngine.getDefaultShipmentProduct();
+                var defaultProduct = productEngine.getDefaultShipmentProduct(tenantProducts);
                 if (defaultProduct == null || identifiedProduct == defaultProduct) {
                     return "";
                 }
