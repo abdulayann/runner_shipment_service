@@ -3910,6 +3910,9 @@ public class ShipmentService implements IShipmentService {
             if(linkedConsol.getCarrierDetails() == null)
                 linkedConsol.setCarrierDetails(new CarrierDetails());
             linkedConsol.getCarrierDetails().setAircraftType(shipment.getCarrierDetails().getAircraftType());
+            linkedConsol.getCarrierDetails().setShippingLine(shipment.getCarrierDetails().getShippingLine());
+            linkedConsol.getCarrierDetails().setVessel(shipment.getCarrierDetails().getVessel());
+            linkedConsol.getCarrierDetails().setVoyage(shipment.getCarrierDetails().getVoyage());
             List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByConsolidationId(linkedConsol.getId());
             List<Long> shipmentIdList = consoleShipmentMappings.stream().map(i -> i.getShipmentId()).collect(Collectors.toList());
             ListCommonRequest listReq = constructListCommonRequest("id", shipmentIdList, "IN");
