@@ -1,11 +1,12 @@
 package com.dpw.runner.shipment.services.syncing.impl;
 
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.request.NotesRequest;
-import com.dpw.runner.shipment.services.dto.v1.response.V1DataSyncResponse;
 import com.dpw.runner.shipment.services.entity.CarrierDetails;
 import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
 import com.dpw.runner.shipment.services.entity.Parties;
@@ -21,19 +22,21 @@ import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.EmailServiceUtility;
 import com.dpw.runner.shipment.services.utils.StringUtility;
+import com.dpw.runner.shipment.services.utils.V1AuthHelper;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.dao.DataRetrievalFailureException;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
-import java.util.*;
-import java.util.concurrent.CompletableFuture;
+import java.util.List;
+import java.util.Objects;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.utils.CommonUtils.stringValueOf;
@@ -56,6 +59,8 @@ public class ShipmentSync implements IShipmentSync {
     IShipmentDao shipmentDao;
     @Autowired
     private IV1Service v1Service;
+    @Autowired
+    private V1AuthHelper v1AuthHelper;
 
     @Autowired
     private EmailServiceUtility emailServiceUtility;
@@ -166,8 +171,10 @@ public class ShipmentSync implements IShipmentSync {
         cs.setDeletedContGuids(deletedContGuids);
 
         String finalCs = jsonHelper.convertToJson(V1DataSyncRequest.builder().entity(cs).module(SyncingConstants.SHIPMENT).build());
-        if (isDirectSync)
-            syncService.callSyncAsync(finalCs, StringUtility.convertToString(sd.getId()), StringUtility.convertToString(sd.getGuid()), "Shipments", null);
+        if (isDirectSync) {
+            HttpHeaders httpHeaders = v1AuthHelper.getHeadersForDataSyncFromKafka(UserContext.getUser().getUsername(), TenantContext.getCurrentTenant());
+            syncService.callSyncAsync(finalCs, StringUtility.convertToString(sd.getId()), StringUtility.convertToString(sd.getGuid()), "Shipments", httpHeaders);
+        }
         else
             syncService.pushToKafka(finalCs, StringUtility.convertToString(sd.getId()), StringUtility.convertToString(sd.getGuid()), "Shipments", transactionId);
         return ResponseHelper.buildSuccessResponse(modelMapper.map(cs, CustomShipmentSyncRequest.class));
