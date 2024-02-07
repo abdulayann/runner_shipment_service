@@ -8,6 +8,7 @@ import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ContainerModel;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.masterdata.response.VesselsResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -15,7 +16,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.*;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.getAddressList;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.getOrgAddress;
 
 @Component
 public class CustomsInstructionsReport extends IReport{
@@ -69,8 +71,11 @@ public class CustomsInstructionsReport extends IReport{
                 customsInstructionsModel.shipmentDetails.getConsignee().getAddressData() : null, ReportConstants.ADDRESS1)));
         dictionary.put(ReportConstants.EXPORT_BROKER, exportBroker);
         dictionary.put(ReportConstants.IMPORT_BROKER, importBroker);
-        dictionary.put(ReportConstants.VESSEL_NAME, customsInstructionsModel.shipmentDetails.getCarrierDetails() != null ?
-                customsInstructionsModel.shipmentDetails.getCarrierDetails().getVessel() : null);
+        if(customsInstructionsModel.shipmentDetails.getCarrierDetails() != null) {
+            VesselsResponse vesselsResponse = getVesselsData(customsInstructionsModel.shipmentDetails.getCarrierDetails().getVessel());
+            if(vesselsResponse != null)
+                dictionary.put(ReportConstants.VESSEL_NAME, vesselsResponse.getName());
+        }
         // TODO- Logo Path
         if (customsInstructionsModel.shipmentDetails.getPackingList() != null && customsInstructionsModel.shipmentDetails.getPackingList().size() > 0) {
             dictionary.put(ReportConstants.HAS_PACKAGES, true);

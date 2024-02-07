@@ -2107,6 +2107,7 @@ public class ShipmentService implements IShipmentService {
             Pair<Specification<Containers>, Pageable> pair = fetchData(listCommonRequest, Containers.class);
             Page<Containers> containers = containerDao.findAll(pair.getLeft(), pair.getRight());
             List<Containers> conts = new ArrayList<>();
+            List<Long> containerIds = new ArrayList<>();
             if(lclAndSeaOrRoadFlag) {
                 for (Containers container : containers.getContent()) {
                     List<ShipmentsContainersMapping> shipmentsContainersMappings = shipmentsContainersMappingDao.findByContainerId(container.getId());
@@ -2142,19 +2143,8 @@ public class ShipmentService implements IShipmentService {
                             containersList.add(x);
                     }
                 }
-            }
-            else {
-                for (Containers container : containers.getContent()) {
-                    List<ShipmentsContainersMapping> shipmentsContainersMappings = shipmentsContainersMappingDao.findByContainerId(container.getId());
-                    if(!shipmentsContainersMappings.stream().map(ShipmentsContainersMapping::getShipmentId).toList().contains(shipmentId)) {
-                        containersList.add(container);
-                    }
-                }
-            }
 
-            List<Long> containerIds = new ArrayList<>();
-            ShipmentDetails shipmentDetails = shipmentDao.findById(containerAssignRequest.getShipmentId()).get();
-            if(shipmentSettingsDetails.getMultipleShipmentEnabled() && (shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_SEA) || shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_ROA))) {
+                ShipmentDetails shipmentDetails = shipmentDao.findById(containerAssignRequest.getShipmentId()).get();
                 boolean isFCL = shipmentDetails.getShipmentType().equals(Constants.CARGO_TYPE_FCL) && (shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_SEA) || shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_ROA));
                 for (Containers container : containersList) {
                     boolean isPart = container.getIsPart() != null && container.getIsPart().booleanValue();
@@ -2176,7 +2166,16 @@ public class ShipmentService implements IShipmentService {
                 if(isFCL)
                     containerDao.saveAll(containersList);
             }
-            shipmentsContainersMappingDao.assignContainers(containerAssignRequest.getShipmentId(), containerIds);
+            else {
+                for (Containers container : containers.getContent()) {
+                    List<ShipmentsContainersMapping> shipmentsContainersMappings = shipmentsContainersMappingDao.findByContainerId(container.getId());
+                    if(!shipmentsContainersMappings.stream().map(ShipmentsContainersMapping::getShipmentId).toList().contains(shipmentId)) {
+                        containerIds.add(container.getId());
+                    }
+                }
+            }
+            if(!Objects.isNull(containerIds) && !containerIds.isEmpty())
+                shipmentsContainersMappingDao.assignContainers(containerAssignRequest.getShipmentId(), containerIds);
             return ResponseHelper.buildSuccessResponse();
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()

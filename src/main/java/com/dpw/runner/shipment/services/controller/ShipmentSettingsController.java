@@ -6,21 +6,21 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
+import com.dpw.runner.shipment.services.dto.request.ProductSequenceConfigRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentSettingRequest;
 import com.dpw.runner.shipment.services.dto.request.TemplateUploadRequest;
-import com.dpw.runner.shipment.services.dto.response.JobResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentSettingsDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.TemplateUploadResponse;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.ProductSequenceConfig;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentSettingsService;
 import com.dpw.runner.shipment.services.syncing.Entity.CustomShipmentSyncRequest;
+import com.dpw.runner.shipment.services.syncing.Entity.ProductSequenceConfigDto;
 import com.dpw.runner.shipment.services.syncing.Entity.ShipmentSettingsSyncRequest;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSettingsReverseSync;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSettingsSync;
-import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
 import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
@@ -31,7 +31,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.validation.Valid;
-import java.util.List;
 import java.util.Optional;
 
 @RestController
@@ -157,6 +156,20 @@ public class ShipmentSettingsController {
             log.error(responseMsg, e);
         }
         return (ResponseEntity<RunnerResponse<CustomShipmentSyncRequest>>) ResponseHelper.buildFailedResponse(responseMsg);
+    }
+
+    @PostMapping(ApiConstants.API_SYNC_PRODUCT_SEQ)
+    public ResponseEntity<RunnerResponse<ProductSequenceConfigDto>> getCustomProductSequence(@RequestBody @Valid ProductSequenceConfigRequest request) {
+        String responseMsg;
+        try {
+            return (ResponseEntity<RunnerResponse<ProductSequenceConfigDto>>) shipmentSettingsSync.syncProductSequence(
+                    jsonHelper.convertValue(request, ProductSequenceConfig.class));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+        }
+        return (ResponseEntity<RunnerResponse<ProductSequenceConfigDto>>) ResponseHelper.buildFailedResponse(responseMsg);
     }
 
     @ApiResponses(value = {

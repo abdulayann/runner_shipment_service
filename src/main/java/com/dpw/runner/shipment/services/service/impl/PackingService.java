@@ -993,7 +993,7 @@ public class PackingService implements IPackingService {
 
         if (request.getWeightUnit().equals("KG")) {
             var totalWeight = request.getWeight();
-            var totalVolume = (request.getVolume() != null && request.getVolumeUnit() == VOLUME_UNIT_M3) ? request.getVolume() : BigDecimal.ZERO;
+            var totalVolume = (request.getVolume() != null && Objects.equals(request.getVolumeUnit(), VOLUME_UNIT_M3)) ? request.getVolume() : BigDecimal.ZERO;
             response.setChargeableUnit("KG");
             response.setChargeable(calculateChargeableWeight(response, request, totalVolume, totalWeight));
         }
