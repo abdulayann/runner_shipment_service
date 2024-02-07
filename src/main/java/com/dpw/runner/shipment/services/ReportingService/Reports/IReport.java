@@ -276,23 +276,27 @@ public abstract class IReport {
 
         dictionary.put(ReportConstants.MASTER_BILL,shipment.getMasterBill());
         dictionary.put(ReportConstants.HOUSE_BILL,shipment.getHouseBill());
-        dictionary.put(ReportConstants.VESSEL_NAME, shipment.getCarrierDetails().getVessel());
+        VesselsResponse vesselsResponse = getVesselsData(shipment.getCarrierDetails().getVessel());
+        if(vesselsResponse != null)
+            dictionary.put(VESSEL_NAME, vesselsResponse.getName());
         dictionary.put(ReportConstants.VOYAGE,shipment.getCarrierDetails().getVoyage());
-        dictionary.put(ReportConstants.POL_CODE, shipment.getCarrierDetails().getOriginPort());
-        dictionary.put(ReportConstants.POD_CODE, shipment.getCarrierDetails().getDestinationPort());
+        if(!Objects.isNull(pol)) dictionary.put(ReportConstants.POL_CODE, pol.getLocCode());
+        if(!Objects.isNull(pod)) dictionary.put(ReportConstants.POD_CODE, pod.getLocCode());
         dictionary.put(ReportConstants.POD_COUNTRY, pod != null ? pod.getCountry() : null);
         dictionary.put(ReportConstants.POL_COUNTRY, pol != null ? pol.getCountry() : null);
         dictionary.put(CARGO_TERMS_DESCRIPTION, StringUtility.toUpperCase(shipment.getGoodsDescription()));
         dictionary.put(BL_DESCRIPTION, StringUtility.toUpperCase(additionalDetails.getBLRemarksDescription()));
         dictionary.put(LOAD_DESCRIPTION_REMARKS, StringUtility.toUpperCase(additionalDetails.getBLRemarks()));
         if(pol != null) {
-            dictionary.put(ReportConstants.POL_PORT_NAME_WITH_COUNTRY_IN_CAPS, (pol.getPortName().toUpperCase() + ", " + (masterListsMap.containsKey(MasterDataType.COUNTRIES.getId()) && masterListsMap.get(MasterDataType.COUNTRIES.getId()).containsKey(pol.getCountry()) ? masterListsMap.get(MasterDataType.COUNTRIES.getId()).get(pol.getCountry()).getItemDescription().toUpperCase() : "")));
+            if(pol.getPortName() != null) {
+                dictionary.put(ReportConstants.POL_PORT_NAME_WITH_COUNTRY_IN_CAPS, (pol.getPortName().toUpperCase() + ", " + (masterListsMap.containsKey(MasterDataType.COUNTRIES.getId()) && masterListsMap.get(MasterDataType.COUNTRIES.getId()).containsKey(pol.getCountry()) ? masterListsMap.get(MasterDataType.COUNTRIES.getId()).get(pol.getCountry()).getItemDescription().toUpperCase() : "")));
+                dictionary.put(ReportConstants.POL_IN_CAPS, pol.getPortName().toUpperCase());
+            }
             dictionary.put(POL_COUNTRY_NAME_IN_CAPS , (masterListsMap.containsKey(MasterDataType.COUNTRIES.getId()) && masterListsMap.get(MasterDataType.COUNTRIES.getId()).containsKey(pol.getCountry()) ? masterListsMap.get(MasterDataType.COUNTRIES.getId()).get(pol.getCountry()).getItemDescription().toUpperCase() : ""));
             dictionary.put(ReportConstants.POL_AIRPORT_CODE, pol.getIataCode());
             if(pol.getIataCode() != null) {
                 dictionary.put(ReportConstants.POL_AIRPORT_CODE_IN_CAPS, pol.getIataCode().toUpperCase());
             }
-            dictionary.put(ReportConstants.POL_IN_CAPS, pol.getPortName().toUpperCase());
             dictionary.put(POL_CODE_IN_CAPS, StringUtility.toUpperCase(pol.getLocCode()));
         }
         if(shipment.getAdditionalDetails() != null) {
@@ -300,9 +304,9 @@ public abstract class IReport {
         }
 
         dictionary.put(ReportConstants.POL_PORTNAME, pol != null ? pol.getPortName() : null);
-        dictionary.put(ReportConstants.POL_PORT_NAME_IN_CAPS, pol != null ? pol.getPortName().toUpperCase() : null);
+        dictionary.put(ReportConstants.POL_PORT_NAME_IN_CAPS, pol != null ? StringUtility.toUpperCase(pol.getPortName()) : null);
         dictionary.put(ReportConstants.POD_PORTNAME, pod != null ? pod.getPortName() : null);
-        dictionary.put(ReportConstants.POD_PORT_NAME_IN_CAPS, pod != null ? pod.getPortName().toUpperCase() : null);
+        dictionary.put(ReportConstants.POD_PORT_NAME_IN_CAPS, pod != null ? StringUtility.toUpperCase(pod.getPortName()) : null);
 
         if (pod != null) {
             String podCountry = masterListsMap.containsKey(MasterDataType.COUNTRIES.getId()) && masterListsMap.get(MasterDataType.COUNTRIES.getId()).containsKey(pod.getCountry()) ? masterListsMap.get(MasterDataType.COUNTRIES.getId()).get(pod.getCountry()).getItemDescription() : "";
@@ -336,15 +340,15 @@ public abstract class IReport {
         dictionary.put(ReportConstants.DESCRIPTION,shipment.getGoodsDescription());
         dictionary.put(ReportConstants.SHIPMENT_TYPE,shipment.getDirection());
         dictionary.put(ReportConstants.CUSTOM_SHIPMENT_TYPE, shipment.getDirection() != null ? Character.toUpperCase(shipment.getDirection().charAt(0)) : null);
-        Long containerCount = 0L;
+        int containerCount = 0;
         if (shipment.getContainersList().size() > 0) {
             for (ContainerModel container : shipment.getContainersList()) {
                 if (container.getContainerCount() != null && container.getContainerCount() != 0) {
-                    containerCount += container.getContainerCount();
+                    containerCount += container.getContainerCount().intValue();
                 }
             }
         }
-        dictionary.put(ReportConstants.CONTAINER_COUNT, containerCount);
+        dictionary.put(ReportConstants.CONTAINER_COUNT, numberToWords(containerCount).toUpperCase());
         dictionary.put(PICKUP_INSTRUCTION, shipment.getPickupDetails() != null ? shipment.getPickupDetails().getPickupDeliveryInstruction() : null);
         dictionary.put(DELIVERY_INSTRUCTIONS, shipment.getDeliveryDetails() != null ? shipment.getDeliveryDetails().getPickupDeliveryInstruction() : null);
         V1TenantSettingsResponse v1TenantSettingsResponse = getTenantSettings();
@@ -365,7 +369,7 @@ public abstract class IReport {
         dictionary.put(ReportConstants.DATE_OF_RECEIPT, additionalDetails.getDateOfReceipt());
 
         dictionary.put(ReportConstants.INCO_TERM, shipment.getIncoterms());
-        dictionary.put(ReportConstants.CHARGEABLE, addCommas(shipment.getChargable()));
+        dictionary.put(ReportConstants.CHARGEABLE, ConvertToWeightNumberFormat(shipment.getChargable(), v1TenantSettingsResponse));
         dictionary.put(ReportConstants.CHARGEABLE_UNIT, shipment.getChargeableUnit());
         dictionary.put(ReportConstants.TRANSPORT_MODE, shipment.getTransportMode());
 
@@ -409,6 +413,8 @@ public abstract class IReport {
         dictionary.put(ReportConstants.VOLUME_WEIGHT_WITH_COMMA, addCommas(shipment.getVolumetricWeight()));
         dictionary.put(ReportConstants.WEIGHT_UNIT_DESCRIPTION,  shipment.getNetWeightUnit());
         dictionary.put(ReportConstants.WEIGHTS, ConvertToWeightNumberFormat(shipment.getNetWeight(), v1TenantSettingsResponse));
+        dictionary.put(WEIGHT, ConvertToWeightNumberFormat(shipment.getWeight(), v1TenantSettingsResponse));
+        dictionary.put(VOLUME, ConvertToVolumeNumberFormat(shipment.getVolume(), v1TenantSettingsResponse));
         if (shipment.getVolumeUnit() != null && masterListsMap.containsKey(MasterDataType.VOLUME_UNIT.getId())) {
             masterData =  masterListsMap.get(MasterDataType.VOLUME_UNIT.getId()).get(shipment.getVolumeUnit());
             dictionary.put(VolumeUnitDescription, masterData != null && masterData.getItemDescription() != null ? StringUtility.toUpperCase(masterData.getItemDescription()) : shipment.getVolumeUnit());
@@ -691,13 +697,14 @@ public abstract class IReport {
         dictionary.put(ReportConstants.NO_OF_PACKAGES, shipment.getNoOfPacks());
         SetContainerCount(shipment, dictionary);
         populateUserFields(UserContext.getUser(), dictionary);
-        populateHasContainerFields(shipment, dictionary);
+        populateHasContainerFields(shipment, dictionary, v1TenantSettingsResponse);
     }
 
     public ShipmentModel getShipment(Long Id)
     {
         ShipmentDetails shipmentDetails = shipmentDao.findById(Id).get();
         ShipmentModel shipmentModel = modelMapper.map(shipmentDetails, ShipmentModel.class);
+        shipmentModel.setVoyage(shipmentDetails.getCarrierDetails().getVoyage());
         try {
             if(shipmentDetails.getContainersList() != null) {
                 ContainerSummaryResponse containerSummaryResponse = containerService.calculateContainerSummary(shipmentDetails.getContainersList(), shipmentDetails.getTransportMode(), shipmentDetails.getShipmentType());
@@ -780,6 +787,22 @@ public abstract class IReport {
         List<ChargeTypesResponse> chargeTypesResponses = jsonHelper.convertValueToList(dependentServiceResponse.getData(), ChargeTypesResponse.class);
         if(chargeTypesResponses != null && chargeTypesResponses.size() > 0)
             return chargeTypesResponses.get(0);
+        return null;
+    }
+
+    public VesselsResponse getVesselsData(String mmsi) {
+        if(IsStringNullOrEmpty(mmsi))
+            return null;
+        List<Object> vesselCriteria = Arrays.asList(
+                List.of("Mmsi"),
+                "=",
+                mmsi
+        );
+        CommonV1ListRequest vesselRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(vesselCriteria).build();
+        V1DataResponse vesselResponse = v1Service.fetchVesselData(vesselRequest);
+        List<VesselsResponse> vesselsResponse = jsonHelper.convertValueToList(vesselResponse.entities, VesselsResponse.class);
+        if(vesselsResponse != null && !vesselsResponse.isEmpty())
+            return vesselsResponse.get(0);
         return null;
     }
 
@@ -1382,6 +1405,83 @@ public abstract class IReport {
         return null;
     }
 
+    public static String addCommasWithPrecision(BigDecimal number) {
+        return addCommasWithPrecision(number, 2);
+    }
+
+    public static String addCommasWithPrecision(BigDecimal number, int decimalPlaces) {
+        if (number != null) {
+            try {
+                BigDecimal roundedNumber = number.setScale(decimalPlaces, RoundingMode.HALF_UP);
+                DecimalFormat decimalFormat = new DecimalFormat();
+                decimalFormat.setMaximumFractionDigits(decimalPlaces);
+                return decimalFormat.format(roundedNumber);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        return String.valueOf(number);
+    }
+
+    public String FormatWithoutDecimal(Object amount, String localCurrency, V1TenantSettingsResponse tenantSettings) {
+        if (amount == null) {
+            return null;
+        }
+
+        BigDecimal amt = null;
+        try {
+            amt = new BigDecimal(amount.toString());
+        }
+        catch (Exception ignored){}
+        if (amt != null) {
+            return FormatWithoutDecimal(amt, localCurrency, tenantSettings);
+        }
+
+        if (amount instanceof String) {
+            try {
+                BigDecimal parsedDecimal = new BigDecimal((String) amount);
+                return FormatWithoutDecimal(parsedDecimal, localCurrency, tenantSettings);
+            } catch (Exception ignored) {}
+        }
+
+        try {
+            return new DecimalFormat("#,##0").format(amount);
+        } catch (Exception ignored) {}
+        return amount.toString();
+    }
+
+    private String FormatWithoutDecimal(BigDecimal amount, String localCurrency, V1TenantSettingsResponse v1TenantSettingsResponse) {
+        if(v1TenantSettingsResponse == null)
+            v1TenantSettingsResponse = getTenantSettings();
+
+        UsersDto user = UserContext.getUser();
+        if (!Boolean.TRUE.equals(v1TenantSettingsResponse.getIsGroupingOverseas()) && !localCurrency.equals(user.getCompanyCurrency())) {
+            return addCommasWithPrecision(amount, 0);
+        } else {
+            return DisplayFormat(amount, 0, v1TenantSettingsResponse);
+        }
+    }
+
+    public static String DisplayFormat(BigDecimal value, int numberDecimalDigits, V1TenantSettingsResponse v1TenantSettingsResponse) {
+        if(value != null && v1TenantSettingsResponse != null) {
+            if(v1TenantSettingsResponse.getCurrencyDigitGrouping() != null) {
+                char customThousandsSeparator = ',';
+                char customDecimalSeparator = '.';
+                if(v1TenantSettingsResponse.getCurrencyGroupingNumber() != null && v1TenantSettingsResponse.getCurrencyGroupingNumber() == GroupingNumber.DotAndComma.getValue()) {
+                    customThousandsSeparator = '.';
+                    customDecimalSeparator = ',';
+                }
+                return formatValue(value, customDecimalSeparator, customThousandsSeparator, numberDecimalDigits, v1TenantSettingsResponse.getCurrencyDigitGrouping());
+            }
+            else {
+                return addCommasWithPrecision(value, numberDecimalDigits);
+            }
+        }
+        if(value != null)
+            return value.toString();
+        return null;
+    }
+
     public static String GetDPWWeightVolumeFormat(BigDecimal value, int numberDecimalDigits, V1TenantSettingsResponse v1TenantSettingsResponse) {
         if(value != null && v1TenantSettingsResponse != null) {
             if(v1TenantSettingsResponse.getWVDigitGrouping() != null) {
@@ -1391,7 +1491,10 @@ public abstract class IReport {
                     customThousandsSeparator = '.';
                     customDecimalSeparator = ',';
                 }
-                return formatValue(value, customDecimalSeparator, customThousandsSeparator, numberDecimalDigits, v1TenantSettingsResponse);
+                return formatValue(value, customDecimalSeparator, customThousandsSeparator, numberDecimalDigits, v1TenantSettingsResponse.getWVDigitGrouping());
+            }
+            else {
+                return addCommasWithPrecision(value, numberDecimalDigits);
             }
         }
         if(value != null)
@@ -1399,8 +1502,8 @@ public abstract class IReport {
         return null;
     }
 
-    public static String formatValue(BigDecimal value, char customDecimalSeparator, char customThousandsSeparator, int numberDecimalDigits, V1TenantSettingsResponse v1TenantSettingsResponse) {
-        int[] dynamicGroupSizes = (v1TenantSettingsResponse.getWVDigitGrouping() == DigitGrouping.THREE.getValue()) ? new int[]{3, 3} : new int[]{3, 2};
+    public static String formatValue(BigDecimal value, char customDecimalSeparator, char customThousandsSeparator, int numberDecimalDigits, Integer digitGrouping) {
+        int[] dynamicGroupSizes = (digitGrouping == DigitGrouping.THREE.getValue()) ? new int[]{3, 3} : new int[]{3, 2};
 
         NumberFormat customFormat = NumberFormat.getNumberInstance(Locale.US);
         DecimalFormat customDecimalFormat = (DecimalFormat) customFormat;
@@ -1787,10 +1890,23 @@ public abstract class IReport {
         return dataMap;
     }
 
-    public void populateHasContainerFields(ShipmentModel shipmentModel, Map<String, Object> dictionary) {
+    public void populateHasContainerFields(ShipmentModel shipmentModel, Map<String, Object> dictionary, V1TenantSettingsResponse v1TenantSettingsResponse) {
         if (shipmentModel.getContainersList() != null && shipmentModel.getContainersList().size() > 0) {
             dictionary.put(ReportConstants.SHIPMENT_PACKING_HAS_CONTAINERS, true);
-            dictionary.put(ReportConstants.SHIPMENT_CONTAINERS, shipmentModel.getContainersList());
+            List<Map<String, Object>> valuesContainer = new ArrayList<>();
+            for (ContainerModel containerModel : shipmentModel.getContainersList()) {
+                ShipmentContainers shipmentContainers = getShipmentContainer(containerModel);
+                String shipContJsonString = jsonHelper.convertToJson(shipmentContainers);
+                Map<String, Object> shipContJson = jsonHelper.convertJsonToMap(shipContJsonString);
+                if(shipContJson.containsKey(ReportConstants.GROSS_VOLUME) && shipContJson.get(ReportConstants.GROSS_VOLUME) != null)
+                    shipContJson.put(ReportConstants.GROSS_VOLUME, ConvertToVolumeNumberFormat(shipContJson.get(ReportConstants.GROSS_VOLUME), v1TenantSettingsResponse));
+                if (shipContJson.containsKey(ReportConstants.GROSS_WEIGHT) && shipContJson.get(ReportConstants.GROSS_WEIGHT) != null)
+                    shipContJson.put(ReportConstants.GROSS_WEIGHT, ConvertToWeightNumberFormat(shipContJson.get(ReportConstants.GROSS_WEIGHT), v1TenantSettingsResponse));
+                if (shipContJson.containsKey(ReportConstants.NET_WEIGHT) && shipContJson.get(ReportConstants.NET_WEIGHT) != null)
+                    shipContJson.put(ReportConstants.NET_WEIGHT, ConvertToWeightNumberFormat(new BigDecimal(shipContJson.get(ReportConstants.NET_WEIGHT).toString())));
+                valuesContainer.add(shipContJson);
+            }
+            dictionary.put(ReportConstants.SHIPMENT_CONTAINERS, valuesContainer);
         }
         else {
             dictionary.put(ReportConstants.SHIPMENT_PACKING_HAS_CONTAINERS, false);
@@ -1846,7 +1962,7 @@ public abstract class IReport {
             dict.put(SHIPMENT_PACKING_WIDTH_UNIT, pack.getWidthUnit());
             dict.put(SHIPMENT_PACKING_HEIGHT, pack.getHeight());
             dict.put(SHIPMENT_PACKING_HEIGHT_UNIT, pack.getHeightUnit());
-            dict.put(CHARGEABLE, pack.getChargeable());
+            dict.put(CHARGEABLE, ConvertToWeightNumberFormat(pack.getChargeable(), v1TenantSettingsResponse));
             dict.put(ChargeableUnit, pack.getChargeableUnit());
 
             if(pack.getHazardous() != null && pack.getHazardous().equals(true)){
