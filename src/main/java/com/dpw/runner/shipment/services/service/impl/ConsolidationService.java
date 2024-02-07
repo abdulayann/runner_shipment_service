@@ -600,7 +600,7 @@ public class ConsolidationService implements IConsolidationService {
     }
 
     private String getCustomizedConsolidationProcessNumber(ConsolidationDetails consolidationDetails, ShipmentSettingsDetails shipmentSettingsDetails, ProductProcessTypes productProcessTypes) {
-        productEngine.populateEnabledTenantProducts(shipmentSettingsDetails);
+        List<TenantProducts> enabledTenantProducts = productEngine.populateEnabledTenantProducts(shipmentSettingsDetails);
         if (productProcessTypes == ProductProcessTypes.ReferenceNumber) {
             // to check the commmon sequence
             var sequenceNumber = productEngine.GetCommonSequenceNumber(consolidationDetails.getTransportMode(), ProductProcessTypes.Consol_Shipment_TI);
@@ -608,7 +608,7 @@ public class ConsolidationService implements IConsolidationService {
                 return sequenceNumber;
             }
         }
-        var identifiedProduct = productEngine.IdentifyProduct(consolidationDetails);
+        var identifiedProduct = productEngine.IdentifyProduct(consolidationDetails, enabledTenantProducts);
         if (identifiedProduct == null){
             return "";
         }

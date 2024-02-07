@@ -2678,23 +2678,23 @@ public class ShipmentService implements IShipmentService {
     }
 
     private String getCustomizedShipmentProcessNumber(ShipmentSettingsDetails shipmentSettingsDetails, ProductProcessTypes productProcessType) {
-        productEngine.populateEnabledTenantProducts(shipmentSettingsDetails);
+        List<TenantProducts> tenantProducts = productEngine.populateEnabledTenantProducts(shipmentSettingsDetails);
         // to check the commmon sequence
         var sequenceNumber = productEngine.GetCommonSequenceNumber(currentShipment.getTransportMode(), ProductProcessTypes.Consol_Shipment_TI);
         if (sequenceNumber != null && !sequenceNumber.isEmpty()) {
             return sequenceNumber;
         }
-        var identifiedProduct = productEngine.IdentifyProduct(currentShipment);
+        var identifiedProduct = productEngine.IdentifyProduct(currentShipment, tenantProducts);
         if (identifiedProduct == null){
             return "";
         }
         var sequenceSettings = getNextNumberHelper.getProductSequence(identifiedProduct.getId(), productProcessType);
         if(sequenceSettings == null){
-            sequenceSettings = productEngine.getShipmentProductWithOutContainerType(currentShipment, productProcessType);
+            sequenceSettings = productEngine.getShipmentProductWithOutContainerType(currentShipment, productProcessType, tenantProducts);
             if (sequenceSettings == null)
             {
                 // get default product type for shipment
-                var defaultProduct = productEngine.getDefaultShipmentProduct();
+                var defaultProduct = productEngine.getDefaultShipmentProduct(tenantProducts);
                 if (defaultProduct == null || identifiedProduct == defaultProduct) {
                     return "";
                 }
