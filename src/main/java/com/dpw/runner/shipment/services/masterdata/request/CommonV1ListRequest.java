@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
 
 import java.util.List;
+import java.util.Map;
 
 @Setter
 @Getter
@@ -23,4 +24,6 @@ public class CommonV1ListRequest {
     private int columnSelection;
     @JsonProperty("IncludeColumns")
     private List<String> includeColumns = null;
+    @JsonProperty("EqualityFilter")
+    private Map<String, Object> EqualityFilter;
 }

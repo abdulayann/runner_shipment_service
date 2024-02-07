@@ -83,6 +83,22 @@ public class ShippingRequestAirReport extends IReport{
         dictionary.put(ReportConstants.COMMODITIES, commodities);
         dictionary.put(ReportConstants.PRINT_DATE, ConvertToDPWDateFormat(LocalDateTime.now()));
 
+        /*
+
+        TODO :: These fields are missing in both v1 and v2 but present in document template file.
+            Debtor Code
+            Open Date
+            ReferenceNo (its present in hbl report only)
+            ConsolNumber (its present in hbl report)
+            RevenuePaymentTerms
+            DebtorVatRegNumber
+            ShipperRefNumber
+            ConsignerCompanyName
+            BillChargesOverseasSum
+            BillChargesOverseasTaxSum
+            CumulativeSumOverseas
+            BillChargesLocalTaxSum
+         */
         return dictionary;
     }
 }

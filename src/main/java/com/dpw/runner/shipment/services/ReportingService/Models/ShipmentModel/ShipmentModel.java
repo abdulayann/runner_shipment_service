@@ -1,9 +1,9 @@
 package com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel;
 
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentContainers;
-import com.dpw.runner.shipment.services.config.LocalDateTimeWithTimeZoneSerializer;
 import com.dpw.runner.shipment.services.config.CustomVolumeValueSerializer;
 import com.dpw.runner.shipment.services.config.CustomWeightValueSerializer;
+import com.dpw.runner.shipment.services.config.LocalDateTimeWithTimeZoneSerializer;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -112,7 +112,7 @@ public class ShipmentModel {
     private List<JobModel> jobsList;
     @JsonProperty("LockedBy")
     private String lockedBy;
-    @JsonProperty("MarksNum")
+    @JsonProperty("MarksnNums")
     private String marksNum;
     @JsonProperty("MasterBill")
     private String masterBill;
