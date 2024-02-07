@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.Kafka.Dto.KafkaResponse;
 import com.dpw.runner.shipment.services.Kafka.Producer.KafkaProducer;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
+import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
@@ -20,6 +21,7 @@ import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.JobResponse;
 import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCommodityType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
@@ -1175,7 +1177,7 @@ public class ContainerService implements IContainerService {
             else
                 containers = new PageImpl<>(containersList);
             return ResponseHelper.buildListSuccessResponse(
-                    convertEntityListToDtoList(containers.getContent()),
+                    convertEntityListToDtoListWithMasterData(containers.getContent()),
                     containers.getTotalPages(),
                     containers.getTotalElements());
         } catch (Exception e) {
@@ -1629,6 +1631,26 @@ public class ContainerService implements IContainerService {
 
     private Containers convertRequestToEntity(ContainerRequest request) {
         return jsonHelper.convertValue(request, Containers.class);
+    }
+
+    private List<IRunnerResponse> convertEntityListToDtoListWithMasterData(List<Containers> lst) {
+        List<IRunnerResponse> responseList = new ArrayList<>();
+        Set<String> commodityTypes = new HashSet<>();
+        Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
+        lst.forEach(containers -> {
+            ContainerResponse containerResponse = (ContainerResponse) convertEntityToDto(containers);
+            responseList.add(containerResponse);
+            commodityTypes.addAll(masterDataUtils.createInBulkCommodityTypeRequest(containerResponse, Containers.class, fieldNameKeyMap, Containers.class.getSimpleName() + containers.getId() ));
+        });
+        Map<String, EntityTransferCommodityType> v1Data = masterDataUtils.fetchInBulkCommodityTypes(commodityTypes.stream().toList());
+        masterDataUtils.pushToCache(v1Data, CacheConstants.COMMODITY);
+        if (!Objects.isNull(responseList)) {
+            for (IRunnerResponse containerResponse : responseList) {
+                ContainerResponse containerResponse1 = (ContainerResponse) containerResponse;
+                containerResponse1.setCommodityTypeData(masterDataUtils.setMasterData(fieldNameKeyMap.get(Containers.class.getSimpleName() + containerResponse1.getId()), CacheConstants.COMMODITY));
+            }
+        }
+        return responseList;
     }
 
     private List<IRunnerResponse> convertEntityListToDtoList(List<Containers> lst) {
