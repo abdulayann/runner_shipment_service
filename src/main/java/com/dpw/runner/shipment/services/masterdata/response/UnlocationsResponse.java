@@ -3,6 +3,8 @@ package com.dpw.runner.shipment.services.masterdata.response;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
+import java.util.Objects;
+
 @Data
 public class UnlocationsResponse {
     @JsonProperty("Id")
@@ -29,4 +31,7 @@ public class UnlocationsResponse {
     private String countryName;
     @JsonProperty("CountryThreeDigitCode")
     private String CountryThreeDigitCode;
+    public String getCountry() {
+        return (!Objects.isNull(country) && country.length() == 2 && !Objects.isNull(CountryThreeDigitCode) ? CountryThreeDigitCode : country);
+    }
 }
