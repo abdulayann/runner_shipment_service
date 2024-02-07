@@ -497,7 +497,8 @@ public class ContainerService implements IContainerService {
 //        Arrays.sort(fields, Comparator.comparingInt(f -> f.getAnnotation(ExcelCell.class).order()));
 
         Map<String, Field> fieldNameMap = Arrays.stream(fields).filter(f->f.isAnnotationPresent(ExcelCell.class)).collect(Collectors.toMap(Field::getName, c-> c));
-        ColumnsToIgnore(fieldNameMap, request);
+        // Removed columns to ignore logic
+//        ColumnsToIgnore(fieldNameMap, request);
 
         if(!Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_AIR) && fieldNameMap.containsKey("containerStuffingLocation")) {
             List<String> unlocationsRefGuids = new ArrayList<>();
