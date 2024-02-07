@@ -1411,6 +1411,7 @@ public class AwbService implements IAwbService {
         }
 
         Awb awb = awbOptional.get();
+        UUID awbGuid = awb.getGuid();
         Long awbId = awb.getId();
 
         Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(awb.getShipmentId());
@@ -1457,6 +1458,7 @@ public class AwbService implements IAwbService {
                     LinkHawbMawb(consolidationDetails.get(), awb, awbList);
                 }
                 else awb = generateAwb(createAwbRequest);
+                awb.setGuid(awbGuid);
                 break;
             }
             case AWB_ROUTING: {
