@@ -633,7 +633,14 @@ public class AwbService implements IAwbService {
     }
 
     private AwbResponse convertEntityToDto(Awb awbShipmentInfo) {
-        return jsonHelper.convertValue(awbShipmentInfo, AwbResponse.class);
+        var awbResponse = jsonHelper.convertValue(awbShipmentInfo, AwbResponse.class);
+        if(awbShipmentInfo.getAwbSpecialHandlingCodesMappings() != null && awbShipmentInfo.getAwbSpecialHandlingCodesMappings().size() > 0) {
+            awbResponse.setShcIdList(awbShipmentInfo.getAwbSpecialHandlingCodesMappings().stream()
+                    .map(i -> i.getShcId())
+                    .toList()
+            );
+        }
+        return awbResponse;
     }
 
     private List<IRunnerResponse> convertEntityListToDtoList(List<Awb> lst) {
@@ -673,7 +680,19 @@ public class AwbService implements IAwbService {
     }
 
     private Awb convertRequestToEntity(AwbRequest request) {
-        return jsonHelper.convertValue(request, Awb.class);
+        var awb =  jsonHelper.convertValue(request, Awb.class);
+        if(request.getShcIdList() != null && request.getShcIdList().size() > 0) {
+            List<AwbSpecialHandlingCodesMappingInfo> res = new ArrayList<>();
+            for(var shcId : request.getShcIdList()) {
+                res.add(AwbSpecialHandlingCodesMappingInfo.builder()
+                        .entityId(request.getAwbShipmentInfo().getEntityId())
+                        .entityType(request.getAwbShipmentInfo().getEntityType())
+                        .shcId(shcId)
+                        .build());
+            }
+            awb.setAwbSpecialHandlingCodesMappings(res);
+        }
+        return awb;
     }
 
     private Awb generateMawb(CreateAwbRequest request, ConsolidationDetails consolidationDetails, List<AwbPackingInfo> awbPackingInfo) {
