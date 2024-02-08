@@ -79,4 +79,6 @@ public class ShipmentAndContainerResponse {
         public String packsUnitDescription;
         @JsonProperty("MarksnNumber")
         public String marksnNumbers;
+        @JsonProperty("FreightOverseasCurrency")
+        public String freightOverseasCurrency;
 }

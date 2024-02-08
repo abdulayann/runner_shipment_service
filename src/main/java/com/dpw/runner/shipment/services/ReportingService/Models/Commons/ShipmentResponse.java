@@ -23,4 +23,5 @@ public class ShipmentResponse implements IRunnerResponse
     public String ConsigneeLocalName;
     public String Description;
     public String HsnNumber;
+    public String FreightOverseasCurrency;
 }
