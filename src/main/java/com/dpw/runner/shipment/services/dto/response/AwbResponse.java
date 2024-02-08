@@ -37,4 +37,7 @@ public class AwbResponse implements IRunnerResponse {
     public List<AwbNotifyPartyInfo> defaultAwbNotifyPartyInfo;
     public List<AwbRoutingInfoResponse> defaultAwbRoutingInfo;
     public String errors;
+    //Used to provide special handling codes for UI
+    private List<String> shcIdList;
+
 }
