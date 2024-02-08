@@ -883,6 +883,7 @@ public class AwbService implements IAwbService {
                 }
             }
         }
+        awbCargoInfo.setChargeCode(fetchChargeCodes(consolidationDetails.getPayment()));
         return awbCargoInfo;
     }
 
@@ -1165,6 +1166,8 @@ public class AwbService implements IAwbService {
         awbCargoInfo.setNtrQtyGoods(awbCargoInfo.getNtrQtyGoods() == null ? null : awbCargoInfo.getNtrQtyGoods().toUpperCase());
         awbCargoInfo.setShippingInformation(awbCargoInfo.getShippingInformation() == null ? null : awbCargoInfo.getShippingInformation().toUpperCase());
         awbCargoInfo.setShippingInformationOther(awbCargoInfo.getShippingInformationOther() == null ? null : awbCargoInfo.getShippingInformationOther().toUpperCase());
+        if(request.getAwbType().equalsIgnoreCase("DMAWB"))
+            awbCargoInfo.setChargeCode(fetchChargeCodes(shipmentDetails.getPaymentTerms()));
         return awbCargoInfo;
     }
 
@@ -2938,6 +2941,22 @@ public class AwbService implements IAwbService {
             errors.add("Additional Shipments have been attached, please reset data as required.");
 
         return errors.size() > 0 ? errors.toString() : null;
+    }
+
+    private String fetchChargeCodes(String paymentTerms) {
+        if(paymentTerms == null)
+            return null;
+        String chargeCode = null;
+        if(paymentTerms.equals(Constants.PREPAID_DESC)){
+            chargeCode = Constants.PREPAID_CODE;
+        }else if(paymentTerms.equals(Constants.COLLECT_DESC)){
+            chargeCode = Constants.COLLECT_CODE;
+        }else if(paymentTerms.equals(Constants.COLLECT_PREPAID_DESC_CODE)){
+            chargeCode = Constants.COLLECT_PREPAID_DESC_CODE;
+        }else if(paymentTerms.equals(Constants.PREPAID_COLLECT_DESC_CODE)){
+            chargeCode = Constants.PREPAID_COLLECT_DESC_CODE;
+        }
+        return chargeCode;
     }
 
 }
