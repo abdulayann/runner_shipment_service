@@ -5,8 +5,10 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.Criteria;
 import com.dpw.runner.shipment.services.commons.requests.FilterCriteria;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.utils.PermissionUtil;
 import org.aspectj.lang.JoinPoint;
+import org.aspectj.lang.annotation.AfterThrowing;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Before;
 import org.slf4j.Logger;
@@ -33,12 +35,14 @@ public class PermissionsAspect {
     private EntityManager entityManager;
 
     @Before("execution(* com.dpw.runner.shipment.services.service.interfaces.IShipmentService+.*(..)) && args(commonRequestModel)")
-    public void beforeFindOfMultiTenancyRepository(JoinPoint joinPoint, CommonRequestModel commonRequestModel) {
+    public void beforeFindOfMultiTenancyRepository(JoinPoint joinPoint, CommonRequestModel commonRequestModel) throws RunnerException {
         if (commonRequestModel.getData() == null || !commonRequestModel.getData().getClass().isAssignableFrom(ListCommonRequest.class)) {
             return;
         }
         ListCommonRequest listCommonRequest = (ListCommonRequest) commonRequestModel.getData();
         List<String> permissionList = PermissionsContext.getPermissions(SHIPMENT_LIST_PERMISSION);
+        if(permissionList == null || permissionList.size() == 0)
+            throw new RunnerException("Unable to list shipments due to insufficient list permissions");
         permissionList.sort(new Comparator<String>() {
             @Override
             public int compare(String o1, String o2) {
@@ -62,12 +66,14 @@ public class PermissionsAspect {
     }
 
     @Before("execution(* com.dpw.runner.shipment.services.service.interfaces.IConsolidationService+.*(..)) && args(commonRequestModel)")
-    public void beforeConsolidationList(JoinPoint joinPoint, CommonRequestModel commonRequestModel) {
+    public void beforeConsolidationList(JoinPoint joinPoint, CommonRequestModel commonRequestModel) throws RunnerException {
         if (commonRequestModel.getData() == null || !commonRequestModel.getData().getClass().isAssignableFrom(ListCommonRequest.class)) {
             return;
         }
         ListCommonRequest listCommonRequest = (ListCommonRequest) commonRequestModel.getData();
         List<String> permissionList = PermissionsContext.getPermissions(CONSOLIDATION_LIST_PERMISSION);
+        if(permissionList == null || permissionList.size() == 0)
+            throw new RunnerException("Unable to list consolidations due to insufficient list permissions.");
         permissionList.sort(new Comparator<String>() {
             @Override
             public int compare(String o1, String o2) {
