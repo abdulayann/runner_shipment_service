@@ -178,6 +178,7 @@ public class ShipmentReverseSync implements IShipmentReverseSync {
         else
             additionalDetails.setDateOfIssue(cs.getDateofIssue());
         additionalDetails.setDateOfReceipt(cs.getDateofReceipt());
+        additionalDetails.setBLChargesDisplay(cs.getChargesApply());
         sd.setAdditionalDetails(additionalDetails);
     }
 
