@@ -116,4 +116,5 @@ public class ContainerResponse implements IRunnerResponse {
     private Boolean isAttached;
     private List<TruckDriverDetailsResponse> truckingDetails;
     private List<EventsResponse> eventsList;
+    private String hblNumber;
 }
