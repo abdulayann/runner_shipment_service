@@ -310,18 +310,20 @@ public abstract class IReport {
 
         if (pod != null) {
             String podCountry = masterListsMap.containsKey(MasterDataType.COUNTRIES.getId()) && masterListsMap.get(MasterDataType.COUNTRIES.getId()).containsKey(pod.getCountry()) ? masterListsMap.get(MasterDataType.COUNTRIES.getId()).get(pod.getCountry()).getItemDescription() : "";
-            dictionary.put(ReportConstants.DESTINATION_AIRPORT_COUNTRY,podCountry.toUpperCase());
-            dictionary.put(ReportConstants.POL_PORT_NAME_WITH_COUNTRY_IN_CAPS, pod.getPortName().toUpperCase()+ ", " + podCountry.toUpperCase());
+            dictionary.put(ReportConstants.DESTINATION_AIRPORT_COUNTRY, podCountry.toUpperCase());
+            if (pod.getPortName() != null)
+                dictionary.put(ReportConstants.POL_PORT_NAME_WITH_COUNTRY_IN_CAPS, pod.getPortName().toUpperCase() + ", " + podCountry.toUpperCase());
             dictionary.put(ReportConstants.POD_COUNTRY_NAME_IN_CAPS, podCountry.toUpperCase());
             dictionary.put(ReportConstants.POD_AIRPORT_CODE, pod.getIataCode());
-            if(pod.getIataCode() != null) {
+            if (pod.getIataCode() != null) {
                 dictionary.put(ReportConstants.POD_AIRPORT_CODE_IN_CAPS, pod.getIataCode().toUpperCase());
             }
-            dictionary.put(ReportConstants.POD_IN_CAPS,pod.getPortName().toUpperCase());
+            if (pod.getPortName() != null)
+                dictionary.put(ReportConstants.POD_IN_CAPS, pod.getPortName().toUpperCase());
             dictionary.put(POD_CODE_IN_CAPS, StringUtility.toUpperCase(pod.getLocCode()));
         }
 
-        dictionary.put(ReportConstants.CARRIER,shipment.getCarrierDetails().getShippingLine());
+        dictionary.put(ReportConstants.CARRIER, shipment.getCarrierDetails() != null ? shipment.getCarrierDetails().getShippingLine() : null);
         dictionary.put(ReportConstants.PORT_OF_DISCHARGE, pod != null ? pod.getName() : null);
         dictionary.put(ReportConstants.PORT_OF_LOADING, pol != null ? pol.getName() : null);
         dictionary.put(ReportConstants.PLACE_OF_DELIVERY, destination != null ? destination.getName() : null);
@@ -987,12 +989,12 @@ public abstract class IReport {
             }
             List<String> unlocoRequests = createUnLocoRequestFromConsolidation(consolidation);
             Map<String, UnlocationsResponse> unlocationsMap = masterDataUtils.getLocationData(new HashSet<>(unlocoRequests));
-            UnlocationsResponse pol = unlocationsMap.get(consolidation.getCarrierDetails().getOriginPort());
-            UnlocationsResponse pod = unlocationsMap.get(consolidation.getCarrierDetails().getDestinationPort());
-            if(pol != null) {
+            UnlocationsResponse pol = consolidation.getCarrierDetails() != null ? unlocationsMap.get(consolidation.getCarrierDetails().getOriginPort()) : null;
+            UnlocationsResponse pod = consolidation.getCarrierDetails() != null ? unlocationsMap.get(consolidation.getCarrierDetails().getDestinationPort()) : null;
+            if (pol != null && pol.getPortName() != null) {
                 dictionary.put(ReportConstants.ORIGIN_PORT_NAME_INCAPS, pol.getPortName().toUpperCase());
             }
-            if(pod != null) {
+            if (pod != null && pod.getPortName() != null) {
                 dictionary.put(ReportConstants.DESTINATION_PORT_NAME_INCAPS, pod.getPortName().toUpperCase());
             }
         }
