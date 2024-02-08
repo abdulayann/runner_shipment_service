@@ -12,6 +12,7 @@ import com.dpw.runner.shipment.services.dto.request.CustomerBookingRequest;
 import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
 import com.dpw.runner.shipment.services.dto.request.platform.*;
 import com.dpw.runner.shipment.services.dto.response.CheckCreditLimitResponse;
+import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
 import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
@@ -19,6 +20,7 @@ import com.dpw.runner.shipment.services.entity.enums.Status;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferChargeType;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
+import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.masterdata.factory.MasterDataFactory;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
@@ -28,6 +30,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.http.ResponseEntity;
+import org.springframework.retry.support.RetryTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.stereotype.Component;
@@ -61,6 +64,13 @@ public class BookingIntegrationsUtility {
     @Autowired
     private MasterDataFactory masterDataFactory;
 
+    static Integer maxAttempts = 5;
+    private RetryTemplate retryTemplate = RetryTemplate.builder()
+            .maxAttempts(maxAttempts)
+            .fixedBackoff(1000)
+            .retryOn(Exception.class)
+            .build();
+
     private Map<BookingStatus, String> platformStatusMap = Map.ofEntries(
             Map.entry(BookingStatus.CANCELLED, "CANCELLED"),
             Map.entry(BookingStatus.READY_FOR_SHIPMENT, "CONFIRMED"),
@@ -92,7 +102,6 @@ public class BookingIntegrationsUtility {
         }
     }
 
-
     public ResponseEntity<?> createShipmentInV1(CustomerBooking customerBooking, boolean isShipmentEnabled, boolean isBillingEnabled, UUID shipmentGuid) {
         try {
             var response = v1Service.createBooking(customerBooking, isShipmentEnabled, isBillingEnabled, shipmentGuid);
@@ -103,6 +112,23 @@ public class BookingIntegrationsUtility {
             log.error("Booking Creation error from V1 for booking number: {} with error message: {}", customerBooking.getBookingNumber(), ex.getMessage());
             throw ex;
         }
+    }
+
+    @Async
+    public void createShipment(CustomerBooking customerBooking, boolean isShipmentEnabled, boolean isBillingEnabled, ShipmentDetailsResponse shipmentResponse) {
+        retryTemplate.execute(ctx -> {
+            log.info("Current retry : {}", ctx.getRetryCount());
+            if (ctx.getLastThrowable() != null) {
+                log.error("V1 error for bill creation -> {}", ctx.getLastThrowable().getMessage());
+            }
+            try {
+                this.createShipmentInV1(customerBooking, false, true, shipmentResponse.getGuid());
+            } catch (Exception e) {
+                log.error("Bill creation for shipment with booking reference {} failed due to following error: {}", shipmentResponse.getBookingReference(), e.getMessage());
+                throw e;
+            }
+            return ResponseHelper.buildSuccessResponse();
+        });
     }
 
     public ResponseEntity<?> updateOrgCreditLimitFromBooking(CheckCreditLimitResponse request) {

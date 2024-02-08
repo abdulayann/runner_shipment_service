@@ -329,12 +329,7 @@ public class CustomerBookingService implements ICustomerBookingService {
             {
                 ShipmentDetailsResponse shipmentResponse = (ShipmentDetailsResponse) (((RunnerResponse) bookingIntegrationsUtility.createShipmentInV2(request).getBody()).getData());
                 if(shipmentResponse != null) {
-                    try
-                    {
-                        bookingIntegrationsUtility.createShipmentInV1(customerBooking, false, true, shipmentResponse.getGuid());
-                    } catch (Exception e) {
-                        log.error("Bill creation for shipment with booking reference {} failed due to following error: {}", shipmentResponse.getBookingReference(), e.getMessage());
-                    }
+                    bookingIntegrationsUtility.createShipment(customerBooking, false, true, shipmentResponse);
                     customerBooking.setShipmentId(shipmentResponse.getShipmentId());
                     customerBooking.setShipmentEntityIdV2(shipmentResponse.getId().toString());
                     customerBooking.setShipmentGuid(shipmentResponse.getGuid().toString());
