@@ -271,6 +271,14 @@ public class Constants {
     public static final String CMS = "CMS";
     public static final String FEET = "Feet";
 
+    // Charge Codes for Payment Terms
+    public static final String PREPAID_DESC = "PPD";
+    public static final String PREPAID_CODE = "PP";
+    public static final String COLLECT_DESC = "CCX";
+    public static final String COLLECT_CODE = "CC";
+    public static final String COLLECT_PREPAID_DESC_CODE = "CP";
+    public static final String PREPAID_COLLECT_DESC_CODE = "PC";
+
     public static final String TRUE = "true";
     public static final String PRE_ALERT_EVENT_CODE = "PREALSNT";
     public static final String SHIPMENT_SENT = "ShipmentSent";
