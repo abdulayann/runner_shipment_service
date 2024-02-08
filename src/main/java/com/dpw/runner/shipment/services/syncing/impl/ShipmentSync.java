@@ -261,6 +261,7 @@ public class ShipmentSync implements IShipmentSync {
         cs.setBoedate(sd.getAdditionalDetails().getBOEDate());
         cs.setBoenumber(sd.getAdditionalDetails().getBOENumber());
         cs.setHblDeliveryMode(sd.getAdditionalDetails().getDeliveryMode());
+        cs.setChargesApply(sd.getAdditionalDetails().getBLChargesDisplay());
     }
 
     private void mapShipmentServices(CustomShipmentSyncRequest cs, ShipmentDetails sd) {

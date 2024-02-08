@@ -193,8 +193,8 @@ public class CustomShipmentSyncRequest implements IRunnerRequest, IRunnerRespons
     private BigDecimal AssessValue;
     @JsonProperty("Betype")
     private String Betype;
-    @JsonProperty("BlchargesDisplay")
-    private String BlchargesDisplay;//TODO : REMOVE
+    @JsonProperty("ChargesApply")
+    private String ChargesApply;
     @JsonProperty("BlexporterShipment")
     private String BlexporterShipment;
     @JsonProperty("Boedate")
