@@ -22,9 +22,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Component;
 
-import java.text.SimpleDateFormat;
 import java.time.Clock;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.time.format.TextStyle;
 import java.util.*;
 import java.util.regex.Matcher;
@@ -57,28 +57,26 @@ public class GetNextNumberHelper {
     String suffix = "";
     //        CompaniesRow companiesRow = null;
     if (sequenceSettings.getGenerationType() == GenerationType.Regex) {
-      Pattern p =
-          Pattern.compile("(?<=\\{)[\\w;]{1,}(?=\\})"); // original v1 regex @"(?<={)[\w;]{1,}(?=})"
+      Pattern p = Pattern.compile("\\{([^}]*)\\}"); // original v1 regex @"(?<={)[\w;]{1,}(?=})"
       Matcher matches = p.matcher(regexPattern);
       var ValueOf = new HashMap<String, String>();
       LocalDateTime currDate = LocalDateTime.now();
 
       ValueOf.put("branch", "BR"); // branch is not clear
-      ValueOf.put("dd", Integer.valueOf(currDate.getDayOfMonth()).toString());
-      ValueOf.put(
-          "yy", Integer.valueOf(currDate.getYear()).toString().substring(2)); // last 2 digits
+      ValueOf.put("dd", DateTimeFormatter.ofPattern("dd").format(currDate));
+      ValueOf.put("yy", Integer.valueOf(currDate.getYear()).toString().substring(2)); // last 2 digits
       ValueOf.put("mm", padLeft(Integer.valueOf(currDate.getMonthValue()).toString(), 2, '0'));
       ValueOf.put("yyyy", Integer.valueOf(currDate.getYear()).toString());
       ValueOf.put("mon", currDate.getMonth().getDisplayName(TextStyle.SHORT, Locale.ROOT));
-      SimpleDateFormat sdf = new SimpleDateFormat("MMMM");
+      DateTimeFormatter df = DateTimeFormatter.ofPattern("MMMM");
       // Format the date to get the month in "MMMM" format
-      String monthName = sdf.format(currDate);
+      String monthName = df.format(currDate);
       ValueOf.put("month", monthName);
       ValueOf.put("cc", ""); // Empty string
       ValueOf.put("seq", ""); // Empty string
 
       while (matches.find()) {
-        String word = matches.group();
+        String word = matches.group(1);
         List<String> wordSplit = List.of(word.split(";"));
         if (ValueOf.get(wordSplit.get(0).toLowerCase()) == null) {
           throw new ValidationException("CONFIGURED_SEQUENCE_REGEX_VALIDATION");
@@ -86,14 +84,13 @@ public class GetNextNumberHelper {
         if (wordSplit.size() > 1) {
           if (wordSplit.get(0).equalsIgnoreCase("seq")) {
             String resetFreq = wordSplit.size() > 2 ? wordSplit.get(2) : "Never";
-            suffix +=
-                padLeft(
+            suffix += padLeft(
                     GetNextRegexSequenceNumber(sequenceSettings, tenantId, resetFreq),
                     Integer.parseInt(wordSplit.get(1)),
                     '0');
-          } else
-            suffix +=
-                padLeft(
+          }
+          else
+            suffix += padLeft(
                     ValueOf.get(wordSplit.get(0).toLowerCase()),
                     Integer.parseInt(wordSplit.get(1)),
                     '0');
@@ -113,11 +110,14 @@ public class GetNextNumberHelper {
             ValueOf.put("branch", user.getCode());
           }
           suffix += ValueOf.get(wordSplit.get(0).toLowerCase());
-        } else suffix += ValueOf.get(wordSplit.get(0).toLowerCase());
+        }
+        else suffix += ValueOf.get(wordSplit.get(0).toLowerCase());
       }
-    } else if (sequenceSettings.getGenerationType() == GenerationType.Random) {
+    }
+    else if (sequenceSettings.getGenerationType() == GenerationType.Random) {
       suffix = StringUtility.getRandomString(10);
-    } else if (sequenceSettings.getGenerationType() == GenerationType.Serial) {
+    }
+    else if (sequenceSettings.getGenerationType() == GenerationType.Serial) {
       suffix = sequenceSettings.getSerialCounter().toString();
       sequenceSettings.setSerialCounter(sequenceSettings.getSerialCounter() + 1);
     }
