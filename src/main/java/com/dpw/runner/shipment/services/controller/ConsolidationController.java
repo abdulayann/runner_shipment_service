@@ -98,8 +98,12 @@ public class ConsolidationController {
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = ConsolidationConstants.LIST_SUCCESSFUL, responseContainer = ConsolidationConstants.RESPONSE_CONTAINER_LIST)})
     @PostMapping(ApiConstants.API_LIST)
-    public ResponseEntity<RunnerListResponse<ConsolidationDetailsResponse>> list(@RequestBody ListCommonRequest listCommonRequest) {
-        return (ResponseEntity<RunnerListResponse<ConsolidationDetailsResponse>>) consolidationService.list(CommonRequestModel.buildRequest(listCommonRequest));
+    public ResponseEntity<?> list(@RequestBody ListCommonRequest listCommonRequest) {
+        try {
+            return consolidationService.list(CommonRequestModel.buildRequest(listCommonRequest));
+        } catch (Exception e) {
+            return ResponseHelper.buildFailedResponse(e.getMessage(), HttpStatus.FORBIDDEN);
+        }
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = ConsolidationConstants.RETRIEVE_BY_ID_SUCCESSFUL)})
