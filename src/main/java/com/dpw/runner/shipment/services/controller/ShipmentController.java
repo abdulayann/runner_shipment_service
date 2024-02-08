@@ -118,9 +118,8 @@ public class ShipmentController {
             }
            return (ResponseEntity<RunnerListResponse<ShipmentListResponse>>) shipmentService.list(CommonRequestModel.buildRequest(listCommonRequest));
         } catch (Exception ex) {
-            System.out.println(ex.toString());
+            return ResponseHelper.buildFailedResponse(ex.getMessage(), HttpStatus.FORBIDDEN);
         }
-        return ResponseEntity.ok(null);
     }
 
     // @PreAuthorize("hasAuthority('"+ Permissions.AdministrationGeneral+"')") //TODO-Authorization
