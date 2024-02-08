@@ -6,6 +6,7 @@ import com.dpw.runner.shipment.services.Kafka.Producer.KafkaProducer;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.adapters.interfaces.IOrderManagementAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.ITrackingServiceAdapter;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.*;
@@ -597,6 +598,10 @@ public class ShipmentService implements IShipmentService {
             if(request.getContainersList() != null)
                 shipmentDetails.setContainersList(jsonHelper.convertValueToList(request.getContainersList(), Containers.class));
             shipmentDetails = getShipment(shipmentDetails);
+            ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
+            if(shipmentSettingsDetails.getAutoEventCreate() != null && shipmentSettingsDetails.getAutoEventCreate())
+                autoGenerateCreateEvent(shipmentDetails);
+            autoGenerateEvents(shipmentDetails, null);
             Long shipmentId = shipmentDetails.getId();
             List<Packing> updatedPackings = new ArrayList<>();
             if (request.getPackingList() != null) {
