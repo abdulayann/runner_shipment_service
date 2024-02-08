@@ -1225,58 +1225,60 @@ public class ConsolidationService implements IConsolidationService {
         }
     }
 
+    private void setDescGoodsAndhandlingInfoMap(Map<Long, String> descOfGoodsMap, Map<Long, String> handlingInfoMap, Map<Long, String> hblNumberMap, Long containerId, String goodsDesc, String handlingInfo, String hblNumber) {
+        if(!IsStringNullOrEmpty(goodsDesc)) {
+            if(descOfGoodsMap.containsKey(containerId))
+                descOfGoodsMap.put(containerId, descOfGoodsMap.get(containerId) + "\n" + goodsDesc);
+            else
+                descOfGoodsMap.put(containerId, goodsDesc);
+        }
+        if(!IsStringNullOrEmpty(handlingInfo)) {
+            if(handlingInfoMap.containsKey(containerId))
+                handlingInfoMap.put(containerId, handlingInfoMap.get(containerId) + "\n" + handlingInfo);
+            else
+                handlingInfoMap.put(containerId, handlingInfo);
+        }
+        if(!IsStringNullOrEmpty(hblNumber)) {
+            if(hblNumberMap.containsKey(containerId))
+                hblNumberMap.put(containerId, hblNumberMap.get(containerId) + ", " + hblNumber);
+            else
+                hblNumberMap.put(containerId, hblNumber);
+        }
+    }
+
     private void calculateDescOfGoodsAndHandlingInfo(ConsolidationDetails consolidationDetails, ConsolidationDetailsResponse consolidationDetailsResponse, boolean isAutoUpdate) {
         ShipmentSettingsDetails shipmentSettingsDetails = shipmentSettingsDao.getSettingsByTenantIds(List.of(TenantContext.getCurrentTenant())).get(0);
         Map<Long, String> descOfGoodsMap = new HashMap<>();
         Map<Long, String> handlingInfoMap = new HashMap<>();
-        if(shipmentSettingsDetails.getMultipleShipmentEnabled() != null && shipmentSettingsDetails.getMultipleShipmentEnabled()
-        && (isAutoUpdate || (consolidationDetails.getAutoUpdateGoodsDesc() != null && consolidationDetails.getAutoUpdateGoodsDesc()))) {
+        Map<Long, String> hblNumberMap = new HashMap<>();
+        boolean lcl = shipmentSettingsDetails.getMultipleShipmentEnabled() != null && shipmentSettingsDetails.getMultipleShipmentEnabled();
+        boolean autoUpdate = isAutoUpdate || (consolidationDetails.getAutoUpdateGoodsDesc() != null && consolidationDetails.getAutoUpdateGoodsDesc());
+        if(lcl) {
             Set<Long> containerSelfDataAdded = new HashSet<>();
             if(consolidationDetails.getShipmentsList() != null && consolidationDetails.getShipmentsList().size() > 0) {
                 for(ShipmentDetails shipmentDetails : consolidationDetails.getShipmentsList()) {
-
-                    if(shipmentDetails.getContainerAutoWeightVolumeUpdate() != null && shipmentDetails.getContainerAutoWeightVolumeUpdate()) {
-                        if(shipmentDetails.getPackingList() != null && shipmentDetails.getPackingList().size() > 0) {
-                            for (Packing packing : shipmentDetails.getPackingList()) {
-                                if(packing.getContainerId() != null) {
-                                    if(!IsStringNullOrEmpty(packing.getGoodsDescription())) {
-                                        if(descOfGoodsMap.containsKey(packing.getContainerId()))
-                                            descOfGoodsMap.put(packing.getContainerId(), descOfGoodsMap.get(packing.getContainerId()) + "\n");
-                                        else
-                                            descOfGoodsMap.put(packing.getContainerId(), "");
-                                        descOfGoodsMap.put(packing.getContainerId(), descOfGoodsMap.get(packing.getContainerId()) + packing.getGoodsDescription());
-                                    }
-                                    if(!IsStringNullOrEmpty(packing.getHandlingInfo())) {
-                                        if(handlingInfoMap.containsKey(packing.getContainerId()))
-                                            handlingInfoMap.put(packing.getContainerId(), handlingInfoMap.get(packing.getContainerId()) + "\n");
-                                        else
-                                            handlingInfoMap.put(packing.getContainerId(), "");
-                                        handlingInfoMap.put(packing.getContainerId(), handlingInfoMap.get(packing.getContainerId()) + packing.getHandlingInfo());
+                    boolean setContData = autoUpdate;
+                    if(autoUpdate) {
+                        if(shipmentDetails.getContainerAutoWeightVolumeUpdate() != null && shipmentDetails.getContainerAutoWeightVolumeUpdate()) {
+                            if(shipmentDetails.getPackingList() != null && shipmentDetails.getPackingList().size() > 0) {
+                                for (Packing packing : shipmentDetails.getPackingList()) {
+                                    if(packing.getContainerId() != null) {
+                                        setDescGoodsAndhandlingInfoMap(descOfGoodsMap, handlingInfoMap, hblNumberMap, packing.getContainerId(), packing.getGoodsDescription(), packing.getHandlingInfo(), null);
                                     }
                                 }
                             }
+                            setContData = false;
                         }
                     }
-                    else {
+                    if(setContData || !IsStringNullOrEmpty(shipmentDetails.getHouseBill())) {
                         if(shipmentDetails.getContainersList() != null && shipmentDetails.getContainersList().size() > 0) {
                             for(Containers containers : shipmentDetails.getContainersList()) {
-                                if(!containerSelfDataAdded.contains(containers.getId())) {
+                                if(setContData && !containerSelfDataAdded.contains(containers.getId())) {
                                     containerSelfDataAdded.add(containers.getId());
-                                    if(!IsStringNullOrEmpty(containers.getDescriptionOfGoods())) {
-                                        if(descOfGoodsMap.containsKey(containers.getId()))
-                                            descOfGoodsMap.put(containers.getId(), descOfGoodsMap.get(containers.getId()) + "\n");
-                                        else
-                                            descOfGoodsMap.put(containers.getId(), "");
-                                        descOfGoodsMap.put(containers.getId(), descOfGoodsMap.get(containers.getId()) + containers.getDescriptionOfGoods());
-                                    }
-                                    if(!IsStringNullOrEmpty(containers.getHandlingInfo())) {
-                                        if(handlingInfoMap.containsKey(containers.getId()))
-                                            handlingInfoMap.put(containers.getId(), handlingInfoMap.get(containers.getId()) + "\n");
-                                        else
-                                            handlingInfoMap.put(containers.getId(), "");
-                                        handlingInfoMap.put(containers.getId(), handlingInfoMap.get(containers.getId()) + containers.getHandlingInfo());
-                                    }
+                                    setDescGoodsAndhandlingInfoMap(descOfGoodsMap, handlingInfoMap, hblNumberMap, containers.getId(), containers.getDescriptionOfGoods(), containers.getHandlingInfo(), shipmentDetails.getHouseBill());
                                 }
+                                else
+                                    setDescGoodsAndhandlingInfoMap(descOfGoodsMap, handlingInfoMap, hblNumberMap, containers.getId(), null, null, shipmentDetails.getHouseBill());
                             }
                         }
                     }
@@ -1297,6 +1299,8 @@ public class ConsolidationService implements IConsolidationService {
                     tempMap.put("handlingInfo", handlingInfoMap.get(containerResponse.getId()));
                 else
                     tempMap.put("handlingInfo", containerResponse.getHandlingInfo());
+                if(hblNumberMap.containsKey(containerResponse.getId()))
+                    containerResponse.setHblNumber(hblNumberMap.get(containerResponse.getId()));
                 containerResponse.setTextFieldData(tempMap);
             }
         }
