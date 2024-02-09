@@ -1526,4 +1526,9 @@ public class MasterDataUtils{
         } catch (Exception e) { }
         return response;
     }
+
+    public Map<String, WareHouseResponse> fetchWareHouseData(List<Long> request) {
+        return fetchInWareHousesList(request.stream().filter(Objects::nonNull)
+                .map(StringUtility::convertToString).collect(Collectors.toList()));
+    }
 }
