@@ -873,6 +873,7 @@ public class ReportConstants {
     public static final String DELIVERY_TO_ADDRESS_LL = "DeliveryToAddressLL";
     public static final String CHARGE_TYPE_DESCRIPTION_LL = "ChargeTypeDescriptionLL";
     public static final String CONSIGNER_NAME_FREETEXT_INCAPS = "ConsignerNameFreeTextInCaps";
+    public static final String CONSIGNEE_NAME_FREETEST_INCAPS = "ConsigneeNameFreeTextInCaps";
     public static final String NOTIFY_PARTY_NAME_FREETEXT_INCAPS = "NotifyPartyNameFreeTextInCaps";
     public static final String CARGO_GROSS_VOLUME_UNIT_DESCRIPTION = "CargoGrossVolumeUnitDescription";
     public static final String CARGO_GROSS_WEIGHT_UNIT_DESCRIPTION = "CargoGrossWeightUnitDescription";
