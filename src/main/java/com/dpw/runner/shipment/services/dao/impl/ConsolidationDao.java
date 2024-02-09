@@ -387,7 +387,13 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
         mawbStocks.setTo(consolidationRequest.getMawb());
         mawbStocks.setMawbNumber(consolidationRequest.getMawb());
         mawbStocks.setStatus("Unused");
-        // if(shipmentRequest.getBorrowedFrom()!=null) mawbStocks.setBorrowedFrom(Long.valueOf(shipmentRequest.getBorrowedFrom())); TODO fetch from v1
+        if(consolidationRequest.getBorrowedFrom()!=null){
+            mawbStocks.setBorrowedFrom(consolidationRequest.getBorrowedFrom().getOrgCode());
+            if(consolidationRequest.getBorrowedFrom().getOrgData() != null && consolidationRequest.getBorrowedFrom().getOrgData().containsKey("FullName")) {
+                String name = (String) consolidationRequest.getBorrowedFrom().getOrgData().get("FullName");
+                mawbStocks.setBorrowedFromFullName(name);
+            }
+        }
         mawbStocks.setHomePort(consolidationRequest.getCarrierDetails().getOriginPort());
         mawbStocks = mawbStocksDao.save(mawbStocks);
 
