@@ -69,7 +69,7 @@ public class NotesDao implements INotesDao {
                 hashMap = notes.stream()
                         .collect(Collectors.toMap(Notes::getId, Function.identity()));
 //            }
-            Map<Long, Notes> copyHashMap = new HashMap<>();
+            Map<Long, Notes> copyHashMap = new HashMap<>(hashMap);
             List<Notes> notesRequestList = new ArrayList<>();
             if (notesList != null && notesList.size() != 0) {
                 for (Notes request : notesList) {
