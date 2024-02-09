@@ -2403,14 +2403,14 @@ public class AwbService implements IAwbService {
             awbResponse.getAwbGoodsDescriptionInfo().forEach(r -> locationCodes.addAll(masterDataUtils.createInBulkUnLocationsRequest(r, AwbGoodsDescriptionInfo.class, fieldNameKeyMap, AwbGoodsDescriptionInfo.class.getSimpleName() + (count.incrementAndGet()))));
 
         Map<String, EntityTransferUnLocations> keyMasterDataMap = masterDataUtils.fetchInBulkUnlocations(locationCodes, EntityTransferConstants.LOCATION_SERVICE_GUID);
-        masterDataUtils.pushToCache(keyMasterDataMap, CacheConstants.UNLOCATIONS);
+        masterDataUtils.pushToCache(keyMasterDataMap, CacheConstants.UNLOCATIONS_AWB);
 
         if(masterDataResponse == null) {
             if (!Objects.isNull(awbResponse.getAwbShipmentInfo()))
-                awbResponse.getAwbShipmentInfo().setUnlocationData(masterDataUtils.setMasterData(fieldNameKeyMap.get(AwbShipmentInfo.class.getSimpleName()), CacheConstants.UNLOCATIONS));
+                awbResponse.getAwbShipmentInfo().setUnlocationData(masterDataUtils.setMasterData(fieldNameKeyMap.get(AwbShipmentInfo.class.getSimpleName()), CacheConstants.UNLOCATIONS_AWB));
         }
         else {
-            masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.UNLOCATIONS, masterDataResponse);
+            masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.UNLOCATIONS_AWB, masterDataResponse);
         }
 
         return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(keyMasterDataMap));
@@ -2847,8 +2847,9 @@ public class AwbService implements IAwbService {
 
         List<EntityTransferUnLocations> locationDataList = jsonHelper.convertValueToList(v1DataResponse.entities, EntityTransferUnLocations.class);
 
-        awbShipmentInfo.setOriginAirport(carrierDetails.getOriginPort());
-        awbShipmentInfo.setDestinationAirport(carrierDetails.getDestinationPort());
+        var locMap = locationDataList.stream().collect(Collectors.toMap(EntityTransferUnLocations::getLocationsReferenceGUID, EntityTransferUnLocations::getName));
+        awbShipmentInfo.setOriginAirport(locMap.get(carrierDetails.getOriginPort()));
+        awbShipmentInfo.setDestinationAirport(locMap.get(carrierDetails.getDestinationPort()));
     }
 
     private void getAwbOtherInfoMasterData(AwbOtherInfo awbOtherInfo, String awbType) {

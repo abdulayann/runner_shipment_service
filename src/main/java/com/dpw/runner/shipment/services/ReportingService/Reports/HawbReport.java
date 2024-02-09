@@ -863,7 +863,7 @@ public class HawbReport extends IReport{
         Map<String, UnlocationsResponse> locationMap = new HashMap<>();
         if (locCodes.size() > 0) {
             List<Object> criteria = Arrays.asList(
-                    Arrays.asList(EntityTransferConstants.LOCATION_SERVICE_GUID),
+                    Arrays.asList(EntityTransferConstants.NAME),
                     "In",
                     Arrays.asList(locCodes)
             );
@@ -873,7 +873,7 @@ public class HawbReport extends IReport{
             if (unlocationsResponse != null && unlocationsResponse.size() > 0) {
 
                 for (UnlocationsResponse unlocation : unlocationsResponse) {
-                    locationMap.put(unlocation.getLocationsReferenceGUID(), unlocation);
+                    locationMap.put(unlocation.getName(), unlocation);
                 }
 
             }
