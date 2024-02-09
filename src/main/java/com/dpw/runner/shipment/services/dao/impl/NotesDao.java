@@ -87,7 +87,7 @@ public class NotesDao implements INotesDao {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
             log.error(responseMsg, e);
-            throw new Exception(e);
+            throw new Exception(e.getMessage());
         }
     }
 

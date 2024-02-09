@@ -92,7 +92,7 @@ public class MawbStocksController {
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = MawbStocksConstants.GET_NEXT_MAWB_SUCCESSFUL)})
     @GetMapping(ApiConstants.API_GET_NEXT_MAWB)
-    public ResponseEntity getNextMawbNumberByCarrier(@RequestParam @NonNull String airlinePrefix) {
-        return (ResponseEntity<RunnerResponse<NextMawbCarrierResponse>>) mawbStocksService.getNextMawbNumberByCarrier(airlinePrefix);
+    public ResponseEntity getNextMawbNumberByCarrier(@RequestParam @NonNull String airlinePrefix, @RequestParam(required = false) String borrowedFrom) {
+        return (ResponseEntity<RunnerResponse<NextMawbCarrierResponse>>) mawbStocksService.getNextMawbNumberByCarrier(airlinePrefix, borrowedFrom);
     }
 }
