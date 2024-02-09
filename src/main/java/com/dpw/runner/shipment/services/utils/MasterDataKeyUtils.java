@@ -31,8 +31,12 @@ public class MasterDataKeyUtils {
     public void setMasterDataValue(Map<String, Map<String, String>> fieldNameKeyMap, String masterDataType, Map<String, Object> masterDataResponse) {
         Map<String, Object> dataMap = new HashMap<>();
         setKeyValueInResponse(fieldNameKeyMap, masterDataType, dataMap);
-        if(!dataMap.isEmpty())
+        if(!dataMap.isEmpty()){
+            if(Objects.equals(masterDataType, CacheConstants.UNLOCATIONS_AWB)) {
+                masterDataType = CacheConstants.UNLOCATIONS;
+            }
             masterDataResponse.put(masterDataType, dataMap);
+        }
     }
     private void setKeyValueInResponse(Map<String, Map<String, String>> fieldNameKeyMap, String masterDataType, Map<String, Object> response) {
         if (Objects.isNull(fieldNameKeyMap) || fieldNameKeyMap.isEmpty())
@@ -46,6 +50,10 @@ public class MasterDataKeyUtils {
                             case CacheConstants.UNLOCATIONS:
                                 EntityTransferUnLocations object = (EntityTransferUnLocations) cache.get();
                                 response.put(value, object.LocCode + " " + object.NameWoDiacritics);
+                                break;
+                            case CacheConstants.UNLOCATIONS_AWB:
+                                EntityTransferUnLocations obj = (EntityTransferUnLocations) cache.get();
+                                response.put(value, obj.NameWoDiacritics);
                                 break;
                             case CacheConstants.CONTAINER_TYPE:
                                 EntityTransferContainerType object1 = (EntityTransferContainerType) cache.get();

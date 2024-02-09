@@ -14,6 +14,7 @@ public class CacheConstants {
     public static final String GET_TENANT_SETTINGS = "getV1TenantSettings";
     public static final String TENANT_SETTINGS = "TenantSettings:";
     public static final String UNLOCATIONS = "Unlocations";
+    public static final String UNLOCATIONS_AWB = "UnlocationsAWB";
     public static final String CONTAINER_TYPE = "ContainerTypes";
     public static final String CHARGE_TYPE = "ChargeTypes";
     public static final String MASTER_LIST = "MasterLists";
