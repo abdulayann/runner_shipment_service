@@ -327,9 +327,9 @@ public class ConsolidationController {
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = ConsolidationConstants.IMPORT_SUCCESSFUL)})
     @GetMapping(ConsolidationConstants.IMPORT_SHIPMENT)
-    public ResponseEntity<?> getShipmentFromConsol(@ApiParam(value = ConsolidationConstants.CONSOLIDATION_ID, required = true) @RequestParam Long id) {
+    public ResponseEntity<?> getShipmentFromConsol(@ApiParam(value = ConsolidationConstants.CONSOLIDATION_ID, required = true) @RequestParam Long id, @RequestParam(required = false) String bookingNumber) {
         try {
-            return (ResponseEntity<RunnerResponse>) shipmentService.getShipmentFromConsol(id);
+            return (ResponseEntity<RunnerResponse>) shipmentService.getShipmentFromConsol(id, bookingNumber);
         } catch (Exception e) {
             return ResponseHelper.buildFailedResponse(e.getMessage());
         }

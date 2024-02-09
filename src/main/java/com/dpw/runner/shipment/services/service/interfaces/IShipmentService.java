@@ -53,7 +53,7 @@ public interface IShipmentService extends ICommonService {
 
     ResponseEntity<?> generateCustomHouseBLNumber();
 
-    ResponseEntity<?> getShipmentFromConsol(Long consolidationId);
+    ResponseEntity<?> getShipmentFromConsol(Long consolidationId, String bookingNumber);
 
     ResponseEntity<?> getDefaultShipment();
 

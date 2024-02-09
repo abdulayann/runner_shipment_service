@@ -108,6 +108,7 @@ public class ConsolidationListResponse implements IRunnerResponse {
     private List<String> shipmentIds;
     private String bookingId;
     private String bookingStatus;
+    private String bookingNumber;
     private BigDecimal teuCount;
     private Long container20Count;
     private Long container40Count;
