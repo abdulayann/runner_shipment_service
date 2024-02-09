@@ -243,7 +243,7 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
         else
             trackingPayload.setBookingReferenceNumber(null);
 
-        if((inputConsol != null && ! inputConsol.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)) || (inputShipment != null && inputShipment.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)))
+        if((inputConsol != null && ! inputConsol.getTransportMode().equalsIgnoreCase(Constants.TRANSPORT_MODE_AIR)) || (inputShipment != null && !inputShipment.getTransportMode().equalsIgnoreCase(Constants.TRANSPORT_MODE_AIR)))
             trackingPayload.setEntityType("Container");
         else
             trackingPayload.setEntityType("awb");
