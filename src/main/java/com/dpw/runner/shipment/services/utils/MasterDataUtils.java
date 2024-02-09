@@ -1052,6 +1052,11 @@ public class MasterDataUtils{
                         fieldNameMasterDataMap.put(key, object.LocCode + " " + object.NameWoDiacritics);
                         fieldNameMasterDataMap.put(key + "_country", object.Country);
                         break;
+                    case CacheConstants.UNLOCATIONS_AWB:
+                        EntityTransferUnLocations obj = (EntityTransferUnLocations) cache.get();
+                        fieldNameMasterDataMap.put(key, obj.NameWoDiacritics);
+                        fieldNameMasterDataMap.put(key + "_country", obj.Country);
+                        break;
                     case CacheConstants.CONTAINER_TYPE:
                         EntityTransferContainerType object1 = (EntityTransferContainerType) cache.get();
                         fieldNameMasterDataMap.put(key, object1.getDescription());
