@@ -372,6 +372,7 @@ public class ConsolidationService implements IConsolidationService {
                             if (consoleBookingListResponse.getData().get(consolidationDetails.getGuid()) != null) {
                                 consolidationDetails.setBookingStatus(consoleBookingListResponse.getData().get(consolidationDetails.getGuid()).getStatus());
                                 consolidationDetails.setBookingId(consoleBookingListResponse.getData().get(consolidationDetails.getGuid()).getIntraBookingId());
+                                consolidationDetails.setBookingNumber(consoleBookingListResponse.getData().get(consolidationDetails.getGuid()).getBookingNumber());
                             }
                         }
                     }
