@@ -278,6 +278,8 @@ public class ContainerDao implements IContainerDao {
                 {
                     for (Containers container: containerList) {
                         container.setConsolidationId(consolidationId);
+                        if (Objects.isNull(container.getAllocationDate()) && !Objects.isNull(container.getContainerNumber()))
+                            container.setAllocationDate(LocalDateTime.now());
                         String operation = DBOperationType.CREATE.name();
                         Containers oldEntityJson = null;
                         if(container.getId() != null)
