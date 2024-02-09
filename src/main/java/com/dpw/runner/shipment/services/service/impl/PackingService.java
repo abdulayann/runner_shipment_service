@@ -177,7 +177,6 @@ public class PackingService implements IPackingService {
         List<Packing> packingList = parser.parseExcelFile(request.getFile(), request, null, masterDataMap, Packing.class, PackingExcelModel.class, dicDGSubstanceUNDGContact, dicDGSubstanceFlashPoint);
         packingList.stream().forEach(packing -> {
             packing.setConsolidationId(request.getConsolidationId());
-            packing.setShipmentId(request.getShipmentId());
         });
 
         applyPackingValidations(packingList, request, masterDataMap, dicDGSubstanceUNDGContact, dicDGSubstanceFlashPoint);
