@@ -38,6 +38,7 @@ public class PlatformServiceAdapter implements IPlatformServiceAdapter {
     public ResponseEntity<?> createAtPlatform(CommonRequestModel requestModel) throws Exception {
         PlatformCreateRequest request = (PlatformCreateRequest) requestModel.getData();
         String url = baseUrl + "/booking/external";
+        log.info("Platform Create Request for booking reference {}: {}", request.getBooking_ref_code(), request);
         log.info("Payload sent for event: {} with request payload: {}", IntegrationType.PLATFORM_CREATE_BOOKING, jsonHelper.convertToJson(request));
         ResponseEntity<?> responseEntity = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJson(request)), Object.class);
         return ResponseHelper.buildDependentServiceResponse(responseEntity.getBody(),0,0);
@@ -47,6 +48,7 @@ public class PlatformServiceAdapter implements IPlatformServiceAdapter {
     public ResponseEntity<?> updateAtPlaform(CommonRequestModel requestModel) throws Exception {
         PlatformUpdateRequest request = (PlatformUpdateRequest) requestModel.getData();
         String url = baseUrl + "/notifications/booking/" + request.getBooking_reference_code();
+        log.info("Platform Update Request for booking reference {}: {}", request.getBooking_reference_code(), request);
         log.info("Payload sent for event: {} with request payload: {}", IntegrationType.PLATFORM_UPDATE_BOOKING, jsonHelper.convertToJson(request));
         ResponseEntity<?> responseEntity = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJson(request)), Object.class);
         return ResponseHelper.buildDependentServiceResponse(responseEntity.getBody(),0,0);

@@ -83,7 +83,8 @@ public class JsonHelper {
         try {
             return mapper.writeValueAsString(object);
         } catch (JsonProcessingException e) {
-            log.error("Failed to Parse given Json");
+            log.error("Failed to Parse given Json: " + e.getMessage());
+            log.debug("Exception thrown while parsing json: {}", e.toString());
             throw new JsonParseException(e);
         }
     }
