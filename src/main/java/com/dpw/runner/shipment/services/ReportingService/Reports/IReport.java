@@ -32,6 +32,7 @@ import com.dpw.runner.shipment.services.dto.v1.request.AddressTranslationRequest
 import com.dpw.runner.shipment.services.dto.v1.response.AddressTranslationListResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.WareHouseResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.DigitGrouping;
 import com.dpw.runner.shipment.services.entity.enums.GroupingNumber;
@@ -273,7 +274,8 @@ public abstract class IReport {
         UnlocationsResponse paidPlace = unlocationsMap.get(shipment.getAdditionalDetails().getPaidPlace());
         UnlocationsResponse placeOfSupply = unlocationsMap.get(shipment.getAdditionalDetails().getPlaceOfSupply());
         UnlocationsResponse placeOfIssue = unlocationsMap.get(shipment.getAdditionalDetails().getPlaceOfIssue());
-
+        Map<String, WareHouseResponse> wareHouseResponseMap = masterDataUtils.fetchWareHouseData(
+                Arrays.asList(shipment.getAdditionalDetails().getWarehouseId(), shipment.getAdditionalDetails().getBondedWarehouseId()));
         dictionary.put(ReportConstants.MASTER_BILL,shipment.getMasterBill());
         dictionary.put(ReportConstants.HOUSE_BILL,shipment.getHouseBill());
         VesselsResponse vesselsResponse = getVesselsData(shipment.getCarrierDetails().getVessel());
@@ -471,7 +473,6 @@ public abstract class IReport {
         var array = new String[] {"" + dictionary.get("VesselName"), shipment.getCarrierDetails().getVoyage()};
         dictionary.put(ReportConstants.VESSEL_NAME_AND_VOYAGE, array[0] + " & " + array[1]);
 
-        dictionary.put(ReportConstants.WAREHOUSE_NAME, additionalDetails.getWarehouseId());
         masterData = null;
         if(placeOfIssue != null && masterListsMap.containsKey(MasterDataType.COUNTRIES.getId()) && masterListsMap.get(MasterDataType.COUNTRIES.getId()).containsKey(placeOfIssue.getCountry()))  {
             masterData = masterListsMap.get(MasterDataType.COUNTRIES.getId()).get(placeOfIssue.getCountry());
@@ -697,6 +698,16 @@ public abstract class IReport {
                     pickup.getTransporterDetail().getOrgData().get("FullName") : "");
         }
         dictionary.put(ReportConstants.NO_OF_PACKAGES, shipment.getNoOfPacks());
+        if (!Objects.isNull(shipment.getAdditionalDetails().getWarehouseId()) &&
+                wareHouseResponseMap.containsKey(StringUtility.convertToString(shipment.getAdditionalDetails().getWarehouseId()))) {
+            dictionary.put(WAREHOUSE_NAME, wareHouseResponseMap.get(StringUtility.convertToString(shipment.getAdditionalDetails().getWarehouseId())).getWarehouseDepotName());
+            dictionary.put(WAREHOUSE_CODE, wareHouseResponseMap.get(StringUtility.convertToString(shipment.getAdditionalDetails().getWarehouseId())).getWarehouseDepotCode());
+        }
+        if (!Objects.isNull(shipment.getAdditionalDetails().getBondedWarehouseId()) &&
+                wareHouseResponseMap.containsKey(StringUtility.convertToString(shipment.getAdditionalDetails().getBondedWarehouseId()))) {
+            dictionary.put(BOUNDED_WAREHOUSE_NAME, wareHouseResponseMap.get(StringUtility.convertToString(shipment.getAdditionalDetails().getBondedWarehouseId())).getWarehouseDepotName());
+            dictionary.put(BOUNDED_WAREHOUSE_CODE, wareHouseResponseMap.get(StringUtility.convertToString(shipment.getAdditionalDetails().getBondedWarehouseId())).getWarehouseDepotCode());
+        }
         SetContainerCount(shipment, dictionary);
         populateUserFields(UserContext.getUser(), dictionary);
         populateHasContainerFields(shipment, dictionary, v1TenantSettingsResponse);

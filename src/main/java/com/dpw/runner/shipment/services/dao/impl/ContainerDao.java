@@ -28,6 +28,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
 
 import java.lang.reflect.InvocationTargetException;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -246,6 +247,8 @@ public class ContainerDao implements IContainerDao {
                     for (Containers containers: containerList) {
                         containers.setConsolidationId(consolidationId);
                         Long id = containers.getId();
+                        if (Objects.isNull(containers.getAllocationDate()) && !Objects.isNull(containers.getContainerNumber()))
+                            containers.setAllocationDate(LocalDateTime.now());
                         if (id != null) {
                             hashMap.remove(id);
                         }
