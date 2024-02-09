@@ -100,7 +100,9 @@ public class DbAccessHelper {
         Pageable pages;
         if (request.getSortRequest() != null && request.getFilterCriteria() != null && (request.getFilterCriteria().size() == 0  || (request.getFilterCriteria().size() == 1 && request.getFilterCriteria().get(0).getInnerFilter() != null))) {
             Sort sortRequest = Sort.by(request.getSortRequest().getFieldName());
-            sortRequest = sortRequest.descending();
+            sortRequest = sortRequest.ascending();
+            if (Objects.equals(request.getSortRequest().getOrder(), "DESC"))
+                sortRequest = sortRequest.descending();
             pages = PageRequest.of(request.getPageNo() - 1, request.getPageSize(), sortRequest);
         } else {
             pages = PageRequest.of(request.getPageNo() - 1, request.getPageSize());

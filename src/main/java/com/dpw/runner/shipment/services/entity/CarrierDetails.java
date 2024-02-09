@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.utils.DedicatedMasterData;
+import com.dpw.runner.shipment.services.utils.ExcludeAuditLog;
 import com.dpw.runner.shipment.services.utils.MasterData;
 import com.dpw.runner.shipment.services.utils.UnlocationData;
 import lombok.*;
@@ -102,6 +103,7 @@ public class CarrierDetails extends MultiTenancy {
     @Column(name = "vessel_berthing_date")
     private LocalDateTime vesselBerthingDate;
 
+    @ExcludeAuditLog
     @Formula( "CONCAT_WS( ' ', voyage, flight_number ) " )
     private String voyageOrFlightNumber;
 }
