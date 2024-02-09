@@ -304,7 +304,8 @@ public abstract class IReport {
         if(shipment.getAdditionalDetails() != null) {
             dictionary.put(ReportConstants.COUNTRY_OF_GOODS_ORIGIN, shipment.getAdditionalDetails().getGoodsCO());
         }
-
+        dictionary.put(CONTAINER_SUMMARY, shipment.getSummary());
+        dictionary.put(ReportConstants.SERVICE_MODE, shipment.getServiceType());
         dictionary.put(ReportConstants.POL_PORTNAME, pol != null ? pol.getPortName() : null);
         dictionary.put(ReportConstants.POL_PORT_NAME_IN_CAPS, pol != null ? StringUtility.toUpperCase(pol.getPortName()) : null);
         dictionary.put(ReportConstants.POD_PORTNAME, pod != null ? pod.getPortName() : null);
