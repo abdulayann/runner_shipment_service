@@ -681,7 +681,7 @@ public class AwbService implements IAwbService {
 
     private Awb convertRequestToEntity(AwbRequest request) {
         var awb =  jsonHelper.convertValue(request, Awb.class);
-        if(request.getShcIdList() != null && request.getShcIdList().size() > 0) {
+        if(request.getShcIdList() != null) {
             List<AwbSpecialHandlingCodesMappingInfo> res = new ArrayList<>();
             for(var shcId : request.getShcIdList()) {
                 res.add(AwbSpecialHandlingCodesMappingInfo.builder()
