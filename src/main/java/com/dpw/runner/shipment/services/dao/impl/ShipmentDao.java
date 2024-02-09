@@ -461,7 +461,13 @@ public class ShipmentDao implements IShipmentDao {
         mawbStocks.setTo(shipmentRequest.getMasterBill());
         mawbStocks.setMawbNumber(shipmentRequest.getMasterBill());
         mawbStocks.setStatus("Unused");
-        // if(shipmentRequest.getBorrowedFrom()!=null) mawbStocks.setBorrowedFrom(Long.valueOf(shipmentRequest.getBorrowedFrom())); TODO fetch from v1
+        if(shipmentRequest.getAdditionalDetails().getBorrowedFrom()!=null){
+             mawbStocks.setBorrowedFrom(shipmentRequest.getAdditionalDetails().getBorrowedFrom().getOrgCode());
+             if(shipmentRequest.getAdditionalDetails().getBorrowedFrom().getOrgData() != null && shipmentRequest.getAdditionalDetails().getBorrowedFrom().getOrgData().containsKey("FullName")) {
+                 String name = (String) shipmentRequest.getAdditionalDetails().getBorrowedFrom().getOrgData().get("FullName");
+                 mawbStocks.setBorrowedFromFullName(name);
+            }
+        }
         mawbStocks.setHomePort(shipmentRequest.getCarrierDetails().getOriginPort());
         mawbStocks = mawbStocksDao.save(mawbStocks);
 

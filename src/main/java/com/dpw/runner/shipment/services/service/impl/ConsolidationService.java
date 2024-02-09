@@ -3136,7 +3136,7 @@ public class ConsolidationService implements IConsolidationService {
 //                        .chargable(shipment.getChargable())
                         .chargeableUnit(shipment.getChargeableUnit())
                         .build())
-                .shipmentType(shipment.getShipmentType() == null ? tenantSettings.get().getDefaultShipmentType() : shipment.getShipmentType())
+                .shipmentType(shipment.getDirection() == null ? null : shipment.getDirection())
                 .igmFileDate(additionalDetails != null ? additionalDetails.getIGMFileDate() : null)
                 .igmFileNo(additionalDetails != null ? additionalDetails.getIGMFileNo() : null)
                 .smtpigmDate(additionalDetails != null ? additionalDetails.getSMTPIGMDate() : null)
