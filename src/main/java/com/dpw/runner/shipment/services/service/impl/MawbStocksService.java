@@ -20,6 +20,7 @@ import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IMawbStocksService;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
+import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -217,9 +218,12 @@ public class MawbStocksService implements IMawbStocksService {
         }
     }
 
-    public ResponseEntity<?> getNextMawbNumberByCarrier(String airLinePrefix){
+    public ResponseEntity<?> getNextMawbNumberByCarrier(String airLinePrefix, String borrowedFrom){
         ListCommonRequest listCommonRequest;
-        listCommonRequest = CommonUtils.andCriteria("borrowedFrom", null, "ISNULL", null);
+        if (StringUtility.isEmpty(borrowedFrom))
+            listCommonRequest = CommonUtils.andCriteria("borrowedFrom", null, "ISNULL", null);
+        else
+            listCommonRequest = CommonUtils.andCriteria("borrowedFrom", borrowedFrom, "=", null);
         CommonUtils.andCriteria("id", 0, ">", listCommonRequest);
         CommonUtils.andCriteria("consolidationId", null, "ISNULL", listCommonRequest);
         CommonUtils.andCriteria("availableCount", "0", ">", listCommonRequest);
