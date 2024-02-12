@@ -250,8 +250,6 @@ public class ShipmentService implements IShipmentService {
     @Autowired
     private V1ServiceUtil v1ServiceUtil;
 
-    private ShipmentDetails currentShipment;
-
     @Autowired
     private ProductIdentifierUtility productEngine;
 
@@ -723,8 +721,7 @@ public class ShipmentService implements IShipmentService {
 
     ShipmentDetails getShipment(ShipmentDetails shipmentDetails) {
         if(shipmentDetails.getShipmentId() == null){
-            this.currentShipment = shipmentDetails;
-            shipmentDetails.setShipmentId(generateShipmentId());
+            shipmentDetails.setShipmentId(generateShipmentId(shipmentDetails));
         }
         shipmentDetails = shipmentDao.save(shipmentDetails, false);
         return shipmentDetails;
@@ -2649,7 +2646,7 @@ public class ShipmentService implements IShipmentService {
         return (T) runnerResponse.getData();
     }
 
-    private String generateShipmentId() {
+    private String generateShipmentId(ShipmentDetails shipmentDetails) {
         List<ShipmentSettingsDetails> shipmentSettingsList = shipmentSettingsDao.list();
         String shipmentId = "";
         boolean flag = true;
@@ -2664,7 +2661,7 @@ public class ShipmentService implements IShipmentService {
             else {
                 if(shipmentSettingsList != null && shipmentSettingsList.size() != 0 && shipmentSettingsList.get(0) != null && shipmentSettingsList.get(0).getCustomisedSequence()) {
                     try{
-                        shipmentId = getCustomizedShipmentProcessNumber(shipmentSettingsList.get(0), ProductProcessTypes.ShipmentNumber);
+                        shipmentId = getCustomizedShipmentProcessNumber(shipmentSettingsList.get(0), ProductProcessTypes.ShipmentNumber, shipmentDetails);
                     } catch (Exception ignored) {
                         //
                         shipmentId = Constants.SHIPMENT_ID_PREFIX + getShipmentsSerialNumber();
@@ -2681,7 +2678,7 @@ public class ShipmentService implements IShipmentService {
 //        return createShipmentSequence(shipmentSettingsList.get(0));
     }
 
-    private String getCustomizedShipmentProcessNumber(ShipmentSettingsDetails shipmentSettingsDetails, ProductProcessTypes productProcessType) {
+    private String getCustomizedShipmentProcessNumber(ShipmentSettingsDetails shipmentSettingsDetails, ProductProcessTypes productProcessType, ShipmentDetails currentShipment) {
         List<TenantProducts> tenantProducts = productEngine.populateEnabledTenantProducts(shipmentSettingsDetails);
         // to check the commmon sequence
         var sequenceNumber = productEngine.GetCommonSequenceNumber(currentShipment.getTransportMode(), ProductProcessTypes.Consol_Shipment_TI);
@@ -3724,7 +3721,7 @@ public class ShipmentService implements IShipmentService {
 
             if(Constants.TRANSPORT_MODE_SEA.equals(response.getTransportMode()) && Constants.DIRECTION_EXP.equals(response.getDirection()))
                 response.setHouseBill(generateCustomHouseBL(null));
-            response.setShipmentId(generateShipmentId());
+            //response.setShipmentId(generateShipmentId());
 
             this.addAllMasterDataInSingleCall(null, response, null);
             this.addAllTenantDataInSingleCall(null, response, null);
