@@ -3544,6 +3544,8 @@ public class ShipmentService implements IShipmentService {
                         .IGMInwardDate(consolidation.getIgmInwardDate())
                         .copy(consolidation.getCopy())
                         .customDeclType(consolidation.getDeclarationType())
+                        .importBroker(consolidation.getReceivingAgent())
+                        .exportBroker(consolidation.getSendingAgent())
                         .build())
                 .carrierDetails(CarrierDetailResponse.builder()
                         .ata(ata)
