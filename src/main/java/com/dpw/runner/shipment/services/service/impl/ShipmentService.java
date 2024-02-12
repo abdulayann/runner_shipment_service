@@ -955,7 +955,7 @@ public class ShipmentService implements IShipmentService {
                     containersList(customerBookingRequest.getContainersList()).
                     sourceTenantId(Long.valueOf(UserContext.getUser().TenantId)).
                     build();
-            ResponseEntity<?> consolidationDetailsResponse = consolidationService.create(CommonRequestModel.buildRequest(consolidationDetailsRequest));
+            ResponseEntity<?> consolidationDetailsResponse = consolidationService.createFromBooking(CommonRequestModel.buildRequest(consolidationDetailsRequest));
             if(consolidationDetailsResponse != null)
             {
                 ConsolidationDetailsResponse consolDetailsResponse = (ConsolidationDetailsResponse) (((RunnerResponse)consolidationDetailsResponse.getBody()).getData());

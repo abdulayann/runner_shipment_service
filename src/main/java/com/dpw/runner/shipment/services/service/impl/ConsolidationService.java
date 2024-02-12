@@ -529,7 +529,34 @@ public class ConsolidationService implements IConsolidationService {
 
             getConsolidation(consolidationDetails);
 
-            afterSave(consolidationDetails, null, request, true, shipmentSettingsDetails);
+            afterSave(consolidationDetails, null, request, true, shipmentSettingsDetails, false);
+        } catch (Exception e) {
+            log.error(e.getMessage());
+            throw new ValidationException(e.getMessage());
+        }
+        return ResponseHelper.buildSuccessResponse(jsonHelper.convertValue(consolidationDetails, ConsolidationDetailsResponse.class));
+    }
+
+    @Transactional
+    @Override
+    public ResponseEntity<?> createFromBooking(CommonRequestModel commonRequestModel) {
+
+        ConsolidationDetailsRequest request = (ConsolidationDetailsRequest) commonRequestModel.getData();
+        if (request == null) {
+            log.error("Request is null for Consolidation Create with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+        }
+
+        System.out.println(jsonHelper.convertToJson(request));
+        ConsolidationDetails consolidationDetails = jsonHelper.convertValue(request, ConsolidationDetails.class);
+        try {
+            ShipmentSettingsDetails shipmentSettingsDetails = shipmentSettingsDao.findByTenantId(TenantContext.getCurrentTenant()).orElseGet(null);
+            consolidationDetails.setShipmentsList(null);
+
+            beforeSave(consolidationDetails, null, true);
+
+            getConsolidation(consolidationDetails);
+
+            afterSave(consolidationDetails, null, request, true, shipmentSettingsDetails, true);
         } catch (Exception e) {
             log.error(e.getMessage());
             throw new ValidationException(e.getMessage());
@@ -1029,7 +1056,7 @@ public class ConsolidationService implements IConsolidationService {
                 log.error("Error writing audit service log", e);
             }
 
-            afterSave(entity, oldEntity.get(), consolidationDetailsRequest, false, shipmentSettingsDetails);
+            afterSave(entity, oldEntity.get(), consolidationDetailsRequest, false, shipmentSettingsDetails, false);
 
             ConsolidationDetailsResponse response = jsonHelper.convertValue(entity, ConsolidationDetailsResponse.class);
             return ResponseHelper.buildSuccessResponse(response);
@@ -2965,7 +2992,7 @@ public class ConsolidationService implements IConsolidationService {
         }
     }
 
-    private void afterSave(ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity, ConsolidationDetailsRequest consolidationDetailsRequest, Boolean isCreate, ShipmentSettingsDetails shipmentSettingsDetails) throws Exception{
+    private void afterSave(ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity, ConsolidationDetailsRequest consolidationDetailsRequest, Boolean isCreate, ShipmentSettingsDetails shipmentSettingsDetails, Boolean isFromBooking) throws Exception{
         List<PackingRequest> packingRequestList = consolidationDetailsRequest.getPackingList();
         List<ContainerRequest> containerRequestList = consolidationDetailsRequest.getContainersList();
         List<EventsRequest> eventsRequestList = consolidationDetailsRequest.getEventsList();
@@ -2985,39 +3012,39 @@ public class ConsolidationService implements IConsolidationService {
         }
 
         if(containerRequestList != null && !shipmentSettingsDetails.getMergeContainers()) {
-            List<Containers> updatedContainers = containerDao.updateEntityFromShipmentConsole(commonUtils.convertToEntityList(containerRequestList, Containers.class, isCreate), id, (Long) null, true);
+            List<Containers> updatedContainers = containerDao.updateEntityFromShipmentConsole(commonUtils.convertToEntityList(containerRequestList, Containers.class, isFromBooking ? false : isCreate), id, (Long) null, true);
             consolidationDetails.setContainersList(updatedContainers);
         }
         if (packingRequestList != null) {
-            List<Packing> updatedPackings = packingDao.updateEntityFromConsole(commonUtils.convertToEntityList(packingRequestList, Packing.class, isCreate), id);
+            List<Packing> updatedPackings = packingDao.updateEntityFromConsole(commonUtils.convertToEntityList(packingRequestList, Packing.class, isFromBooking ? false : isCreate), id);
             consolidationDetails.setPackingList(updatedPackings);
         }
         if (eventsRequestList != null) {
-            List<Events> updatedEvents = eventDao.updateEntityFromOtherEntity(commonUtils.convertToEntityList(eventsRequestList, Events.class, isCreate), id, Constants.CONSOLIDATION);
+            List<Events> updatedEvents = eventDao.updateEntityFromOtherEntity(commonUtils.convertToEntityList(eventsRequestList, Events.class, isFromBooking ? false : isCreate), id, Constants.CONSOLIDATION);
             consolidationDetails.setEventsList(updatedEvents);
         }
         if (fileRepoRequestList != null) {
-            List<FileRepo> updatedFileRepos = fileRepoDao.updateEntityFromOtherEntity(commonUtils.convertToEntityList(fileRepoRequestList, FileRepo.class, isCreate), id, Constants.CONSOLIDATION);
+            List<FileRepo> updatedFileRepos = fileRepoDao.updateEntityFromOtherEntity(commonUtils.convertToEntityList(fileRepoRequestList, FileRepo.class, isFromBooking ? false : isCreate), id, Constants.CONSOLIDATION);
             consolidationDetails.setFileRepoList(updatedFileRepos);
         }
         if (jobRequestList != null) {
-            List<Jobs> updatedJobs = jobDao.updateEntityFromConsole(commonUtils.convertToEntityList(jobRequestList, Jobs.class, isCreate), id);
+            List<Jobs> updatedJobs = jobDao.updateEntityFromConsole(commonUtils.convertToEntityList(jobRequestList, Jobs.class, isFromBooking ? false : isCreate), id);
             consolidationDetails.setJobsList(updatedJobs);
         }
         if (referenceNumbersRequestList != null) {
-            List<ReferenceNumbers> updatedReferenceNumbers = referenceNumbersDao.updateEntityFromConsole(commonUtils.convertToEntityList(referenceNumbersRequestList, ReferenceNumbers.class, isCreate), id);
+            List<ReferenceNumbers> updatedReferenceNumbers = referenceNumbersDao.updateEntityFromConsole(commonUtils.convertToEntityList(referenceNumbersRequestList, ReferenceNumbers.class, isFromBooking ? false : isCreate), id);
             consolidationDetails.setReferenceNumbersList(updatedReferenceNumbers);
         }
         if (truckDriverDetailsRequestList != null) {
-            List<TruckDriverDetails> updatedTruckDriverDetails = truckDriverDetailsDao.updateEntityFromConsole(commonUtils.convertToEntityList(truckDriverDetailsRequestList, TruckDriverDetails.class, isCreate), id);
+            List<TruckDriverDetails> updatedTruckDriverDetails = truckDriverDetailsDao.updateEntityFromConsole(commonUtils.convertToEntityList(truckDriverDetailsRequestList, TruckDriverDetails.class, isFromBooking ? false : isCreate), id);
             consolidationDetails.setTruckDriverDetails(updatedTruckDriverDetails);
         }
         if (routingsRequestList != null) {
-            List<Routings> updatedRoutings = routingsDao.updateEntityFromConsole(commonUtils.convertToEntityList(routingsRequestList, Routings.class, isCreate), id);
+            List<Routings> updatedRoutings = routingsDao.updateEntityFromConsole(commonUtils.convertToEntityList(routingsRequestList, Routings.class, isFromBooking ? false : isCreate), id);
             consolidationDetails.setRoutingsList(updatedRoutings);
         }
         if (consolidationAddressRequest != null) {
-            List<Parties> updatedFileRepos = partiesDao.updateEntityFromOtherEntity(commonUtils.convertToEntityList(consolidationAddressRequest, Parties.class, isCreate), id, Constants.CONSOLIDATION_ADDRESSES);
+            List<Parties> updatedFileRepos = partiesDao.updateEntityFromOtherEntity(commonUtils.convertToEntityList(consolidationAddressRequest, Parties.class, isFromBooking ? false : isCreate), id, Constants.CONSOLIDATION_ADDRESSES);
             consolidationDetails.setConsolidationAddresses(updatedFileRepos);
         }
 
