@@ -547,7 +547,6 @@ public class ProductIdentifierUtility {
       if (type.contains(shipment.getShipmentType()) && ans) {
         Optional<TenantProducts> optional =
             enabledTenantProducts.stream()
-                .findFirst()
                 .filter(
                     i -> {
                       try {
@@ -556,7 +555,8 @@ public class ProductIdentifierUtility {
                       } catch (Exception ignored) {
                         return false;
                       }
-                    });
+                    })
+                .findFirst();
         if (optional.isPresent()) {
           product = optional.get();
           break;
