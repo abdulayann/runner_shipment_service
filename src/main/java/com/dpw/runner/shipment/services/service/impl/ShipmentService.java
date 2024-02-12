@@ -3651,8 +3651,6 @@ public class ShipmentService implements IShipmentService {
         if (shipmentDetails != null && tenantSetting.getCustomisedSequence()) {
             try {
                 res = productEngine.getCustomizedBLNumber(shipmentDetails, tenantSetting);
-                // generate via Product Identifier Utility
-                // res = someMethod();
             } catch (Exception e) {
                 log.error(e.getMessage());
             }
@@ -3675,6 +3673,16 @@ public class ShipmentService implements IShipmentService {
             }
         }
 
+        return res;
+    }
+
+    private String generateBlViaProductUtility(ShipmentDetails shipmentDetails, ShipmentSettingsDetails tenantSetting) {
+        String res = null;
+        try {
+            res = productEngine.getCustomizedBLNumber(shipmentDetails, tenantSetting);
+        } catch (Exception e) {
+            log.error(e.getMessage());
+        }
         return res;
     }
 
