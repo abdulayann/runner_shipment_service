@@ -3648,8 +3648,7 @@ public class ShipmentService implements IShipmentService {
             return null;
         }
 
-        if (shipmentDetails != null && tenantSetting.getRestrictHblGen() && tenantSetting.getCustomisedSequence()) {
-
+        if (shipmentDetails != null && tenantSetting.getCustomisedSequence()) {
             try {
                 res = productEngine.getCustomizedBLNumber(shipmentDetails, tenantSetting);
                 // generate via Product Identifier Utility
