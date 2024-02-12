@@ -1,10 +1,17 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
+import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IPartiesDao;
 import com.dpw.runner.shipment.services.entity.Parties;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.IPartiesRepository;
+import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,6 +21,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -26,6 +34,10 @@ import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListRe
 public class PartiesDao implements IPartiesDao {
     @Autowired
     private IPartiesRepository partiesRepository;
+    @Autowired
+    private JsonHelper jsonHelper;
+    @Autowired
+    private IAuditLogService auditLogService;
 
     @Override
     public List<Parties> saveAll(List<Parties> parties) {
@@ -97,7 +109,7 @@ public class PartiesDao implements IPartiesDao {
                 }
                 responseParties = saveEntityFromOtherEntity(partiesRequestList, entityId, entityType, copyHashMap);
             }
-            deleteParties(hashMap);
+            deleteParties(hashMap, entityType, entityId);
             return responseParties;
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -110,6 +122,8 @@ public class PartiesDao implements IPartiesDao {
     public List<Parties> saveEntityFromOtherEntity(List<Parties> partiesRequests, Long entityId, String entityType) {
         List<Parties> res = new ArrayList<>();
         for(Parties req : partiesRequests){
+            String oldEntityJsonString = null;
+            String operation = DBOperationType.CREATE.name();
             if(req.getId() != null){
                 long id = req.getId();
                 Optional<Parties> oldEntity = findById(id);
@@ -117,12 +131,26 @@ public class PartiesDao implements IPartiesDao {
                     log.debug("Parties is null for Id {}", req.getId());
                     throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
                 }
+                oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
+                operation = DBOperationType.UPDATE.name();
                 req.setCreatedAt(oldEntity.get().getCreatedAt());
                 req.setCreatedBy(oldEntity.get().getCreatedBy());
             }
             req.setEntityId(entityId);
             req.setEntityType(entityType);
             req = save(req);
+            try {
+                auditLogService.addAuditLog(
+                        AuditLogMetaData.builder()
+                                .newData(req)
+                                .prevData(oldEntityJsonString != null ? jsonHelper.readFromJson(oldEntityJsonString, Parties.class) : null)
+                                .parent(Objects.equals(entityType, Constants.SHIPMENT_ADDRESSES) ? ShipmentDetails.class.getSimpleName() : entityType)
+                                .parentId(entityId)
+                                .operation(operation).build()
+                );
+            } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException | InvocationTargetException | NoSuchMethodException e) {
+                log.error(e.getMessage());
+            }
             res.add(req);
         }
         return res;
@@ -130,6 +158,7 @@ public class PartiesDao implements IPartiesDao {
     @Override
     public List<Parties> saveEntityFromOtherEntity(List<Parties> partiesRequests, Long entityId, String entityType, Map<Long, Parties> oldEntityMap) {
         List<Parties> res = new ArrayList<>();
+        Map<Long, String> oldEntityJsonStringMap = new HashMap<>();
         for(Parties req : partiesRequests){
             if(req.getId() != null){
                 long id = req.getId();
@@ -139,19 +168,59 @@ public class PartiesDao implements IPartiesDao {
                 }
                 req.setCreatedAt(oldEntityMap.get(id).getCreatedAt());
                 req.setCreatedBy(oldEntityMap.get(id).getCreatedBy());
+                String oldEntityJsonString = jsonHelper.convertToJson(oldEntityMap.get(id));
+                oldEntityJsonStringMap.put(id, oldEntityJsonString);
             }
             req.setEntityId(entityId);
             req.setEntityType(entityType);
             res.add(req);
         }
         res = saveAll(res);
+        for (var req : res) {
+            String oldEntityJsonString = null;
+            String operation = DBOperationType.CREATE.name();
+            if (oldEntityJsonStringMap.containsKey(req.getId())) {
+                oldEntityJsonString = oldEntityJsonStringMap.get(req.getId());
+                operation = DBOperationType.UPDATE.name();
+            }
+            try {
+                auditLogService.addAuditLog(
+                        AuditLogMetaData.builder()
+                                .newData(req)
+                                .prevData(oldEntityJsonString != null ? jsonHelper.readFromJson(oldEntityJsonString, Parties.class) : null)
+                                .parent(Objects.equals(entityType, Constants.SHIPMENT_ADDRESSES) ? ShipmentDetails.class.getSimpleName() : entityType)
+                                .parentId(entityId)
+                                .operation(operation).build()
+                );
+            } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException | InvocationTargetException | NoSuchMethodException e) {
+                log.error(e.getMessage());
+            }
+        }
         return res;
     }
 
-    private void deleteParties(Map<Long, Parties> hashMap) {
+    private void deleteParties(Map<Long, Parties> hashMap, String entityType, Long entityId) {
         String responseMsg;
         try {
-            hashMap.values().forEach(this::delete);
+            hashMap.values().forEach(parties -> {
+                String json = jsonHelper.convertToJson(parties);
+                delete(parties);
+                if(entityType != null)
+                {
+                    try {
+                        auditLogService.addAuditLog(
+                                AuditLogMetaData.builder()
+                                        .newData(null)
+                                        .prevData(jsonHelper.readFromJson(json, Parties.class))
+                                        .parent(Objects.equals(entityType, Constants.SHIPMENT_ADDRESSES) ? ShipmentDetails.class.getSimpleName() : entityType)
+                                        .parentId(entityId)
+                                        .operation(DBOperationType.DELETE.name()).build()
+                        );
+                    } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException | InvocationTargetException | NoSuchMethodException e) {
+                        log.error(e.getMessage());
+                    }
+                }
+            });
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_DELETE_EXCEPTION_MSG;
@@ -187,7 +256,7 @@ public class PartiesDao implements IPartiesDao {
             }
             Map<Long, Parties> hashMap = new HashMap<>();
             partiesMap.forEach((s, parties) ->  hashMap.put(parties.getId(), parties));
-            deleteParties(hashMap);
+            deleteParties(hashMap, entityType, entityId);
             return responseParties;
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
