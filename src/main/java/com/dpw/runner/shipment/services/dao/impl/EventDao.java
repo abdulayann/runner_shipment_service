@@ -339,6 +339,18 @@ public class EventDao implements IEventDao {
             eventsRow.setEventCode(eventCode);
             eventsRow.setPlaceName(placeName);
             eventsRow.setPlaceDescription(placeDesc);
+            try {
+                auditLogService.addAuditLog(
+                        AuditLogMetaData.builder()
+                                .newData(eventsRow)
+                                .prevData(null)
+                                .parent(Objects.equals(entityType, Constants.SHIPMENT) ? ShipmentDetails.class.getSimpleName() : entityType)
+                                .parentId(entityId)
+                                .operation(DBOperationType.CREATE.name()).build()
+                );
+            } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException | InvocationTargetException | NoSuchMethodException e) {
+                log.error(e.getMessage());
+            }
             eventRepository.save(eventsRow);
             try {
                 eventsSync.sync(List.of(eventsRow));
