@@ -3455,7 +3455,7 @@ public class ConsolidationService implements IConsolidationService {
         if (shipmentSettingsDetailsList.get(0) != null)
             tenantSetting = shipmentSettingsDetailsList.get(0);
 
-        if(tenantSetting.getConsolidationLite() != null && tenantSetting.getConsolidationLite()) {
+        if(tenantSetting.getConsolidationLite() != null && tenantSetting.getConsolidationLite() && tenantSetting.getBolNumberGeneration() == null) {
             return  res;
         }
 
