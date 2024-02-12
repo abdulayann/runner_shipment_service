@@ -43,7 +43,7 @@ public class PartiesConstants {
     public static final String ACCOUNT_ID = "ACCOUNT_ID";
     public static final String FUSION = "FUSION";
     public static final String BILLABLE_FLAG = "BILLABLE_FLAG";
-    public static final String RAW_DATA = "rawData";
+    public static final String RAW_DATA = "RawData";
 
     public static final String AGENT_IATA_CODE = "AgentIATACode";
     public static final String AGENT_CASS_CODE = "AgentCASSCode";

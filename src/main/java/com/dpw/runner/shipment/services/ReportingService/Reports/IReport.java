@@ -501,8 +501,8 @@ public abstract class IReport {
                 }
                 if(shipmentConsigner.getOrgData() != null)
                     dictionary.put(ReportConstants.CONSIGNER_LOCAL_NAME,shipmentConsigner.getOrgData().get("LocalName"));
-                if (consignerAddress.containsKey(PartiesConstants.RAW_DATA)) {
-                    consignorFreeText = ReportHelper.getAddressList(StringUtility.convertToString(consignerAddress.get(PartiesConstants.RAW_DATA)));
+                if (consignerAddress.containsKey("rawData")) {
+                    consignorFreeText = ReportHelper.getAddressList(StringUtility.convertToString(consignerAddress.get("rawData")));
                     dictionary.put(ReportConstants.CONSIGNER_FREETEXT, consignorFreeText);
                     dictionary.put(ReportConstants.CONSIGNER_FREETEXTInCaps, consignorFreeText == null ? null : consignorFreeText.stream().map(StringUtility::toUpperCase).collect(Collectors.toList()));
                     dictionary.put(ReportConstants.CONSIGNER_NAME_FREETEXT_INCAPS, consignorFreeText.isEmpty() ? null : StringUtility.toUpperCase(consignorFreeText.get(0)));
