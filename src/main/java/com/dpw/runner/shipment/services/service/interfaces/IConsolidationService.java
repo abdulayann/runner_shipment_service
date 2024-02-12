@@ -60,4 +60,5 @@ public interface IConsolidationService extends ICommonService{
     ResponseEntity<?> getDefaultConsolidation();
     ResponseEntity<?> generateCustomHouseBLNumber();
     ResponseEntity<?> validateMawbNumber(CommonRequestModel commonRequestModel);
+    ResponseEntity<?> createFromBooking(CommonRequestModel commonRequestModel);
 }
