@@ -3606,6 +3606,20 @@ public class ShipmentService implements IShipmentService {
                 shipment.getAdditionalDetails().setDateOfReceipt(shipment.getCarrierDetails().getEta());
         }
 
+        PartiesResponse parties;
+        if(consolidation.getReceivingAgent() != null) {
+            parties = jsonHelper.convertValue(consolidation.getReceivingAgent(), PartiesResponse.class);
+            parties.setId(null);
+            parties.setGuid(null);
+            shipment.getAdditionalDetails().setImportBroker(parties);
+        }
+        if(consolidation.getSendingAgent() != null) {
+            parties = jsonHelper.convertValue(consolidation.getSendingAgent(), PartiesResponse.class);
+            parties.setId(null);
+            parties.setGuid(null);
+            shipment.getAdditionalDetails().setExportBroker(parties);
+        }
+
         //Generate HBL
         if(Constants.TRANSPORT_MODE_SEA.equals(shipment.getTransportMode()) && Constants.DIRECTION_EXP.equals(shipment.getDirection()))
             shipment.setHouseBill(generateCustomHouseBL(null));
