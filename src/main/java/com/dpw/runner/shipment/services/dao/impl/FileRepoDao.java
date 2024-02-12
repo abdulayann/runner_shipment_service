@@ -69,7 +69,7 @@ public class FileRepoDao implements IFileRepoDao {
                 hashMap = fileRepos.stream()
                         .collect(Collectors.toMap(FileRepo::getId, Function.identity()));
 //            }
-            Map<Long, FileRepo> copyHashMap = new HashMap<>();
+            Map<Long, FileRepo> copyHashMap = new HashMap<>(hashMap);
             List<FileRepo> fileReposRequestList = new ArrayList<>();
             if (fileRepoList != null && fileRepoList.size() != 0) {
                 for (FileRepo request : fileRepoList) {

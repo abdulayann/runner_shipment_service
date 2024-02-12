@@ -64,7 +64,7 @@ public class ServiceDetailsDao implements IServiceDetailsDao {
                 hashMap = serviceDetailsPage.stream()
                         .collect(Collectors.toMap(ServiceDetails::getId, Function.identity()));
 //            }
-            Map<Long, ServiceDetails> copyHashMap = new HashMap<>();
+            Map<Long, ServiceDetails> copyHashMap = new HashMap<>(hashMap);
             List<ServiceDetails> serviceDetailsRequests = new ArrayList<>();
             if (serviceDetailsList != null && serviceDetailsList.size() != 0) {
                 for (ServiceDetails request : serviceDetailsList) {
