@@ -3145,8 +3145,6 @@ public class ConsolidationService implements IConsolidationService {
                 .igmInwardDate(additionalDetails != null ? additionalDetails.getIGMInwardDate() : null)
                 .inwardDateAndTime(additionalDetails != null ? additionalDetails.getInwardDateAndTime() : null)
                 .warehouseId(additionalDetails != null ? additionalDetails.getWarehouseId() : null)
-                .receivingAgent(additionalDetails != null ? additionalDetails.getImportBroker() : null)
-                .sendingAgent(additionalDetails != null ? additionalDetails.getExportBroker() : null)
                 .bol(shipment.getMasterBill() != null && !shipment.getMasterBill().isEmpty() ? shipment.getMasterBill() : generateCustomBolNumber())
                 .referenceNumber(shipment.getBookingReference())
                 .payment(isPayment ? shipment.getPaymentTerms() : null)
@@ -3155,6 +3153,22 @@ public class ConsolidationService implements IConsolidationService {
                 .createdBy(UserContext.getUser().getUsername())
                 //.isLinked(true)
                 .build();
+
+        if(additionalDetails != null) {
+            PartiesResponse parties;
+            if(additionalDetails.getImportBroker() != null) {
+                parties = jsonHelper.convertValue(additionalDetails.getImportBroker(), PartiesResponse.class);
+                parties.setId(null);
+                parties.setGuid(null);
+                consol.setReceivingAgent(parties);
+            }
+            if(additionalDetails.getExportBroker() != null) {
+                parties = jsonHelper.convertValue(additionalDetails.getExportBroker(), PartiesResponse.class);
+                parties.setId(null);
+                parties.setGuid(null);
+                consol.setSendingAgent(parties);
+            }
+        }
 
         createConsolidationPayload(modelMapper.map(consol, ConsolidationDetails.class), consol);
 
