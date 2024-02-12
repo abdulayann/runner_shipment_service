@@ -1,10 +1,7 @@
 package com.dpw.runner.shipment.services.service.v1.util;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
-import com.dpw.runner.shipment.services.commons.constants.Constants;
-import com.dpw.runner.shipment.services.commons.constants.CustomerBookingConstants;
-import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
-import com.dpw.runner.shipment.services.commons.constants.ShipmentConstants;
+import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.dao.interfaces.INotesDao;
 import com.dpw.runner.shipment.services.dto.request.CreateBookingModuleInV1;
 import com.dpw.runner.shipment.services.dto.v1.request.AddressTranslationRequest;
@@ -13,6 +10,7 @@ import com.dpw.runner.shipment.services.dto.v1.response.CreditLimitValidateRespo
 import com.dpw.runner.shipment.services.dto.v1.response.OrgAddressResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.StringUtility;
@@ -33,6 +31,8 @@ public class V1ServiceUtil {
     INotesDao notesDao;
     @Autowired
     IV1Service v1Service;
+    @Autowired
+    JsonHelper jsonHelper;
 
     public CreateBookingModuleInV1 createBookingRequestForV1(CustomerBooking customerBooking, boolean isShipmentEnabled, boolean isBillingEnabled, UUID shipmentGuid) {
         return CreateBookingModuleInV1.builder()
@@ -96,6 +96,7 @@ public class V1ServiceUtil {
                 .OrgDetails(null)
                 .BillCharges(createQuoteCharges(customerBooking.getBookingCharges()))
                 .CustomerBookingNoteList(createNotes(notes))
+                .LastTransactionLoadJson(getLastLoadJson(customerBooking.getContainersList()))
                 .build();
     }
 
@@ -359,6 +360,23 @@ public class V1ServiceUtil {
             orgRequest.add(createV1OrgRequest(p));
         });
         return v1Service.fetchOrgAddresses(AddressTranslationRequest.builder().OrgAddressCodeList(orgRequest.stream().filter(Objects::nonNull).toList()).build());
+    }
+
+    private String getLastLoadJson(List<Containers> containersList) {
+        var list = new ArrayList<CreateBookingModuleInV1.BookingEntity.LastTransactionLoadDetails>();
+        containersList.forEach(c -> {
+            var _current = new CreateBookingModuleInV1.BookingEntity.LastTransactionLoadDetails();
+            _current.setLoadKey(generateLoadKeyForContainer(c));
+            _current.setLoadQuantity(Objects.isNull(c.getContainerCount()) ? 1 : c.getContainerCount().intValue());
+            list.add(_current);
+        });
+        return jsonHelper.convertToJson(list);
+    }
+
+    private String generateLoadKeyForContainer(Containers container) {
+        return StringUtility.convertToString(container.getGuid()) + "#"
+                + (StringUtility.isNotEmpty(container.getContainerCode()) ? container.getContainerCode() : NPMConstants.ANY) + "#"
+                + (StringUtility.isNotEmpty(container.getCommodityGroup()) ? container.getCommodityGroup() : NPMConstants.FAK);
     }
 
 }

@@ -325,8 +325,10 @@ public class V1ServiceImpl implements IV1Service {
             log.info("Payload sent for event: {} with request payload: {}", IntegrationType.V1_SHIPMENT_CREATION, jsonHelper.convertToJson(request));
             return this.restTemplate.postForEntity(this.CUSTOMER_BOOKING_URL, entity, V1ShipmentCreationResponse.class, new Object[0]);
         } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            log.info("Response from V1 for event: {} with exception: {}", IntegrationType.V1_SHIPMENT_CREATION, ex.getMessage());
             throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
         } catch (Exception exception) {
+            log.info("Response from V1 for event: {} with exception: {}", IntegrationType.V1_SHIPMENT_CREATION, exception.getMessage());
             throw new V1ServiceException(exception.getMessage());
         }
     }

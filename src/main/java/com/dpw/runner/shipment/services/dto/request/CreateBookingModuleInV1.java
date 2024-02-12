@@ -76,6 +76,7 @@ public class CreateBookingModuleInV1 {
         private List<OrgDetail> OrgDetails;
         private List<BillCharge> BillCharges;
         private List<Notes> CustomerBookingNoteList;
+        private String LastTransactionLoadJson;
 
         @Data
         @Builder
@@ -247,6 +248,15 @@ public class CreateBookingModuleInV1 {
                 private String Mobile;
                 private String Email;
             }
+        }
+
+        @Data
+        @Builder
+        @NoArgsConstructor
+        @AllArgsConstructor
+        public static class LastTransactionLoadDetails {
+            private String LoadKey;
+            private Integer LoadQuantity;
         }
     }
 }
