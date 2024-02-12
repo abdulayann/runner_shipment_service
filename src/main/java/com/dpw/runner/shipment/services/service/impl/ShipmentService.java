@@ -2910,7 +2910,7 @@ public class ShipmentService implements IShipmentService {
             return ResponseHelper.buildFailedResponse(responseMsg);
         }
     }
-    
+
     public ResponseEntity<?> calculateContainerSummary(CommonRequestModel commonRequestModel) throws Exception {
         String responseMsg;
         CalculateContainerSummaryRequest request = (CalculateContainerSummaryRequest) commonRequestModel.getData();
@@ -3401,9 +3401,10 @@ public class ShipmentService implements IShipmentService {
             cloneShipmentDetails.setMasterBill(null);
             cloneShipmentDetails.setConsolidationList(null);
             cloneShipmentDetails.setStatus(ShipmentStatus.Created.getValue());
+            cloneShipmentDetails.setConsolRef(null);
 
             cloneShipmentDetails.setShipmentCreatedOn(LocalDateTime.now());
-            
+
             if(Constants.TRANSPORT_MODE_SEA.equals(cloneShipmentDetails.getTransportMode()) && Constants.DIRECTION_EXP.equals(cloneShipmentDetails.getDirection()))
                 cloneShipmentDetails.setHouseBill(generateCustomHouseBL(null));
 
@@ -3493,7 +3494,7 @@ public class ShipmentService implements IShipmentService {
     }
 
     @Override
-    public ResponseEntity<?> getShipmentFromConsol(Long consolidationId) {
+    public ResponseEntity<?> getShipmentFromConsol(Long consolidationId, String bookingNumber) {
         List<ShipmentSettingsDetails> shipmentSettingsDetails = shipmentSettingsDao.getSettingsByTenantIds(List.of(TenantContext.getCurrentTenant()));
         if(shipmentSettingsDetails == null || shipmentSettingsDetails.size() == 0)
             throw new RunnerException("Shipment settings empty for current tenant");
@@ -3523,7 +3524,7 @@ public class ShipmentService implements IShipmentService {
         var consolCarrier = consolidation.getCarrierDetails();
         shipment = ShipmentDetailsResponse.builder()
                 .transportMode(consolidation.getTransportMode() == null ? tenantSettings.getDefaultTransportMode() : consolidation.getTransportMode())
-                .bookingNumber(consolidation.getBookingNumber())
+                .bookingNumber(bookingNumber)
                 .consolidationList(List.of(modelMapper.map(consolidation, ConsolidationListResponse.class)))
                 .direction(consolidation.getShipmentType() == null ? tenantSettings.getDefaultShipmentType() : consolidation.getShipmentType())
                 .jobType(Constants.SHIPMENT_TYPE_STD)

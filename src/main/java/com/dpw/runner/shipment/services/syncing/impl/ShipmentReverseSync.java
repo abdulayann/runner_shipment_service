@@ -81,6 +81,10 @@ public class ShipmentReverseSync implements IShipmentReverseSync {
             sd.setChargeableUnit(cs.getChargableUnit());
             sd.setNoOfPacks(cs.getPacks());
             sd.setFinanceClosedBy(cs.getFinanceClosedByUser());
+            sd.setClientCountry(cs.getClientCountryFilter());
+            sd.setConsigneeCountry(cs.getConsigneeCountryFilter());
+            sd.setConsignorCountry(cs.getConsignorCountryFilter());
+            sd.setNotifyPartyCountry(cs.getNotifyPartyCountryFilter());
 
             sd.setConsigner(mapPartyObject(cs.getConsignerParty()));
             sd.setConsignee(mapPartyObject(cs.getConsigneeParty()));
@@ -162,7 +166,7 @@ public class ShipmentReverseSync implements IShipmentReverseSync {
             additionalDetails.setAndesStatus(AndesStatus.valueOf(cs.getAndesStatusString()));
         if(!IsStringNullOrEmpty(cs.getOwnershipString())) {
             additionalDetails.setOwnership(Ownership.valueOf(cs.getOwnershipString()));
-            if(additionalDetails.getOwnership().equals(Ownership.SELF))
+            if(additionalDetails.getOwnership().equals(Ownership.Self))
                 additionalDetails.setOwnershipName(cs.getOwnershipName());
             else
                 additionalDetails.setOwnershipOrg(mapPartyObject(cs.getOwnershipParty()));
@@ -178,6 +182,8 @@ public class ShipmentReverseSync implements IShipmentReverseSync {
         else
             additionalDetails.setDateOfIssue(cs.getDateofIssue());
         additionalDetails.setDateOfReceipt(cs.getDateofReceipt());
+        additionalDetails.setBLChargesDisplay(cs.getChargesApply());
+        additionalDetails.setBLExporterShipment(cs.getExporterStmt());
         sd.setAdditionalDetails(additionalDetails);
     }
 

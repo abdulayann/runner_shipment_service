@@ -139,6 +139,10 @@ public class ShipmentSync implements IShipmentSync {
         cs.setGuid(sd.getGuid());
         cs.setDescription(sd.getGoodsDescription());
         cs.setCreatedBy(sd.getCreatedBy());
+        cs.setClientCountryFilter(sd.getClientCountry());
+        cs.setConsigneeCountryFilter(sd.getConsigneeCountry());
+        cs.setConsignorCountryFilter(sd.getConsignorCountry());
+        cs.setNotifyPartyCountryFilter(sd.getNotifyPartyCountry());
 
         // Manually mapped fields
         cs.setVolumeWeight(sd.getVolumetricWeight());
@@ -251,7 +255,7 @@ public class ShipmentSync implements IShipmentSync {
             cs.setAndesStatusString(String.valueOf(sd.getAdditionalDetails().getAndesStatus().getValue()));
         if(sd.getAdditionalDetails().getOwnership() != null) {
             cs.setOwnershipString(String.valueOf(sd.getAdditionalDetails().getOwnership().getValue()));
-            if(sd.getAdditionalDetails().getOwnership().equals(Ownership.SELF))
+            if(sd.getAdditionalDetails().getOwnership().equals(Ownership.Self))
                 cs.setOwnershipName(sd.getAdditionalDetails().getOwnershipName());
             else
                 cs.setOwnershipParty(mapPartyObject(sd.getAdditionalDetails().getOwnershipOrg()));
@@ -261,6 +265,8 @@ public class ShipmentSync implements IShipmentSync {
         cs.setBoedate(sd.getAdditionalDetails().getBOEDate());
         cs.setBoenumber(sd.getAdditionalDetails().getBOENumber());
         cs.setHblDeliveryMode(sd.getAdditionalDetails().getDeliveryMode());
+        cs.setChargesApply(sd.getAdditionalDetails().getBLChargesDisplay());
+        cs.setExporterStmt(sd.getAdditionalDetails().getBLExporterShipment());
     }
 
     private void mapShipmentServices(CustomShipmentSyncRequest cs, ShipmentDetails sd) {

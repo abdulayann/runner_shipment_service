@@ -193,16 +193,16 @@ public class CustomShipmentSyncRequest implements IRunnerRequest, IRunnerRespons
     private BigDecimal AssessValue;
     @JsonProperty("Betype")
     private String Betype;
-    @JsonProperty("BlchargesDisplay")
-    private String BlchargesDisplay;//TODO : REMOVE
-    @JsonProperty("BlexporterShipment")
-    private String BlexporterShipment;
+    @JsonProperty("ChargesApply")
+    private String ChargesApply;
+    @JsonProperty("ExporterStmt")
+    private String ExporterStmt;
     @JsonProperty("Boedate")
     private LocalDateTime Boedate;
     @JsonProperty("Boenumber")
     private String Boenumber;
     @JsonProperty("BondedWarehouseId")
-    private Long BondedWarehouseId; //int64
+    private Long BondedWarehouseId;
     @JsonProperty("BorrowedFrom")
     private PartyRequestV2 BorrowedFrom;
     @JsonProperty("BranchSINumber")
@@ -316,7 +316,7 @@ public class CustomShipmentSyncRequest implements IRunnerRequest, IRunnerRespons
     @JsonProperty("TraderOrSupplierParty")
     private PartyRequestV2 TraderOrSupplierParty;
     @JsonProperty("WarehouseId")
-    private Long WarehouseId; //int64
+    private Long WarehouseId;
     @JsonProperty("Wblprinted")
     private boolean Wblprinted;
     // ---- Additional Details ends here
@@ -514,4 +514,14 @@ public class CustomShipmentSyncRequest implements IRunnerRequest, IRunnerRespons
     private Long ConsignorDpsAddressId;
     @JsonProperty("NotifyPartyDpsAddressId")
     private Long NotifyPartyDpsAddressId;
+    @JsonProperty("ClientCountryFilter")
+    private String ClientCountryFilter;
+    @JsonProperty("ConsignorCountryFilter")
+    private String ConsignorCountryFilter;
+    @JsonProperty("ConsigneeCountryFilter")
+    private String ConsigneeCountryFilter;
+    @JsonProperty("NotifyPartyCountryFilter")
+    private String NotifyPartyCountryFilter;
+    @JsonProperty("EntryRefNo")
+    private String EntryRefNo;
 }
