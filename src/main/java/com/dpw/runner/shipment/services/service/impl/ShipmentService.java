@@ -1629,12 +1629,6 @@ public class ShipmentService implements IShipmentService {
                 }
             }
         }
-        if(isCreate){
-            // create Shipment event on the bases of auto create event flag
-            if(shipmentSettingsDetails.getAutoEventCreate() != null && shipmentSettingsDetails.getAutoEventCreate())
-                autoGenerateCreateEvent(shipmentDetails);
-            updateLinkedShipmentData(shipmentDetails, null);
-        }
 
         if (bookingCarriageRequestList != null) {
             List<BookingCarriage> updatedBookingCarriages = bookingCarriageDao.updateEntityFromShipment(commonUtils.convertToEntityList(bookingCarriageRequestList, BookingCarriage.class, isCreate), id);
@@ -1660,6 +1654,12 @@ public class ShipmentService implements IShipmentService {
             List<Events> updatedEvents = eventDao.updateEntityFromOtherEntity(commonUtils.convertToEntityList(eventsRequestList, Events.class, isCreate), id, Constants.SHIPMENT);
             shipmentDetails.setEventsList(updatedEvents);
             eventService.updateAtaAtdInShipment(updatedEvents, shipmentDetails, shipmentSettingsDetails);
+        }
+        if(isCreate){
+            // create Shipment event on the bases of auto create event flag
+            if(shipmentSettingsDetails.getAutoEventCreate() != null && shipmentSettingsDetails.getAutoEventCreate())
+                autoGenerateCreateEvent(shipmentDetails);
+            updateLinkedShipmentData(shipmentDetails, null);
         }
         // Create events on basis of shipment status Confirmed/Created
         autoGenerateEvents(shipmentDetails, previousStatus);
