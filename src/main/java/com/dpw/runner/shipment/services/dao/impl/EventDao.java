@@ -2,17 +2,22 @@ package com.dpw.runner.shipment.services.dao.impl;
 
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
+import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IEventDao;
 import com.dpw.runner.shipment.services.dto.request.CustomAutoEventRequest;
 import com.dpw.runner.shipment.services.entity.Events;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.enums.LifecycleHooks;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.IEventRepository;
+import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.syncing.interfaces.IEventsSync;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.validator.ValidatorUtility;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,6 +27,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
 
+import java.lang.reflect.InvocationTargetException;
 import java.time.LocalDate;
 import java.util.*;
 import java.util.function.Function;
@@ -44,6 +50,9 @@ public class EventDao implements IEventDao {
 
     @Autowired
     private IEventsSync eventsSync;
+
+    @Autowired
+    private IAuditLogService auditLogService;
 
     @Override
     public Events save(Events events) {
@@ -109,7 +118,7 @@ public class EventDao implements IEventDao {
                 }
                 responseEvents = saveEntityFromOtherEntity(eventsRequestList, entityId, entityType, copyHashMap);
             }
-            deleteEvents(hashMap);
+            deleteEvents(hashMap, entityType, entityId);
             return responseEvents;
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -122,6 +131,8 @@ public class EventDao implements IEventDao {
     public List<Events> saveEntityFromOtherEntity(List<Events> events, Long entityId, String entityType) {
         List<Events> res = new ArrayList<>();
         for (Events req : events) {
+            String oldEntityJsonString = null;
+            String operation = DBOperationType.CREATE.name();
             if (req.getId() != null) {
                 long id = req.getId();
                 Optional<Events> oldEntity = findById(id);
@@ -129,12 +140,26 @@ public class EventDao implements IEventDao {
                     log.debug("Events is null for Id {}", req.getId());
                     throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
                 }
+                oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
+                operation = DBOperationType.UPDATE.name();
                 req.setCreatedAt(oldEntity.get().getCreatedAt());
                 req.setCreatedBy(oldEntity.get().getCreatedBy());
             }
             req.setEntityId(entityId);
             req.setEntityType(entityType);
             req = save(req);
+            try {
+                auditLogService.addAuditLog(
+                        AuditLogMetaData.builder()
+                                .newData(req)
+                                .prevData(oldEntityJsonString != null ? jsonHelper.readFromJson(oldEntityJsonString, Events.class) : null)
+                                .parent(Objects.equals(entityType, Constants.SHIPMENT) ? ShipmentDetails.class.getSimpleName() : entityType)
+                                .parentId(entityId)
+                                .operation(operation).build()
+                );
+            } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException | InvocationTargetException | NoSuchMethodException e) {
+                log.error(e.getMessage());
+            }
             res.add(req);
         }
         return res;
@@ -142,6 +167,7 @@ public class EventDao implements IEventDao {
     @Override
     public List<Events> saveEntityFromOtherEntity(List<Events> events, Long entityId, String entityType, Map<Long, Events> oldEntityMap) {
         List<Events> res = new ArrayList<>();
+        Map<Long, String> oldEntityJsonStringMap = new HashMap<>();
         for (Events req : events) {
             if (req.getId() != null) {
                 long id = req.getId();
@@ -151,19 +177,59 @@ public class EventDao implements IEventDao {
                 }
                 req.setCreatedAt(oldEntityMap.get(id).getCreatedAt());
                 req.setCreatedBy(oldEntityMap.get(id).getCreatedBy());
+                String oldEntityJsonString = jsonHelper.convertToJson(oldEntityMap.get(id));
+                oldEntityJsonStringMap.put(id, oldEntityJsonString);
             }
             req.setEntityId(entityId);
             req.setEntityType(entityType);
             res.add(req);
         }
         res = saveAll(res);
+        for (var req : res) {
+            String oldEntityJsonString = null;
+            String operation = DBOperationType.CREATE.name();
+            if (oldEntityJsonStringMap.containsKey(req.getId())) {
+                oldEntityJsonString = oldEntityJsonStringMap.get(req.getId());
+                operation = DBOperationType.UPDATE.name();
+            }
+            try {
+                auditLogService.addAuditLog(
+                        AuditLogMetaData.builder()
+                                .newData(req)
+                                .prevData(oldEntityJsonString != null ? jsonHelper.readFromJson(oldEntityJsonString, Events.class) : null)
+                                .parent(Objects.equals(entityType, Constants.SHIPMENT) ? ShipmentDetails.class.getSimpleName() : entityType)
+                                .parentId(entityId)
+                                .operation(operation).build()
+                );
+            } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException | InvocationTargetException | NoSuchMethodException e) {
+                log.error(e.getMessage());
+            }
+        }
         return res;
     }
 
-    private void deleteEvents(Map<Long, Events> hashMap) {
+    private void deleteEvents(Map<Long, Events> hashMap, String entityType, Long entityId) {
         String responseMsg;
         try {
-            hashMap.values().forEach(this::delete);
+            hashMap.values().forEach(event -> {
+                String json = jsonHelper.convertToJson(event);
+                delete(event);
+                if(entityType != null)
+                {
+                    try {
+                        auditLogService.addAuditLog(
+                                AuditLogMetaData.builder()
+                                        .newData(null)
+                                        .prevData(jsonHelper.readFromJson(json, Events.class))
+                                        .parent(Objects.equals(entityType, Constants.SHIPMENT) ? ShipmentDetails.class.getSimpleName() : entityType)
+                                        .parentId(entityId)
+                                        .operation(DBOperationType.DELETE.name()).build()
+                        );
+                    } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException | InvocationTargetException | NoSuchMethodException e) {
+                        log.error(e.getMessage());
+                    }
+                }
+            });
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_DELETE_EXCEPTION_MSG;
@@ -200,7 +266,7 @@ public class EventDao implements IEventDao {
             }
             Map<Long, Events> hashMap = new HashMap<>();
             eventsMap.forEach((s, events) -> hashMap.put(events.getId(), events));
-            deleteEvents(hashMap);
+            deleteEvents(hashMap, entityType, entityId);
             return responseEvents;
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -273,6 +339,18 @@ public class EventDao implements IEventDao {
             eventsRow.setEventCode(eventCode);
             eventsRow.setPlaceName(placeName);
             eventsRow.setPlaceDescription(placeDesc);
+            try {
+                auditLogService.addAuditLog(
+                        AuditLogMetaData.builder()
+                                .newData(eventsRow)
+                                .prevData(null)
+                                .parent(Objects.equals(entityType, Constants.SHIPMENT) ? ShipmentDetails.class.getSimpleName() : entityType)
+                                .parentId(entityId)
+                                .operation(DBOperationType.CREATE.name()).build()
+                );
+            } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException | InvocationTargetException | NoSuchMethodException e) {
+                log.error(e.getMessage());
+            }
             eventRepository.save(eventsRow);
             try {
                 eventsSync.sync(List.of(eventsRow));
