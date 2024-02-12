@@ -1,10 +1,17 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
+import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IReferenceNumbersDao;
+import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.ReferenceNumbers;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.IReferenceNumbersRepository;
+import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,6 +21,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -26,6 +34,10 @@ import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCo
 public class ReferenceNumbersDao implements IReferenceNumbersDao {
     @Autowired
     private IReferenceNumbersRepository referenceNumbersRepository;
+    @Autowired
+    private JsonHelper jsonHelper;
+    @Autowired
+    private IAuditLogService auditLogService;
 
     @Override
     public ReferenceNumbers save(ReferenceNumbers referenceNumbers) {
@@ -77,7 +89,7 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
                 }
                 responseReferenceNumbers = saveEntityFromShipment(referenceNumbersRequests, shipmentId, copyHashMap);
             }
-            deleteReferenceNumbers(hashMap);
+            deleteReferenceNumbers(hashMap, ShipmentDetails.class.getSimpleName(), shipmentId);
             return responseReferenceNumbers;
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -91,6 +103,8 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
     public List<ReferenceNumbers> saveEntityFromShipment(List<ReferenceNumbers> referenceNumbersRequests, Long shipmentId) {
         List<ReferenceNumbers> res = new ArrayList<>();
         for(ReferenceNumbers req : referenceNumbersRequests){
+            String oldEntityJsonString = null;
+            String operation = DBOperationType.CREATE.name();
             if(req.getId() != null){
                 long id = req.getId();
                 Optional<ReferenceNumbers> oldEntity = findById(id);
@@ -98,11 +112,25 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
                     log.debug("Reference number is null for Id {}", req.getId());
                     throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
                 }
+                oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
+                operation = DBOperationType.UPDATE.name();
                 req.setCreatedAt(oldEntity.get().getCreatedAt());
                 req.setCreatedBy(oldEntity.get().getCreatedBy());
             }
             req.setShipmentId(shipmentId);
             req = save(req);
+            try {
+                auditLogService.addAuditLog(
+                        AuditLogMetaData.builder()
+                                .newData(req)
+                                .prevData(oldEntityJsonString != null ? jsonHelper.readFromJson(oldEntityJsonString, ReferenceNumbers.class) : null)
+                                .parent(ShipmentDetails.class.getSimpleName())
+                                .parentId(shipmentId)
+                                .operation(operation).build()
+                );
+            } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException | InvocationTargetException | NoSuchMethodException e) {
+                log.error(e.getMessage());
+            }
             res.add(req);
         }
         return res;
@@ -110,6 +138,7 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
     @Override
     public List<ReferenceNumbers> saveEntityFromShipment(List<ReferenceNumbers> referenceNumbersRequests, Long shipmentId, Map<Long, ReferenceNumbers> hashMap) {
         List<ReferenceNumbers> res = new ArrayList<>();
+        Map<Long, String> oldEntityJsonStringMap = new HashMap<>();
         for(ReferenceNumbers req : referenceNumbersRequests){
             if(req.getId() != null){
                 long id = req.getId();
@@ -119,11 +148,33 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
                 }
                 req.setCreatedAt(hashMap.get(id).getCreatedAt());
                 req.setCreatedBy(hashMap.get(id).getCreatedBy());
+                String oldEntityJsonString = jsonHelper.convertToJson(hashMap.get(id));
+                oldEntityJsonStringMap.put(id, oldEntityJsonString);
             }
             req.setShipmentId(shipmentId);
             res.add(req);
         }
         res = saveAll(res);
+        for (var req : res) {
+            String oldEntityJsonString = null;
+            String operation = DBOperationType.CREATE.name();
+            if (oldEntityJsonStringMap.containsKey(req.getId())) {
+                oldEntityJsonString = oldEntityJsonStringMap.get(req.getId());
+                operation = DBOperationType.UPDATE.name();
+            }
+            try {
+                auditLogService.addAuditLog(
+                        AuditLogMetaData.builder()
+                                .newData(req)
+                                .prevData(oldEntityJsonString != null ? jsonHelper.readFromJson(oldEntityJsonString, ReferenceNumbers.class) : null)
+                                .parent(ShipmentDetails.class.getSimpleName())
+                                .parentId(shipmentId)
+                                .operation(operation).build()
+                );
+            } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException | InvocationTargetException | NoSuchMethodException e) {
+                log.error(e.getMessage());
+            }
+        }
         return res;
     }
 
@@ -154,7 +205,7 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
                 }
                 responseReferenceNumbers = saveEntityFromConsole(referenceNumbersRequests, consolidationId, copyHashMap);
             }
-            deleteReferenceNumbers(hashMap);
+            deleteReferenceNumbers(hashMap, ConsolidationDetails.class.getSimpleName(), consolidationId);
             return responseReferenceNumbers;
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -192,7 +243,7 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
             }
             Map<Long, ReferenceNumbers> hashMap = new HashMap<>();
             referenceNumbersMap.forEach((s, referenceNumbers) ->  hashMap.put(referenceNumbers.getId(), referenceNumbers));
-            deleteReferenceNumbers(hashMap);
+            deleteReferenceNumbers(hashMap, ConsolidationDetails.class.getSimpleName(), consolidationId);
             return responseReferenceNumbers;
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -206,6 +257,8 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
     public List<ReferenceNumbers> saveEntityFromConsole(List<ReferenceNumbers> referenceNumbersRequests, Long consolidationId) {
         List<ReferenceNumbers> res = new ArrayList<>();
         for(ReferenceNumbers req : referenceNumbersRequests){
+            String oldEntityJsonString = null;
+            String operation = DBOperationType.CREATE.name();
             if(req.getId() != null){
                 long id = req.getId();
                 Optional<ReferenceNumbers> oldEntity = findById(id);
@@ -213,11 +266,25 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
                     log.debug("Reference number is null for Id {}", req.getId());
                     throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
                 }
+                oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
+                operation = DBOperationType.UPDATE.name();
                 req.setCreatedAt(oldEntity.get().getCreatedAt());
                 req.setCreatedBy(oldEntity.get().getCreatedBy());
             }
             req.setConsolidationId(consolidationId);
             req = save(req);
+            try {
+                auditLogService.addAuditLog(
+                        AuditLogMetaData.builder()
+                                .newData(req)
+                                .prevData(oldEntityJsonString != null ? jsonHelper.readFromJson(oldEntityJsonString, ReferenceNumbers.class) : null)
+                                .parent(ConsolidationDetails.class.getSimpleName())
+                                .parentId(consolidationId)
+                                .operation(operation).build()
+                );
+            } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException | InvocationTargetException | NoSuchMethodException e) {
+                log.error(e.getMessage());
+            }
             res.add(req);
         }
         return res;
@@ -225,6 +292,7 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
     @Override
     public List<ReferenceNumbers> saveEntityFromConsole(List<ReferenceNumbers> referenceNumbersRequests, Long consolidationId, Map<Long, ReferenceNumbers> hashMap) {
         List<ReferenceNumbers> res = new ArrayList<>();
+        Map<Long, String> oldEntityJsonStringMap = new HashMap<>();
         for(ReferenceNumbers req : referenceNumbersRequests){
             if(req.getId() != null){
                 long id = req.getId();
@@ -232,6 +300,8 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
                     log.debug("Reference number is null for Id {}", req.getId());
                     throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
                 }
+                String oldEntityJsonString = jsonHelper.convertToJson(hashMap.get(id));
+                oldEntityJsonStringMap.put(id, oldEntityJsonString);
                 req.setCreatedAt(hashMap.get(id).getCreatedAt());
                 req.setCreatedBy(hashMap.get(id).getCreatedBy());
             }
@@ -239,13 +309,51 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
             res.add(req);
         }
         res = saveAll(res);
+        for (var req : res) {
+            String oldEntityJsonString = null;
+            String operation = DBOperationType.CREATE.name();
+            if (oldEntityJsonStringMap.containsKey(req.getId())) {
+                oldEntityJsonString = oldEntityJsonStringMap.get(req.getId());
+                operation = DBOperationType.UPDATE.name();
+            }
+            try {
+                auditLogService.addAuditLog(
+                        AuditLogMetaData.builder()
+                                .newData(req)
+                                .prevData(oldEntityJsonString != null ? jsonHelper.readFromJson(oldEntityJsonString, ReferenceNumbers.class) : null)
+                                .parent(ConsolidationDetails.class.getSimpleName())
+                                .parentId(consolidationId)
+                                .operation(operation).build()
+                );
+            } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException | InvocationTargetException | NoSuchMethodException e) {
+                log.error(e.getMessage());
+            }
+        }
         return res;
     }
 
-    private void deleteReferenceNumbers(Map<Long, ReferenceNumbers> hashMap) {
+    private void deleteReferenceNumbers(Map<Long, ReferenceNumbers> hashMap, String entityType, Long entityId) {
         String responseMsg;
         try {
-            hashMap.values().forEach(this::delete);
+            hashMap.values().forEach(referenceNumber -> {
+                String json = jsonHelper.convertToJson(referenceNumber);
+                delete(referenceNumber);
+                if(entityType != null)
+                {
+                    try {
+                        auditLogService.addAuditLog(
+                                AuditLogMetaData.builder()
+                                        .newData(null)
+                                        .prevData(jsonHelper.readFromJson(json, ReferenceNumbers.class))
+                                        .parent(entityType)
+                                        .parentId(entityId)
+                                        .operation(DBOperationType.DELETE.name()).build()
+                        );
+                    } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException | InvocationTargetException | NoSuchMethodException e) {
+                        log.error(e.getMessage());
+                    }
+                }
+            });
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_DELETE_EXCEPTION_MSG;
@@ -281,7 +389,7 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
             }
             Map<Long, ReferenceNumbers> hashMap = new HashMap<>();
             referenceNumbersMap.forEach((s, referenceNumbers) ->  hashMap.put(referenceNumbers.getId(), referenceNumbers));
-            deleteReferenceNumbers(hashMap);
+            deleteReferenceNumbers(hashMap, ShipmentDetails.class.getSimpleName(), shipmentId);
             return responseReferenceNumbers;
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
