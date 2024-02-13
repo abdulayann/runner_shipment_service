@@ -28,7 +28,7 @@ steps:
     goals: clean package
     publishJUnitResults: false
     javaHomeOption: JDKVersion
-    jdkVersionOption: '1.17'
+    jdkVersionOption: '1.11'
     mavenVersionOption: Default
     mavenAuthenticateFeed: true
     mavenOptions: '-Xmx3072m $(MAVEN_OPTS)'
