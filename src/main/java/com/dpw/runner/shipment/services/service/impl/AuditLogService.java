@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
+import com.dpw.runner.shipment.services.commons.constants.AuditLogConstants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogChanges;
@@ -11,7 +12,7 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IAuditLogDao;
 import com.dpw.runner.shipment.services.dto.response.AllocationsResponse;
 import com.dpw.runner.shipment.services.dto.response.AuditLogResponse;
-import com.dpw.runner.shipment.services.entity.AuditLog;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -240,12 +241,55 @@ public class AuditLogService implements IAuditLogService {
         List<AuditLogChanges> changes = new ArrayList<>();
         for (Map.Entry<String, AuditLogChanges> entry : auditLog.getChanges().entrySet()) {
             AuditLogChanges auditChange = entry.getValue();
-            auditChange.setFieldName(entry.getKey());
+            auditChange.setFieldName(replaceFieldNames(auditLog, entry.getKey()));
             changes.add(entry.getValue());
         }
 
         response.setChanges(changes);
         return response;
+    }
+
+    private String replaceFieldNames(AuditLog auditLog, String key){
+        if(Objects.equals(auditLog.getParentType(), ShipmentDetails.class.getSimpleName())) {
+            if (Objects.equals(auditLog.getEntity(), ShipmentDetails.class.getSimpleName())) {
+                if (AuditLogConstants.ShipmentsFieldNameToDisplayNameMap.containsKey(key)) {
+                    return AuditLogConstants.ShipmentsFieldNameToDisplayNameMap.get(key);
+                }
+            } else if (Objects.equals(auditLog.getEntity(), Containers.class.getSimpleName())) {
+                if (AuditLogConstants.ContainerFieldNameToDisplayNameMap.containsKey(key)) {
+                    return AuditLogConstants.ContainerFieldNameToDisplayNameMap.get(key);
+                }
+            } else if (Objects.equals(auditLog.getEntity(), Packing.class.getSimpleName())) {
+                if (AuditLogConstants.PackingFieldNameToDisplayNameMap.containsKey(key)) {
+                    return AuditLogConstants.PackingFieldNameToDisplayNameMap.get(key);
+                }
+            } else if (Objects.equals(auditLog.getEntity(), Routings.class.getSimpleName())) {
+                if (AuditLogConstants.RoutingsFieldNameToDisplayNameMap.containsKey(key)) {
+                    return AuditLogConstants.RoutingsFieldNameToDisplayNameMap.get(key);
+                }
+            } else if (Objects.equals(auditLog.getEntity(), Notes.class.getSimpleName())) {
+                if (AuditLogConstants.NotesFieldNameToDisplayNameMap.containsKey(key)) {
+                    return AuditLogConstants.NotesFieldNameToDisplayNameMap.get(key);
+                }
+            } else if (Objects.equals(auditLog.getEntity(), BookingCarriage.class.getSimpleName())) {
+                if (AuditLogConstants.BookingCarriageFieldNameToDisplayNameMap.containsKey(key)) {
+                    return AuditLogConstants.BookingCarriageFieldNameToDisplayNameMap.get(key);
+                }
+            } else if (Objects.equals(auditLog.getEntity(), Events.class.getSimpleName())) {
+                if (AuditLogConstants.EventsFieldNameToDisplayNameMap.containsKey(key)) {
+                    return AuditLogConstants.EventsFieldNameToDisplayNameMap.get(key);
+                }
+            } else if (Objects.equals(auditLog.getEntity(), ReferenceNumbers.class.getSimpleName())) {
+                if (AuditLogConstants.ReferenceNumbersFieldNameToDisplayNameMap.containsKey(key)) {
+                    return AuditLogConstants.ReferenceNumbersFieldNameToDisplayNameMap.get(key);
+                }
+            } else if (Objects.equals(auditLog.getEntity(), Parties.class.getSimpleName())) {
+                if (AuditLogConstants.PartiesFieldNameToDisplayNameMap.containsKey(key)) {
+                    return AuditLogConstants.PartiesFieldNameToDisplayNameMap.get(key);
+                }
+            }
+        }
+        return key;
     }
 
     private void validateRequest(AuditLogMetaData auditLogMetaData) {
