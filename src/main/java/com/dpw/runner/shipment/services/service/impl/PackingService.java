@@ -1038,6 +1038,10 @@ public class PackingService implements IPackingService {
         }
         ListCommonRequest listCommonRequest = andCriteria("containerId", request.getContainerId(), "=", null);
         listCommonRequest  = andCriteria("shipmentId", request.getShipmentId(), "=", listCommonRequest);
+        if(request.getPageNo() != null)
+            listCommonRequest.setPageNo(request.getPageNo());
+        if(request.getPageSize() != null)
+            listCommonRequest.setPageSize(request.getPageSize());
         return list(CommonRequestModel.buildRequest(listCommonRequest));
     }
 
