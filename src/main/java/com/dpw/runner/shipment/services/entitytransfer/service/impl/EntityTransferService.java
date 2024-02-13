@@ -138,11 +138,11 @@ public class EntityTransferService implements IEntityTransferService {
                         }
                     } else {
                         log.error("Entity Transfer failed Send V1 shipment: " + v1ShipmentTaskResponse.getError());
-                        throw new RuntimeException("Entity Transfer failed Send V1 shipment: " + v1ShipmentTaskResponse.getError());
+                        throw new RuntimeException(v1ShipmentTaskResponse.getError());
                     }
                 } catch (Exception ex) {
                     log.error("Entity Transfer failed Send V1 shipment: " + ex);
-                    throw new RuntimeException("Entity Transfer failed Send V1 shipment: " + ex);
+                    throw new RuntimeException(ex.getMessage());
                 }
             } else {
                 EntityTransferShipmentDetails entityTransferShipmentDetails = modelMapper.map(shipmentDetails.get(), EntityTransferShipmentDetails.class);
@@ -742,11 +742,11 @@ public class EntityTransferService implements IEntityTransferService {
                         }
                     } else {
                         log.error("Entity Transfer failed Send V1 Consolidation: " + v1ConsoleTaskResponse.getError());
-                        throw new RuntimeException("Entity Transfer failed Send V1 Consolidation: " + v1ConsoleTaskResponse.getError());
+                        throw new RuntimeException(v1ConsoleTaskResponse.getError());
                     }
                 } catch (Exception ex) {
                     log.error("Entity Transfer failed Send V1 Consolidation: " + ex);
-                    throw new RuntimeException("Entity Transfer failed Send V1 Consolidation: " + ex);
+                    throw new RuntimeException(ex.getMessage());
                 }
             } else {
 
