@@ -1,7 +1,7 @@
 trigger:
 
 - Release-v*
-- dev
+- development
 pool:
   name: Runner-self-hosted-agent
 steps:
