@@ -28,11 +28,10 @@ steps:
 
 - task: Maven@3
   inputs:
-    mavenPomFile: pom.xml
-    goals: clean package
+    goals: clean package -DskipTests
     publishJUnitResults: false
     javaHomeOption: JDKVersion
-    jdkVersionOption: '1.11'
+    jdkVersionOption: '1.17'
     mavenVersionOption: Default
     mavenAuthenticateFeed: true
     mavenOptions: '-Xmx3072m $(MAVEN_OPTS)'
