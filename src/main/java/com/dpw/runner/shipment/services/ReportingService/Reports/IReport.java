@@ -1472,7 +1472,7 @@ public abstract class IReport {
             v1TenantSettingsResponse = getTenantSettings();
 
         UsersDto user = UserContext.getUser();
-        if (!Boolean.TRUE.equals(v1TenantSettingsResponse.getIsGroupingOverseas()) && !localCurrency.equals(user.getCompanyCurrency())) {
+        if (!Boolean.TRUE.equals(v1TenantSettingsResponse.getIsGroupingOverseas()) && !Objects.equals(localCurrency, user.getCompanyCurrency())) {
             return addCommasWithPrecision(amount, 0);
         } else {
             return DisplayFormat(amount, 0, v1TenantSettingsResponse);
