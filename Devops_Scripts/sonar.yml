@@ -20,7 +20,11 @@ steps:
     SonarQube: SonarQube Connection
     scannerMode: Other
     configMode: file
-    extraProperties: sonar.projectVersion=$(Build.BuildNumber)
+    extraProperties: |
+      sonar.exclusions=**/*.bin,Devops_Scripts/**
+      sonar.projectVersion=$(Build.BuildNumber)
+      sonar.projectKey=runner_shipment_service
+      sonar.projectName=runner_shipment_service
 
 - task: Maven@3
   inputs:
