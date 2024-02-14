@@ -385,4 +385,10 @@ public class ConsolidationDetails extends MultiTenancy {
 
     @Column(name = "source_guid")
     private UUID sourceGuid;
+    @Column(name = "booking_id")
+    private String bookingId;
+    @Column(name = "booking_status")
+    private String bookingStatus;
+    @Column(name = "booking_number")
+    private String bookingNumber;
 }
