@@ -52,13 +52,13 @@ public class RetrieveValidateAspect {
                 String validShipmentType = getParameterFromPermission(SHIPMENT_TYPE_INDEX, parameterList);
                 String validDomesticType = getParameterFromPermission(IS_DOMESTIC_INDEX, parameterList);
 
-                if(validTransportMode.equals(ALL) || transportMode != null && transportMode.equals(validTransportMode)){
+                if(validTransportMode.equals(ALL) || transportMode == null || transportMode.equals(validTransportMode)){
                     validatedFields.add("transportMode");
-                    if(validDirection.equals(ALL) || direction != null && direction.equals(validDirection)){
+                    if(validDirection.equals(ALL) || direction == null || direction.equals(validDirection)){
                         validatedFields.add("direction");
-                        if(validShipmentType.equals(ALL) || shipmentType != null && shipmentType.equals(validShipmentType)){
+                        if(validShipmentType.equals(ALL) || shipmentType == null || shipmentType.equals(validShipmentType)){
                             validatedFields.add("shipmentType");
-                            if(validDomesticType.equals(ALL) || domesticType != null && domesticType.equals(validDomesticType.equals(DOMESTIC))){
+                            if(validDomesticType.equals(ALL) || domesticType == null || domesticType.equals(validDomesticType.equals(DOMESTIC))){
                                 validatedFields.add("domesticType");
                             }
                         }
@@ -104,13 +104,13 @@ public class RetrieveValidateAspect {
                 String validShipmentType = getParameterFromPermission(SHIPMENT_TYPE_INDEX, parameterList);
                 String validDomesticType = getParameterFromPermission(IS_DOMESTIC_INDEX, parameterList);
 
-                if(validTransportMode.equals(ALL) || transportMode != null && transportMode.equals(validTransportMode)){
+                if(validTransportMode.equals(ALL) || transportMode == null || transportMode.equals(validTransportMode)){
                     validatedFields.add("transportMode");
-                    if(validDirection.equals(ALL) || direction != null && direction.equals(validDirection)){
+                    if(validDirection.equals(ALL) || direction == null || direction.equals(validDirection)){
                         validatedFields.add("direction");
-                        if(validShipmentType.equals(ALL) || shipmentType != null && shipmentType.equals(validShipmentType)){
+                        if(validShipmentType.equals(ALL) || shipmentType == null || shipmentType.equals(validShipmentType)){
                             validatedFields.add("shipmentType");
-                            if(validDomesticType.equals(ALL) || domesticType != null && domesticType.equals(validDomesticType.equals(DOMESTIC))){
+                            if(validDomesticType.equals(ALL) || domesticType == null || domesticType.equals(validDomesticType.equals(DOMESTIC))){
                                 validatedFields.add("domesticType");
                             }
                         }
