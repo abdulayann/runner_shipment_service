@@ -192,18 +192,18 @@ public class ProductIdentifierUtility {
     if (isConsolSea(consolidation, enabledTenantProducts)) {
       res =
           enabledTenantProducts.stream()
-              .findFirst()
-              .filter(p -> p.getProductType() == ProductType.Consolidation_Sea_EXIM);
+
+              .filter(p -> p.getProductType() == ProductType.Consolidation_Sea_EXIM).findFirst();
     } else if (isConsolAir(consolidation, enabledTenantProducts)) {
       res =
           enabledTenantProducts.stream()
-              .findFirst()
-              .filter(p -> p.getProductType() == ProductType.Consolidation_Air_EXIM);
+
+              .filter(p -> p.getProductType() == ProductType.Consolidation_Air_EXIM) .findFirst();
     } else {
       res =
           enabledTenantProducts.stream()
-              .findFirst()
-              .filter(p -> p.getProductType() == ProductType.Consolidation_All);
+
+              .filter(p -> p.getProductType() == ProductType.Consolidation_All).findFirst();
     }
 
     return res.orElse(null);
@@ -569,8 +569,7 @@ public class ProductIdentifierUtility {
   public TenantProducts getDefaultShipmentProduct(List<TenantProducts> enabledTenantProducts) {
     Optional<TenantProducts> transportAll =
         enabledTenantProducts.stream()
-            .findFirst()
-            .filter(i -> i.getProductType() == ProductType.Transport_All);
+            .filter(i -> i.getProductType() == ProductType.Transport_All).findFirst();
     return transportAll.orElse(null);
   }
 
