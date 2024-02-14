@@ -255,4 +255,20 @@ public class AwbController {
             return ResponseHelper.buildFailedResponse(e.getMessage());
         }
     }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = AwbConstants.CHARGE_TYPE_DATA_RETRIEVE_SUCCESSFUL)})
+    @GetMapping(ApiConstants.POPULATE_CHARGE_TYPE_DETAILS)
+    public ResponseEntity<?> getChargeTypeMasterData(@ApiParam(value = AwbConstants.CHARGE_TYPE_ID, required = true) @RequestParam Long id) {
+        String responseMsg = "";
+        try {
+            CommonGetRequest request = CommonGetRequest.builder().id(id).build();
+            return awbService.getChargeTypeMasterData(request);
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : "Error generating dims information";
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(e.getMessage());
+        }
+    }
+
 }

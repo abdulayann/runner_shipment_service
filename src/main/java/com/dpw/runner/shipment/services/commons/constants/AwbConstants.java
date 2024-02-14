@@ -28,5 +28,7 @@ public class AwbConstants {
     public static final String GET_AWB_PAYMENT_INFO = "/generate/awb-payment-info";
     public static final String DIMS_TEXT = "/dims/text";
     public static final String DIMS_TEXT_RETERIEVE_SUCCESS = "Dims text created successfully !";
+    public static final String CHARGE_TYPE_DATA_RETRIEVE_SUCCESSFUL = "Successfully retrieved data for charge type";
+    public static final String CHARGE_TYPE_ID = "ChargeTypeId";
 
 }

@@ -226,6 +226,9 @@ public class V1ServiceImpl implements IV1Service {
 
     @Value("${v1service.url.base}${v1service.url.chargeType}")
     private String CHARGE_TYPE_URL;
+    @Value("${v1service.url.base}${v1service.url.retrieveChargeType}")
+    private String RETRIEVE_CHARGE_TYPE_URL;
+
     @Value("${v1service.url.base}${v1service.url.retrieveTenantSettings}")
     private String RETRIEVE_TENANT_SETTINGS;
 
@@ -1371,6 +1374,26 @@ public class V1ServiceImpl implements IV1Service {
             if (_timeTaken > 200)
                 log.info(" RequestId: {} || {} for event: {} Actual time taken: {} ms",LoggerHelper.getRequestIdFromMDC(), LoggerEvent.MORE_TIME_TAKEN, LoggerEvent.MASTERDATA_CHARGE_TYPE, _timeTaken);
             return (V1DataResponse) masterDataResponse.getBody();
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
+        } catch (Exception var7) {
+            throw new V1ServiceException(var7.getMessage());
+        }
+    }
+
+    @Override
+    public V1RetrieveResponse retrieveChargeCodeData(Object request) {
+        ResponseEntity masterDataResponse = null;
+
+        try {
+            long time = System.currentTimeMillis();
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            masterDataResponse = this.restTemplate.postForEntity(this.RETRIEVE_CHARGE_TYPE_URL, entity, V1RetrieveResponse.class, new Object[0]);
+            double _timeTaken = System.currentTimeMillis() - time;
+            log.info("Token time taken in fetchChargeCodeData() function {} with Request ID: {}", _timeTaken, LoggerHelper.getRequestIdFromMDC());
+            if (_timeTaken > 200)
+                log.info(" RequestId: {} || {} for event: {} Actual time taken: {} ms",LoggerHelper.getRequestIdFromMDC(), LoggerEvent.MORE_TIME_TAKEN, LoggerEvent.MASTERDATA_CHARGE_TYPE, _timeTaken);
+            return (V1RetrieveResponse) masterDataResponse.getBody();
         } catch (HttpClientErrorException | HttpServerErrorException ex) {
             throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
         } catch (Exception var7) {
