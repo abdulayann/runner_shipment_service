@@ -33,7 +33,7 @@ public class CarrierMasterData {
     private String identifier3;
     @JsonProperty("TransportCodeDescription")
     private String transportCodeDescription;
-    @JsonProperty("IataCode")
+    @JsonProperty("IATACode")
     private String iataCode;
     @JsonProperty("AirlineCode")
     private String airlineCode;

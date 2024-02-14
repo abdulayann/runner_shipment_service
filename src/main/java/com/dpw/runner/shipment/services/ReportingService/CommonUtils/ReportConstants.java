@@ -987,4 +987,6 @@ public class ReportConstants {
     public static final String TOTAL_PACKS_TYPE_MANIFEST = "TotalPacksTypeManifest";
     public static final String TOTAL_MBL = "TotalMBL";
     public static final String TOTAL_MAWB = "TotalMAWB";
+    public static final String CHARGEABLE_WEIGHT = "ChargeableWeight";
+    public static final String CHARGEABLE_WEIGHT_UNIT = "ChargeableWeightUnit";
 }
