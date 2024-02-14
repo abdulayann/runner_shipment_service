@@ -362,6 +362,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
             if(shipmentSettingsDetails.getTenantProducts() != null) {
                 shipmentSettingsDetails.setTenantProducts(tenantProductsDao.saveEntityFromSettings(shipmentSettingsDetails.getTenantProducts(), shipmentSettingsDetails.getId()));
             }
+            List<ProductSequenceConfig> productSequenceConfigList = new ArrayList<>();
             if(shipmentSettingsDetails.getProductSequenceConfig() != null) {
                 if(shipmentSettingsDetails.getProductSequenceConfig().size() > 0) {
                     for (ProductSequenceConfig productSequenceConfig: shipmentSettingsDetails.getProductSequenceConfig()) {
@@ -369,11 +370,14 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
                             ListCommonRequest listCommonRequest = constructListCommonRequest("productType", String.valueOf(productSequenceConfig.getTenantProducts().getProductType()), "=");
                             Pair<Specification<TenantProducts>, Pageable> pair = fetchData(listCommonRequest, TenantProducts.class);
                             Page<TenantProducts> tenantProducts = tenantProductsDao.findAll(pair.getLeft(), pair.getRight());
-                            productSequenceConfig.setTenantProducts(tenantProducts.getContent().get(0));
+                            if(tenantProducts != null && !tenantProducts.isEmpty()) {
+                                productSequenceConfig.setTenantProducts(tenantProducts.getContent().get(0));
+                                productSequenceConfigList.add(productSequenceConfig);
+                            }
                         }
                     }
                 }
-                shipmentSettingsDetails.setProductSequenceConfig(productSequenceConfigDao.saveEntityFromSettings(shipmentSettingsDetails.getProductSequenceConfig(), shipmentSettingsDetails.getId()));
+                shipmentSettingsDetails.setProductSequenceConfig(productSequenceConfigDao.saveEntityFromSettings(productSequenceConfigList, shipmentSettingsDetails.getId()));
             }
 
             log.info("Shipment Setting Details created successfully for Id {} with Request Id {}", shipmentSettingsDetails.getId(), LoggerHelper.getRequestIdFromMDC());
@@ -461,19 +465,23 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
                     oldProductSequenceConfigList = productsPage.getContent();
                 else
                     oldProductSequenceConfigList = null;
+                List<ProductSequenceConfigRequest> productSequenceConfigRequests = new ArrayList<>();
                 if(productSequenceConfigList.size() > 0) {
                     for (ProductSequenceConfigRequest productSequenceConfig: productSequenceConfigList) {
                         if(productSequenceConfig.getTenantProducts() != null && productSequenceConfig.getTenantProducts().getProductType() != null) {
                             listCommonRequest = constructListCommonRequest("productType", stringValueOf(productSequenceConfig.getTenantProducts().getProductType()), "=");
                             Pair<Specification<TenantProducts>, Pageable> pair2 = fetchData(listCommonRequest, TenantProducts.class);
                             Page<TenantProducts> tenantProducts = tenantProductsDao.findAll(pair2.getLeft(), pair2.getRight());
-                            productSequenceConfig.setTenantProducts(convertToClass(tenantProducts.getContent().get(0), TenantProductsRequest.class));
+                            if(tenantProducts != null && !tenantProducts.isEmpty()) {
+                                productSequenceConfig.setTenantProducts(convertToClass(tenantProducts.getContent().get(0), TenantProductsRequest.class));
+                                productSequenceConfigRequests.add(productSequenceConfig);
+                            }
                         }
                         else
                             productSequenceConfig.setTenantProducts(null);
                     }
                 }
-                List<ProductSequenceConfig> productSequenceConfigs = productSequenceConfigDao.updateEntityFromV1Settings(convertToEntityList(productSequenceConfigList, ProductSequenceConfig.class), shipmentSettingsDetails.getId(), oldProductSequenceConfigList);
+                List<ProductSequenceConfig> productSequenceConfigs = productSequenceConfigDao.updateEntityFromV1Settings(convertToEntityList(productSequenceConfigRequests, ProductSequenceConfig.class), shipmentSettingsDetails.getId(), oldProductSequenceConfigList);
                 response.setProductSequenceConfig(convertToDtoList(productSequenceConfigs, ProductSequenceConfigResponse.class));
             }
 
