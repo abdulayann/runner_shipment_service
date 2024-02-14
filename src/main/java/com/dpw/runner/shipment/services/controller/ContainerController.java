@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.CheckAllocatedDataChangesRequest;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerAssignListRequest;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerPackADInShipmentRequest;
 import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
@@ -145,6 +146,12 @@ public class ContainerController {
     @PostMapping(ApiConstants.API_CHANGE_UNIT_ALLOCATED_ACHIEVED)
     public ResponseEntity<RunnerListResponse<ContainerResponse>> calculateAchieved_AllocatedForSameUnit(@RequestBody ContainerRequest containerRequest) {
         return (ResponseEntity<RunnerListResponse<ContainerResponse>>) containerService.calculateAchieved_AllocatedForSameUnit(CommonRequestModel.buildRequest(containerRequest));
+    }
+
+    @ApiResponses(value = { @ApiResponse(code = 200, message = ContainerConstants.CALCULATION_SUCCESSFUL) })
+    @PostMapping(ApiConstants.API_CHECK_ALLOCATED_DATA_CHANGE)
+    public ResponseEntity<?> calculateAllocatedData(@RequestBody CheckAllocatedDataChangesRequest containerRequest) {
+        return (ResponseEntity<?>) containerService.calculateAllocatedData(CommonRequestModel.buildRequest(containerRequest));
     }
 
 //    @ApiResponses(value = { @ApiResponse(code = 200, message = ContainerConstants.CALCULATION_SUCCESSFUL) })
