@@ -3412,7 +3412,7 @@ public class ConsolidationService implements IConsolidationService {
             response.setTransportMode(tenantSettings.getDefaultTransportMode());
             response.setContainerCategory(tenantSettings.getDefaultContainerType());
             response.setShipmentType(tenantSettings.getDefaultShipmentType());
-            response.setBol(generateCustomBolNumber());
+            response.setBol((response.getTransportMode() == null || !response.getTransportMode().equalsIgnoreCase(Constants.TRANSPORT_MODE_AIR)) ? generateCustomBolNumber() : null);
 
             response.setCreatedBy(UserContext.getUser().getUsername());
             response.setCreatedAt(LocalDateTime.now());
