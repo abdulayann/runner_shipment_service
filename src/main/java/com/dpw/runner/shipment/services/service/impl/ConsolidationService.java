@@ -2066,7 +2066,6 @@ public class ConsolidationService implements IConsolidationService {
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
             log.info("Consolidation details fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
-            List<ShipmentSettingsDetails> shipmentSettingsDetailsList = shipmentSettingsDao.getSettingsByTenantIds(List.of(TenantContext.getCurrentTenant()));
             ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
             if(shipmentSettingsDetails.getMergeContainers() && consolidationDetails.get().getContainersList() != null && consolidationDetails.get().getContainersList().size() > 0) {
                 consolidationDetails.get().setContainersList(mergeContainers(consolidationDetails.get().getContainersList(), shipmentSettingsDetails));
@@ -2114,7 +2113,6 @@ public class ConsolidationService implements IConsolidationService {
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
             log.info("Consolidation details async fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
-            List<ShipmentSettingsDetails> shipmentSettingsDetailsList = shipmentSettingsDao.getSettingsByTenantIds(List.of(TenantContext.getCurrentTenant()));
             ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
             if(shipmentSettingsDetails.getMergeContainers() && consolidationDetails.get().getContainersList() != null && consolidationDetails.get().getContainersList().size() > 0) {
                 consolidationDetails.get().setContainersList(mergeContainers(consolidationDetails.get().getContainersList(), shipmentSettingsDetails));
@@ -3392,10 +3390,7 @@ public class ConsolidationService implements IConsolidationService {
     public ResponseEntity<?> getDefaultConsolidation() {
         String responseMsg;
         try {
-            List<ShipmentSettingsDetails> shipmentSettingsDetails = shipmentSettingsDao.getSettingsByTenantIds(List.of(TenantContext.getCurrentTenant()));
-            if(shipmentSettingsDetails == null || shipmentSettingsDetails.size() == 0)
-                throw new RunnerException("Shipment settings empty for current tenant");
-            var tenantSettings = shipmentSettingsDetails.get(0);
+            var tenantSettings = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
             // Populate shipment details on basis of tenant settings
             ConsolidationDetailsResponse response = new ConsolidationDetailsResponse();
             response.setCarrierDetails(new CarrierDetailResponse());
@@ -3468,10 +3463,7 @@ public class ConsolidationService implements IConsolidationService {
 
     public String generateCustomBolNumber() {
         String res = null;
-        List<ShipmentSettingsDetails> shipmentSettingsDetailsList = shipmentSettingsDao.getSettingsByTenantIds(List.of(TenantContext.getCurrentTenant()));
-        ShipmentSettingsDetails tenantSetting = null;
-        if (shipmentSettingsDetailsList.get(0) != null)
-            tenantSetting = shipmentSettingsDetailsList.get(0);
+        ShipmentSettingsDetails tenantSetting = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
 
         if(tenantSetting.getConsolidationLite() != null && tenantSetting.getConsolidationLite() && tenantSetting.getBolNumberGeneration() == null) {
             return  res;

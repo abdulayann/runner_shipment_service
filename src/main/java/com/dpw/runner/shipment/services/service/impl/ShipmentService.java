@@ -1092,7 +1092,7 @@ public class ShipmentService implements IShipmentService {
 //        }
         response = calculatePacksAndPacksUnit(packingList, response);
         response = calculateWeightAndVolumeUnit(request, packingList, response);
-        ShipmentSettingsDetails shipmentSettingsDetails = shipmentSettingsDao.getSettingsByTenantIds(List.of(TenantContext.getCurrentTenant())).get(0);
+        ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
         boolean isPacksPresent = packingList != null && packingList.size() > 0;
         if(shipmentSettingsDetails.getIsShipmentLevelContainer() && !request.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && !isPacksPresent) {
             response.setContainerSummary(containerService.calculateContainerSummary(containersList, request.getTransportMode(), request.getShipmentType()));
@@ -1145,7 +1145,7 @@ public class ShipmentService implements IShipmentService {
         String packsUnit = "";
         String toWeightUnit = Constants.WEIGHT_UNIT_KG;
         String toVolumeUnit = Constants.VOLUME_UNIT_M3;
-        ShipmentSettingsDetails shipmentSettingsDetails = shipmentSettingsDao.getSettingsByTenantIds(List.of(TenantContext.getCurrentTenant())).get(0);
+        ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
         if(!IsStringNullOrEmpty(shipmentSettingsDetails.getWeightChargeableUnit()))
             toWeightUnit = shipmentSettingsDetails.getWeightChargeableUnit();
         if(!IsStringNullOrEmpty(shipmentSettingsDetails.getVolumeChargeableUnit()))
@@ -1745,14 +1745,7 @@ public class ShipmentService implements IShipmentService {
     }
 
     public ConsolidationDetails createConsolidation(ShipmentDetails shipmentDetails, List<Containers> containers) {
-        List<ShipmentSettingsDetails> shipmentSettingsDetails = shipmentSettingsDao.getSettingsByTenantIds(List.of(TenantContext.getCurrentTenant()));
-        ShipmentSettingsDetails shipmentSettings = null;
-        if(shipmentSettingsDetails != null && shipmentSettingsDetails.size() > 0)
-            shipmentSettings = shipmentSettingsDetails.get(0);
-        else {
-            log.error("Not able to create consolidation, Shipment Settings not available in current tenant");
-            return null;
-        }
+        ShipmentSettingsDetails shipmentSettings = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
         if(shipmentSettings.getShipConsolidationContainerEnabled()) {
             ConsolidationDetails consolidationDetails = new ConsolidationDetails();
             consolidationDetails.setConsolidationType(Constants.SHIPMENT_TYPE_DRT);
@@ -2047,7 +2040,7 @@ public class ShipmentService implements IShipmentService {
     @Override
     public ResponseEntity<?> assignAllContainers(CommonRequestModel commonRequestModel) {
         String responseMsg;
-        ShipmentSettingsDetails shipmentSettingsDetails = shipmentSettingsDao.getSettingsByTenantIds(List.of(TenantContext.getCurrentTenant())).get(0);
+        ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
         boolean lclAndSeaOrRoadFlag = shipmentSettingsDetails.getMultipleShipmentEnabled() != null && shipmentSettingsDetails.getMultipleShipmentEnabled();
         boolean IsConsolidatorFlag = shipmentSettingsDetails.getIsConsolidator() != null && shipmentSettingsDetails.getIsConsolidator();
         List<Containers> containersList = new ArrayList<>();
@@ -3270,7 +3263,7 @@ public class ShipmentService implements IShipmentService {
         if(containers != null)
             map = containers.stream().collect(Collectors.toMap(cont -> cont.getId(), cont -> cont.getContainerNumber()));
         Map<Long, Map<String, String>> contMap = new HashMap<>();
-        ShipmentSettingsDetails shipmentSettingsDetails = shipmentSettingsDao.getSettingsByTenantIds(List.of(TenantContext.getCurrentTenant())).get(0);
+        ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
         boolean flag = shipmentDetailsResponse.getContainerAutoWeightVolumeUpdate() != null && shipmentDetailsResponse.getContainerAutoWeightVolumeUpdate().booleanValue()
                 && shipmentSettingsDetails.getMultipleShipmentEnabled() != null && shipmentSettingsDetails.getMultipleShipmentEnabled();
         if(packings != null && packings.size() > 0) {
@@ -3447,10 +3440,7 @@ public class ShipmentService implements IShipmentService {
 
     @Override
     public ResponseEntity<?> getShipmentFromConsol(Long consolidationId, String bookingNumber) {
-        List<ShipmentSettingsDetails> shipmentSettingsDetails = shipmentSettingsDao.getSettingsByTenantIds(List.of(TenantContext.getCurrentTenant()));
-        if(shipmentSettingsDetails == null || shipmentSettingsDetails.size() == 0)
-            throw new RunnerException("Shipment settings empty for current tenant");
-        var tenantSettings = shipmentSettingsDetails.get(0);
+        var tenantSettings = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
         // Populate shipment details on basis of tenant settings
 
         ShipmentDetailsResponse shipment;
@@ -3593,10 +3583,7 @@ public class ShipmentService implements IShipmentService {
         if(shipmentDetails != null) {
             res = shipmentDetails.getHouseBill();
         }
-        List<ShipmentSettingsDetails> shipmentSettingsDetailsList = shipmentSettingsDao.getSettingsByTenantIds(List.of(TenantContext.getCurrentTenant()));
-        ShipmentSettingsDetails tenantSetting = null;
-        if (shipmentSettingsDetailsList.get(0) != null)
-            tenantSetting = shipmentSettingsDetailsList.get(0);
+        ShipmentSettingsDetails tenantSetting = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
         if(shipmentDetails == null && tenantSetting != null && tenantSetting.getRestrictHblGen()) {
             return null;
         }
@@ -3643,10 +3630,7 @@ public class ShipmentService implements IShipmentService {
     public ResponseEntity<?> getDefaultShipment() {
         String responseMsg;
         try {
-            List<ShipmentSettingsDetails> shipmentSettingsDetails = shipmentSettingsDao.getSettingsByTenantIds(List.of(TenantContext.getCurrentTenant()));
-            if(shipmentSettingsDetails == null || shipmentSettingsDetails.size() == 0)
-                throw new RunnerException("Shipment settings empty for current tenant");
-            var tenantSettings = shipmentSettingsDetails.get(0);
+            var tenantSettings = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
             // Populate shipment details on basis of tenant settings
             ShipmentDetailsResponse response = new ShipmentDetailsResponse();
             response.setAdditionalDetails(new AdditionalDetailResponse());
